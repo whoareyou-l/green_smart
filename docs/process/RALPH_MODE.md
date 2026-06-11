@@ -46,7 +46,7 @@ RALPH_MAX_ROUNDS=1 scripts/greenity-ralph-loop
 Current executable steps:
 
 ```text
-compose config → secret scan → dev healthcheck → HA smoke → MQTT smoke
+compose config → secret scan → product test → dev healthcheck → HA smoke → MQTT smoke
 ```
 
 The loop writes redacted failure logs under:

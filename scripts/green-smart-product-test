@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+env -u VIRTUAL_ENV uv run --python 3.12 --group dev pytest tests -q
+npm run check:panel --silent
+
+echo GREEN_SMART_PRODUCT_TEST_OK

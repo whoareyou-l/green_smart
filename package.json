@@ -1,0 +1,8 @@
+{
+  "name": "green-smart-panel-checks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:panel": "node --check custom_components/green_smart/panel/green-smart-panel.js"
+  }
+}
