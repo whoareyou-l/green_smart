@@ -30,7 +30,12 @@ Current tests cover:
 - `const.py`: `DOMAIN == "green_smart"`.
 - `config_flow.py` static contract: wizard keys and single user step.
 - `panel/green-smart-panel.js`: panel registration marker and no obvious embedded secrets/prod URLs.
+- `kma_grid.py`: address search, duplicate grid behavior, short sido names, regId fallback/specific mapping.
+- `weather_api.py`: storage/cache constants, masked key contract, key-safe error handling, masked frontend methods.
+- `db.py`: environment variable defaults, utf8mb4/autocommit/bounded pool config, ISO conversion, pool cleanup contract.
 - JS syntax validity via `node --check`.
+
+Current baseline: 20 pytest tests plus JS syntax check.
 
 ## Why tests avoid importing Home Assistant
 
