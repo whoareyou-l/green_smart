@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+coverage/
+
+# Home Assistant runtime / secrets
+.storage/
+*.db
+*.db-shm
+*.db-wal
+home-assistant.log*
+secrets.yaml
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/

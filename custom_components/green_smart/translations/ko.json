@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Green Smart",
+        "description": "Green Smart 사이드바 패널을 열고 설정 마법사를 완료하세요."
+      }
+    },
+    "abort": {
+      "already_configured": "Green Smart가 이미 설정되어 있습니다.",
+      "use_panel_wizard": "Green Smart 사이드바 패널을 열고 설정 마법사를 완료하세요."
+    }
+  }
+}

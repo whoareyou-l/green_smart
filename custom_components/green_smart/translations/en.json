@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Green Smart",
+        "description": "Open the Green Smart sidebar panel and complete the setup wizard."
+      }
+    },
+    "abort": {
+      "already_configured": "Green Smart is already configured.",
+      "use_panel_wizard": "Open the Green Smart sidebar panel and complete the setup wizard."
+    }
+  }
+}

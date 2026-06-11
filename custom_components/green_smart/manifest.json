@@ -1,0 +1,14 @@
+{
+  "domain": "green_smart",
+  "name": "Green Smart",
+  "after_dependencies": [
+    "http"
+  ],
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/whoareyou-l/green_smart_install",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/whoareyou-l/green_smart_install/issues",
+  "requirements": ["aiomysql==0.2.0"],
+  "version": "1.8.0"
+}
