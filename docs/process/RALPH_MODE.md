@@ -34,7 +34,30 @@ Ralph Mode is a bounded build/run/test/inspect/fix loop. It repeats until all ac
 - Same failure repeats 3 times.
 - Max rounds/time/budget exceeded.
 
+## Current dev implementation
+
+The deployment repo contains the first executable Ralph loop:
+
+```bash
+cd /home/smartfarm/green_smart-deploy
+RALPH_MAX_ROUNDS=1 scripts/greenity-ralph-loop
+```
+
+Current executable steps:
+
+```text
+compose config → secret scan → dev healthcheck → HA smoke → MQTT smoke
+```
+
+The loop writes redacted failure logs under:
+
+```text
+/home/smartfarm/green_smart-deploy/reports/ralph/
+```
+
+`reports/` is ignored by git.
+
 ## Defaults
-- Max rounds: 10
-- Same-failure limit: 3
+- Max rounds: 10 planned; current script default is 1 unless `RALPH_MAX_ROUNDS` is set.
+- Same-failure limit: 3 planned.
 - Claude escalation: repeated failure, architecture ambiguity, or security/safety issue only
