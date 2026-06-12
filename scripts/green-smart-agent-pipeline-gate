@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TASK_ID="${1:?usage: scripts/green-smart-agent-pipeline-gate <task-id-or-path>}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "$TASK_ID" = /* ]]; then
+  TASK_DIR="$TASK_ID"
+else
+  TASK_DIR="$ROOT/sandbox/tasks/$TASK_ID"
+fi
+
+fail() {
+  echo "FAIL $*" >&2
+  exit 1
+}
+
+[[ -f "$TASK_DIR/TASK_BRIEF.md" ]] || fail "missing TASK_BRIEF.md"
+[[ -f "$TASK_DIR/role-cards/hermes.md" ]] || fail "missing orchestrator role card: hermes"
+[[ -f "$TASK_DIR/role-cards/codex-builder.md" ]] || fail "missing builder role card: codex-builder"
+[[ -f "$TASK_DIR/role-cards/claude-reviewer.md" ]] || fail "missing required reviewer role card: claude-reviewer"
+[[ -f "$TASK_DIR/role-cards/antigravity-reviewer.md" ]] || fail "missing UX/docs reviewer role card: antigravity-reviewer"
+[[ -f "$TASK_DIR/reviews/spec-compliance.md" ]] || fail "missing spec compliance review"
+[[ -f "$TASK_DIR/reviews/quality-security.md" ]] || fail "missing quality/security review"
+
+grep -Eq "Verdict: PASS|PASS" "$TASK_DIR/reviews/spec-compliance.md" || fail "spec review missing PASS verdict"
+grep -Eq "Verdict: APPROVED|APPROVED" "$TASK_DIR/reviews/quality-security.md" || fail "quality/security review missing APPROVED verdict"
+
+grep -Eq "Hermes orchestrator|Hermes: orchestration" "$TASK_DIR/TASK_BRIEF.md" || fail "task brief missing Hermes orchestrator lane"
+grep -Eq "Codex builder|Codex CLI" "$TASK_DIR/TASK_BRIEF.md" || fail "task brief missing Codex builder lane"
+grep -Eq "Claude Code reviewer|Claude Code CLI" "$TASK_DIR/TASK_BRIEF.md" || fail "task brief missing Claude reviewer lane"
+
+grep -Eq "Do not commit secrets|Do not commit Home Assistant runtime data" "$TASK_DIR/TASK_BRIEF.md" || fail "task brief missing secrets/customer-data boundary"
+grep -Eq 'No generic `/vendor/proxy`|no generic `/vendor/proxy`|/vendor/proxy' "$TASK_DIR/TASK_BRIEF.md" || fail "task brief missing generic proxy boundary"
+
+echo "GREEN_SMART_AGENT_PIPELINE_GATE_OK task=$(basename "$TASK_DIR")"

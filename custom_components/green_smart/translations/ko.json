@@ -3,8 +3,14 @@
     "step": {
       "user": {
         "title": "Green Smart",
-        "description": "Green Smart 사이드바 패널을 열고 설정 마법사를 완료하세요."
+        "description": "Green Smart 사이드바 패널을 열고 설정 마법사를 완료하세요. 중앙 활성화는 선택 사항이며 현재는 로컬/데모 Greenity 중앙 API 기준입니다. 지원되는 벤더 어댑터가 확정되기 전에는 실제 유료 벤더 자격 증명을 입력하지 마세요."
       }
+    },
+    "error": {
+      "invalid_activation_code": "중앙 활성화 코드가 올바르지 않습니다. 코드를 확인한 뒤 다시 시도하세요.",
+      "activation_code_expired": "중앙 활성화 코드가 만료되었습니다. 중앙 서비스에서 새 코드를 생성하세요.",
+      "activation_code_not_active": "중앙 활성화 코드가 이미 사용되었거나, 폐기되었거나, 활성 상태가 아닙니다.",
+      "cannot_connect": "Greenity 중앙 API에 연결할 수 없습니다. 로컬/데모 중앙 URL을 확인한 뒤 다시 시도하세요."
     },
     "abort": {
       "already_configured": "Green Smart가 이미 설정되어 있습니다.",

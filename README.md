@@ -25,3 +25,12 @@ Green Smart is distributed through the public `whoareyou-l/green_smart` reposito
 ## Safety boundary
 
 Do not commit Home Assistant runtime data, `.storage`, secrets, tokens, real customer data, production Docker config, or real device credentials.
+
+## Central activation baseline
+
+The current central activation support is a demo/local baseline for connecting the Home Assistant integration to the Greenity central API contract.
+
+- The default central URL is local/demo-oriented, not a managed production cloud promise.
+- Do not enter real paid vendor credentials, real customer tokens, or real device secrets unless a supported vendor adapter and operating runbook are explicitly confirmed.
+- The generic `/vendor/proxy` endpoint is not exposed by this Home Assistant client. User-facing integrations should use allowlisted adapter endpoints such as the demo status adapter only.
+- This baseline adds client/storage/test plumbing; real vendor readiness still requires the first confirmed vendor schema and adapter contract.

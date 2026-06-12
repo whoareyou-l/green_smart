@@ -47,7 +47,11 @@ def test_config_flow_filters_user_input_to_wizard_keys_only():
         "stevenson_screens",
         "weatherflow_prefix",
         "virtual",
+        "central_base_url",
+        "central_installation_id",
     }
+
+    assert "activation_code" not in wizard_keys
 
 
 def test_config_flow_exposes_single_user_step():

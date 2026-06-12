@@ -3,8 +3,14 @@
     "step": {
       "user": {
         "title": "Green Smart",
-        "description": "Open the Green Smart sidebar panel and complete the setup wizard."
+        "description": "Open the Green Smart sidebar panel and complete the setup wizard. Central activation is optional and currently targets the local/demo Greenity central API baseline; do not use real paid vendor credentials unless a supported vendor adapter is confirmed."
       }
+    },
+    "error": {
+      "invalid_activation_code": "The central activation code is invalid. Check the code and try again.",
+      "activation_code_expired": "The central activation code has expired. Create a new code in the central service.",
+      "activation_code_not_active": "The central activation code is already used, revoked, or not active.",
+      "cannot_connect": "Cannot connect to the Greenity central API. Check the local/demo central URL and try again."
     },
     "abort": {
       "already_configured": "Green Smart is already configured.",
