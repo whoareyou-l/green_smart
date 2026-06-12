@@ -10,7 +10,7 @@ Green Smart 제품 코드는 공개 배포하지 않는다.
 ```text
 제품 repo: whoareyou-l/green_smart       private
 배포 repo: whoareyou-l/green_smart-deploy private
-설치 안내 repo: whoareyou-l/green_smart_install private 또는 legacy 안내 전용
+설치 안내 repo: whoareyou-l/green_smart_install private, 안내 전용
 ```
 
 사용자가 설치 가능하려면 다음 둘 중 하나가 필요하다.
@@ -99,4 +99,4 @@ Green Smart 설치 가능 여부를 공개 URL이 아니라 접근권으로 판�
 계약 없음 → private repo/release 접근 불가 → 신규 설치/업데이트 불가
 ```
 
-public repo에는 제품 코드를 두지 않고, 안내가 필요하면 초대/계약 절차와 문의 방법만 둔다.
+설치 안내 repo도 private 상태로 유지한다. 과거 public raw URL 캐시가 남더라도 제품 코드와 설치 스크립트는 두지 않고, 초대/계약 절차와 문의 방법만 둔다.
