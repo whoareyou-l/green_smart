@@ -14,6 +14,17 @@ def test_panel_bundle_exists_and_registers_green_smart_element():
     assert "green-smart-panel" in source
 
 
+def test_panel_registration_is_idempotent_for_frontend_reload():
+    source = PANEL.read_text(encoding="utf-8")
+
+    guard = 'if (!customElements.get("green-smart-panel")) {'
+    define = 'customElements.define("green-smart-panel", GreenSmartPanel);'
+
+    assert guard in source
+    assert define in source
+    assert source.index(guard) < source.index(define)
+
+
 def test_panel_does_not_embed_obvious_secrets_or_prod_urls():
     source = PANEL.read_text(encoding="utf-8")
 

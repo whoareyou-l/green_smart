@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.2
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.3
 const DOMAIN = "green_smart";
-const VERSION = "1.8.2";
+const VERSION = "1.8.3";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -4633,4 +4633,6 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 }
 
-customElements.define("green-smart-panel", GreenSmartPanel);
+if (!customElements.get("green-smart-panel")) {
+  customElements.define("green-smart-panel", GreenSmartPanel);
+}
