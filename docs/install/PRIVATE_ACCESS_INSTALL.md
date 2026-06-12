@@ -1,6 +1,6 @@
 # Green Smart public HACS 설치 운영안
 
-이 문서는 Green Smart v1.8.1 이상을 GitHub public repository와 HACS custom repository로 설치하는 기준입니다.
+이 문서는 Green Smart v1.8.2 이상을 GitHub public repository와 HACS custom repository로 설치하는 기준입니다.
 
 ## 핵심 원칙
 
@@ -40,11 +40,11 @@ Category: Integration
 6. Home Assistant를 재시작한다.
 7. 설정 → 기기 및 서비스 → 통합구성요소 추가 → `Green Smart`를 추가한다.
 
-v1.8.1 확인:
+v1.8.2 확인:
 
 ```text
 /config/custom_components/green_smart/manifest.json
-"version": "1.8.1"
+"version": "1.8.2"
 ```
 
 ## 권장 방식 B: release zip 수동 설치
