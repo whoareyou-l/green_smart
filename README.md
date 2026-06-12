@@ -14,12 +14,12 @@ Paperclip-era documents are historical only and are not part of the active workf
 - Codex CLI: primary implementation and test/fix loop
 - Antigravity CLI: frontend, UX, documentation, independent review
 
-## Private installation model
+## Public HACS installation model
 
-Green Smart is distributed through private GitHub access for invited/contracted users only.
+Green Smart is distributed through the public `whoareyou-l/green_smart` repository so HACS can read repository metadata without private GitHub authentication.
 
-- Product source/release repo: `whoareyou-l/green_smart` private repo
-- Recommended customer flow: contract check → GitHub collaborator invite or company-managed install → HACS/private release install
+- Product source/release repo: `whoareyou-l/green_smart` public repo
+- Recommended customer flow: HACS custom repository → install `Green Smart` integration → restart Home Assistant
 - Detailed runbook: [`docs/install/PRIVATE_ACCESS_INSTALL.md`](docs/install/PRIVATE_ACCESS_INSTALL.md)
 
 ## Safety boundary
