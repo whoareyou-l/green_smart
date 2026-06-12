@@ -1,8 +1,10 @@
+import json
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js"
+MANIFEST = ROOT / "custom_components" / "green_smart" / "manifest.json"
 
 
 def test_panel_bundle_exists_and_registers_green_smart_element():
@@ -24,3 +26,28 @@ def test_panel_does_not_embed_obvious_secrets_or_prod_urls():
         r"greenhouse-control",
     ]
     assert not any(re.search(pattern, source, flags=re.IGNORECASE) for pattern in forbidden_patterns)
+
+
+def test_panel_version_constant_matches_manifest_version():
+    source = PANEL.read_text(encoding="utf-8")
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+    version_match = re.search(r'const VERSION = "([^"]+)";', source)
+
+    assert version_match
+    assert version_match.group(1) == manifest["version"]
+
+
+def test_home_dashboard_renders_version_footer_at_bottom():
+    source = PANEL.read_text(encoding="utf-8")
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+    assert 'class="dashboard-version-footer"' in source
+    assert 'data-dashboard-version' in source
+    assert 'Green Smart v${VERSION}' in source
+    assert f'const VERSION = "{manifest["version"]}";' in source
+
+    equip_grid = source.index("${this._renderEquipGrid()}")
+    footer = source.index('class="dashboard-version-footer"')
+    home_end = source.index("  _renderKPIStrip", footer)
+    assert equip_grid < footer < home_end

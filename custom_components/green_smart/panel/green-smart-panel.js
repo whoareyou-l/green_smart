@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.0
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.1
 const DOMAIN = "green_smart";
-const VERSION = "1.8.0";
+const VERSION = "1.8.1";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -635,6 +635,8 @@ button{cursor:pointer;font:inherit;}
 #main-area{min-height:100vh;display:flex;flex-direction:column;}
 #main-area.has-sidebar{margin-left:70px;}
 #content{flex:1;padding:24px;}
+.dashboard-version-footer{margin-top:26px;padding:18px 0 4px;text-align:center;font-size:12px;font-weight:600;color:#9aada0;letter-spacing:.02em;}
+.dashboard-version-footer span{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid #e8f0e9;}
 /* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .page{animation:fadeUp .2s ease-out;}
@@ -1333,6 +1335,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
       </div>
       ${this._renderEquipGrid()}
+      <div class="dashboard-version-footer" data-dashboard-version="${VERSION}">
+        <span>Green Smart v${VERSION}</span>
+      </div>
     </div>`;
   }
 
