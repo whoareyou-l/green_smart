@@ -442,8 +442,9 @@ class GreenSmartPanel extends HTMLElement {
     // ── 센서 임계값 체크 ──
     if (this._simData) this._checkAlerts(this._simData);
 
-    // ── GitHub 릴리즈 직접 체크 (HACS 엔티티 없이도 동작) ──
-    await this._checkGithubRelease();
+    // ── Private 배포 모델 ──
+    // GitHub release API는 private repo에서 브라우저 무인 호출이 404/인증 오류가 되므로 직접 조회하지 않는다.
+    // HACS/update 엔티티가 제공하는 업데이트 신호만 사용한다.
 
     // ── HA 업데이트 엔티티 체크 (HA Core / HACS) ──
     if (!this._hass || !this._hass.states) return;
@@ -493,44 +494,6 @@ class GreenSmartPanel extends HTMLElement {
       const entityId = key.replace("upd::", "");
       const s = states[entityId];
       if (s && s.state !== "on") this._watchdogKeys.delete(key);
-    }
-  }
-
-  async _checkGithubRelease() {
-    const GH_KEY = "upd::github::green_smart";
-    try {
-      const resp = await fetch(
-        "https://api.github.com/repos/whoareyou-l/green_smart_install/releases/latest",
-        { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" }
-      );
-      if (!resp.ok) return;
-      const data = await resp.json();
-      const latest = (data.tag_name || "").replace(/^v/, "");
-      if (!latest) return;
-
-      // 이미 이 버전으로 알림을 표시한 경우 스킵
-      const key = `${GH_KEY}::${latest}`;
-      if (this._watchdogKeys.has(key)) return;
-
-      // 현재 버전보다 최신이면 알림 추가
-      if (latest !== VERSION) {
-        this._watchdogKeys.add(key);
-        this._alerts.unshift({
-          key,
-          msg: `Green Smart: ${VERSION} → ${latest}`,
-          time: new Date().toLocaleTimeString(),
-          isUpdate: true,
-          entityId: null,
-          updateTitle: "Green Smart 업데이트",
-          updateFrom: VERSION,
-          updateTo: latest,
-        });
-        if (this._alerts.length > 20) this._alerts.pop();
-        const alertsList = this.shadowRoot && this.shadowRoot.querySelector("[data-alerts-list]");
-        if (alertsList) alertsList.innerHTML = this._renderAlertsInner();
-      }
-    } catch (_) {
-      // 네트워크 오류 시 무시
     }
   }
 
