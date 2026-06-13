@@ -6,6 +6,9 @@ const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
   greenhouse_zones: 1, nutrient_zones: 1, stevenson_screens: 1,
   weatherflow_prefix: "sensor.tempest_", virtual: false,
+  central_base_url: "http://127.0.0.1:18000",
+  central_installation_id: "",
+  activation_code: "",
 };
 const EQUIP_KEYS = ["roof_window","side_window","shade_screen","thermal_curtain","irrigation","nutrient_machine","circulation_fan","co2_generator"];
 const EQUIP_LABELS = {
@@ -208,10 +211,10 @@ class GreenSmartPanel extends HTMLElement {
   }
 
   async _finishWizard() {
-    const data = this._normalizedForm();
+    const data = this._submissionData();
     if (!data.host) { this._error = "PLC IP 주소를 입력해 주세요."; this._update(); return; }
     this._saving = true; this._error = ""; this._update();
-    this._saveStorage(data);
+    this._saveStorage(this._safeStorageData(data));
     try {
       await this._refreshEntries();
       if (this._entry && this._entry.data && this._entry.data.host) {
@@ -272,7 +275,7 @@ class GreenSmartPanel extends HTMLElement {
       // (it would reset _form to DEFAULT). Apply the saved values directly.
       Object.assign(this._form, data);
       this._virtualMode = Boolean(data.virtual || data.host === "virtual");
-      this._saveStorage(this._form);
+      this._saveStorage(this._safeStorageData(this._form));
       this._saving = false; this._state = "dashboard"; this._update();
     } catch (err) {
       this._saving = false; this._showError(err, "저장에 실패했습니다."); }
@@ -292,7 +295,23 @@ class GreenSmartPanel extends HTMLElement {
       stevenson_screens: this._number(f.stevenson_screens, 1, 1, 10),
       weatherflow_prefix: (f.weatherflow_prefix || "").trim() || "sensor.tempest_",
       virtual,
+      central_base_url: (f.central_base_url || "http://127.0.0.1:18000").trim() || "http://127.0.0.1:18000",
+      central_installation_id: (f.central_installation_id || "").trim(),
     };
+  }
+
+  _submissionData() {
+    const data = this._normalizedForm();
+    const trimmedActivationCode = (this._form.activation_code || "").trim();
+    if (trimmedActivationCode) data.activation_code = trimmedActivationCode;
+    else delete data.activation_code;
+    return data;
+  }
+
+  _safeStorageData(data) {
+    const safe = Object.assign({}, data);
+    delete safe.activation_code;
+    return safe;
   }
 
   _isVirtual() { return this._virtualMode || this._form.host === "virtual"; }
@@ -4197,11 +4216,28 @@ button.action:disabled{opacity:.5;cursor:default;}
   _renderReviewStep() {
     return `<h1>설정 확인</h1>
       <p class="sub">설정 내용을 확인하고 완료하세요.</p>
+      ${this._renderCentralActivationCard()}
       ${this._renderSummary(this._normalizedForm())}
       <div class="actions">
         <button class="action" id="back">이전</button>
         <button class="action primary" id="finish">설정 완료</button>
       </div>`;
+  }
+
+  _renderCentralActivationCard() {
+    const f = this._form;
+    return `<div class="mode-copy central-activation-card">
+      <strong>중앙 활성화 — 선택 사항</strong>
+      <span>현재는 로컬/데모 Greenity 중앙 API 연결 기준입니다. 실제 유료 벤더 자격 증명이나 고객 토큰은 입력하지 마세요. 활성화 코드는 전송에만 사용하고 저장하지 않습니다.</span>
+      <div class="form" style="margin-top:12px;">
+        <label>중앙 API URL
+          <input id="central_base_url" value="${this._esc(f.central_base_url || "http://127.0.0.1:18000")}" autocomplete="off" placeholder="http://127.0.0.1:18000">
+        </label>
+        <label>활성화 코드
+          <input type="password" id="activation_code" value="${this._esc(f.activation_code)}" autocomplete="off" placeholder="선택 사항 — 중앙 API에서 발급한 일회용 코드">
+        </label>
+      </div>
+    </div>`;
   }
 
   _renderSummary(d) {
@@ -4213,6 +4249,9 @@ button.action:disabled{opacity:.5;cursor:default;}
       <dt>양액 구역</dt><dd>${this._esc(d.nutrient_zones)}개</dd>
       <dt>스티븐슨 스크린</dt><dd>${this._esc(d.stevenson_screens)}개</dd>
       <dt>WeatherFlow 접두사</dt><dd>${this._esc(d.weatherflow_prefix)}</dd>
+      <dt>중앙 API</dt><dd>${this._esc(d.central_base_url || "미설정")}</dd>
+      <dt>중앙 설치 ID</dt><dd>${this._esc(d.central_installation_id || "활성화 후 표시")}</dd>
+      <dt>중앙 보안</dt><dd>활성화 코드는 저장하지 않습니다</dd>
     </dl>`;
   }
 
