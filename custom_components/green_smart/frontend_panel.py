@@ -140,6 +140,14 @@ async def ws_get_config(hass: HomeAssistant, connection, msg) -> None:
         vol.Required("stevenson_screens"): int,
         vol.Required("weatherflow_prefix"): str,
         vol.Optional("virtual", default=False): bool,
+        vol.Optional("greenhouse_address", default=""): str,
+        vol.Optional("location_name", default=""): str,
+        vol.Optional("nx", default=60): int,
+        vol.Optional("ny", default=127): int,
+        vol.Optional("land_regid", default="11H10000"): str,
+        vol.Optional("ta_regid", default="11H10701"): str,
+        vol.Optional("weather_mid_land_reg_id", default="11H10000"): str,
+        vol.Optional("weather_mid_ta_reg_id", default="11H10701"): str,
     }
 )
 @websocket_api.async_response
@@ -158,6 +166,14 @@ async def ws_save_config(hass: HomeAssistant, connection, msg) -> None:
         "stevenson_screens": msg["stevenson_screens"],
         "weatherflow_prefix": msg["weatherflow_prefix"],
         "virtual": msg["virtual"],
+        "greenhouse_address": msg.get("greenhouse_address", ""),
+        "location_name": msg.get("location_name", ""),
+        "nx": msg.get("nx", 60),
+        "ny": msg.get("ny", 127),
+        "land_regid": msg.get("land_regid", "11H10000"),
+        "ta_regid": msg.get("ta_regid", "11H10701"),
+        "weather_mid_land_reg_id": msg.get("weather_mid_land_reg_id", msg.get("land_regid", "11H10000")),
+        "weather_mid_ta_reg_id": msg.get("weather_mid_ta_reg_id", msg.get("ta_regid", "11H10701")),
     }
     hass.config_entries.async_update_entry(entry, data=new_data)
     connection.send_result(msg["id"], {"success": True})

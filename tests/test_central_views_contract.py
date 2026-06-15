@@ -93,3 +93,27 @@ def test_panel_weather_modal_merges_realtime_central_mid_forecast_through_d7():
     assert "pm_weather || d.am_weather" in source
     assert 'const rainKey = "am_" + "rain_" + "probability"' in source
     assert "Math.max(Number(d[rainKey]" in source
+
+
+def test_panel_auto_matches_greenhouse_address_to_kma_location_codes_and_uses_them_for_weather():
+    source = _source(PANEL)
+    frontend_source = _source(ROOT / "custom_components" / "green_smart" / "frontend_panel.py")
+
+    assert "greenhouse_address" in source
+    assert 'id="greenhouse_address"' in source
+    assert "_matchGreenhouseAddress" in source
+    assert 'green_smart/weather/search-location' in source
+    assert "location_match_status" in source
+    assert "weather_location_match" in source
+    assert "nx: Number(cfg.nx || 60)" in source
+    assert "ny: Number(cfg.ny || 127)" in source
+    assert "weather_mid_land_reg_id: (f.weather_mid_land_reg_id || f.land_regid" in source
+    assert "weather_mid_ta_reg_id: (f.weather_mid_ta_reg_id || f.ta_regid" in source
+    assert "land_regid: (f.weather_mid_land_reg_id || f.land_regid" in source
+    assert "ta_regid: (f.weather_mid_ta_reg_id || f.ta_regid" in source
+    assert "온실 주소" in source
+    assert "nx ${nx} · ny ${ny}" in source
+    assert "중기예보 ${this._esc(landReg)} / ${this._esc(taReg)}" in source
+
+    for field in ["greenhouse_address", "location_name", "nx", "ny", "ta_regid", "land_regid", "weather_mid_land_reg_id", "weather_mid_ta_reg_id"]:
+        assert field in frontend_source

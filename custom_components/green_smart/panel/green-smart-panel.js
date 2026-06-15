@@ -1,11 +1,13 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.9
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.10
 const DOMAIN = "green_smart";
-const VERSION = "1.8.9";
+const VERSION = "1.8.10";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
   greenhouse_zones: 1, nutrient_zones: 1, stevenson_screens: 1,
   weatherflow_prefix: "sensor.tempest_", virtual: false,
+  greenhouse_address: "", location_name: "", nx: 60, ny: 127,
+  land_regid: "11H10000", ta_regid: "11H10701",
   central_base_url: "http://127.0.0.1:18000",
   central_installation_id: "",
   weather_mid_land_reg_id: "11H10000",
@@ -274,6 +276,13 @@ class GreenSmartPanel extends HTMLElement {
     try {
       const data = this._normalizedForm();
       await this._hass.callWS({ type: "green_smart/save_config", ...data });
+      await this._hass.callApi("POST", "green_smart/weather/config", {
+        nx: data.nx,
+        ny: data.ny,
+        location_name: data.location_name || data.greenhouse_address || null,
+        ta_regid: data.weather_mid_ta_reg_id,
+        land_regid: data.weather_mid_land_reg_id,
+      }).catch(() => null);
       await this._refreshEntries();
       // REST API does not return entry.data, so do NOT call _loadFormFromEntry()
       // (it would reset _form to DEFAULT). Apply the saved values directly.
@@ -299,10 +308,16 @@ class GreenSmartPanel extends HTMLElement {
       stevenson_screens: this._number(f.stevenson_screens, 1, 1, 10),
       weatherflow_prefix: (f.weatherflow_prefix || "").trim() || "sensor.tempest_",
       virtual,
+      greenhouse_address: (f.greenhouse_address || f.location_name || "").trim(),
+      location_name: (f.location_name || f.greenhouse_address || "").trim(),
+      nx: this._number(f.nx, 60, 0, 999),
+      ny: this._number(f.ny, 127, 0, 999),
+      weather_mid_land_reg_id: (f.weather_mid_land_reg_id || f.land_regid || "11H10000").trim().toUpperCase() || "11H10000",
+      weather_mid_ta_reg_id: (f.weather_mid_ta_reg_id || f.ta_regid || "11H10701").trim().toUpperCase() || "11H10701",
+      land_regid: (f.weather_mid_land_reg_id || f.land_regid || "11H10000").trim().toUpperCase() || "11H10000",
+      ta_regid: (f.weather_mid_ta_reg_id || f.ta_regid || "11H10701").trim().toUpperCase() || "11H10701",
       central_base_url: (f.central_base_url || "http://127.0.0.1:18000").trim() || "http://127.0.0.1:18000",
       central_installation_id: (f.central_installation_id || "").trim(),
-      weather_mid_land_reg_id: (f.weather_mid_land_reg_id || "11H10000").trim().toUpperCase() || "11H10000",
-      weather_mid_ta_reg_id: (f.weather_mid_ta_reg_id || "11H10701").trim().toUpperCase() || "11H10701",
     };
   }
 
@@ -349,14 +364,14 @@ class GreenSmartPanel extends HTMLElement {
 
   async _fetchWeather() {
     try {
+      const cfg = this._normalizedForm();
       const weather = await this._hass.callApi("POST", "green_smart/central/weather/current", {
-        nx: 60,
-        ny: 127,
+        nx: Number(cfg.nx || 60),
+        ny: Number(cfg.ny || 127),
       });
       this._weatherData = weather;
 
       try {
-        const cfg = this._normalizedForm();
         this._weatherMidData = await this._hass.callApi("POST", "green_smart/central/weather/mid", {
           land_reg_id: cfg.weather_mid_land_reg_id,
           ta_reg_id: cfg.weather_mid_ta_reg_id,
@@ -2592,9 +2607,11 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _wmInfo(cur, cfg) {
-    const locName = cfg.location_name || "--";
+    const locName = cfg.location_name || cfg.greenhouse_address || "--";
     const nx = cfg.nx != null ? cfg.nx : "--";
     const ny = cfg.ny != null ? cfg.ny : "--";
+    const landReg = cfg.weather_mid_land_reg_id || cfg.land_regid || "--";
+    const taReg = cfg.weather_mid_ta_reg_id || cfg.ta_regid || "--";
     const updated = cur.updated || "--";
     return `<div class="wm-info-row">
       <div class="wm-icard">
@@ -2603,7 +2620,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           <ha-icon icon="mdi:map-marker" style="--mdi-icon-size:13px;color:#51AE60;vertical-align:-1px;"></ha-icon>
           ${this._esc(locName)}
           ${nx !== "--" ? `<div style="font-size:11px;color:#7a9780;margin-top:3px;">nx ${nx} · ny ${ny}</div>` : ""}
-          ${cfg.ta_regid ? `<div style="font-size:11px;color:#7a9780;margin-top:2px;">중기예보 ${this._esc(cfg.ta_regid)}</div>` : ""}
+          ${landReg !== "--" || taReg !== "--" ? `<div style="font-size:11px;color:#7a9780;margin-top:2px;">중기예보 ${this._esc(landReg)} / ${this._esc(taReg)}</div>` : ""}
         </div>
       </div>
       <div class="wm-icard">
@@ -2633,10 +2650,10 @@ button.action:disabled{opacity:.5;cursor:default;}
           this._hass.callApi("GET", "green_smart/weather/config").catch(() => ({})),
           this._hass.callApi("GET", "green_smart/weather/weekly").catch(() => ({})),
         ]);
-        const cfg = cfgResp || {};
+        const cfg = Object.assign({}, cfgResp || {}, this._normalizedForm());
         const centralModalWeather = await this._hass.callApi("POST", "green_smart/central/weather/current", {
-          nx: cfg.nx != null ? cfg.nx : 60,
-          ny: cfg.ny != null ? cfg.ny : 127,
+          nx: Number(cfg.nx || 60),
+          ny: Number(cfg.ny || 127),
         }).catch(() => null);
         const cur = centralModalWeather || localCur || {};
         if (centralModalWeather && centralModalWeather.mode === "real") this._weatherData = centralModalWeather;
@@ -4374,6 +4391,8 @@ button.action:disabled{opacity:.5;cursor:default;}
       <dt>양액 구역</dt><dd>${this._esc(d.nutrient_zones)}개</dd>
       <dt>스티븐슨 스크린</dt><dd>${this._esc(d.stevenson_screens)}개</dd>
       <dt>WeatherFlow 접두사</dt><dd>${this._esc(d.weatherflow_prefix)}</dd>
+      <dt>온실 주소</dt><dd>${this._esc(d.location_name || d.greenhouse_address || "미설정")}</dd>
+      <dt>단기예보 격자</dt><dd>nx ${this._esc(d.nx)} · ny ${this._esc(d.ny)}</dd>
       <dt>중앙 API</dt><dd>${this._esc(d.central_base_url || "미설정")}</dd>
       <dt>중앙 설치 ID</dt><dd>${this._esc(d.central_installation_id || "활성화 후 표시")}</dd>
       <dt>중기예보 권역</dt><dd>${this._esc(d.weather_mid_land_reg_id)} / ${this._esc(d.weather_mid_ta_reg_id)}</dd>
@@ -4404,9 +4423,28 @@ button.action:disabled{opacity:.5;cursor:default;}
           </div>
           <label>스티븐슨 스크린<input id="stevenson_screens" type="number" min="1" max="10" value="${this._esc(f.stevenson_screens)}"></label>
           <label>WeatherFlow 접두사<input id="weatherflow_prefix" value="${this._esc(f.weatherflow_prefix)}" autocomplete="off"></label>
-          <div class="grid">
-            <label>중기예보 날씨 권역 코드<input id="weather_mid_land_reg_id" value="${this._esc(f.weather_mid_land_reg_id || "11H10000")}" autocomplete="off" placeholder="11H10000"></label>
-            <label>중기예보 기온 권역 코드<input id="weather_mid_ta_reg_id" value="${this._esc(f.weather_mid_ta_reg_id || "11H10701")}" autocomplete="off" placeholder="11H10701"></label>
+          <div class="mode-copy" style="margin-top:10px;">
+            <strong>온실 주소 기반 날씨 위치</strong>
+            <span>주소를 입력하면 기상청 단기 격자(nx/ny)와 중기 권역 코드가 자동 매칭됩니다.</span>
+            <div class="form" style="margin-top:12px;">
+              <label>온실 주소
+                <input id="greenhouse_address" value="${this._esc(f.greenhouse_address || f.location_name || "")}" autocomplete="off" placeholder="예: 경기도 수원시 영통구">
+              </label>
+              <div class="actions" style="justify-content:flex-start;margin-top:8px;">
+                <button class="action" id="weather_location_match" type="button">주소로 날씨 위치 자동 매칭</button>
+              </div>
+              <div id="location_match_status" style="font-size:12px;color:#7a9780;margin-top:8px;">
+                ${this._esc(f.location_name || f.greenhouse_address || "주소를 입력하고 자동 매칭을 눌러주세요.")}
+              </div>
+              <div class="grid" style="margin-top:10px;">
+                <label>단기 nx<input id="nx" type="number" min="0" max="999" value="${this._esc(f.nx || 60)}"></label>
+                <label>단기 ny<input id="ny" type="number" min="0" max="999" value="${this._esc(f.ny || 127)}"></label>
+              </div>
+              <div class="grid">
+                <label>중기예보 날씨 권역 코드<input id="weather_mid_land_reg_id" value="${this._esc(f.weather_mid_land_reg_id || f.land_regid || "11H10000")}" autocomplete="off" placeholder="11H10000"></label>
+                <label>중기예보 기온 권역 코드<input id="weather_mid_ta_reg_id" value="${this._esc(f.weather_mid_ta_reg_id || f.ta_regid || "11H10701")}" autocomplete="off" placeholder="11H10701"></label>
+              </div>
+            </div>
           </div>
         </div>
         <div class="actions">
@@ -4447,6 +4485,44 @@ button.action:disabled{opacity:.5;cursor:default;}
     if (finish) finish.addEventListener("click", () => this._finishWizard());
   }
 
+  async _matchGreenhouseAddress(root) {
+    const input = root.querySelector("#greenhouse_address");
+    const status = root.querySelector("#location_match_status");
+    const query = (input?.value || "").trim();
+    if (!query) {
+      if (status) status.textContent = "온실 주소를 입력해주세요.";
+      return;
+    }
+    if (status) status.textContent = "주소를 기상청 위치 코드로 매칭 중...";
+    try {
+      const resp = await this._hass.callApi("POST", "green_smart/weather/search-location", { query });
+      const loc = resp && Array.isArray(resp.results) ? resp.results[0] : null;
+      if (!loc) {
+        if (status) status.textContent = "매칭 결과가 없습니다. 시/군/구까지 입력해 주세요.";
+        return;
+      }
+      this._form.greenhouse_address = query;
+      this._form.location_name = loc.name;
+      this._form.nx = Number(loc.nx || 60);
+      this._form.ny = Number(loc.ny || 127);
+      this._form.land_regid = loc.land_regid || "11H10000";
+      this._form.ta_regid = loc.ta_regid || "11H10701";
+      this._form.weather_mid_land_reg_id = this._form.land_regid;
+      this._form.weather_mid_ta_reg_id = this._form.ta_regid;
+      const nx = root.querySelector("#nx");
+      const ny = root.querySelector("#ny");
+      const land = root.querySelector("#weather_mid_land_reg_id");
+      const ta = root.querySelector("#weather_mid_ta_reg_id");
+      if (nx) nx.value = this._form.nx;
+      if (ny) ny.value = this._form.ny;
+      if (land) land.value = this._form.weather_mid_land_reg_id;
+      if (ta) ta.value = this._form.weather_mid_ta_reg_id;
+      if (status) status.textContent = `매칭됨: ${loc.name} · nx ${loc.nx} · ny ${loc.ny} · 중기 ${loc.land_regid}/${loc.ta_regid}`;
+    } catch (_) {
+      if (status) status.textContent = "위치 매칭 실패";
+    }
+  }
+
   _bindSettings(root) {
     this._bindInputs(root);
     const cancel = root.querySelector("#cancel");
@@ -4462,6 +4538,8 @@ button.action:disabled{opacity:.5;cursor:default;}
       this._state = "dashboard"; this._error = ""; this._update();
     });
     if (save) save.addEventListener("click", () => this._saveSettings());
+    root.querySelector("#weather_location_match")?.addEventListener("click", () => this._matchGreenhouseAddress(root));
+    root.querySelector("#greenhouse_address")?.addEventListener("change", () => this._matchGreenhouseAddress(root));
 
     // 기상청 API 키 관리 — 로드 시 현재 상태 fetch
     this._hass.callApi("GET", "green_smart/weather/config").then((cfg) => {
