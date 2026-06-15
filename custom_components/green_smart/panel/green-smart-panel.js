@@ -77,6 +77,7 @@ class GreenSmartPanel extends HTMLElement {
     this._cropSeasons = [];
     this._growthData = [];
     this._pestData = [];
+    this._pesticideSearchData = null;
     this._controlData = [];
     this._activeSeasonId = null;   // 현재 선택된 작기 ID
     this._dbReady        = false;  // DB 연결 완료 여부
@@ -343,11 +344,33 @@ class GreenSmartPanel extends HTMLElement {
 
   async _fetchWeather() {
     try {
-      const data = await this._hass.callApi("GET", "green_smart/weather/current");
-      this._weatherData = data;
-      const card = this.shadowRoot && this.shadowRoot.querySelector("[data-weather-card]");
-      if (card) card.innerHTML = this._renderWeatherCardInner(data);
-    } catch (_) {}
+      const weather = await this._hass.callApi("POST", "green_smart/central/weather/current", {
+        nx: 60,
+        ny: 127,
+      });
+      this._weatherData = weather;
+
+      try {
+        this._pesticideSearchData = await this._hass.callApi("POST", "green_smart/central/pesticide/search", {
+          query: "살충제",
+        });
+      } catch (pestErr) {
+        this._pesticideSearchData = { items: [], error: "unavailable" };
+      }
+
+      const weatherCard = this.shadowRoot && this.shadowRoot.querySelector("[data-weather-card]");
+      if (weatherCard) weatherCard.innerHTML = this._renderWeatherCardInner(this._weatherData);
+      const pesticideCard = this.shadowRoot && this.shadowRoot.querySelector("[data-pesticide-card]");
+      if (pesticideCard) pesticideCard.outerHTML = this._renderPesticideCard();
+    } catch (err) {
+      try {
+        const fallback = await this._hass.callApi("GET", "green_smart/weather/current");
+        this._weatherData = fallback;
+        const card = this.shadowRoot && this.shadowRoot.querySelector("[data-weather-card]");
+        if (card) card.innerHTML = this._renderWeatherCardInner(fallback);
+      } catch (_) {}
+      console.error("Weather fetch failed", err);
+    }
   }
 
   _generateSimData(cfg) {
@@ -1341,6 +1364,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div class="right-pair">
           ${this._renderTargetEnv()}
           ${this._renderIrrigPlan()}
+          ${this._renderPesticideCard()}
         </div>
       </div>
       ${this._renderZoneCards2(sim)}
@@ -2000,6 +2024,28 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="gs-card" style="display:flex;flex-direction:column;">
       <div class="card-title"><ha-icon icon="mdi:calendar-clock"></ha-icon>오늘 관수 계획</div>
       <div style="overflow-y:auto;flex:1;">${rows}</div>
+    </div>`;
+  }
+
+  _renderPesticideCard() {
+    const data = this._pesticideSearchData || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+    const error = data.error;
+    const body = error
+      ? `<div class="notice"><ha-icon icon="mdi:cloud-alert-outline"></ha-icon><div>중앙 서버 농약 검색 연결 대기 중</div></div>`
+      : items.length
+        ? `<div style="display:grid;gap:8px;max-height:132px;overflow-y:auto;">
+            ${items.slice(0, 4).map((it) => `<div class="irr-item" style="align-items:flex-start;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;color:#24323F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this._esc(it.name || "이름 없음")}</div>
+                <div style="font-size:11px;color:#7a9780;margin-top:2px;line-height:1.4;">${this._esc([it.company, it.crop, it.pest].filter(Boolean).join(" · ") || "상세 정보 없음")}</div>
+              </div>
+            </div>`).join("")}
+          </div>`
+        : `<div class="notice"><ha-icon icon="mdi:sprout-outline"></ha-icon><div>농약 검색 결과 수집 중</div></div>`;
+    return `<div class="gs-card" data-pesticide-card>
+      <div class="card-title"><ha-icon icon="mdi:bottle-tonic-plus-outline"></ha-icon>농약 정보</div>
+      ${body}
     </div>`;
   }
 
@@ -4261,11 +4307,11 @@ button.action:disabled{opacity:.5;cursor:default;}
     const f = this._form;
     return `<div class="wizard-area">
       <div class="wiz-topbar">
-        <div class="wiz-brand"><ha-icon icon="mdi:leaf"></ha-icon>Green Smart 설정</div>
+        <div class="wiz-brand"><ha-icon icon="mdi:leaf"></ha-icon>Green Smart 시스템 설정</div>
       </div>
       <ha-card>
-        <h1>설정 변경</h1>
-        <p class="sub">저장된 Green Smart 설정을 수정합니다.</p>
+        <h1>시스템 설정</h1>
+        <p class="sub">Green Smart 중앙 시스템 연결 및 설치 구역 정보를 관리합니다.</p>
         <div class="form">
           <label>PLC IP 주소<input id="host" value="${this._esc(f.host)}" autocomplete="off"></label>
           <div class="grid">
@@ -4279,88 +4325,6 @@ button.action:disabled{opacity:.5;cursor:default;}
           <label>스티븐슨 스크린<input id="stevenson_screens" type="number" min="1" max="10" value="${this._esc(f.stevenson_screens)}"></label>
           <label>WeatherFlow 접두사<input id="weatherflow_prefix" value="${this._esc(f.weatherflow_prefix)}" autocomplete="off"></label>
         </div>
-        <div class="settings-section">
-          <div class="settings-section-title">기상청 API 설정</div>
-
-          <!-- 단기예보 API -->
-          <div style="margin-bottom:14px;">
-            <div style="font-size:12px;font-weight:700;color:#3d5a47;margin-bottom:6px;">단기예보 API 키</div>
-            <div id="weather-key-status" style="font-size:12px;color:#7a9780;margin-bottom:6px;">로딩 중...</div>
-            <div class="form" style="margin-bottom:0;">
-              <label>
-                <div style="display:flex;gap:8px;align-items:flex-end;">
-                  <input type="password" id="weather-api-key" autocomplete="off" placeholder="기상청 단기예보 서비스 API 키" style="flex:1;">
-                  <button id="weather-key-validate" style="white-space:nowrap;flex:0 0 auto;">검사</button>
-                </div>
-              </label>
-            </div>
-            <div id="weather-key-validate-result" style="font-size:12px;color:#7a9780;margin-top:4px;"></div>
-          </div>
-
-          <!-- 중기예보 API -->
-          <div style="margin-bottom:14px;">
-            <div style="font-size:12px;font-weight:700;color:#3d5a47;margin-bottom:6px;">중기예보 API 키</div>
-            <div id="weather-mid-key-status" style="font-size:12px;color:#7a9780;margin-bottom:6px;">로딩 중...</div>
-            <div class="form" style="margin-bottom:0;">
-              <label>
-                <div style="display:flex;gap:8px;align-items:flex-end;">
-                  <input type="password" id="weather-mid-api-key" autocomplete="off" placeholder="기상청 중기예보 서비스 API 키 (없으면 단기예보 키 사용)" style="flex:1;">
-                  <button id="weather-mid-key-validate" style="white-space:nowrap;flex:0 0 auto;">검사</button>
-                </div>
-              </label>
-            </div>
-            <div id="weather-mid-key-validate-result" style="font-size:12px;color:#7a9780;margin-top:4px;"></div>
-          </div>
-
-          <!-- 위치 설정 -->
-          <div class="form">
-            <label>설치 위치 (읍면동/시군구 검색)
-              <div style="display:flex;gap:8px;">
-                <input type="text" id="weather-location-query" placeholder="예: 강남구  /  수원시 영통구  /  제주시">
-                <button id="weather-location-search" style="white-space:nowrap;">검색</button>
-              </div>
-            </label>
-            <!-- 검색 결과 드롭다운 -->
-            <div id="weather-location-results" style="display:none; border:1px solid #e8f0e9; border-radius:10px; background:#fff; overflow:hidden; margin-top:4px;"></div>
-            <!-- 선택된 위치 표시 -->
-            <div id="weather-location-selected" style="font-size:13px; color:#51AE60; font-weight:600; margin-top:6px; min-height:20px;"></div>
-            <!-- 숨겨진 위치 값 -->
-            <input type="hidden" id="weather-nx" value="60">
-            <input type="hidden" id="weather-ny" value="127">
-            <input type="hidden" id="weather-ta-regid" value="">
-            <input type="hidden" id="weather-land-regid" value="">
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
-            <button class="action primary" id="weather-key-save">저장</button>
-            <button class="action" id="weather-key-delete">단기 키 삭제</button>
-            <button class="action" id="weather-mid-key-delete">중기 키 삭제</button>
-          </div>
-          <div id="weather-key-result" style="font-size:13px;color:#7a9780;margin-top:12px;"></div>
-        </div>
-
-        <!-- ── 농약안전정보시스템 (PSIS) API ─────────────────────────── -->
-        <div class="settings-section">
-          <div class="settings-section-title">농약안전정보시스템 (PSIS) API 설정</div>
-          <div style="font-size:12px;color:#7a9780;margin-bottom:12px;line-height:1.6;">
-            방제 기록 팝업에서 농약 검색 기능을 사용하려면 API 키가 필요합니다.<br>
-            <a href="https://www.data.go.kr" target="_blank"
-              style="color:#51AE60;text-decoration:none;">공공데이터포털(data.go.kr)</a>에서
-            <b>농촌진흥청_농약안전정보시스템_농약목록정보</b>를 신청하세요.
-          </div>
-          <div id="psis-key-status" style="font-size:12px;color:#7a9780;margin-bottom:6px;">로딩 중...</div>
-          <div class="form" style="margin-bottom:0;">
-            <label>
-              <div style="display:flex;gap:8px;align-items:flex-end;">
-                <input type="password" id="psis-api-key" autocomplete="off"
-                  placeholder="농약안전정보시스템 서비스 API 키" style="flex:1;">
-                <button id="psis-key-save" style="white-space:nowrap;flex:0 0 auto;">저장</button>
-                <button id="psis-key-delete" style="white-space:nowrap;flex:0 0 auto;background:#f5f5f5;color:#7a9780;">삭제</button>
-              </div>
-            </label>
-          </div>
-          <div id="psis-key-result" style="font-size:12px;color:#7a9780;margin-top:6px;"></div>
-        </div>
-
         <div class="actions">
           <button class="action" id="cancel">취소</button>
           <button class="action primary" id="save">저장</button>

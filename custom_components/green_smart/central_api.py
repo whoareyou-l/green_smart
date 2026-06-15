@@ -95,6 +95,20 @@ class GreenityCentralClient:
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
+    async def get_weather(self, access_token: str, endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
+        return await self._post_json(
+            f"/vendor/adapters/weather/{endpoint}",
+            params,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    async def get_pesticide_data(self, access_token: str, params: dict[str, Any]) -> dict[str, Any]:
+        return await self._post_json(
+            "/vendor/adapters/pesticide/search",
+            params,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
 
 async def ensure_access_token(store: CentralTokenStore, client: GreenityCentralClient) -> str:
     """Return a current central access token, rotating refresh tokens when needed."""

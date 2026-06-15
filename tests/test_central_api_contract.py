@@ -33,6 +33,8 @@ def test_central_api_declares_allowlisted_endpoints_only():
     assert constants["TOKEN_REFRESH_PATH"] == "/tokens/refresh"
     assert constants["TOKEN_REVOKE_PATH"] == "/tokens/revoke"
     assert constants["DEMO_STATUS_PATH"] == "/vendor/adapters/demo/status"
+    assert "/vendor/adapters/weather/" in _source()
+    assert "/vendor/adapters/pesticide/search" in _source()
     assert "/vendor/proxy" not in _source()
 
 
@@ -45,6 +47,8 @@ def test_central_api_uses_ha_aiohttp_session_and_json_methods():
     assert "async def refresh_tokens" in source
     assert "async def revoke_token" in source
     assert "async def demo_status" in source
+    assert "async def get_weather" in source
+    assert "async def get_pesticide_data" in source
     assert "async def ensure_access_token" in source
 
 
@@ -59,7 +63,16 @@ def test_central_api_payloads_match_central_contract_without_generic_proxy_field
     assert '"device_id": device_id' in source
     assert "feature_key" not in source
     assert "method" not in source
-    assert "path" not in source
+
+
+def test_central_api_uses_only_allowlisted_adapter_paths_for_external_data():
+    source = _source()
+
+    assert "get_weather" in source
+    assert "get_pesticide_data" in source
+    assert 'f"/vendor/adapters/weather/{endpoint}"' in source
+    assert '"/vendor/adapters/pesticide/search"' in source
+    assert "central/proxy" not in source
 
 
 def test_central_api_authorization_header_only_uses_access_token_for_adapter():
@@ -67,7 +80,9 @@ def test_central_api_authorization_header_only_uses_access_token_for_adapter():
 
     assert '"Authorization": f"Bearer {access_token}"' in source
     assert "demo_status" in source
-    assert source.count("Authorization") == 1
+    assert "get_weather" in source
+    assert "get_pesticide_data" in source
+    assert source.count("Authorization") == 3
 
 
 def test_central_api_errors_do_not_embed_raw_secret_material():
