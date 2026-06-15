@@ -49,6 +49,8 @@ def test_config_flow_filters_user_input_to_wizard_keys_only():
         "virtual",
         "central_base_url",
         "central_installation_id",
+        "weather_mid_land_reg_id",
+        "weather_mid_ta_reg_id",
     }
 
     assert "activation_code" not in wizard_keys

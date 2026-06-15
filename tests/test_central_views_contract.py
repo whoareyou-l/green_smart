@@ -37,6 +37,12 @@ def test_panel_uses_explicit_central_routes_and_keeps_crop_pest_data_separate():
     assert "green_smart/central/pesticide/search" in source
     assert "centralMidWeather" in source
     assert "_weatherMidData" in source
+    assert "weather_mid_land_reg_id" in source
+    assert "weather_mid_ta_reg_id" in source
+    assert 'id="weather_mid_land_reg_id"' in source
+    assert 'id="weather_mid_ta_reg_id"' in source
+    assert 'land_reg_id: cfg.weather_mid_land_reg_id' in source
+    assert 'ta_reg_id: cfg.weather_mid_ta_reg_id' in source
     assert "green_smart/central/proxy" not in source
     assert "_pesticideSearchData" in source
     assert "this._pestData = pest" not in source

@@ -8,6 +8,8 @@ const DEFAULT_FORM = {
   weatherflow_prefix: "sensor.tempest_", virtual: false,
   central_base_url: "http://127.0.0.1:18000",
   central_installation_id: "",
+  weather_mid_land_reg_id: "11H10000",
+  weather_mid_ta_reg_id: "11H10701",
   activation_code: "",
 };
 const EQUIP_KEYS = ["roof_window","side_window","shade_screen","thermal_curtain","irrigation","nutrient_machine","circulation_fan","co2_generator"];
@@ -299,6 +301,8 @@ class GreenSmartPanel extends HTMLElement {
       virtual,
       central_base_url: (f.central_base_url || "http://127.0.0.1:18000").trim() || "http://127.0.0.1:18000",
       central_installation_id: (f.central_installation_id || "").trim(),
+      weather_mid_land_reg_id: (f.weather_mid_land_reg_id || "11H10000").trim().toUpperCase() || "11H10000",
+      weather_mid_ta_reg_id: (f.weather_mid_ta_reg_id || "11H10701").trim().toUpperCase() || "11H10701",
     };
   }
 
@@ -352,9 +356,10 @@ class GreenSmartPanel extends HTMLElement {
       this._weatherData = weather;
 
       try {
+        const cfg = this._normalizedForm();
         this._weatherMidData = await this._hass.callApi("POST", "green_smart/central/weather/mid", {
-          land_reg_id: "11H10000",
-          ta_reg_id: "11H10701",
+          land_reg_id: cfg.weather_mid_land_reg_id,
+          ta_reg_id: cfg.weather_mid_ta_reg_id,
         });
       } catch (centralMidWeatherErr) {
         this._weatherMidData = { days: [], error: "unavailable" };
@@ -4318,6 +4323,14 @@ button.action:disabled{opacity:.5;cursor:default;}
         <label>활성화 코드
           <input type="password" id="activation_code" value="${this._esc(f.activation_code)}" autocomplete="off" placeholder="선택 사항 — 중앙 API에서 발급한 일회용 코드">
         </label>
+        <div class="grid">
+          <label>중기예보 날씨 권역 코드
+            <input id="weather_mid_land_reg_id" value="${this._esc(f.weather_mid_land_reg_id || "11H10000")}" autocomplete="off" placeholder="11H10000">
+          </label>
+          <label>중기예보 기온 권역 코드
+            <input id="weather_mid_ta_reg_id" value="${this._esc(f.weather_mid_ta_reg_id || "11H10701")}" autocomplete="off" placeholder="11H10701">
+          </label>
+        </div>
       </div>
     </div>`;
   }
@@ -4333,6 +4346,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       <dt>WeatherFlow 접두사</dt><dd>${this._esc(d.weatherflow_prefix)}</dd>
       <dt>중앙 API</dt><dd>${this._esc(d.central_base_url || "미설정")}</dd>
       <dt>중앙 설치 ID</dt><dd>${this._esc(d.central_installation_id || "활성화 후 표시")}</dd>
+      <dt>중기예보 권역</dt><dd>${this._esc(d.weather_mid_land_reg_id)} / ${this._esc(d.weather_mid_ta_reg_id)}</dd>
       <dt>중앙 보안</dt><dd>활성화 코드는 저장하지 않습니다</dd>
     </dl>`;
   }
@@ -4360,6 +4374,10 @@ button.action:disabled{opacity:.5;cursor:default;}
           </div>
           <label>스티븐슨 스크린<input id="stevenson_screens" type="number" min="1" max="10" value="${this._esc(f.stevenson_screens)}"></label>
           <label>WeatherFlow 접두사<input id="weatherflow_prefix" value="${this._esc(f.weatherflow_prefix)}" autocomplete="off"></label>
+          <div class="grid">
+            <label>중기예보 날씨 권역 코드<input id="weather_mid_land_reg_id" value="${this._esc(f.weather_mid_land_reg_id || "11H10000")}" autocomplete="off" placeholder="11H10000"></label>
+            <label>중기예보 기온 권역 코드<input id="weather_mid_ta_reg_id" value="${this._esc(f.weather_mid_ta_reg_id || "11H10701")}" autocomplete="off" placeholder="11H10701"></label>
+          </div>
         </div>
         <div class="actions">
           <button class="action" id="cancel">취소</button>

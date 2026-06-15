@@ -20,6 +20,8 @@ _WIZARD_KEYS = (
     "virtual",
     "central_base_url",
     "central_installation_id",
+    "weather_mid_land_reg_id",
+    "weather_mid_ta_reg_id",
 )
 
 _ACTIVATION_ERROR_MAP = {
