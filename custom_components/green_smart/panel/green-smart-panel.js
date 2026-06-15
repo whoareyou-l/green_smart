@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.6
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.7
 const DOMAIN = "green_smart";
-const VERSION = "1.8.6";
+const VERSION = "1.8.7";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -2300,42 +2300,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div class="tw-item"><div class="tw-label">외기습도</div><div class="tw-value">${hum} %</div></div>
         <div class="tw-item${windWarn ? " warn-blink" : ""}"><div class="tw-label">풍속</div><div class="tw-value">${wind} m/s${windDir ? ` <span style="font-size:12px;">${windDir}</span>` : ""}</div></div>
         <div class="tw-item"><div class="tw-label">날씨 상태</div><div class="tw-value">${status}</div></div>
-      </div>
-      ${this._renderMidWeatherRows(real)}`;
-  }
-
-  _renderMidWeatherRows(currentWeatherReal = false) {
-    const data = this._weatherMidData || {};
-    const days = Array.isArray(data.days) ? data.days.slice(0, 3) : [];
-    const forecastReal = data.mode === "real" || currentWeatherReal;
-    const modeLabel = forecastReal ? "예보 실시간" : "예보 대기";
-    const modeStyle = forecastReal
-      ? "background:#DFF3E2;color:#51AE60;"
-      : "background:#f0f5f1;color:#7a9780;";
-    const header = `<div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 4px;padding-top:10px;border-top:1px solid #eef4ef;">
-      <span style="font-size:12px;font-weight:800;color:#2f5f3a;">날씨 정보</span>
-      <span data-mid-weather-mode="${forecastReal ? "real" : "pending"}" style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;${modeStyle}">${modeLabel}</span>
-    </div>`;
-    if (!days.length) {
-      return `<div data-weather-info style="font-size:12px;">${header}<div style="color:#7a9780;">중기예보 수집 중</div></div>`;
-    }
-    const row = days.map((d) => {
-      const day = d.day != null ? `+${d.day}일` : "중기";
-      const weather = d.am_weather && d.pm_weather && d.am_weather !== d.pm_weather
-        ? `${d.am_weather}/${d.pm_weather}`
-        : (d.am_weather || d.pm_weather || "—");
-      const rainKey = "am_" + "rain_" + "probability";
-      const rain = d[rainKey] != null ? d[rainKey] : d.pm_rain_probability;
-      const temp = d.min_temp != null && d.max_temp != null ? `${d.min_temp}/${d.max_temp}°C` : "--";
-      return `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid #f1f5f2;">
-        <span style="font-weight:700;color:#2f5f3a;">${day}</span>
-        <span>${weather}</span>
-        <span>${rain != null ? rain + "%" : "--"}</span>
-        <span>${temp}</span>
       </div>`;
-    }).join("");
-    const updated = data.updated ? `<div style="font-size:11px;color:#9aaa9d;margin-top:4px;">중기 ${data.updated}</div>` : "";
-    return `<div data-weather-info data-mid-weather style="font-size:12px;">${header}${row}${updated}</div>`;
   }
 
   // ── Weather Modal helpers ────────────────────────────────────────────────────
@@ -2617,14 +2582,20 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
       </div>`;
       try {
-        const [cur, fcstResp, cfgResp, weeklyResp] = await Promise.all([
+        const [localCur, fcstResp, cfgResp, weeklyResp] = await Promise.all([
           this._hass.callApi("GET", "green_smart/weather/current").catch(() => ({})),
           this._hass.callApi("GET", "green_smart/weather/forecast").catch(() => ({})),
           this._hass.callApi("GET", "green_smart/weather/config").catch(() => ({})),
           this._hass.callApi("GET", "green_smart/weather/weekly").catch(() => ({})),
         ]);
-        const forecasts = (fcstResp && fcstResp.forecasts) || [];
         const cfg = cfgResp || {};
+        const centralModalWeather = await this._hass.callApi("POST", "green_smart/central/weather/current", {
+          nx: cfg.nx != null ? cfg.nx : 60,
+          ny: cfg.ny != null ? cfg.ny : 127,
+        }).catch(() => null);
+        const cur = centralModalWeather || localCur || {};
+        if (centralModalWeather && centralModalWeather.mode === "real") this._weatherData = centralModalWeather;
+        const forecasts = (fcstResp && fcstResp.forecasts) || [];
         const weekly = (weeklyResp && weeklyResp.weekly) || [];
         inner.innerHTML = this._renderWeatherModal(cur, forecasts, cfg, weekly);
         inner.querySelectorAll(".wm-close-btn").forEach(b => b.addEventListener("click", () => this._closePopup()));

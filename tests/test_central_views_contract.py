@@ -49,7 +49,7 @@ def test_panel_uses_explicit_central_routes_and_keeps_crop_pest_data_separate():
     assert "_renderPesticideCard" in source
 
 
-def test_panel_weather_card_keeps_four_summary_metrics_and_marks_api_weather_info_realtime():
+def test_panel_weather_card_keeps_summary_only_and_modal_uses_realtime_central_weather():
     source = _source(PANEL)
 
     assert '<div class="tw-label">외기온도</div>' in source
@@ -57,8 +57,10 @@ def test_panel_weather_card_keeps_four_summary_metrics_and_marks_api_weather_inf
     assert '<div class="tw-label">풍속</div>' in source
     assert '<div class="tw-label">날씨 상태</div>' in source
     assert "data-weather-summary" in source
-    assert "data-weather-info" in source
-    assert "날씨 정보" in source
-    assert "data-mid-weather-mode" in source
-    assert "예보 실시간" in source
-    assert "data.mode === \"real\"" in source
+    assert "${this._renderMidWeatherRows" not in source
+    assert "data-mid-weather-mode" not in source
+    assert "예보 실시간" not in source
+    assert 'green_smart/central/weather/current' in source
+    assert "centralModalWeather" in source
+    assert "cur.mode === \"real\"" in source
+    assert "wm-hero-badge" in source
