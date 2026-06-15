@@ -47,3 +47,18 @@ def test_panel_uses_explicit_central_routes_and_keeps_crop_pest_data_separate():
     assert "_pesticideSearchData" in source
     assert "this._pestData = pest" not in source
     assert "_renderPesticideCard" in source
+
+
+def test_panel_weather_card_keeps_four_summary_metrics_and_marks_api_weather_info_realtime():
+    source = _source(PANEL)
+
+    assert '<div class="tw-label">외기온도</div>' in source
+    assert '<div class="tw-label">외기습도</div>' in source
+    assert '<div class="tw-label">풍속</div>' in source
+    assert '<div class="tw-label">날씨 상태</div>' in source
+    assert "data-weather-summary" in source
+    assert "data-weather-info" in source
+    assert "날씨 정보" in source
+    assert "data-mid-weather-mode" in source
+    assert "예보 실시간" in source
+    assert "data.mode === \"real\"" in source

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.5
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.6
 const DOMAIN = "green_smart";
-const VERSION = "1.8.5";
+const VERSION = "1.8.6";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -2295,20 +2295,29 @@ button.action:disabled{opacity:.5;cursor:default;}
         </span>
         ${badge}
       </div>
-      <div class="tw-grid">
+      <div class="tw-grid" data-weather-summary>
         <div class="tw-item${tempWarn ? " warn-blink" : ""}"><div class="tw-label">외기온도</div><div class="tw-value">${temp} °C</div></div>
         <div class="tw-item"><div class="tw-label">외기습도</div><div class="tw-value">${hum} %</div></div>
         <div class="tw-item${windWarn ? " warn-blink" : ""}"><div class="tw-label">풍속</div><div class="tw-value">${wind} m/s${windDir ? ` <span style="font-size:12px;">${windDir}</span>` : ""}</div></div>
         <div class="tw-item"><div class="tw-label">날씨 상태</div><div class="tw-value">${status}</div></div>
       </div>
-      ${this._renderMidWeatherRows()}`;
+      ${this._renderMidWeatherRows(real)}`;
   }
 
-  _renderMidWeatherRows() {
+  _renderMidWeatherRows(currentWeatherReal = false) {
     const data = this._weatherMidData || {};
     const days = Array.isArray(data.days) ? data.days.slice(0, 3) : [];
+    const forecastReal = data.mode === "real" || currentWeatherReal;
+    const modeLabel = forecastReal ? "예보 실시간" : "예보 대기";
+    const modeStyle = forecastReal
+      ? "background:#DFF3E2;color:#51AE60;"
+      : "background:#f0f5f1;color:#7a9780;";
+    const header = `<div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 4px;padding-top:10px;border-top:1px solid #eef4ef;">
+      <span style="font-size:12px;font-weight:800;color:#2f5f3a;">날씨 정보</span>
+      <span data-mid-weather-mode="${forecastReal ? "real" : "pending"}" style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;${modeStyle}">${modeLabel}</span>
+    </div>`;
     if (!days.length) {
-      return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #eef4ef;color:#7a9780;font-size:12px;">중기예보 수집 중</div>`;
+      return `<div data-weather-info style="font-size:12px;">${header}<div style="color:#7a9780;">중기예보 수집 중</div></div>`;
     }
     const row = days.map((d) => {
       const day = d.day != null ? `+${d.day}일` : "중기";
@@ -2326,7 +2335,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>`;
     }).join("");
     const updated = data.updated ? `<div style="font-size:11px;color:#9aaa9d;margin-top:4px;">중기 ${data.updated}</div>` : "";
-    return `<div data-mid-weather style="margin-top:12px;padding-top:4px;font-size:12px;">${row}${updated}</div>`;
+    return `<div data-weather-info data-mid-weather style="font-size:12px;">${header}${row}${updated}</div>`;
   }
 
   // ── Weather Modal helpers ────────────────────────────────────────────────────
