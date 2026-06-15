@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.7
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.8
 const DOMAIN = "green_smart";
-const VERSION = "1.8.7";
+const VERSION = "1.8.8";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -2255,14 +2255,28 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `(${ampm})${hh}:${min}`;
   }
 
-  _weatherStatus(data) {
+  _resolvedWeatherStatus(data) {
+    data = data || {};
     const pty = (data.precipitation_type || "없음").trim();
-    const sky = data.sky || "--";
+    const rawSky = (data.sky || "").trim();
+    const sky = rawSky && rawSky !== "--" && rawSky !== "—" ? rawSky : "";
     const precip = parseFloat(data.precipitation) || 0;
-    if (pty === "비" || pty === "빗방울") return precip > 0 ? `비(${precip}mm)` : "비";
+    const humidity = parseFloat(data.humidity);
+
+    // 강수량 우선: 하늘 상태가 비어 있어도 강수 값이 있으면 비/눈으로 표시한다.
+    if (pty === "비" || pty === "빗방울" || (precip > 0 && (!pty || pty === "없음"))) return precip > 0 ? `비(${precip}mm)` : "비";
     if (pty === "비/눈") return precip > 0 ? `비/눈(${precip}mm)` : "비/눈";
     if (pty === "눈" || pty === "눈날림" || pty === "빗방울눈날림") return precip > 0 ? `눈(${precip}mm)` : "눈";
-    return sky === "--" ? "—" : sky;
+    if (sky) return sky;
+
+    // API가 sky를 비워 보내는 경우 보조 관측값으로 사람이 읽을 수 있는 상태를 추정한다.
+    if (!isNaN(humidity) && humidity >= 85) return "흐림";
+    if (!isNaN(humidity) && humidity <= 60) return "맑음";
+    return "구름많음";
+  }
+
+  _weatherStatus(data) {
+    return this._resolvedWeatherStatus(data);
   }
 
   _renderWeatherCardInner(data) {
@@ -2280,7 +2294,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const wind = data.wind_speed != null ? data.wind_speed : "--";
     const windDir = data.wind_direction || "";
     const updTime = this._fmtWeatherTime(data.updated || "");
-    const status = this._weatherStatus(data);
+    const status = this._resolvedWeatherStatus(data);
 
     // 경보 판정: 폭염 ≥33°C, 한파 ≤-5°C, 강풍 ≥14m/s
     const tempNum = parseFloat(temp);
@@ -2360,7 +2374,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const pty = cur.precipitation_type || "없음";
     const sky = cur.sky || "--";
     const feels = this._feelsLike(cur.temperature, cur.wind_speed, cur.humidity);
-    const icon = this._weatherIcon(sky, pty);
+    const statusText = this._resolvedWeatherStatus(cur);
+    const icon = this._weatherIcon(statusText, pty);
     const real = cur.mode === "real";
     const t = parseFloat(temp);
     const bg = !isNaN(t) && t >= 30 ? "linear-gradient(135deg,#fff5ed 0%,#ffe0c8 100%)"
@@ -2369,11 +2384,6 @@ button.action:disabled{opacity:.5;cursor:default;}
     const badge = real
       ? `<span class="wm-hero-badge" style="background:#DFF3E2;color:#51AE60;">실시간</span>`
       : `<span class="wm-hero-badge" style="background:#f0f5f1;color:#7a9780;">가상</span>`;
-    let statusText = sky;
-    if (pty !== "없음" && pty) {
-      const precip = cur.precipitation != null && cur.precipitation > 0 ? `(${cur.precipitation}mm)` : "";
-      statusText = `${pty}${precip}`;
-    }
     return `<div class="wm-hero" style="background:${bg};">
       <div class="wm-hero-top">
         <div class="wm-hero-left">
@@ -2506,6 +2516,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         };
       });
     }
+    items = items.slice(0, 7);
     if (!items.length) return "";
     const now = new Date();
     const todayStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;

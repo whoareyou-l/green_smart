@@ -64,3 +64,17 @@ def test_panel_weather_card_keeps_summary_only_and_modal_uses_realtime_central_w
     assert "centralModalWeather" in source
     assert "cur.mode === \"real\"" in source
     assert "wm-hero-badge" in source
+
+
+def test_panel_weather_modal_limits_daily_forecast_to_today_plus_six_and_never_shows_blank_status():
+    source = _source(PANEL)
+
+    assert "items = items.slice(0, 7)" in source
+    assert "_resolvedWeatherStatus" in source
+    assert "강수량 우선" in source
+    assert "humidity >= 85" in source
+    assert "humidity <= 60" in source
+    assert "return \"구름많음\"" in source
+    assert "this._resolvedWeatherStatus(data)" in source
+    assert "this._resolvedWeatherStatus(cur)" in source
+    assert 'return sky === "--" ? "—" : sky' not in source
