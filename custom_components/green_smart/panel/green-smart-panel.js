@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.8
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.9
 const DOMAIN = "green_smart";
-const VERSION = "1.8.8";
+const VERSION = "1.8.9";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -2471,52 +2471,86 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
-  _wmDaily(forecasts, weekly) {
-    // weekly(7일치)가 있으면 우선 사용, 없으면 forecasts에서 날짜별 집계(3일치)
+  _mergeDailyItems(baseItems, extraItems) {
+    const byDate = new Map((baseItems || []).filter((it) => it && it.date).map((it) => [it.date, it]));
+    (extraItems || []).forEach((it) => { if (it && it.date) byDate.set(it.date, it); });
+    return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }
+
+  _dailyItemsFromForecasts(forecasts) {
+    const byDate = {};
+    (forecasts || []).forEach((f) => {
+      const d = f.date;
+      if (!d) return;
+      if (!byDate[d]) byDate[d] = { temps: [], pops: [], skies: {}, ptys: {}, tmn: null, tmx: null };
+      const e = byDate[d];
+      const t = Number(f.temp);
+      if (Number.isFinite(t)) e.temps.push(t);
+      const p = Number(f.pop);
+      if (Number.isFinite(p)) e.pops.push(p);
+      if (f.sky) e.skies[f.sky] = (e.skies[f.sky] || 0) + 1;
+      if (f.precipitation_type && f.precipitation_type !== "없음") e.ptys[f.precipitation_type] = (e.ptys[f.precipitation_type] || 0) + 1;
+      const tmn = Number(f.temp_min), tmx = Number(f.temp_max);
+      if (Number.isFinite(tmn)) e.tmn = tmn;
+      if (Number.isFinite(tmx)) e.tmx = tmx;
+    });
+    return Object.keys(byDate).sort().map((d) => {
+      const e = byDate[d];
+      return {
+        date: d,
+        min: e.tmn != null ? e.tmn : (e.temps.length ? Math.min(...e.temps) : "--"),
+        max: e.tmx != null ? e.tmx : (e.temps.length ? Math.max(...e.temps) : "--"),
+        topSky: Object.keys(e.skies).sort((a, b) => e.skies[b] - e.skies[a])[0] || "--",
+        topPty: Object.keys(e.ptys).sort((a, b) => e.ptys[b] - e.ptys[a])[0],
+        pop: e.pops.length ? Math.max(...e.pops) : 0,
+      };
+    });
+  }
+
+  _mergeCentralMidDaily(items, centralMid) {
+    const days = centralMid && Array.isArray(centralMid.days) ? centralMid.days : [];
+    if (!days.length) return items || [];
+    const byDate = new Map((items || []).filter((it) => it && it.date).map((it) => [it.date, it]));
+    const today = new Date();
+    days.forEach((d) => {
+      if (!d || d.day == null) return;
+      const day_dt = new Date(today);
+      day_dt.setDate(today.getDate() + Number(d.day));
+      const date = `${day_dt.getFullYear()}${String(day_dt.getMonth() + 1).padStart(2, "0")}${String(day_dt.getDate()).padStart(2, "0")}`;
+      const pm_weather = d.pm_weather || d.am_weather || "구름많음";
+      const rainKey = "am_" + "rain_" + "probability";
+      const rain = Math.max(Number(d[rainKey] || 0), Number(d.pm_rain_probability || 0));
+      byDate.set(date, {
+        date,
+        min: Number.isFinite(Number(d.min_temp)) ? Number(d.min_temp) : "--",
+        max: Number.isFinite(Number(d.max_temp)) ? Number(d.max_temp) : "--",
+        topSky: pm_weather,
+        topPty: undefined,
+        pop: Number.isFinite(rain) ? rain : 0,
+        source: "central-mid",
+      });
+    });
+    return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }
+
+  _wmDaily(forecasts, weekly, centralMid = null) {
+    // weekly가 짧게 내려와도 중앙 실시간 중기예보(D+3~D+7)를 병합해서 오늘~D+7을 채운다.
     let items;
-    if (weekly && weekly.length > 0) {
-      items = weekly.map((w) => {
-        const min = Number.isFinite(Number(w.temp_min)) ? Number(w.temp_min) : "--";
-        const max = Number.isFinite(Number(w.temp_max)) ? Number(w.temp_max) : "--";
-        return {
-          date: w.date,
-          min,
-          max,
-          topSky: w.sky || "--",
-          topPty: undefined,
-          pop: Number.isFinite(Number(w.pop)) ? Number(w.pop) : 0,
-        };
-      });
-    } else {
-      const byDate = {};
-      forecasts.forEach((f) => {
-        const d = f.date;
-        if (!d) return;
-        if (!byDate[d]) byDate[d] = { temps: [], pops: [], skies: {}, ptys: {}, tmn: null, tmx: null };
-        const e = byDate[d];
-        const t = Number(f.temp);
-        if (Number.isFinite(t)) e.temps.push(t);
-        const p = Number(f.pop);
-        if (Number.isFinite(p)) e.pops.push(p);
-        if (f.sky) e.skies[f.sky] = (e.skies[f.sky] || 0) + 1;
-        if (f.precipitation_type && f.precipitation_type !== "없음") e.ptys[f.precipitation_type] = (e.ptys[f.precipitation_type] || 0) + 1;
-        const tmn = Number(f.temp_min), tmx = Number(f.temp_max);
-        if (Number.isFinite(tmn)) e.tmn = tmn;
-        if (Number.isFinite(tmx)) e.tmx = tmx;
-      });
-      items = Object.keys(byDate).sort().map((d) => {
-        const e = byDate[d];
-        return {
-          date: d,
-          min: e.tmn != null ? e.tmn : (e.temps.length ? Math.min(...e.temps) : "--"),
-          max: e.tmx != null ? e.tmx : (e.temps.length ? Math.max(...e.temps) : "--"),
-          topSky: Object.keys(e.skies).sort((a, b) => e.skies[b] - e.skies[a])[0] || "--",
-          topPty: Object.keys(e.ptys).sort((a, b) => e.ptys[b] - e.ptys[a])[0],
-          pop: e.pops.length ? Math.max(...e.pops) : 0,
-        };
-      });
-    }
-    items = items.slice(0, 7);
+    const weeklyItems = (weekly || []).map((w) => {
+      const min = Number.isFinite(Number(w.temp_min)) ? Number(w.temp_min) : "--";
+      const max = Number.isFinite(Number(w.temp_max)) ? Number(w.temp_max) : "--";
+      return {
+        date: w.date,
+        min,
+        max,
+        topSky: w.sky || "--",
+        topPty: undefined,
+        pop: Number.isFinite(Number(w.pop)) ? Number(w.pop) : 0,
+      };
+    });
+    items = this._mergeDailyItems(this._dailyItemsFromForecasts(forecasts), weeklyItems);
+    items = this._mergeCentralMidDaily(items, centralMid);
+    items = items.slice(0, 8);
     if (!items.length) return "";
     const now = new Date();
     const todayStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;
@@ -2606,9 +2640,14 @@ button.action:disabled{opacity:.5;cursor:default;}
         }).catch(() => null);
         const cur = centralModalWeather || localCur || {};
         if (centralModalWeather && centralModalWeather.mode === "real") this._weatherData = centralModalWeather;
+        const formCfg = this._normalizedForm();
+        const centralModalMidWeather = await this._hass.callApi("POST", "green_smart/central/weather/mid", {
+          land_reg_id: formCfg.weather_mid_land_reg_id,
+          ta_reg_id: formCfg.weather_mid_ta_reg_id,
+        }).catch(() => null);
         const forecasts = (fcstResp && fcstResp.forecasts) || [];
         const weekly = (weeklyResp && weeklyResp.weekly) || [];
-        inner.innerHTML = this._renderWeatherModal(cur, forecasts, cfg, weekly);
+        inner.innerHTML = this._renderWeatherModal(cur, forecasts, cfg, weekly, centralModalMidWeather);
         inner.querySelectorAll(".wm-close-btn").forEach(b => b.addEventListener("click", () => this._closePopup()));
         // 스크롤 버튼 바인딩
         inner.querySelectorAll(".wm-scroll-btn").forEach(btn => {
@@ -2636,7 +2675,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     await doLoad();
   }
 
-  _renderWeatherModal(cur, forecasts, cfg, weekly) {
+  _renderWeatherModal(cur, forecasts, cfg, weekly, centralMid = null) {
     cur = cur || {};
     forecasts = forecasts || [];
     cfg = cfg || {};
@@ -2666,7 +2705,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._wmAI(cur)}
       ${this._wmAlerts(cur)}
       ${this._wmHourly(forecasts)}
-      ${this._wmDaily(forecasts, weekly)}
+      ${this._wmDaily(forecasts, weekly, centralMid)}
       ${this._wmInfo(cur, cfg)}
       <div class="wm-footer">
         <button id="weather-modal-refresh" style="background:none;border:none;cursor:pointer;color:#7a9780;font-size:13px;display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;transition:color .15s,background .15s;" onmouseover="this.style.background='#f0f5f1';this.style.color='#51AE60'" onmouseout="this.style.background='none';this.style.color='#7a9780'">

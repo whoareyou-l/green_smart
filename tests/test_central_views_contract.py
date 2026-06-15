@@ -66,10 +66,10 @@ def test_panel_weather_card_keeps_summary_only_and_modal_uses_realtime_central_w
     assert "wm-hero-badge" in source
 
 
-def test_panel_weather_modal_limits_daily_forecast_to_today_plus_six_and_never_shows_blank_status():
+def test_panel_weather_modal_limits_daily_forecast_through_d7_and_never_shows_blank_status():
     source = _source(PANEL)
 
-    assert "items = items.slice(0, 7)" in source
+    assert "items = items.slice(0, 8)" in source
     assert "_resolvedWeatherStatus" in source
     assert "강수량 우선" in source
     assert "humidity >= 85" in source
@@ -78,3 +78,18 @@ def test_panel_weather_modal_limits_daily_forecast_to_today_plus_six_and_never_s
     assert "this._resolvedWeatherStatus(data)" in source
     assert "this._resolvedWeatherStatus(cur)" in source
     assert 'return sky === "--" ? "—" : sky' not in source
+
+
+def test_panel_weather_modal_merges_realtime_central_mid_forecast_through_d7():
+    source = _source(PANEL)
+
+    assert 'green_smart/central/weather/mid' in source
+    assert "centralModalMidWeather" in source
+    assert "_dailyItemsFromForecasts" in source
+    assert "items = this._mergeDailyItems(this._dailyItemsFromForecasts(forecasts), weeklyItems)" in source
+    assert "items = this._mergeCentralMidDaily(items, centralMid)" in source
+    assert "items = items.slice(0, 8)" in source
+    assert "day_dt.setDate(today.getDate() + Number(d.day))" in source
+    assert "pm_weather || d.am_weather" in source
+    assert 'const rainKey = "am_" + "rain_" + "probability"' in source
+    assert "Math.max(Number(d[rainKey]" in source
