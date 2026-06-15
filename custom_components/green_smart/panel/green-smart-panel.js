@@ -82,6 +82,7 @@ class GreenSmartPanel extends HTMLElement {
     this._activeSeasonId = null;   // 현재 선택된 작기 ID
     this._dbReady        = false;  // DB 연결 완료 여부
     this._weatherData = null;
+    this._weatherMidData = null;
     this._weatherInterval = null;
     this._watchdogInterval = null;
     this._watchdogKeys = new Set();
@@ -349,6 +350,15 @@ class GreenSmartPanel extends HTMLElement {
         ny: 127,
       });
       this._weatherData = weather;
+
+      try {
+        this._weatherMidData = await this._hass.callApi("POST", "green_smart/central/weather/mid", {
+          land_reg_id: "11H10000",
+          ta_reg_id: "11H10701",
+        });
+      } catch (centralMidWeatherErr) {
+        this._weatherMidData = { days: [], error: "unavailable" };
+      }
 
       try {
         this._pesticideSearchData = await this._hass.callApi("POST", "green_smart/central/pesticide/search", {
@@ -2285,7 +2295,33 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div class="tw-item"><div class="tw-label">외기습도</div><div class="tw-value">${hum} %</div></div>
         <div class="tw-item${windWarn ? " warn-blink" : ""}"><div class="tw-label">풍속</div><div class="tw-value">${wind} m/s${windDir ? ` <span style="font-size:12px;">${windDir}</span>` : ""}</div></div>
         <div class="tw-item"><div class="tw-label">날씨 상태</div><div class="tw-value">${status}</div></div>
+      </div>
+      ${this._renderMidWeatherRows()}`;
+  }
+
+  _renderMidWeatherRows() {
+    const data = this._weatherMidData || {};
+    const days = Array.isArray(data.days) ? data.days.slice(0, 3) : [];
+    if (!days.length) {
+      return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #eef4ef;color:#7a9780;font-size:12px;">중기예보 수집 중</div>`;
+    }
+    const row = days.map((d) => {
+      const day = d.day != null ? `+${d.day}일` : "중기";
+      const weather = d.am_weather && d.pm_weather && d.am_weather !== d.pm_weather
+        ? `${d.am_weather}/${d.pm_weather}`
+        : (d.am_weather || d.pm_weather || "—");
+      const rainKey = "am_" + "rain_" + "probability";
+      const rain = d[rainKey] != null ? d[rainKey] : d.pm_rain_probability;
+      const temp = d.min_temp != null && d.max_temp != null ? `${d.min_temp}/${d.max_temp}°C` : "--";
+      return `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid #f1f5f2;">
+        <span style="font-weight:700;color:#2f5f3a;">${day}</span>
+        <span>${weather}</span>
+        <span>${rain != null ? rain + "%" : "--"}</span>
+        <span>${temp}</span>
       </div>`;
+    }).join("");
+    const updated = data.updated ? `<div style="font-size:11px;color:#9aaa9d;margin-top:4px;">중기 ${data.updated}</div>` : "";
+    return `<div data-mid-weather style="margin-top:12px;padding-top:4px;font-size:12px;">${row}${updated}</div>`;
   }
 
   // ── Weather Modal helpers ────────────────────────────────────────────────────

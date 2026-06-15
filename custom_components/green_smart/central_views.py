@@ -55,6 +55,33 @@ class CentralWeatherCurrentView(_CentralAdapterView):
             return self._error_response(err)
 
 
+class CentralWeatherMidView(_CentralAdapterView):
+    """POST /api/green_smart/central/weather/mid — allowlisted central mid-term weather adapter."""
+
+    url = "/api/green_smart/central/weather/mid"
+    name = "api:green_smart:central:weather:mid"
+
+    async def post(self, request: web.Request) -> web.Response:
+        try:
+            body = await request.json()
+        except Exception:
+            return self.json({"error": "invalid_json"}, status_code=400)
+
+        land_reg_id = str(body.get("land_reg_id") or "11H10000").strip().upper()
+        ta_reg_id = str(body.get("ta_reg_id") or "11H10701").strip().upper()
+        if not land_reg_id.isalnum() or not ta_reg_id.isalnum():
+            return self.json({"error": "invalid_reg_id"}, status_code=400)
+        params = {"land_reg_id": land_reg_id, "ta_reg_id": ta_reg_id}
+
+        try:
+            client, token = await self._client_and_token(request)
+            payload = await client.get_weather(token, "mid", params)
+            body = payload.get("body") if isinstance(payload, dict) and "body" in payload else payload
+            return self.json(body)
+        except CentralApiError as err:
+            return self._error_response(err)
+
+
 class CentralPesticideSearchView(_CentralAdapterView):
     """POST /api/green_smart/central/pesticide/search — allowlisted central pesticide adapter."""
 
