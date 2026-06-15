@@ -39,8 +39,9 @@ async def async_setup_panel(hass: HomeAssistant) -> None:
         return
     domain_data["_panel_registered"] = True
     await _register_static_path(hass)
-    # URL을 setup 시마다 새로 계산 — Python 모듈 캐시 문제 방지
-    panel_js_url = _get_panel_js_url()
+    # URL을 setup 시마다 새로 계산 — Python 모듈 캐시 문제 방지.
+    # manifest.json sync read는 executor에서 실행해 HA event loop blocking 경고를 피한다.
+    panel_js_url = await hass.async_add_executor_job(_get_panel_js_url)
     await _register_panel(hass, panel_js_url)
 
 
