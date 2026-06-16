@@ -115,5 +115,18 @@ def test_panel_auto_matches_greenhouse_address_to_kma_location_codes_and_uses_th
     assert "nx ${nx} · ny ${ny}" in source
     assert "중기예보 ${this._esc(landReg)} / ${this._esc(taReg)}" in source
 
-    for field in ["greenhouse_address", "location_name", "nx", "ny", "ta_regid", "land_regid", "weather_mid_land_reg_id", "weather_mid_ta_reg_id"]:
+    for field in [
+        "greenhouse_address", "location_name", "nx", "ny", "ta_regid", "land_regid",
+        "weather_mid_land_reg_id", "weather_mid_ta_reg_id",
+        "central_base_url", "central_installation_id",
+    ]:
         assert field in frontend_source
+
+
+def test_save_config_websocket_allows_panel_normalized_central_fields():
+    frontend_source = _source(ROOT / "custom_components" / "green_smart" / "frontend_panel.py")
+
+    assert 'vol.Optional("central_base_url"' in frontend_source
+    assert 'vol.Optional("central_installation_id"' in frontend_source
+    assert '"central_base_url": msg.get("central_base_url"' in frontend_source
+    assert '"central_installation_id": msg.get("central_installation_id"' in frontend_source

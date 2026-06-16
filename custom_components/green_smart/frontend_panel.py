@@ -148,6 +148,8 @@ async def ws_get_config(hass: HomeAssistant, connection, msg) -> None:
         vol.Optional("ta_regid", default="11H10701"): str,
         vol.Optional("weather_mid_land_reg_id", default="11H10000"): str,
         vol.Optional("weather_mid_ta_reg_id", default="11H10701"): str,
+        vol.Optional("central_base_url", default="http://127.0.0.1:18000"): str,
+        vol.Optional("central_installation_id", default=""): str,
     }
 )
 @websocket_api.async_response
@@ -174,6 +176,8 @@ async def ws_save_config(hass: HomeAssistant, connection, msg) -> None:
         "ta_regid": msg.get("ta_regid", "11H10701"),
         "weather_mid_land_reg_id": msg.get("weather_mid_land_reg_id", msg.get("land_regid", "11H10000")),
         "weather_mid_ta_reg_id": msg.get("weather_mid_ta_reg_id", msg.get("ta_regid", "11H10701")),
+        "central_base_url": msg.get("central_base_url", "http://127.0.0.1:18000"),
+        "central_installation_id": msg.get("central_installation_id", ""),
     }
     hass.config_entries.async_update_entry(entry, data=new_data)
     connection.send_result(msg["id"], {"success": True})
