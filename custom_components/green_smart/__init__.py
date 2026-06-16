@@ -37,7 +37,7 @@ async def async_setup(hass, config):
         CropPestListView, CropPestDeleteView,
         CropControlListView, CropControlDeleteView,
     )
-    from .central_views import CentralWeatherCurrentView, CentralWeatherMidView, CentralPesticideSearchView
+    from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView
     domain_data = hass.data.setdefault(DOMAIN, {})
     if not domain_data.get("_views_registered"):
         store = WeatherStore(hass)
@@ -53,6 +53,7 @@ async def async_setup(hass, config):
         hass.http.register_view(PesticideKeyConfigView(store))
         hass.http.register_view(PesticideMixCheckView(store))
         hass.http.register_view(CentralWeatherCurrentView())
+        hass.http.register_view(CentralWeatherForecastView())
         hass.http.register_view(CentralWeatherMidView())
         hass.http.register_view(CentralPesticideSearchView())
         hass.http.register_view(CropSeasonsView())

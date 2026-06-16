@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.11
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.12
 const DOMAIN = "green_smart";
-const VERSION = "1.8.11";
+const VERSION = "1.8.12";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -2492,6 +2492,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }
 
+  _desiredDailyDates(count = 8) {
+    const start = new Date();
+    return Array.from({ length: count }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    });
+  }
+
   _dailyItemsFromForecasts(forecasts) {
     const byDate = {};
     (forecasts || []).forEach((f) => {
@@ -2565,7 +2574,16 @@ button.action:disabled{opacity:.5;cursor:default;}
     });
     items = this._mergeDailyItems(this._dailyItemsFromForecasts(forecasts), weeklyItems);
     items = this._mergeCentralMidDaily(items, centralMid);
-    items = items.slice(0, 8);
+    const desiredDates = this._desiredDailyDates(8);
+    const itemsByDate = new Map(items.filter((it) => it && it.date).map((it) => [it.date, it]));
+    items = desiredDates.map((date) => itemsByDate.get(date) || {
+      date,
+      min: "--",
+      max: "--",
+      topSky: "구름많음",
+      topPty: undefined,
+      pop: 0,
+    });
     if (!items.length) return "";
     const now = new Date();
     const todayStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;
@@ -2650,21 +2668,28 @@ button.action:disabled{opacity:.5;cursor:default;}
           this._hass.callApi("GET", "green_smart/weather/config").catch(() => ({})),
           this._hass.callApi("GET", "green_smart/weather/weekly").catch(() => ({})),
         ]);
-        const cfg = Object.assign({}, cfgResp || {}, this._normalizedForm());
+        const cfg = Object.assign({}, this._normalizedForm(), cfgResp || {});
         const centralModalWeather = await this._hass.callApi("POST", "green_smart/central/weather/current", {
+          nx: Number(cfg.nx || 60),
+          ny: Number(cfg.ny || 127),
+        }).catch(() => null);
+        const centralModalForecast = await this._hass.callApi("POST", "green_smart/central/weather/forecast", {
           nx: Number(cfg.nx || 60),
           ny: Number(cfg.ny || 127),
         }).catch(() => null);
         const cur = centralModalWeather || localCur || {};
         if (centralModalWeather && centralModalWeather.mode === "real") this._weatherData = centralModalWeather;
-        const formCfg = this._normalizedForm();
         const centralModalMidWeather = await this._hass.callApi("POST", "green_smart/central/weather/mid", {
-          land_reg_id: formCfg.weather_mid_land_reg_id,
-          ta_reg_id: formCfg.weather_mid_ta_reg_id,
+          land_reg_id: cfg.weather_mid_land_reg_id,
+          ta_reg_id: cfg.weather_mid_ta_reg_id,
         }).catch(() => null);
-        const forecasts = (fcstResp && fcstResp.forecasts) || [];
+        const localForecasts = (fcstResp && fcstResp.forecasts) || [];
+        const shortForecasts = centralModalForecast && centralModalForecast.mode === "real"
+          ? (centralModalForecast.forecasts || [])
+          : localForecasts;
+        const forecastSource = centralModalForecast && centralModalForecast.mode === "real" ? "central" : "local";
         const weekly = (weeklyResp && weeklyResp.weekly) || [];
-        inner.innerHTML = this._renderWeatherModal(cur, forecasts, cfg, weekly, centralModalMidWeather);
+        inner.innerHTML = this._renderWeatherModal(cur, shortForecasts, cfg, weekly, centralModalMidWeather, forecastSource);
         inner.querySelectorAll(".wm-close-btn").forEach(b => b.addEventListener("click", () => this._closePopup()));
         // 스크롤 버튼 바인딩
         inner.querySelectorAll(".wm-scroll-btn").forEach(btn => {
@@ -2692,11 +2717,13 @@ button.action:disabled{opacity:.5;cursor:default;}
     await doLoad();
   }
 
-  _renderWeatherModal(cur, forecasts, cfg, weekly, centralMid = null) {
+  _renderWeatherModal(cur, forecasts, cfg, weekly, centralMid = null, forecastSource = "local") {
     cur = cur || {};
     forecasts = forecasts || [];
     cfg = cfg || {};
     weekly = weekly || [];
+    const forecast_source = forecastSource;
+    const shortForecasts = forecasts;
 
     if (cur.error === "no_api_key") {
       return `<div class="wm-popup" style="padding:48px;text-align:center;">
@@ -2721,8 +2748,9 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._wmHero(cur)}
       ${this._wmAI(cur)}
       ${this._wmAlerts(cur)}
-      ${this._wmHourly(forecasts)}
-      ${this._wmDaily(forecasts, weekly, centralMid)}
+      ${forecast_source === "central" ? `<div style="font-size:11px;color:#51AE60;margin:0 18px 8px;font-weight:700;">저장 위치 기준 실시간 예보</div>` : ""}
+      ${this._wmHourly(shortForecasts)}
+      ${this._wmDaily(shortForecasts, weekly, centralMid)}
       ${this._wmInfo(cur, cfg)}
       <div class="wm-footer">
         <button id="weather-modal-refresh" style="background:none;border:none;cursor:pointer;color:#7a9780;font-size:13px;display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;transition:color .15s,background .15s;" onmouseover="this.style.background='#f0f5f1';this.style.color='#51AE60'" onmouseout="this.style.background='none';this.style.color='#7a9780'">

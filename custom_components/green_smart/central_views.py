@@ -55,6 +55,34 @@ class CentralWeatherCurrentView(_CentralAdapterView):
             return self._error_response(err)
 
 
+class CentralWeatherForecastView(_CentralAdapterView):
+    """POST /api/green_smart/central/weather/forecast — allowlisted central short-term forecast adapter."""
+
+    url = "/api/green_smart/central/weather/forecast"
+    name = "api:green_smart:central:weather:forecast"
+
+    async def post(self, request: web.Request) -> web.Response:
+        try:
+            body = await request.json()
+        except Exception:
+            return self.json({"error": "invalid_json"}, status_code=400)
+
+        nx = body.get("nx", 60)
+        ny = body.get("ny", 127)
+        try:
+            params = {"nx": int(nx), "ny": int(ny)}
+        except (TypeError, ValueError):
+            return self.json({"error": "invalid_grid"}, status_code=400)
+
+        try:
+            client, token = await self._client_and_token(request)
+            payload = await client.get_weather(token, "forecast", params)
+            body = payload.get("body") if isinstance(payload, dict) and "body" in payload else payload
+            return self.json(body)
+        except CentralApiError as err:
+            return self._error_response(err)
+
+
 class CentralWeatherMidView(_CentralAdapterView):
     """POST /api/green_smart/central/weather/mid — allowlisted central mid-term weather adapter."""
 

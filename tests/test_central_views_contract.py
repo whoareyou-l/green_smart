@@ -15,9 +15,11 @@ def test_central_views_register_explicit_allowlisted_adapter_routes():
     init_source = _source(INIT)
 
     assert "CentralWeatherCurrentView" in source
+    assert "CentralWeatherForecastView" in source
     assert "CentralWeatherMidView" in source
     assert "CentralPesticideSearchView" in source
     assert 'url = "/api/green_smart/central/weather/current"' in source
+    assert 'url = "/api/green_smart/central/weather/forecast"' in source
     assert 'url = "/api/green_smart/central/weather/mid"' in source
     assert 'url = "/api/green_smart/central/pesticide/search"' in source
     assert "ensure_access_token" in source
@@ -25,6 +27,7 @@ def test_central_views_register_explicit_allowlisted_adapter_routes():
     assert "get_pesticide_data" in source
     assert "central/proxy" not in source
     assert "CentralWeatherCurrentView" in init_source
+    assert "CentralWeatherForecastView" in init_source
     assert "CentralWeatherMidView" in init_source
     assert "CentralPesticideSearchView" in init_source
 
@@ -33,6 +36,7 @@ def test_panel_uses_explicit_central_routes_and_keeps_crop_pest_data_separate():
     source = _source(PANEL)
 
     assert "green_smart/central/weather/current" in source
+    assert "green_smart/central/weather/forecast" in source
     assert "green_smart/central/weather/mid" in source
     assert "green_smart/central/pesticide/search" in source
     assert "centralMidWeather" in source
@@ -69,7 +73,8 @@ def test_panel_weather_card_keeps_summary_only_and_modal_uses_realtime_central_w
 def test_panel_weather_modal_limits_daily_forecast_through_d7_and_never_shows_blank_status():
     source = _source(PANEL)
 
-    assert "items = items.slice(0, 8)" in source
+    assert "_desiredDailyDates(8)" in source
+    assert "desiredDates.map((date)" in source
     assert "_resolvedWeatherStatus" in source
     assert "강수량 우선" in source
     assert "humidity >= 85" in source
@@ -88,11 +93,32 @@ def test_panel_weather_modal_merges_realtime_central_mid_forecast_through_d7():
     assert "_dailyItemsFromForecasts" in source
     assert "items = this._mergeDailyItems(this._dailyItemsFromForecasts(forecasts), weeklyItems)" in source
     assert "items = this._mergeCentralMidDaily(items, centralMid)" in source
-    assert "items = items.slice(0, 8)" in source
+    assert "_desiredDailyDates(8)" in source
+    assert "desiredDates.map((date)" in source
     assert "day_dt.setDate(today.getDate() + Number(d.day))" in source
     assert "pm_weather || d.am_weather" in source
     assert 'const rainKey = "am_" + "rain_" + "probability"' in source
     assert "Math.max(Number(d[rainKey]" in source
+
+
+def test_panel_weather_modal_uses_saved_location_for_central_current_hourly_and_exact_d0_to_d7_dates():
+    source = _source(PANEL)
+
+    assert 'green_smart/central/weather/current' in source
+    assert 'green_smart/central/weather/forecast' in source
+    assert 'green_smart/central/weather/mid' in source
+    assert "centralModalForecast" in source
+    assert "const shortForecasts = centralModalForecast && centralModalForecast.mode === \"real\"" in source
+    assert "this._wmHourly(shortForecasts)" in source
+    assert "this._wmDaily(shortForecasts, weekly, centralMid)" in source
+    assert "_desiredDailyDates(8)" in source
+    assert "desiredDates.map((date)" in source
+    assert "itemsByDate.get(date)" in source
+    assert "forecast_source" in source
+    assert "nx: Number(cfg.nx || 60)" in source
+    assert "ny: Number(cfg.ny || 127)" in source
+    assert "land_reg_id: cfg.weather_mid_land_reg_id" in source
+    assert "ta_reg_id: cfg.weather_mid_ta_reg_id" in source
 
 
 def test_panel_auto_matches_greenhouse_address_to_kma_location_codes_and_uses_them_for_weather():
