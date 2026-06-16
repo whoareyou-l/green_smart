@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.12
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.13
 const DOMAIN = "green_smart";
-const VERSION = "1.8.12";
+const VERSION = "1.8.13";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -362,13 +362,40 @@ class GreenSmartPanel extends HTMLElement {
     clearInterval(this._chartInterval); this._chartInterval = null;
   }
 
+  _currentWeatherFromForecasts(forecasts, fallback = {}) {
+    const items = Array.isArray(forecasts) ? forecasts : [];
+    if (!items.length) return fallback || {};
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const nowKey = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const sorted = items.slice().sort((a, b) => `${a.date || ""}${a.time || ""}`.localeCompare(`${b.date || ""}${b.time || ""}`));
+    const picked = sorted.find((f) => `${f.date || ""}${f.time || ""}` >= nowKey) || sorted[0];
+    const updated = picked.date && picked.time
+      ? `${picked.date.slice(0, 4)}-${picked.date.slice(4, 6)}-${picked.date.slice(6, 8)} ${picked.time.slice(0, 2)}:${picked.time.slice(2, 4)}`
+      : (fallback && fallback.updated) || "";
+    return {
+      mode: picked.mode || "real",
+      temperature: picked.temp != null ? picked.temp : fallback.temperature,
+      humidity: picked.humidity != null ? picked.humidity : fallback.humidity,
+      wind_speed: picked.wind_speed != null ? picked.wind_speed : fallback.wind_speed,
+      wind_direction: picked.wind_direction || fallback.wind_direction || "",
+      precipitation_type: picked.precipitation_type || fallback.precipitation_type || "없음",
+      precipitation: picked.precipitation != null ? picked.precipitation : (fallback.precipitation || 0),
+      sky: picked.sky || fallback.sky || "구름많음",
+      pop: picked.pop != null ? picked.pop : fallback.pop,
+      updated,
+      source: "central-forecast-current",
+    };
+  }
+
   async _fetchWeather() {
     try {
       const cfg = this._normalizedForm();
-      const weather = await this._hass.callApi("POST", "green_smart/central/weather/current", {
+      const centralForecast = await this._hass.callApi("POST", "green_smart/central/weather/forecast", {
         nx: Number(cfg.nx || 60),
         ny: Number(cfg.ny || 127),
       });
+      const weather = this._currentWeatherFromForecasts((centralForecast && centralForecast.forecasts) || []);
       this._weatherData = weather;
 
       try {
@@ -2458,7 +2485,14 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _wmHourly(forecasts) {
-    const items = forecasts.slice(0, 12);
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const nowKey = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const items = (forecasts || [])
+      .slice()
+      .sort((a, b) => `${a.date || ""}${a.time || ""}`.localeCompare(`${b.date || ""}${b.time || ""}`))
+      .filter((f) => `${f.date || ""}${f.time || ""}` >= nowKey)
+      .slice(0, 12);
     if (!items.length) return "";
     const cards = items.map((f) => {
       const h = f.time ? parseInt(f.time.slice(0, 2), 10) : 0;
@@ -2669,25 +2703,21 @@ button.action:disabled{opacity:.5;cursor:default;}
           this._hass.callApi("GET", "green_smart/weather/weekly").catch(() => ({})),
         ]);
         const cfg = Object.assign({}, this._normalizedForm(), cfgResp || {});
-        const centralModalWeather = await this._hass.callApi("POST", "green_smart/central/weather/current", {
-          nx: Number(cfg.nx || 60),
-          ny: Number(cfg.ny || 127),
-        }).catch(() => null);
         const centralModalForecast = await this._hass.callApi("POST", "green_smart/central/weather/forecast", {
           nx: Number(cfg.nx || 60),
           ny: Number(cfg.ny || 127),
-        }).catch(() => null);
-        const cur = centralModalWeather || localCur || {};
-        if (centralModalWeather && centralModalWeather.mode === "real") this._weatherData = centralModalWeather;
-        const centralModalMidWeather = await this._hass.callApi("POST", "green_smart/central/weather/mid", {
-          land_reg_id: cfg.weather_mid_land_reg_id,
-          ta_reg_id: cfg.weather_mid_ta_reg_id,
         }).catch(() => null);
         const localForecasts = (fcstResp && fcstResp.forecasts) || [];
         const shortForecasts = centralModalForecast && centralModalForecast.mode === "real"
           ? (centralModalForecast.forecasts || [])
           : localForecasts;
         const forecastSource = centralModalForecast && centralModalForecast.mode === "real" ? "central" : "local";
+        const cur = this._currentWeatherFromForecasts(shortForecasts, localCur || {});
+        if (forecastSource === "central") this._weatherData = cur;
+        const centralModalMidWeather = await this._hass.callApi("POST", "green_smart/central/weather/mid", {
+          land_reg_id: cfg.weather_mid_land_reg_id,
+          ta_reg_id: cfg.weather_mid_ta_reg_id,
+        }).catch(() => null);
         const weekly = (weeklyResp && weeklyResp.weekly) || [];
         inner.innerHTML = this._renderWeatherModal(cur, shortForecasts, cfg, weekly, centralModalMidWeather, forecastSource);
         inner.querySelectorAll(".wm-close-btn").forEach(b => b.addEventListener("click", () => this._closePopup()));

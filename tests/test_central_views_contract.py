@@ -35,7 +35,6 @@ def test_central_views_register_explicit_allowlisted_adapter_routes():
 def test_panel_uses_explicit_central_routes_and_keeps_crop_pest_data_separate():
     source = _source(PANEL)
 
-    assert "green_smart/central/weather/current" in source
     assert "green_smart/central/weather/forecast" in source
     assert "green_smart/central/weather/mid" in source
     assert "green_smart/central/pesticide/search" in source
@@ -64,9 +63,9 @@ def test_panel_weather_card_keeps_summary_only_and_modal_uses_realtime_central_w
     assert "${this._renderMidWeatherRows" not in source
     assert "data-mid-weather-mode" not in source
     assert "예보 실시간" not in source
-    assert 'green_smart/central/weather/current' in source
-    assert "centralModalWeather" in source
-    assert "cur.mode === \"real\"" in source
+    assert 'green_smart/central/weather/forecast' in source
+    assert "_currentWeatherFromForecasts" in source
+    assert "source: \"central-forecast-current\"" in source
     assert "wm-hero-badge" in source
 
 
@@ -101,15 +100,16 @@ def test_panel_weather_modal_merges_realtime_central_mid_forecast_through_d7():
     assert "Math.max(Number(d[rainKey]" in source
 
 
-def test_panel_weather_modal_uses_saved_location_for_central_current_hourly_and_exact_d0_to_d7_dates():
+def test_panel_weather_modal_uses_saved_location_for_central_short_api_current_hourly_and_exact_d0_to_d7_dates():
     source = _source(PANEL)
 
-    assert 'green_smart/central/weather/current' in source
     assert 'green_smart/central/weather/forecast' in source
     assert 'green_smart/central/weather/mid' in source
     assert "centralModalForecast" in source
     assert "const shortForecasts = centralModalForecast && centralModalForecast.mode === \"real\"" in source
+    assert "const cur = this._currentWeatherFromForecasts(shortForecasts, localCur || {})" in source
     assert "this._wmHourly(shortForecasts)" in source
+    assert ".filter((f) => `${f.date || \"\"}${f.time || \"\"}` >= nowKey)" in source
     assert "this._wmDaily(shortForecasts, weekly, centralMid)" in source
     assert "_desiredDailyDates(8)" in source
     assert "desiredDates.map((date)" in source
