@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.19
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.20
 const DOMAIN = "green_smart";
-const VERSION = "1.8.19";
+const VERSION = "1.8.20";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -3130,6 +3130,50 @@ button.action:disabled{opacity:.5;cursor:default;}
     return common[cropType] || common.tomato;
   }
 
+  _parseGrowthMetrics(row) {
+    if (Array.isArray(row?.metrics)) return row.metrics;
+    const raw = row?.metricsJson;
+    if (!raw) return [];
+    try {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) { return []; }
+  }
+
+  _renderGrowthMetricChips(row) {
+    const metrics = this._parseGrowthMetrics(row);
+    if (metrics.length) {
+      return metrics
+        .filter(m => m && m.value !== null && m.value !== undefined && m.value !== "")
+        .map(m => `<span style="font-size:12px;color:#4a6741;">${this._esc(m.label || m.key)} <b>${this._esc(String(m.value))}${m.unit ? this._esc(m.unit) : ""}</b></span>`)
+        .join("");
+    }
+    return `
+      <span style="font-size:12px;color:#4a6741;">초장 <b>${row.height}cm</b></span>
+      <span style="font-size:12px;color:#4a6741;">엽수 <b>${row.leafCount}매</b></span>
+      <span style="font-size:12px;color:#4a6741;">줄기경 <b>${row.stemDia}mm</b></span>
+      <span style="font-size:12px;color:#4a6741;">화방 <b>${row.truss}단</b></span>`;
+  }
+
+  _growthUnitFromLabel(label) {
+    const m = String(label || "").match(/\(([^)]+)\)/);
+    return m ? m[1] : "";
+  }
+
+  _growthMetricRowsForExport(row) {
+    const metrics = this._parseGrowthMetrics(row);
+    if (metrics.length) {
+      return metrics.map(m => [row.date, row.cropType || "", m.label || m.key, m.value ?? "", m.unit || "", row.note || ""]);
+    }
+    return [
+      [row.date, row.cropType || "", "초장", row.height || "", "cm", row.note || ""],
+      [row.date, row.cropType || "", "엽수", row.leafCount || "", "매", row.note || ""],
+      [row.date, row.cropType || "", "줄기경", row.stemDia || "", "mm", row.note || ""],
+      [row.date, row.cropType || "", "화방", row.truss || "", "단", row.note || ""],
+      [row.date, row.cropType || "", "절위", row.node || "", "절", row.note || ""],
+    ];
+  }
+
   _cropRowsForPage(key, rows) {
     const total = Array.isArray(rows) ? rows.length : 0;
     const pages = Math.max(1, Math.ceil(total / CROP_PAGE_SIZE));
@@ -3257,13 +3301,10 @@ button.action:disabled{opacity:.5;cursor:default;}
       ? pageRows.map((r) => {
         const i = r.__cropIndex;
         return `
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;" data-growth-metrics-json="${this._esc(r.metricsJson || "")}">
           <div style="flex:0 0 72px;font-size:12px;font-weight:700;color:#51AE60;">${r.date}</div>
           <div style="flex:1;display:flex;flex-wrap:wrap;gap:6px 14px;">
-            <span style="font-size:12px;color:#4a6741;">초장 <b>${r.height}cm</b></span>
-            <span style="font-size:12px;color:#4a6741;">엽수 <b>${r.leafCount}매</b></span>
-            <span style="font-size:12px;color:#4a6741;">줄기경 <b>${r.stemDia}mm</b></span>
-            <span style="font-size:12px;color:#4a6741;">화방 <b>${r.truss}단</b></span>
+            ${this._renderGrowthMetricChips(r)}
             ${r.note ? `<span style="font-size:11px;color:#7a9780;">${this._esc(r.note)}</span>` : ""}
           </div>
           <button data-growth-del="${i}" title="삭제"
@@ -3669,11 +3710,10 @@ button.action:disabled{opacity:.5;cursor:default;}
         ).join("\n");
     } else if (type === "growth") {
       filename = "생육조사.csv";
-      csv = "조사일,초장(cm),엽수(매),줄기경(mm),화방(단),절위(절),비고\n"
-        + this._growthData.map(r =>
-          [r.date, r.height, r.leafCount, r.stemDia, r.truss, r.node, r.note]
-          .map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(",")
-        ).join("\n");
+      csv = "조사일,작물,조사항목,값,단위,비고\n"
+        + this._growthData.flatMap(r => this._growthMetricRowsForExport({ ...r, metricsJson: r.metricsJson }))
+          .map(row => row.map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(","))
+          .join("\n");
     } else if (type === "pest") {
       filename = "병해충예찰.csv";
       csv = "조사일,병해충종류,발생위치,발생정도,비고\n"
@@ -3756,13 +3796,21 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
       </div>`, (inner) => {
       inner.querySelector("#g-save")?.addEventListener("click", async () => {
+        // Dynamic DB payload marker: metrics: config.fields.map
+        const metrics = config.fields.map(([key, label]) => ({
+          key, label,
+          value: inner.querySelector(`#g-${key}`)?.value || null,
+          unit: this._growthUnitFromLabel(label),
+        }));
         const body = {
           date:      inner.querySelector("#g-date")?.value || "",
+          cropType: activeSeason?.cropType || "other",
           height:    parseFloat(inner.querySelector("#g-height")?.value) || null,
           leafCount: parseInt(inner.querySelector("#g-leafCount")?.value) || null,
           stemDia:   parseFloat(inner.querySelector("#g-stemDia")?.value) || null,
           truss:     parseInt(inner.querySelector("#g-truss")?.value) || null,
           node:      parseInt(inner.querySelector("#g-node")?.value) || null,
+          metrics,
           note:      inner.querySelector("#g-note")?.value || "",
         };
         // Contract markers for tests: body.height body.leafCount body.stemDia body.truss body.node activeSeason.cropType

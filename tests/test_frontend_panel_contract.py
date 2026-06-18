@@ -99,9 +99,23 @@ def test_growth_add_popup_uses_selected_season_crop_type_for_dynamic_fields():
 
     assert "_activeSeason()" in panel
     assert "_growthFieldConfigForCrop" in panel
-    assert "activeSeason.cropType" in popup
+    assert "activeSeason.cropType" in popup or "activeSeason?.cropType" in popup
     assert "data-growth-field" in popup
     for crop in ("tomato", "paprika", "strawberry", "lettuce", "cucumber", "herb"):
         assert crop in panel
     for field in ("height", "leafCount", "stemDia", "truss", "node"):
         assert f"body.{field}" in popup
+
+
+def test_growth_survey_payload_list_and_export_use_dynamic_crop_metrics():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    popup = panel.split("_openGrowthAddPopup()", 1)[1].split("_openPestAddPopup()", 1)[0]
+    growth_list = panel.split("  _renderCropGrowthTab()", 1)[1].split("  _renderCropPestTab()", 1)[0]
+    export_section = panel.split('} else if (type === "growth") {', 1)[1].split('} else if (type === "pest") {', 1)[0]
+
+    assert "metrics: config.fields.map" in popup
+    assert "cropType: activeSeason?.cropType" in popup
+    assert "metricsJson" in growth_list
+    assert "this._renderGrowthMetricChips" in growth_list
+    assert "_growthMetricRowsForExport" in panel
+    assert "metricsJson" in export_section

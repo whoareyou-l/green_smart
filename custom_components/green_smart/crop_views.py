@@ -196,7 +196,9 @@ class CropGrowthListView(HomeAssistantView):
         rows = await fetchall(hass, """
             SELECT id, survey_date AS date, plant_height AS height,
                    leaf_count AS leafCount, stem_diameter AS stemDia,
-                   truss_count AS truss, node_count AS node, notes AS note
+                   truss_count AS truss, node_count AS node,
+                   crop_type AS cropType, metrics_json AS metricsJson,
+                   notes AS note
             FROM growth_surveys
             WHERE season_id = %s AND deleted_at IS NULL
             ORDER BY survey_date DESC
@@ -211,21 +213,25 @@ class CropGrowthListView(HomeAssistantView):
             return _err("Invalid JSON")
         if not body.get("date"):
             return _err("date 필수")
+        metrics_json = json.dumps(body.get("metrics") or [], ensure_ascii=False)
         new_id = await execute(hass, """
             INSERT INTO growth_surveys
                 (season_id, survey_date, plant_height, leaf_count,
-                 stem_diameter, truss_count, node_count, notes)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                 stem_diameter, truss_count, node_count, crop_type, metrics_json, notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             int(season_id), body["date"],
             body.get("height"), body.get("leafCount"),
             body.get("stemDia"), body.get("truss"),
-            body.get("node"), body.get("note") or "",
+            body.get("node"), body.get("cropType") or "other", metrics_json,
+            body.get("note") or "",
         ))
         row = await fetchone(hass, """
             SELECT id, survey_date AS date, plant_height AS height,
                    leaf_count AS leafCount, stem_diameter AS stemDia,
-                   truss_count AS truss, node_count AS node, notes AS note
+                   truss_count AS truss, node_count AS node,
+                   crop_type AS cropType, metrics_json AS metricsJson,
+                   notes AS note
             FROM growth_surveys WHERE id = %s
         """, (new_id,))
         return _json(row)

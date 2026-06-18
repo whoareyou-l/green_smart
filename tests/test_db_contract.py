@@ -59,6 +59,21 @@ def test_db_bootstrap_creates_crop_management_tables_and_default_zone():
     ):
         assert f"CREATE TABLE IF NOT EXISTS {table}" in source
     assert "INSERT IGNORE INTO zones" in source
+    assert "crop_type VARCHAR(50)" in source
+    assert "metrics_json" in source
+    assert "_ensure_column" in source
+
+
+def test_growth_survey_backend_persists_dynamic_crop_metrics_json():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    growth_section = source.split("class CropGrowthListView", 1)[1].split("class CropGrowthDeleteView", 1)[0]
+
+    assert "import json" in source
+    assert "metrics_json AS metricsJson" in growth_section
+    assert "crop_type AS cropType" in growth_section
+    assert "json.dumps(body.get(\"metrics\")" in growth_section
+    assert "body.get(\"cropType\")" in growth_section
+    assert "metricsJson" in growth_section
 
 
 def test_integration_setup_runs_db_schema_bootstrap_before_crop_views():

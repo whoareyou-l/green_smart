@@ -72,6 +72,21 @@ async def execute(hass: HomeAssistant, sql: str, args: tuple = ()) -> int:
             return cur.lastrowid if cur.lastrowid else cur.rowcount
 
 
+async def _ensure_column(cur, table: str, column: str, ddl: str) -> None:
+    await cur.execute(
+        """
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s
+        """,
+        (table, column),
+    )
+    row = await cur.fetchone()
+    exists = bool(row and row[0])
+    if not exists:
+        await cur.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
+
 async def ensure_schema(hass: HomeAssistant) -> None:
     """Create the crop-management schema used by the Green Smart panel.
 
@@ -122,6 +137,8 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             stem_diameter DECIMAL(10,2) NULL,
             truss_count DECIMAL(10,2) NULL,
             node_count DECIMAL(10,2) NULL,
+            crop_type VARCHAR(50) NOT NULL DEFAULT 'other',
+            metrics_json TEXT NULL,
             notes TEXT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -180,6 +197,8 @@ async def ensure_schema(hass: HomeAssistant) -> None:
         async with conn.cursor() as cur:
             for statement in statements:
                 await cur.execute(statement)
+            await _ensure_column(cur, "growth_surveys", "crop_type", "crop_type VARCHAR(50) NOT NULL DEFAULT 'other' AFTER node_count")
+            await _ensure_column(cur, "growth_surveys", "metrics_json", "metrics_json TEXT NULL AFTER crop_type")
     _LOGGER.info("green_smart DB schema ensured")
 
 
