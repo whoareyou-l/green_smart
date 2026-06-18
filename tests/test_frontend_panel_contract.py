@@ -141,3 +141,18 @@ def test_green_smart_sidebar_offsets_from_ha_sidebar_not_viewport_left():
     assert "getBoundingClientRect().left" in panel
     assert "left:var(--gs-ha-sidebar-left,0px)" in styles
     assert "position:fixed;top:0;left:0;width:70px" not in styles
+
+def test_home_dashboard_trend_charts_use_dense_vertical_plot_area_without_extra_top_bottom_gap():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    env_chart = panel.split("  _renderTrendChart()", 1)[1].split("  _patchChart()", 1)[0]
+    irrig_chart = panel.split("  _renderIrrigChart()", 1)[1].split("  _patchIrrigChart()", 1)[0]
+
+    for chart in (env_chart, irrig_chart):
+        assert "CHART_VIEW_H = 280" in chart
+        assert "PAD_TOP = 4" in chart
+        assert "PAD_BOTTOM = 18" in chart
+        assert "chartH = CHART_VIEW_H - PAD_TOP - PAD_BOTTOM" in chart
+        assert "viewBox=\"0 0 ${W} ${CHART_VIEW_H}\"" in chart
+        assert "style=\"height:280px;\"" in chart
+        assert "viewBox=\"0 0 ${W} 220\"" not in chart
+

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.21
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.22
 const DOMAIN = "green_smart";
-const VERSION = "1.8.21";
+const VERSION = "1.8.22";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -1696,9 +1696,9 @@ button.action:disabled{opacity:.5;cursor:default;}
       `<button class="c-tab ${i === zoneIdx ? "active" : ""}" data-zone-tab="${i}">Zone ${i + 1}</button>`
     ).join("");
 
-    const W = 600, PAD_TOP = 10, PAD_RIGHT = 10, PAD_BOTTOM = 30, PAD_LEFT = 45;
+    const W = 600, CHART_VIEW_H = 280, PAD_TOP = 4, PAD_RIGHT = 10, PAD_BOTTOM = 18, PAD_LEFT = 45;
     const chartW = W - PAD_LEFT - PAD_RIGHT;
-    const chartH = 220 - PAD_TOP - PAD_BOTTOM;
+    const chartH = CHART_VIEW_H - PAD_TOP - PAD_BOTTOM;
     const n = this._chartHistory.length;
 
     const seriesData = (key) => this._chartHistory
@@ -1738,7 +1738,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       const ts = this._chartHistory[idx] && this._chartHistory[idx].ts;
       const label = ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const x = PAD_LEFT + (idx / (n - 1)) * chartW;
-      return `<text x="${x.toFixed(0)}" y="${220 - 8}" text-anchor="middle" fill="#7a9780" font-size="10">${label}</text>`;
+      return `<text x="${x.toFixed(0)}" y="${CHART_VIEW_H - 5}" text-anchor="middle" fill="#7a9780" font-size="10">${label}</text>`;
     }).join("");
 
     const polylines = SERIES.map((s) => {
@@ -1762,7 +1762,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>`;
     }).join("");
 
-    const svg = `<svg id="env-chart-svg" class="chart-svg" viewBox="0 0 ${W} 220" style="height:280px;">
+    const svg = `<svg id="env-chart-svg" class="chart-svg" viewBox="0 0 ${W} ${CHART_VIEW_H}" style="height:280px;">
       ${yLabels}${xLabels}
       ${polylines}
       <line id="chart-crosshair" x1="0" y1="${PAD_TOP}" x2="0" y2="${PAD_TOP + chartH}" opacity="0" pointer-events="none" stroke="#24323F" stroke-dasharray="4,4"/>
@@ -1792,9 +1792,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     const svg = root && root.querySelector("#env-chart-svg");
     if (!svg || !this._chartHistory.length) return;
     const zoneIdx = this._chartZoneTab;
-    const W = 600, PAD_LEFT = 45, PAD_TOP = 10;
+    const W = 600, CHART_VIEW_H = 280, PAD_LEFT = 45, PAD_TOP = 4, PAD_BOTTOM = 18;
     const chartW = W - PAD_LEFT - 10;
-    const chartH = 220 - PAD_TOP - 30;
+    const chartH = CHART_VIEW_H - PAD_TOP - PAD_BOTTOM;
     SERIES.forEach((s) => {
       const line = svg.querySelector(`#series-${s.key}`);
       if (!line) return;
@@ -1868,9 +1868,9 @@ button.action:disabled{opacity:.5;cursor:default;}
       `<button class="c-tab ${i === zoneIdx ? "active" : ""}" data-irrig-zone-tab="${i}">Zone ${i + 1}</button>`
     ).join("");
 
-    const W = 600, PAD_TOP = 10, PAD_RIGHT = 10, PAD_BOTTOM = 30, PAD_LEFT = 45;
+    const W = 600, CHART_VIEW_H = 280, PAD_TOP = 4, PAD_RIGHT = 10, PAD_BOTTOM = 18, PAD_LEFT = 45;
     const chartW = W - PAD_LEFT - PAD_RIGHT;
-    const chartH = 220 - PAD_TOP - PAD_BOTTOM;
+    const chartH = CHART_VIEW_H - PAD_TOP - PAD_BOTTOM;
     const n = this._chartHistory.length;
 
     const seriesData = (key) => this._chartHistory
@@ -1910,7 +1910,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       const ts = this._chartHistory[idx] && this._chartHistory[idx].ts;
       const label = ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const x = PAD_LEFT + (idx / (n - 1)) * chartW;
-      return `<text x="${x.toFixed(0)}" y="${220 - 8}" text-anchor="middle" fill="#7a9780" font-size="10">${label}</text>`;
+      return `<text x="${x.toFixed(0)}" y="${CHART_VIEW_H - 5}" text-anchor="middle" fill="#7a9780" font-size="10">${label}</text>`;
     }).join("");
 
     const polylines = IRRIG_SERIES.map((s) => {
@@ -1934,7 +1934,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>`;
     }).join("");
 
-    const svg = `<svg id="irrig-chart-svg" class="chart-svg" viewBox="0 0 ${W} 220" style="height:280px;">
+    const svg = `<svg id="irrig-chart-svg" class="chart-svg" viewBox="0 0 ${W} ${CHART_VIEW_H}" style="height:280px;">
       ${yLabels}${xLabels}
       ${polylines}
       <line id="irrig-crosshair" x1="0" y1="${PAD_TOP}" x2="0" y2="${PAD_TOP + chartH}" opacity="0" pointer-events="none" stroke="#24323F" stroke-dasharray="4,4"/>
@@ -1964,9 +1964,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     const svg = root && root.querySelector("#irrig-chart-svg");
     if (!svg || !this._chartHistory.length) return;
     const zoneIdx = this._irrigZoneTab;
-    const W = 600, PAD_LEFT = 45, PAD_TOP = 10;
+    const W = 600, CHART_VIEW_H = 280, PAD_LEFT = 45, PAD_TOP = 4, PAD_BOTTOM = 18;
     const chartW = W - PAD_LEFT - 10;
-    const chartH = 220 - PAD_TOP - 30;
+    const chartH = CHART_VIEW_H - PAD_TOP - PAD_BOTTOM;
     IRRIG_SERIES.forEach((s) => {
       const line = svg.querySelector(`#irrig-series-${s.key}`);
       if (!line) return;
