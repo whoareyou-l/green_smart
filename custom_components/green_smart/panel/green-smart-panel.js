@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.15
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.16
 const DOMAIN = "green_smart";
-const VERSION = "1.8.15";
+const VERSION = "1.8.16";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -4040,6 +4040,10 @@ button.action:disabled{opacity:.5;cursor:default;}
         });
         const validEntries = entries.filter(e => e.name);
         if (!validEntries.length) return;
+        if (!this._activeSeasonId) {
+          alert("작기를 먼저 등록한 뒤 방제 기록을 저장해주세요.");
+          return;
+        }
 
         const controlBody = {
           controlDate: inner.querySelector("#c-date")?.value || today,

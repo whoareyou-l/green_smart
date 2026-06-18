@@ -72,6 +72,117 @@ async def execute(hass: HomeAssistant, sql: str, args: tuple = ()) -> int:
             return cur.lastrowid if cur.lastrowid else cur.rowcount
 
 
+async def ensure_schema(hass: HomeAssistant) -> None:
+    """Create the crop-management schema used by the Green Smart panel.
+
+    Older installs can have the integration code without the new crop tables.
+    Keep this idempotent so HA restarts safely bootstrap missing tables before
+    the HTTP views try to read/write crop records.
+    """
+    statements = (
+        """
+        CREATE TABLE IF NOT EXISTS zones (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_zones_name (name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS crop_seasons (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            greenhouse_id INT NOT NULL DEFAULT 1,
+            zone_id INT NOT NULL DEFAULT 1,
+            crop_type VARCHAR(50) NOT NULL DEFAULT 'other',
+            variety VARCHAR(100) NOT NULL DEFAULT '',
+            method VARCHAR(50) NOT NULL DEFAULT 'hydro',
+            plant_date DATE NOT NULL,
+            demolish_date DATE NULL,
+            row_spacing DECIMAL(10,2) NULL,
+            plant_spacing DECIMAL(10,2) NULL,
+            total_plants INT NULL,
+            plant_density DECIMAL(10,2) NULL,
+            train_dir VARCHAR(20) NOT NULL DEFAULT 'v',
+            notes TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMP NULL,
+            KEY idx_crop_seasons_zone (zone_id),
+            KEY idx_crop_seasons_deleted_plant (deleted_at, plant_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS growth_surveys (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            season_id INT NOT NULL,
+            survey_date DATE NOT NULL,
+            plant_height DECIMAL(10,2) NULL,
+            leaf_count DECIMAL(10,2) NULL,
+            stem_diameter DECIMAL(10,2) NULL,
+            truss_count DECIMAL(10,2) NULL,
+            node_count DECIMAL(10,2) NULL,
+            notes TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMP NULL,
+            KEY idx_growth_surveys_season (season_id, deleted_at, survey_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS pest_surveys (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            season_id INT NOT NULL,
+            survey_date DATE NOT NULL,
+            pest_type VARCHAR(100) NOT NULL,
+            location VARCHAR(100) NOT NULL DEFAULT '',
+            severity INT NOT NULL DEFAULT 1,
+            notes TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMP NULL,
+            KEY idx_pest_surveys_season (season_id, deleted_at, survey_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS control_records (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            season_id INT NOT NULL,
+            control_date DATE NOT NULL,
+            zone_description VARCHAR(200) NOT NULL DEFAULT '',
+            notes TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMP NULL,
+            KEY idx_control_records_season (season_id, deleted_at, control_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS control_pesticides (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            control_id INT NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            pesticide_name VARCHAR(200) NOT NULL,
+            reg_no VARCHAR(80) NULL,
+            mode_of_action VARCHAR(100) NULL,
+            dilution_ratio INT NULL,
+            usage_amount VARCHAR(100) NULL,
+            pls_compliant TINYINT(1) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_control_pesticides_control (control_id, sort_order),
+            KEY idx_control_pesticides_name (pesticide_name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        "INSERT IGNORE INTO zones (id, name) VALUES (1, '1구역')",
+    )
+    pool = await get_pool(hass)
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            for statement in statements:
+                await cur.execute(statement)
+    _LOGGER.info("green_smart DB schema ensured")
+
+
 async def close_pool() -> None:
     """풀 종료 — HA 언로드 시 호출."""
     global _pool

@@ -43,3 +43,36 @@ def test_db_close_pool_resets_singleton_after_wait_closed():
     assert "_pool.close()" in source
     assert "await _pool.wait_closed()" in source
     assert "_pool = None" in source
+
+
+def test_db_bootstrap_creates_crop_management_tables_and_default_zone():
+    source = DB.read_text(encoding="utf-8")
+
+    assert "async def ensure_schema" in source
+    for table in (
+        "zones",
+        "crop_seasons",
+        "growth_surveys",
+        "pest_surveys",
+        "control_records",
+        "control_pesticides",
+    ):
+        assert f"CREATE TABLE IF NOT EXISTS {table}" in source
+    assert "INSERT IGNORE INTO zones" in source
+
+
+def test_integration_setup_runs_db_schema_bootstrap_before_crop_views():
+    init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
+
+    assert "from .db import ensure_schema" in init_source
+    assert "await ensure_schema(hass)" in init_source
+    assert init_source.index("await ensure_schema(hass)") < init_source.index("hass.http.register_view(CropSeasonsView())")
+
+
+def test_control_record_save_requires_active_season_before_posting():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    save_section = panel.split('inner.querySelector("#c-save")?.addEventListener("click"', 1)[1].split("const controlBody", 1)[0]
+
+    assert "!this._activeSeasonId" in save_section
+    assert "작기를 먼저 등록" in save_section
+    assert "green_smart/crop/seasons/${this._activeSeasonId}/control" in panel

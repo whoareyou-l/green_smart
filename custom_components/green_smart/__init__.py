@@ -31,6 +31,7 @@ async def async_setup(hass, config):
         WeatherLocationSearchView, WeatherWeeklyView,
         PesticideSearchView, PesticideKeyConfigView, PesticideMixCheckView,
     )
+    from .db import ensure_schema
     from .crop_views import (
         CropSeasonsView, CropSeasonDemolishView, CropSeasonDeleteView,
         CropGrowthListView, CropGrowthDeleteView,
@@ -39,6 +40,7 @@ async def async_setup(hass, config):
     )
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView
     domain_data = hass.data.setdefault(DOMAIN, {})
+    await ensure_schema(hass)
     if not domain_data.get("_views_registered"):
         store = WeatherStore(hass)
         domain_data["weather_store"] = store
