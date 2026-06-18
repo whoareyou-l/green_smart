@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.22
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.23
 const DOMAIN = "green_smart";
-const VERSION = "1.8.22";
+const VERSION = "1.8.23";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -34,6 +34,34 @@ const DEFAULT_EQUIP = {
 const DEFAULT_EQUIP_MODE = {
   roof_window:"auto", side_window:"auto", shade_screen:"auto", thermal_curtain:"auto",
   irrigation:"auto", nutrient_machine:"auto", circulation_fan:"auto", co2_generator:"auto",
+};
+
+const DEFAULT_CONTROL_STRATEGY_STATE = {
+  baseInterlockSettings: {
+    dayTargetTemp: 25, nightTargetTemp: 18, targetHumidity: 70, targetVpd: 1.0,
+    targetCo2: 800, baseAdt: 22, baseDif: 7,
+  },
+  aiStrategySettings: {
+    enabled: false, autoFallback: true, gIndex: -2.1, growthStage: "영양생장",
+    targetAdtDelta: -0.5, targetDifDelta: 0.5, targetVpdDelta: 0.1,
+    dayTempDelta: -1.5, nightTempDelta: 0.5,
+  },
+  safetyLimits: {
+    absoluteMaxTemp: 35, absoluteMinTemp: 8, maxVentOpen: 100, minVentOpen: 0,
+    strongWindCloseSpeed: 8, sensorErrorMode: "interlock", aiErrorMode: "interlock",
+  },
+  finalAppliedTargets: {
+    dayTargetTemp: 25, nightTargetTemp: 18, targetHumidity: 70, targetVpd: 1.0,
+    targetCo2: 800, targetAdt: 22, targetDif: 7,
+  },
+  controlMode: "interlock",
+  systemStatus: { aiStatus: "standby", interlockActive: true, aiApplied: false },
+  controlLogs: [
+    "10:21 온도 28.2°C → 환기창 30% 개방",
+    "10:24 VPD 0.42kPa → 제습 모드 진입",
+    "10:30 AI 오류 감지 → 인터록 모드 복귀",
+    "10:35 G-Index -2.1 → AI 보정 적용",
+  ],
 };
 const SERIES = [
   { key:"temp",     label:"온도", unit:"°C",   color:"#51AE60", fixed:1 },
@@ -94,6 +122,7 @@ class GreenSmartPanel extends HTMLElement {
     this._watchdogInterval = null;
     this._watchdogKeys = new Set();
     this._weatherModalOpen = false;
+    this._controlStrategy = this._loadControlStrategy();
     this._pageRendered = null;
     this.attachShadow({ mode: "open" });
   }
@@ -794,6 +823,33 @@ button{cursor:pointer;font:inherit;}
 .c-tab.active{background:#DFF3E2;color:#51AE60;}
 .chart-wrap{width:100%;overflow:hidden;border-radius:8px;}
 .chart-svg{display:block;width:100%;overflow:visible;}
+/* Control strategy */
+.strategy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;}
+.strategy-card{margin-bottom:0!important;}
+.strategy-principle{margin-bottom:16px;font-size:13px;color:#3d5a47;line-height:1.55;}
+.strategy-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f0f5f1;}
+.strategy-row:last-child{border-bottom:none;}
+.strategy-label{font-size:13px;color:#4a6741;font-weight:600;min-width:130px;}
+.strategy-control{display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+.strategy-control input,.strategy-row select{border:1px solid #e8f0e9;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;color:#24323F;background:#fff;outline:none;}
+.strategy-control input{width:86px;text-align:right;}
+.strategy-control span{font-size:12px;color:#7a9780;min-width:32px;}
+.strategy-switch{display:flex;align-items:center;gap:8px;font-size:12px;color:#7a9780;font-weight:700;cursor:pointer;}
+.strategy-switch input{width:36px;height:20px;accent-color:#51AE60;}
+.strategy-status-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;}
+.strategy-status-row>div{background:#F8FAF8;border-radius:10px;padding:10px;}
+.strategy-status-row span,.strategy-muted{font-size:11px;color:#7a9780;text-transform:uppercase;letter-spacing:.04em;}
+.strategy-status-row b{display:block;margin-top:4px;color:#24323F;font-size:14px;}
+.strategy-chip-title{display:inline-flex;align-items:center;background:#DFF3E2;color:#2f8f45;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:800;margin-bottom:8px;}
+.strategy-example{margin-top:10px;background:#F8FAF8;border-left:3px solid #51AE60;border-radius:8px;padding:10px 12px;font-size:12px;color:#4a6741;line-height:1.5;}
+.strategy-final-grid{display:grid;gap:8px;}
+.strategy-final{display:flex;justify-content:space-between;align-items:center;background:#F8FAF8;border-radius:10px;padding:9px 10px;font-size:13px;color:#4a6741;}
+.strategy-final b{color:#24323F;}
+.strategy-log{padding:9px 10px;background:#F8FAF8;border-radius:10px;margin-bottom:7px;font-size:12px;color:#4a6741;}
+.strategy-perms{display:grid;grid-template-columns:100px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid #f0f5f1;font-size:12px;color:#4a6741;}
+.strategy-perms:last-child{border-bottom:none;}
+.strategy-perms b{color:#24323F;}
+@media(max-width:800px){.strategy-grid{grid-template-columns:1fr}.strategy-row{align-items:flex-start;flex-direction:column}.strategy-control{justify-content:flex-start}.strategy-perms{grid-template-columns:1fr}}
 /* Alerts */
 .alert-item{
   display:flex;align-items:flex-start;gap:10px;
@@ -1322,7 +1378,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const navItems = [
       navBtn("home",        "mdi:home-variant",       "홈",        "온실 현황 · 환경 추세 · 날씨를 한눈에 확인"),
       navBtn("crop",        "mdi:sprout",             "작물 설정", "작물 종류 · 생육 단계 · 재배 방식 설정"),
-      navBtn("environment", "mdi:thermometer-lines",  "환경 설정", "온도 · 습도 · CO₂ · VPD 목표값 설정"),
+      navBtn("environment", "mdi:shield-leaf",  "환경 제어 전략", "기본 인터록 · AI 보정 · 안전 한계 전략"),
       navBtn("irrigation",  "mdi:water",              "관수 설정", "관수 주기 · 관수량 · EC · pH 설정"),
       navBtn("ventilation", "mdi:fan",                "환기 설정", "천창 · 측창 개폐 조건 및 환기 기준 설정"),
       navBtn("screen",      "mdi:roller-shade",       "스크린 설정","차광 스크린 · 보온 커튼 동작 조건 설정"),
@@ -4456,22 +4512,211 @@ button.action:disabled{opacity:.5;cursor:default;}
     );
   }
 
+  _cloneControlStrategyDefaults() {
+    return JSON.parse(JSON.stringify(DEFAULT_CONTROL_STRATEGY_STATE));
+  }
+
+  _loadControlStrategy() {
+    const defaults = this._cloneControlStrategyDefaults();
+    try {
+      const raw = localStorage.getItem("green_smart_control_strategy");
+      if (!raw) return defaults;
+      const saved = JSON.parse(raw);
+      const merged = {
+        ...defaults,
+        ...saved,
+        baseInterlockSettings: { ...defaults.baseInterlockSettings, ...(saved.baseInterlockSettings || {}) },
+        aiStrategySettings: { ...defaults.aiStrategySettings, ...(saved.aiStrategySettings || {}) },
+        safetyLimits: { ...defaults.safetyLimits, ...(saved.safetyLimits || {}) },
+        finalAppliedTargets: { ...defaults.finalAppliedTargets, ...(saved.finalAppliedTargets || {}) },
+        systemStatus: { ...defaults.systemStatus, ...(saved.systemStatus || {}) },
+        controlLogs: Array.isArray(saved.controlLogs) ? saved.controlLogs : defaults.controlLogs,
+      };
+      return this._calculateFinalAppliedTargets(merged);
+    } catch (_) {
+      return defaults;
+    }
+  }
+
+  _saveControlStrategy() {
+    this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
+    localStorage.setItem("green_smart_control_strategy", JSON.stringify(this._controlStrategy));
+    this._pushControlLog("설정 저장 → 환경 제어 전략 갱신");
+    this._pageRendered = null;
+    this._update();
+  }
+
+  _pushControlLog(message) {
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    this._controlStrategy.controlLogs = [`${time} ${message}`, ...(this._controlStrategy.controlLogs || [])].slice(0, 12);
+  }
+
+  _calculateFinalAppliedTargets(strategy = this._controlStrategy) {
+    const base = strategy.baseInterlockSettings;
+    const ai = strategy.aiStrategySettings;
+    const safety = strategy.safetyLimits;
+    const aiHealthy = ai.enabled && strategy.controlMode === "ai_assist" && strategy.systemStatus.aiStatus === "ok";
+    if (!aiHealthy && ai.enabled && ai.autoFallback) {
+      strategy.controlMode = "interlock";
+      strategy.systemStatus.aiApplied = false;
+      strategy.systemStatus.interlockActive = true;
+    }
+    const useAi = ai.enabled && strategy.controlMode === "ai_assist" && strategy.systemStatus.aiStatus === "ok";
+    const clampTemp = (v) => Math.max(Number(safety.absoluteMinTemp), Math.min(Number(safety.absoluteMaxTemp), Number(v)));
+    strategy.finalAppliedTargets = {
+      dayTargetTemp: clampTemp(Number(base.dayTargetTemp) + (useAi ? Number(ai.dayTempDelta) : 0)),
+      nightTargetTemp: clampTemp(Number(base.nightTargetTemp) + (useAi ? Number(ai.nightTempDelta) : 0)),
+      targetHumidity: Number(base.targetHumidity),
+      targetVpd: Math.max(0.1, Number(base.targetVpd) + (useAi ? Number(ai.targetVpdDelta) : 0)),
+      targetCo2: Number(base.targetCo2),
+      targetAdt: clampTemp(Number(base.baseAdt) + (useAi ? Number(ai.targetAdtDelta) : 0)),
+      targetDif: Number(base.baseDif) + (useAi ? Number(ai.targetDifDelta) : 0),
+    };
+    strategy.systemStatus.aiApplied = useAi;
+    strategy.systemStatus.interlockActive = !useAi || strategy.controlMode === "interlock";
+    return strategy;
+  }
+
+  _strategyInput(group, key, label, val, unit = "", min = 0, max = 100, step = 1, marker = "") {
+    return `<div class="strategy-row" ${marker}>
+      <div class="strategy-label">${label}</div>
+      <div class="strategy-control">
+        <input type="number" data-control-field data-control-group="${group}" data-control-key="${key}"
+          value="${val}" min="${min}" max="${max}" step="${step}">
+        ${unit ? `<span>${unit}</span>` : ""}
+      </div>
+    </div>`;
+  }
+
+  _strategyToggle(group, key, label, checked, marker = "") {
+    return `<div class="strategy-row" ${marker}>
+      <div class="strategy-label">${label}</div>
+      <label class="strategy-switch"><input type="checkbox" data-control-field data-control-group="${group}" data-control-key="${key}" ${checked ? "checked" : ""}><span>ON/OFF</span></label>
+    </div>`;
+  }
+
+  _strategySelect(group, key, label, value, options, marker = "") {
+    return `<div class="strategy-row" ${marker}>
+      <div class="strategy-label">${label}</div>
+      <select data-control-field data-control-group="${group}" data-control-key="${key}">
+        ${options.map(([v, t]) => `<option value="${v}" ${value === v ? "selected" : ""}>${t}</option>`).join("")}
+      </select>
+    </div>`;
+  }
+
+  _strategySection(icon, title, body, attr = "") {
+    return `<div class="gs-card strategy-card" ${attr}>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><ha-icon icon="${icon}" style="color:#51AE60;"></ha-icon>${title}</div>
+      ${body}
+    </div>`;
+  }
+
+  _renderFinalAppliedTargets(strategy) {
+    const f = strategy.finalAppliedTargets;
+    const rows = [
+      ["주간 목표온도", f.dayTargetTemp, "°C"], ["야간 목표온도", f.nightTargetTemp, "°C"],
+      ["목표 습도", f.targetHumidity, "%"], ["목표 VPD", f.targetVpd, "kPa"],
+      ["목표 CO₂", f.targetCo2, "ppm"], ["목표 ADT", f.targetAdt, "°C"], ["목표 DIF", f.targetDif, "°C"],
+    ];
+    return `<div class="strategy-final-grid" data-final-target>
+      <div class="strategy-chip-title">최종 적용값</div>
+      ${rows.map(([l, v, u]) => `<div class="strategy-final"><span>${l}</span><b>${Number(v).toFixed(u === "ppm" || u === "%" ? 0 : 1)} ${u}</b></div>`).join("")}
+    </div>`;
+  }
+
   _renderEnvSettingsPage() {
-    return `<div class="page">
-      ${this._renderSubHero("환경 설정", "온도 · 습도 · CO₂ · VPD 목표값을 설정합니다", "mdi:thermometer-lines")}
-      ${this._settingCard("mdi:thermometer", "온도 설정", [
-        this._settingRow("주간 목표 온도", this._inputNum("env-day-temp", 25, 10, 45, 0.5), "°C"),
-        this._settingRow("야간 목표 온도", this._inputNum("env-night-temp", 18, 5, 35, 0.5), "°C"),
-        this._settingRow("최대 허용 온도", this._inputNum("env-max-temp", 35, 20, 50, 0.5), "°C"),
-        this._settingRow("DIF 목표",       this._inputNum("env-dif", 7, -5, 20, 0.5), "°C"),
-      ].join(""))}
-      ${this._settingCard("mdi:water-percent", "습도 / CO₂ / VPD", [
-        this._settingRow("목표 습도",     this._inputNum("env-humidity", 70, 30, 95), "%"),
-        this._settingRow("목표 CO₂",     this._inputNum("env-co2", 800, 400, 2000, 50), "ppm"),
-        this._settingRow("목표 VPD",     this._inputNum("env-vpd", 1.0, 0.1, 3.0, 0.1), "kPa"),
-        this._settingRow("ADT 목표",     this._inputNum("env-adt", 22, 10, 35, 0.5), "°C"),
-      ].join(""))}
-      ${this._saveBtn("environment")}
+    this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
+    const s = this._controlStrategy;
+    const base = s.baseInterlockSettings;
+    const ai = s.aiStrategySettings;
+    const safe = s.safetyLimits;
+    const statusText = s.systemStatus.aiStatus === "ok" ? "AI 연결 정상" : s.systemStatus.aiStatus === "error" ? "AI 오류" : s.systemStatus.interlockActive ? "인터록 단독 작동중" : "AI 대기";
+    const modeOptions = [["interlock", "인터록 모드"], ["ai_assist", "AI 보조 모드"], ["manual", "수동 모드"], ["emergency_stop", "비상 정지 모드"]];
+    const aiStatusOptions = [["ok", "AI 연결 정상"], ["standby", "AI 대기"], ["error", "AI 오류"]];
+    return `<div class="page control-strategy-page">
+      ${this._renderSubHero("환경 제어 전략", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:shield-leaf")}
+      <div class="gs-card strategy-principle">
+        <b>AI는 제어의 기본값이 아니다.</b> AI는 기본 인터록 위에서 작동하는 보정 레이어이며, AI 오류 시 즉시 기본 인터록 값으로 복귀합니다.
+        <div style="margin-top:8px;color:#7a9780;font-size:12px;">우선순위: 1. 비상 정지 → 2. 안전 한계 → 3. 기본 인터록 → 4. AI 전략 보정 → 5. 수동 명령</div>
+      </div>
+      <div class="strategy-grid">
+        ${this._strategySection("mdi:tune-variant", "제어 모드", `
+          <div class="strategy-status-row">
+            <div><div class="strategy-muted">현재 제어 모드</div><b>${modeOptions.find(([v]) => v === s.controlMode)?.[1] || "인터록 모드"}</b></div>
+            <div><div class="strategy-muted">상태 표시</div><b>${statusText}</b></div>
+          </div>
+          ${this._strategySelect("root", "controlMode", "현재 제어 모드", s.controlMode, modeOptions)}
+          ${this._strategyToggle("aiStrategySettings", "enabled", "AI 전략 사용", ai.enabled)}
+          ${this._strategyToggle("aiStrategySettings", "autoFallback", "AI 오류 시 자동 인터록 복귀", ai.autoFallback)}
+          ${this._strategySelect("systemStatus", "aiStatus", "AI 연결 상태", s.systemStatus.aiStatus, aiStatusOptions)}
+        `)}
+        ${this._strategySection("mdi:shield-check", "기본 인터록", `
+          <div class="strategy-chip-title" data-base-interlock>기본 인터록값</div>
+          ${this._strategyInput("baseInterlockSettings", "dayTargetTemp", "주간 목표온도", base.dayTargetTemp, "°C", 5, 45, 0.5)}
+          ${this._strategyInput("baseInterlockSettings", "nightTargetTemp", "야간 목표온도", base.nightTargetTemp, "°C", 0, 35, 0.5)}
+          ${this._strategyInput("baseInterlockSettings", "targetHumidity", "목표 습도", base.targetHumidity, "%", 20, 100, 1)}
+          ${this._strategyInput("baseInterlockSettings", "targetVpd", "목표 VPD", base.targetVpd, "kPa", 0.1, 3, 0.1)}
+          ${this._strategyInput("baseInterlockSettings", "targetCo2", "목표 CO₂", base.targetCo2, "ppm", 300, 2000, 50)}
+          ${this._strategyInput("baseInterlockSettings", "baseAdt", "기본 ADT", base.baseAdt, "°C", 5, 40, 0.5)}
+          ${this._strategyInput("baseInterlockSettings", "baseDif", "기본 DIF", base.baseDif, "°C", -10, 20, 0.5)}
+        `)}
+        ${this._strategySection("mdi:thermometer-lines", "온도 제어", `
+          ${this._strategyInput("temperatureControl", "heatingStartTemp", "난방 시작 온도", 16, "°C", 0, 35, 0.5)}
+          ${this._strategyInput("temperatureControl", "heatingStopTemp", "난방 정지 온도", 19, "°C", 0, 35, 0.5)}
+          ${this._strategyInput("temperatureControl", "ventStartTemp", "환기 시작 온도", 28, "°C", 10, 45, 0.5)}
+          ${this._strategyInput("temperatureControl", "ventMaxTemp", "환기 최대 온도", 32, "°C", 15, 50, 0.5)}
+          ${this._strategyInput("temperatureControl", "highAlarmTemp", "고온 경보 온도", 35, "°C", 20, 55, 0.5)}
+          ${this._strategyInput("temperatureControl", "lowAlarmTemp", "저온 경보 온도", 5, "°C", -10, 20, 0.5)}
+          <div class="strategy-example">현재 온도 &lt; 난방 시작 온도 → 난방 ON / 현재 온도 &gt; 환기 시작 온도 → 환기창 단계 개방</div>
+        `)}
+        ${this._strategySection("mdi:water-percent", "습도 / VPD 제어", `
+          ${this._strategyInput("humidityVpdControl", "targetHumidity", "목표 습도", base.targetHumidity, "%", 20, 100, 1)}
+          ${this._strategyInput("humidityVpdControl", "maxHumidity", "최대 습도", 85, "%", 40, 100, 1)}
+          ${this._strategyInput("humidityVpdControl", "minVpd", "최소 VPD", 0.45, "kPa", 0.1, 2, 0.05)}
+          ${this._strategyInput("humidityVpdControl", "maxVpd", "최대 VPD", 1.4, "kPa", 0.3, 3, 0.05)}
+          ${this._strategyInput("humidityVpdControl", "dewpointGap", "결로 위험 이슬점 차이", 2.0, "°C", 0, 10, 0.5)}
+          ${this._strategyInput("humidityVpdControl", "dehumidVentOpen", "제습 환기 개도율", 10, "%", 0, 100, 5)}
+          ${this._strategyToggle("humidityVpdControl", "dehumidHeating", "제습 난방 사용 여부", true)}
+          <div class="strategy-example">습도 &gt; 최대 습도 또는 VPD &lt; 최소 VPD → 천창 미세개방 → 유동팬 ON → 필요시 난방 제습 ON</div>
+        `)}
+        ${this._strategySection("mdi:molecule-co2", "CO₂ 제어", `
+          ${this._strategyInput("co2Control", "targetCo2", "목표 CO₂", base.targetCo2, "ppm", 300, 2000, 50)}
+          ${this._strategyInput("co2Control", "co2Start", "CO₂ 공급 시작값", 650, "ppm", 300, 2000, 50)}
+          ${this._strategyInput("co2Control", "co2Stop", "CO₂ 공급 정지값", 850, "ppm", 300, 2500, 50)}
+          ${this._strategyToggle("co2Control", "limitDuringVent", "환기 중 CO₂ 공급 제한 여부", true)}
+          <div class="strategy-example">CO₂ &lt; 공급 시작값 && 환기창 개도율 낮음 → CO₂ 공급 ON / CO₂ &gt; 공급 정지값 → OFF</div>
+        `)}
+        ${this._strategySection("mdi:brain", "AI 전략 보정", `
+          <div class="strategy-chip-title" data-ai-strategy>AI 보정값</div>
+          <div class="strategy-status-row"><div><span>현재 G-Index</span><b>${ai.gIndex}</b></div><div><span>생육단계</span><b>${ai.growthStage}</b></div><div><span>AI 적용 여부</span><b>${s.systemStatus.aiApplied ? "적용" : "미적용"}</b></div></div>
+          ${this._strategyInput("aiStrategySettings", "targetAdtDelta", "AI 목표 ADT", ai.targetAdtDelta, "°C", -5, 5, 0.1)}
+          ${this._strategyInput("aiStrategySettings", "targetDifDelta", "AI 목표 DIF", ai.targetDifDelta, "°C", -5, 5, 0.1)}
+          ${this._strategyInput("aiStrategySettings", "targetVpdDelta", "AI 목표 VPD", ai.targetVpdDelta, "kPa", -1, 1, 0.05)}
+          ${this._strategyInput("aiStrategySettings", "dayTempDelta", "AI 보정 주간온도", ai.dayTempDelta, "°C", -5, 5, 0.1)}
+          ${this._strategyInput("aiStrategySettings", "nightTempDelta", "AI 보정 야간온도", ai.nightTempDelta, "°C", -5, 5, 0.1)}
+          <div class="strategy-example">최종 목표값 = 기본 인터록 목표값 + AI 보정값. 예: 기본 주간 목표온도 25°C + AI 보정 -1.5°C = 최종 주간 목표온도 23.5°C. 단, 안전 한계값을 초과할 수 없음.</div>
+        `)}
+        ${this._strategySection("mdi:alert-octagon", "안전 한계", `
+          <div class="strategy-chip-title" data-safety-limit>AI와 수동제어보다 우선하는 절대 안전값</div>
+          ${this._strategyInput("safetyLimits", "absoluteMaxTemp", "절대 최고온도", safe.absoluteMaxTemp, "°C", 20, 60, 0.5)}
+          ${this._strategyInput("safetyLimits", "absoluteMinTemp", "절대 최저온도", safe.absoluteMinTemp, "°C", -10, 25, 0.5)}
+          ${this._strategyInput("safetyLimits", "maxVentOpen", "최대 환기 개도율", safe.maxVentOpen, "%", 0, 100, 5)}
+          ${this._strategyInput("safetyLimits", "minVentOpen", "최소 환기 개도율", safe.minVentOpen, "%", 0, 100, 5)}
+          ${this._strategyInput("safetyLimits", "strongWindCloseSpeed", "강풍 폐쇄 풍속", safe.strongWindCloseSpeed, "m/s", 1, 30, 1)}
+          ${this._strategySelect("safetyLimits", "sensorErrorMode", "센서 오류 시 제어 방식", safe.sensorErrorMode, [["interlock", "기본 인터록"], ["hold", "직전 상태 유지"], ["emergency_stop", "비상 정지"]])}
+          ${this._strategySelect("safetyLimits", "aiErrorMode", "AI 오류 시 제어 방식", safe.aiErrorMode, [["interlock", "기본 인터록"], ["standby", "AI 대기"], ["emergency_stop", "비상 정지"]])}
+        `)}
+        ${this._strategySection("mdi:target", "최종 적용값", this._renderFinalAppliedTargets(s), "data-final-target")}
+        ${this._strategySection("mdi:clipboard-text-clock", "작동 로그", `
+          <div data-control-log>${(s.controlLogs || []).map((log) => `<div class="strategy-log">${this._esc(log)}</div>`).join("")}</div>
+        `)}
+        ${this._strategySection("mdi:account-lock", "권한", `
+          <div class="strategy-perms"><b>Admin</b><span>전체 수정 가능 · AI 사용 여부 변경 가능 · 안전 한계 변경 가능</span></div>
+          <div class="strategy-perms"><b>Farm Owner</b><span>기본 인터록값 수정 가능 · AI 사용 여부 변경 가능 · 안전 한계 일부 수정 가능</span></div>
+          <div class="strategy-perms"><b>Farm Worker</b><span>조회만 가능 · 작동 로그 확인 가능</span></div>
+        `)}
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="control-strategy-save" class="btn btn-primary">전략 저장</button></div>
     </div>`;
   }
 
@@ -4601,9 +4846,38 @@ button.action:disabled{opacity:.5;cursor:default;}
     if (overlay) overlay.setAttribute("hidden", "");
   }
 
+
+  _bindControlStrategyInputs(root) {
+    if (!root.querySelector(".control-strategy-page")) return;
+    const readValue = (el) => {
+      if (el.type === "checkbox") return Boolean(el.checked);
+      if (el.tagName === "SELECT") return el.value;
+      const n = Number(el.value);
+      return Number.isFinite(n) ? n : el.value;
+    };
+    root.querySelectorAll("[data-control-field]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const group = el.dataset.controlGroup;
+        const key = el.dataset.controlKey;
+        if (!group || !key) return;
+        if (group === "root" && key === "controlMode") this._controlStrategy.controlMode = readValue(el);
+        else {
+          if (!this._controlStrategy[group]) this._controlStrategy[group] = {};
+          this._controlStrategy[group][key] = readValue(el);
+        }
+        this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
+        this._pushControlLog("전략 값 변경 → 최종 적용값 재계산");
+        this._pageRendered = null;
+        this._update();
+      });
+    });
+    root.querySelector("#control-strategy-save")?.addEventListener("click", () => this._saveControlStrategy());
+  }
+
   // ── Dashboard event binding ───────────────────────────────────────────────────
 
   _bindDashboard(root) {
+    this._bindControlStrategyInputs(root);
     // Trend chart zone tabs — patch polylines only (no full re-render)
     root.querySelectorAll("[data-zone-tab]").forEach((btn) =>
       btn.addEventListener("click", () => {

@@ -156,3 +156,38 @@ def test_home_dashboard_trend_charts_use_dense_vertical_plot_area_without_extra_
         assert "style=\"height:280px;\"" in chart
         assert "viewBox=\"0 0 ${W} 220\"" not in chart
 
+def test_environment_page_is_control_strategy_with_interlock_ai_safety_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    sidebar = panel.split("  _renderSidebar()", 1)[1].split("  _alertPillHtml", 1)[0]
+    env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _renderIrrigSettingsPage()", 1)[0]
+
+    assert "환경 제어 전략" in sidebar
+    assert "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지" in env_page
+    for section in ["제어 모드", "기본 인터록", "온도 제어", "습도 / VPD 제어", "CO₂ 제어", "AI 전략 보정", "안전 한계", "작동 로그"]:
+        assert section in env_page
+    for state_key in ["baseInterlockSettings", "aiStrategySettings", "safetyLimits", "finalAppliedTargets", "controlMode", "systemStatus", "controlLogs"]:
+        assert state_key in panel
+    assert "AI는 기본 인터록 위에서 작동하는 보정 레이어" in env_page
+    assert "AI 오류 시 즉시 기본 인터록 값으로 복귀" in env_page
+    assert "최종 목표값 = 기본 인터록 목표값 + AI 보정값" in env_page
+    assert "비상 정지" in env_page and "안전 한계" in env_page and "기본 인터록" in env_page
+
+
+def test_environment_control_strategy_distinguishes_base_ai_final_and_permissions():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _renderIrrigSettingsPage()", 1)[0]
+
+    for marker in ["data-base-interlock", "data-ai-strategy", "data-final-target", "data-safety-limit", "data-control-log"]:
+        assert marker in env_page
+    for label in ["기본 인터록값", "AI 보정값", "최종 적용값"]:
+        assert label in env_page
+    for role in ["Admin", "Farm Owner", "Farm Worker"]:
+        assert role in env_page
+    for field in ["주간 목표온도", "야간 목표온도", "목표 습도", "목표 VPD", "목표 CO₂", "기본 ADT", "기본 DIF"]:
+        assert field in env_page
+    for field in ["난방 시작 온도", "난방 정지 온도", "환기 시작 온도", "환기 최대 온도", "고온 경보 온도", "저온 경보 온도"]:
+        assert field in env_page
+    assert "_calculateFinalAppliedTargets" in panel
+    assert "_bindControlStrategyInputs" in panel
+    assert "_saveControlStrategy" in panel
+
