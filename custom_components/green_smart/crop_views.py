@@ -25,6 +25,10 @@ def _err(msg: str, status: int = 400) -> web.Response:
     )
 
 
+async def _ensure_zone(hass, zone_id: int) -> None:
+    await execute(hass, "INSERT IGNORE INTO zones (id, name) VALUES (%s, %s)", (zone_id, f"{zone_id}구역"))
+
+
 # ── 작기 ──────────────────────────────────────────────────────────────────────
 
 class CropSeasonsView(HomeAssistantView):
@@ -41,9 +45,9 @@ class CropSeasonsView(HomeAssistantView):
                 s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
                 s.total_plants AS totalPlants, s.plant_density AS plantDensity,
                 s.train_dir AS trainDir, s.notes,
-                z.name AS zoneName, z.id AS zoneId
+                COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
             FROM crop_seasons s
-            JOIN zones z ON z.id = s.zone_id
+            LEFT JOIN zones z ON z.id = s.zone_id
             WHERE s.deleted_at IS NULL
             ORDER BY s.plant_date DESC
         """)
@@ -62,6 +66,8 @@ class CropSeasonsView(HomeAssistantView):
         if not plant_date or not zone_id:
             return _err("cropType, plantDate, zoneId 필수")
 
+        zone_id_int = int(zone_id)
+        await _ensure_zone(hass, zone_id_int)
         new_id = await execute(hass, """
             INSERT INTO crop_seasons
                 (greenhouse_id, zone_id, crop_type, variety, method,
@@ -69,7 +75,7 @@ class CropSeasonsView(HomeAssistantView):
                  total_plants, plant_density, train_dir, notes)
             VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            int(zone_id), crop_type,
+            zone_id_int, crop_type,
             body.get("variety") or "",
             body.get("method") or "hydro",
             plant_date,
@@ -86,8 +92,8 @@ class CropSeasonsView(HomeAssistantView):
                    s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
                    s.total_plants AS totalPlants, s.plant_density AS plantDensity,
                    s.train_dir AS trainDir, s.notes,
-                   z.name AS zoneName, z.id AS zoneId
-            FROM crop_seasons s JOIN zones z ON z.id = s.zone_id
+                   COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
+            FROM crop_seasons s LEFT JOIN zones z ON z.id = s.zone_id
             WHERE s.id = %s
         """, (new_id,))
         return _json(row)

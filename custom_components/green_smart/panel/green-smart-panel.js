@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.16
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.17
 const DOMAIN = "green_smart";
-const VERSION = "1.8.16";
+const VERSION = "1.8.17";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -84,6 +84,7 @@ class GreenSmartPanel extends HTMLElement {
     this._pesticideSearchData = null;
     this._controlData = [];
     this._activeSeasonId = null;   // 현재 선택된 작기 ID
+    this._basicZoneCollapsed = {}; // 정식 등록 모달 구역별 접기 상태
     this._dbReady        = false;  // DB 연결 완료 여부
     this._weatherData = null;
     this._weatherMidData = null;
@@ -3066,6 +3067,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     return this._renderCropBasicTab();
   }
 
+  _seasonZoneLabel(s) {
+    if (!s) return "구역 미지정";
+    const zoneId = s.zoneId ?? s.zone_id ?? s.zone;
+    const zoneName = String(s.zoneName || "").trim();
+    if (zoneName) return zoneName;
+    const n = Number(zoneId);
+    return Number.isFinite(n) && n > 0 ? `${n}구역` : "구역 미지정";
+  }
+
   _renderCropBasicTab() {
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -3108,6 +3118,7 @@ button.action:disabled{opacity:.5;cursor:default;}
              padding:2px 8px;border-radius:20px;">철거 완료</span>`
         : `<span style="background:#d4edda;color:#155724;font-size:10px;font-weight:700;
              padding:2px 8px;border-radius:20px;">재배 중</span>`;
+      const zoneLabel = this._seasonZoneLabel(s);
       return `
         <div style="border:1.5px solid ${demolished ? "#e9ecef" : "#e8f0e9"};border-radius:12px;
              padding:12px 14px;margin-bottom:8px;background:${demolished ? "#fafafa" : "#f9fcf9"};">
@@ -3127,7 +3138,7 @@ button.action:disabled{opacity:.5;cursor:default;}
                   <b>철거일</b> ${s.demolishDate}
                 </span>` : ""}
                 <span style="font-size:12px;color:#7a9780;">
-                  Zone ${s.zone || "?"}
+                  ${this._esc(zoneLabel)}
                 </span>
                 ${methodLabel ? `<span style="font-size:12px;color:#7a9780;">${methodLabel}</span>` : ""}
                 ${s.totalPlants ? `<span style="font-size:12px;color:#7a9780;">${s.totalPlants}주</span>` : ""}
@@ -3351,18 +3362,59 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _openCropBasicAddPopup() {
     const today = new Date().toISOString().slice(0, 10);
+    const cfg = this._normalizedForm();
+    const zoneCount = cfg.greenhouse_zones || 1;
+    const zones = Array.from({ length: zoneCount }, (_, i) => ({ id: i + 1, label: `${i + 1}구역` }));
+    zones.forEach((z) => {
+      if (this._basicZoneCollapsed[z.id] === undefined) this._basicZoneCollapsed[z.id] = false;
+    });
+
+    const renderZoneGroups = () => zones.map((zone, idx) => {
+      const collapsed = !!this._basicZoneCollapsed[zone.id];
+      return `
+        <div data-basic-zone-group="${zone.id}" style="border:1.5px solid #e8f0e9;border-radius:14px;margin-bottom:10px;background:#fbfefb;overflow:hidden;">
+          <button type="button" data-basic-zone-toggle="${zone.id}"
+            style="width:100%;border:none;background:${idx === 0 ? '#eaf8ec' : '#f5faf6'};padding:10px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+            <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#24323F;">
+              <input type="checkbox" data-basic-zone-enabled="${zone.id}" ${idx === 0 ? 'checked' : ''}
+                onclick="event.stopPropagation()" style="accent-color:#51AE60;">
+              ${zone.label}
+            </span>
+            <span style="display:flex;align-items:center;gap:6px;color:#7a9780;font-size:11px;font-weight:700;">
+              ${collapsed ? '펼치기' : '접기'}
+              <ha-icon icon="${collapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}" style="--mdi-icon-size:18px;"></ha-icon>
+            </span>
+          </button>
+          <div data-basic-zone-body="${zone.id}" style="${collapsed ? 'display:none;' : ''}padding:12px;">
+            <div class="pop-field-row">
+              <div class="pop-field"><label>정식일</label><input type="date" data-basic-plant-date="${zone.id}" value="${today}"></div>
+              <div class="pop-field"><label>총 정식 수 (주)</label><input type="number" data-basic-total="${zone.id}" value="200" min="1" max="10000"></div>
+            </div>
+            <div class="pop-field-row">
+              <div class="pop-field"><label>줄 간격 (cm)</label><input type="number" data-basic-row-space="${zone.id}" value="130" min="50" max="300" step="5"></div>
+              <div class="pop-field"><label>주 간격 (cm)</label><input type="number" data-basic-plant-space="${zone.id}" value="40" min="10" max="200" step="5"></div>
+            </div>
+            <div class="pop-field-row">
+              <div class="pop-field"><label>재식 밀도 (주/㎡)</label><input type="number" data-basic-density="${zone.id}" value="4" min="1" max="20" step="0.1"></div>
+              <div class="pop-field"><label>줄기 유인 방향</label><select data-basic-train="${zone.id}">
+                <option value="v">V자형</option><option value="single">단간</option><option value="double">복간</option>
+              </select></div>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
     this._openCropPopup(`
-      <div class="popup-card" style="width:min(520px,93vw);">
+      <div class="popup-card" style="width:min(680px,94vw);">
         <div class="pop-header">
           <div class="pop-icon-box"><ha-icon icon="mdi:sprout" style="--mdi-icon-size:22px;"></ha-icon></div>
           <div>
             <div class="pop-title-main">정식 등록</div>
-            <div class="pop-title-sub">새 작기를 등록합니다</div>
+            <div class="pop-title-sub">설정한 온실 구역수만큼 구역별 작기를 동시에 등록합니다</div>
           </div>
         </div>
         <div class="pop-fields">
-          <!-- 작물 정보 -->
-          <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:6px;">작물 정보</div>
+          <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:6px;">공통 작물 정보</div>
           <div class="pop-field-row">
             <div class="pop-field">
               <label>작물 종류</label>
@@ -3385,64 +3437,51 @@ button.action:disabled{opacity:.5;cursor:default;}
               <option value="nft">NFT</option><option value="dwc">DWC</option>
             </select>
           </div>
-          <!-- 정식 정보 -->
-          <div style="height:1px;background:#f0f7f1;margin:8px 0;"></div>
-          <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:6px;">정식 정보</div>
-          <div class="pop-field-row">
-            <div class="pop-field">
-              <label>정식일</label>
-              <input type="date" id="b-plant-date" value="${today}">
-            </div>
-            <div class="pop-field">
-              <label>재배 구역</label>
-              <select id="b-zone">
-                <option value="1">Zone 1</option><option value="2">Zone 2</option>
-                <option value="3">Zone 3</option><option value="4">Zone 4</option>
-              </select>
-            </div>
+          <div style="height:1px;background:#f0f7f1;margin:10px 0;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;">구역별 정식 정보</div>
+            <div style="font-size:11px;color:#7a9780;">저장할 구역을 체크하세요</div>
           </div>
-          <!-- 재식 설계 -->
-          <div style="height:1px;background:#f0f7f1;margin:8px 0;"></div>
-          <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:6px;">재식 설계</div>
-          <div class="pop-field-row">
-            <div class="pop-field"><label>줄 간격 (cm)</label><input type="number" id="b-row-space" value="130" min="50" max="300" step="5"></div>
-            <div class="pop-field"><label>주 간격 (cm)</label><input type="number" id="b-plant-space" value="40" min="10" max="200" step="5"></div>
-          </div>
-          <div class="pop-field-row">
-            <div class="pop-field"><label>총 정식 수 (주)</label><input type="number" id="b-total" value="200" min="1" max="10000"></div>
-            <div class="pop-field"><label>재식 밀도 (주/㎡)</label><input type="number" id="b-density" value="4" min="1" max="20" step="0.1"></div>
-          </div>
-          <div class="pop-field">
-            <label>줄기 유인 방향</label>
-            <select id="b-train">
-              <option value="v">V자형</option><option value="single">단간</option><option value="double">복간</option>
-            </select>
-          </div>
+          ${renderZoneGroups()}
         </div>
         <div class="pop-foot">
           <button class="crop-pop-cancel pop-btn-cancel">취소</button>
-          <button id="b-save" class="pop-btn-save">정식 등록</button>
+          <button id="b-save" class="pop-btn-save">선택 구역 정식 등록</button>
         </div>
       </div>`, (inner) => {
+      inner.querySelectorAll("[data-basic-zone-toggle]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const zoneId = Number(btn.dataset.basicZoneToggle);
+          this._basicZoneCollapsed[zoneId] = !this._basicZoneCollapsed[zoneId];
+          this._openCropBasicAddPopup();
+        });
+      });
       inner.querySelector("#b-save")?.addEventListener("click", async () => {
-        const plantDate = inner.querySelector("#b-plant-date")?.value || "";
-        if (!plantDate) { alert("정식일을 입력해주세요."); return; }
-        const body = {
-          cropType:     inner.querySelector("#b-crop-type")?.value   || "tomato",
-          variety:      inner.querySelector("#b-variety")?.value     || "",
-          method:       inner.querySelector("#b-method")?.value      || "hydro",
-          zoneId:       parseInt(inner.querySelector("#b-zone")?.value) || 1,
-          plantDate,
-          rowSpacing:   parseFloat(inner.querySelector("#b-row-space")?.value)   || null,
-          plantSpacing: parseFloat(inner.querySelector("#b-plant-space")?.value) || null,
-          totalPlants:  parseInt(inner.querySelector("#b-total")?.value)         || null,
-          plantDensity: parseFloat(inner.querySelector("#b-density")?.value)     || null,
-          trainDir:     inner.querySelector("#b-train")?.value       || "v",
-        };
         try {
-          const result = await this._hass.callApi("POST", "green_smart/crop/seasons", body);
-          this._cropSeasons.unshift(result);
-          this._activeSeasonId = result.id;
+          const cropType = inner.querySelector("#b-crop-type")?.value || "tomato";
+          const variety = inner.querySelector("#b-variety")?.value || "";
+          const method = inner.querySelector("#b-method")?.value || "hydro";
+          const selectedZones = zones.filter(zone => inner.querySelector(`[data-basic-zone-enabled="${zone.id}"]`)?.checked);
+          if (!selectedZones.length) { alert("정식 등록할 구역을 하나 이상 선택해주세요."); return; }
+          const bodies = selectedZones.map((zone) => {
+            const plantDate = inner.querySelector(`[data-basic-plant-date="${zone.id}"]`)?.value || "";
+            if (!plantDate) throw new Error(`${zone.label} 정식일을 입력해주세요.`);
+            return {
+              cropType, variety, method, zoneId: zone.id, plantDate,
+              rowSpacing: parseFloat(inner.querySelector(`[data-basic-row-space="${zone.id}"]`)?.value) || null,
+              plantSpacing: parseFloat(inner.querySelector(`[data-basic-plant-space="${zone.id}"]`)?.value) || null,
+              totalPlants: parseInt(inner.querySelector(`[data-basic-total="${zone.id}"]`)?.value) || null,
+              plantDensity: parseFloat(inner.querySelector(`[data-basic-density="${zone.id}"]`)?.value) || null,
+              trainDir: inner.querySelector(`[data-basic-train="${zone.id}"]`)?.value || "v",
+            };
+          });
+          const results = await Promise.all(bodies.map(body => this._hass.callApi("POST", "green_smart/crop/seasons", body)));
+          results.filter(Boolean).forEach(result => this._cropSeasons.unshift(result));
+          const active = results.find(r => r && !r.demolishDate) || results[0];
+          if (active?.id) {
+            this._activeSeasonId = active.id;
+            await this._loadSeasonDetail(active.id);
+          }
           this._closePopup();
           this._refreshCropContent();
         } catch (e) {
@@ -3463,7 +3502,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       csv = "작물종류,품종,재배방식,정식일,구역,줄간격(cm),주간격(cm),총정식수(주),재식밀도(주/㎡),철거일,상태\n"
         + this._cropSeasons.map(s =>
           [CROP_LABELS[s.cropType]||s.cropType, s.variety, METHOD_LABELS[s.method]||s.method,
-           s.plantDate, `Zone ${s.zone}`, s.rowSpace, s.plantSpace, s.totalPlants, s.density,
+           s.plantDate, this._seasonZoneLabel(s), s.rowSpace, s.plantSpace, s.totalPlants, s.density,
            s.demolishDate||"", s.demolishDate?"철거완료":"재배중"]
           .map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(",")
         ).join("\n");

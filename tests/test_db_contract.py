@@ -76,3 +76,14 @@ def test_control_record_save_requires_active_season_before_posting():
     assert "!this._activeSeasonId" in save_section
     assert "작기를 먼저 등록" in save_section
     assert "green_smart/crop/seasons/${this._activeSeasonId}/control" in panel
+
+
+def test_crop_season_post_ensures_zone_and_get_keeps_zone_id_name():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+
+    assert "async def _ensure_zone" in source
+    assert "INSERT IGNORE INTO zones" in source
+    assert "await _ensure_zone(hass, zone_id_int)" in source
+    assert "LEFT JOIN zones" in source
+    assert "s.zone_id AS zoneId" in source
+    assert "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName" in source
