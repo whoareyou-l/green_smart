@@ -161,43 +161,57 @@ def test_environment_page_is_control_strategy_with_interlock_ai_safety_contract(
     sidebar = panel.split("  _renderSidebar()", 1)[1].split("  _alertPillHtml", 1)[0]
     env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _renderIrrigSettingsPage()", 1)[0]
 
-    assert "환경 제어 전략" in sidebar
+    assert "환경 제어" in sidebar
+    assert "환경 제어 전략" not in sidebar
     assert "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지" in env_page
-    for section in ["제어 모드", "기본 인터록", "온도 제어", "습도 / VPD 제어", "CO₂ 제어", "AI 전략 보정", "안전 한계", "작동 로그"]:
-        assert section in env_page
-    for state_key in ["baseInterlockSettings", "aiStrategySettings", "safetyLimits", "finalAppliedTargets", "controlMode", "systemStatus", "controlLogs"]:
+    for section in ["제어 모드", "온도 제어", "습도 / VPD 제어", "CO₂ 제어", "AI 전략 / 최종 적용값", "안전 한계", "작동 로그"]:
+        assert section in panel
+    for removed_tab in ["기본 인터록", "권한"]:
+        assert removed_tab not in panel.split("  _envStrategyTabs()", 1)[1].split("  _renderEnvStrategyTabBar", 1)[0]
+    for state_key in ["baseInterlockSettings", "aiStrategySettings", "lowLightStrategySettings", "safetyLimits", "finalAppliedTargets", "controlMode", "systemStatus", "controlLogs"]:
         assert state_key in panel
-    assert "AI는 기본 인터록 위에서 작동하는 보정 레이어" in env_page
-    assert "AI 오류 시 즉시 기본 인터록 값으로 복귀" in env_page
-    assert "최종 목표값 = 기본 인터록 목표값 + AI 보정값" in env_page
-    assert "비상 정지" in env_page and "안전 한계" in env_page and "기본 인터록" in env_page
+    assert "AI는 제어의 기본값이 아니다" not in env_page
+    assert "우선순위: 1. 비상 정지" not in env_page
 
 
 def test_environment_control_strategy_distinguishes_base_ai_final_and_permissions():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _renderIrrigSettingsPage()", 1)[0]
+    content = panel.split("  _renderEnvStrategyTabContent", 1)[1].split("  _renderEnvSettingsPage", 1)[0]
+    doc = (ROOT / "docs" / "decisions" / "environment-control-permissions.md").read_text(encoding="utf-8")
 
-    for marker in ["data-base-interlock", "data-ai-strategy", "data-final-target", "data-safety-limit", "data-control-log"]:
-        assert marker in env_page
-    for label in ["기본 인터록값", "AI 보정값", "최종 적용값"]:
-        assert label in env_page
+    for marker in ["data-ai-strategy", "data-final-target", "data-safety-limit", "data-control-log"]:
+        assert marker in panel
+    assert "data-base-interlock" not in env_page
+    assert "기본 인터록값" not in env_page
+    assert "AI 보정값" in content
+    assert "최종 적용값" in content
+    assert "저광기 전략" in content
+    assert "lowLightStrategySettings" in panel
     for role in ["Admin", "Farm Owner", "Farm Worker"]:
-        assert role in env_page
-    for field in ["주간 목표온도", "야간 목표온도", "목표 습도", "목표 VPD", "목표 CO₂", "기본 ADT", "기본 DIF"]:
-        assert field in env_page
-    for field in ["난방 시작 온도", "난방 정지 온도", "환기 시작 온도", "환기 최대 온도", "고온 경보 온도", "저온 경보 온도"]:
-        assert field in env_page
+        assert role not in env_page
+        assert role in doc
+    temperature_block = content.split('if (tab === "temperature")', 1)[1].split('if (tab === "humidity")', 1)[0]
+    for field in ["주간 목표온도", "야간 목표온도", "기본 ADT", "기본 DIF", "난방 시작 온도", "난방 정지 온도", "환기 시작 온도", "환기 최대 온도", "고온 경보 온도", "저온 경보 온도"]:
+        assert field in temperature_block
+    humidity_block = content.split('if (tab === "humidity")', 1)[1].split('if (tab === "co2")', 1)[0]
+    assert "목표 습도" in humidity_block
+    assert "목표 VPD" in humidity_block
+    co2_block = content.split('if (tab === "co2")', 1)[1].split('if (tab === "ai")', 1)[0]
+    assert "목표 CO₂" in co2_block
     assert "_calculateFinalAppliedTargets" in panel
     assert "_bindControlStrategyInputs" in panel
     assert "_saveControlStrategy" in panel
+
 
 def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_card():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     sidebar = panel.split("  _renderSidebar()", 1)[1].split("  _alertPillHtml", 1)[0]
     env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _renderIrrigSettingsPage()", 1)[0]
     binder = panel.split("  _bindControlStrategyInputs(root)", 1)[1].split("  // ── Dashboard event binding", 1)[0]
+    tabs = panel.split("  _envStrategyTabs()", 1)[1].split("  _renderEnvStrategyTabBar", 1)[0]
 
-    assert 'navBtn("environment", "mdi:thermometer-lines",  "환경 제어 전략"' in sidebar
+    assert 'navBtn("environment", "mdi:thermometer-lines",  "환경 제어"' in sidebar
     assert 'this._envStrategyTab = "mode"' in panel
     assert "data-env-strategy-tab" in env_page
     assert "data-env-strategy-content" in env_page
@@ -208,4 +222,7 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     assert "this._envStrategyTab = btn.dataset.envStrategyTab" in binder
     assert "strategy-grid" not in env_page
     assert "_strategySection(" not in env_page
+    assert 'key: "interlock"' not in tabs
+    assert 'key: "final"' not in tabs
+    assert 'key: "permissions"' not in tabs
 
