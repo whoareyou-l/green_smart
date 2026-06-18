@@ -191,3 +191,21 @@ def test_environment_control_strategy_distinguishes_base_ai_final_and_permission
     assert "_bindControlStrategyInputs" in panel
     assert "_saveControlStrategy" in panel
 
+def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_card():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    sidebar = panel.split("  _renderSidebar()", 1)[1].split("  _alertPillHtml", 1)[0]
+    env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _renderIrrigSettingsPage()", 1)[0]
+    binder = panel.split("  _bindControlStrategyInputs(root)", 1)[1].split("  // ── Dashboard event binding", 1)[0]
+
+    assert 'navBtn("environment", "mdi:thermometer-lines",  "환경 제어 전략"' in sidebar
+    assert 'this._envStrategyTab = "mode"' in panel
+    assert "data-env-strategy-tab" in env_page
+    assert "data-env-strategy-content" in env_page
+    assert "_renderEnvStrategyTabBar" in panel
+    assert "_renderEnvStrategyTabContent" in panel
+    assert "_envStrategyTabs()" in panel
+    assert "data-env-strategy-tab" in binder
+    assert "this._envStrategyTab = btn.dataset.envStrategyTab" in binder
+    assert "strategy-grid" not in env_page
+    assert "_strategySection(" not in env_page
+
