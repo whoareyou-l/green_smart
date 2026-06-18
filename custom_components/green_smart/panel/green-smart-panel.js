@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.13
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.14
 const DOMAIN = "green_smart";
-const VERSION = "1.8.13";
+const VERSION = "1.8.14";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -2321,6 +2321,12 @@ button.action:disabled{opacity:.5;cursor:default;}
     return this._resolvedWeatherStatus(data);
   }
 
+  _numOrNull(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   _renderWeatherCardInner(data) {
     data = data || {};
     if (data.error === "no_api_key") {
@@ -2542,15 +2548,15 @@ button.action:disabled{opacity:.5;cursor:default;}
       if (!d) return;
       if (!byDate[d]) byDate[d] = { temps: [], pops: [], skies: {}, ptys: {}, tmn: null, tmx: null };
       const e = byDate[d];
-      const t = Number(f.temp);
-      if (Number.isFinite(t)) e.temps.push(t);
-      const p = Number(f.pop);
-      if (Number.isFinite(p)) e.pops.push(p);
+      const t = this._numOrNull(f.temp);
+      if (t !== null) e.temps.push(t);
+      const p = this._numOrNull(f.pop);
+      if (p !== null) e.pops.push(p);
       if (f.sky) e.skies[f.sky] = (e.skies[f.sky] || 0) + 1;
       if (f.precipitation_type && f.precipitation_type !== "없음") e.ptys[f.precipitation_type] = (e.ptys[f.precipitation_type] || 0) + 1;
-      const tmn = Number(f.temp_min), tmx = Number(f.temp_max);
-      if (Number.isFinite(tmn)) e.tmn = tmn;
-      if (Number.isFinite(tmx)) e.tmx = tmx;
+      const tmn = this._numOrNull(f.temp_min), tmx = this._numOrNull(f.temp_max);
+      if (tmn !== null) e.tmn = tmn;
+      if (tmx !== null) e.tmx = tmx;
     });
     return Object.keys(byDate).sort().map((d) => {
       const e = byDate[d];
@@ -2577,11 +2583,15 @@ button.action:disabled{opacity:.5;cursor:default;}
       const date = `${day_dt.getFullYear()}${String(day_dt.getMonth() + 1).padStart(2, "0")}${String(day_dt.getDate()).padStart(2, "0")}`;
       const pm_weather = d.pm_weather || d.am_weather || "구름많음";
       const rainKey = "am_" + "rain_" + "probability";
-      const rain = Math.max(Number(d[rainKey] || 0), Number(d.pm_rain_probability || 0));
+      const rainAm = this._numOrNull(d[rainKey]);
+      const rainPm = this._numOrNull(d.pm_rain_probability);
+      const rain = Math.max(rainAm ?? 0, rainPm ?? 0);
+      const minTemp = this._numOrNull(d.min_temp);
+      const maxTemp = this._numOrNull(d.max_temp);
       byDate.set(date, {
         date,
-        min: Number.isFinite(Number(d.min_temp)) ? Number(d.min_temp) : "--",
-        max: Number.isFinite(Number(d.max_temp)) ? Number(d.max_temp) : "--",
+        min: minTemp !== null ? minTemp : "--",
+        max: maxTemp !== null ? maxTemp : "--",
         topSky: pm_weather,
         topPty: undefined,
         pop: Number.isFinite(rain) ? rain : 0,
@@ -2595,15 +2605,18 @@ button.action:disabled{opacity:.5;cursor:default;}
     // weekly가 짧게 내려와도 중앙 실시간 중기예보(D+3~D+7)를 병합해서 오늘~D+7을 채운다.
     let items;
     const weeklyItems = (weekly || []).map((w) => {
-      const min = Number.isFinite(Number(w.temp_min)) ? Number(w.temp_min) : "--";
-      const max = Number.isFinite(Number(w.temp_max)) ? Number(w.temp_max) : "--";
+      const minVal = this._numOrNull(w.temp_min);
+      const maxVal = this._numOrNull(w.temp_max);
+      const popVal = this._numOrNull(w.pop);
+      const min = minVal !== null ? minVal : "--";
+      const max = maxVal !== null ? maxVal : "--";
       return {
         date: w.date,
         min,
         max,
         topSky: w.sky || "--",
         topPty: undefined,
-        pop: Number.isFinite(Number(w.pop)) ? Number(w.pop) : 0,
+        pop: popVal !== null ? popVal : 0,
       };
     });
     items = this._mergeDailyItems(this._dailyItemsFromForecasts(forecasts), weeklyItems);

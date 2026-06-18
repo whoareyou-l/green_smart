@@ -79,8 +79,12 @@ def test_panel_weather_modal_limits_daily_forecast_through_d7_and_never_shows_bl
     assert "humidity >= 85" in source
     assert "humidity <= 60" in source
     assert "return \"구름많음\"" in source
-    assert "this._resolvedWeatherStatus(data)" in source
-    assert "this._resolvedWeatherStatus(cur)" in source
+    assert "_numOrNull" in source
+    assert "if (value === null || value === undefined || value === \"\") return null" in source
+    assert "const tmn = this._numOrNull(f.temp_min), tmx = this._numOrNull(f.temp_max)" in source
+    assert "Number(f.temp_min)" not in source
+    assert "Number(w.temp_min)" not in source
+    assert "Number(d.min_temp)" not in source
     assert 'return sky === "--" ? "—" : sky' not in source
 
 
@@ -97,7 +101,8 @@ def test_panel_weather_modal_merges_realtime_central_mid_forecast_through_d7():
     assert "day_dt.setDate(today.getDate() + Number(d.day))" in source
     assert "pm_weather || d.am_weather" in source
     assert 'const rainKey = "am_" + "rain_" + "probability"' in source
-    assert "Math.max(Number(d[rainKey]" in source
+    assert "const rainAm = this._numOrNull(d[rainKey])" in source
+    assert "const rainPm = this._numOrNull(d.pm_rain_probability)" in source
 
 
 def test_panel_weather_modal_uses_saved_location_for_central_short_api_current_hourly_and_exact_d0_to_d7_dates():
