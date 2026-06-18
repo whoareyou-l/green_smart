@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.14
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.15
 const DOMAIN = "green_smart";
-const VERSION = "1.8.14";
+const VERSION = "1.8.15";
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -3636,12 +3636,50 @@ button.action:disabled{opacity:.5;cursor:default;}
     });
   }
 
+  _formatPesticideMoa(item) {
+    const name = String(item?.name || "").toLowerCase().replace(/\s+/g, "");
+    const use = String(item?.use || item?.pestiUse || "").trim();
+    const rawMoa = String(item?.moa || item?.indictSymbl || item?.actionCode || "").trim();
+    const pest = String(item?.pest || "").trim();
+    const crop = String(item?.crop || "").trim();
+    const hay = `${name} ${use} ${rawMoa} ${pest} ${crop}`;
+    const kind = /살균|곰팡|역병|노균|흰가루|잿빛|균/i.test(hay) ? "살균제"
+      : /살충|응애|진딧|총채|나방|충/i.test(hay) ? "살충제"
+      : /제초|잡초/i.test(hay) ? "제초제"
+      : "약제";
+    const groupMatch = hay.match(/(?:사용기작|기작|계통|작용기작)?\s*[-:]?\s*([가-힣] ?\d+|[A-Z]{1,2}\d*)/i);
+    const group = name.includes("리도밀골드") ? "가1" : (groupMatch ? groupMatch[1].replace(/\s+/g, "") : "");
+    return group ? `${kind}-${group}` : (use || kind);
+  }
+
+  _isPlsRiskEntry(entry) {
+    const text = `${entry?.pls || ""} ${entry?.plsStatus || ""} ${entry?.note || ""} ${entry?.memo || ""}`.toLowerCase();
+    return entry?.pls === false || /pls|잔류|미등록|부적합|초과|주의|경고/.test(text);
+  }
+
+  _findPlsConflict(name, moa = "") {
+    const n = String(name || "").trim().toLowerCase();
+    const m = String(moa || "").trim().toLowerCase();
+    if (!n && !m) return null;
+    for (const record of this._controlData || []) {
+      const pesticides = Array.isArray(record.pesticides) ? record.pesticides : (record.pesticide ? [{ name: record.pesticide, moa: record.moa, pls: record.pls }] : []);
+      for (const p of pesticides) {
+        const pn = String(p.name || "").trim().toLowerCase();
+        const pm = String(p.moa || "").trim().toLowerCase();
+        if ((n && pn === n) || (m && pm === m)) {
+          if (this._isPlsRiskEntry(p) || this._isPlsRiskEntry(record)) return { record, pesticide: p };
+        }
+      }
+    }
+    return null;
+  }
+
   _openControlAddPopup() {
     const today = new Date().toISOString().slice(0, 10);
     const MAX_PESTS = 5;
 
     // ── 로컬 상태 ───────────────────────────────────────────────────────────────
-    const entries = [{ name: "", regNo: "", moa: "", dil: "", amount: "", pls: null }];
+    const entries = [{ name: "", regNo: "", moa: "", dil: "", amount: "", pls: null, mixWarning: "", plsWarning: "" }];
     const debounceTimers = {};
 
     // ── 이전 기록에서 약제별 자동완성 데이터 추출 ───────────────────────────────
@@ -3686,15 +3724,8 @@ button.action:disabled{opacity:.5;cursor:default;}
                    padding:9px;width:100%;font-size:13px;font-weight:700;cursor:pointer;margin-top:2px;">
             + 약제 추가 (최대 ${MAX_PESTS}개)
           </button>
-          <!-- 혼용 확인 -->
-          <div id="c-mix-wrap" style="display:none;">
-            <button id="c-mix-check"
-              style="background:#fff3cd;color:#856404;border:1.5px solid #ffc107;border-radius:10px;
-                     padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">
-              🔍 혼용 가능 여부 확인
-            </button>
-            <div id="c-mix-result" style="margin-top:8px;"></div>
-          </div>
+          <!-- 혼용 경고는 약제명 아래에 자동 표시된다 -->
+          <div id="c-mix-summary" style="display:none;margin-top:2px;font-size:11px;color:#856404;"></div>
           <div style="height:1px;background:#f0f7f1;margin:4px 0;"></div>
           <!-- 처리구역 -->
           <div class="pop-field">
@@ -3744,18 +3775,20 @@ button.action:disabled{opacity:.5;cursor:default;}
               <input type="text" data-name-input="${idx}"
                 value="${this._esc(e.name)}" placeholder="2글자 이상 입력 시 자동완성..."
                 autocomplete="off">
-              <div data-sug="${idx}"
+              <div data-pesticide-suggestions="${idx}"
                 style="display:none;position:absolute;left:0;right:0;
                   background:#fff;border:1.5px solid #e8f0e9;border-radius:12px;
                   box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:300;
                   max-height:200px;overflow-y:auto;margin-top:2px;top:100%;"></div>
+              <div data-mix-warning="${idx}" style="${e.mixWarning ? "" : "display:none;"}font-size:11px;color:#c0392b;margin-top:6px;line-height:1.4;">${e.mixWarning ? `⚠️ 혼용 경고: ${this._esc(e.mixWarning)}` : ""}</div>
             </div>
             <!-- 사용기작 / 희석배수 -->
             <div class="pop-field-row" style="margin-bottom:10px;">
               <div class="pop-field">
                 <label>사용기작</label>
                 <input type="text" data-moa-input="${idx}"
-                  value="${this._esc(e.moa)}" placeholder="예) 살균 - DMI계">
+                  value="${this._esc(e.moa)}" placeholder="예) 살균제-가1">
+                <div data-pls-warning="${idx}" style="${e.plsWarning ? "" : "display:none;"}font-size:11px;color:#c0392b;margin-top:5px;line-height:1.4;">${e.plsWarning ? `⚠️ PLS 경고: ${this._esc(e.plsWarning)}` : ""}</div>
               </div>
               <div class="pop-field">
                 <label>희석 배수 (배)</label>
@@ -3775,13 +3808,98 @@ button.action:disabled{opacity:.5;cursor:default;}
       // ── DOM 갱신 ─────────────────────────────────────────────────────────────
       const listEl   = inner.querySelector("#c-pest-list");
       const addBtn   = inner.querySelector("#c-add-pest");
-      const mixWrap  = inner.querySelector("#c-mix-wrap");
+      const mixSummary  = inner.querySelector("#c-mix-summary");
 
       const renderAll = () => {
         listEl.innerHTML = entries.map((_, i) => entryHtml(i)).join("");
         addBtn.style.display = entries.length >= MAX_PESTS ? "none" : "";
-        mixWrap.style.display = entries.length >= 2 ? "block" : "none";
+        if (mixSummary) {
+          const count = entries.filter(e => e.name).length;
+          mixSummary.style.display = count >= 2 ? "block" : "none";
+          mixSummary.textContent = count >= 2 ? "혼용 경고는 문제가 되는 약제명 아래에 자동 표시됩니다." : "";
+        }
         bindEntries();
+      };
+
+      const renderInlineWarnings = () => {
+        entries.forEach((entry, idx) => {
+          const mixEl = listEl.querySelector(`[data-mix-warning="${idx}"]`);
+          if (mixEl) {
+            mixEl.style.display = entry.mixWarning ? "" : "none";
+            mixEl.textContent = entry.mixWarning ? `⚠️ 혼용 경고: ${entry.mixWarning}` : "";
+          }
+          const plsEl = listEl.querySelector(`[data-pls-warning="${idx}"]`);
+          if (plsEl) {
+            plsEl.style.display = entry.plsWarning ? "" : "none";
+            plsEl.textContent = entry.plsWarning ? `⚠️ PLS 경고: ${entry.plsWarning}` : "";
+          }
+        });
+      };
+
+      const updatePlsWarnings = () => {
+        entries.forEach((entry) => {
+          const conflict = this._findPlsConflict(entry.name, entry.moa);
+          entry.plsWarning = conflict
+            ? `지난 방제기록에서 ${conflict.pesticide?.name || entry.name} 약제가 PLS 주의/부적합으로 기록되었습니다.`
+            : "";
+        });
+        renderInlineWarnings();
+      };
+
+      const applyMixWarnings = (pairs = []) => {
+        entries.forEach((entry) => { entry.mixWarning = ""; });
+        pairs.forEach((pair) => {
+          if (pair.mixable === true) return;
+          const names = [pair.pest1, pair.pest2, pair.name1, pair.name2].filter(Boolean).map(v => String(v).trim());
+          const note = pair.mixable === false
+            ? (pair.note || "혼용 불가로 확인되었습니다.")
+            : (pair.note || "혼용 정보가 명확하지 않아 주의가 필요합니다.");
+          entries.forEach((entry) => {
+            if (names.some(n => n && entry.name && n === entry.name)) {
+              entry.mixWarning = entry.mixWarning ? `${entry.mixWarning} / ${note}` : note;
+            }
+          });
+        });
+        renderInlineWarnings();
+      };
+
+      const runMixWarningCheck = async () => {
+        const named = entries.filter(e => e.name);
+        if (named.length < 2) { applyMixWarnings([]); return; }
+        try {
+          const json = await this._hass.callApi("POST", "green_smart/pesticide/mix-check", {
+            reg_nos: named.map(e => e.regNo).filter(Boolean),
+            names: named.map(e => e.name),
+          });
+          applyMixWarnings(json.pairs || []);
+        } catch (_) {
+          const groups = new Map();
+          named.forEach(e => {
+            const key = String(e.moa || "").trim();
+            if (!key) return;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(e);
+          });
+          const fallbackPairs = [];
+          groups.forEach((groupEntries, moa) => {
+            if (groupEntries.length >= 2) {
+              for (let i = 0; i < groupEntries.length; i += 1) {
+                for (let j = i + 1; j < groupEntries.length; j += 1) {
+                  fallbackPairs.push({ pest1: groupEntries[i].name, pest2: groupEntries[j].name, mixable: null, note: `같은 사용기작(${moa}) 약제 혼용/연용 주의` });
+                }
+              }
+            }
+          });
+          applyMixWarnings(fallbackPairs);
+        }
+      };
+
+      const scheduleRiskChecks = () => {
+        clearTimeout(debounceTimers.__risk);
+        debounceTimers.__risk = setTimeout(() => {
+          updatePlsWarnings();
+          runMixWarningCheck();
+        }, 250);
       };
 
       // ── 각 항목 이벤트 바인딩 ─────────────────────────────────────────────────
@@ -3800,10 +3918,10 @@ button.action:disabled{opacity:.5;cursor:default;}
           const moaInput    = listEl.querySelector(`[data-moa-input="${idx}"]`);
           const dilInput    = listEl.querySelector(`[data-dil-input="${idx}"]`);
           const amountInput = listEl.querySelector(`[data-amount-input="${idx}"]`);
-          const sugBox      = listEl.querySelector(`[data-sug="${idx}"]`);
+          const sugBox      = listEl.querySelector(`[data-pesticide-suggestions="${idx}"]`);
 
           // 필드 변경 → entries 동기화
-          moaInput?.addEventListener("input",    () => { entries[idx].moa    = moaInput.value; });
+          moaInput?.addEventListener("input",    () => { entries[idx].moa    = moaInput.value; scheduleRiskChecks(); });
           dilInput?.addEventListener("input",    () => { entries[idx].dil    = dilInput.value; });
           amountInput?.addEventListener("input", () => { entries[idx].amount = amountInput.value; });
 
@@ -3813,7 +3931,8 @@ button.action:disabled{opacity:.5;cursor:default;}
             entries[idx].name  = q;
             entries[idx].regNo = "";
             clearTimeout(debounceTimers[idx]);
-            if (q.length < 2) { sugBox.style.display = "none"; return; }
+            if (q.length < 2) { sugBox.style.display = "none"; scheduleRiskChecks(); return; }
+            scheduleRiskChecks();
             debounceTimers[idx] = setTimeout(() => fetchSuggestions(idx, q, nameInput, sugBox, moaInput, dilInput, amountInput), 400);
           });
 
@@ -3830,9 +3949,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         sugBox.style.display = "block";
         try {
           const json = await this._hass.callApi(
-            "GET", `green_smart/pesticide/search?q=${encodeURIComponent(q)}`
+            "POST", "green_smart/central/pesticide/search", { query: q }
           );
-          if (json.error === "no_psis_key") {
+          if (json.error === "no_psis_key" || json.detail === "feature_secret_missing") {
             sugBox.innerHTML = `<div style="padding:10px 14px;color:#c0392b;font-size:11px;">
               ⚠️ PSIS API 키 미설정 — Green Smart 설정에서 입력해주세요.</div>`;
             return;
@@ -3859,7 +3978,9 @@ button.action:disabled{opacity:.5;cursor:default;}
               const it = items[+el.dataset.si];
               entries[idx].name  = it.name;
               entries[idx].regNo = it.regNo || "";
+              entries[idx].moa = this._formatPesticideMoa(it);
               nameInput.value    = it.name;
+              if (moaInput) moaInput.value = entries[idx].moa;
               sugBox.style.display = "none";
 
               // 이전 기록으로 자동완성
@@ -3892,6 +4013,7 @@ button.action:disabled{opacity:.5;cursor:default;}
                   labelEl.appendChild(b);
                 }
               }
+              scheduleRiskChecks();
             })
           );
         } catch {
@@ -3902,45 +4024,9 @@ button.action:disabled{opacity:.5;cursor:default;}
       // ── 약제 추가 버튼 ────────────────────────────────────────────────────────
       addBtn.addEventListener("click", () => {
         if (entries.length >= MAX_PESTS) return;
-        entries.push({ name: "", regNo: "", moa: "", dil: "", amount: "", pls: null });
+        entries.push({ name: "", regNo: "", moa: "", dil: "", amount: "", pls: null, mixWarning: "", plsWarning: "" });
         renderAll();
-      });
-
-      // ── 혼용 확인 ─────────────────────────────────────────────────────────────
-      inner.querySelector("#c-mix-check")?.addEventListener("click", async () => {
-        const named = entries.filter(e => e.name);
-        if (named.length < 2) return;
-        const mixBtn = inner.querySelector("#c-mix-check");
-        const mixResult = inner.querySelector("#c-mix-result");
-        mixBtn.textContent = "🔍 조회 중...";
-        mixBtn.disabled = true;
-        try {
-          const json = await this._hass.callApi("POST", "green_smart/pesticide/mix-check", {
-            reg_nos: named.map(e => e.regNo),
-            names:   named.map(e => e.name),
-          });
-          const pairs = json.pairs || [];
-          if (!pairs.length) {
-            mixResult.innerHTML = `<div style="font-size:12px;color:#7a9780;padding:8px;">혼용 정보가 없습니다.</div>`;
-          } else {
-            mixResult.innerHTML = pairs.map(p => {
-              const ok = p.mixable === true, ng = p.mixable === false;
-              const bg    = ok ? "#d4edda" : ng ? "#f8d7da" : "#fff3cd";
-              const color = ok ? "#155724" : ng ? "#721c24" : "#856404";
-              const icon  = ok ? "✅" : ng ? "❌" : "⚠️";
-              const label = ok ? "혼용 가능" : ng ? "혼용 불가" : "정보 없음";
-              return `<div style="background:${bg};border-radius:8px;padding:8px 12px;margin-bottom:6px;">
-                <span style="font-weight:700;color:${color};font-size:12px;">${icon} ${this._esc(p.pest1)} + ${this._esc(p.pest2)}: ${label}</span>
-                ${p.note ? `<div style="font-size:11px;color:${color};margin-top:3px;">${this._esc(p.note)}</div>` : ""}
-              </div>`;
-            }).join("");
-          }
-        } catch {
-          mixResult.innerHTML = `<div style="font-size:12px;color:#c0392b;">혼용 조회 실패</div>`;
-        } finally {
-          mixBtn.textContent = "🔍 혼용 가능 여부 확인";
-          mixBtn.disabled = false;
-        }
+        scheduleRiskChecks();
       });
 
       // ── 저장 ──────────────────────────────────────────────────────────────────

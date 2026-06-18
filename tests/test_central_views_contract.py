@@ -52,6 +52,24 @@ def test_panel_uses_explicit_central_routes_and_keeps_crop_pest_data_separate():
     assert "_renderPesticideCard" in source
 
 
+def test_crop_control_modal_uses_central_pesticide_api_autocomplete_inline_mix_and_pls_warnings():
+    source = _source(PANEL)
+
+    assert "_openControlAddPopup" in source
+    assert '"POST", "green_smart/central/pesticide/search"' in source
+    assert "green_smart/pesticide/search?q=" not in source
+    assert "data-pesticide-suggestions" in source
+    assert "_formatPesticideMoa" in source
+    assert "살균제-가1" in source
+    assert "data-mix-warning" in source
+    assert "혼용 경고" in source
+    assert "c-mix-check" not in source
+    assert "혼용 가능 여부 확인" not in source
+    assert "data-pls-warning" in source
+    assert "PLS 경고" in source
+    assert "_findPlsConflict" in source
+
+
 def test_panel_weather_card_keeps_summary_only_and_modal_uses_realtime_central_weather():
     source = _source(PANEL)
 
