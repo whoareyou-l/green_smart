@@ -80,3 +80,28 @@ def test_crop_tabs_paginate_records_five_per_page():
         assert f'_renderCropPager("{key}"' in panel
         assert f'this._paginatedCropRows("{key}"' in panel
     assert "data-crop-page" in panel
+
+
+def test_crop_basic_demolished_seasons_still_show_delete_button_without_edit_or_demolish():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    seasons_list = panel.split("_renderCropSeasonsList()", 1)[1].split("_renderCropGrowthTab()", 1)[0]
+
+    assert "const seasonActions" in seasons_list
+    assert "data-season-delete" in seasons_list
+    assert "const activeActions" in seasons_list
+    assert "const deleteAction" in seasons_list
+    assert "demolished ? deleteAction : activeActions" in seasons_list
+
+
+def test_growth_add_popup_uses_selected_season_crop_type_for_dynamic_fields():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    popup = panel.split("_openGrowthAddPopup()", 1)[1].split("_openPestAddPopup()", 1)[0]
+
+    assert "_activeSeason()" in panel
+    assert "_growthFieldConfigForCrop" in panel
+    assert "activeSeason.cropType" in popup
+    assert "data-growth-field" in popup
+    for crop in ("tomato", "paprika", "strawberry", "lettuce", "cucumber", "herb"):
+        assert crop in panel
+    for field in ("height", "leafCount", "stemDia", "truss", "node"):
+        assert f"body.{field}" in popup

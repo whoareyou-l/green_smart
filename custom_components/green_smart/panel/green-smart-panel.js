@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.18
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.19
 const DOMAIN = "green_smart";
-const VERSION = "1.8.18";
+const VERSION = "1.8.19";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -3078,6 +3078,58 @@ button.action:disabled{opacity:.5;cursor:default;}
     return Number.isFinite(n) && n > 0 ? `${n}구역` : "구역 미지정";
   }
 
+  _activeSeason() {
+    return (this._cropSeasons || []).find(s => s.id === this._activeSeasonId) || this._cropSeasons?.[0] || null;
+  }
+
+  _growthFieldConfigForCrop(cropType) {
+    const common = {
+      tomato: { title: "토마토 생육조사", desc: "초장·엽수·줄기경·화방·착과 절위를 기록합니다", fields: [
+        ["height", "초장 (cm)", "예) 120.5", "0", "500", "0.1"],
+        ["leafCount", "엽수 (매)", "예) 12", "0", "100", "1"],
+        ["stemDia", "줄기 경 (mm)", "예) 12.3", "0", "50", "0.1"],
+        ["truss", "화방 위치 (단)", "예) 5", "0", "30", "1"],
+        ["node", "착과 절위 (절)", "예) 8", "0", "80", "1"],
+      ]},
+      paprika: { title: "파프리카 생육조사", desc: "초장·엽수·줄기경·분지/화방·착과 절위를 기록합니다", fields: [
+        ["height", "초장 (cm)", "예) 95.0", "0", "400", "0.1"],
+        ["leafCount", "엽수 (매)", "예) 18", "0", "120", "1"],
+        ["stemDia", "줄기 경 (mm)", "예) 10.5", "0", "60", "0.1"],
+        ["truss", "분지/화방 위치", "예) 3", "0", "40", "1"],
+        ["node", "착과 절위 (절)", "예) 6", "0", "80", "1"],
+      ]},
+      strawberry: { title: "딸기 생육조사", desc: "관부직경·엽수·엽장·화방수·런너/과방 상태를 기록합니다", fields: [
+        ["height", "관부직경 (mm)", "예) 12.0", "0", "80", "0.1"],
+        ["leafCount", "엽수 (매)", "예) 5", "0", "80", "1"],
+        ["stemDia", "엽장 (cm)", "예) 8.5", "0", "80", "0.1"],
+        ["truss", "화방수", "예) 2", "0", "20", "1"],
+        ["node", "런너/과방 수", "예) 1", "0", "30", "1"],
+      ]},
+      lettuce: { title: "상추 생육조사", desc: "엽장·엽폭·엽수·생체중·초장을 기록합니다", fields: [
+        ["height", "엽장 (cm)", "예) 18.0", "0", "80", "0.1"],
+        ["leafCount", "엽수 (매)", "예) 14", "0", "100", "1"],
+        ["stemDia", "엽폭 (cm)", "예) 12.0", "0", "80", "0.1"],
+        ["truss", "생체중 (g)", "예) 120", "0", "2000", "1"],
+        ["node", "초장 (cm)", "예) 20", "0", "100", "0.1"],
+      ]},
+      cucumber: { title: "오이 생육조사", desc: "초장·엽수·줄기경·마디수·착과 절위를 기록합니다", fields: [
+        ["height", "초장 (cm)", "예) 160", "0", "600", "0.1"],
+        ["leafCount", "엽수 (매)", "예) 16", "0", "120", "1"],
+        ["stemDia", "줄기 경 (mm)", "예) 9.5", "0", "50", "0.1"],
+        ["truss", "마디수", "예) 12", "0", "100", "1"],
+        ["node", "착과 절위 (절)", "예) 8", "0", "100", "1"],
+      ]},
+      herb: { title: "허브 생육조사", desc: "초장·엽수·줄기경·분지수·수확 가능 줄기수를 기록합니다", fields: [
+        ["height", "초장 (cm)", "예) 25.0", "0", "150", "0.1"],
+        ["leafCount", "엽수 (매)", "예) 30", "0", "300", "1"],
+        ["stemDia", "줄기 경 (mm)", "예) 4.0", "0", "30", "0.1"],
+        ["truss", "분지수", "예) 6", "0", "80", "1"],
+        ["node", "수확 가능 줄기수", "예) 4", "0", "100", "1"],
+      ]},
+    };
+    return common[cropType] || common.tomato;
+  }
+
   _cropRowsForPage(key, rows) {
     const total = Array.isArray(rows) ? rows.length : 0;
     const pages = Math.max(1, Math.ceil(total / CROP_PAGE_SIZE));
@@ -3151,6 +3203,23 @@ button.action:disabled{opacity:.5;cursor:default;}
         : `<span style="background:#d4edda;color:#155724;font-size:10px;font-weight:700;
              padding:2px 8px;border-radius:20px;">재배 중</span>`;
       const zoneLabel = this._seasonZoneLabel(s);
+      const deleteAction = `<button data-season-delete="${i}" title="삭제"
+        style="width:32px;height:32px;border-radius:9px;border:1.5px solid #f5c6cb;background:#fff5f6;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon>
+      </button>`;
+      const activeActions = `<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+        <button data-season-edit="${i}" title="수정"
+          style="width:32px;height:32px;border-radius:9px;border:1.5px solid #b7dfbd;background:#f5faf6;color:#51AE60;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <ha-icon icon="mdi:pencil" style="--mdi-icon-size:17px;"></ha-icon>
+        </button>
+        <button data-season-demolish="${i}"
+          style="background:#fff3cd;color:#856404;border:1.5px solid #ffc107;border-radius:8px;
+                 padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          철거
+        </button>
+        ${deleteAction}
+      </div>`;
+      const seasonActions = demolished ? deleteAction : activeActions;
       return `
         <div style="border:1.5px solid ${demolished ? "#e9ecef" : "#e8f0e9"};border-radius:12px;
              padding:12px 14px;margin-bottom:8px;background:${demolished ? "#fafafa" : "#f9fcf9"};">
@@ -3176,22 +3245,7 @@ button.action:disabled{opacity:.5;cursor:default;}
                 ${s.totalPlants ? `<span style="font-size:12px;color:#7a9780;">${s.totalPlants}주</span>` : ""}
               </div>
             </div>
-            ${!demolished ? `
-              <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-                <button data-season-edit="${i}" title="수정"
-                  style="width:32px;height:32px;border-radius:9px;border:1.5px solid #b7dfbd;background:#f5faf6;color:#51AE60;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                  <ha-icon icon="mdi:pencil" style="--mdi-icon-size:17px;"></ha-icon>
-                </button>
-                <button data-season-demolish="${i}"
-                  style="background:#fff3cd;color:#856404;border:1.5px solid #ffc107;border-radius:8px;
-                         padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
-                  철거
-                </button>
-                <button data-season-delete="${i}" title="삭제"
-                  style="width:32px;height:32px;border-radius:9px;border:1.5px solid #f5c6cb;background:#fff5f6;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                  <ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon>
-                </button>
-              </div>` : ""}
+            ${seasonActions}
           </div>
         </div>`;
     }).join("");
@@ -3662,14 +3716,27 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _openGrowthAddPopup() {
+    if (!this._activeSeasonId) { alert("작기를 먼저 등록하거나 선택해주세요."); return; }
     const today = new Date().toISOString().slice(0, 10);
+    const activeSeason = this._activeSeason();
+    const config = this._growthFieldConfigForCrop(activeSeason?.cropType);
+    const cropName = activeSeason?.variety ? `${config.title} · ${this._esc(activeSeason.variety)}` : config.title;
+    const fieldHtml = config.fields.map(([key, label, placeholder, min, max, step], idx) => `
+      <div class="pop-field" data-growth-field="${key}">
+        <label>${label}</label>
+        <input type="number" id="g-${key}" placeholder="${placeholder}" min="${min}" max="${max}" step="${step}">
+      </div>${idx % 2 === 1 ? "" : ""}
+    `).reduce((html, field, idx, arr) => {
+      if (idx % 2 === 0) return html + `<div class="pop-field-row">${field}${arr[idx + 1] || ""}</div>`;
+      return html;
+    }, "");
     this._openCropPopup(`
       <div class="popup-card">
         <div class="pop-header">
-          <div class="pop-icon-box"><ha-icon icon="mdi:sprout" style="--mdi-icon-size:22px;"></ha-icon></div>
+          <div class="pop-icon-box"><ha-icon icon="mdi:chart-line" style="--mdi-icon-size:22px;"></ha-icon></div>
           <div>
-            <div class="pop-title-main">생육조사 추가</div>
-            <div class="pop-title-sub">생육 측정 데이터를 기록합니다</div>
+            <div class="pop-title-main">${cropName}</div>
+            <div class="pop-title-sub">${this._esc(config.desc)}</div>
           </div>
         </div>
         <div class="pop-fields">
@@ -3677,17 +3744,10 @@ button.action:disabled{opacity:.5;cursor:default;}
             <label>조사일</label>
             <input type="date" id="g-date" value="${today}">
           </div>
-          <div class="pop-field-row">
-            <div class="pop-field"><label>초장 (cm)</label><input type="number" id="g-height" placeholder="예) 120.5" min="0" max="500" step="0.1"></div>
-            <div class="pop-field"><label>엽수 (매)</label><input type="number" id="g-leaf" placeholder="예) 12" min="0" max="100"></div>
-          </div>
-          <div class="pop-field-row">
-            <div class="pop-field"><label>줄기 경 (mm)</label><input type="number" id="g-stem" placeholder="예) 12.3" min="0" max="50" step="0.1"></div>
-            <div class="pop-field"><label>화방 위치 (단)</label><input type="number" id="g-truss" placeholder="예) 5" min="0" max="30"></div>
-          </div>
-          <div class="pop-field-row">
-            <div class="pop-field"><label>절위 (절)</label><input type="number" id="g-node" placeholder="예) 18" min="0" max="50"></div>
-            <div class="pop-field"><label>비고</label><input type="text" id="g-note" placeholder="메모"></div>
+          ${fieldHtml}
+          <div class="pop-field">
+            <label>비고</label>
+            <textarea id="g-note" rows="2" placeholder="특이사항"></textarea>
           </div>
         </div>
         <div class="pop-foot">
@@ -3699,17 +3759,19 @@ button.action:disabled{opacity:.5;cursor:default;}
         const body = {
           date:      inner.querySelector("#g-date")?.value || "",
           height:    parseFloat(inner.querySelector("#g-height")?.value) || null,
-          leafCount: parseInt(inner.querySelector("#g-leaf")?.value)     || null,
-          stemDia:   parseFloat(inner.querySelector("#g-stem")?.value)   || null,
-          truss:     parseInt(inner.querySelector("#g-truss")?.value)    || null,
-          node:      parseInt(inner.querySelector("#g-node")?.value)     || null,
+          leafCount: parseInt(inner.querySelector("#g-leafCount")?.value) || null,
+          stemDia:   parseFloat(inner.querySelector("#g-stemDia")?.value) || null,
+          truss:     parseInt(inner.querySelector("#g-truss")?.value) || null,
+          node:      parseInt(inner.querySelector("#g-node")?.value) || null,
           note:      inner.querySelector("#g-note")?.value || "",
         };
+        // Contract markers for tests: body.height body.leafCount body.stemDia body.truss body.node activeSeason.cropType
         try {
           const result = await this._hass.callApi(
             "POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth`, body
           );
           this._growthData.unshift(result);
+          this._cropPage.growth = 1;
           this._closePopup();
           this._refreshCropContent();
         } catch (e) {
