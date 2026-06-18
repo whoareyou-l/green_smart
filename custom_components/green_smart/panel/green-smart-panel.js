@@ -1,6 +1,7 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.17
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.18
 const DOMAIN = "green_smart";
-const VERSION = "1.8.17";
+const VERSION = "1.8.18";
+const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
@@ -85,6 +86,7 @@ class GreenSmartPanel extends HTMLElement {
     this._controlData = [];
     this._activeSeasonId = null;   // 현재 선택된 작기 ID
     this._basicZoneCollapsed = {}; // 정식 등록 모달 구역별 접기 상태
+    this._cropPage = { basic: 1, growth: 1, pest: 1, control: 1 };
     this._dbReady        = false;  // DB 연결 완료 여부
     this._weatherData = null;
     this._weatherMidData = null;
@@ -3076,6 +3078,33 @@ button.action:disabled{opacity:.5;cursor:default;}
     return Number.isFinite(n) && n > 0 ? `${n}구역` : "구역 미지정";
   }
 
+  _cropRowsForPage(key, rows) {
+    const total = Array.isArray(rows) ? rows.length : 0;
+    const pages = Math.max(1, Math.ceil(total / CROP_PAGE_SIZE));
+    const current = Math.min(Math.max(1, this._cropPage?.[key] || 1), pages);
+    this._cropPage[key] = current;
+    const start = (current - 1) * CROP_PAGE_SIZE;
+    return { rows: (rows || []).slice(start, start + CROP_PAGE_SIZE), current, pages, total };
+  }
+
+  _paginatedCropRows(key, rows) {
+    const page = this._cropRowsForPage(key, rows);
+    const start = (page.current - 1) * CROP_PAGE_SIZE;
+    return page.rows.map((row, i) => ({ ...row, __cropIndex: start + i }));
+  }
+
+  _renderCropPager(key, total) {
+    const pages = Math.max(1, Math.ceil((total || 0) / CROP_PAGE_SIZE));
+    if (pages <= 1) return "";
+    const current = Math.min(Math.max(1, this._cropPage?.[key] || 1), pages);
+    const buttons = Array.from({ length: pages }, (_, i) => {
+      const page = i + 1;
+      const active = page === current;
+      return `<button data-crop-page="${key}:${page}" style="min-width:30px;padding:5px 8px;border-radius:8px;border:1px solid ${active ? "#51AE60" : "#dfeee1"};background:${active ? "#51AE60" : "#fff"};color:${active ? "#fff" : "#4a6741"};font-size:12px;font-weight:700;cursor:pointer;">${page}</button>`;
+    }).join("");
+    return `<div style="display:flex;justify-content:center;gap:5px;margin-top:10px;">${buttons}</div>`;
+  }
+
   _renderCropBasicTab() {
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -3093,7 +3122,8 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 정식 등록</button>
         </div>
       </div>
-      <div id="crop-seasons-list">${this._renderCropSeasonsList()}</div>`;
+      <div id="crop-seasons-list">${this._renderCropSeasonsList()}</div>
+      ${this._renderCropPager("basic", this._cropSeasons.length)}`;
   }
 
   _renderCropSeasonsList() {
@@ -3109,7 +3139,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         등록된 작기가 없습니다
       </div>`;
     }
-    return this._cropSeasons.map((s, i) => {
+    const pageRows = this._paginatedCropRows("basic", this._cropSeasons);
+    return pageRows.map((s) => {
+      const i = s.__cropIndex;
       const demolished = !!s.demolishDate;
       const cropLabel  = CROP_LABELS[s.cropType] || s.cropType || "작물";
       const methodLabel = METHOD_LABELS[s.method] || s.method || "";
@@ -3145,19 +3177,32 @@ button.action:disabled{opacity:.5;cursor:default;}
               </div>
             </div>
             ${!demolished ? `
-              <button data-season-demolish="${i}"
-                style="background:#fff3cd;color:#856404;border:1.5px solid #ffc107;border-radius:8px;
-                       padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">
-                철거
-              </button>` : ""}
+              <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                <button data-season-edit="${i}" title="수정"
+                  style="width:32px;height:32px;border-radius:9px;border:1.5px solid #b7dfbd;background:#f5faf6;color:#51AE60;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                  <ha-icon icon="mdi:pencil" style="--mdi-icon-size:17px;"></ha-icon>
+                </button>
+                <button data-season-demolish="${i}"
+                  style="background:#fff3cd;color:#856404;border:1.5px solid #ffc107;border-radius:8px;
+                         padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+                  철거
+                </button>
+                <button data-season-delete="${i}" title="삭제"
+                  style="width:32px;height:32px;border-radius:9px;border:1.5px solid #f5c6cb;background:#fff5f6;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                  <ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon>
+                </button>
+              </div>` : ""}
           </div>
         </div>`;
     }).join("");
   }
 
   _renderCropGrowthTab() {
-    const rows = this._growthData.length
-      ? this._growthData.map((r, i) => `
+    const pageRows = this._paginatedCropRows("growth", this._growthData);
+    const rows = pageRows.length
+      ? pageRows.map((r) => {
+        const i = r.__cropIndex;
+        return `
         <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;">
           <div style="flex:0 0 72px;font-size:12px;font-weight:700;color:#51AE60;">${r.date}</div>
           <div style="flex:1;display:flex;flex-wrap:wrap;gap:6px 14px;">
@@ -3169,7 +3214,8 @@ button.action:disabled{opacity:.5;cursor:default;}
           </div>
           <button data-growth-del="${i}" title="삭제"
             style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;padding:2px 6px;">✕</button>
-        </div>`).join("")
+        </div>`;
+      }).join("")
       : `<div style="text-align:center;padding:32px 0;color:#b0c4b1;font-size:13px;">
           <ha-icon icon="mdi:sprout-outline" style="--mdi-icon-size:32px;display:block;margin:0 auto 8px;"></ha-icon>
           생육조사 기록이 없습니다
@@ -3187,14 +3233,18 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 생육조사 추가</button>
         </div>
       </div>
-      <div id="growth-list">${rows}</div>`;
+      <div id="growth-list">${rows}</div>
+      ${this._renderCropPager("growth", this._growthData.length)}`;
   }
 
   _renderCropPestTab() {
     const SEVERITY = { low: "낮음", mid: "보통", high: "높음", critical: "위험" };
     const SEVERITY_COLOR = { low: "#51AE60", mid: "#f39c12", high: "#e67e22", critical: "#c0392b" };
-    const rows = this._pestData.length
-      ? this._pestData.map((r, i) => `
+    const pageRows = this._paginatedCropRows("pest", this._pestData);
+    const rows = pageRows.length
+      ? pageRows.map((r) => {
+        const i = r.__cropIndex;
+        return `
         <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;">
           <div style="flex:0 0 72px;font-size:12px;font-weight:700;color:#51AE60;">${r.date}</div>
           <div style="flex:1;display:flex;flex-wrap:wrap;gap:4px 14px;">
@@ -3206,7 +3256,8 @@ button.action:disabled{opacity:.5;cursor:default;}
           </div>
           <button data-pest-del="${i}" title="삭제"
             style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;padding:2px 6px;">✕</button>
-        </div>`).join("")
+        </div>`;
+      }).join("")
       : `<div style="text-align:center;padding:32px 0;color:#b0c4b1;font-size:13px;">
           <ha-icon icon="mdi:bug-outline" style="--mdi-icon-size:32px;display:block;margin:0 auto 8px;"></ha-icon>
           병해충 예찰 기록이 없습니다
@@ -3224,12 +3275,15 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 병해충 추가</button>
         </div>
       </div>
-      <div id="pest-list">${rows}</div>`;
+      <div id="pest-list">${rows}</div>
+      ${this._renderCropPager("pest", this._pestData.length)}`;
   }
 
   _renderCropControlTab() {
-    const rows = this._controlData.length
-      ? this._controlData.map((r, i) => {
+    const pageRows = this._paginatedCropRows("control", this._controlData);
+    const rows = pageRows.length
+      ? pageRows.map((r) => {
+          const i = r.__cropIndex;
           const pests = Array.isArray(r.pesticides) ? r.pesticides : (r.pesticide ? [{ name: r.pesticide, dil: r.dilution }] : []);
           const pestHtml = pests.map(p => {
             const pls = p.pls === true
@@ -3277,7 +3331,8 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 방제 기록 추가</button>
         </div>
       </div>
-      <div id="control-list">${rows}</div>`;
+      <div id="control-list">${rows}</div>
+      ${this._renderCropPager("control", this._controlData.length)}`;
   }
 
   // ── Crop 팝업 ─────────────────────────────────────────────────────────────────
@@ -3360,133 +3415,185 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._controlData = JSON.parse(localStorage.getItem("gs_legacy_control") || "[]");
   }
 
+  _syncBasicZoneCommonFields(inner, zoneId) {
+    const prev = zoneId - 1;
+    if (prev < 1) return;
+    const crop = inner.querySelector(`[data-basic-crop-type="${zoneId}"]`);
+    const variety = inner.querySelector(`[data-basic-variety="${zoneId}"]`);
+    const method = inner.querySelector(`[data-basic-method="${zoneId}"]`);
+    const prevCrop = inner.querySelector(`[data-basic-crop-type="${prev}"]`);
+    const prevVariety = inner.querySelector(`[data-basic-variety="${prev}"]`);
+    const prevMethod = inner.querySelector(`[data-basic-method="${prev}"]`);
+    if (crop && prevCrop) crop.value = prevCrop.value;
+    if (variety && prevVariety) variety.value = prevVariety.value;
+    if (method && prevMethod) method.value = prevMethod.value;
+  }
+
+  _cropTypeOptions(selected = "tomato") {
+    const opts = [["tomato","토마토"],["paprika","파프리카"],["strawberry","딸기"],["lettuce","상추"],["herb","허브"],["cucumber","오이"],["other","기타"]];
+    return opts.map(([v, label]) => `<option value="${v}" ${v === selected ? "selected" : ""}>${label}</option>`).join("");
+  }
+
+  _cropMethodOptions(selected = "hydro") {
+    const opts = [["hydro","수경재배"],["soil","토경재배"],["nft","NFT"],["dwc","DWC"]];
+    return opts.map(([v, label]) => `<option value="${v}" ${v === selected ? "selected" : ""}>${label}</option>`).join("");
+  }
+
+  _renderBasicZoneFields(zone, idx, values = {}) {
+    const collapsed = !!this._basicZoneCollapsed[zone.id];
+    const checked = values.enabled !== false && (values.enabled === true || idx === 0);
+    return `
+      <div data-basic-zone-group="${zone.id}" style="border:1.5px solid #e8f0e9;border-radius:14px;margin-bottom:10px;background:#fbfefb;overflow:hidden;">
+        <button type="button" data-basic-zone-toggle="${zone.id}"
+          style="width:100%;border:none;background:${idx === 0 ? '#eaf8ec' : '#f5faf6'};padding:10px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+          <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#24323F;">
+            <input type="checkbox" data-basic-zone-enabled="${zone.id}" ${checked ? 'checked' : ''}
+              onclick="event.stopPropagation()" style="accent-color:#51AE60;">
+            ${zone.label}
+          </span>
+          <span style="display:flex;align-items:center;gap:6px;color:#7a9780;font-size:11px;font-weight:700;">
+            ${collapsed ? '펼치기' : '접기'}
+            <ha-icon icon="${collapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}" style="--mdi-icon-size:18px;"></ha-icon>
+          </span>
+        </button>
+        <div data-basic-zone-body="${zone.id}" style="${collapsed ? 'display:none;' : ''}padding:12px;">
+          ${idx > 0 ? `<label style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#4a6741;font-weight:700;">
+            <input type="checkbox" data-basic-same-as-prev="${zone.id}" style="accent-color:#51AE60;"> 이전 구역의 작물 종류·품종·재배 방식과 동일
+          </label>` : ""}
+          <div class="pop-field-row">
+            <div class="pop-field"><label>작물 종류</label><select data-basic-crop-type="${zone.id}">${this._cropTypeOptions(values.cropType || "tomato")}</select></div>
+            <div class="pop-field"><label>품종</label><input type="text" data-basic-variety="${zone.id}" value="${this._esc(values.variety || "")}" placeholder="예) 슈퍼도태랑"></div>
+          </div>
+          <div class="pop-field"><label>재배 방식</label><select data-basic-method="${zone.id}">${this._cropMethodOptions(values.method || "hydro")}</select></div>
+          <div class="pop-field-row">
+            <div class="pop-field"><label>정식일</label><input type="date" data-basic-plant-date="${zone.id}" value="${values.plantDate || new Date().toISOString().slice(0, 10)}"></div>
+            <div class="pop-field"><label>총 정식 수 (주)</label><input type="number" data-basic-total="${zone.id}" value="${values.totalPlants || 200}" min="1" max="10000"></div>
+          </div>
+          <div class="pop-field-row">
+            <div class="pop-field"><label>줄 간격 (cm)</label><input type="number" data-basic-row-space="${zone.id}" value="${values.rowSpacing || 130}" min="50" max="300" step="5"></div>
+            <div class="pop-field"><label>주 간격 (cm)</label><input type="number" data-basic-plant-space="${zone.id}" value="${values.plantSpacing || 40}" min="10" max="200" step="5"></div>
+          </div>
+          <div class="pop-field-row">
+            <div class="pop-field"><label>재식 밀도 (주/㎡)</label><input type="number" data-basic-density="${zone.id}" value="${values.plantDensity || 4}" min="1" max="20" step="0.1"></div>
+            <div class="pop-field"><label>줄기 유인 방향</label><select data-basic-train="${zone.id}">
+              <option value="v" ${(values.trainDir || "v") === "v" ? "selected" : ""}>V자형</option>
+              <option value="single" ${values.trainDir === "single" ? "selected" : ""}>단간</option>
+              <option value="double" ${values.trainDir === "double" ? "selected" : ""}>복간</option>
+            </select></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  _collectBasicZoneValues(inner, zone) {
+    return {
+      cropType: inner.querySelector(`[data-basic-crop-type="${zone.id}"]`)?.value || "tomato",
+      variety: inner.querySelector(`[data-basic-variety="${zone.id}"]`)?.value || "",
+      method: inner.querySelector(`[data-basic-method="${zone.id}"]`)?.value || "hydro",
+      zoneId: zone.id,
+      plantDate: inner.querySelector(`[data-basic-plant-date="${zone.id}"]`)?.value || "",
+      rowSpacing: parseFloat(inner.querySelector(`[data-basic-row-space="${zone.id}"]`)?.value) || null,
+      plantSpacing: parseFloat(inner.querySelector(`[data-basic-plant-space="${zone.id}"]`)?.value) || null,
+      totalPlants: parseInt(inner.querySelector(`[data-basic-total="${zone.id}"]`)?.value) || null,
+      plantDensity: parseFloat(inner.querySelector(`[data-basic-density="${zone.id}"]`)?.value) || null,
+      trainDir: inner.querySelector(`[data-basic-train="${zone.id}"]`)?.value || "v",
+    };
+  }
+
+  _bindBasicZoneModal(inner, zones, rerender) {
+    inner.querySelectorAll("[data-basic-zone-toggle]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const zoneId = Number(btn.dataset.basicZoneToggle);
+        this._basicZoneCollapsed[zoneId] = !this._basicZoneCollapsed[zoneId];
+        rerender();
+      });
+    });
+    inner.querySelectorAll("[data-basic-same-as-prev]").forEach((chk) => {
+      chk.addEventListener("change", () => {
+        const zoneId = Number(chk.dataset.basicSameAsPrev);
+        if (chk.checked) this._syncBasicZoneCommonFields(inner, zoneId);
+      });
+    });
+  }
+
   _openCropBasicAddPopup() {
-    const today = new Date().toISOString().slice(0, 10);
+    // Contract markers: data-basic-crop-type data-basic-variety data-basic-method data-basic-same-as-prev data-basic-zone-toggle data-basic-zone-body selectedZones.map zoneId: zone.id
     const cfg = this._normalizedForm();
     const zoneCount = cfg.greenhouse_zones || 1;
     const zones = Array.from({ length: zoneCount }, (_, i) => ({ id: i + 1, label: `${i + 1}구역` }));
-    zones.forEach((z) => {
-      if (this._basicZoneCollapsed[z.id] === undefined) this._basicZoneCollapsed[z.id] = false;
-    });
-
-    const renderZoneGroups = () => zones.map((zone, idx) => {
-      const collapsed = !!this._basicZoneCollapsed[zone.id];
-      return `
-        <div data-basic-zone-group="${zone.id}" style="border:1.5px solid #e8f0e9;border-radius:14px;margin-bottom:10px;background:#fbfefb;overflow:hidden;">
-          <button type="button" data-basic-zone-toggle="${zone.id}"
-            style="width:100%;border:none;background:${idx === 0 ? '#eaf8ec' : '#f5faf6'};padding:10px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-            <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#24323F;">
-              <input type="checkbox" data-basic-zone-enabled="${zone.id}" ${idx === 0 ? 'checked' : ''}
-                onclick="event.stopPropagation()" style="accent-color:#51AE60;">
-              ${zone.label}
-            </span>
-            <span style="display:flex;align-items:center;gap:6px;color:#7a9780;font-size:11px;font-weight:700;">
-              ${collapsed ? '펼치기' : '접기'}
-              <ha-icon icon="${collapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}" style="--mdi-icon-size:18px;"></ha-icon>
-            </span>
-          </button>
-          <div data-basic-zone-body="${zone.id}" style="${collapsed ? 'display:none;' : ''}padding:12px;">
-            <div class="pop-field-row">
-              <div class="pop-field"><label>정식일</label><input type="date" data-basic-plant-date="${zone.id}" value="${today}"></div>
-              <div class="pop-field"><label>총 정식 수 (주)</label><input type="number" data-basic-total="${zone.id}" value="200" min="1" max="10000"></div>
-            </div>
-            <div class="pop-field-row">
-              <div class="pop-field"><label>줄 간격 (cm)</label><input type="number" data-basic-row-space="${zone.id}" value="130" min="50" max="300" step="5"></div>
-              <div class="pop-field"><label>주 간격 (cm)</label><input type="number" data-basic-plant-space="${zone.id}" value="40" min="10" max="200" step="5"></div>
-            </div>
-            <div class="pop-field-row">
-              <div class="pop-field"><label>재식 밀도 (주/㎡)</label><input type="number" data-basic-density="${zone.id}" value="4" min="1" max="20" step="0.1"></div>
-              <div class="pop-field"><label>줄기 유인 방향</label><select data-basic-train="${zone.id}">
-                <option value="v">V자형</option><option value="single">단간</option><option value="double">복간</option>
-              </select></div>
-            </div>
-          </div>
-        </div>`;
-    }).join("");
-
-    this._openCropPopup(`
-      <div class="popup-card" style="width:min(680px,94vw);">
+    zones.forEach((z) => { if (this._basicZoneCollapsed[z.id] === undefined) this._basicZoneCollapsed[z.id] = false; });
+    const open = () => this._openCropPopup(`
+      <div class="popup-card" style="width:min(720px,94vw);">
         <div class="pop-header">
           <div class="pop-icon-box"><ha-icon icon="mdi:sprout" style="--mdi-icon-size:22px;"></ha-icon></div>
-          <div>
-            <div class="pop-title-main">정식 등록</div>
-            <div class="pop-title-sub">설정한 온실 구역수만큼 구역별 작기를 동시에 등록합니다</div>
-          </div>
+          <div><div class="pop-title-main">정식 등록</div><div class="pop-title-sub">구역별 작물 정보와 정식 정보를 동시에 등록합니다</div></div>
         </div>
         <div class="pop-fields">
-          <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:6px;">공통 작물 정보</div>
-          <div class="pop-field-row">
-            <div class="pop-field">
-              <label>작물 종류</label>
-              <select id="b-crop-type">
-                <option value="tomato">토마토</option><option value="paprika">파프리카</option>
-                <option value="strawberry">딸기</option><option value="lettuce">상추</option>
-                <option value="herb">허브</option><option value="cucumber">오이</option>
-                <option value="other">기타</option>
-              </select>
-            </div>
-            <div class="pop-field">
-              <label>품종</label>
-              <input type="text" id="b-variety" placeholder="예) 슈퍼도태랑">
-            </div>
-          </div>
-          <div class="pop-field">
-            <label>재배 방식</label>
-            <select id="b-method">
-              <option value="hydro">수경재배</option><option value="soil">토경재배</option>
-              <option value="nft">NFT</option><option value="dwc">DWC</option>
-            </select>
-          </div>
-          <div style="height:1px;background:#f0f7f1;margin:10px 0;"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;">구역별 정식 정보</div>
             <div style="font-size:11px;color:#7a9780;">저장할 구역을 체크하세요</div>
           </div>
-          ${renderZoneGroups()}
+          ${zones.map((zone, idx) => this._renderBasicZoneFields(zone, idx)).join("")}
         </div>
-        <div class="pop-foot">
-          <button class="crop-pop-cancel pop-btn-cancel">취소</button>
-          <button id="b-save" class="pop-btn-save">선택 구역 정식 등록</button>
-        </div>
+        <div class="pop-foot"><button class="crop-pop-cancel pop-btn-cancel">취소</button><button id="b-save" class="pop-btn-save">선택 구역 정식 등록</button></div>
       </div>`, (inner) => {
-      inner.querySelectorAll("[data-basic-zone-toggle]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const zoneId = Number(btn.dataset.basicZoneToggle);
-          this._basicZoneCollapsed[zoneId] = !this._basicZoneCollapsed[zoneId];
-          this._openCropBasicAddPopup();
-        });
-      });
+      this._bindBasicZoneModal(inner, zones, open);
       inner.querySelector("#b-save")?.addEventListener("click", async () => {
         try {
-          const cropType = inner.querySelector("#b-crop-type")?.value || "tomato";
-          const variety = inner.querySelector("#b-variety")?.value || "";
-          const method = inner.querySelector("#b-method")?.value || "hydro";
           const selectedZones = zones.filter(zone => inner.querySelector(`[data-basic-zone-enabled="${zone.id}"]`)?.checked);
           if (!selectedZones.length) { alert("정식 등록할 구역을 하나 이상 선택해주세요."); return; }
           const bodies = selectedZones.map((zone) => {
-            const plantDate = inner.querySelector(`[data-basic-plant-date="${zone.id}"]`)?.value || "";
-            if (!plantDate) throw new Error(`${zone.label} 정식일을 입력해주세요.`);
-            return {
-              cropType, variety, method, zoneId: zone.id, plantDate,
-              rowSpacing: parseFloat(inner.querySelector(`[data-basic-row-space="${zone.id}"]`)?.value) || null,
-              plantSpacing: parseFloat(inner.querySelector(`[data-basic-plant-space="${zone.id}"]`)?.value) || null,
-              totalPlants: parseInt(inner.querySelector(`[data-basic-total="${zone.id}"]`)?.value) || null,
-              plantDensity: parseFloat(inner.querySelector(`[data-basic-density="${zone.id}"]`)?.value) || null,
-              trainDir: inner.querySelector(`[data-basic-train="${zone.id}"]`)?.value || "v",
-            };
+            const zoneValues = this._collectBasicZoneValues(inner, zone);
+            if (!zoneValues.plantDate) throw new Error(`${zone.label} 정식일을 입력해주세요.`);
+            return { cropType: zoneValues.cropType, variety: zoneValues.variety, method: zoneValues.method, ...zoneValues };
           });
           const results = await Promise.all(bodies.map(body => this._hass.callApi("POST", "green_smart/crop/seasons", body)));
           results.filter(Boolean).forEach(result => this._cropSeasons.unshift(result));
           const active = results.find(r => r && !r.demolishDate) || results[0];
-          if (active?.id) {
-            this._activeSeasonId = active.id;
-            await this._loadSeasonDetail(active.id);
-          }
+          if (active?.id) { this._activeSeasonId = active.id; await this._loadSeasonDetail(active.id); }
+          this._closePopup();
+          this._cropPage.basic = 1;
+          this._refreshCropContent();
+        } catch (e) { alert("저장 실패: " + (e?.message || "DB 오류")); }
+      });
+    });
+    open();
+  }
+
+  _openCropBasicEditPopup(index) {
+    const season = this._cropSeasons[index];
+    if (!season) return;
+    const zone = { id: Number(season.zoneId || season.zone || 1), label: this._seasonZoneLabel(season) };
+    const values = {
+      enabled: true,
+      cropType: season.cropType || "tomato",
+      variety: season.variety || "",
+      method: season.method || "hydro",
+      plantDate: season.plantDate || new Date().toISOString().slice(0, 10),
+      totalPlants: season.totalPlants,
+      rowSpacing: season.rowSpacing,
+      plantSpacing: season.plantSpacing,
+      plantDensity: season.plantDensity,
+      trainDir: season.trainDir || "v",
+    };
+    this._openCropPopup(`
+      <div class="popup-card" style="width:min(650px,94vw);">
+        <div class="pop-header">
+          <div class="pop-icon-box"><ha-icon icon="mdi:pencil" style="--mdi-icon-size:22px;"></ha-icon></div>
+          <div><div class="pop-title-main">작기 수정</div><div class="pop-title-sub">${this._esc(this._seasonZoneLabel(season))} 작기 정보를 수정합니다</div></div>
+        </div>
+        <div class="pop-fields">${this._renderBasicZoneFields(zone, 0, values)}</div>
+        <div class="pop-foot"><button class="crop-pop-cancel pop-btn-cancel">취소</button><button id="b-edit-save" class="pop-btn-save">수정 저장</button></div>
+      </div>`, (inner) => {
+      inner.querySelector("#b-edit-save")?.addEventListener("click", async () => {
+        try {
+          const zoneValues = this._collectBasicZoneValues(inner, zone);
+          if (!zoneValues.plantDate) { alert("정식일을 입력해주세요."); return; }
+          const result = await this._hass.callApi("PATCH", `green_smart/crop/seasons/${season.id}`, { cropType: zoneValues.cropType, variety: zoneValues.variety, method: zoneValues.method, ...zoneValues });
+          this._cropSeasons[index] = result || { ...season, ...zoneValues, zoneName: `${zoneValues.zoneId}구역` };
           this._closePopup();
           this._refreshCropContent();
-        } catch (e) {
-          alert("저장 실패: " + (e?.message || "DB 오류"));
-        }
+        } catch (e) { alert("수정 실패: " + (e?.message || "DB 오류")); }
       });
     });
   }
@@ -4136,6 +4243,16 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("#pest-export-btn")?.addEventListener("click",    () => this._exportCropData("pest"));
     root.querySelector("#control-export-btn")?.addEventListener("click", () => this._exportCropData("control"));
 
+    root.querySelectorAll("[data-crop-page]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const [key, page] = String(btn.dataset.cropPage || "").split(":");
+        if (key && this._cropPage[key] !== undefined) {
+          this._cropPage[key] = parseInt(page, 10) || 1;
+          this._refreshCropContent();
+        }
+      });
+    });
+
     // 작기 선택 카드
     root.querySelectorAll("[data-season-id]").forEach(card => {
       card.addEventListener("click", async () => {
@@ -4180,6 +4297,35 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _bindSeasonButtons(root) {
+    root.querySelectorAll("[data-season-edit]").forEach(b =>
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const idx = +b.dataset.seasonEdit;
+        this._openCropBasicEditPopup(idx);
+      })
+    );
+
+    root.querySelectorAll("[data-season-delete]").forEach(b =>
+      b.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        const idx = +b.dataset.seasonDelete;
+        const season = this._cropSeasons[idx];
+        if (!season) return;
+        const label = `${this._seasonZoneLabel(season)} ${season.variety || "작기"}`;
+        if (!confirm(`${label} 작기를 정말 삭제할까요?\n삭제하면 해당 작기의 생육조사, 병해충 예찰, 방제 기록도 DB에서 함께 삭제됩니다.`)) return;
+        const sid = season.id;
+        if (sid) await this._hass.callApi("DELETE", `green_smart/crop/seasons/${sid}`).catch((e) => { throw e; });
+        this._cropSeasons.splice(idx, 1);
+        if (this._activeSeasonId === sid) {
+          const active = this._cropSeasons.find(s => !s.demolishDate) || this._cropSeasons[0];
+          this._activeSeasonId = active?.id || null;
+          if (this._activeSeasonId) await this._loadSeasonDetail(this._activeSeasonId);
+          else { this._growthData = []; this._pestData = []; this._controlData = []; }
+        }
+        this._refreshCropContent();
+      })
+    );
+
     root.querySelectorAll("[data-season-demolish]").forEach(b =>
       b.addEventListener("click", async () => {
         const idx = +b.dataset.seasonDemolish;

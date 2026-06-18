@@ -119,17 +119,69 @@ class CropSeasonDemolishView(HomeAssistantView):
 
 
 class CropSeasonDeleteView(HomeAssistantView):
-    """DELETE /api/green_smart/crop/seasons/{season_id} — 소프트 삭제."""
+    """PATCH/DELETE /api/green_smart/crop/seasons/{season_id}."""
     url  = "/api/green_smart/crop/seasons/{season_id}"
     name = "api:green_smart:crop:season:delete"
 
+    async def patch(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            return _err("Invalid JSON")
+
+        zone_id = body.get("zoneId")
+        plant_date = body.get("plantDate")
+        if not zone_id or not plant_date:
+            return _err("plantDate, zoneId 필수")
+        zone_id_int = int(zone_id)
+        await _ensure_zone(hass, zone_id_int)
+        await execute(hass, """
+            UPDATE crop_seasons
+            SET zone_id = %s, crop_type = %s, variety = %s, method = %s,
+                plant_date = %s, row_spacing = %s, plant_spacing = %s,
+                total_plants = %s, plant_density = %s, train_dir = %s,
+                notes = %s, updated_at = NOW()
+            WHERE id = %s AND deleted_at IS NULL
+        """, (
+            zone_id_int,
+            body.get("cropType") or "other",
+            body.get("variety") or "",
+            body.get("method") or "hydro",
+            plant_date,
+            body.get("rowSpacing"),
+            body.get("plantSpacing"),
+            body.get("totalPlants"),
+            body.get("plantDensity"),
+            body.get("trainDir") or "v",
+            body.get("notes") or "",
+            int(season_id),
+        ))
+        row = await fetchone(hass, """
+            SELECT s.id, s.crop_type AS cropType, s.variety, s.method,
+                   s.plant_date AS plantDate, s.demolish_date AS demolishDate,
+                   s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
+                   s.total_plants AS totalPlants, s.plant_density AS plantDensity,
+                   s.train_dir AS trainDir, s.notes,
+                   COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
+            FROM crop_seasons s LEFT JOIN zones z ON z.id = s.zone_id
+            WHERE s.id = %s AND s.deleted_at IS NULL
+        """, (int(season_id),))
+        return _json(row)
+
     async def delete(self, request: web.Request, season_id: str) -> web.Response:
         hass = request.app["hass"]
-        await execute(hass,
-            "UPDATE crop_seasons SET deleted_at = NOW() WHERE id = %s",
-            (int(season_id),),
-        )
-        return _json({"ok": True})
+        sid = int(season_id)
+        await execute(hass, """
+            DELETE cp FROM control_pesticides cp
+            JOIN control_records cr ON cr.id = cp.control_id
+            WHERE cr.season_id = %s
+        """, (sid,))
+        await execute(hass, "DELETE FROM control_records WHERE season_id = %s", (sid,))
+        await execute(hass, "DELETE FROM pest_surveys WHERE season_id = %s", (sid,))
+        await execute(hass, "DELETE FROM growth_surveys WHERE season_id = %s", (sid,))
+        await execute(hass, "DELETE FROM crop_seasons WHERE id = %s", (sid,))
+        return _json({"ok": True, "id": sid, "hardDeleted": True})
 
 
 # ── 생육조사 ──────────────────────────────────────────────────────────────────

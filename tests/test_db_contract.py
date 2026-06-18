@@ -87,3 +87,26 @@ def test_crop_season_post_ensures_zone_and_get_keeps_zone_id_name():
     assert "LEFT JOIN zones" in source
     assert "s.zone_id AS zoneId" in source
     assert "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName" in source
+
+
+def test_crop_season_patch_updates_editable_fields_and_returns_zone_label():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+
+    assert "async def patch(self, request: web.Request, season_id: str)" in source
+    assert "UPDATE crop_seasons" in source
+    assert "crop_type = %s" in source
+    assert "zone_id = %s" in source
+    assert "plant_density = %s" in source
+    assert "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName" in source
+
+
+def test_crop_season_delete_hard_deletes_child_tables_before_season():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    delete_section = source.split("class CropSeasonDeleteView", 1)[1].split("# ── 생육조사", 1)[0]
+
+    assert "DELETE cp FROM control_pesticides cp" in delete_section
+    assert "DELETE FROM control_records WHERE season_id = %s" in delete_section
+    assert "DELETE FROM pest_surveys WHERE season_id = %s" in delete_section
+    assert "DELETE FROM growth_surveys WHERE season_id = %s" in delete_section
+    assert "DELETE FROM crop_seasons WHERE id = %s" in delete_section
+    assert "UPDATE crop_seasons SET deleted_at" not in delete_section
