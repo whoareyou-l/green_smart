@@ -119,3 +119,25 @@ def test_growth_survey_payload_list_and_export_use_dynamic_crop_metrics():
     assert "this._renderGrowthMetricChips" in growth_list
     assert "_growthMetricRowsForExport" in panel
     assert "metricsJson" in export_section
+
+
+def test_home_dashboard_does_not_render_or_fetch_pesticide_card():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    home = panel.split("  _renderHomePage(sim)", 1)[1].split("  _renderKPIStrip", 1)[0]
+    weather_fetch = panel.split("  async _fetchWeather()", 1)[1].split("  _generateSimData", 1)[0]
+
+    assert "_renderPesticideCard()" not in home
+    assert "data-pesticide-card" not in home
+    assert "central/pesticide/search" not in weather_fetch
+    assert "data-pesticide-card" not in weather_fetch
+
+
+def test_green_smart_sidebar_offsets_from_ha_sidebar_not_viewport_left():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    styles = panel.split("/* ── Sidebar / TopBar ─── */", 1)[1].split("/* Animations */", 1)[0]
+
+    assert "--gs-ha-sidebar-left" in panel
+    assert "_syncHaSidebarOffset" in panel
+    assert "getBoundingClientRect().left" in panel
+    assert "left:var(--gs-ha-sidebar-left,0px)" in styles
+    assert "position:fixed;top:0;left:0;width:70px" not in styles

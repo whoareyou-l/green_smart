@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.20
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.21
 const DOMAIN = "green_smart";
-const VERSION = "1.8.20";
+const VERSION = "1.8.21";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -107,12 +107,22 @@ class GreenSmartPanel extends HTMLElement {
 
   connectedCallback() {
     if (!this.shadowRoot.querySelector("#app")) this._renderShell();
+    this._syncHaSidebarOffset();
+    this._haSidebarResizeHandler = this._haSidebarResizeHandler || (() => this._syncHaSidebarOffset());
+    window.addEventListener("resize", this._haSidebarResizeHandler);
+    requestAnimationFrame(() => this._syncHaSidebarOffset());
   }
 
   disconnectedCallback() {
     this._stopVirtualSimulation();
     clearInterval(this._weatherInterval); this._weatherInterval = null;
     this._stopWatchdog();
+    if (this._haSidebarResizeHandler) window.removeEventListener("resize", this._haSidebarResizeHandler);
+  }
+
+  _syncHaSidebarOffset() {
+    const left = Math.max(0, Math.round(this.getBoundingClientRect().left || 0));
+    this.style.setProperty("--gs-ha-sidebar-left", `${left}px`);
   }
 
   // ── Init & storage ──────────────────────────────────────────────────────────
@@ -410,18 +420,8 @@ class GreenSmartPanel extends HTMLElement {
         this._weatherMidData = { days: [], error: "unavailable" };
       }
 
-      try {
-        this._pesticideSearchData = await this._hass.callApi("POST", "green_smart/central/pesticide/search", {
-          query: "살충제",
-        });
-      } catch (pestErr) {
-        this._pesticideSearchData = { items: [], error: "unavailable" };
-      }
-
       const weatherCard = this.shadowRoot && this.shadowRoot.querySelector("[data-weather-card]");
       if (weatherCard) weatherCard.innerHTML = this._renderWeatherCardInner(this._weatherData);
-      const pesticideCard = this.shadowRoot && this.shadowRoot.querySelector("[data-pesticide-card]");
-      if (pesticideCard) pesticideCard.outerHTML = this._renderPesticideCard();
     } catch (err) {
       try {
         const fallback = await this._hass.callApi("GET", "green_smart/weather/current");
@@ -707,7 +707,7 @@ class GreenSmartPanel extends HTMLElement {
 button{cursor:pointer;font:inherit;}
 /* ── Sidebar / TopBar ─── */
 #sidebar{
-  position:fixed;top:0;left:0;width:70px;height:100vh;
+  position:fixed;top:0;left:var(--gs-ha-sidebar-left,0px);width:70px;height:100vh;
   background:#fff;border-right:1px solid #e8f0e9;
   display:flex;flex-direction:column;align-items:center;
   padding:16px 0 12px;z-index:20;
@@ -1424,7 +1424,6 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div class="right-pair">
           ${this._renderTargetEnv()}
           ${this._renderIrrigPlan()}
-          ${this._renderPesticideCard()}
         </div>
       </div>
       ${this._renderZoneCards2(sim)}
