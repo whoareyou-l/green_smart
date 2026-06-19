@@ -226,3 +226,36 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     assert 'key: "final"' not in tabs
     assert 'key: "permissions"' not in tabs
 
+
+def test_irrigation_control_page_tabs_state_and_ai_interlock_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    sidebar = panel.split("  _renderSidebar()", 1)[1].split("  _alertPillHtml", 1)[0]
+    irrig_page = panel.split("  _renderIrrigSettingsPage()", 1)[1].split("  _renderVentSettingsPage()", 1)[0]
+
+    assert 'navBtn("irrigation",  "mdi:water",              "관수 제어"' in sidebar
+    assert "기본 관수 인터록으로 안전하게 작동하고" in irrig_page
+    assert "data-irrigation-control-tab" in irrig_page
+    assert "data-irrigation-control-content" in irrig_page
+    assert "_irrigationControlTabs()" in panel
+    assert "_renderIrrigationControlTabBar" in panel
+    assert "_renderIrrigationControlTabContent" in panel
+    assert "_bindIrrigationControlInputs" in panel
+    for tab in ["제어 모드", "기본 관수 설정", "포수 전략", "일사 비례 관수", "드라이백 전략", "배액 피드백", "양액 전략", "AI 관수 보정", "안전 한계", "양액기 설정", "관수 로그"]:
+        assert tab in panel
+    for state_key in ["irrigationControlMode", "baseIrrigationSettings", "saturationStrategy", "solarIrrigationStrategy", "drybackStrategy", "drainFeedback", "nutrientStrategy", "aiIrrigationCorrection", "irrigationSafetyLimits", "fertigationDeviceSettings", "finalIrrigationTargets", "irrigationLogs"]:
+        assert state_key in panel
+    assert "AI는 기본 관수 인터록 위에 적용되는 보정 레이어" in panel
+    assert "_calculateFinalIrrigationTargets" in panel
+
+
+def test_irrigation_control_docs_cover_requested_development_deliverables():
+    doc_path = ROOT / "docs" / "design" / "irrigation-control-page.md"
+    doc = doc_path.read_text(encoding="utf-8")
+    for heading in ["전체 페이지 구조", "하위 탭 구조", "React 컴포넌트 구조", "TypeScript Interface", "Mock Data", "API 명세", "DB 테이블 초안", "RBAC 권한 처리 방식", "실제 UI 코드", "Home Assistant 엔티티 연동 구조", "AI Agent 출력값을 DB에 저장하고 UI에 반영하는 구조"]:
+        assert heading in doc
+    for api in ["GET /api/irrigation/status", "GET /api/irrigation/settings", "POST /api/irrigation/settings", "GET /api/irrigation/final-targets", "GET /api/irrigation/ai-correction", "POST /api/irrigation/manual-run", "POST /api/irrigation/emergency-stop", "GET /api/irrigation/logs", "POST /api/irrigation/drain-feedback"]:
+        assert api in doc
+    for table in ["irrigation_settings", "sensor_readings", "irrigation_drain_feedback", "ai_irrigation_outputs", "final_irrigation_targets", "irrigation_control_logs", "audit_logs"]:
+        assert table in doc
+    for role in ["Admin", "Farm Owner", "Farm Worker"]:
+        assert role in doc

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.25
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.26
 const DOMAIN = "green_smart";
-const VERSION = "1.8.25";
+const VERSION = "1.8.26";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -67,6 +67,75 @@ const DEFAULT_CONTROL_STRATEGY_STATE = {
     "10:35 G-Index -2.1 → AI 보정 적용",
   ],
 };
+
+const DEFAULT_IRRIGATION_CONTROL_STATE = {
+  irrigationControlMode: {
+    mode: "interlock", aiEnabled: false, fallbackToInterlockOnAiError: true,
+    autoIrrigationEnabled: true, manualRunAllowed: true, status: "standby",
+    todayCount: 7, lastRunAt: "11:20", nextRunAt: "12:10", accumulatedRadiation: 82,
+    currentVwc: 63, currentEc: 2.4, currentPh: 6.1,
+  },
+  baseIrrigationSettings: {
+    startTime: "07:00", endTime: "17:30", sunriseOffsetMin: 30, sunsetOffsetMin: -120,
+    shotCcPerPlant: 120, shotLiterPerZone: 12, minIntervalMin: 30, maxDailyCount: 18,
+    baseEc: 2.5, basePh: 6.0, zoneEnabled: true, valveOrder: "1,2,3,4", zoneTargetAmountL: 12,
+  },
+  saturationStrategy: {
+    enabled: true, targetVwc: 68, startTime: "07:00", completeVwc: 70,
+    firstDrainTargetTime: "10:30", firstDrainTargetAmountL: 1.2, splitCount: 3,
+    shotAmountL: 4, firstDrainInductionAmountL: 2,
+    previousLastVwc: 61, todayPreFirstVwc: 58, nightWaterLoss: 3, requiredAmountL: 8, firstDrainDetected: false,
+  },
+  solarIrrigationStrategy: {
+    enabled: true, baseAccumulatedRadiation: 100, cloudyThreshold: 80, sunnyThreshold: 120,
+    minIntervalMin: 25, maxIntervalMin: 90, highTempCorrectionEnabled: true, vpdCorrectionEnabled: true,
+    currentAccumulatedRadiation: 82, afterLastIrrigationRadiation: 58, remainingRadiation: 42, nextExpectedAt: "12:10",
+  },
+  drybackStrategy: {
+    enabled: true, dayDrybackRange: 8, nightDrybackTarget: 10, minVwc: 45,
+    targetVwcUpper: 72, targetVwcLower: 58, nightEmergencyIrrigation: true, nightEmergencyVwc: 42,
+    peakVwcAfterSaturation: 70, currentDryback: 7, targetDryback: 10, nightProgress: 52,
+  },
+  drainFeedback: {
+    previousFeedAmountL: 180, previousDrainAmountL: 45, drainRate: 25,
+    drainEc: 3.1, drainPh: 5.7, measuredAt: "16:30", targetDrainRate: 30,
+    drainShortage: true, saltAccumulationRisk: true, phAcidificationRisk: false,
+  },
+  nutrientStrategy: {
+    cropGroup: "과채류", growthStage: "착과기", baseEc: 2.5, aiEcDelta: 0.3, finalEc: 2.8,
+    basePh: 6.0, aiPhDelta: 0.2, finalPh: 6.2, useA: true, useB: true, useAcid: true, useAlkali: false,
+    currentFeedEc: 2.4, currentFeedPh: 6.1, ecDeviation: -0.4, phDeviation: -0.1,
+  },
+  aiIrrigationCorrection: {
+    gIndex: 3.1, cropGroup: "과채류", growthStage: "착과기", decision: "생식생장 유도",
+    ecDelta: 0.3, phDelta: 0.2, shotAmountDelta: 1.0, intervalDeltaMin: -5,
+    drybackDelta: 2, endTimeDeltaMin: -20, targetDrainRateDelta: 5, healthy: true, applied: false,
+    explanation: "현재 G-Index가 +3.1로 영양생장이 강합니다. 생식생장 유도를 위해 EC를 +0.3dS/m 상향하고 야간 드라이백 목표를 10%로 확대합니다.",
+  },
+  irrigationSafetyLimits: {
+    minVwc: 40, maxVwc: 80, maxEc: 4.0, minEc: 0.8, maxPh: 7.2, minPh: 5.2,
+    maxShotAmountL: 20, maxDailyAmountL: 260, minIntervalMin: 20, maxPumpContinuousMin: 8,
+    flowAnomalyThreshold: 20, valveErrorDetection: true, sensorErrorMode: "interlock", aiErrorMode: "interlock",
+  },
+  fertigationDeviceSettings: {
+    rawWaterPumpEntity: "switch.raw_water_pump", irrigationPumpEntity: "switch.irrigation_pump",
+    aValveEntity: "valve.nutrient_a", bValveEntity: "valve.nutrient_b",
+    acidValveEntity: "valve.acid", alkaliValveEntity: "valve.alkali",
+    zoneValveEntities: "valve.zone_1,valve.zone_2", flowMeterEntity: "sensor.flow_meter",
+    ecSensorEntity: "sensor.feed_ec", phSensorEntity: "sensor.feed_ph", vwcSensorEntity: "sensor.substrate_vwc",
+    ecP: 1.2, ecI: 0.04, ecD: 0.01, phP: 1.0, phI: 0.03, phD: 0.01,
+    ecCalibration: 0, phCalibration: 0, flowCalibration: 1.0,
+  },
+  finalIrrigationTargets: {
+    shotAmountL: 12, minIntervalMin: 30, targetEc: 2.5, targetPh: 6.0,
+    targetDrainRate: 30, targetDryback: 10, endTime: "17:30",
+  },
+  irrigationLogs: [
+    "11:20 Zone 1 · 12L · 일사량 · EC 2.4 · pH 6.1 · 성공",
+    "10:35 Zone 2 · 12L · AI 보정 · 배액 감지중 · 성공",
+    "09:10 Zone 1 · 8L · 포수 · 첫 배액 대기 · 성공",
+  ],
+};
 const SERIES = [
   { key:"temp",     label:"온도", unit:"°C",   color:"#51AE60", fixed:1 },
   { key:"humidity", label:"습도", unit:"%",    color:"#4A90D9", fixed:1 },
@@ -128,6 +197,8 @@ class GreenSmartPanel extends HTMLElement {
     this._weatherModalOpen = false;
     this._controlStrategy = this._loadControlStrategy();
     this._envStrategyTab = "mode";
+    this._irrigationControl = this._loadIrrigationControl();
+    this._irrigationTab = "mode";
     this._pageRendered = null;
     this.attachShadow({ mode: "open" });
   }
@@ -1384,7 +1455,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       navBtn("home",        "mdi:home-variant",       "홈",        "온실 현황 · 환경 추세 · 날씨를 한눈에 확인"),
       navBtn("crop",        "mdi:sprout",             "작물 설정", "작물 종류 · 생육 단계 · 재배 방식 설정"),
       navBtn("environment", "mdi:thermometer-lines",  "환경 제어", "온도 · 습도/VPD · CO₂ · AI 보정 제어"),
-      navBtn("irrigation",  "mdi:water",              "관수 설정", "관수 주기 · 관수량 · EC · pH 설정"),
+      navBtn("irrigation",  "mdi:water",              "관수 제어", "기본 관수 인터록 · AI 보정 · 양액 전략"),
       navBtn("ventilation", "mdi:fan",                "환기 설정", "천창 · 측창 개폐 조건 및 환기 기준 설정"),
       navBtn("screen",      "mdi:roller-shade",       "스크린 설정","차광 스크린 · 보온 커튼 동작 조건 설정"),
     ].join("");
@@ -4749,22 +4820,134 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _cloneIrrigationDefaults() {
+    return JSON.parse(JSON.stringify(DEFAULT_IRRIGATION_CONTROL_STATE));
+  }
+
+  _loadIrrigationControl() {
+    const defaults = this._cloneIrrigationDefaults();
+    try {
+      const raw = localStorage.getItem("green_smart_irrigation_control");
+      if (!raw) return defaults;
+      const saved = JSON.parse(raw);
+      const merged = { ...defaults, ...saved };
+      Object.keys(defaults).forEach((k) => {
+        if (typeof defaults[k] === "object" && !Array.isArray(defaults[k])) merged[k] = { ...defaults[k], ...(saved[k] || {}) };
+      });
+      return this._calculateFinalIrrigationTargets(merged);
+    } catch (_) { return defaults; }
+  }
+
+  _saveIrrigationControl() {
+    this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
+    localStorage.setItem("green_smart_irrigation_control", JSON.stringify(this._irrigationControl));
+    this._irrigationControl.irrigationLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 설정 저장 · 관수 제어 갱신 · 성공`, ...(this._irrigationControl.irrigationLogs || [])].slice(0, 20);
+    this._pageRendered = null;
+    this._update();
+  }
+
+  _calculateFinalIrrigationTargets(state = this._irrigationControl) {
+    const mode = state.irrigationControlMode;
+    const base = state.baseIrrigationSettings;
+    const ai = state.aiIrrigationCorrection;
+    const safety = state.irrigationSafetyLimits;
+    const useAi = mode.aiEnabled && mode.mode === "ai_assist" && ai.healthy;
+    if (mode.aiEnabled && !ai.healthy && mode.fallbackToInterlockOnAiError) mode.mode = "interlock";
+    const clamp = (v, min, max) => Math.max(Number(min), Math.min(Number(max), Number(v)));
+    state.finalIrrigationTargets = {
+      shotAmountL: clamp(Number(base.shotLiterPerZone) + (useAi ? Number(ai.shotAmountDelta) : 0), 0, safety.maxShotAmountL),
+      minIntervalMin: Math.max(Number(safety.minIntervalMin), Number(base.minIntervalMin) + (useAi ? Number(ai.intervalDeltaMin) : 0)),
+      targetEc: clamp(Number(base.baseEc) + (useAi ? Number(ai.ecDelta) : 0), safety.minEc, safety.maxEc),
+      targetPh: clamp(Number(base.basePh) + (useAi ? Number(ai.phDelta) : 0), safety.minPh, safety.maxPh),
+      targetDrainRate: Number(state.drainFeedback.targetDrainRate) + (useAi ? Number(ai.targetDrainRateDelta) : 0),
+      targetDryback: Number(state.drybackStrategy.nightDrybackTarget) + (useAi ? Number(ai.drybackDelta) : 0),
+      endTime: base.endTime,
+    };
+    state.nutrientStrategy.finalEc = state.finalIrrigationTargets.targetEc;
+    state.nutrientStrategy.finalPh = state.finalIrrigationTargets.targetPh;
+    ai.applied = useAi;
+    return state;
+  }
+
+  _irrigationControlTabs() {
+    return [
+      { key:"mode", label:"제어 모드", icon:"mdi:tune-variant" },
+      { key:"base", label:"기본 관수 설정", icon:"mdi:timer-outline" },
+      { key:"saturation", label:"포수 전략", icon:"mdi:cup-water" },
+      { key:"solar", label:"일사 비례 관수", icon:"mdi:white-balance-sunny" },
+      { key:"dryback", label:"드라이백 전략", icon:"mdi:water-minus" },
+      { key:"drain", label:"배액 피드백", icon:"mdi:tray-arrow-down" },
+      { key:"nutrient", label:"양액 전략", icon:"mdi:flask-outline" },
+      { key:"ai", label:"AI 관수 보정", icon:"mdi:brain" },
+      { key:"safety", label:"안전 한계", icon:"mdi:alert-octagon" },
+      { key:"device", label:"양액기 설정", icon:"mdi:pipe-valve" },
+      { key:"logs", label:"관수 로그", icon:"mdi:clipboard-text-clock" },
+    ];
+  }
+
+  _renderIrrigationControlTabBar() {
+    const tabs = this._irrigationControlTabs();
+    if (!tabs.some((t) => t.key === this._irrigationTab)) this._irrigationTab = "mode";
+    return `<div class="irrigation-control-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">
+      ${tabs.map((t) => `<button class="c-tab ${this._irrigationTab === t.key ? "active" : ""}" data-irrigation-control-tab="${t.key}" style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;"><ha-icon icon="${t.icon}" style="width:15px;height:15px;"></ha-icon>${t.label}</button>`).join("")}
+    </div>`;
+  }
+
+  _irrigRow(group, key, label, val, unit = "", min = 0, max = 9999, step = 1) {
+    return `<div class="strategy-row"><div class="strategy-label">${label}</div><div class="strategy-control"><input type="number" data-irrigation-field data-irrigation-group="${group}" data-irrigation-key="${key}" value="${val}" min="${min}" max="${max}" step="${step}">${unit ? `<span>${unit}</span>` : ""}</div></div>`;
+  }
+
+  _irrigText(group, key, label, val) {
+    return `<div class="strategy-row"><div class="strategy-label">${label}</div><div class="strategy-control"><input type="text" data-irrigation-field data-irrigation-group="${group}" data-irrigation-key="${key}" value="${this._esc(String(val || ""))}"></div></div>`;
+  }
+
+  _irrigToggle(group, key, label, checked) {
+    return `<div class="strategy-row"><div class="strategy-label">${label}</div><label class="strategy-switch"><input type="checkbox" data-irrigation-field data-irrigation-group="${group}" data-irrigation-key="${key}" ${checked ? "checked" : ""}><span>ON/OFF</span></label></div>`;
+  }
+
+  _irrigSelect(group, key, label, val, opts) {
+    return `<div class="strategy-row"><div class="strategy-label">${label}</div><select data-irrigation-field data-irrigation-group="${group}" data-irrigation-key="${key}">${opts.map(([v,t]) => `<option value="${v}" ${String(val)===String(v)?"selected":""}>${t}</option>`).join("")}</select></div>`;
+  }
+
+  _irrigSection(icon, title, body, attr = "") {
+    return `<div class="gs-card strategy-card" ${attr}><div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><ha-icon icon="${icon}" style="color:#51AE60;"></ha-icon>${title}</div>${body}</div>`;
+  }
+
+  _irrigSummary(state) {
+    const m = state.irrigationControlMode;
+    return `<div class="strategy-status-row"><div><span>오늘 관수 횟수</span><b>${m.todayCount}회</b></div><div><span>마지막 관수</span><b>${m.lastRunAt}</b></div><div><span>다음 예상</span><b>${m.nextRunAt}</b></div><div><span>누적 일사량</span><b>${m.accumulatedRadiation} J/cm²</b></div><div><span>현재 VWC</span><b>${m.currentVwc}%</b></div><div><span>급액 EC/pH</span><b>${m.currentEc} / ${m.currentPh}</b></div></div>`;
+  }
+
+  _irrigTriad(label, base, ai, final, unit = "") {
+    return `<div class="strategy-final"><span>${label}</span><b>기본값 ${base}${unit}</b><b>AI 보정값 ${ai}${unit}</b><b>최종값 ${final}${unit}</b></div>`;
+  }
+
+  _renderIrrigationControlTabContent(state) {
+    const tab = this._irrigationTab;
+    const m = state.irrigationControlMode, b = state.baseIrrigationSettings, sat = state.saturationStrategy, sol = state.solarIrrigationStrategy, dry = state.drybackStrategy, df = state.drainFeedback, nut = state.nutrientStrategy, ai = state.aiIrrigationCorrection, safe = state.irrigationSafetyLimits, dev = state.fertigationDeviceSettings, f = state.finalIrrigationTargets;
+    if (tab === "base") return this._irrigSection("mdi:timer-outline", "기본 관수 설정", `${this._irrigSummary(state)}${this._irrigText("baseIrrigationSettings","startTime","관수 시작 시간",b.startTime)}${this._irrigText("baseIrrigationSettings","endTime","관수 종료 시간",b.endTime)}${this._irrigRow("baseIrrigationSettings","sunriseOffsetMin","일출 기준 시작 오프셋",b.sunriseOffsetMin,"분",-180,180)}${this._irrigRow("baseIrrigationSettings","sunsetOffsetMin","일몰 기준 종료 오프셋",b.sunsetOffsetMin,"분",-240,60)}${this._irrigRow("baseIrrigationSettings","shotCcPerPlant","1회 급액량",b.shotCcPerPlant,"cc/주",0,1000)}${this._irrigRow("baseIrrigationSettings","shotLiterPerZone","1회 급액량",b.shotLiterPerZone,"L/구역",0,100)}${this._irrigRow("baseIrrigationSettings","minIntervalMin","관수 최소 간격",b.minIntervalMin,"분",1,240)}${this._irrigRow("baseIrrigationSettings","maxDailyCount","관수 최대 횟수",b.maxDailyCount,"회/일",1,100)}${this._irrigRow("baseIrrigationSettings","baseEc","기본 목표 EC",b.baseEc,"dS/m",0,6,0.1)}${this._irrigRow("baseIrrigationSettings","basePh","기본 목표 pH",b.basePh,"",4,8,0.1)}${this._irrigToggle("baseIrrigationSettings","zoneEnabled","구역별 관수 사용 여부",b.zoneEnabled)}${this._irrigText("baseIrrigationSettings","valveOrder","구역별 밸브 순서",b.valveOrder)}${this._irrigRow("baseIrrigationSettings","zoneTargetAmountL","구역별 목표 급액량",b.zoneTargetAmountL,"L",0,100)}<div class="strategy-final-grid" data-irrigation-final-target>${this._irrigTriad("급액량", b.shotLiterPerZone, ai.applied ? ai.shotAmountDelta : 0, f.shotAmountL, "L")}${this._irrigTriad("EC", b.baseEc, ai.applied ? ai.ecDelta : 0, f.targetEc, "")}${this._irrigTriad("pH", b.basePh, ai.applied ? ai.phDelta : 0, f.targetPh, "")}</div>`);
+    if (tab === "saturation") return this._irrigSection("mdi:cup-water", "포수 전략", `${this._irrigSummary(state)}${this._irrigToggle("saturationStrategy","enabled","포수 사용",sat.enabled)}${this._irrigRow("saturationStrategy","targetVwc","목표 포수 VWC",sat.targetVwc,"%")}${this._irrigText("saturationStrategy","startTime","포수 시작 시간",sat.startTime)}${this._irrigRow("saturationStrategy","completeVwc","포수 완료 기준 VWC",sat.completeVwc,"%")}${this._irrigText("saturationStrategy","firstDrainTargetTime","첫 배액 목표 시간",sat.firstDrainTargetTime)}${this._irrigRow("saturationStrategy","firstDrainTargetAmountL","첫 배액 목표량",sat.firstDrainTargetAmountL,"L")}${this._irrigRow("saturationStrategy","splitCount","포수 분할 횟수",sat.splitCount,"회")}${this._irrigRow("saturationStrategy","shotAmountL","포수 1회 급액량",sat.shotAmountL,"L")}${this._irrigRow("saturationStrategy","firstDrainInductionAmountL","첫 배액 유도 급액량",sat.firstDrainInductionAmountL,"L")}<div class="strategy-example">전날 마지막 VWC ${sat.previousLastVwc}% · 첫 관수 전 VWC ${sat.todayPreFirstVwc}% · 야간 수분 손실량 ${sat.nightWaterLoss}% · 포수 필요 수량 ${sat.requiredAmountL}L · 첫 배액 발생 여부 ${sat.firstDrainDetected ? "발생" : "대기"}. 포수 완료 전에는 일사 비례 관수를 시작하지 않습니다.</div>`);
+    if (tab === "solar") return this._irrigSection("mdi:white-balance-sunny", "일사 비례 관수", `${this._irrigSummary(state)}${this._irrigToggle("solarIrrigationStrategy","enabled","일사 비례 관수 사용",sol.enabled)}${this._irrigRow("solarIrrigationStrategy","baseAccumulatedRadiation","기준 누적 일사량",sol.baseAccumulatedRadiation,"J/cm²")}${this._irrigRow("solarIrrigationStrategy","cloudyThreshold","흐린 날 기준값",sol.cloudyThreshold,"J/cm²")}${this._irrigRow("solarIrrigationStrategy","sunnyThreshold","맑은 날 기준값",sol.sunnyThreshold,"J/cm²")}${this._irrigRow("solarIrrigationStrategy","minIntervalMin","최소 관수 간격",sol.minIntervalMin,"분")}${this._irrigRow("solarIrrigationStrategy","maxIntervalMin","최대 관수 간격",sol.maxIntervalMin,"분")}${this._irrigToggle("solarIrrigationStrategy","highTempCorrectionEnabled","고온 시 보정 사용 여부",sol.highTempCorrectionEnabled)}${this._irrigToggle("solarIrrigationStrategy","vpdCorrectionEnabled","VPD 보정 사용 여부",sol.vpdCorrectionEnabled)}<div class="strategy-example">현재 누적 ${sol.currentAccumulatedRadiation} · 마지막 관수 후 ${sol.afterLastIrrigationRadiation} · 남은 일사량 ${sol.remainingRadiation} · 다음 예상 ${sol.nextExpectedAt}. 최소 간격 미만이면 관수를 지연합니다.</div>`);
+    if (tab === "dryback") return this._irrigSection("mdi:water-minus", "드라이백 전략", `${this._irrigSummary(state)}${this._irrigToggle("drybackStrategy","enabled","드라이백 사용",dry.enabled)}${this._irrigRow("drybackStrategy","dayDrybackRange","주간 드라이백 허용폭",dry.dayDrybackRange,"%")}${this._irrigRow("drybackStrategy","nightDrybackTarget","야간 드라이백 목표폭",dry.nightDrybackTarget,"%")}${this._irrigRow("drybackStrategy","minVwc","최소 VWC",dry.minVwc,"%")}${this._irrigRow("drybackStrategy","targetVwcUpper","목표 VWC 상한",dry.targetVwcUpper,"%")}${this._irrigRow("drybackStrategy","targetVwcLower","목표 VWC 하한",dry.targetVwcLower,"%")}${this._irrigToggle("drybackStrategy","nightEmergencyIrrigation","야간 비상 관수 사용 여부",dry.nightEmergencyIrrigation)}${this._irrigRow("drybackStrategy","nightEmergencyVwc","야간 비상 관수 VWC 기준",dry.nightEmergencyVwc,"%")}<div class="strategy-example">포수 후 최고 VWC ${dry.peakVwcAfterSaturation}% · 현재 VWC ${m.currentVwc}% · 현재 드라이백 ${dry.currentDryback}% · 목표 ${dry.targetDryback}% · 야간 진행률 ${dry.nightProgress}%. 과채류는 적극 활용, 엽채류는 수분 편차를 줄입니다.</div>`);
+    if (tab === "drain") return this._irrigSection("mdi:tray-arrow-down", "배액 피드백", `${this._irrigSummary(state)}${this._irrigRow("drainFeedback","previousFeedAmountL","전날 총 급액량",df.previousFeedAmountL,"L")}${this._irrigRow("drainFeedback","previousDrainAmountL","전날 총 배액량",df.previousDrainAmountL,"L")}${this._irrigRow("drainFeedback","drainRate","배액률",df.drainRate,"%")}${this._irrigRow("drainFeedback","drainEc","배액 EC",df.drainEc,"dS/m",0,8,0.1)}${this._irrigRow("drainFeedback","drainPh","배액 pH",df.drainPh,"",4,8,0.1)}${this._irrigText("drainFeedback","measuredAt","배액 측정 시각",df.measuredAt)}<div class="strategy-example">목표 배액률 ${df.targetDrainRate}% · 배액률 부족 ${df.drainShortage ? "예" : "아니오"} · 염류 집적 위험 ${df.saltAccumulationRisk ? "있음" : "낮음"} · pH 산성화 위험 ${df.phAcidificationRisk ? "있음" : "낮음"}. 배액 EC가 높으면 다음날 오전 급액량과 목표 배액률을 증가합니다.</div>`);
+    if (tab === "nutrient") return this._irrigSection("mdi:flask-outline", "양액 전략", `${this._irrigSummary(state)}${this._irrigSelect("nutrientStrategy","cropGroup","작물군",nut.cropGroup,[["과채류","과채류"],["엽채류","엽채류"]])}${this._irrigText("nutrientStrategy","growthStage","생육단계",nut.growthStage)}${this._irrigRow("nutrientStrategy","baseEc","기본 EC",nut.baseEc,"dS/m",0,6,0.1)}${this._irrigRow("nutrientStrategy","aiEcDelta","AI 보정 EC",nut.aiEcDelta,"dS/m",-2,2,0.1)}${this._irrigRow("nutrientStrategy","finalEc","최종 EC",nut.finalEc,"dS/m",0,6,0.1)}${this._irrigRow("nutrientStrategy","basePh","기본 pH",nut.basePh,"",4,8,0.1)}${this._irrigRow("nutrientStrategy","aiPhDelta","AI 보정 pH",nut.aiPhDelta,"",-1,1,0.1)}${this._irrigRow("nutrientStrategy","finalPh","최종 pH",nut.finalPh,"",4,8,0.1)}${this._irrigToggle("nutrientStrategy","useA","A액 사용 여부",nut.useA)}${this._irrigToggle("nutrientStrategy","useB","B액 사용 여부",nut.useB)}${this._irrigToggle("nutrientStrategy","useAcid","산 사용 여부",nut.useAcid)}${this._irrigToggle("nutrientStrategy","useAlkali","알칼리 사용 여부",nut.useAlkali)}<div class="strategy-example">현재 급액 EC ${nut.currentFeedEc}, pH ${nut.currentFeedPh} · 목표 EC ${nut.finalEc}, pH ${nut.finalPh} · 편차 ${nut.ecDeviation}/${nut.phDeviation}</div>`);
+    if (tab === "ai") return this._irrigSection("mdi:brain", "AI 관수 보정", `${this._irrigSummary(state)}<div class="strategy-chip-title">AI는 기본 관수 인터록 위에 적용되는 보정 레이어</div><div class="strategy-status-row"><div><span>현재 G-Index</span><b>${ai.gIndex}</b></div><div><span>현재 작물군</span><b>${ai.cropGroup}</b></div><div><span>현재 생육단계</span><b>${ai.growthStage}</b></div><div><span>AI 판단 상태</span><b>${ai.decision}</b></div></div>${this._irrigRow("aiIrrigationCorrection","ecDelta","EC 보정값",ai.ecDelta,"dS/m",-2,2,0.1)}${this._irrigRow("aiIrrigationCorrection","phDelta","pH 보정값",ai.phDelta,"",-1,1,0.1)}${this._irrigRow("aiIrrigationCorrection","shotAmountDelta","1회 급액량 보정값",ai.shotAmountDelta,"L",-10,10,0.1)}${this._irrigRow("aiIrrigationCorrection","intervalDeltaMin","관수 간격 보정값",ai.intervalDeltaMin,"분",-60,60)}${this._irrigRow("aiIrrigationCorrection","drybackDelta","드라이백 보정값",ai.drybackDelta,"%",-10,10,0.5)}${this._irrigRow("aiIrrigationCorrection","endTimeDeltaMin","관수 종료시간 보정값",ai.endTimeDeltaMin,"분",-180,180)}${this._irrigRow("aiIrrigationCorrection","targetDrainRateDelta","목표 배액률 보정값",ai.targetDrainRateDelta,"%",-20,20)}<div class="strategy-example">${this._esc(ai.explanation)}</div>`);
+    if (tab === "safety") return this._irrigSection("mdi:alert-octagon", "안전 한계", `${this._irrigSummary(state)}${this._irrigRow("irrigationSafetyLimits","minVwc","최저 VWC",safe.minVwc,"%")}${this._irrigRow("irrigationSafetyLimits","maxVwc","최고 VWC",safe.maxVwc,"%")}${this._irrigRow("irrigationSafetyLimits","maxEc","최대 급액 EC",safe.maxEc,"dS/m",0,8,0.1)}${this._irrigRow("irrigationSafetyLimits","minEc","최소 급액 EC",safe.minEc,"dS/m",0,8,0.1)}${this._irrigRow("irrigationSafetyLimits","maxPh","최대 pH",safe.maxPh,"",4,9,0.1)}${this._irrigRow("irrigationSafetyLimits","minPh","최소 pH",safe.minPh,"",4,9,0.1)}${this._irrigRow("irrigationSafetyLimits","maxShotAmountL","최대 1회 관수량",safe.maxShotAmountL,"L")}${this._irrigRow("irrigationSafetyLimits","maxDailyAmountL","최대 일 관수량",safe.maxDailyAmountL,"L")}${this._irrigRow("irrigationSafetyLimits","minIntervalMin","최소 관수 간격",safe.minIntervalMin,"분")}${this._irrigRow("irrigationSafetyLimits","maxPumpContinuousMin","펌프 최대 연속 가동 시간",safe.maxPumpContinuousMin,"분")}${this._irrigRow("irrigationSafetyLimits","flowAnomalyThreshold","유량 이상 감지 기준",safe.flowAnomalyThreshold,"%")}${this._irrigToggle("irrigationSafetyLimits","valveErrorDetection","밸브 오류 감지 기준",safe.valveErrorDetection)}${this._irrigSelect("irrigationSafetyLimits","sensorErrorMode","센서 오류 시 제어 방식",safe.sensorErrorMode,[["interlock","인터록"],["hold","유지"],["emergency_stop","비상 정지"]])}${this._irrigSelect("irrigationSafetyLimits","aiErrorMode","AI 오류 시 제어 방식",safe.aiErrorMode,[["interlock","인터록"],["standby","대기"],["emergency_stop","비상 정지"]])}<div class="strategy-example">관수 우선순위: 비상 정지 → 안전 한계 → 기본 관수 인터록 → AI 관수 보정 → 수동 명령</div>`);
+    if (tab === "device") return this._irrigSection("mdi:pipe-valve", "양액기 설정", `${this._irrigSummary(state)}${["rawWaterPumpEntity","irrigationPumpEntity","aValveEntity","bValveEntity","acidValveEntity","alkaliValveEntity","zoneValveEntities","flowMeterEntity","ecSensorEntity","phSensorEntity","vwcSensorEntity"].map((k)=>this._irrigText("fertigationDeviceSettings",k,{rawWaterPumpEntity:"원수 펌프 엔티티",irrigationPumpEntity:"관수 펌프 엔티티",aValveEntity:"A액 밸브 엔티티",bValveEntity:"B액 밸브 엔티티",acidValveEntity:"산 밸브 엔티티",alkaliValveEntity:"알칼리 밸브 엔티티",zoneValveEntities:"구역 밸브 엔티티",flowMeterEntity:"유량계 엔티티",ecSensorEntity:"EC 센서 엔티티",phSensorEntity:"pH 센서 엔티티",vwcSensorEntity:"VWC 센서 엔티티"}[k],dev[k])).join("")}${this._irrigRow("fertigationDeviceSettings","ecP","EC P값",dev.ecP,"",0,10,0.01)}${this._irrigRow("fertigationDeviceSettings","ecI","EC I값",dev.ecI,"",0,10,0.01)}${this._irrigRow("fertigationDeviceSettings","ecD","EC D값",dev.ecD,"",0,10,0.01)}${this._irrigRow("fertigationDeviceSettings","phP","pH P값",dev.phP,"",0,10,0.01)}${this._irrigRow("fertigationDeviceSettings","phI","pH I값",dev.phI,"",0,10,0.01)}${this._irrigRow("fertigationDeviceSettings","phD","pH D값",dev.phD,"",0,10,0.01)}${this._irrigRow("fertigationDeviceSettings","ecCalibration","EC 센서 보정값",dev.ecCalibration,"",-5,5,0.01)}${this._irrigRow("fertigationDeviceSettings","phCalibration","pH 센서 보정값",dev.phCalibration,"",-2,2,0.01)}${this._irrigRow("fertigationDeviceSettings","flowCalibration","유량계 보정계수",dev.flowCalibration,"",0,5,0.01)}`);
+    if (tab === "logs") return this._irrigSection("mdi:clipboard-text-clock", "관수 로그", `${this._irrigSummary(state)}<div class="strategy-status-row"><div><span>필터</span><b>날짜 · 구역 · 실행 원인 · 오류 여부</b></div></div><div data-irrigation-log>${(state.irrigationLogs || []).map((log)=>`<div class="strategy-log">${this._esc(log)}</div>`).join("")}</div>`);
+    return this._irrigSection("mdi:tune-variant", "제어 모드", `${this._irrigSummary(state)}${this._irrigSelect("irrigationControlMode","mode","현재 제어 모드",m.mode,[["interlock","인터록 모드"],["ai_assist","AI 보조 모드"],["manual","수동 모드"],["emergency_stop","비상 정지 모드"]])}${this._irrigToggle("irrigationControlMode","aiEnabled","AI 관수 보정 사용",m.aiEnabled)}${this._irrigToggle("irrigationControlMode","fallbackToInterlockOnAiError","AI 오류 시 인터록 복귀",m.fallbackToInterlockOnAiError)}${this._irrigToggle("irrigationControlMode","autoIrrigationEnabled","자동 관수 사용",m.autoIrrigationEnabled)}${this._irrigToggle("irrigationControlMode","manualRunAllowed","수동 관수 허용 여부",m.manualRunAllowed)}${this._irrigSelect("irrigationControlMode","status","현재 관수 상태",m.status,[["standby","대기중"],["running","관수중"],["drain_detecting","배액 감지중"],["dryback","드라이백 진행중"],["emergency_stop","비상 정지"]])}`);
+  }
+
   _renderIrrigSettingsPage() {
-    return `<div class="page">
-      ${this._renderSubHero("관수 설정", "관수 주기 · 관수량 · EC · pH 목표값을 설정합니다", "mdi:water")}
-      ${this._settingCard("mdi:timer-outline", "관수 일정", [
-        this._settingRow("관수 시작 시각", this._inputTime("irrig-start", "07:00")),
-        this._settingRow("관수 종료 시각", this._inputTime("irrig-end", "18:00")),
-        this._settingRow("관수 주기",     this._inputNum("irrig-interval", 60, 5, 360, 5), "분"),
-        this._settingRow("1회 관수 시간", this._inputNum("irrig-duration", 3, 1, 60), "분"),
-      ].join(""))}
-      ${this._settingCard("mdi:flask-outline", "양액 설정", [
-        this._settingRow("목표 EC",    this._inputNum("irrig-ec", 2.5, 0.5, 6.0, 0.1), "mS/cm"),
-        this._settingRow("목표 pH",    this._inputNum("irrig-ph", 6.0, 4.0, 8.0, 0.1), ""),
-        this._settingRow("1회 관수량", this._inputNum("irrig-amount", 150, 50, 1000, 10), "mL/주"),
-        this._settingRow("배액률 목표",this._inputNum("irrig-drain", 30, 10, 60), "%"),
-      ].join(""))}
-      ${this._saveBtn("irrigation")}
+    this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
+    return `<div class="page irrigation-control-page">
+      ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
+      <div class="gs-card" style="padding:16px;">
+        <span hidden data-irrigation-control-tab data-irrigation-control-content>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
+        ${this._renderIrrigationControlTabBar()}
+        <div data-irrigation-control-content>${this._renderIrrigationControlTabContent(this._irrigationControl)}</div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="irrigation-control-save" class="btn btn-primary">관수 제어 저장</button></div>
     </div>`;
   }
 
@@ -4914,6 +5097,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _bindDashboard(root) {
     this._bindControlStrategyInputs(root);
+    this._bindIrrigationControlInputs(root);
     // Trend chart zone tabs — patch polylines only (no full re-render)
     root.querySelectorAll("[data-zone-tab]").forEach((btn) =>
       btn.addEventListener("click", () => {
