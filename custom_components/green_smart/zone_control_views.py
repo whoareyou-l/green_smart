@@ -5,6 +5,7 @@ import asyncio
 import json
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
+from homeassistant.util import dt as dt_util
 
 from .db import execute, fetchall, fetchone
 
@@ -696,6 +697,8 @@ def _safe_state_service_call_for_mapping(mapping: dict) -> dict | None:
     return _service_call_for_mapping(mapping, safe_state)
 
 
+SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS = 60
+
 SAFETY_GUARD_RULE_PRESETS = {
     "wind_speed_above": {"label": "강풍 초과", "attribute": "wind_speed", "entityClass": "weather.wind_speed", "reasonCode": "wind_speed_above"},
     "temperature_below": {"label": "저온 미만", "attribute": "temperature", "entityClass": "sensor.temperature", "reasonCode": "temperature_below"},
@@ -841,6 +844,63 @@ def _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_
 def _interlock_failsafe_decision(final_target: dict, mapping: dict, call: dict, pre_state: dict | None) -> dict:
     """Legacy wrapper kept for Phase 12 contracts; Phase 2A uses SafetyGuard directly."""
     return _safety_guard_decision(final_target, {"enabled": True, "settings": {}}, mapping, call, pre_state)
+
+
+def _notify_safety_guard_critical(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, critical_events: list[dict]) -> None:
+    if not critical_events:
+        return
+    message = f"SafetyGuard critical safety event: farm={farm_id}, cropSeason={crop_season_id}, zone={zone_id}, domain={domain}, events={len(critical_events)}"
+    hass.async_create_task(hass.services.async_call("persistent_notification", "create", {"title": "Green Smart SafetyGuard", "message": message, "notification_id": f"green_smart_safety_guard_{crop_season_id}_{zone_id}_{domain}"}, blocking=False))  # persistent_notification.create
+
+
+def _safety_guard_watchdog_item(hass, *, final_target: dict, interlock_settings: dict, mapping: dict, stale_threshold_seconds: int) -> dict:
+    pre_state = _entity_state_snapshot(hass, mapping.get("entityId"))
+    target_value = _target_value_for_mapping(final_target.get("targets") or {}, mapping)
+    call = _service_call_for_mapping(mapping, target_value) or _safe_state_service_call_for_mapping(mapping) or {"domain": "homeassistant", "service": "turn_off", "serviceData": {"entity_id": mapping.get("entityId")}, "targetValue": target_value}
+    call["mappingId"] = mapping.get("id")
+    call["entityId"] = mapping.get("entityId")
+    decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
+    state_text = str((pre_state or {}).get("state") or "unknown").lower()
+    stale = False  # staleThresholdSeconds baseline; timestamp age policy is Phase 2D.
+    critical = bool(decision.get("blockedByInterlock")) or state_text in {"unavailable", "unknown"} or stale
+    return {"mappingId": mapping.get("id"), "entityId": mapping.get("entityId"), "controlRole": mapping.get("controlRole"), "deviceType": mapping.get("deviceType"), "preState": pre_state, "dryRun": True, "watchdog": True, "stale": stale, "staleThresholdSeconds": stale_threshold_seconds, "watchdogStatus": "critical" if critical else "clear", "safetyGuard": decision.get("safetyGuard"), "critical": critical}
+
+
+async def _safety_guard_watchdog_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, notify: bool = False, stale_threshold_seconds: int = SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS * 2) -> dict:
+    # Watchdog baseline intentionally evaluates current state via _entity_state_snapshot and _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state) in _safety_guard_watchdog_item; it is dryRun/watchdog only.
+    final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain) or {"targets": {}}
+    interlock_settings = await _interlock_settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    items = [_safety_guard_watchdog_item(hass, final_target=final_target, interlock_settings=interlock_settings, mapping=mapping, stale_threshold_seconds=stale_threshold_seconds) for mapping in mappings]
+    critical_events = [item for item in items if item.get("critical")]
+    if notify and critical_events:
+        _notify_safety_guard_critical(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, critical_events=critical_events)
+    checked_at = dt_util.utcnow().isoformat()
+    return {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "watchdogStatus": "critical" if critical_events else "clear", "checkedAt": checked_at, "lastCheckedAt": checked_at, "staleThresholdSeconds": stale_threshold_seconds, "intervalSeconds": SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS, "criticalEvents": critical_events, "items": items}
+
+
+class ZoneSafetyGuardWatchdogView(HomeAssistantView):
+    """GET /api/green_smart/zones/safety-guard-watchdog."""
+
+    url = "/api/green_smart/zones/safety-guard-watchdog"
+    name = "api:green_smart:zones:safety_guard_watchdog"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            notify = str(request.query.get("notify") or "false").lower() in {"1", "true", "yes"}
+            stale_threshold_seconds = _query_int(request, "stale_threshold_seconds", SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS * 2) or SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS * 2
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _safety_guard_watchdog_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, notify=notify, stale_threshold_seconds=stale_threshold_seconds)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="safety_guard_critical_event" if response.get("criticalEvents") else "safety_guard_watchdog_checked", before=None, after=response, result="critical" if response.get("criticalEvents") else "success", message="SafetyGuard watchdog checked")
+        return _json(response)
 
 
 class ZoneFinalTargetExecutionView(HomeAssistantView):

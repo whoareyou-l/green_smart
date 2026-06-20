@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.6` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.7` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.6"
+  "version": "1.9.7"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.6"
+const VERSION = "1.9.7"
 ```
 
 중요 UI 페이지:
@@ -794,6 +794,21 @@ safety_guard_blocked
 ```
 
 Panel 실행/안전 로그에는 `SafetyGuard 안전 판단`과 `ruleResults` count가 표시된다.
+
+Phase 2C watchdog baseline:
+
+```text
+GET /api/green_smart/zones/safety-guard-watchdog
+SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS = 60
+watchdogStatus
+checkedAt
+lastCheckedAt
+staleThresholdSeconds
+criticalEvents
+persistent_notification.create
+```
+
+Panel에는 `SafetyGuard Watchdog` 카드가 표시되며, 5초 요소별 refresh loop가 `_fetchZoneSafetyGuardWatchdog(domain, { patchOnly })`를 호출한다.
 
 ---
 
@@ -1155,7 +1170,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.6
+v1.9.7
 ```
 
 ---

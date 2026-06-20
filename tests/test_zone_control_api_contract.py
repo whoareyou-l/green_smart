@@ -739,3 +739,62 @@ def test_phase2b_safety_guard_semantic_rule_presets_contract():
         "reasonCode",
     ):
         assert panel_marker in panel_source
+
+def test_phase2c_safety_guard_watchdog_and_notification_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS = 60",
+        "_safety_guard_watchdog_response",
+        "_safety_guard_watchdog_item",
+        "_notify_safety_guard_critical",
+        "persistent_notification.create",
+        "safety_guard_watchdog_checked",
+        "safety_guard_critical_event",
+        "ZoneSafetyGuardWatchdogView",
+        'url = "/api/green_smart/zones/safety-guard-watchdog"',
+        "criticalEvents",
+        "watchdogStatus",
+        "checkedAt",
+        "lastCheckedAt",
+        "staleThresholdSeconds",
+    ):
+        assert api_marker in source
+        if api_marker == "ZoneSafetyGuardWatchdogView":
+            assert api_marker in init_source
+
+    assert "hass.http.register_view(ZoneSafetyGuardWatchdogView())" in init_source
+
+    watchdog_section = source.split("async def _safety_guard_watchdog_response", 1)[1].split("class ZoneSafetyGuardWatchdogView", 1)[0]
+    for behavior in (
+        "_enabled_entity_mappings",
+        "_interlock_settings_response",
+        "_entity_state_snapshot",
+        "_safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)",
+        "dryRun",
+        "watchdog",
+        "criticalEvents",
+        "_notify_safety_guard_critical",
+    ):
+        assert behavior in watchdog_section
+
+    for panel_marker in (
+        "this._zoneSafetyGuardWatchdogCache",
+        "async _fetchZoneSafetyGuardWatchdog(domain",
+        "_renderZoneSafetyGuardWatchdogCard(domain)",
+        "_bindZoneSafetyGuardWatchdogInputs(root)",
+        "green_smart/zones/safety-guard-watchdog",
+        "data-zone-safety-watchdog-card",
+        "data-zone-safety-watchdog-refresh",
+        "SafetyGuard Watchdog",
+        "1분 fallback 검사",
+        "criticalEvents",
+        "critical safety event",
+        "SafetyGuard Watchdog 조회 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source
+
+    refresh_section = panel_source.split("async _refreshZoneControlElements", 1)[1].split("_patchZoneControlElementCards", 1)[0]
+    assert "this._fetchZoneSafetyGuardWatchdog(domain, { patchOnly })" in refresh_section
