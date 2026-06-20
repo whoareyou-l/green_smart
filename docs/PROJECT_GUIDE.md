@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.8` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.9` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.8"
+  "version": "1.9.9"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.8"
+const VERSION = "1.9.9"
 ```
 
 중요 UI 페이지:
@@ -824,6 +824,23 @@ safety_guard_notification_deduped
 ```
 
 Scheduler는 `safety_guard_watchdog_scopes`에 저장된 scope를 대상으로 1분마다 watchdog을 실행한다.
+
+Phase 2E event lifecycle baseline:
+
+```text
+GET /api/green_smart/zones/safety-guard-events
+POST /api/green_smart/zones/safety-guard-events/ack
+POST /api/green_smart/zones/safety-guard-events/clear
+SAFETY_GUARD_EVENT_ACTIONS
+safety_guard_event_acknowledged
+safety_guard_event_cleared
+eventLifecycle
+activeEvents
+acknowledgedEventIds
+clearedEventIds
+```
+
+Panel에는 `SafetyGuard 이벤트 이력` 카드가 표시되며, 운영자는 `운영자 확인`과 `조치 완료`를 기록할 수 있다.
 
 ---
 
@@ -1185,7 +1202,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.8
+v1.9.9
 ```
 
 ---

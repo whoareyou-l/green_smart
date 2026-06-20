@@ -46,7 +46,7 @@ async def _setup_safety_guard_watchdog_scheduler(hass) -> None:
         return
 
     def _tick(now):
-        hass.async_create_task(_run_safety_guard_watchdog_tick(hass, now))
+        hass.loop.call_soon_threadsafe(hass.async_create_task, _run_safety_guard_watchdog_tick(hass, now))
 
     domain_data["unsub_safety_guard_watchdog"] = async_track_time_interval(hass, _tick, timedelta(seconds=SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS))
     domain_data["safety_guard_watchdog_scheduler_started"] = True
@@ -80,7 +80,7 @@ async def async_setup(hass, config):
     from .zone_control_views import (
         ZoneControlSettingsView, ZoneControlCopySettingsView, ZoneInterlockSettingsView, ZoneControlModeView,
         ZoneControlFinalTargetsView, ZoneControlLogsView,
-        ZoneAiControlOutputsView, ZoneAiControlOutputApplyView, ZoneDeviceEntityMappingsView, ZoneEntityStateSummaryView, ZoneFinalTargetExecutionView, ZoneSafetyGuardWatchdogView,
+        ZoneAiControlOutputsView, ZoneAiControlOutputApplyView, ZoneDeviceEntityMappingsView, ZoneEntityStateSummaryView, ZoneFinalTargetExecutionView, ZoneSafetyGuardWatchdogView, ZoneSafetyGuardEventsView, ZoneSafetyGuardEventAckView, ZoneSafetyGuardEventClearView,
         EnvironmentControlSettingsView, IrrigationControlSettingsView, DeviceControlSettingsView,
         EnvironmentAiControlOutputsView, IrrigationAiControlOutputsView, DeviceAiControlOutputsView,
         EnvironmentDeviceEntityMappingsView, IrrigationDeviceEntityMappingsView, DeviceEntityMappingsView,
@@ -126,6 +126,9 @@ async def async_setup(hass, config):
         hass.http.register_view(ZoneEntityStateSummaryView())
         hass.http.register_view(ZoneFinalTargetExecutionView())
         hass.http.register_view(ZoneSafetyGuardWatchdogView())
+        hass.http.register_view(ZoneSafetyGuardEventsView())
+        hass.http.register_view(ZoneSafetyGuardEventAckView())
+        hass.http.register_view(ZoneSafetyGuardEventClearView())
         hass.http.register_view(EnvironmentControlSettingsView())
         hass.http.register_view(IrrigationControlSettingsView())
         hass.http.register_view(DeviceControlSettingsView())

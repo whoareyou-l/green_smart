@@ -699,6 +699,7 @@ def _safe_state_service_call_for_mapping(mapping: dict) -> dict | None:
 
 SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS = 60
 SAFETY_GUARD_LAST_NOTIFIED_KEY = "safety_guard_last_notified"
+SAFETY_GUARD_EVENT_ACTIONS = {"safety_guard_critical_event", "safety_guard_watchdog_checked", "safety_guard_blocked", "execution_safety_blocked", "failsafe_applied"}
 
 SAFETY_GUARD_RULE_PRESETS = {
     "wind_speed_above": {"label": "강풍 초과", "attribute": "wind_speed", "entityClass": "weather.wind_speed", "reasonCode": "wind_speed_above"},
@@ -1295,6 +1296,104 @@ def _summarize_control_log_row(row: dict) -> dict:
         "interlockReasons": sorted({reason for call in blocked_calls for reason in (call.get("interlockReasons") or [])}),
         "safetyGuard": after.get("safetyGuard") or {"status": after.get("safetyStatus") or ("blocked" if blocked_calls else "clear"), "ruleResults": [r for call in blocked_calls for r in ((call.get("safetyGuard") or {}).get("ruleResults") or [])]},
     }
+
+
+async def _safety_guard_event_history_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, limit: int = 50) -> dict:
+    rows = await fetchall(
+        hass,
+        """
+        SELECT id, farm_id AS farmId, crop_season_id AS cropSeasonId, zone_id AS zoneId,
+               domain, actor, actor_role AS actorRole, action, before_json AS beforeJson,
+               after_json AS afterJson, result, message, created_at AS createdAt
+        FROM zone_control_logs
+        WHERE farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s
+          AND action IN ('safety_guard_critical_event', 'safety_guard_watchdog_checked', 'safety_guard_blocked', 'execution_safety_blocked', 'failsafe_applied', 'safety_guard_event_acknowledged', 'safety_guard_event_cleared')
+        ORDER BY created_at DESC, id DESC
+        LIMIT %s
+        """,
+        (farm_id, crop_season_id, zone_id, domain, limit),
+    )
+    acknowledgedEventIds = set()
+    clearedEventIds = set()
+    items = []
+    for row in rows:
+        row["before"] = _json_loads(row.pop("beforeJson", None), None)
+        row["after"] = _json_loads(row.pop("afterJson", None), None)
+        lifecycle = (row.get("after") or {}).get("eventLifecycle") or {}
+        target_id = lifecycle.get("eventId")
+        if row.get("action") == "safety_guard_event_acknowledged" and target_id:
+            acknowledgedEventIds.add(int(target_id))
+        if row.get("action") == "safety_guard_event_cleared" and target_id:
+            clearedEventIds.add(int(target_id))
+        row["eventLifecycle"] = lifecycle or {"state": "active" if row.get("action") in SAFETY_GUARD_EVENT_ACTIONS else row.get("action")}
+        items.append(row)
+    activeEvents = [row for row in items if row.get("action") in SAFETY_GUARD_EVENT_ACTIONS and int(row.get("id")) not in clearedEventIds]
+    for row in items:
+        if int(row.get("id")) in clearedEventIds:
+            row["eventLifecycle"] = {**(row.get("eventLifecycle") or {}), "state": "cleared", "cleared": True}
+        elif int(row.get("id")) in acknowledgedEventIds:
+            row["eventLifecycle"] = {**(row.get("eventLifecycle") or {}), "state": "acknowledged", "acknowledged": True}
+    return {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "items": items, "activeEvents": activeEvents, "acknowledgedEventIds": sorted(acknowledgedEventIds), "clearedEventIds": sorted(clearedEventIds)}
+
+
+async def _safety_guard_event_lifecycle_post(request: web.Request, lifecycle_action: str) -> web.Response:
+    hass = request.app["hass"]
+    try:
+        body = await request.json()
+        domain = _validate_domain(body.get("domain"))
+        farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+        crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+        zone_id = int(body.get("zone_id") or body.get("zoneId"))
+        event_id = int(body.get("event_id") or body.get("eventId"))
+        note = body.get("note") or body.get("message") or ""
+    except Exception as exc:
+        return _err(str(exc))
+    state = "acknowledged" if lifecycle_action == "ack" else "cleared"
+    action = "safety_guard_event_acknowledged" if lifecycle_action == "ack" else "safety_guard_event_cleared"
+    after = {"eventLifecycle": {"eventId": event_id, "state": state, state: True, "note": note}}
+    await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"eventId": event_id}, after=after, result="success", message=f"SafetyGuard event {state}")
+    return _json({"ok": True, "eventId": event_id, "eventLifecycle": after["eventLifecycle"]})
+
+
+class ZoneSafetyGuardEventsView(HomeAssistantView):
+    """GET /api/green_smart/zones/safety-guard-events."""
+
+    url = "/api/green_smart/zones/safety-guard-events"
+    name = "api:green_smart:zones:safety_guard_events"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            limit = min(_query_int(request, "limit", 50) or 50, 200)
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        return _json(await _safety_guard_event_history_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, limit=limit))
+
+
+class ZoneSafetyGuardEventAckView(HomeAssistantView):
+    """POST /api/green_smart/zones/safety-guard-events/ack."""
+
+    url = "/api/green_smart/zones/safety-guard-events/ack"
+    name = "api:green_smart:zones:safety_guard_event_ack"
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _safety_guard_event_lifecycle_post(request, "ack")
+
+
+class ZoneSafetyGuardEventClearView(HomeAssistantView):
+    """POST /api/green_smart/zones/safety-guard-events/clear."""
+
+    url = "/api/green_smart/zones/safety-guard-events/clear"
+    name = "api:green_smart:zones:safety_guard_event_clear"
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _safety_guard_event_lifecycle_post(request, "clear")
 
 
 class ZoneControlLogsView(HomeAssistantView):

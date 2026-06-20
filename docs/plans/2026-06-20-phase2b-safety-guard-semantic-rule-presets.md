@@ -1,6 +1,6 @@
 # Phase 2B — SafetyGuard Semantic Rule Presets
 
-> 기준 버전: v1.9.8
+> 기준 버전: v1.9.9
 > 대상: SafetyGuard matcher, interlock rule builder UI, execution log contract
 
 ## 목적

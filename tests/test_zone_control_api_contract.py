@@ -826,7 +826,7 @@ def test_phase2d_safety_guard_scheduler_and_stale_policy_contract():
     scheduler_section = init_source.split("async def _setup_safety_guard_watchdog_scheduler", 1)[1].split("async def async_setup", 1)[0]
     for behavior in (
         "domain_data.get(\"unsub_safety_guard_watchdog\")",
-        "hass.async_create_task(_run_safety_guard_watchdog_tick(hass, now))",
+        "hass.loop.call_soon_threadsafe(hass.async_create_task, _run_safety_guard_watchdog_tick(hass, now))",
         "SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS",
         "safety_guard_watchdog_scheduler_started",
     ):
@@ -848,3 +848,71 @@ def test_phase2d_safety_guard_scheduler_and_stale_policy_contract():
         "notification_key",
     ):
         assert behavior in notify_section
+
+def test_phase2e_safety_guard_event_history_ack_clear_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "SAFETY_GUARD_EVENT_ACTIONS",
+        "_safety_guard_event_history_response",
+        "_safety_guard_event_lifecycle_post",
+        "ZoneSafetyGuardEventsView",
+        "ZoneSafetyGuardEventAckView",
+        "ZoneSafetyGuardEventClearView",
+        'url = "/api/green_smart/zones/safety-guard-events"',
+        'url = "/api/green_smart/zones/safety-guard-events/ack"',
+        'url = "/api/green_smart/zones/safety-guard-events/clear"',
+        "safety_guard_event_acknowledged",
+        "safety_guard_event_cleared",
+        "acknowledged",
+        "cleared",
+        "eventLifecycle",
+        "activeEvents",
+    ):
+        assert api_marker in source
+        if api_marker.startswith("ZoneSafetyGuard"):
+            assert api_marker in init_source
+
+    for register_marker in (
+        "hass.http.register_view(ZoneSafetyGuardEventsView())",
+        "hass.http.register_view(ZoneSafetyGuardEventAckView())",
+        "hass.http.register_view(ZoneSafetyGuardEventClearView())",
+    ):
+        assert register_marker in init_source
+
+    history_section = source.split("async def _safety_guard_event_history_response", 1)[1].split("class ZoneSafetyGuardEventsView", 1)[0]
+    for behavior in (
+        "zone_control_logs",
+        "SAFETY_GUARD_EVENT_ACTIONS",
+        "eventLifecycle",
+        "activeEvents",
+        "acknowledgedEventIds",
+        "clearedEventIds",
+        "safety_guard_critical_event",
+    ):
+        assert behavior in history_section
+
+    for panel_marker in (
+        "this._zoneSafetyGuardEventCache",
+        "async _fetchZoneSafetyGuardEvents(domain",
+        "async _ackZoneSafetyGuardEvent(domain, eventId)",
+        "async _clearZoneSafetyGuardEvent(domain, eventId)",
+        "_renderZoneSafetyGuardEventHistoryCard(domain)",
+        "_bindZoneSafetyGuardEventInputs(root)",
+        "green_smart/zones/safety-guard-events",
+        "data-zone-safety-event-card",
+        "data-zone-safety-event-ack",
+        "data-zone-safety-event-clear",
+        "SafetyGuard 이벤트 이력",
+        "운영자 확인",
+        "조치 완료",
+        "acknowledged",
+        "cleared",
+        "SafetyGuard event 조회 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source
+
+    refresh_section = panel_source.split("async _refreshZoneControlElements", 1)[1].split("_patchZoneControlElementCards", 1)[0]
+    assert "this._fetchZoneSafetyGuardEvents(domain, { patchOnly })" in refresh_section

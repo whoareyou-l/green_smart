@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.8
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.9
 const DOMAIN = "green_smart";
-const VERSION = "1.9.8";
+const VERSION = "1.9.9";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -252,6 +252,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneControlModeCache = {};
     this._zoneEntityStateSummaryCache = {};
     this._zoneSafetyGuardWatchdogCache = {};
+    this._zoneSafetyGuardEventCache = {};
     this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
@@ -316,6 +317,7 @@ class GreenSmartPanel extends HTMLElement {
       this._fetchZoneControlMode(domain, { patchOnly }),
       this._fetchZoneEntityStateSummary(domain, { patchOnly }),
       this._fetchZoneSafetyGuardWatchdog(domain, { patchOnly }),
+      this._fetchZoneSafetyGuardEvents(domain, { patchOnly }),
       this._fetchZoneExecutionLogs(domain, { patchOnly }),
     ]);
     if (patchOnly) this._patchZoneControlElementCards(domain);
@@ -336,11 +338,13 @@ class GreenSmartPanel extends HTMLElement {
     this._replaceZoneControlCard("[data-zone-control-mode-card]", this._renderZoneControlModeCard(domain));
     this._replaceZoneControlCard("[data-zone-entity-state-summary-card]", this._renderZoneEntityStateSummaryCard(domain));
     this._replaceZoneControlCard("[data-zone-safety-watchdog-card]", this._renderZoneSafetyGuardWatchdogCard(domain));
+    this._replaceZoneControlCard("[data-zone-safety-event-card]", this._renderZoneSafetyGuardEventHistoryCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
     this._bindZoneControlModeInputs(this.shadowRoot);
     this._bindZoneEntityStateSummaryInputs(this.shadowRoot);
     this._bindZoneSafetyGuardWatchdogInputs(this.shadowRoot);
+    this._bindZoneSafetyGuardEventInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
   }
 
@@ -5096,6 +5100,41 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneSafetyGuardEvents(domain) {
+    const { patchOnly = false } = arguments[1] || {};
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/safety-guard-events?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}&limit=30`);
+      this._zoneSafetyGuardEventCache[cacheKey] = res;
+      if (!patchOnly) { this._pageRendered = null; this._update(); }
+      return res;
+    } catch (err) {
+      console.warn("SafetyGuard event 조회 실패 시 fallback", err);
+      return this._zoneSafetyGuardEventCache[cacheKey] || null;
+    }
+  }
+
+  async _ackZoneSafetyGuardEvent(domain, eventId) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId || !eventId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/ack", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, event_id: Number(eventId), note: "운영자 확인" });
+    await this._fetchZoneSafetyGuardEvents(domain);
+    return !!res?.ok;
+  }
+
+  async _clearZoneSafetyGuardEvent(domain, eventId) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId || !eventId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/clear", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, event_id: Number(eventId), note: "조치 완료" });
+    await this._fetchZoneSafetyGuardEvents(domain);
+    return !!res?.ok;
+  }
+
   async _fetchZoneExecutionLogs(domain) {
     const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
@@ -5427,6 +5466,32 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>
       ${rows || `<div class="strategy-muted">아직 SafetyGuard Watchdog 결과가 없습니다.</div>`}
       <div class="strategy-muted" style="margin-top:6px;">lastCheckedAt ${this._esc(data?.lastCheckedAt || "-")} · staleThresholdSeconds ${this._esc(data?.staleThresholdSeconds || 120)}</div>
+    </div>`;
+  }
+
+  _renderZoneSafetyGuardEventHistoryCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneSafetyGuardEventCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId() && !data) this._fetchZoneSafetyGuardEvents(domain);
+    const events = Array.isArray(data?.items) ? data.items : [];
+    const rows = events.slice(0, 8).map((event) => {
+      const lifecycle = event.eventLifecycle || {};
+      const state = lifecycle.state || "active";
+      return `<div style="border-top:1px solid #e2f0e4;padding:8px 0;font-size:12px;display:grid;gap:4px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><b>#${this._esc(event.id || "-")} ${this._esc(event.action || "event")}</b><span>${this._esc(state)} · ${this._esc(event.createdAt || "")}</span></div>
+        <div>result ${this._esc(event.result || "-")} · message ${this._esc(event.message || "-")}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="mini-btn" data-zone-safety-event-ack data-zone-safety-event-domain="${domain}" data-zone-safety-event-id="${this._esc(String(event.id || ""))}">운영자 확인</button>
+          <button class="mini-btn" data-zone-safety-event-clear data-zone-safety-event-domain="${domain}" data-zone-safety-event-id="${this._esc(String(event.id || ""))}">조치 완료</button>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="gs-card" data-zone-safety-event-card style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>SafetyGuard 이벤트 이력</b><div class="strategy-muted">activeEvents ${(data?.activeEvents || []).length || 0} · acknowledged ${(data?.acknowledgedEventIds || []).length || 0} · cleared ${(data?.clearedEventIds || []).length || 0}</div></div>
+        <button class="mini-btn" data-zone-safety-event-refresh data-zone-safety-event-domain="${domain}">이벤트 새로고침</button>
+      </div>
+      ${rows || `<div class="strategy-muted">SafetyGuard 이벤트 이력이 없습니다.</div>`}
     </div>`;
   }
 
@@ -5767,6 +5832,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneInterlockSettingsCard("environment")}
       ${this._renderZoneEntityStateSummaryCard("environment")}
       ${this._renderZoneSafetyGuardWatchdogCard("environment")}
+      ${this._renderZoneSafetyGuardEventHistoryCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
@@ -5932,6 +5998,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneInterlockSettingsCard("irrigation")}
       ${this._renderZoneEntityStateSummaryCard("irrigation")}
       ${this._renderZoneSafetyGuardWatchdogCard("irrigation")}
+      ${this._renderZoneSafetyGuardEventHistoryCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
@@ -6019,6 +6086,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneInterlockSettingsCard("device")}
       ${this._renderZoneEntityStateSummaryCard("device")}
       ${this._renderZoneSafetyGuardWatchdogCard("device")}
+      ${this._renderZoneSafetyGuardEventHistoryCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
@@ -6273,6 +6341,18 @@ button.action:disabled{opacity:.5;cursor:default;}
     });
   }
 
+  _bindZoneSafetyGuardEventInputs(root) {
+    root.querySelectorAll("[data-zone-safety-event-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => await this._fetchZoneSafetyGuardEvents(btn.dataset.zoneSafetyEventDomain || "environment"));
+    });
+    root.querySelectorAll("[data-zone-safety-event-ack]").forEach((btn) => {
+      btn.addEventListener("click", async () => await this._ackZoneSafetyGuardEvent(btn.dataset.zoneSafetyEventDomain || "environment", btn.dataset.zoneSafetyEventId));
+    });
+    root.querySelectorAll("[data-zone-safety-event-clear]").forEach((btn) => {
+      btn.addEventListener("click", async () => await this._clearZoneSafetyGuardEvent(btn.dataset.zoneSafetyEventDomain || "environment", btn.dataset.zoneSafetyEventId));
+    });
+  }
+
   _bindZoneInterlockSettingsInputs(root) {
     root.querySelectorAll("[data-zone-interlock-refresh]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -6432,6 +6512,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._bindZoneControlModeInputs(root);
     this._bindZoneEntityStateSummaryInputs(root);
     this._bindZoneSafetyGuardWatchdogInputs(root);
+    this._bindZoneSafetyGuardEventInputs(root);
     this._bindZoneAiFinalTargetInputs(root);
     this._bindZoneEntityMappingInputs(root);
     this._bindControlStrategyInputs(root);
