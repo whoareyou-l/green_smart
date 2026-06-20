@@ -433,6 +433,21 @@ class ZoneControlCopySettingsView(HomeAssistantView):
         return _json({"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "domain": domain, "fromZoneId": from_zone_id, "toZoneIds": to_zone_ids})
 
 
+async def _insert_final_targets(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, targets: dict, actor: str | None, source_ai_output_id=None, source_settings_id=None, calculated_by: str = "system", action: str = "final_targets_saved", message: str = "final targets saved") -> int:
+    targets_json = json.dumps(targets, ensure_ascii=False)
+    new_id = await execute(
+        hass,
+        """
+        INSERT INTO zone_final_control_targets
+            (farm_id, crop_season_id, zone_id, domain, targets_json, source_ai_output_id, source_settings_id, calculated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (farm_id, crop_season_id, zone_id, domain, targets_json, source_ai_output_id, source_settings_id, calculated_by),
+    )
+    await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=actor, action=action, before=None, after=targets, result="success", message=message)
+    return new_id
+
+
 class ZoneControlFinalTargetsView(HomeAssistantView):
     """GET/POST /api/green_smart/zones/final-targets."""
 
@@ -485,18 +500,96 @@ class ZoneControlFinalTargetsView(HomeAssistantView):
             calculated_by = body.get("calculated_by") or body.get("calculatedBy") or "system"
         except Exception as exc:
             return _err(str(exc))
-        targets_json = json.dumps(targets, ensure_ascii=False)
-        new_id = await execute(
-            hass,
-            """
-            INSERT INTO zone_final_control_targets
-                (farm_id, crop_season_id, zone_id, domain, targets_json, source_ai_output_id, source_settings_id, calculated_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (farm_id, crop_season_id, zone_id, domain, targets_json, source_ai_output_id, source_settings_id, calculated_by),
-        )
-        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="final_targets_saved", before=None, after=targets, result="success", message="final targets saved")
+        new_id = await _insert_final_targets(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, targets=targets, actor=_actor(request), source_ai_output_id=source_ai_output_id, source_settings_id=source_settings_id, calculated_by=calculated_by)
         return _json({"ok": True, "id": new_id, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "targets": targets})
+
+
+ENVIRONMENT_STRATEGY_COMPONENTS = ("CORP", "TEMHUM", "VENT", "SCRN")
+
+
+def _environment_strategy_float(data: dict, key: str, default: float) -> float:
+    try:
+        return float(data.get(key, default))
+    except Exception:
+        return default
+
+
+def _environment_strategy_g_index(inputs: dict) -> dict:
+    # CORP baseline: radiation and CO2 proxy into a simple 0-100 growth index.
+    radiation = _environment_strategy_float(inputs, "radiation", 450.0)
+    co2 = _environment_strategy_float(inputs, "co2", 420.0)
+    corpGIndex = round(max(0.0, min(100.0, (radiation / 8.0) + ((co2 - 350.0) / 10.0))), 2)
+    return {"component": "CORP", "radiation": radiation, "co2": co2, "corpGIndex": corpGIndex}
+
+
+def _environment_strategy_adt_dif_vpd(inputs: dict) -> dict:
+    # TEMHUM baseline: ADT/DIF/VPD from day/night temperature and humidity.
+    day_temp = _environment_strategy_float(inputs, "dayTemperature", _environment_strategy_float(inputs, "temperature", 24.0))
+    night_temp = _environment_strategy_float(inputs, "nightTemperature", 18.0)
+    humidity = _environment_strategy_float(inputs, "humidity", 70.0)
+    adt = round((day_temp + night_temp) / 2.0, 2)
+    dif = round(day_temp - night_temp, 2)
+    saturation = 0.6108 * pow(2.718281828, (17.27 * day_temp) / (day_temp + 237.3))
+    vpd = round(max(0.0, saturation * (1.0 - humidity / 100.0)), 3)
+    return {"component": "TEMHUM", "temperature": day_temp, "nightTemperature": night_temp, "humidity": humidity, "adt": adt, "dif": dif, "vpd": vpd}
+
+
+def _environment_strategy_final_targets(inputs: dict, metrics: dict) -> dict:
+    # VENT/SCRN baseline: conservative final targets; SafetyGuard 우선 remains enforced by execution layer.
+    temp = metrics.get("temhum", {}).get("temperature", _environment_strategy_float(inputs, "temperature", 24.0))
+    radiation = metrics.get("corp", {}).get("radiation", _environment_strategy_float(inputs, "radiation", 450.0))
+    vpd = metrics.get("temhum", {}).get("vpd", 0.8)
+    ventTarget = round(max(0.0, min(100.0, 35.0 + max(0.0, temp - 24.0) * 6.0 + max(0.0, vpd - 1.2) * 12.0)), 1)
+    screenTarget = round(max(0.0, min(100.0, 70.0 - (radiation / 12.0))), 1)
+    return {"component": "VENT/SCRN", "ventTarget": ventTarget, "screenTarget": screenTarget, "targets": {"ventTarget": ventTarget, "screenTarget": screenTarget, "strategy": "environment_strategy_mvp", "safetyPolicy": "SafetyGuard 우선"}}
+
+
+async def _environment_strategy_preview_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, inputs: dict | None = None) -> dict:
+    inputs = inputs or {}
+    corp = _environment_strategy_g_index(inputs)
+    temhum = _environment_strategy_adt_dif_vpd(inputs)
+    final = _environment_strategy_final_targets(inputs, {"corp": corp, "temhum": temhum})
+    response = {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": "environment", "components": list(ENVIRONMENT_STRATEGY_COMPONENTS), "corp": corp, "temhum": temhum, "ventScreen": final, "corpGIndex": corp["corpGIndex"], "adt": temhum["adt"], "dif": temhum["dif"], "vpd": temhum["vpd"], "ventTarget": final["ventTarget"], "screenTarget": final["screenTarget"], "targets": final["targets"], "safetyPolicy": "SafetyGuard 우선"}
+    return response
+
+
+class ZoneEnvironmentStrategyPreviewView(HomeAssistantView):
+    """GET/POST /api/green_smart/environment/strategy-preview."""
+
+    url = "/api/green_smart/environment/strategy-preview"
+    name = "api:green_smart:environment:strategy_preview"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _environment_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", actor=_actor(request), action="environment_strategy_previewed", before=None, after=response, result="success", message="environment strategy MVP previewed")
+        return _json(response)
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            inputs = body.get("inputs") if isinstance(body.get("inputs"), dict) else body
+            save_final_targets = bool(body.get("save_final_targets") or body.get("saveFinalTargets"))
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _environment_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, inputs=inputs)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", actor=_actor(request), action="environment_strategy_previewed", before=None, after=response, result="success", message="environment strategy MVP previewed")
+        if save_final_targets:
+            response["finalTargetId"] = await _insert_final_targets(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", targets=response["targets"], actor=_actor(request), calculated_by="environment_strategy_mvp", action="environment_strategy_final_targets_saved", message="environment strategy final targets saved")  # calculated_by="environment_strategy_mvp"
+            response["saved"] = True
+        return _json(response)
 
 
 async def _latest_final_target_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict | None:

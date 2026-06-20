@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.10
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.11
 const DOMAIN = "green_smart";
-const VERSION = "1.9.10";
+const VERSION = "1.9.11";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -253,6 +253,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneEntityStateSummaryCache = {};
     this._zoneSafetyGuardWatchdogCache = {};
     this._zoneSafetyGuardEventCache = {};
+    this._zoneEnvironmentStrategyPreviewCache = {};
     this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
@@ -318,6 +319,7 @@ class GreenSmartPanel extends HTMLElement {
       this._fetchZoneEntityStateSummary(domain, { patchOnly }),
       this._fetchZoneSafetyGuardWatchdog(domain, { patchOnly }),
       this._fetchZoneSafetyGuardEvents(domain, { patchOnly }),
+      ...(domain === "environment" ? [this._fetchEnvironmentStrategyPreview(domain, { patchOnly })] : []),
       this._fetchZoneExecutionLogs(domain, { patchOnly }),
     ]);
     if (patchOnly) this._patchZoneControlElementCards(domain);
@@ -339,12 +341,14 @@ class GreenSmartPanel extends HTMLElement {
     this._replaceZoneControlCard("[data-zone-entity-state-summary-card]", this._renderZoneEntityStateSummaryCard(domain));
     this._replaceZoneControlCard("[data-zone-safety-watchdog-card]", this._renderZoneSafetyGuardWatchdogCard(domain));
     this._replaceZoneControlCard("[data-zone-safety-event-card]", this._renderZoneSafetyGuardEventHistoryCard(domain));
+    if (domain === "environment") this._replaceZoneControlCard("[data-env-strategy-preview-card]", this._renderEnvironmentStrategyPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
     this._bindZoneControlModeInputs(this.shadowRoot);
     this._bindZoneEntityStateSummaryInputs(this.shadowRoot);
     this._bindZoneSafetyGuardWatchdogInputs(this.shadowRoot);
     this._bindZoneSafetyGuardEventInputs(this.shadowRoot);
+    this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
   }
 
@@ -5043,6 +5047,41 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchEnvironmentStrategyPreview(domain) {
+    const { patchOnly = false } = arguments[1] || {};
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId || domain !== "environment") return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/environment/strategy-preview?crop_season_id=${cropSeasonId}&zone_id=${zoneId}`);
+      this._zoneEnvironmentStrategyPreviewCache[cacheKey] = res;
+      if (!patchOnly) { this._pageRendered = null; this._update(); }
+      return res;
+    } catch (err) {
+      console.warn("환경 전략 MVP 조회 실패 시 fallback", err);
+      return this._zoneEnvironmentStrategyPreviewCache[cacheKey] || null;
+    }
+  }
+
+  async _saveEnvironmentStrategyFinalTargets(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId || domain !== "environment") return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/environment/strategy-preview", { crop_season_id: cropSeasonId, zone_id: zoneId, save_final_targets: true, calculated_by: "environment_strategy_mvp" });
+      this._zoneEnvironmentStrategyPreviewCache[this._scopedControlCacheKey(domain)] = res;
+      await this._fetchZoneFinalTargets(domain);
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 환경 전략 MVP 최종값 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null;
+      this._update();
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("환경 전략 MVP 저장 실패 시 fallback", err);
+      return false;
+    }
+  }
+
   async _applyZoneAiOutput(domain, outputId) {
     if (!this._hass || !outputId) return false;
     try {
@@ -5505,6 +5544,28 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderEnvironmentStrategyPreviewCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneEnvironmentStrategyPreviewCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId() && domain === "environment" && !data) this._fetchEnvironmentStrategyPreview(domain);
+    const metric = (label, value, unit = "") => `<div class="strategy-status-row"><span>${label}</span><b>${this._esc(value ?? "-")}${unit}</b></div>`;
+    return `<div class="gs-card" data-env-strategy-preview-card style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>환경 전략 MVP</b><div class="strategy-muted">CORP/TEMHUM/VENT/SCRN · SafetyGuard 우선 적용 · environment_strategy_mvp</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="mini-btn" data-env-strategy-preview-refresh data-env-strategy-preview-domain="${domain}">전략 새로고침</button>
+          <button class="mini-btn" data-env-strategy-save-final data-env-strategy-preview-domain="${domain}">전략 최종값 저장</button>
+        </div>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+        <div><b>CORP G-Index</b>${metric("corpGIndex", data?.corpGIndex)}${metric("radiation", data?.corp?.radiation, "W")}</div>
+        <div><b>TEMHUM ADT/DIF/VPD</b>${metric("ADT", data?.adt, "°C")}${metric("DIF", data?.dif, "°C")}${metric("VPD", data?.vpd, "kPa")}</div>
+        <div><b>VENT/SCRN 최종 목표</b>${metric("ventTarget", data?.ventTarget, "%")}${metric("screenTarget", data?.screenTarget, "%")}</div>
+      </div>
+      <div class="strategy-muted" style="margin-top:8px;">SafetyGuard 우선 적용: 저장된 최종 목표도 실행 단계에서 SafetyGuard/Interlock gate를 먼저 통과합니다.</div>
+    </div>`;
+  }
+
   _renderZoneInterlockRuleBuilder(domain, settings) {
     // Phase 1E contract: structured rule UI keeps settings_json compatible while avoiding raw JSON-only editing.
     const rules = Array.isArray(settings?.rules) ? settings.rules : [];
@@ -5843,6 +5904,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneEntityStateSummaryCard("environment")}
       ${this._renderZoneSafetyGuardWatchdogCard("environment")}
       ${this._renderZoneSafetyGuardEventHistoryCard("environment")}
+      ${this._renderEnvironmentStrategyPreviewCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
@@ -6373,6 +6435,20 @@ button.action:disabled{opacity:.5;cursor:default;}
     });
   }
 
+  _bindEnvironmentStrategyPreviewInputs(root) {
+    root.querySelectorAll("[data-env-strategy-preview-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => await this._fetchEnvironmentStrategyPreview(btn.dataset.envStrategyPreviewDomain || "environment"));
+    });
+    root.querySelectorAll("[data-env-strategy-save-final]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.envStrategyPreviewDomain || "environment";
+        if (!confirm("환경 전략 MVP 결과를 최종 적용값으로 저장할까요? SafetyGuard 우선 적용은 실행 단계에서 유지됩니다.")) return;
+        const ok = await this._saveEnvironmentStrategyFinalTargets(domain);
+        if (!ok) alert("환경 전략 MVP 최종값 저장 실패: API/로그를 확인해 주세요.");
+      });
+    });
+  }
+
   _bindZoneInterlockSettingsInputs(root) {
     root.querySelectorAll("[data-zone-interlock-refresh]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -6533,6 +6609,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._bindZoneEntityStateSummaryInputs(root);
     this._bindZoneSafetyGuardWatchdogInputs(root);
     this._bindZoneSafetyGuardEventInputs(root);
+    this._bindEnvironmentStrategyPreviewInputs(root);
     this._bindZoneAiFinalTargetInputs(root);
     this._bindZoneEntityMappingInputs(root);
     this._bindControlStrategyInputs(root);

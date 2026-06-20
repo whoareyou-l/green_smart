@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.10` / Phase 2F SafetyGuard notification clear/operator note
+> 기준 버전: `v1.9.11` / Phase 3A Environment Strategy MVP
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -681,7 +681,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.10` 기준으로 가능한 것:
+현재 `v1.9.11` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장
@@ -692,6 +692,7 @@ domain별 상세 설정 탭
 - 실행 전/후 entity 상태 수집
 - 인터록/Fail Safe 판단
 - SafetyGuard watchdog/event lifecycle 및 notification clear 확인
+- 환경 전략 MVP preview 및 final target 저장
 - 실행/차단/상태검증 로그 UI 확인
 ```
 

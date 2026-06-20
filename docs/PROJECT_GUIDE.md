@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.10` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.11` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.10"
+  "version": "1.9.11"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.10"
+const VERSION = "1.9.11"
 ```
 
 중요 UI 페이지:
@@ -855,6 +855,21 @@ data-zone-safety-event-note
 
 `조치 완료`는 같은 작기/구역/domain의 SafetyGuard persistent notification을 해제하고 dedupe cache를 reset한다. Panel은 active 상태에서 `운영자 확인`, acknowledged 상태에서 `조치 완료`만 노출하며, 운영자는 `조치 메모`를 lifecycle에 남길 수 있다.
 
+Phase 3A environment strategy MVP baseline:
+
+```text
+GET /api/green_smart/environment/strategy-preview
+POST /api/green_smart/environment/strategy-preview
+ENVIRONMENT_STRATEGY_COMPONENTS = CORP/TEMHUM/VENT/SCRN
+corpGIndex
+adt/dif/vpd
+ventTarget/screenTarget
+environment_strategy_mvp
+environment_strategy_final_targets_saved
+```
+
+Panel에는 `환경 전략 MVP` 카드가 표시되며, 운영자는 CORP G-Index, TEMHUM ADT/DIF/VPD, VENT/SCRN 최종 목표 preview를 확인하고 `전략 최종값 저장`으로 `zone_final_control_targets`에 저장할 수 있다. 실제 실행은 기존 Control Mode/SafetyGuard/Interlock gate를 계속 통과한다.
+
 ---
 
 ### 11.5 `ai_zone_control_outputs`
@@ -1215,7 +1230,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.10
+v1.9.11
 ```
 
 ---

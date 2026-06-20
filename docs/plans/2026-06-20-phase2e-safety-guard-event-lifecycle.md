@@ -1,6 +1,6 @@
 # Phase 2E — SafetyGuard Event Lifecycle
 
-> 기준 버전: v1.9.10
+> 기준 버전: v1.9.11
 > 대상: SafetyGuard event history, ack/clear API, panel event card
 
 ## 목적

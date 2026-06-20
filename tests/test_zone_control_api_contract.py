@@ -960,3 +960,70 @@ def test_phase2f_safety_guard_notification_clear_and_operator_note_contract():
         "state === \"acknowledged\"",
     ):
         assert panel_marker in panel_source
+
+
+def test_phase3a_environment_strategy_mvp_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "ENVIRONMENT_STRATEGY_COMPONENTS",
+        "_environment_strategy_g_index",
+        "_environment_strategy_adt_dif_vpd",
+        "_environment_strategy_final_targets",
+        "_environment_strategy_preview_response",
+        "ZoneEnvironmentStrategyPreviewView",
+        'url = "/api/green_smart/environment/strategy-preview"',
+        "environment_strategy_previewed",
+        "environment_strategy_final_targets_saved",
+        "calculated_by=\"environment_strategy_mvp\"",
+        "corpGIndex",
+        "adt",
+        "dif",
+        "vpd",
+        "ventTarget",
+        "screenTarget",
+        "SafetyGuard 우선",
+    ):
+        assert api_marker in source
+
+    assert "hass.http.register_view(ZoneEnvironmentStrategyPreviewView())" in init_source
+
+    strategy_section = source.split("def _environment_strategy_g_index", 1)[1].split("class ZoneEnvironmentStrategyPreviewView", 1)[0]
+    for behavior in (
+        "CORP",
+        "TEMHUM",
+        "VENT",
+        "SCRN",
+        "radiation",
+        "temperature",
+        "humidity",
+        "ventTarget",
+        "screenTarget",
+        "targets",
+    ):
+        assert behavior in strategy_section
+
+    for panel_marker in (
+        "this._zoneEnvironmentStrategyPreviewCache",
+        "async _fetchEnvironmentStrategyPreview(domain",
+        "async _saveEnvironmentStrategyFinalTargets(domain)",
+        "_renderEnvironmentStrategyPreviewCard(domain)",
+        "_bindEnvironmentStrategyPreviewInputs(root)",
+        "green_smart/environment/strategy-preview",
+        "data-env-strategy-preview-card",
+        "data-env-strategy-preview-refresh",
+        "data-env-strategy-save-final",
+        "환경 전략 MVP",
+        "CORP G-Index",
+        "TEMHUM ADT/DIF/VPD",
+        "VENT/SCRN 최종 목표",
+        "SafetyGuard 우선 적용",
+        "전략 최종값 저장",
+        "environment_strategy_mvp",
+    ):
+        assert panel_marker in panel_source
+
+    env_page = panel_source.split("  _renderEnvSettingsPage() {", 1)[1].split("  _cloneIrrigationDefaults()", 1)[0]
+    assert '_renderEnvironmentStrategyPreviewCard("environment")' in env_page
