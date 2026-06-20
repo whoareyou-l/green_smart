@@ -39,6 +39,11 @@ async def async_setup(hass, config):
         CropControlListView, CropControlDeleteView,
     )
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView
+    from .zone_control_views import (
+        ZoneControlSettingsView, ZoneControlCopySettingsView,
+        ZoneControlFinalTargetsView, ZoneControlLogsView,
+        EnvironmentControlSettingsView, IrrigationControlSettingsView, DeviceControlSettingsView,
+    )
     domain_data = hass.data.setdefault(DOMAIN, {})
     await ensure_schema(hass)
     if not domain_data.get("_views_registered"):
@@ -67,6 +72,13 @@ async def async_setup(hass, config):
         hass.http.register_view(CropPestDeleteView())
         hass.http.register_view(CropControlListView())
         hass.http.register_view(CropControlDeleteView())
+        hass.http.register_view(ZoneControlSettingsView())
+        hass.http.register_view(ZoneControlCopySettingsView())
+        hass.http.register_view(ZoneControlFinalTargetsView())
+        hass.http.register_view(ZoneControlLogsView())
+        hass.http.register_view(EnvironmentControlSettingsView())
+        hass.http.register_view(IrrigationControlSettingsView())
+        hass.http.register_view(DeviceControlSettingsView())
         domain_data["_views_registered"] = True
     return True
 

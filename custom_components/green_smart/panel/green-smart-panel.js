@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.33
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.35
 const DOMAIN = "green_smart";
-const VERSION = "1.8.33";
+const VERSION = "1.8.35";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -242,6 +242,7 @@ class GreenSmartPanel extends HTMLElement {
     this._deviceTab = "status";
     this._controlScope = this._loadControlScope();
     this._controlSaveNotice = null;
+    this._apiScopedControlCache = {};
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -4662,6 +4663,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
     this._pushControlLog("설정 저장 → 환경 제어 갱신");
     this._setScopedControlState("environment", this._controlStrategy);
+    this._saveScopedControlStateToApi("environment", this._controlStrategy);
     this._setControlSaveNotice("environment");
     localStorage.setItem("green_smart_control_strategy", JSON.stringify(this._controlStrategy));
     this._pageRendered = null;
@@ -4859,6 +4861,80 @@ button.action:disabled{opacity:.5;cursor:default;}
     localStorage.setItem("green_smart_control_scope", JSON.stringify(this._controlScope));
   }
 
+  _zoneControlApiPath(domain) {
+    return {
+      environment: "green_smart/environment/control-settings",
+      irrigation: "green_smart/irrigation/control-settings",
+      device: "green_smart/devices/control-settings",
+    }[domain] || "green_smart/zones/control-settings";
+  }
+
+  _numericControlSeasonId() {
+    const sid = this._currentControlSeasonId();
+    const n = Number(sid);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  _scopedControlCacheKey(domain) {
+    return `${domain}:${this._currentControlSeasonId()}:${Number(this._controlScope?.zoneId || 1)}`;
+  }
+
+  async _fetchScopedControlStateFromApi(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const path = `${this._zoneControlApiPath(domain)}?crop_season_id=${cropSeasonId}&zone_id=${zoneId}`;
+      const res = await this._hass.callApi("GET", path);
+      if (res && res.found && res.settings) {
+        this._apiScopedControlCache[cacheKey] = this._cloneControlState(domain, res.settings);
+        this._setScopedControlState(domain, res.settings);
+        this._pageRendered = null;
+        this._update();
+        return this._apiScopedControlCache[cacheKey];
+      }
+    } catch (err) {
+      console.warn("API 저장 실패 시 localStorage fallback", err);
+    }
+    return null;
+  }
+
+  async _saveScopedControlStateToApi(domain, state) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    try {
+      const res = await this._hass.callApi("POST", this._zoneControlApiPath(domain), {
+        crop_season_id: cropSeasonId,
+        zone_id: zoneId,
+        settings: state,
+      });
+      if (res && res.settings) this._apiScopedControlCache[this._scopedControlCacheKey(domain)] = this._cloneControlState(domain, res.settings);
+      return true;
+    } catch (err) {
+      console.warn("API 저장 실패 시 localStorage fallback", err);
+      return false;
+    }
+  }
+
+  async _copyScopedControlSettingsViaApi(domain, fromZoneId, toZoneIds) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    try {
+      await this._hass.callApi("POST", "green_smart/zones/copy-control-settings", {
+        crop_season_id: cropSeasonId,
+        domain,
+        from_zone_id: Number(fromZoneId),
+        to_zone_ids: toZoneIds.map((z) => Number(z)),
+      });
+      return true;
+    } catch (err) {
+      console.warn("API 저장 실패 시 localStorage fallback", err);
+      return false;
+    }
+  }
+
   _currentControlSeasonId() {
     return this._controlScope?.seasonId || this._activeSeasonId || this._cropSeasons?.find((s) => !s.demolished)?.id || "default-season";
   }
@@ -4973,6 +5049,9 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _getScopedControlState(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    if (this._apiScopedControlCache?.[cacheKey]) return this._cloneControlState(domain, this._apiScopedControlCache[cacheKey]);
+    this._fetchScopedControlStateFromApi(domain); // async best-effort; localStorage fallback renders immediately
     return this._cloneControlState(domain, this._ensureScopedControlState(domain));
   }
 
@@ -5074,6 +5153,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
     this._irrigationControl.irrigationLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 설정 저장 · 관수 제어 갱신 · 성공`, ...(this._irrigationControl.irrigationLogs || [])].slice(0, 20);
     this._setScopedControlState("irrigation", this._irrigationControl);
+    this._saveScopedControlStateToApi("irrigation", this._irrigationControl);
     this._setControlSaveNotice("irrigation");
     localStorage.setItem("green_smart_irrigation_control", JSON.stringify(this._irrigationControl));
     this._pageRendered = null;
@@ -5220,6 +5300,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   _saveDeviceControl() {
     this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 장치제어 설정 저장 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
     this._setScopedControlState("device", this._deviceControl);
+    this._saveScopedControlStateToApi("device", this._deviceControl);
     this._setControlSaveNotice("device");
     localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
     this._pageRendered = null;
@@ -5502,6 +5583,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         device.updated = "방금 전";
         this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} ${device.name} ${previous} → ${command} · 수동실행 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
         this._setScopedControlState("device", this._deviceControl);
+        this._saveScopedControlStateToApi("device", this._deviceControl);
         this._setControlSaveNotice("device");
         localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
         this._pageRendered = null;
@@ -5539,6 +5621,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         if (fromZone === toZone) return;
         if (!confirm(`${this._controlDomainLabel(domain)} 현재 설정을 ${toZone}구역으로 복사할까요?`)) return;
         this._copyScopedControlSettings(domain, fromZone, toZone);
+        this._copyScopedControlSettingsViaApi(domain, fromZone, [toZone]);
         this._controlSaveNotice = { ...this._controlSaveNotice, label: `${this._currentControlScopeLabel(domain)} → ${toZone}구역 복사 완료` };
         this._pageRendered = null;
         this._update();
@@ -5547,6 +5630,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         const fromZone = Number(zone?.value || this._controlScope?.zoneId || 1);
         if (!confirm(`${this._controlDomainLabel(domain)} 현재 설정을 전체 구역에 적용할까요?`)) return;
         const copied = this._copyScopedControlSettingsToAllZones(domain, fromZone);
+        this._copyScopedControlSettingsViaApi(domain, fromZone, copied);
         this._controlSaveNotice = { ...this._controlSaveNotice, label: `${this._currentControlScopeLabel(domain)} → 전체 구역(${copied.length}개) 복사 완료` };
         this._pageRendered = null;
         this._update();

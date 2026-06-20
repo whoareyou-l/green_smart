@@ -190,6 +190,87 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             KEY idx_control_pesticides_name (pesticide_name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+        """
+        CREATE TABLE IF NOT EXISTS zone_control_settings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id INT NOT NULL DEFAULT 1,
+            crop_season_id INT NOT NULL,
+            zone_id INT NOT NULL,
+            domain VARCHAR(32) NOT NULL,
+            settings_json JSON NOT NULL,
+            version INT NOT NULL DEFAULT 1,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_zone_control_settings (farm_id, crop_season_id, zone_id, domain),
+            KEY idx_zone_control_settings_lookup (farm_id, crop_season_id, domain)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS zone_final_control_targets (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id INT NOT NULL DEFAULT 1,
+            crop_season_id INT NOT NULL,
+            zone_id INT NOT NULL,
+            domain VARCHAR(32) NOT NULL,
+            targets_json JSON NOT NULL,
+            source_ai_output_id BIGINT NULL,
+            source_settings_id BIGINT NULL,
+            calculated_by VARCHAR(64) NOT NULL DEFAULT 'system',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_zone_final_targets (farm_id, crop_season_id, zone_id, domain, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS zone_control_logs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id INT NOT NULL DEFAULT 1,
+            crop_season_id INT NOT NULL,
+            zone_id INT NOT NULL,
+            domain VARCHAR(32) NOT NULL,
+            actor VARCHAR(128) NULL,
+            actor_role VARCHAR(64) NULL,
+            action VARCHAR(128) NOT NULL,
+            before_json JSON NULL,
+            after_json JSON NULL,
+            result VARCHAR(64) NOT NULL,
+            message TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_zone_control_logs (farm_id, crop_season_id, zone_id, domain, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS zone_control_copy_jobs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id INT NOT NULL DEFAULT 1,
+            crop_season_id INT NOT NULL,
+            domain VARCHAR(32) NOT NULL,
+            from_zone_id INT NOT NULL,
+            to_zone_ids JSON NOT NULL,
+            copied_settings_json JSON NOT NULL,
+            actor VARCHAR(128) NULL,
+            result VARCHAR(64) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_zone_control_copy_jobs (farm_id, crop_season_id, domain, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS ai_zone_control_outputs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id INT NOT NULL DEFAULT 1,
+            crop_season_id INT NOT NULL,
+            zone_id INT NOT NULL,
+            domain VARCHAR(32) NOT NULL,
+            model_name VARCHAR(128) NULL,
+            strategy_json JSON NOT NULL,
+            explanation TEXT NULL,
+            safety_status VARCHAR(64) NOT NULL DEFAULT 'pending',
+            applied TINYINT(1) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_ai_zone_control_outputs (farm_id, crop_season_id, zone_id, domain, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
         "INSERT IGNORE INTO zones (id, name) VALUES (1, '1구역')",
     )
     pool = await get_pool(hass)
