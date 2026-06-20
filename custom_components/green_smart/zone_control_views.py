@@ -1633,6 +1633,95 @@ class ZoneEntityStateSummaryView(HomeAssistantView):
         return _json(await _entity_state_summary_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain))
 
 
+
+ENTITY_MAPPING_VALIDATION_SERVICE_DOMAINS = {
+    "switch": {"turn_on", "turn_off"},
+    "input_boolean": {"turn_on", "turn_off"},
+    "fan": {"turn_on", "turn_off"},
+    "cover": {"open_cover", "close_cover", "set_cover_position", "stop_cover"},
+    "light": {"turn_on", "turn_off"},
+    "climate": {"set_temperature"},
+    "number": {"set_value"},
+    "input_number": {"set_value"},
+}
+
+
+def _entity_mapping_expected_service_domain(entity_id: str | None) -> str:
+    return str(entity_id or "").split(".", 1)[0] if "." in str(entity_id or "") else ""
+
+
+def _validate_entity_mapping_item(hass, mapping: dict, final_targets: dict | None = None) -> dict:
+    # Control Phase C15: entity_id 존재 · domain/service 호환성 · safe_state 유효성.
+    entity_id = mapping.get("entityId") or mapping.get("entity_id")
+    service_domain = _entity_mapping_expected_service_domain(entity_id)
+    state = hass.states.get(entity_id) if entity_id else None
+    target_value = _target_value_for_mapping(final_targets or {}, mapping)
+    target_call = None
+    target_call_error = None
+    if target_value is not None:
+        try:
+            target_call = _service_call_for_mapping(mapping, target_value)
+        except Exception as exc:
+            target_call_error = str(exc)
+    safe_state = mapping.get("safeState") if "safeState" in mapping else mapping.get("safe_state")
+    safe_call = None
+    safe_call_error = None
+    if safe_state not in (None, ""):
+        try:
+            safe_call = _safe_state_service_call_for_mapping(mapping)
+        except Exception as exc:
+            safe_call_error = str(exc)
+    supported_services = ENTITY_MAPPING_VALIDATION_SERVICE_DOMAINS.get(service_domain, set())
+    serviceCompatible = bool(service_domain and supported_services and not target_call_error and (target_call is None or target_call.get("service") in supported_services))
+    safeStateValid = bool(safe_state not in (None, "") and not safe_call_error and safe_call and safe_call.get("service") in supported_services) if supported_services else False
+    issues = []
+    if not entity_id or state is None:
+        issues.append("entity_id 존재")
+    if not serviceCompatible:
+        issues.append("domain/service 호환성")
+    if safe_state in (None, ""):
+        issues.append("missingSafeState")
+    elif not safeStateValid:
+        issues.append("safe_state 유효성")
+    status = "valid" if not issues else ("warning" if serviceCompatible and state is not None else "invalid")
+    return {"mappingId": mapping.get("id"), "entityId": entity_id, "deviceType": mapping.get("deviceType") or mapping.get("device_type"), "controlRole": mapping.get("controlRole") or mapping.get("control_role"), "serviceDomain": service_domain, "entityExists": state is not None, "serviceCompatible": serviceCompatible, "safeStateValid": safeStateValid, "missingSafeState": safe_state in (None, ""), "mappingValidationStatus": status, "validationIssues": issues, "currentState": getattr(state, "state", None), "safeStateCall": safe_call, "targetCall": target_call, "safeStateError": safe_call_error, "targetCallError": target_call_error}
+
+
+async def _validate_entity_mapping_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain) or {"targets": {}}
+    items = [_validate_entity_mapping_item(hass, mapping, final_target.get("targets") or {}) for mapping in mappings]
+    target_keys = set((final_target.get("targets") or {}).keys())
+    mapped_keys = {str(m.get("controlRole") or m.get("deviceType") or m.get("entityId") or "") for m in mappings}
+    unmappedTargetKeys = sorted(k for k in target_keys if not str(k).startswith("_") and k not in mapped_keys)
+    validCount = sum(1 for item in items if item.get("mappingValidationStatus") == "valid")
+    invalidCount = sum(1 for item in items if item.get("mappingValidationStatus") == "invalid")
+    warningCount = sum(1 for item in items if item.get("mappingValidationStatus") == "warning") + len(unmappedTargetKeys)
+    status = "valid" if items and not invalidCount and not warningCount else ("empty" if not items else "needs_attention")
+    return {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "mappingValidationStatus": status, "items": items, "validCount": validCount, "invalidCount": invalidCount, "warningCount": warningCount, "unmappedTargetKeys": unmappedTargetKeys, "validationIssues": sorted({issue for item in items for issue in item.get("validationIssues", [])} | ({"위험 장비 mapping 누락"} if unmappedTargetKeys else set())), "checks": ["entity_id 존재", "domain/service 호환성", "safe_state 유효성", "위험 장비 mapping 누락"]}
+
+
+class ZoneEntityMappingValidationView(HomeAssistantView):
+    """GET /api/green_smart/zones/entity-mapping-validation."""
+
+    url = "/api/green_smart/zones/entity-mapping-validation"
+    name = "api:green_smart:zones:entity_mapping_validation"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _validate_entity_mapping_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="entity_mapping_validation_checked", before=None, after=response, result="success" if response.get("mappingValidationStatus") == "valid" else "warning", message="entity mapping validation checked")
+        return _json(response)
+
 class ZoneDeviceEntityMappingsView(HomeAssistantView):
     """GET/POST/DELETE /api/green_smart/zones/device-entity-mappings."""
 
@@ -1703,6 +1792,10 @@ class ZoneDeviceEntityMappingsView(HomeAssistantView):
             (farm_id, crop_season_id, zone_id, domain, device_type, entity_id, control_role, safe_state, enabled, note, actor, actor),
         )
         mapping = {"deviceType": device_type, "entity_id": entity_id, "entityId": entity_id, "control_role": control_role, "controlRole": control_role, "safe_state": safe_state, "safeState": safe_state, "enabled": bool(enabled), "note": note}
+        mappingValidation = _validate_entity_mapping_item(hass, mapping, {})
+        mapping["mappingValidation"] = mappingValidation
+        mapping["mappingValidationStatus"] = mappingValidation.get("mappingValidationStatus")
+        mapping["validationIssues"] = mappingValidation.get("validationIssues")
         await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=actor, action="device_entity_mapping_saved", before=None, after=mapping, result="success", message="device entity mapping saved")
         return _json({"ok": True, "id": new_id, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, **mapping})
 

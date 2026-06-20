@@ -1,6 +1,6 @@
 # Control Phase C14 — Dry Run UI
 
-> 기준 버전: v1.9.15
+> 기준 버전: v1.9.16
 > 상태: 완료
 > 대상: `green-smart-panel.js`, 기존 `POST /api/green_smart/zones/execute-final-targets` dry_run 경로
 

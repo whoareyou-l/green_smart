@@ -1319,3 +1319,65 @@ def test_control_phase_c14_dry_run_ui_contract():
 
     for domain in ("environment", "irrigation", "device"):
         assert f'_renderZoneDryRunPreviewCard("{domain}")' in panel_source
+
+
+
+def test_control_phase_c15_entity_mapping_validation_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "ENTITY_MAPPING_VALIDATION_SERVICE_DOMAINS",
+        "_entity_mapping_expected_service_domain",
+        "_validate_entity_mapping_item",
+        "_validate_entity_mapping_response",
+        "ZoneEntityMappingValidationView",
+        'url = "/api/green_smart/zones/entity-mapping-validation"',
+        "entity_mapping_validation_checked",
+        "entityExists",
+        "serviceCompatible",
+        "safeStateValid",
+        "missingSafeState",
+        "mappingValidationStatus",
+        "validationIssues",
+        "entity_id 존재",
+        "domain/service 호환성",
+        "safe_state 유효성",
+    ):
+        assert api_marker in source
+
+    assert "hass.http.register_view(ZoneEntityMappingValidationView())" in init_source
+
+    mapping_post_section = source.split("class ZoneDeviceEntityMappingsView", 1)[1].split("def _summarize_control_log_row", 1)[0]
+    for save_marker in (
+        "_validate_entity_mapping_item",
+        "mappingValidation",
+        "mappingValidationStatus",
+        "validationIssues",
+    ):
+        assert save_marker in mapping_post_section
+
+    for panel_marker in (
+        "this._zoneEntityMappingValidationCache",
+        "async _fetchZoneEntityMappingValidation(domain)",
+        "_renderZoneEntityMappingValidationCard(domain)",
+        "_bindZoneEntityMappingValidationInputs(root)",
+        "green_smart/zones/entity-mapping-validation",
+        "data-zone-entity-validation-card",
+        "data-zone-entity-validation-refresh",
+        "data-zone-entity-validation-row",
+        "data-zone-entity-validation-status",
+        "data-zone-entity-validation-issue",
+        "Entity Mapping 검증",
+        "Setup Assistant",
+        "entity_id 존재",
+        "domain/service 호환성",
+        "safe_state 유효성",
+        "위험 장비 mapping 누락",
+        "검증 실행",
+    ):
+        assert panel_marker in panel_source
+
+    for domain in ("environment", "irrigation", "device"):
+        assert f'_renderZoneEntityMappingValidationCard("{domain}")' in panel_source

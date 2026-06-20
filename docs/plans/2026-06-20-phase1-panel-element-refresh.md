@@ -1,6 +1,6 @@
 # Green Smart Phase 1C Panel Element Refresh Plan
 
-> 기준 버전: v1.9.15
+> 기준 버전: v1.9.16
 > 목표: 마스터 플랜의 panel 갱신 정책을 제어 페이지부터 계약화한다.
 
 ## Scope

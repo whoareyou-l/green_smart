@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.15
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.16
 const DOMAIN = "green_smart";
-const VERSION = "1.9.15";
+const VERSION = "1.9.16";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -247,6 +247,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneAiOutputCache = {};
     this._zoneFinalTargetCache = {};
     this._zoneEntityMappingCache = {};
+    this._zoneEntityMappingValidationCache = {};
     this._zoneExecutionLogCache = {};
     this._zoneInterlockSettingsCache = {};
     this._zoneControlModeCache = {};
@@ -352,6 +353,7 @@ class GreenSmartPanel extends HTMLElement {
     if (domain === "irrigation") this._replaceZoneControlCard("[data-irrigation-strategy-preview-card]", this._renderIrrigationStrategyPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-dry-run-card]", this._renderZoneDryRunPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
+    this._replaceZoneControlCard("[data-zone-entity-validation-card]", this._renderZoneEntityMappingValidationCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
     this._bindZoneControlModeInputs(this.shadowRoot);
     this._bindZoneEntityStateSummaryInputs(this.shadowRoot);
@@ -362,6 +364,7 @@ class GreenSmartPanel extends HTMLElement {
     this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
     this._bindIrrigationStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
+    this._bindZoneEntityMappingValidationInputs(this.shadowRoot);
   }
 
   // ── Init & storage ──────────────────────────────────────────────────────────
@@ -5381,6 +5384,24 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneEntityMappingValidation(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/entity-mapping-validation?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._zoneEntityMappingValidationCache[cacheKey] = res;
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · Entity Mapping 검증 실행 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null;
+      this._update();
+      return res;
+    } catch (err) {
+      console.warn("Entity Mapping 검증 조회 실패 시 fallback", err);
+      return this._zoneEntityMappingValidationCache[cacheKey] || null;
+    }
+  }
+
   async _fetchZoneEntityMappings(domain) {
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return [];
@@ -5929,6 +5950,32 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderZoneEntityMappingValidationCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneEntityMappingValidationCache?.[cacheKey] || null;
+    const items = data?.items || [];
+    const rows = items.length ? items.map((item) => `<div data-zone-entity-validation-row style="border-top:1px solid #e4f0e5;padding:8px 0;font-size:12px;display:grid;gap:4px;">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><b>${this._esc(item.entityId || "entity_id")}</b><span data-zone-entity-validation-status>${this._esc(item.mappingValidationStatus || "-")}</span></div>
+      <div>entity_id 존재: ${item.entityExists ? "확인" : "누락"} · domain/service 호환성: ${item.serviceCompatible ? "확인" : "주의"} · safe_state 유효성: ${item.safeStateValid ? "확인" : "주의"}</div>
+      ${(item.validationIssues || []).map((issue) => `<div data-zone-entity-validation-issue class="strategy-muted">검증 이슈: ${this._esc(issue)}</div>`).join("")}
+    </div>`).join("") : `<div class="strategy-muted">검증 실행을 누르면 entity_id 존재, domain/service 호환성, safe_state 유효성을 확인합니다.</div>`;
+    const unmapped = (data?.unmappedTargetKeys || []).map((key) => `<div data-zone-entity-validation-issue class="strategy-muted">위험 장비 mapping 누락: ${this._esc(key)}</div>`).join("");
+    return `<div class="gs-card" data-zone-entity-validation-card data-zone-entity-validation-domain="${domain}" style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>Entity Mapping 검증</b><div class="strategy-muted">Setup Assistant · entity_id 존재 · domain/service 호환성 · safe_state 유효성 · 위험 장비 mapping 누락</div></div>
+        <button class="mini-btn primary" data-zone-entity-validation-refresh data-zone-entity-validation-domain="${domain}">검증 실행</button>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:8px;">
+        <div>status <b>${this._esc(data?.mappingValidationStatus || "대기")}</b></div>
+        <div>valid <b>${this._esc(data?.validCount ?? "-")}</b></div>
+        <div>invalid <b>${this._esc(data?.invalidCount ?? "-")}</b></div>
+        <div>warnings <b>${this._esc(data?.warningCount ?? "-")}</b></div>
+      </div>
+      ${rows}
+      ${unmapped}
+    </div>`;
+  }
+
   _renderZoneEntityMappingCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const mappings = this._zoneEntityMappingCache?.[cacheKey] || [];
@@ -6181,6 +6228,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneDryRunPreviewCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
+      ${this._renderZoneEntityMappingValidationCard("environment")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
@@ -6350,6 +6398,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneDryRunPreviewCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
+      ${this._renderZoneEntityMappingValidationCard("irrigation")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
         ${this._renderIrrigationControlTabBar()}
@@ -6440,6 +6489,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneDryRunPreviewCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
+      ${this._renderZoneEntityMappingValidationCard("device")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
         ${this._renderDeviceControlTabBar()}
@@ -6837,6 +6887,16 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelectorAll("[data-zone-log-refresh]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         await this._fetchZoneExecutionLogs(btn.dataset.zoneLogDomain || "environment");
+      });
+    });
+  }
+
+  _bindZoneEntityMappingValidationInputs(root) {
+    root.querySelectorAll("[data-zone-entity-validation-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneEntityValidationDomain || "environment";
+        const res = await this._fetchZoneEntityMappingValidation(domain);
+        if (!res) alert("Entity Mapping 검증 실패: entity_id, safe_state, service 호환성을 확인해 주세요.");
       });
     });
   }
