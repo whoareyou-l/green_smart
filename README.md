@@ -12,6 +12,12 @@ Paperclip-era documents are historical only and are not part of the active workf
 New developers should read the full project handbook first:
 
 - [`docs/PROJECT_GUIDE.md`](docs/PROJECT_GUIDE.md) — end-to-end project overview, architecture, DB model, API map, UI structure, testing, deployment, and roadmap.
+- [`docs/PROJECT_MASTER_PLAN.md`](docs/PROJECT_MASTER_PLAN.md) — current master roadmap aligned with the new interlock-first control plan.
+- [`docs/design/system-architecture.md`](docs/design/system-architecture.md) — HA/edge/SaaS/deploy architecture boundary.
+- [`docs/design/data-model.md`](docs/design/data-model.md) — current and planned DB/data-model contracts.
+- [`docs/design/control-engine-contracts.md`](docs/design/control-engine-contracts.md) — CORP/TEMHUM/IRR/VENT/SCRN/SafetyGuard contracts.
+- [`docs/design/api-spec.md`](docs/design/api-spec.md) — existing and planned API contract map.
+- [`docs/design/home-assistant-integration-contract.md`](docs/design/home-assistant-integration-contract.md) — HA integration/panel/entity/persistent-notification contract.
 - [`docs/design/zone-control-roadmap-and-data-model.md`](docs/design/zone-control-roadmap-and-data-model.md) — detailed zone-control/AI/final-target/entity-mapping/execution data model.
 
 ## Active workflow

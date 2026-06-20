@@ -1056,6 +1056,13 @@ v1.8.42
 | 문서 | 역할 |
 |---|---|
 | `docs/PROJECT_GUIDE.md` | 프로젝트 전체 핸드북 |
+| `docs/PROJECT_MASTER_PLAN.md` | 새 마스터 플랜과 기존 문서/코드를 정렬한 현재 개발 기준 |
+| `.omc/plans/green-smart-master-plan.md` | 사용자가 제공한 새 마스터 플랜 원문 repo 사본 |
+| `docs/design/system-architecture.md` | HA custom integration, edge appliance, SaaS/deploy 경계 |
+| `docs/design/data-model.md` | 현재/확장 DB와 저장 정책 기준 |
+| `docs/design/control-engine-contracts.md` | CORP/TEMHUM/IRR/VENT/SCRN/SafetyGuard 계약 |
+| `docs/design/api-spec.md` | 기존/향후 API 경로와 호환성 기준 |
+| `docs/design/home-assistant-integration-contract.md` | HA integration, panel, entity/service call, persistent notification 계약 |
 | `docs/design/zone-control-roadmap-and-data-model.md` | 제어/DB/AI execution 세부 기준 |
 | `docs/design/zone-scoped-control-settings.md` | zone-scoped control 초기 설계 |
 | `docs/design/irrigation-control-page.md` | 관수 제어 페이지 설계 |
