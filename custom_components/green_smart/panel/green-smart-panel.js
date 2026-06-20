@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.2
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.3
 const DOMAIN = "green_smart";
-const VERSION = "1.9.2";
+const VERSION = "1.9.3";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -249,6 +249,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneEntityMappingCache = {};
     this._zoneExecutionLogCache = {};
     this._zoneInterlockSettingsCache = {};
+    this._zoneControlModeCache = {};
     this._zoneEntityStateSummaryCache = {};
     this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
@@ -302,7 +303,7 @@ class GreenSmartPanel extends HTMLElement {
   _hasDirtyZoneControlEditor() {
     const active = this.shadowRoot?.activeElement;
     if (!active) return false;
-    return Boolean(active.closest?.("[data-zone-interlock-settings-card], [data-zone-entity-mapping-card]") || ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
+    return Boolean(active.closest?.("[data-zone-interlock-settings-card], [data-zone-control-mode-card], [data-zone-entity-mapping-card]") || ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
   }
 
   async _refreshZoneControlElements({ patchOnly = false } = {}) {
@@ -311,6 +312,7 @@ class GreenSmartPanel extends HTMLElement {
     const domain = this._page === "device" ? "device" : this._page;
     await Promise.allSettled([
       this._fetchZoneInterlockSettings(domain, { patchOnly }),
+      this._fetchZoneControlMode(domain, { patchOnly }),
       this._fetchZoneEntityStateSummary(domain, { patchOnly }),
       this._fetchZoneExecutionLogs(domain, { patchOnly }),
     ]);
@@ -329,9 +331,11 @@ class GreenSmartPanel extends HTMLElement {
 
   _patchZoneControlElementCards(domain) {
     this._replaceZoneControlCard("[data-zone-interlock-settings-card]", this._renderZoneInterlockSettingsCard(domain));
+    this._replaceZoneControlCard("[data-zone-control-mode-card]", this._renderZoneControlModeCard(domain));
     this._replaceZoneControlCard("[data-zone-entity-state-summary-card]", this._renderZoneEntityStateSummaryCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
+    this._bindZoneControlModeInputs(this.shadowRoot);
     this._bindZoneEntityStateSummaryInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
   }
@@ -5196,6 +5200,80 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneControlMode(domain) {
+    const { patchOnly = false } = arguments[1] || {};
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/control-mode?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._zoneControlModeCache[cacheKey] = res || { mode: "manual", allowAutoExecution: false };
+      if (!patchOnly) {
+        this._pageRendered = null;
+        this._update();
+      }
+      return this._zoneControlModeCache[cacheKey];
+    } catch (err) {
+      console.warn("제어 모드 조회 실패 시 fallback", err);
+      return this._zoneControlModeCache[cacheKey] || { mode: "manual", allowAutoExecution: false };
+    }
+  }
+
+  async _saveZoneControlMode(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const card = this.shadowRoot?.querySelector(`[data-zone-control-mode-card][data-zone-control-mode-domain=\"${domain}\"]`);
+    const mode = card?.querySelector("[data-zone-control-mode-select]")?.value || "manual";
+    const allowAutoExecution = !!card?.querySelector("[data-zone-control-mode-auto]")?.checked;
+    const overrideReason = card?.querySelector("[data-zone-control-mode-reason]")?.value?.trim() || null;
+    const overrideExpiresAt = card?.querySelector("[data-zone-control-mode-expires]")?.value || null;
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/control-mode", {
+        crop_season_id: cropSeasonId,
+        zone_id: zoneId,
+        domain,
+        mode,
+        allowAutoExecution,
+        overrideReason,
+        overrideExpiresAt,
+      });
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 제어 모드 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      await this._fetchZoneControlMode(domain);
+      return !!res?.found || !!res?.id;
+    } catch (err) {
+      console.warn("제어 모드 조회 실패 시 fallback", err);
+      return false;
+    }
+  }
+
+  _renderZoneControlModeCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneControlModeCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId() && !data) this._fetchZoneControlMode(domain);
+    const mode = data?.mode || "manual";
+    const allow = !!data?.allowAutoExecution;
+    const reason = this._esc(data?.overrideReason || "");
+    const expires = this._esc(String(data?.overrideExpiresAt || "").slice(0, 16));
+    const option = (value, label) => `<option value="${value}" ${mode === value ? "selected" : ""}>${label}</option>`;
+    return `<div class="gs-card" data-zone-control-mode-card data-zone-control-mode-domain="${domain}" style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>제어 모드</b><div class="strategy-muted">수동/자동/반자동/비활성 및 manual override 기본 모델 · 현재 ${this._esc(mode)}</div></div>
+        <div style="display:flex;gap:6px;"><button class="mini-btn" data-zone-control-mode-refresh data-zone-control-mode-domain="${domain}">새로고침</button><button class="mini-btn primary" data-zone-control-mode-save data-zone-control-mode-domain="${domain}">제어 모드 저장</button></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;align-items:end;">
+        <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">제어 모드
+          <select data-zone-control-mode-select>${option("manual", "수동")}${option("auto", "자동")}${option("assist", "반자동")}${option("disabled", "비활성")}</select>
+        </label>
+        <label style="font-size:12px;color:#5d7d64;display:flex;gap:6px;align-items:center;"><input type="checkbox" data-zone-control-mode-auto ${allow ? "checked" : ""}> 자동 실행 허용</label>
+        <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">Override 사유<input data-zone-control-mode-reason placeholder="예: 현장 점검자 승인" value="${reason}"></label>
+        <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">Override 만료<input type="datetime-local" data-zone-control-mode-expires value="${expires}"></label>
+      </div>
+      <div class="strategy-muted" style="margin-top:6px;">수동 기본값은 실제 실행을 차단하고 dry-run만 허용합니다. 자동/반자동 + 자동 실행 허용일 때 Phase 2 SafetyGuard 앞단으로 전달됩니다.</div>
+    </div>`;
+  }
+
   async _fetchZoneEntityStateSummary(domain) {
     const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
@@ -5535,6 +5613,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page control-strategy-page">
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
       ${this._renderControlScopeBar("environment")}
+      ${this._renderZoneControlModeCard("environment")}
       ${this._renderZoneInterlockSettingsCard("environment")}
       ${this._renderZoneEntityStateSummaryCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
@@ -5698,6 +5777,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page irrigation-control-page">
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
+      ${this._renderZoneControlModeCard("irrigation")}
       ${this._renderZoneInterlockSettingsCard("irrigation")}
       ${this._renderZoneEntityStateSummaryCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
@@ -5783,6 +5863,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page device-control-page">
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
+      ${this._renderZoneControlModeCard("device")}
       ${this._renderZoneInterlockSettingsCard("device")}
       ${this._renderZoneEntityStateSummaryCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
@@ -6046,6 +6127,21 @@ button.action:disabled{opacity:.5;cursor:default;}
     });
   }
 
+  _bindZoneControlModeInputs(root) {
+    root.querySelectorAll("[data-zone-control-mode-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await this._fetchZoneControlMode(btn.dataset.zoneControlModeDomain || "environment");
+      });
+    });
+    root.querySelectorAll("[data-zone-control-mode-save]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneControlModeDomain || "environment";
+        const ok = await this._saveZoneControlMode(domain);
+        if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+  }
+
   _bindZoneAiFinalTargetInputs(root) {
     root.querySelectorAll("[data-zone-ai-refresh]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -6166,6 +6262,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   _bindDashboard(root) {
     this._bindControlScopeInputs(root);
     this._bindZoneInterlockSettingsInputs(root);
+    this._bindZoneControlModeInputs(root);
     this._bindZoneEntityStateSummaryInputs(root);
     this._bindZoneAiFinalTargetInputs(root);
     this._bindZoneEntityMappingInputs(root);

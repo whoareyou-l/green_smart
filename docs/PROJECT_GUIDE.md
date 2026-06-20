@@ -1,9 +1,9 @@
 # Green Smart Project Guide
 
-> **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent  
-> **Repository:** `whoareyou-l/green_smart`  
-> **Current baseline:** `v1.9.2` / `green_smart` Home Assistant custom integration  
-> **Last verified locally:** 101 pytest contract tests + JS syntax check  
+> **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
+> **Repository:** `whoareyou-l/green_smart`
+> **Current baseline:** `v1.9.3` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.2"
+  "version": "1.9.3"
 }
 ```
 
@@ -439,6 +439,7 @@ docs/design/zone-control-roadmap-and-data-model.md
 |---|---|---|
 | GET/POST | `/api/green_smart/zones/control-settings` | scoped 설정 조회/저장 |
 | GET/POST | `/api/green_smart/zones/interlock-settings` | scoped 인터록/안전 기준 설정 조회/저장 |
+| GET/POST | `/api/green_smart/zones/control-mode` | manual/auto/assist/disabled 및 override 상태 조회/저장 |
 | GET | `/api/green_smart/zones/entity-state-summary` | Entity Mapping 기준 HA 현재 상태 요약 조회 |
 | POST | `/api/green_smart/zones/copy-control-settings` | zone 설정 복사 |
 | GET/POST | `/api/green_smart/zones/final-targets` | 최종 적용값 조회/저장 |
@@ -480,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.2"
+const VERSION = "1.9.3"
 ```
 
 중요 UI 페이지:
@@ -686,7 +687,41 @@ farm_id, crop_season_id, zone_id, domain
 
 ---
 
-### 11.3 `ai_zone_control_outputs`
+### 11.3 `zone_control_modes`
+
+Phase 1D에서 추가된 Zone/domain별 manual/auto/assist/disabled 및 override 기본 상태.
+
+```text
+mode
+allow_auto_execution
+override_reason
+override_expires_at
+created_by
+updated_by
+created_at
+updated_at
+```
+
+Unique:
+
+```text
+farm_id, crop_season_id, zone_id, domain
+```
+
+실행 정책:
+
+```text
+manual   → 실제 실행 차단, dry-run 허용
+auto     → allow_auto_execution=true일 때 실행 허용
+assist   → allow_auto_execution=true일 때 실행 허용
+disabled → 실제 실행 차단
+```
+
+`execute-final-targets`는 HA service call 전에 이 mode를 조회하고, 차단 시 `blocked_by_control_mode` 로그를 남긴다.
+
+---
+
+### 11.4 `ai_zone_control_outputs`
 
 AI Agent 또는 시스템이 생성한 제어 전략 후보.
 
@@ -1044,7 +1079,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.2
+v1.9.3
 ```
 
 ---

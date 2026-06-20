@@ -9,6 +9,7 @@ from homeassistant.components.http import HomeAssistantView
 from .db import execute, fetchall, fetchone
 
 VALID_DOMAINS = {"environment", "irrigation", "device"}
+VALID_CONTROL_MODES = {"manual", "auto", "assist", "disabled"}
 
 
 def _json(data, status: int = 200) -> web.Response:
@@ -166,6 +167,83 @@ async def _upsert_interlock_settings(hass, *, farm_id: int, crop_season_id: int,
     return await _interlock_settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
 
 
+async def _control_mode_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    row = await fetchone(
+        hass,
+        """
+        SELECT id, farm_id AS farmId, crop_season_id AS cropSeasonId, zone_id AS zoneId,
+               domain, mode, allow_auto_execution AS allowAutoExecution,
+               override_reason AS overrideReason, override_expires_at AS overrideExpiresAt,
+               updated_at AS updatedAt
+        FROM zone_control_modes
+        WHERE farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s
+        """,
+        (farm_id, crop_season_id, zone_id, domain),
+    )
+    if not row:
+        return {
+            "farmId": farm_id,
+            "cropSeasonId": crop_season_id,
+            "zoneId": zone_id,
+            "domain": domain,
+            "mode": "manual",
+            "allowAutoExecution": False,
+            "overrideReason": None,
+            "overrideExpiresAt": None,
+            "found": False,
+        }
+    row["allowAutoExecution"] = bool(row.get("allowAutoExecution"))
+    row["found"] = True
+    return row
+
+
+async def _upsert_control_mode(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, mode: str, allow_auto_execution: bool, override_reason: str | None, override_expires_at: str | None, actor: str | None) -> dict:
+    if mode not in VALID_CONTROL_MODES:
+        raise ValueError("mode must be one of manual, auto, assist, disabled")
+    before = await _control_mode_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    await execute(
+        hass,
+        """
+        INSERT INTO zone_control_modes
+            (farm_id, crop_season_id, zone_id, domain, mode, allow_auto_execution, override_reason, override_expires_at, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''), %s, %s)
+        ON DUPLICATE KEY UPDATE
+            mode = VALUES(mode),
+            allow_auto_execution = VALUES(allow_auto_execution),
+            override_reason = VALUES(override_reason),
+            override_expires_at = VALUES(override_expires_at),
+            updated_by = VALUES(updated_by),
+            updated_at = NOW()
+        """,
+        (farm_id, crop_season_id, zone_id, domain, mode, 1 if allow_auto_execution else 0, override_reason, override_expires_at, actor, actor),
+    )
+    after = await _control_mode_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    await _insert_log(
+        hass,
+        farm_id=farm_id,
+        crop_season_id=crop_season_id,
+        zone_id=zone_id,
+        domain=domain,
+        actor=actor,
+        action="control_mode_saved",
+        before={"mode": before.get("mode"), "allowAutoExecution": before.get("allowAutoExecution"), "overrideReason": before.get("overrideReason"), "overrideExpiresAt": before.get("overrideExpiresAt")},
+        after={"mode": after.get("mode"), "allowAutoExecution": after.get("allowAutoExecution"), "overrideReason": after.get("overrideReason"), "overrideExpiresAt": after.get("overrideExpiresAt")},
+        result="success",
+        message="zone control mode saved",
+    )
+    return after
+
+
+async def _control_mode_decision(mode_row: dict, *, dry_run: bool) -> dict:
+    mode = mode_row.get("mode") or "manual"
+    allow_auto = bool(mode_row.get("allowAutoExecution"))
+    allow_execution = bool(dry_run or (mode in {"auto", "assist"} and allow_auto))
+    reason = None if allow_execution else "manual override required before execution"
+    if mode == "disabled" and not dry_run:
+        reason = "control mode disabled"
+    return {"mode": mode, "allowAutoExecution": allow_auto, "allowExecution": allow_execution, "reason": reason, "modeRow": mode_row}
+
+
 async def _insert_log(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, actor: str | None, action: str, before, after, result: str, message: str) -> None:
     await execute(
         hass,
@@ -223,6 +301,57 @@ class ZoneInterlockSettingsView(HomeAssistantView):
         except Exception as exc:
             return _err(str(exc))
         return _json(await _upsert_interlock_settings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, settings=settings, enabled=enabled, actor=_actor(request)))
+
+
+class ZoneControlModeView(HomeAssistantView):
+    """GET/POST /api/green_smart/zones/control-mode."""
+
+    url = "/api/green_smart/zones/control-mode"
+    name = "api:green_smart:zones:control_mode"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        return _json(await _control_mode_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain))
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            domain = _validate_domain(body.get("domain"))
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            mode = (body.get("mode") or "manual").strip()
+            allow_auto_execution = bool(body.get("allow_auto_execution") or body.get("allowAutoExecution") or False)
+            override_reason = body.get("override_reason") or body.get("overrideReason")
+            override_expires_at = body.get("override_expires_at") or body.get("overrideExpiresAt")
+        except Exception as exc:
+            return _err(str(exc))
+        try:
+            data = await _upsert_control_mode(
+                hass,
+                farm_id=farm_id,
+                crop_season_id=crop_season_id,
+                zone_id=zone_id,
+                domain=domain,
+                mode=mode,
+                allow_auto_execution=allow_auto_execution,
+                override_reason=override_reason,
+                override_expires_at=override_expires_at,
+                actor=_actor(request),
+            )
+        except Exception as exc:
+            return _err(str(exc))
+        return _json(data)
 
 
 class ZoneControlSettingsView(HomeAssistantView):
@@ -621,6 +750,11 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         except Exception as exc:
             return _err(str(exc))
         final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        mode_row = await _control_mode_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        modeDecision = await _control_mode_decision(mode_row, dry_run=dry_run)  # Phase 1D: manual/auto/override gate
+        if not modeDecision.get("allowExecution"):
+            await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="blocked_by_control_mode", before=mode_row, after=modeDecision, result="blocked", message=modeDecision.get("reason") or "manual override required before execution")
+            return _json({"ok": False, "dryRun": dry_run, "controlMode": modeDecision, "safetyStatus": "blocked", "blockedByControlMode": True, "message": modeDecision.get("reason") or "manual override required before execution"}, status=409)
         if not final_target or not isinstance(final_target.get("targets"), dict):
             return _err("final targets not found", status=404)
         mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)

@@ -534,3 +534,69 @@ def test_phase1_panel_uses_five_second_element_refresh_without_full_rerender_con
     assert "this._fetchZoneEntityStateSummary(domain, { patchOnly })" in refresh_section
     assert "this._fetchZoneExecutionLogs(domain, { patchOnly })" in refresh_section
     assert "this._fetchZoneInterlockSettings(domain, { patchOnly })" in refresh_section
+
+def test_phase1_manual_auto_override_mode_contract():
+    db_source = DB.read_text(encoding="utf-8")
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for db_marker in (
+        "CREATE TABLE IF NOT EXISTS zone_control_modes",
+        "uniq_zone_control_modes",
+        "mode VARCHAR(32) NOT NULL DEFAULT 'manual'",
+        "override_reason TEXT NULL",
+        "override_expires_at DATETIME NULL",
+        "allow_auto_execution TINYINT(1) NOT NULL DEFAULT 0",
+    ):
+        assert db_marker in db_source
+
+    for api_marker in (
+        "VALID_CONTROL_MODES",
+        "ZoneControlModeView",
+        'url = "/api/green_smart/zones/control-mode"',
+        "_control_mode_response",
+        "_upsert_control_mode",
+        "_control_mode_decision",
+        "control_mode_saved",
+        "zone_control_modes",
+        "allowAutoExecution",
+        "overrideExpiresAt",
+    ):
+        assert api_marker in source
+        if api_marker == "ZoneControlModeView":
+            assert api_marker in init_source
+
+    assert "hass.http.register_view(ZoneControlModeView())" in init_source
+
+    for execution_marker in (
+        "modeDecision = await _control_mode_decision",
+        "blocked_by_control_mode",
+        "modeDecision.get(\"allowExecution\")",
+        "manual override required before execution",
+    ):
+        assert execution_marker in source
+
+    for panel_marker in (
+        "this._zoneControlModeCache",
+        "async _fetchZoneControlMode(domain)",
+        "async _saveZoneControlMode(domain)",
+        "_renderZoneControlModeCard(domain)",
+        "_bindZoneControlModeInputs(root)",
+        "green_smart/zones/control-mode",
+        "data-zone-control-mode-card",
+        "data-zone-control-mode-refresh",
+        "data-zone-control-mode-save",
+        "제어 모드",
+        "수동",
+        "자동",
+        "반자동",
+        "비활성",
+        "Override 사유",
+        "Override 만료",
+        "제어 모드 조회 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source
+
+    refresh_section = panel_source.split("async _refreshZoneControlElements", 1)[1].split("_patchZoneControlElementCards", 1)[0]
+    assert "this._fetchZoneControlMode(domain, { patchOnly })" in refresh_section

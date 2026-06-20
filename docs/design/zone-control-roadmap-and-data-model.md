@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
-> 작성일: 2026-06-20  
-> 기준 버전: `v1.9.2` / Phase 1C panel element-refresh baseline  
+> 작성일: 2026-06-20
+> 기준 버전: `v1.9.3` / Phase 1D control-mode baseline
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -172,7 +172,43 @@ CREATE TABLE zone_interlock_settings (
 
 ---
 
-### 5.4 `ai_zone_control_outputs`
+### 5.4 `zone_control_modes`
+
+**목적:** Phase 1D에서 추가된 작기/구역/domain별 수동/자동/반자동/비활성 및 override 기본 상태 저장.
+
+```sql
+CREATE TABLE zone_control_modes (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  farm_id INT NOT NULL DEFAULT 1,
+  crop_season_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  domain VARCHAR(32) NOT NULL,
+  mode VARCHAR(32) NOT NULL DEFAULT 'manual',
+  allow_auto_execution TINYINT(1) NOT NULL DEFAULT 0,
+  override_reason TEXT NULL,
+  override_expires_at DATETIME NULL,
+  created_by VARCHAR(128) NULL,
+  updated_by VARCHAR(128) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_zone_control_modes (farm_id, crop_season_id, zone_id, domain)
+)
+```
+
+**정책:**
+
+```text
+manual   → 실제 실행 차단, dry-run 허용
+auto     → allow_auto_execution=true일 때 실행 허용
+assist   → allow_auto_execution=true일 때 실행 허용
+disabled → 실제 실행 차단
+```
+
+차단 로그 action은 `blocked_by_control_mode`이며, 세부 SafetyGuard 규칙보다 앞단에서 실행된다.
+
+---
+
+### 5.5 `ai_zone_control_outputs`
 
 **목적:** AI Agent 또는 외부 계산기가 생성한 제어 전략 후보 저장.
 
@@ -645,7 +681,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.2` 기준으로 가능한 것:
+현재 `v1.9.3` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장
