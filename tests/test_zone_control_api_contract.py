@@ -1267,3 +1267,55 @@ def test_phase5_limited_auto_control_and_alert_resume_contract():
     for domain in ("environment", "irrigation", "device"):
         page = panel_source
         assert f'_renderZoneLimitedAutoPolicyCard("{domain}")' in page
+
+
+
+def test_control_phase_c14_dry_run_ui_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    execution_section = source.split("class ZoneFinalTargetExecutionView", 1)[1].split("class ZoneAiControlOutputsView", 1)[0]
+    for api_marker in (
+        "dry_run",
+        "dryRun",
+        '"executedCount": 0 if dry_run',
+        "plannedCount",
+        "calls",
+        "blockedCalls",
+        "safeStateCalls",
+        "preState",
+        'stateVerification"] = "dry_run"',
+        "if dry_run:",
+        "continue",
+    ):
+        assert api_marker in execution_section
+
+    assert "if not dry_run:" in execution_section.split("await hass.services.async_call", 1)[0]
+
+    for panel_marker in (
+        "this._zoneDryRunPreviewCache",
+        "async _previewZoneFinalTargetsDryRun(domain)",
+        "_renderZoneDryRunPreviewCard(domain)",
+        "_bindZoneDryRunPreviewInputs(root)",
+        "green_smart/zones/execute-final-targets",
+        "dry_run: true",
+        "data-zone-dry-run-card",
+        "data-zone-dry-run-preview",
+        "data-zone-dry-run-domain",
+        "data-zone-dry-run-call-row",
+        "data-zone-dry-run-blocked-row",
+        "data-zone-dry-run-failsafe-row",
+        "Dry Run UI",
+        "실행 전 확인",
+        "예정 service call",
+        "현재 상태",
+        "안전 차단",
+        "Fail Safe",
+        "SafetyGuard 판단",
+        "제한적 자동제어 gate",
+        "실제 장비는 움직이지 않습니다",
+    ):
+        assert panel_marker in panel_source
+
+    for domain in ("environment", "irrigation", "device"):
+        assert f'_renderZoneDryRunPreviewCard("{domain}")' in panel_source

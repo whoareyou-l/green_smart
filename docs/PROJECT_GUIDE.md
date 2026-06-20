@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.14` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 113 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.15` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 114 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -57,7 +57,7 @@
 
 | 영역 | 상태 |
 |---|---|
-| Dry Run UI | 다음 Control Phase C14 권장 |
+| Dry Run UI | Control Phase C14 완료 |
 | Entity mapping 실시간 검증 | 다음 Control Phase C15 권장 |
 | 실시간 센서 기반 safety rule | 다음 Control Phase C16 권장 |
 | 운영 권한/승인 UX | Control Phase C17 권장 |
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.14"
+  "version": "1.9.15"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.14"
+const VERSION = "1.9.15"
 ```
 
 중요 UI 페이지:
@@ -921,6 +921,23 @@ alert_resume_requested/approved/rejected
 
 Panel에는 `제한적 자동제어` 카드가 환경/관수/장치제어에 공통 표시된다. 운영자는 장비군별 자동 허용, 반자동 승인 필요, 자동 최대 지속 시간을 저장하고, 알림 확인/조치 이후 재개 요청을 남길 수 있다. 실제 장비 실행은 Control Mode 다음에 제한적 자동제어 gate를 통과한 뒤 SafetyGuard/Interlock/fail-safe/state verification을 통과한다.
 
+
+Control Phase C14 Dry Run UI baseline:
+
+```text
+data-zone-dry-run-card
+data-zone-dry-run-preview
+data-zone-dry-run-call-row
+data-zone-dry-run-blocked-row
+data-zone-dry-run-failsafe-row
+_previewZoneFinalTargetsDryRun(domain)
+_renderZoneDryRunPreviewCard(domain)
+_bindZoneDryRunPreviewInputs(root)
+dry_run: true
+```
+
+Panel에는 환경/관수/장치제어 final target 카드 아래 `Dry Run UI` 카드가 표시된다. 운영자는 실제 장비를 움직이기 전에 예정 service call, 현재 상태, SafetyGuard 판단, 제한적 자동제어 gate, 안전 차단, Fail Safe 대체 call을 확인할 수 있다.
+
 ---
 
 ### 11.5 `ai_zone_control_outputs`
@@ -1217,7 +1234,7 @@ python3 -m py_compile \
 현재 기대값:
 
 ```text
-113 passed
+114 passed
 node --check: no output / exit 0
 py_compile: no output / exit 0
 ```
@@ -1281,7 +1298,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.14
+v1.9.15
 ```
 
 ---
@@ -1377,7 +1394,7 @@ README에는 과거 workflow 흔적이 남아 있을 수 있다. 현재 운영 �
 
 | Control Phase | 내용 | 이유 |
 |---:|---|---|
-| C14 | Dry Run UI | 실제 장비 실행 전 call/safety/failsafe를 미리 봐야 함 |
+| C14 | Dry Run UI | 완료: 실제 장비 실행 전 call/safety/failsafe를 미리 확인 |
 | C15 | Entity Mapping 검증 | entity_id 오입력, service 호환성, safe_state 검증 필요 |
 | C16 | 실시간 Sensor Safety Rule | 풍속/강우/탱크수위/펌프 fault 기반 차단 필요 |
 
@@ -1428,7 +1445,7 @@ python3 -m py_compile custom_components/green_smart/db.py custom_components/gree
 
 ```text
 git status clean 또는 의도한 변경만 표시
-113 passed
+114 passed
 node --check exit 0
 py_compile exit 0
 ```

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.14
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.15
 const DOMAIN = "green_smart";
-const VERSION = "1.9.14";
+const VERSION = "1.9.15";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -257,6 +257,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneIrrigationStrategyPreviewCache = {};
     this._zoneLimitedAutoPolicyCache = {};
     this._zoneAlertResumeCache = {};
+    this._zoneDryRunPreviewCache = {};
     this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
@@ -349,6 +350,7 @@ class GreenSmartPanel extends HTMLElement {
     this._replaceZoneControlCard("[data-zone-limited-auto-card]", this._renderZoneLimitedAutoPolicyCard(domain));
     if (domain === "environment") this._replaceZoneControlCard("[data-env-strategy-preview-card]", this._renderEnvironmentStrategyPreviewCard(domain));
     if (domain === "irrigation") this._replaceZoneControlCard("[data-irrigation-strategy-preview-card]", this._renderIrrigationStrategyPreviewCard(domain));
+    this._replaceZoneControlCard("[data-zone-dry-run-card]", this._renderZoneDryRunPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
     this._bindZoneControlModeInputs(this.shadowRoot);
@@ -356,6 +358,7 @@ class GreenSmartPanel extends HTMLElement {
     this._bindZoneSafetyGuardWatchdogInputs(this.shadowRoot);
     this._bindZoneSafetyGuardEventInputs(this.shadowRoot);
     this._bindZoneLimitedAutoPolicyInputs(this.shadowRoot);
+    this._bindZoneDryRunPreviewInputs(this.shadowRoot);
     this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
     this._bindIrrigationStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
@@ -5251,6 +5254,29 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _previewZoneFinalTargetsDryRun(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/execute-final-targets", {
+        crop_season_id: cropSeasonId,
+        zone_id: zoneId,
+        domain,
+        dry_run: true,
+        post_state_delay: 0,
+      });
+      this._zoneDryRunPreviewCache[this._scopedControlCacheKey(domain)] = res;
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · Dry Run UI 실행 전 확인 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null;
+      this._update();
+      return res;
+    } catch (err) {
+      console.warn("Dry Run UI 조회 실패 시 fallback", err);
+      return this._zoneDryRunPreviewCache[this._scopedControlCacheKey(domain)] || null;
+    }
+  }
+
   async _executeZoneFinalTargets(domain) {
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return false;
@@ -5846,6 +5872,30 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderZoneDryRunPreviewCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneDryRunPreviewCache?.[cacheKey] || null;
+    const callRows = (data?.calls || []).map((call) => `<div data-zone-dry-run-call-row style="border-top:1px solid #e4f0e5;padding:8px 0;"><b>${this._esc(call.entityId || call.serviceData?.entity_id || "-")}</b><div class="strategy-muted">예정 service call: ${this._esc(call.domain)}.${this._esc(call.service)} · ${this._esc(JSON.stringify(call.serviceData || {}))}</div><div class="strategy-muted">현재 상태: ${this._esc(call.preState?.state ?? "-")} · stateVerification ${this._esc(call.stateVerification || "dry_run")}</div><div class="strategy-muted">제한적 자동제어 gate: ${this._esc(call.deviceGroupAutoAllowance?.deviceGroup || "-")} ${call.deviceGroupAutoAllowance?.allowed ? "허용" : "확인 필요"}</div></div>`).join("");
+    const blockedRows = (data?.blockedCalls || []).map((call) => `<div data-zone-dry-run-blocked-row style="border-top:1px solid #f3dfdf;padding:8px 0;"><b>${this._esc(call.entityId || "-")}</b><div class="strategy-muted">안전 차단: ${this._esc((call.interlockReasons || []).join(", ") || call.safetyStatus || "blocked")}</div><div class="strategy-muted">SafetyGuard 판단: ${this._esc(call.safetyGuard?.status || "blocked")}</div></div>`).join("");
+    const failsafeRows = (data?.safeStateCalls || []).map((call) => `<div data-zone-dry-run-failsafe-row style="border-top:1px solid #e4f0e5;padding:8px 0;"><b>${this._esc(call.entityId || call.serviceData?.entity_id || "-")}</b><div class="strategy-muted">Fail Safe: ${this._esc(call.domain)}.${this._esc(call.service)} · ${this._esc(JSON.stringify(call.serviceData || {}))}</div></div>`).join("");
+    return `<div class="gs-card" data-zone-dry-run-card data-zone-dry-run-domain="${domain}" style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>Dry Run UI</b><div class="strategy-muted">실행 전 확인 · 예정 service call · 현재 상태 · 안전 차단 · Fail Safe · 실제 장비는 움직이지 않습니다</div></div>
+        <button class="mini-btn primary" data-zone-dry-run-preview data-zone-dry-run-domain="${domain}">Dry Run 실행 전 확인</button>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:8px;">
+        <div>planned <b>${this._esc(data?.plannedCount ?? "-")}</b></div>
+        <div>executed <b>${this._esc(data?.executedCount ?? 0)}</b></div>
+        <div>safetyStatus <b>${this._esc(data?.safetyStatus || "-")}</b></div>
+        <div>dryRun <b>${this._esc(String(data?.dryRun ?? true))}</b></div>
+      </div>
+      <div class="strategy-muted" style="margin-bottom:8px;">SafetyGuard 판단: ${this._esc(data?.safetyGuard?.status || "대기")} · 제한적 자동제어 gate 결과와 Interlock/Failsafe 결과를 실제 실행 전에 확인합니다.</div>
+      ${callRows || `<div class="strategy-muted">Dry Run을 실행하면 예정 service call과 현재 상태가 표시됩니다.</div>`}
+      ${blockedRows}
+      ${failsafeRows}
+    </div>`;
+  }
+
   _renderZoneExecutionLogCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const logs = this._zoneExecutionLogCache?.[cacheKey] || [];
@@ -6128,6 +6178,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneLimitedAutoPolicyCard("environment")}
       ${this._renderEnvironmentStrategyPreviewCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
+      ${this._renderZoneDryRunPreviewCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
       <div class="gs-card" style="padding:16px;">
@@ -6296,6 +6347,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneLimitedAutoPolicyCard("irrigation")}
       ${this._renderIrrigationStrategyPreviewCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
+      ${this._renderZoneDryRunPreviewCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
       <div class="gs-card" style="padding:16px;">
@@ -6385,6 +6437,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneSafetyGuardEventHistoryCard("device")}
       ${this._renderZoneLimitedAutoPolicyCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
+      ${this._renderZoneDryRunPreviewCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
       <div class="gs-card" style="padding:16px;">
@@ -6741,6 +6794,16 @@ button.action:disabled{opacity:.5;cursor:default;}
         const domain = btn.dataset.zoneControlModeDomain || "environment";
         const ok = await this._saveZoneControlMode(domain);
         if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+  }
+
+  _bindZoneDryRunPreviewInputs(root) {
+    root.querySelectorAll("[data-zone-dry-run-preview]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneDryRunDomain || "environment";
+        const res = await this._previewZoneFinalTargetsDryRun(domain);
+        if (!res) alert("Dry Run 실행 전 확인 실패: final target, entity mapping, control mode 로그를 확인해 주세요.");
       });
     });
   }

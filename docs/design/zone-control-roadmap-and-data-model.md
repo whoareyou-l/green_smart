@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.14` / Product Phase 5 완료, Control Phase C13 완료
+> 기준 버전: `v1.9.15` / Product Phase 5 완료, Control Phase C14 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -681,7 +681,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.14` 기준으로 가능한 것:
+현재 `v1.9.15` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장
@@ -723,11 +723,11 @@ domain별 상세 설정 탭
 
 | Control Phase | 목표 | 완료 기준 |
 |---:|---|---|
-| C14 | Dry Run UI | 실제 실행 전 예정 service call, 차단, Fail Safe, 현재 상태를 UI에서 확인 |
+| C14 | Dry Run UI | 완료: 실제 실행 전 예정 service call, 차단, Fail Safe, 현재 상태를 UI에서 확인 |
 | C15 | Entity Mapping 검증 | entity 존재 여부, domain/service 호환성, safe_state 유효성 검사 |
 | C16 | 실시간 Safety Rule | 풍속/강우/저온/탱크수위/펌프 fault 등 HA sensor 기반 차단 |
 
-이 3개가 끝나면 **제한적 현장 운영 테스트 가능**으로 본다.
+C14는 완료됐고, C15~C16까지 끝나면 **제한적 현장 운영 테스트 가능**으로 본다.
 
 ### 운영 완성 기준: 추가 2단계
 
@@ -817,26 +817,25 @@ domain별 상세 설정 탭
 
 ## 14. 다음 작업 권장 순서
 
-바로 다음은 Control Phase C14를 진행한다.
+바로 다음은 Control Phase C15를 진행한다.
 
 ```text
-Control Phase C14: Dry Run UI
+Control Phase C15: Entity Mapping 검증 / Setup Assistant
 ```
 
 작업 목표:
 
 ```text
-실제 장비를 움직이기 전에 예정 service call, safety decision, fail safe 대체, 현재 entity 상태를 UI에서 확인한다.
+entity_id 존재 여부, domain/service 호환성, safe_state 유효성, 위험 장비 mapping 누락을 실행 전에 검증한다.
 ```
 
 그 다음:
 
 ```text
-Control Phase C15: Entity Mapping 검증 / Setup Assistant
 Control Phase C16: 실시간 Sensor 기반 Safety Rule
 ```
 
-C14~C16 3단계를 완료하면 “제한적 현장 운영 테스트 가능”으로 판단한다.
+C15~C16을 완료하면 “제한적 현장 운영 테스트 가능”으로 판단한다.
 
 ---
 
