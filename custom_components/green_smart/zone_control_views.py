@@ -272,6 +272,137 @@ class ZoneControlFinalTargetsView(HomeAssistantView):
         return _json({"ok": True, "id": new_id, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "targets": targets})
 
 
+async def _latest_final_target_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict | None:
+    row = await fetchone(
+        hass,
+        """
+        SELECT id, farm_id AS farmId, crop_season_id AS cropSeasonId, zone_id AS zoneId,
+               domain, targets_json AS targetsJson, created_at AS createdAt
+        FROM zone_final_control_targets
+        WHERE farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+        """,
+        (farm_id, crop_season_id, zone_id, domain),
+    )
+    if not row:
+        return None
+    row["targets"] = _json_loads(row.pop("targetsJson", None), {})
+    return row
+
+
+async def _enabled_entity_mappings(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> list[dict]:
+    return await fetchall(
+        hass,
+        """
+        SELECT id, device_type AS deviceType, entity_id AS entityId,
+               control_role AS controlRole, safe_state AS safeState, enabled
+        FROM zone_device_entity_mappings
+        WHERE farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s AND enabled = 1
+        ORDER BY device_type ASC, control_role ASC, entity_id ASC
+        """,
+        (farm_id, crop_season_id, zone_id, domain),
+    )
+
+
+def _target_value_for_mapping(targets: dict, mapping: dict):
+    keys = (
+        mapping.get("controlRole"),
+        mapping.get("deviceType"),
+        mapping.get("entityId"),
+        str(mapping.get("entityId", "")).replace(".", "_"),
+    )
+    for key in keys:
+        if key and key in targets:
+            return targets[key]
+    return None
+
+
+def _split_entity_domain(entity_id: str) -> str:
+    return entity_id.split(".", 1)[0] if "." in entity_id else "homeassistant"
+
+
+def _service_call_for_mapping(mapping: dict, target_value) -> dict | None:
+    entity_id = mapping.get("entityId") or mapping.get("entity_id")
+    if not entity_id or target_value is None:
+        return None
+    entity_domain = _split_entity_domain(str(entity_id))
+    if isinstance(target_value, dict):
+        if target_value.get("service"):
+            service_domain, service = str(target_value["service"]).split(".", 1)
+            service_data = dict(target_value.get("service_data") or target_value.get("serviceData") or {})
+            service_data.setdefault("entity_id", entity_id)
+            return {"domain": service_domain, "service": service, "serviceData": service_data, "targetValue": target_value}
+        if "value" in target_value:
+            target_value = target_value["value"]
+    service_data = {"entity_id": entity_id}
+    if entity_domain in {"switch", "input_boolean", "fan"}:
+        service = "turn_on" if str(target_value).lower() in {"on", "open", "true", "1", "start"} or target_value is True else "turn_off"
+    elif entity_domain == "cover":
+        text = str(target_value).lower()
+        if isinstance(target_value, (int, float)):
+            service = "set_cover_position"; service_data["position"] = int(target_value)
+        elif text in {"open", "on"}:
+            service = "open_cover"
+        elif text in {"close", "closed", "off"}:
+            service = "close_cover"
+        else:
+            service = "stop_cover"
+    elif entity_domain == "light":
+        service = "turn_on" if str(target_value).lower() in {"on", "true", "1"} or target_value is True else "turn_off"
+    elif entity_domain == "climate":
+        service = "set_temperature"; service_data["temperature"] = float(target_value)
+    elif entity_domain in {"number", "input_number"}:
+        service = "set_value"; service_data["value"] = float(target_value)
+    else:
+        safe_state = mapping.get("safeState") or mapping.get("safe_state") or "off"
+        service = "turn_on" if str(target_value or safe_state).lower() in {"on", "true", "1"} else "turn_off"
+    return {"domain": entity_domain, "service": service, "serviceData": service_data, "targetValue": target_value}
+
+
+class ZoneFinalTargetExecutionView(HomeAssistantView):
+    """POST /api/green_smart/zones/execute-final-targets."""
+
+    url = "/api/green_smart/zones/execute-final-targets"
+    name = "api:green_smart:zones:execute_final_targets"
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            domain = _validate_domain(body.get("domain"))
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            dry_run = bool(body.get("dry_run") or body.get("dryRun") or False)
+        except Exception as exc:
+            return _err(str(exc))
+        final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        if not final_target or not isinstance(final_target.get("targets"), dict):
+            return _err("final targets not found", status=404)
+        mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        calls = []
+        errors = []
+        for mapping in mappings:
+            target_value = _target_value_for_mapping(final_target["targets"], mapping)
+            call = _service_call_for_mapping(mapping, target_value)
+            if not call:
+                continue
+            call["mappingId"] = mapping.get("id")
+            call["entityId"] = mapping.get("entityId")
+            calls.append(call)
+            if dry_run:
+                continue
+            try:
+                await hass.services.async_call(call["domain"], call["service"], call["serviceData"], blocking=True)
+            except Exception as exc:  # pragma: no cover - HA runtime path
+                errors.append({"entityId": call["entityId"], "error": str(exc)})
+        action = "final_target_execution_failed" if errors else "final_targets_executed"
+        result = "failed" if errors else "success"
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before=None, after={"dry_run": dry_run, "calls": calls, "errors": errors}, result=result, message="final targets executed via Home Assistant services")
+        return _json({"ok": not errors, "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls), "calls": calls, "errors": errors})
+
+
 class ZoneAiControlOutputsView(HomeAssistantView):
     """GET/POST /api/green_smart/zones/ai-control-outputs."""
 
@@ -571,6 +702,16 @@ async def _domain_entity_mapping_post(request: web.Request, domain: str) -> web.
     return await ZoneDeviceEntityMappingsView().post(request)
 
 
+async def _domain_final_target_execution_post(request: web.Request, domain: str) -> web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        return _err("Invalid JSON")
+    body["domain"] = domain
+    request._read_bytes = json.dumps(body).encode()
+    return await ZoneFinalTargetExecutionView().post(request)
+
+
 class EnvironmentControlSettingsView(HomeAssistantView):
     """Domain wrapper for Environment Control settings."""
 
@@ -686,3 +827,33 @@ class DeviceEntityMappingsView(HomeAssistantView):
 
     async def post(self, request: web.Request) -> web.Response:
         return await _domain_entity_mapping_post(request, "device")
+
+
+class EnvironmentFinalTargetExecutionView(HomeAssistantView):
+    """Domain wrapper for Environment final target execution."""
+
+    url = "/api/green_smart/environment/execute-final-targets"
+    name = "api:green_smart:environment:execute_final_targets"
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_final_target_execution_post(request, "environment")
+
+
+class IrrigationFinalTargetExecutionView(HomeAssistantView):
+    """Domain wrapper for Irrigation final target execution."""
+
+    url = "/api/green_smart/irrigation/execute-final-targets"
+    name = "api:green_smart:irrigation:execute_final_targets"
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_final_target_execution_post(request, "irrigation")
+
+
+class DeviceFinalTargetExecutionView(HomeAssistantView):
+    """Domain wrapper for Device final target execution."""
+
+    url = "/api/green_smart/devices/execute-final-targets"
+    name = "api:green_smart:devices:execute_final_targets"
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_final_target_execution_post(request, "device")

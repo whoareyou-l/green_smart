@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.38
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.39
 const DOMAIN = "green_smart";
-const VERSION = "1.8.38";
+const VERSION = "1.8.39";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -4987,6 +4987,26 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _executeZoneFinalTargets(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/execute-final-targets", {
+        crop_season_id: cropSeasonId,
+        zone_id: zoneId,
+        domain,
+        dry_run: false,
+      });
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 (${res?.executedCount || 0}/${res?.plannedCount || 0})`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      await this._fetchZoneFinalTargets(domain);
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("final targets 실행 실패 시 fallback", err);
+      return false;
+    }
+  }
+
   async _fetchZoneEntityMappings(domain) {
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return [];
@@ -5095,7 +5115,8 @@ button.action:disabled{opacity:.5;cursor:default;}
         <b>최종 적용값</b><br>
         <span style="font-size:12px;color:#5d7d64;">zone_final_control_targets</span>
         <p style="font-size:12px;color:#2f6b3c;line-height:1.5;">${targetSummary}</p>
-        <span style="font-size:12px;color:#5d7d64;">적용 완료 상태는 AI 전략 적용 후 이 영역에 반영됩니다.</span>
+        <button class="btn" data-zone-final-execute data-zone-final-domain="${domain}" ${finalTarget?.targets ? "" : "disabled"}>최종값 실행</button>
+        <span style="font-size:12px;color:#5d7d64;display:block;margin-top:6px;">실행 완료 상태는 HA service call 후 감사 로그에 기록됩니다.</span>
       </div>
     </div>`;
   }
@@ -5780,6 +5801,14 @@ button.action:disabled{opacity:.5;cursor:default;}
         if (!confirm(`${this._controlDomainLabel(domain)} AI 전략 출력 #${outputId}을 최종 적용값으로 적용할까요?`)) return;
         const ok = await this._applyZoneAiOutput(domain, outputId);
         if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+    root.querySelectorAll("[data-zone-final-execute]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneFinalDomain || "environment";
+        if (!confirm(`${this._controlDomainLabel(domain)} 최종 적용값을 Home Assistant service call로 실행할까요?`)) return;
+        const ok = await this._executeZoneFinalTargets(domain);
+        if (!ok) alert("최종값 실행 실패: 매핑/대상값/HA service call 로그를 확인해 주세요.");
       });
     });
   }

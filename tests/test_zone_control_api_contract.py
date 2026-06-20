@@ -231,3 +231,50 @@ def test_zone_control_device_entity_mappings_phase9():
         "this._bindZoneEntityMappingInputs(root)",
     ):
         assert domain_call in panel_source
+
+
+def test_zone_control_executes_final_targets_via_ha_services_phase10():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for cls in (
+        "ZoneFinalTargetExecutionView",
+        "EnvironmentFinalTargetExecutionView",
+        "IrrigationFinalTargetExecutionView",
+        "DeviceFinalTargetExecutionView",
+    ):
+        assert cls in source
+        assert cls in init_source
+
+    for route in (
+        'url = "/api/green_smart/zones/execute-final-targets"',
+        'url = "/api/green_smart/environment/execute-final-targets"',
+        'url = "/api/green_smart/irrigation/execute-final-targets"',
+        'url = "/api/green_smart/devices/execute-final-targets"',
+    ):
+        assert route in source
+
+    for behavior in (
+        "_latest_final_target_response",
+        "_enabled_entity_mappings",
+        "_target_value_for_mapping",
+        "_service_call_for_mapping",
+        "hass.services.async_call",
+        "dry_run",
+        "final_targets_executed",
+        "final_target_execution_failed",
+        "zone_device_entity_mappings",
+        "zone_final_control_targets",
+    ):
+        assert behavior in source
+
+    for panel_marker in (
+        "async _executeZoneFinalTargets(domain)",
+        "data-zone-final-execute",
+        "최종값 실행",
+        "실행 완료",
+        "green_smart/zones/execute-final-targets",
+        "final targets 실행 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source

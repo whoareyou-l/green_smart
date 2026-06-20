@@ -42,10 +42,11 @@ async def async_setup(hass, config):
     from .zone_control_views import (
         ZoneControlSettingsView, ZoneControlCopySettingsView,
         ZoneControlFinalTargetsView, ZoneControlLogsView,
-        ZoneAiControlOutputsView, ZoneAiControlOutputApplyView, ZoneDeviceEntityMappingsView,
+        ZoneAiControlOutputsView, ZoneAiControlOutputApplyView, ZoneDeviceEntityMappingsView, ZoneFinalTargetExecutionView,
         EnvironmentControlSettingsView, IrrigationControlSettingsView, DeviceControlSettingsView,
         EnvironmentAiControlOutputsView, IrrigationAiControlOutputsView, DeviceAiControlOutputsView,
         EnvironmentDeviceEntityMappingsView, IrrigationDeviceEntityMappingsView, DeviceEntityMappingsView,
+        EnvironmentFinalTargetExecutionView, IrrigationFinalTargetExecutionView, DeviceFinalTargetExecutionView,
     )
     domain_data = hass.data.setdefault(DOMAIN, {})
     await ensure_schema(hass)
@@ -82,6 +83,7 @@ async def async_setup(hass, config):
         hass.http.register_view(ZoneAiControlOutputsView())
         hass.http.register_view(ZoneAiControlOutputApplyView())
         hass.http.register_view(ZoneDeviceEntityMappingsView())
+        hass.http.register_view(ZoneFinalTargetExecutionView())
         hass.http.register_view(EnvironmentControlSettingsView())
         hass.http.register_view(IrrigationControlSettingsView())
         hass.http.register_view(DeviceControlSettingsView())
@@ -91,6 +93,9 @@ async def async_setup(hass, config):
         hass.http.register_view(EnvironmentDeviceEntityMappingsView())
         hass.http.register_view(IrrigationDeviceEntityMappingsView())
         hass.http.register_view(DeviceEntityMappingsView())
+        hass.http.register_view(EnvironmentFinalTargetExecutionView())
+        hass.http.register_view(IrrigationFinalTargetExecutionView())
+        hass.http.register_view(DeviceFinalTargetExecutionView())
         domain_data["_views_registered"] = True
     return True
 
