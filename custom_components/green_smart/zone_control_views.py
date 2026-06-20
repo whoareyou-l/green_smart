@@ -415,6 +415,46 @@ def _execution_state_report(call: dict, pre_state: dict | None, post_state: dict
     }
 
 
+def _safe_state_service_call_for_mapping(mapping: dict) -> dict | None:
+    safe_state = mapping.get("safeState") or mapping.get("safe_state") or "off"
+    return _service_call_for_mapping(mapping, safe_state)
+
+
+def _interlock_failsafe_decision(final_target: dict, mapping: dict, call: dict, pre_state: dict | None) -> dict:
+    targets = final_target.get("targets") or {}
+    policy = targets.get("_safety") or targets.get("safety") or {}
+    emergency_stop = bool(policy.get("emergency_stop") or policy.get("emergencyStop") or False)
+    block_on_unavailable = policy.get("block_on_unavailable", policy.get("blockOnUnavailable", True))
+    apply_safe_state_on_block = policy.get("apply_safe_state_on_block", policy.get("applySafeStateOnBlock", True))
+    reasons = []
+    if emergency_stop:
+        reasons.append("emergency_stop")
+    if block_on_unavailable and pre_state and not pre_state.get("available", True):
+        reasons.append("entity_unavailable")
+    for rule in policy.get("rules") or []:
+        role = rule.get("control_role") or rule.get("controlRole")
+        device_type = rule.get("device_type") or rule.get("deviceType")
+        entity_id = rule.get("entity_id") or rule.get("entityId")
+        if role and role != mapping.get("controlRole"):
+            continue
+        if device_type and device_type != mapping.get("deviceType"):
+            continue
+        if entity_id and entity_id != mapping.get("entityId"):
+            continue
+        if rule.get("block", True):
+            reasons.append(rule.get("reason") or "interlock_rule")
+    safe_state_call = _safe_state_service_call_for_mapping(mapping) if reasons and apply_safe_state_on_block else None
+    return {
+        "blockedByInterlock": bool(reasons),
+        "failSafeApplied": bool(safe_state_call),
+        "interlockReasons": reasons,
+        "safetyStatus": "blocked" if reasons else "clear",
+        "safeStateCall": safe_state_call,
+        "safeStateResult": None,
+        "originalCall": call,
+    }
+
+
 class ZoneFinalTargetExecutionView(HomeAssistantView):
     """POST /api/green_smart/zones/execute-final-targets."""
 
@@ -440,6 +480,8 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         calls = []
         errors = []
         state_reports = []
+        blocked_calls = []
+        safe_state_calls = []
         for mapping in mappings:
             target_value = _target_value_for_mapping(final_target["targets"], mapping)
             call = _service_call_for_mapping(mapping, target_value)
@@ -449,6 +491,32 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
             call["entityId"] = mapping.get("entityId")
             pre_state = _entity_state_snapshot(hass, call["entityId"])
             call["preState"] = pre_state
+            safety_decision = _interlock_failsafe_decision(final_target, mapping, call, pre_state)
+            call["blockedByInterlock"] = safety_decision["blockedByInterlock"]
+            call["failSafeApplied"] = safety_decision["failSafeApplied"]
+            call["interlockReasons"] = safety_decision["interlockReasons"]
+            call["safetyStatus"] = safety_decision["safetyStatus"]
+            if safety_decision["blockedByInterlock"]:
+                blocked_calls.append(call)
+                safe_state_call = safety_decision.get("safeStateCall")
+                if safe_state_call:
+                    safe_state_call["mappingId"] = mapping.get("id")
+                    safe_state_call["entityId"] = mapping.get("entityId")
+                    safe_state_call["blockedByInterlock"] = True
+                    safe_state_call["failSafeApplied"] = True
+                    safe_state_call["interlockReasons"] = safety_decision["interlockReasons"]
+                    safe_state_call["safetyStatus"] = "failsafe"
+                    safe_state_calls.append(safe_state_call)
+                    if not dry_run:
+                        try:
+                            await hass.services.async_call(safe_state_call["domain"], safe_state_call["service"], safe_state_call["serviceData"], blocking=True)
+                            safety_decision["safeStateResult"] = "success"  # failsafe_applied
+                        except Exception as exc:  # pragma: no cover - HA runtime path
+                            safety_decision["safeStateResult"] = "failed"
+                            errors.append({"entityId": call["entityId"], "error": str(exc), "action": "fail_safe_service_call_failed", "preState": pre_state})
+                call["safeStateCall"] = safe_state_call
+                call["safeStateResult"] = safety_decision.get("safeStateResult")
+                continue
             calls.append(call)
             if dry_run:
                 call["postState"] = pre_state
@@ -472,17 +540,23 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         state_failures = [r for r in state_reports if not r.get("stateMatched")]
         if errors:
             action = "final_target_execution_failed"
+        elif blocked_calls and safe_state_calls:
+            action = "failsafe_applied"
+        elif blocked_calls:
+            action = "interlock_blocked"
         elif not state_reports:
             action = "final_targets_executed"
         elif state_failures:
             action = "state_verification_failed"
         else:
             action = "state_verification_passed"
-        result = "failed" if errors or state_failures else "success"
-        response = {"ok": not errors and not state_failures, "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed"}
-        if response.get("stateMatched"):
+        if blocked_calls and not safe_state_calls:
+            action = "execution_safety_blocked"
+        result = "failed" if errors or state_failures or (blocked_calls and not safe_state_calls) else "success"
+        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "safetyStatus": "blocked" if blocked_calls and not safe_state_calls else ("failsafe" if safe_state_calls else "clear")}
+        if response.get("stateMatched") and not blocked_calls:
             action = "state_verification_passed"
-        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports]}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports}, result=result, message="final targets executed via Home Assistant services with pre/post state verification")
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "safetyStatus": response["safetyStatus"]}, result=result, message="final targets executed via Home Assistant services with interlock/fail safe and pre/post state verification")
         return _json(response)
 
 

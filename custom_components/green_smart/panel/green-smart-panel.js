@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.40
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.41
 const DOMAIN = "green_smart";
-const VERSION = "1.8.40";
+const VERSION = "1.8.41";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -4998,8 +4998,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         domain,
         dry_run: false,
       });
+      const safetyText = res?.blockedByInterlock ? `안전 차단${res?.failSafeApplied ? " · Fail Safe 적용" : ""}` : "안전 상태 clear";
       const stateText = res?.stateVerification === "passed" ? "상태 확인 통과" : `상태 확인 ${res?.stateMatched ? "통과" : "주의"}`;
-      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 (${res?.executedCount || 0}/${res?.plannedCount || 0}) · ${stateText} · 실행 후 상태 ${res?.stateVerification || "unknown"}`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 (${res?.executedCount || 0}/${res?.plannedCount || 0}) · ${safetyText} · ${stateText} · 실행 후 상태 ${res?.stateVerification || "unknown"} · safetyStatus ${res?.safetyStatus || "clear"}`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
       await this._fetchZoneFinalTargets(domain);
       return !!res?.ok;
     } catch (err) {

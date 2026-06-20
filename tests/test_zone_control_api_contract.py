@@ -316,3 +316,49 @@ def test_zone_control_execution_captures_pre_post_entity_state_phase11():
         "실행 후 상태",
     ):
         assert panel_marker in panel_source
+
+
+def test_zone_control_execution_blocks_with_interlock_and_failsafe_phase12():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for helper in (
+        "_interlock_failsafe_decision",
+        "_safe_state_service_call_for_mapping",
+        "blockedByInterlock",
+        "failSafeApplied",
+        "interlockReasons",
+        "safetyStatus",
+        "emergency_stop",
+        "safe_state",
+    ):
+        assert helper in source
+
+    for audit_action in (
+        "interlock_blocked",
+        "failsafe_applied",
+        "execution_safety_blocked",
+        "fail_safe_service_call_failed",
+    ):
+        assert audit_action in source
+
+    for behavior in (
+        "block_on_unavailable",
+        "apply_safe_state_on_block",
+        "safeStateCall",
+        "safeStateResult",
+        "blockedCalls",
+        "safeStateCalls",
+        "before_json",
+        "after_json",
+    ):
+        assert behavior in source
+
+    for panel_marker in (
+        "blockedByInterlock",
+        "failSafeApplied",
+        "safetyStatus",
+        "안전 차단",
+        "Fail Safe",
+    ):
+        assert panel_marker in panel_source
