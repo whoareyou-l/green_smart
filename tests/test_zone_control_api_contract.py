@@ -1381,3 +1381,67 @@ def test_control_phase_c15_entity_mapping_validation_contract():
 
     for domain in ("environment", "irrigation", "device"):
         assert f'_renderZoneEntityMappingValidationCard("{domain}")' in panel_source
+
+
+
+def test_control_phase_c16_sensor_safety_rule_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "SENSOR_SAFETY_RULE_OPERATORS",
+        "_sensor_safety_rule_snapshot",
+        "_sensor_safety_rule_value",
+        "_sensor_safety_rule_matches",
+        "_sensor_safety_rule_results",
+        "sensor_entity_id",
+        "sensorEntityId",
+        "sensorAttribute",
+        "sensorOperator",
+        "sensorActualValue",
+        "sensorThreshold",
+        "sensorRuleMatched",
+        "sensorSafetyStatus",
+        "sensorSafetyResults",
+        "sensor_safety_rule_blocked",
+        "풍속/강우/저온/탱크수위/펌프 fault",
+    ):
+        assert api_marker in source
+
+    decision_section = source.split("def _safety_guard_decision", 1)[1].split("def _interlock_failsafe_decision", 1)[0]
+    for decision_marker in (
+        "_sensor_safety_rule_results",
+        "sensor_results",
+        "sensorSafetyResults",
+        "sensorSafetyStatus",
+        "sensor_safety_rule_blocked",
+        "reasons.append",
+    ):
+        assert decision_marker in decision_section
+
+    execution_section = source.split("class ZoneFinalTargetExecutionView", 1)[1].split("class ZoneAiControlOutputsView", 1)[0]
+    for execution_marker in (
+        "sensorSafetyResults",
+        "sensorSafetyStatus",
+        "sensor_safety_rule_blocked",
+    ):
+        assert execution_marker in execution_section
+
+    for panel_marker in (
+        "data-zone-interlock-rule-sensor-entity",
+        "data-zone-interlock-rule-sensor-attribute",
+        "data-zone-interlock-rule-sensor-operator",
+        "sensor_entity_id",
+        "sensor_attribute",
+        "sensor_operator",
+        "실시간 Sensor 기반 Safety Rule",
+        "센서 entity",
+        "센서 속성",
+        "센서 연산자",
+        "풍속",
+        "강우",
+        "저온",
+        "탱크수위",
+        "펌프 fault",
+    ):
+        assert panel_marker in panel_source

@@ -1,6 +1,6 @@
 # Phase 3A — Environment Strategy MVP
 
-> 기준 버전: v1.9.16
+> 기준 버전: v1.9.17
 > 상태: 완료
 
 ## 목적

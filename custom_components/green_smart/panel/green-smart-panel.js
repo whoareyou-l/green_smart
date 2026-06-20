@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.16
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.17
 const DOMAIN = "green_smart";
-const VERSION = "1.9.16";
+const VERSION = "1.9.17";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5503,18 +5503,21 @@ button.action:disabled{opacity:.5;cursor:default;}
         condition: row.querySelector("[data-zone-interlock-rule-condition]")?.value || "unavailable",
         threshold: row.querySelector("[data-zone-interlock-rule-threshold]")?.value?.trim() || "",
         reasonCode: row.querySelector("[data-zone-interlock-rule-reason-code]")?.value?.trim() || "",
+        sensor_entity_id: row.querySelector("[data-zone-interlock-rule-sensor-entity]")?.value?.trim() || "",
+        sensor_attribute: row.querySelector("[data-zone-interlock-rule-sensor-attribute]")?.value?.trim() || "",
+        sensor_operator: row.querySelector("[data-zone-interlock-rule-sensor-operator]")?.value || "above",
         action,
         message: row.querySelector("[data-zone-interlock-rule-message]")?.value?.trim() || "",
         block: action !== "warn",
       };
-    }).filter((rule) => rule.control_role || rule.message || rule.condition !== "unavailable");
+    }).filter((rule) => rule.control_role || rule.message || rule.sensor_entity_id || rule.condition !== "unavailable");
     return this._normalizeZoneInterlockSettings(settings);
   }
 
   _addZoneInterlockRule(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const current = this._normalizeZoneInterlockSettings(this._zoneInterlockSettingsCache?.[cacheKey]?.settings);
-    current.rules.push({ control_role: "", condition: "unavailable", threshold: "", action: "block", message: "" });
+    current.rules.push({ control_role: "", condition: "unavailable", threshold: "", sensor_entity_id: "", sensor_attribute: "", sensor_operator: "above", action: "block", message: "" });
     this._zoneInterlockSettingsCache[cacheKey] = { ...(this._zoneInterlockSettingsCache[cacheKey] || {}), settings: current };
     this._pageRendered = null;
     this._update();
@@ -5853,21 +5856,24 @@ button.action:disabled{opacity:.5;cursor:default;}
       ["sensor_integrity", "센서 무결성"],
     ];
     const actionOptions = [["block", "차단"], ["failsafe", "Fail Safe"], ["warn", "경고"]];
-    const rows = rules.map((rule, index) => `<div data-zone-interlock-rule-row data-zone-interlock-rule-index="${index}" style="display:grid;grid-template-columns:1fr 1fr .8fr .9fr 1fr 1.4fr auto;gap:8px;align-items:end;border-top:1px solid #e2f0e4;padding:8px 0;">
+    const sensorOperatorOptions = [["above", "초과"], ["below", "미만"], ["equals", "일치"], ["not_equals", "불일치"], ["is_on", "ON/fault"], ["is_off", "OFF/normal"], ["truthy", "감지"], ["falsy", "미감지"]];
+    const rows = rules.map((rule, index) => `<div data-zone-interlock-rule-row data-zone-interlock-rule-index="${index}" style="display:grid;grid-template-columns:1fr 1fr .8fr .9fr 1fr 1fr .8fr 1fr auto;gap:8px;align-items:end;border-top:1px solid #e2f0e4;padding:8px 0;">
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">제어 역할<input data-zone-interlock-rule-role value="${this._esc(rule.control_role || rule.controlRole || "")}" placeholder="예: ventilation"></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">조건<select data-zone-interlock-rule-condition>${conditionOptions.map(([value, label]) => `<option value="${value}" ${(rule.condition || "unavailable") === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">임계값<input data-zone-interlock-rule-threshold value="${this._esc(rule.threshold ?? "")}" placeholder="선택"></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">센서 entity<input data-zone-interlock-rule-sensor-entity value="${this._esc(rule.sensor_entity_id || rule.sensorEntityId || "")}" placeholder="예: sensor.wind_speed"></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">센서 속성<input data-zone-interlock-rule-sensor-attribute value="${this._esc(rule.sensor_attribute || rule.sensorAttribute || "")}" placeholder="예: wind_speed"></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">센서 연산자<select data-zone-interlock-rule-sensor-operator>${sensorOperatorOptions.map(([value, label]) => `<option value="${value}" ${(rule.sensor_operator || rule.sensorOperator || "above") === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">reasonCode<input data-zone-interlock-rule-reason-code value="${this._esc(rule.reasonCode || rule.reason_code || "")}" placeholder="예: wind_speed_above"></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">차단 동작<select data-zone-interlock-rule-action>${actionOptions.map(([value, label]) => `<option value="${value}" ${(rule.action || (rule.block === false ? "warn" : "block")) === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
-      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">운영자 메시지<input data-zone-interlock-rule-message value="${this._esc(rule.message || rule.reason || "")}" placeholder="예: 강풍으로 환기 차단"></label>
-      <button class="mini-btn" data-zone-interlock-rule-delete data-zone-interlock-domain="${domain}" data-zone-interlock-rule-index="${index}">규칙 삭제</button>
+      <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">운영자 메시지<input data-zone-interlock-rule-message value="${this._esc(rule.message || rule.reason || "")}" placeholder="예: 강풍으로 환기 차단"></label><button class="mini-btn" data-zone-interlock-rule-delete data-zone-interlock-domain="${domain}" data-zone-interlock-rule-index="${index}">규칙 삭제</button></div>
     </div>`).join("");
     return `<div data-zone-interlock-rule-builder style="border:1px solid #dcebdd;border-radius:12px;padding:10px;margin-top:10px;background:#fbfffb;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px;">
-        <div><b>세부 인터록 규칙</b><div class="strategy-muted">structured rule UI · rules[]는 기존 settings_json에 그대로 저장됩니다.</div></div>
+        <div><b>세부 인터록 규칙</b><div class="strategy-muted">structured rule UI · 실시간 Sensor 기반 Safety Rule · rules[]는 기존 settings_json에 그대로 저장됩니다.</div></div>
         <button class="mini-btn" data-zone-interlock-rule-add data-zone-interlock-domain="${domain}">규칙 추가</button>
       </div>
-      ${rows || `<div class="strategy-muted">아직 세부 규칙이 없습니다. 규칙 추가로 강풍/저온/VWC/EC 등 SafetyGuard 후보 규칙을 준비하세요.</div>`}
+      ${rows || `<div class="strategy-muted">아직 세부 규칙이 없습니다. 규칙 추가로 풍속/강우/저온/탱크수위/펌프 fault 등 실시간 Sensor 기반 Safety Rule을 준비하세요.</div>`}
     </div>`;
   }
 
@@ -5889,7 +5895,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>
       ${this._renderZoneInterlockRuleBuilder(domain, settings)}
       <details style="margin-top:10px;"><summary class="strategy-muted">settings_json 미리보기</summary><textarea data-zone-interlock-json="${domain}" readonly style="width:100%;min-height:118px;font-family:monospace;font-size:12px;border:1px solid #dcebdd;border-radius:10px;padding:10px;">${jsonText}</textarea></details>
-      <div class="strategy-muted" style="margin-top:6px;">안전 기준 예: emergency_stop, block_on_unavailable, apply_safe_state_on_block, rules</div>
+      <div class="strategy-muted" style="margin-top:6px;">안전 기준 예: emergency_stop, block_on_unavailable, apply_safe_state_on_block, rules · 풍속/강우/저온/탱크수위/펌프 fault</div>
     </div>`;
   }
 

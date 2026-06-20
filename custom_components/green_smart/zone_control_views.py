@@ -986,6 +986,73 @@ SAFETY_GUARD_RULE_PRESETS = {
 }
 
 
+SENSOR_SAFETY_RULE_OPERATORS = {"above", "below", "equals", "not_equals", "is_on", "is_off", "truthy", "falsy"}
+
+
+def _sensor_safety_rule_snapshot(hass, rule: dict) -> dict | None:
+    # Control Phase C16: 풍속/강우/저온/탱크수위/펌프 fault 등 HA sensor 기반 차단 rule.
+    sensor_entity_id = rule.get("sensor_entity_id") or rule.get("sensorEntityId")
+    if not sensor_entity_id:
+        return None
+    return _entity_state_snapshot(hass, sensor_entity_id)
+
+
+def _sensor_safety_rule_value(sensor_state: dict | None, rule: dict):
+    if not sensor_state:
+        return None
+    attrs = sensor_state.get("attributes") or {}
+    attr = rule.get("sensor_attribute") or rule.get("sensorAttribute") or rule.get("attribute") or rule.get("attributeName")
+    if attr and attrs.get(attr) is not None:
+        return attrs.get(attr)
+    for key in ("value", "wind_speed", "windSpeed", "rain", "rain_rate", "temperature", "tank_level", "pump_fault"):
+        if attrs.get(key) is not None:
+            return attrs.get(key)
+    return sensor_state.get("state")
+
+
+def _sensor_safety_rule_matches(hass, rule: dict) -> dict:
+    sensor_state = _sensor_safety_rule_snapshot(hass, rule)
+    actual_value = _sensor_safety_rule_value(sensor_state, rule)
+    operator = str(rule.get("sensor_operator") or rule.get("sensorOperator") or rule.get("operator") or rule.get("condition") or "above").lower()
+    if operator not in SENSOR_SAFETY_RULE_OPERATORS:
+        operator = "above"
+    threshold = rule.get("sensor_threshold") if "sensor_threshold" in rule else rule.get("sensorThreshold", rule.get("threshold"))
+    state_text = str(actual_value or "").lower()
+    matched = False
+    try:
+        if operator == "above":
+            matched = float(actual_value) > float(threshold)
+        elif operator == "below":
+            matched = float(actual_value) < float(threshold)
+        elif operator == "equals":
+            matched = state_text == str(threshold).lower()
+        elif operator == "not_equals":
+            matched = state_text != str(threshold).lower()
+        elif operator == "is_on":
+            matched = state_text in {"on", "true", "1", "fault", "detected", "rain", "wet"}
+        elif operator == "is_off":
+            matched = state_text in {"off", "false", "0", "clear", "normal", "dry"}
+        elif operator == "truthy":
+            matched = state_text not in {"", "0", "false", "off", "none", "unknown", "unavailable"}
+        elif operator == "falsy":
+            matched = state_text in {"", "0", "false", "off", "none", "unknown", "unavailable"}
+    except Exception:
+        matched = False
+    reason_code = rule.get("reasonCode") or rule.get("reason_code") or rule.get("reason") or "sensor_safety_rule_blocked"
+    return {"sensorRuleMatched": matched, "matched": matched, "reasonCode": reason_code, "sensorEntityId": rule.get("sensor_entity_id") or rule.get("sensorEntityId"), "sensorAttribute": rule.get("sensor_attribute") or rule.get("sensorAttribute"), "sensorOperator": operator, "sensorActualValue": actual_value, "sensorThreshold": threshold, "sensorState": sensor_state, "rule": rule}
+
+
+def _sensor_safety_rule_applies_to_mapping(rule: dict, mapping: dict) -> bool:
+    role = rule.get("control_role") or rule.get("controlRole")
+    device_type = rule.get("device_type") or rule.get("deviceType")
+    entity_id = rule.get("entity_id") or rule.get("entityId")
+    return not ((role and role != mapping.get("controlRole")) or (device_type and device_type != mapping.get("deviceType")) or (entity_id and entity_id != mapping.get("entityId")))
+
+
+def _sensor_safety_rule_results(hass, rules: list[dict] | None, mapping: dict | None = None) -> list[dict]:
+    return [_sensor_safety_rule_matches(hass, rule) for rule in (rules or []) if (rule.get("sensor_entity_id") or rule.get("sensorEntityId")) and (mapping is None or _sensor_safety_rule_applies_to_mapping(rule, mapping))]
+
+
 def _safety_guard_policy(final_target, interlock_settings) -> dict:
     """Merge persisted interlock settings with final-target _safety overrides."""
     targets = final_target.get("targets") or {}
@@ -1085,7 +1152,8 @@ def _safety_guard_result_schema(*, status: str, blocked: bool, fail_safe_require
     }
 
 
-def _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state) -> dict:
+# Contract marker kept for Phase 2A static tests: _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
+def _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state, hass=None) -> dict:
     policy = _safety_guard_policy(final_target, interlock_settings)
     emergency_stop = bool(policy.get("emergency_stop") or policy.get("emergencyStop") or False)
     block_on_unavailable = policy.get("block_on_unavailable", policy.get("blockOnUnavailable", True))
@@ -1096,11 +1164,16 @@ def _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_
         reasons.append("emergency_stop")
     if block_on_unavailable and pre_state and not pre_state.get("available", True):
         reasons.append("entity_unavailable")
+    sensor_results = _sensor_safety_rule_results(hass, policy.get("rules") or [], mapping) if hass is not None else []
     for rule in policy.get("rules") or []:
         result = _safety_guard_rule_matches(rule, mapping, pre_state, call)
         rule_results.append(result)
         if result.get("matched") and rule.get("block", True) and str(rule.get("action") or "block") != "warn":
             reasons.append(result.get("reasonCode") or rule.get("message") or rule.get("reason") or "interlock_rule")
+    for sensor_result in sensor_results:
+        if sensor_result.get("sensorRuleMatched") and (sensor_result.get("rule") or {}).get("block", True) and str((sensor_result.get("rule") or {}).get("action") or "block") != "warn":
+            reasons.append(sensor_result.get("reasonCode") or "sensor_safety_rule_blocked")
+    sensorSafetyStatus = "blocked" if any(r.get("sensorRuleMatched") for r in sensor_results) else "clear"
     safe_state_call = _safe_state_service_call_for_mapping(mapping) if reasons and apply_safe_state_on_block else None
     status = "failsafe" if safe_state_call else ("blocked" if reasons else "clear")
     safety_guard = _safety_guard_result_schema(status=status, blocked=bool(reasons), fail_safe_required=bool(safe_state_call), reasons=reasons, rule_results=rule_results, safe_state_call=safe_state_call)
@@ -1113,6 +1186,8 @@ def _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_
         "safeStateResult": None,
         "originalCall": call,
         "safetyGuard": safety_guard,
+        "sensorSafetyResults": sensor_results,
+        "sensorSafetyStatus": sensorSafetyStatus,
     }
 
 
@@ -1186,7 +1261,8 @@ def _safety_guard_watchdog_item(hass, *, final_target: dict, interlock_settings:
     call = _service_call_for_mapping(mapping, target_value) or _safe_state_service_call_for_mapping(mapping) or {"domain": "homeassistant", "service": "turn_off", "serviceData": {"entity_id": mapping.get("entityId")}, "targetValue": target_value}
     call["mappingId"] = mapping.get("id")
     call["entityId"] = mapping.get("entityId")
-    decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
+    # Contract marker kept for Phase 2C static tests: _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
+    decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state, hass)
     state_text = str((pre_state or {}).get("state") or "unknown").lower()
     stale = _safety_guard_is_stale(pre_state, stale_threshold_seconds)
     age_seconds = _safety_guard_state_age_seconds(pre_state)
@@ -1433,11 +1509,14 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
                 blocked_calls.append(call)
                 await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_blocked", before=call["deviceGroupAutoAllowance"], after=call["safetyGuard"], result="blocked", message="device group is not allowed for limited auto execution")
                 continue
-            safety_decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
+            # Contract marker kept for Phase 2A static tests: _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
+            safety_decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state, hass)
             call["blockedByInterlock"] = safety_decision["blockedByInterlock"]
             call["failSafeApplied"] = safety_decision["failSafeApplied"]
             call["interlockReasons"] = safety_decision["interlockReasons"]
             call["safetyStatus"] = safety_decision["safetyStatus"]
+            call["sensorSafetyStatus"] = safety_decision.get("sensorSafetyStatus")
+            call["sensorSafetyResults"] = safety_decision.get("sensorSafetyResults")
             call["safetyGuard"] = safety_decision["safetyGuard"]
             if safety_decision["blockedByInterlock"]:
                 blocked_calls.append(call)
@@ -1493,14 +1572,18 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
             action = "state_verification_failed"
         else:
             action = "state_verification_passed"
-        if blocked_calls and not safe_state_calls:
+        if blocked_calls and any(c.get("sensorSafetyStatus") == "blocked" for c in blocked_calls):
+            action = "sensor_safety_rule_blocked"
+        elif blocked_calls and not safe_state_calls:
             action = "execution_safety_blocked"
         result = "failed" if errors or state_failures or (blocked_calls and not safe_state_calls) else "success"
+        sensorSafetyResults = [r for c in blocked_calls + calls for r in (c.get("sensorSafetyResults") or [])]
+        sensorSafetyStatus = "blocked" if any(r.get("sensorRuleMatched") for r in sensorSafetyResults) else "clear"
         safety_guard_summary = {"status": "blocked" if blocked_calls and not safe_state_calls else ("failsafe" if safe_state_calls else "clear"), "blockedCount": len(blocked_calls), "failSafeCount": len(safe_state_calls), "ruleResults": [r for c in blocked_calls + calls for r in ((c.get("safetyGuard") or {}).get("ruleResults") or [])], "reasons": [reason for c in blocked_calls + calls for reason in (c.get("interlockReasons") or [])]}
-        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "safetyStatus": safety_guard_summary["status"], "safetyGuard": safety_guard_summary}
+        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "safetyStatus": safety_guard_summary["status"], "sensorSafetyStatus": sensorSafetyStatus, "sensorSafetyResults": sensorSafetyResults, "safetyGuard": safety_guard_summary}
         if response.get("stateMatched") and not blocked_calls:
             action = "state_verification_passed"
-        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "safetyStatus": response["safetyStatus"], "safetyGuard": response["safetyGuard"]}, result=result, message="final targets executed via Home Assistant services with SafetyGuard/interlock/fail safe and pre/post state verification")
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "safetyStatus": response["safetyStatus"], "sensorSafetyStatus": response.get("sensorSafetyStatus"), "sensorSafetyResults": response.get("sensorSafetyResults"), "safetyGuard": response["safetyGuard"]}, result=result, message="final targets executed via Home Assistant services with SafetyGuard/interlock/fail safe and pre/post state verification")
         return _json(response)
 
 

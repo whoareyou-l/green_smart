@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.16` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 115 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.17` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 116 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.16"
+  "version": "1.9.17"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.16"
+const VERSION = "1.9.17"
 ```
 
 중요 UI 페이지:
@@ -957,6 +957,28 @@ Setup Assistant
 
 Panel에는 환경/관수/장치제어에 `Entity Mapping 검증` 카드가 표시된다. 운영자는 entity_id 존재, domain/service 호환성, safe_state 유효성, final target 대비 위험 장비 mapping 누락을 실행 전에 확인할 수 있다.
 
+
+Control Phase C16 실시간 Sensor 기반 Safety Rule baseline:
+
+```text
+SENSOR_SAFETY_RULE_OPERATORS
+_sensor_safety_rule_snapshot
+_sensor_safety_rule_value
+_sensor_safety_rule_matches
+_sensor_safety_rule_results
+sensor_entity_id / sensorEntityId
+sensor_attribute / sensorAttribute
+sensor_operator / sensorOperator
+sensorActualValue
+sensorThreshold
+sensorRuleMatched
+sensorSafetyStatus
+sensorSafetyResults
+sensor_safety_rule_blocked
+```
+
+Interlock `rules[]`에 sensor entity를 지정하면 실행 시 target entity 상태뿐 아니라 별도 HA sensor 상태/속성을 읽어 SafetyGuard 차단과 Fail Safe 적용을 결정한다. 운영 UI의 세부 인터록 규칙에는 `센서 entity`, `센서 속성`, `센서 연산자` 입력이 표시된다.
+
 ---
 
 ### 11.5 `ai_zone_control_outputs`
@@ -1253,7 +1275,7 @@ python3 -m py_compile \
 현재 기대값:
 
 ```text
-115 passed
+116 passed
 node --check: no output / exit 0
 py_compile: no output / exit 0
 ```
@@ -1317,7 +1339,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.16
+v1.9.17
 ```
 
 ---
@@ -1464,7 +1486,7 @@ python3 -m py_compile custom_components/green_smart/db.py custom_components/gree
 
 ```text
 git status clean 또는 의도한 변경만 표시
-115 passed
+116 passed
 node --check exit 0
 py_compile exit 0
 ```

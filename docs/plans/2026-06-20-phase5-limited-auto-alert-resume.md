@@ -1,6 +1,6 @@
 # Phase 5 — Limited Auto Control + Alert Resume
 
-> 기준 버전: v1.9.16
+> 기준 버전: v1.9.17
 > 상태: 완료
 > 대상: `zone_control_views.py`, `green-smart-panel.js`, 제한적 자동제어 실행 gate 및 알림 재개 lifecycle
 
