@@ -869,10 +869,21 @@ def _safety_guard_is_stale(pre_state, stale_threshold_seconds) -> bool:
     return age_seconds is not None and age_seconds > stale_threshold_seconds
 
 
+def _safety_guard_notification_id(*, crop_season_id: int, zone_id: int, domain: str) -> str:
+    return f"green_smart_safety_guard_{crop_season_id}_{zone_id}_{domain}"
+
+
+def _safety_guard_notification_key(*, crop_season_id: int, zone_id: int, domain: str, critical_events: list[dict] | None = None) -> str:
+    entity_part = ""
+    if critical_events:
+        entity_part = ":" + ",".join(sorted(str(e.get("entityId")) for e in critical_events))
+    return f"{crop_season_id}:{zone_id}:{domain}{entity_part}"
+
+
 def _notify_safety_guard_critical(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, critical_events: list[dict]) -> None:
     if not critical_events:
         return
-    notification_key = f"{crop_season_id}:{zone_id}:{domain}:{','.join(sorted(str(e.get('entityId')) for e in critical_events))}"
+    notification_key = _safety_guard_notification_key(crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, critical_events=critical_events)
     domain_data = hass.data.setdefault("green_smart", {})
     last_notified = domain_data.setdefault(SAFETY_GUARD_LAST_NOTIFIED_KEY, {})
     if last_notified.get(notification_key):
@@ -880,7 +891,20 @@ def _notify_safety_guard_critical(hass, *, farm_id: int, crop_season_id: int, zo
         return
     last_notified[notification_key] = dt_util.utcnow().isoformat()
     message = f"SafetyGuard critical safety event: farm={farm_id}, cropSeason={crop_season_id}, zone={zone_id}, domain={domain}, events={len(critical_events)}"
-    hass.async_create_task(hass.services.async_call("persistent_notification", "create", {"title": "Green Smart SafetyGuard", "message": message, "notification_id": f"green_smart_safety_guard_{crop_season_id}_{zone_id}_{domain}"}, blocking=False))  # persistent_notification.create
+    hass.async_create_task(hass.services.async_call("persistent_notification", "create", {"title": "Green Smart SafetyGuard", "message": message, "notification_id": _safety_guard_notification_id(crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)}, blocking=False))  # persistent_notification.create
+
+
+async def _clear_safety_guard_notification(hass, *, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    notification_key = _safety_guard_notification_key(crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    domain_data = hass.data.setdefault("green_smart", {})
+    last_notified = domain_data.setdefault(SAFETY_GUARD_LAST_NOTIFIED_KEY, {})
+    removed_keys = [key for key in list(last_notified) if key == notification_key or key.startswith(f"{notification_key}:")]
+    last_notified.pop(notification_key, None)
+    for key in removed_keys:
+        last_notified.pop(key, None)
+    await hass.services.async_call("persistent_notification", "dismiss", {"notification_id": _safety_guard_notification_id(crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)}, blocking=False)  # persistent_notification.dismiss
+    domain_data["safety_guard_notification_cleared"] = notification_key
+    return {"notificationCleared": True, "notificationId": _safety_guard_notification_id(crop_season_id=crop_season_id, zone_id=zone_id, domain=domain), "dedupeKeysCleared": removed_keys}
 
 
 def _safety_guard_watchdog_item(hass, *, final_target: dict, interlock_settings: dict, mapping: dict, stale_threshold_seconds: int) -> dict:
@@ -1345,14 +1369,17 @@ async def _safety_guard_event_lifecycle_post(request: web.Request, lifecycle_act
         crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
         zone_id = int(body.get("zone_id") or body.get("zoneId"))
         event_id = int(body.get("event_id") or body.get("eventId"))
-        note = body.get("note") or body.get("message") or ""
+        note = str(body.get("note") or body.get("message") or body.get("operatorNote") or "").strip()
     except Exception as exc:
         return _err(str(exc))
     state = "acknowledged" if lifecycle_action == "ack" else "cleared"
     action = "safety_guard_event_acknowledged" if lifecycle_action == "ack" else "safety_guard_event_cleared"
-    after = {"eventLifecycle": {"eventId": event_id, "state": state, state: True, "note": note}}
+    notification_result = {"notificationCleared": False}
+    if lifecycle_action == "clear":
+        notification_result = await _clear_safety_guard_notification(hass, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    after = {"eventLifecycle": {"eventId": event_id, "state": state, state: True, "note": note, "operatorNote": note, **notification_result}}
     await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"eventId": event_id}, after=after, result="success", message=f"SafetyGuard event {state}")
-    return _json({"ok": True, "eventId": event_id, "eventLifecycle": after["eventLifecycle"]})
+    return _json({"ok": True, "eventId": event_id, "eventLifecycle": after["eventLifecycle"], **notification_result})
 
 
 class ZoneSafetyGuardEventsView(HomeAssistantView):

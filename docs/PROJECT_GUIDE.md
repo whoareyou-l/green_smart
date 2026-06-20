@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.9` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.10.0` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.9"
+  "version": "1.10.0"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.9"
+const VERSION = "1.10.0"
 ```
 
 중요 UI 페이지:
@@ -841,6 +841,19 @@ clearedEventIds
 ```
 
 Panel에는 `SafetyGuard 이벤트 이력` 카드가 표시되며, 운영자는 `운영자 확인`과 `조치 완료`를 기록할 수 있다.
+
+Phase 2F notification clear/operator note baseline:
+
+```text
+_safety_guard_notification_id
+_clear_safety_guard_notification
+persistent_notification.dismiss
+notificationCleared
+operatorNote
+data-zone-safety-event-note
+```
+
+`조치 완료`는 같은 작기/구역/domain의 SafetyGuard persistent notification을 해제하고 dedupe cache를 reset한다. Panel은 active 상태에서 `운영자 확인`, acknowledged 상태에서 `조치 완료`만 노출하며, 운영자는 `조치 메모`를 lifecycle에 남길 수 있다.
 
 ---
 
@@ -1202,7 +1215,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.9
+v1.10.0
 ```
 
 ---

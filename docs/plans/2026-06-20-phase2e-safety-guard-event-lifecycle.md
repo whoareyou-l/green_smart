@@ -1,6 +1,6 @@
 # Phase 2E — SafetyGuard Event Lifecycle
 
-> 기준 버전: v1.9.9
+> 기준 버전: v1.10.0
 > 대상: SafetyGuard event history, ack/clear API, panel event card
 
 ## 목적
@@ -109,11 +109,20 @@ node --check custom_components/green_smart/panel/green-smart-panel.js
 
 ## 다음 단계
 
-Phase 2F 후보:
+Phase 2F 완료:
 
 ```text
 persistent notification dismiss/clear 연동
-별도 safety_guard_events table migration 검토
-event lifecycle state 정규화
 operator action note 입력 UI
+ack/clear lifecycle 상태별 버튼 gating
+notification dedupe reset
+```
+
+Phase 3A 후보:
+
+```text
+환경 전략 MVP 시작
+CORP 기본 G-Index
+TEMHUM ADT/DIF/VPD
+VENT/SCRN 기본 final target 생성
 ```

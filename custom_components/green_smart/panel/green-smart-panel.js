@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.9
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.0
 const DOMAIN = "green_smart";
-const VERSION = "1.9.9";
+const VERSION = "1.10.0";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5117,20 +5117,25 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
-  async _ackZoneSafetyGuardEvent(domain, eventId) {
+  _zoneSafetyGuardEventNote(domain, eventId) {
+    const selector = `[data-zone-safety-event-note][data-zone-safety-event-domain="${domain}"][data-zone-safety-event-note-for="${eventId}"]`;
+    return (this.shadowRoot?.querySelector(selector)?.value || "").trim();
+  }
+
+  async _ackZoneSafetyGuardEvent(domain, eventId, note) {
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId || !eventId) return false;
     const zoneId = Number(this._controlScope?.zoneId || 1);
-    const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/ack", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, event_id: Number(eventId), note: "운영자 확인" });
+    const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/ack", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, event_id: Number(eventId), note: note || "운영자 확인", operatorNote: note });
     await this._fetchZoneSafetyGuardEvents(domain);
     return !!res?.ok;
   }
 
-  async _clearZoneSafetyGuardEvent(domain, eventId) {
+  async _clearZoneSafetyGuardEvent(domain, eventId, note) {
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId || !eventId) return false;
     const zoneId = Number(this._controlScope?.zoneId || 1);
-    const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/clear", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, event_id: Number(eventId), note: "조치 완료" });
+    const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/clear", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, event_id: Number(eventId), note: note || "조치 완료", operatorNote: note });
     await this._fetchZoneSafetyGuardEvents(domain);
     return !!res?.ok;
   }
@@ -5477,12 +5482,17 @@ button.action:disabled{opacity:.5;cursor:default;}
     const rows = events.slice(0, 8).map((event) => {
       const lifecycle = event.eventLifecycle || {};
       const state = lifecycle.state || "active";
+      const eventId = this._esc(String(event.id || ""));
+      const ackButton = state === "active" ? `<button class="mini-btn" data-zone-safety-event-ack data-zone-safety-event-domain="${domain}" data-zone-safety-event-id="${eventId}">운영자 확인</button>` : "";
+      const clearButton = state === "acknowledged" ? `<button class="mini-btn" data-zone-safety-event-clear data-zone-safety-event-domain="${domain}" data-zone-safety-event-id="${eventId}">조치 완료</button>` : "";
       return `<div style="border-top:1px solid #e2f0e4;padding:8px 0;font-size:12px;display:grid;gap:4px;">
-        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><b>#${this._esc(event.id || "-")} ${this._esc(event.action || "event")}</b><span>${this._esc(state)} · ${this._esc(event.createdAt || "")}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><b>#${this._esc(event.id || "-")} ${this._esc(event.action || "event")}</b><span>상태: ${this._esc(state)} · ${this._esc(event.createdAt || "")}</span></div>
         <div>result ${this._esc(event.result || "-")} · message ${this._esc(event.message || "-")}</div>
+        <input data-zone-safety-event-note data-zone-safety-event-domain="${domain}" data-zone-safety-event-note-for="${eventId}" placeholder="조치 메모" value="${this._esc(lifecycle.operatorNote || lifecycle.note || "")}" style="padding:7px;border:1px solid #d7e8dc;border-radius:8px;" />
+        <div class="strategy-muted">상태: active → 운영자 확인, 상태: acknowledged → 조치 완료, 상태: cleared → 알림 해제 완료</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="mini-btn" data-zone-safety-event-ack data-zone-safety-event-domain="${domain}" data-zone-safety-event-id="${this._esc(String(event.id || ""))}">운영자 확인</button>
-          <button class="mini-btn" data-zone-safety-event-clear data-zone-safety-event-domain="${domain}" data-zone-safety-event-id="${this._esc(String(event.id || ""))}">조치 완료</button>
+          ${ackButton}
+          ${clearButton}
         </div>
       </div>`;
     }).join("");
@@ -6346,10 +6356,20 @@ button.action:disabled{opacity:.5;cursor:default;}
       btn.addEventListener("click", async () => await this._fetchZoneSafetyGuardEvents(btn.dataset.zoneSafetyEventDomain || "environment"));
     });
     root.querySelectorAll("[data-zone-safety-event-ack]").forEach((btn) => {
-      btn.addEventListener("click", async () => await this._ackZoneSafetyGuardEvent(btn.dataset.zoneSafetyEventDomain || "environment", btn.dataset.zoneSafetyEventId));
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneSafetyEventDomain || "environment";
+        const eventId = btn.dataset.zoneSafetyEventId;
+        const note = this._zoneSafetyGuardEventNote(domain, eventId);
+        await this._ackZoneSafetyGuardEvent(domain, eventId, note);
+      });
     });
     root.querySelectorAll("[data-zone-safety-event-clear]").forEach((btn) => {
-      btn.addEventListener("click", async () => await this._clearZoneSafetyGuardEvent(btn.dataset.zoneSafetyEventDomain || "environment", btn.dataset.zoneSafetyEventId));
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneSafetyEventDomain || "environment";
+        const eventId = btn.dataset.zoneSafetyEventId;
+        const note = this._zoneSafetyGuardEventNote(domain, eventId);
+        await this._clearZoneSafetyGuardEvent(domain, eventId, note);
+      });
     });
   }
 

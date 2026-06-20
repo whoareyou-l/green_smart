@@ -897,8 +897,8 @@ def test_phase2e_safety_guard_event_history_ack_clear_contract():
     for panel_marker in (
         "this._zoneSafetyGuardEventCache",
         "async _fetchZoneSafetyGuardEvents(domain",
-        "async _ackZoneSafetyGuardEvent(domain, eventId)",
-        "async _clearZoneSafetyGuardEvent(domain, eventId)",
+        "async _ackZoneSafetyGuardEvent(domain, eventId, note)",
+        "async _clearZoneSafetyGuardEvent(domain, eventId, note)",
         "_renderZoneSafetyGuardEventHistoryCard(domain)",
         "_bindZoneSafetyGuardEventInputs(root)",
         "green_smart/zones/safety-guard-events",
@@ -916,3 +916,47 @@ def test_phase2e_safety_guard_event_history_ack_clear_contract():
 
     refresh_section = panel_source.split("async _refreshZoneControlElements", 1)[1].split("_patchZoneControlElementCards", 1)[0]
     assert "this._fetchZoneSafetyGuardEvents(domain, { patchOnly })" in refresh_section
+
+
+def test_phase2f_safety_guard_notification_clear_and_operator_note_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "_safety_guard_notification_id",
+        "_clear_safety_guard_notification",
+        "persistent_notification.dismiss",
+        "green_smart_safety_guard_{crop_season_id}_{zone_id}_{domain}",
+        "SAFETY_GUARD_LAST_NOTIFIED_KEY",
+        "pop(notification_key, None)",
+        "notificationCleared",
+        "safety_guard_notification_cleared",
+        "operatorNote",
+    ):
+        assert api_marker in source
+
+    lifecycle_section = source.split("async def _safety_guard_event_lifecycle_post", 1)[1].split("class ZoneSafetyGuardEventsView", 1)[0]
+    for behavior in (
+        "note = str(body.get(\"note\") or body.get(\"message\") or body.get(\"operatorNote\") or \"\").strip()",
+        "if lifecycle_action == \"clear\":",
+        "await _clear_safety_guard_notification",
+        "notificationCleared",
+        "operatorNote",
+    ):
+        assert behavior in lifecycle_section
+
+    for panel_marker in (
+        "data-zone-safety-event-note",
+        "data-zone-safety-event-note-for",
+        "조치 메모",
+        "상태: active",
+        "상태: acknowledged",
+        "상태: cleared",
+        "const note = this._zoneSafetyGuardEventNote(domain, eventId);",
+        "async _ackZoneSafetyGuardEvent(domain, eventId, note)",
+        "async _clearZoneSafetyGuardEvent(domain, eventId, note)",
+        "operatorNote: note",
+        "state === \"active\"",
+        "state === \"acknowledged\"",
+    ):
+        assert panel_marker in panel_source
