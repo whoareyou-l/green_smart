@@ -124,3 +124,36 @@ def test_zone_control_views_persist_ai_outputs_and_final_targets_phase7():
 
     assert "hass.http.register_view(ZoneAiControlOutputsView())" in init_source
     assert "hass.http.register_view(ZoneAiControlOutputApplyView())" in init_source
+
+
+def test_panel_shows_ai_outputs_and_final_targets_with_apply_action_phase8():
+    source = PANEL.read_text(encoding="utf-8")
+
+    for required in (
+        "this._zoneAiOutputCache",
+        "this._zoneFinalTargetCache",
+        "async _fetchZoneAiOutputs(domain)",
+        "async _fetchZoneFinalTargets(domain)",
+        "async _applyZoneAiOutput(domain, outputId)",
+        "_renderZoneAiFinalTargetCard(domain)",
+        "_bindZoneAiFinalTargetInputs(root)",
+        "green_smart/zones/ai-control-outputs",
+        "green_smart/zones/final-targets",
+        "data-zone-ai-final-card",
+        "data-zone-ai-refresh",
+        "data-zone-ai-apply",
+        "AI 전략 출력",
+        "최종 적용값",
+        "AI 전략 적용",
+        "적용 완료",
+        "AI output 조회 실패 시 fallback",
+    ):
+        assert required in source
+
+    for domain_call in (
+        '_renderZoneAiFinalTargetCard("environment")',
+        '_renderZoneAiFinalTargetCard("irrigation")',
+        '_renderZoneAiFinalTargetCard("device")',
+        "this._bindZoneAiFinalTargetInputs(root)",
+    ):
+        assert domain_call in source

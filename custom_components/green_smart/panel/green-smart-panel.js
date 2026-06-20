@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.36
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.37
 const DOMAIN = "green_smart";
-const VERSION = "1.8.36";
+const VERSION = "1.8.37";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -243,6 +243,8 @@ class GreenSmartPanel extends HTMLElement {
     this._controlScope = this._loadControlScope();
     this._controlSaveNotice = null;
     this._apiScopedControlCache = {};
+    this._zoneAiOutputCache = {};
+    this._zoneFinalTargetCache = {};
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -4935,6 +4937,83 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneAiOutputs(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return [];
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/ai-control-outputs?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}&limit=5`);
+      const items = Array.isArray(res?.items) ? res.items : [];
+      this._zoneAiOutputCache[cacheKey] = items;
+      this._pageRendered = null;
+      this._update();
+      return items;
+    } catch (err) {
+      console.warn("AI output 조회 실패 시 fallback", err);
+      return this._zoneAiOutputCache[cacheKey] || [];
+    }
+  }
+
+  async _fetchZoneFinalTargets(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/final-targets?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._zoneFinalTargetCache[cacheKey] = res?.found ? res : null;
+      this._pageRendered = null;
+      this._update();
+      return this._zoneFinalTargetCache[cacheKey];
+    } catch (err) {
+      console.warn("AI output 조회 실패 시 fallback", err);
+      return this._zoneFinalTargetCache[cacheKey] || null;
+    }
+  }
+
+  async _applyZoneAiOutput(domain, outputId) {
+    if (!this._hass || !outputId) return false;
+    try {
+      const res = await this._hass.callApi("POST", `green_smart/zones/ai-control-outputs/${outputId}/apply`, {});
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · AI 전략 적용 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      await this._fetchZoneAiOutputs(domain);
+      await this._fetchZoneFinalTargets(domain);
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("AI output 조회 실패 시 fallback", err);
+      return false;
+    }
+  }
+
+  _renderZoneAiFinalTargetCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const outputs = this._zoneAiOutputCache?.[cacheKey] || [];
+    const finalTarget = this._zoneFinalTargetCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId()) {
+      if (!this._zoneAiOutputCache?.[cacheKey]) this._fetchZoneAiOutputs(domain);
+      if (!(cacheKey in (this._zoneFinalTargetCache || {}))) this._fetchZoneFinalTargets(domain);
+    }
+    const latest = outputs[0] || null;
+    const strategySummary = latest ? Object.entries(latest.strategy || {}).slice(0, 4).map(([k, v]) => `${this._esc(k)}: ${this._esc(String(v))}`).join(" · ") : "저장된 AI 전략 출력 없음";
+    const targetSummary = finalTarget?.targets ? Object.entries(finalTarget.targets || {}).slice(0, 4).map(([k, v]) => `${this._esc(k)}: ${this._esc(String(v))}`).join(" · ") : "최종 적용값 없음";
+    return `<div class="gs-card" data-zone-ai-final-card data-zone-ai-domain="${domain}" style="padding:14px;margin-bottom:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+      <div style="border:1px solid #d7ecd9;border-radius:12px;padding:10px;background:#fbfffb;">
+        <b>AI 전략 출력</b><br>
+        <span style="font-size:12px;color:#5d7d64;">${latest ? `${this._esc(latest.modelName || "AI Agent")} · ${this._esc(latest.safetyStatus || "pending")}` : "대기"}</span>
+        <p style="font-size:12px;color:#2f6b3c;line-height:1.5;">${strategySummary}</p>
+        <button class="btn btn-ghost" data-zone-ai-refresh data-zone-ai-domain="${domain}">AI 출력 새로고침</button>
+        ${latest ? `<button class="btn" data-zone-ai-apply data-zone-ai-domain="${domain}" data-zone-ai-output-id="${latest.id}">AI 전략 적용</button>` : ""}
+      </div>
+      <div style="border:1px solid #d7ecd9;border-radius:12px;padding:10px;background:#f3fbf4;">
+        <b>최종 적용값</b><br>
+        <span style="font-size:12px;color:#5d7d64;">zone_final_control_targets</span>
+        <p style="font-size:12px;color:#2f6b3c;line-height:1.5;">${targetSummary}</p>
+        <span style="font-size:12px;color:#5d7d64;">적용 완료 상태는 AI 전략 적용 후 이 영역에 반영됩니다.</span>
+      </div>
+    </div>`;
+  }
+
   _currentControlSeasonId() {
     return this._controlScope?.seasonId || this._activeSeasonId || this._cropSeasons?.find((s) => !s.demolished)?.id || "default-season";
   }
@@ -5120,6 +5199,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page control-strategy-page">
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
       ${this._renderControlScopeBar("environment")}
+      ${this._renderZoneAiFinalTargetCard("environment")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
@@ -5278,6 +5358,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page irrigation-control-page">
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
+      ${this._renderZoneAiFinalTargetCard("irrigation")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
         ${this._renderIrrigationControlTabBar()}
@@ -5358,6 +5439,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page device-control-page">
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
+      ${this._renderZoneAiFinalTargetCard("device")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
         ${this._renderDeviceControlTabBar()}
@@ -5593,6 +5675,26 @@ button.action:disabled{opacity:.5;cursor:default;}
     page.querySelector("#device-control-save")?.addEventListener("click", () => this._saveDeviceControl());
   }
 
+  _bindZoneAiFinalTargetInputs(root) {
+    root.querySelectorAll("[data-zone-ai-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneAiDomain || "environment";
+        await this._fetchZoneAiOutputs(domain);
+        await this._fetchZoneFinalTargets(domain);
+      });
+    });
+    root.querySelectorAll("[data-zone-ai-apply]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneAiDomain || "environment";
+        const outputId = btn.dataset.zoneAiOutputId;
+        if (!outputId) return;
+        if (!confirm(`${this._controlDomainLabel(domain)} AI 전략 출력 #${outputId}을 최종 적용값으로 적용할까요?`)) return;
+        const ok = await this._applyZoneAiOutput(domain, outputId);
+        if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+  }
+
   _bindControlScopeInputs(root) {
     root.querySelectorAll("[data-control-scope-bar]").forEach((bar) => {
       const domain = bar.dataset.controlScopeDomain || "environment";
@@ -5645,6 +5747,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _bindDashboard(root) {
     this._bindControlScopeInputs(root);
+    this._bindZoneAiFinalTargetInputs(root);
     this._bindControlStrategyInputs(root);
     this._bindIrrigationControlInputs(root);
     this._bindDeviceControlInputs(root);
