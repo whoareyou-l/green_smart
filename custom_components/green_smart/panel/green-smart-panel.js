@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.32
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.33
 const DOMAIN = "green_smart";
-const VERSION = "1.8.32";
+const VERSION = "1.8.33";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -4920,6 +4920,13 @@ button.action:disabled{opacity:.5;cursor:default;}
           <option value="all" ${this._controlScope?.applyMode === "all" ? "selected" : ""}>전체 구역에 복사</option>
         </select>
       </label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:130px;">복사 대상 구역
+        <select data-control-copy-target-zone>
+          ${zoneOptions.filter((z) => z.id !== safeZone).map((z) => `<option value="${z.id}">${z.label}</option>`).join("") || `<option value="${safeZone}">${safeZone}구역</option>`}
+        </select>
+      </label>
+      <button class="btn btn-ghost" data-control-copy-zone style="height:34px;">현재 설정 복사</button>
+      <button class="btn btn-ghost" data-control-copy-all-zones style="height:34px;">전체 구역에 적용</button>
       <div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;min-width:260px;">
         <b>저장 대상</b><br>${this._esc(this._currentControlScopeLabel(domain))}<br>
         <span>제어영역: ${this._esc(this._controlDomainLabel(domain))}</span><br>
@@ -4977,6 +4984,34 @@ button.action:disabled{opacity:.5;cursor:default;}
     if (!this._zoneControlSettings[domain][seasonId]) this._zoneControlSettings[domain][seasonId] = {};
     this._zoneControlSettings[domain][seasonId][zoneId] = this._cloneControlState(domain, state);
     this._saveZoneControlSettings();
+  }
+
+  _copyScopedControlSettings(domain, fromZoneId, toZoneId) {
+    const seasonId = String(this._currentControlSeasonId());
+    const fromKey = String(Number(fromZoneId || 1));
+    const toKey = String(Number(toZoneId || 1));
+    if (fromKey === toKey) return false;
+    if (!this._zoneControlSettings) this._zoneControlSettings = this._loadZoneControlSettings();
+    if (!this._zoneControlSettings[domain]) this._zoneControlSettings[domain] = {};
+    if (!this._zoneControlSettings[domain][seasonId]) this._zoneControlSettings[domain][seasonId] = {};
+    if (!this._zoneControlSettings[domain][seasonId][fromKey]) {
+      this._zoneControlSettings[domain][seasonId][fromKey] = this._cloneControlState(domain, this._defaultControlStateForDomain(domain));
+    }
+    const source = this._zoneControlSettings[domain][seasonId][fromKey];
+    this._zoneControlSettings[domain][seasonId][toKey] = this._cloneControlState(domain, source);
+    this._saveZoneControlSettings();
+    this._setControlSaveNotice(domain);
+    return true;
+  }
+
+  _copyScopedControlSettingsToAllZones(domain, fromZoneId) {
+    const copied = [];
+    const fromKey = Number(fromZoneId || this._controlScope?.zoneId || 1);
+    this._controlZoneOptions(domain).forEach((z) => {
+      if (z.id === fromKey) return;
+      if (this._copyScopedControlSettings(domain, fromKey, z.id)) copied.push(z.id);
+    });
+    return copied;
   }
 
   _migrateLegacyControlStateToScoped() {
@@ -5497,6 +5532,24 @@ button.action:disabled{opacity:.5;cursor:default;}
       apply?.addEventListener("change", () => {
         this._controlScope = { ...this._controlScope, applyMode: apply.value || "current" };
         this._saveControlScope();
+      });
+      bar.querySelector("[data-control-copy-zone]")?.addEventListener("click", () => {
+        const fromZone = Number(zone?.value || this._controlScope?.zoneId || 1);
+        const toZone = Number(bar.querySelector("[data-control-copy-target-zone]")?.value || fromZone);
+        if (fromZone === toZone) return;
+        if (!confirm(`${this._controlDomainLabel(domain)} 현재 설정을 ${toZone}구역으로 복사할까요?`)) return;
+        this._copyScopedControlSettings(domain, fromZone, toZone);
+        this._controlSaveNotice = { ...this._controlSaveNotice, label: `${this._currentControlScopeLabel(domain)} → ${toZone}구역 복사 완료` };
+        this._pageRendered = null;
+        this._update();
+      });
+      bar.querySelector("[data-control-copy-all-zones]")?.addEventListener("click", () => {
+        const fromZone = Number(zone?.value || this._controlScope?.zoneId || 1);
+        if (!confirm(`${this._controlDomainLabel(domain)} 현재 설정을 전체 구역에 적용할까요?`)) return;
+        const copied = this._copyScopedControlSettingsToAllZones(domain, fromZone);
+        this._controlSaveNotice = { ...this._controlSaveNotice, label: `${this._currentControlScopeLabel(domain)} → 전체 구역(${copied.length}개) 복사 완료` };
+        this._pageRendered = null;
+        this._update();
       });
       if (domain === "irrigation" && zone && !this._controlZoneOptions(domain).some((z) => z.id === Number(zone.value))) {
         zone.value = "1";

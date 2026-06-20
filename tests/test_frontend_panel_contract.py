@@ -386,3 +386,29 @@ def test_control_scope_save_ux_shows_current_crop_zone_and_domain_for_phase3():
     assert "this._setControlSaveNotice(\"device\");" in panel
     assert "this._currentControlScopeLabel(domain)" in scope_bar
     assert "this._controlDomainLabel(domain)" in scope_bar
+
+
+def test_control_scope_can_copy_current_zone_settings_for_phase4():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    scope_bar = panel.split("  _renderControlScopeBar(domain) {", 1)[1].split("  _cloneControlState", 1)[0]
+    binder = panel.split("  _bindControlScopeInputs(root) {", 1)[1].split("  // ── Dashboard event binding", 1)[0]
+
+    for required in [
+        "  _copyScopedControlSettings(domain, fromZoneId, toZoneId) {",
+        "  _copyScopedControlSettingsToAllZones(domain, fromZoneId) {",
+        "data-control-copy-target-zone",
+        "data-control-copy-zone",
+        "data-control-copy-all-zones",
+        "복사 대상 구역",
+        "현재 설정 복사",
+        "전체 구역에 적용",
+        "복사 완료",
+    ]:
+        assert required in panel
+    assert "data-control-copy-target-zone" in scope_bar
+    assert "data-control-copy-zone" in scope_bar
+    assert "data-control-copy-all-zones" in scope_bar
+    assert "this._copyScopedControlSettings(domain" in binder
+    assert "this._copyScopedControlSettingsToAllZones(domain" in binder
+    assert "confirm(" in binder
+    assert "this._setControlSaveNotice(domain)" in panel
