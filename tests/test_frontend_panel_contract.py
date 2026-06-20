@@ -270,3 +270,38 @@ def test_irrigation_control_docs_cover_requested_development_deliverables():
         assert table in doc
     for role in ["Admin", "Farm Owner", "Farm Worker"]:
         assert role in doc
+
+
+def test_device_control_replaces_ventilation_and_screen_sidebar_routes():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    sidebar = panel.split("  _renderSidebar()", 1)[1].split("  _alertPillHtml", 1)[0]
+    dashboard = panel.split("    const sim = this._simData;", 1)[1].split("  // ── No-flicker partial data refresh", 1)[0]
+    device_page = panel.split("  _renderDeviceControlPage()", 1)[1].split("  _renderVentSettingsPage()", 1)[0]
+
+    assert 'navBtn("device",      "mdi:cog-box",            "장치제어"' in sidebar
+    assert "환기 설정" not in sidebar
+    assert "스크린 설정" not in sidebar
+    assert 'this._page === "device"' in dashboard
+    assert 'this._page === "ventilation"' not in dashboard
+    assert 'this._page === "screen"' not in dashboard
+    assert "data-device-control-tab" in panel
+    assert "_deviceControlTabs()" in panel
+    assert "_renderDeviceControlTabBar" in panel
+    assert "_renderDeviceControlTabContent" in panel
+    assert "  _bindDeviceControlInputs(root) {" in panel
+    for tab in ["장치 현황", "수동 제어", "자동 제어 상태", "환기 장치 설정", "스크린 장치 설정", "장치 그룹 관리", "인터록 설정", "Fail Safe 설정", "알람 및 장애", "제어 이력"]:
+        assert tab in panel
+    for state_key in ["devices", "deviceGroups", "deviceStatus", "deviceControlLogs", "deviceInterlocks", "deviceFailsafeRules", "deviceAlarms", "ventilationDeviceSettings", "screenDeviceSettings"]:
+        assert state_key in panel
+
+
+def test_device_control_docs_cover_api_db_vue_and_flow_contracts():
+    doc = (ROOT / "docs" / "design" / "device-control-page.md").read_text(encoding="utf-8")
+    for heading in ["메뉴별 화면 구성", "API 설계", "DB 설계", "Vue 컴포넌트 구조", "AI Agent → DB → Home Assistant → 장치 제어 흐름", "RBAC 및 실행 확인 팝업"]:
+        assert heading in doc
+    for table in ["devices", "device_groups", "device_group_items", "device_status", "device_control_logs", "device_interlocks", "device_failsafe_rules", "device_alarms", "ventilation_device_settings", "screen_device_settings"]:
+        assert table in doc
+    for api in ["GET /api/devices", "POST /api/devices/manual-control", "GET /api/devices/status", "GET /api/devices/interlocks", "POST /api/devices/failsafe-rules", "GET /api/devices/control-logs"]:
+        assert api in doc
+    for comp in ["DeviceControlPage.vue", "DeviceStatusTab.vue", "ManualControlTab.vue", "VentilationDeviceSettingsTab.vue", "ScreenDeviceSettingsTab.vue", "InterlockRulesTab.vue", "FailSafeRulesTab.vue"]:
+        assert comp in doc

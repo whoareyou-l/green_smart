@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.28
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.29
 const DOMAIN = "green_smart";
-const VERSION = "1.8.28";
+const VERSION = "1.8.29";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -34,6 +34,45 @@ const DEFAULT_EQUIP = {
 const DEFAULT_EQUIP_MODE = {
   roof_window:"auto", side_window:"auto", shade_screen:"auto", thermal_curtain:"auto",
   irrigation:"auto", nutrient_machine:"auto", circulation_fan:"auto", co2_generator:"auto",
+};
+
+const DEFAULT_DEVICE_CONTROL_STATE = {
+  devices: [
+    { id: "roof_window", name: "천창", type: "환기", state: "OPEN 30%", mode: "자동", controller: "Home Assistant", comm: "정상", updated: "방금 전" },
+    { id: "side_window", name: "측창", type: "환기", state: "CLOSE", mode: "자동", controller: "인터록", comm: "정상", updated: "1분 전" },
+    { id: "thermal_screen", name: "보온스크린", type: "스크린", state: "전개 70%", mode: "자동", controller: "AI Agent", comm: "정상", updated: "2분 전" },
+    { id: "shade_screen", name: "차광스크린", type: "스크린", state: "수축 20%", mode: "자동", controller: "Home Assistant", comm: "정상", updated: "3분 전" },
+    { id: "circulation_fan", name: "순환팬", type: "팬", state: "ON", mode: "자동", controller: "Home Assistant", comm: "정상", updated: "방금 전" },
+    { id: "exhaust_fan", name: "배기팬", type: "팬", state: "OFF", mode: "자동", controller: "인터록", comm: "정상", updated: "4분 전" },
+    { id: "heater", name: "난방기", type: "난방", state: "OFF", mode: "자동", controller: "Home Assistant", comm: "정상", updated: "5분 전" },
+    { id: "cooler", name: "냉방기", type: "냉방", state: "OFF", mode: "자동", controller: "Home Assistant", comm: "정상", updated: "5분 전" },
+    { id: "fertigation", name: "양액기", type: "양액", state: "대기", mode: "자동", controller: "Home Assistant", comm: "정상", updated: "방금 전" },
+    { id: "irrigation_valve", name: "관수밸브", type: "관수", state: "CLOSE", mode: "자동", controller: "Fail Safe", comm: "정상", updated: "방금 전" },
+    { id: "grow_light", name: "조명", type: "조명", state: "OFF", mode: "자동", controller: "AI Agent", comm: "정상", updated: "7분 전" },
+  ],
+  deviceGroups: ["환기 그룹", "난방 그룹", "관수 그룹", "스크린 그룹"],
+  deviceStatus: { haConnected: true, autoControlEnabled: true, aiStrategyApplied: true, currentStrategy: "주간 고일사 환기/차광 전략", lastRunAt: "12:40" },
+  deviceControlLogs: [
+    "12:40 천창 20% → 30% · 자동제어 · Home Assistant · 성공",
+    "12:33 차광스크린 0% → 20% · AI 전략 · AI Agent · 성공",
+    "12:21 관수밸브 OPEN 금지 · 인터록 · 인터록 · 성공",
+  ],
+  deviceInterlocks: [
+    { name: "강풍 천창 보호", enabled: true, priority: 1, description: "풍속 > 12m/s → 천창 CLOSE" },
+    { name: "배기팬-난방기 충돌 방지", enabled: true, priority: 2, description: "배기팬 ON → 난방기 OFF" },
+    { name: "양액기-관수밸브 보호", enabled: true, priority: 3, description: "양액기 OFF → 관수밸브 OPEN 금지" },
+  ],
+  deviceFailsafeRules: [
+    { trigger: "Home Assistant 연결 끊김", enabled: true, action: "천창 CLOSE · 관수 정지 · 경보 발생" },
+    { trigger: "MQTT 장애", enabled: true, action: "스크린 50% · 난방 정지" },
+    { trigger: "장치 응답 없음", enabled: true, action: "해당 장치 정지 · 장애 알람" },
+  ],
+  deviceAlarms: [
+    { time: "11:52", device: "측창", type: "통신 지연", message: "응답 시간 5초 초과", status: "처리중" },
+    { time: "09:10", device: "유량계", type: "센서 이상", message: "순간 유량 0 감지", status: "확인완료" },
+  ],
+  ventilationDeviceSettings: { enabled: true, autoControl: true, manualAllowed: true, minOpen: 0, maxOpen: 100, defaultOpen: 20, controlUnit: "%", delaySec: 10, maxContinuousMin: 15, direction: "정방향", positionFeedback: true, windLimit: 12, rainRestricted: true, lowTempRestricted: true, highTempForceVent: true },
+  screenDeviceSettings: { enabled: true, autoControl: true, manualAllowed: true, minDeploy: 0, maxDeploy: 100, defaultDeploy: 50, controlUnit: "%", delaySec: 10, maxContinuousMin: 20, direction: "정방향", positionFeedback: true, solarThreshold: 600, tempThreshold: 30, nightInsulation: true, dewGapPercent: 5, strongWindProtection: true },
 };
 
 const DEFAULT_CONTROL_STRATEGY_STATE = {
@@ -199,6 +238,8 @@ class GreenSmartPanel extends HTMLElement {
     this._envStrategyTab = "mode";
     this._irrigationControl = this._loadIrrigationControl();
     this._irrigationTab = "mode";
+    this._deviceControl = this._loadDeviceControl();
+    this._deviceTab = "status";
     this._pageRendered = null;
     this.attachShadow({ mode: "open" });
   }
@@ -1378,8 +1419,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     if (this._page === "crop")        html = this._renderCropSettingsPage();
     else if (this._page === "environment") html = this._renderEnvSettingsPage();
     else if (this._page === "irrigation")  html = this._renderIrrigSettingsPage();
-    else if (this._page === "ventilation") html = this._renderVentSettingsPage();
-    else if (this._page === "screen")      html = this._renderScreenSettingsPage();
+    else if (this._page === "device")      html = this._renderDeviceControlPage();
     else html = this._renderHomePage(sim); // home (default)
     content.innerHTML = html;
     this._bindDashboard(content);
@@ -1456,8 +1496,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       navBtn("crop",        "mdi:sprout",             "작물 설정", "작물 종류 · 생육 단계 · 재배 방식 설정"),
       navBtn("environment", "mdi:thermometer-lines",  "환경 제어", "온도 · 습도/VPD · CO₂ · AI 보정 제어"),
       navBtn("irrigation",  "mdi:water",              "관수 제어", "기본 관수 인터록 · AI 보정 · 양액 전략"),
-      navBtn("ventilation", "mdi:fan",                "환기 설정", "천창 · 측창 개폐 조건 및 환기 기준 설정"),
-      navBtn("screen",      "mdi:roller-shade",       "스크린 설정","차광 스크린 · 보온 커튼 동작 조건 설정"),
+      navBtn("device",      "mdi:cog-box",            "장치제어", "설비 운영 · 수동 제어 · 인터록 · Fail Safe"),
     ].join("");
     return `
     <div class="sb-desktop">
@@ -4972,6 +5011,81 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _cloneDeviceDefaults() { return JSON.parse(JSON.stringify(DEFAULT_DEVICE_CONTROL_STATE)); }
+
+  _loadDeviceControl() {
+    const defaults = this._cloneDeviceDefaults();
+    try {
+      const raw = localStorage.getItem("green_smart_device_control");
+      return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
+    } catch (_) { return defaults; }
+  }
+
+  _saveDeviceControl() {
+    localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
+    this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 장치제어 설정 저장 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
+    this._pageRendered = null;
+    this._update();
+  }
+
+  _deviceControlTabs() {
+    return [
+      { key:"status", label:"장치 현황", icon:"mdi:view-dashboard" }, { key:"manual", label:"수동 제어", icon:"mdi:gesture-tap-button" },
+      { key:"auto", label:"자동 제어 상태", icon:"mdi:robot" }, { key:"vent", label:"환기 장치 설정", icon:"mdi:fan" },
+      { key:"screen", label:"스크린 장치 설정", icon:"mdi:roller-shade" }, { key:"groups", label:"장치 그룹 관리", icon:"mdi:group" },
+      { key:"interlock", label:"인터록 설정", icon:"mdi:shield-link-variant" }, { key:"failsafe", label:"Fail Safe 설정", icon:"mdi:shield-alert" },
+      { key:"alarms", label:"알람 및 장애", icon:"mdi:bell-alert" }, { key:"logs", label:"제어 이력", icon:"mdi:history" },
+    ];
+  }
+
+  _renderDeviceControlTabBar() {
+    const tabs = this._deviceControlTabs();
+    if (!tabs.some((t) => t.key === this._deviceTab)) this._deviceTab = "status";
+    return `<div class="device-control-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">${tabs.map((t) => `<button class="c-tab ${this._deviceTab === t.key ? "active" : ""}" data-device-control-tab="${t.key}" style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;"><ha-icon icon="${t.icon}" style="width:15px;height:15px;"></ha-icon>${t.label}</button>`).join("")}</div>`;
+  }
+
+  _deviceStatusBadge(value) {
+    const text = String(value);
+    const color = text.includes("정상") || text.includes("성공") || text.includes("ON") || text.includes("OPEN") ? "#2EAD4B" : text.includes("장애") || text.includes("끊김") || text.includes("FAIL") ? "#D64545" : "#E0A12B";
+    return `<span style="display:inline-flex;align-items:center;gap:4px;color:${color};font-weight:700;"><span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block;"></span>${this._esc(text)}</span>`;
+  }
+
+  _deviceSettingRow(group, key, label, value, unit = "") {
+    const type = typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : "text";
+    return `<div class="strategy-row"><div class="strategy-label">${label}</div><div class="strategy-control"><input ${type === "checkbox" ? "" : `value="${this._esc(String(value))}"`} type="${type}" ${type === "checkbox" && value ? "checked" : ""} data-device-field data-device-group="${group}" data-device-key="${key}">${unit ? `<span>${unit}</span>` : ""}</div></div>`;
+  }
+
+  _deviceTable(headers, rows) {
+    return `<div style="overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>${headers.map((h)=>`<th style="text-align:left;padding:10px;border-bottom:1px solid #e5efe7;color:#5d7d64;white-space:nowrap;">${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r)=>`<tr>${r.map((c)=>`<td style="padding:10px;border-bottom:1px solid #edf4ee;vertical-align:top;">${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  }
+
+  _renderDeviceControlTabContent(state) {
+    const tab = this._deviceTab;
+    const auto = state.deviceStatus;
+    if (tab === "manual") return this._strategySection("mdi:gesture-tap-button", "수동 제어", `${this._deviceTable(["장치명","현재상태","명령","0~100% 비율 제어"], state.devices.map((d)=>[this._esc(d.name), this._deviceStatusBadge(d.state), `<button class="btn btn-ghost" data-device-command="ON" data-device-id="${d.id}">ON</button> <button class="btn btn-ghost" data-device-command="OFF" data-device-id="${d.id}">OFF</button> <button class="btn btn-ghost" data-device-command="OPEN" data-device-id="${d.id}">OPEN</button> <button class="btn btn-ghost" data-device-command="CLOSE" data-device-id="${d.id}">CLOSE</button>`, `<input type="range" min="0" max="100" value="50" data-device-percent="${d.id}">`]))}<div class="strategy-example">제어 전 확인 팝업을 표시하고, 실행 기록을 DB의 device_control_logs에 저장하는 구조입니다.</div>`);
+    if (tab === "auto") return this._strategySection("mdi:robot", "자동 제어 상태", `<div class="strategy-status-row"><div><span>Home Assistant 연결상태</span><b>${auto.haConnected ? "연결" : "끊김"}</b></div><div><span>자동제어 활성 여부</span><b>${auto.autoControlEnabled ? "활성" : "비활성"}</b></div><div><span>AI 전략 적용 여부</span><b>${auto.aiStrategyApplied ? "적용" : "미적용"}</b></div><div><span>현재 적용중인 전략</span><b>${this._esc(auto.currentStrategy)}</b></div><div><span>마지막 실행 시간</span><b>${auto.lastRunAt}</b></div></div><div class="strategy-example">AI Agent → 전략 생성 → DB 저장 → Home Assistant → 장치 제어 → 장치 상태 수집 → DB 저장</div>`);
+    if (tab === "vent") { const v=state.ventilationDeviceSettings; return this._strategySection("mdi:fan", "환기 장치 설정", `${["천창","측창","배기팬","순환팬"].map((d)=>`<div class="strategy-chip-title">${d}</div>`).join("")}${this._deviceSettingRow("ventilationDeviceSettings","enabled","장치 활성 여부",v.enabled)}${this._deviceSettingRow("ventilationDeviceSettings","autoControl","자동제어 사용 여부",v.autoControl)}${this._deviceSettingRow("ventilationDeviceSettings","manualAllowed","수동제어 허용 여부",v.manualAllowed)}${this._deviceSettingRow("ventilationDeviceSettings","minOpen","최소 개도율",v.minOpen,"%")}${this._deviceSettingRow("ventilationDeviceSettings","maxOpen","최대 개도율",v.maxOpen,"%")}${this._deviceSettingRow("ventilationDeviceSettings","defaultOpen","기본 개도율",v.defaultOpen,"%")}${this._deviceSettingRow("ventilationDeviceSettings","controlUnit","제어 단위",v.controlUnit)}${this._deviceSettingRow("ventilationDeviceSettings","delaySec","동작 지연시간",v.delaySec,"초")}${this._deviceSettingRow("ventilationDeviceSettings","maxContinuousMin","최대 연속 동작시간",v.maxContinuousMin,"분")}${this._deviceSettingRow("ventilationDeviceSettings","direction","개폐 방향 설정",v.direction)}${this._deviceSettingRow("ventilationDeviceSettings","positionFeedback","위치 피드백 사용 여부",v.positionFeedback)}${this._deviceSettingRow("ventilationDeviceSettings","windLimit","풍속 제한값",v.windLimit,"m/s")}${this._deviceSettingRow("ventilationDeviceSettings","rainRestricted","강우 시 동작 제한",v.rainRestricted)}${this._deviceSettingRow("ventilationDeviceSettings","lowTempRestricted","저온 시 동작 제한",v.lowTempRestricted)}${this._deviceSettingRow("ventilationDeviceSettings","highTempForceVent","고온 시 강제 환기 여부",v.highTempForceVent)}`); }
+    if (tab === "screen") { const sc=state.screenDeviceSettings; return this._strategySection("mdi:roller-shade", "스크린 장치 설정", `${["보온스크린","차광스크린","1중 스크린","2중 스크린","측면커튼"].map((d)=>`<div class="strategy-chip-title">${d}</div>`).join("")}${this._deviceSettingRow("screenDeviceSettings","enabled","장치 활성 여부",sc.enabled)}${this._deviceSettingRow("screenDeviceSettings","autoControl","자동제어 사용 여부",sc.autoControl)}${this._deviceSettingRow("screenDeviceSettings","manualAllowed","수동제어 허용 여부",sc.manualAllowed)}${this._deviceSettingRow("screenDeviceSettings","minDeploy","최소 전개율",sc.minDeploy,"%")}${this._deviceSettingRow("screenDeviceSettings","maxDeploy","최대 전개율",sc.maxDeploy,"%")}${this._deviceSettingRow("screenDeviceSettings","defaultDeploy","기본 전개율",sc.defaultDeploy,"%")}${this._deviceSettingRow("screenDeviceSettings","controlUnit","제어 단위",sc.controlUnit)}${this._deviceSettingRow("screenDeviceSettings","delaySec","동작 지연시간",sc.delaySec,"초")}${this._deviceSettingRow("screenDeviceSettings","maxContinuousMin","최대 연속 동작시간",sc.maxContinuousMin,"분")}${this._deviceSettingRow("screenDeviceSettings","direction","전개/수축 방향 설정",sc.direction)}${this._deviceSettingRow("screenDeviceSettings","positionFeedback","위치 피드백 사용 여부",sc.positionFeedback)}${this._deviceSettingRow("screenDeviceSettings","solarThreshold","일사 기준 전개 설정",sc.solarThreshold,"W/m²")}${this._deviceSettingRow("screenDeviceSettings","tempThreshold","온도 기준 전개 설정",sc.tempThreshold,"°C")}${this._deviceSettingRow("screenDeviceSettings","nightInsulation","야간 보온 전개 설정",sc.nightInsulation)}${this._deviceSettingRow("screenDeviceSettings","dewGapPercent","결로 방지 틈새 개방률",sc.dewGapPercent,"%")}${this._deviceSettingRow("screenDeviceSettings","strongWindProtection","강풍 시 보호 동작",sc.strongWindProtection)}`); }
+    if (tab === "groups") return this._strategySection("mdi:group", "장치 그룹 관리", `${this._deviceTable(["그룹명","기능"], state.deviceGroups.map((g)=>[this._esc(g), "생성 · 수정 · 삭제 · 장치 추가 · 장치 제거"]))}`);
+    if (tab === "interlock") return this._strategySection("mdi:shield-link-variant", "인터록 설정", `${this._deviceTable(["인터록 이름","활성 여부","우선순위","설명","조건/동작"], state.deviceInterlocks.map((r)=>[this._esc(r.name), this._deviceStatusBadge(r.enabled ? "정상" : "비활성"), String(r.priority), this._esc(r.description), "장치 상태 · 환경값 · 센서값 · 통신상태 → 장치 정지 · 강제 종료 · 동작 금지 · 경보 발생"]))}<div class="strategy-example">인터록 상태 시각화: 배기팬 ON → 난방기 OFF, 풍속 &gt; 12m/s → 천창 CLOSE 등 장치 충돌을 방지합니다.</div>`);
+    if (tab === "failsafe") return this._strategySection("mdi:shield-alert", "Fail Safe 설정", `${this._deviceTable(["조건","활성","안전 동작"], state.deviceFailsafeRules.map((r)=>[this._esc(r.trigger), this._deviceStatusBadge(r.enabled ? "정상" : "비활성"), this._esc(r.action)]))}<div class="strategy-example">Fail Safe 상태 시각화: 센서 통신 끊김 · HA 연결 끊김 · MQTT/Modbus 장애 · 정전 · 장치 응답 없음 발생 시 안전 위치로 전환합니다.</div>`);
+    if (tab === "alarms") return this._strategySection("mdi:bell-alert", "알람 및 장애", `${this._deviceTable(["발생시간","장치명","장애유형","장애내용","처리상태"], state.deviceAlarms.map((a)=>[a.time, this._esc(a.device), this._esc(a.type), this._esc(a.message), this._deviceStatusBadge(a.status)]))}`);
+    if (tab === "logs") return this._strategySection("mdi:history", "제어 이력", `${this._deviceTable(["시간","장치","이전상태","변경상태","제어유형","실행주체"], state.deviceControlLogs.map((l)=>{ const parts=String(l).split(" · "); return [parts[0]?.split(" ")[0] || "-", parts[0]?.replace(/^\S+\s*/,"") || "-", "이전상태", parts[0] || "-", parts[1] || "자동", parts[2] || "Home Assistant"]; }))}`);
+    return this._strategySection("mdi:view-dashboard", "장치 현황", `${this._deviceTable(["장치명","장치유형","현재상태","동작모드","제어주체","통신상태","마지막 업데이트"], state.devices.map((d)=>[this._esc(d.name), this._esc(d.type), this._deviceStatusBadge(d.state), this._esc(d.mode), this._esc(d.controller), this._deviceStatusBadge(d.comm), this._esc(d.updated)]))}`);
+  }
+
+  _renderDeviceControlPage() {
+    return `<div class="page device-control-page">
+      ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
+      <div class="gs-card" style="padding:16px;">
+        <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
+        ${this._renderDeviceControlTabBar()}
+        <div data-device-control-content>${this._renderDeviceControlTabContent(this._deviceControl)}</div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="device-control-save" class="btn btn-primary">장치제어 저장</button></div>
+    </div>`;
+  }
+
   _renderVentSettingsPage() {
     return `<div class="page">
       ${this._renderSubHero("환기 설정", "천창 · 측창 개폐 조건 및 환기 기준을 설정합니다", "mdi:fan")}
@@ -5154,11 +5268,52 @@ button.action:disabled{opacity:.5;cursor:default;}
     page.querySelector("#irrigation-control-save")?.addEventListener("click", () => this._saveIrrigationControl());
   }
 
+  _bindDeviceControlInputs(root) {
+    const page = root.querySelector(".device-control-page");
+    if (!page) return;
+    page.querySelectorAll("button[data-device-control-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const next = btn.dataset.deviceControlTab;
+        if (!next || next === this._deviceTab) return;
+        this._deviceTab = next;
+        this._pageRendered = null;
+        this._update();
+      });
+    });
+    const readValue = (el) => el.type === "checkbox" ? Boolean(el.checked) : el.type === "number" ? Number(el.value) : el.value;
+    page.querySelectorAll("[data-device-field]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const group = el.dataset.deviceGroup;
+        const key = el.dataset.deviceKey;
+        if (!group || !key) return;
+        if (!this._deviceControl[group]) this._deviceControl[group] = {};
+        this._deviceControl[group][key] = readValue(el);
+      });
+    });
+    page.querySelectorAll("[data-device-command]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const device = this._deviceControl.devices.find((d) => d.id === btn.dataset.deviceId);
+        const command = btn.dataset.deviceCommand;
+        if (!device || !command) return;
+        if (!confirm(`${device.name} 장치에 ${command} 명령을 실행할까요?`)) return;
+        const previous = device.state;
+        device.state = command;
+        device.controller = "사용자";
+        device.updated = "방금 전";
+        this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} ${device.name} ${previous} → ${command} · 수동실행 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
+        this._pageRendered = null;
+        this._update();
+      });
+    });
+    page.querySelector("#device-control-save")?.addEventListener("click", () => this._saveDeviceControl());
+  }
+
   // ── Dashboard event binding ───────────────────────────────────────────────────
 
   _bindDashboard(root) {
     this._bindControlStrategyInputs(root);
     this._bindIrrigationControlInputs(root);
+    this._bindDeviceControlInputs(root);
     // Trend chart zone tabs — patch polylines only (no full re-render)
     root.querySelectorAll("[data-zone-tab]").forEach((btn) =>
       btn.addEventListener("click", () => {
