@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.41
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.42
 const DOMAIN = "green_smart";
-const VERSION = "1.8.41";
+const VERSION = "1.8.42";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -246,6 +246,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneAiOutputCache = {};
     this._zoneFinalTargetCache = {};
     this._zoneEntityMappingCache = {};
+    this._zoneExecutionLogCache = {};
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -5002,10 +5003,29 @@ button.action:disabled{opacity:.5;cursor:default;}
       const stateText = res?.stateVerification === "passed" ? "상태 확인 통과" : `상태 확인 ${res?.stateMatched ? "통과" : "주의"}`;
       this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 (${res?.executedCount || 0}/${res?.plannedCount || 0}) · ${safetyText} · ${stateText} · 실행 후 상태 ${res?.stateVerification || "unknown"} · safetyStatus ${res?.safetyStatus || "clear"}`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
       await this._fetchZoneFinalTargets(domain);
+      await this._fetchZoneExecutionLogs(domain);
       return !!res?.ok;
     } catch (err) {
       console.warn("final targets 실행 실패 시 fallback", err);
       return false;
+    }
+  }
+
+  async _fetchZoneExecutionLogs(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return [];
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/control-logs?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}&limit=8`);
+      const items = Array.isArray(res?.items) ? res.items : [];
+      this._zoneExecutionLogCache[cacheKey] = items;
+      this._pageRendered = null;
+      this._update();
+      return items;
+    } catch (err) {
+      console.warn("실행 로그 조회 실패 시 fallback", err);
+      return this._zoneExecutionLogCache[cacheKey] || [];
     }
   }
 
@@ -5065,6 +5085,36 @@ button.action:disabled{opacity:.5;cursor:default;}
       console.warn("Entity 매핑 조회 실패 시 fallback", err);
       return false;
     }
+  }
+
+  _renderZoneExecutionLogCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const logs = this._zoneExecutionLogCache?.[cacheKey] || [];
+    if (this._numericControlSeasonId() && !this._zoneExecutionLogCache?.[cacheKey]) this._fetchZoneExecutionLogs(domain);
+    const rows = logs.length ? logs.map((log) => {
+      const summary = log.executionSummary || {};
+      const after = log.after || {};
+      const before = log.before || {};
+      const blocked = summary.blockedByInterlock || summary.blockedCallCount > 0;
+      const failSafe = summary.failSafeApplied || summary.safeStateCallCount > 0;
+      const reasons = (summary.interlockReasons || []).join(", ") || "-";
+      const pre = (before.preState || [])[0]?.state || "-";
+      const post = (after.postState || [])[0]?.state || summary.latestActualState || "-";
+      return `<div style="border-top:1px solid #e2f0e4;padding:9px 0;display:grid;gap:5px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><b>${this._esc(log.action || "execution")}</b><span>${this._esc(log.result || "-")} · ${this._esc(log.createdAt || "")}</span></div>
+        <div>안전 상태: <b>${this._esc(summary.safetyStatus || "clear")}</b> · ${blocked ? "안전 차단" : "차단 없음"} · ${failSafe ? "Fail Safe 적용" : "Fail Safe 미적용"}</div>
+        <div>차단 사유: ${this._esc(reasons)}</div>
+        <div>실행 전 상태: ${this._esc(pre)} → 실행 후 상태: ${this._esc(post)} · 목표: ${this._esc(summary.latestExpectedTarget ?? "-")}</div>
+        <div>호출 ${summary.callCount || 0} · 차단 ${summary.blockedCallCount || 0} · Fail Safe ${summary.safeStateCallCount || 0} · 상태 리포트 ${summary.stateReportCount || 0}</div>
+      </div>`;
+    }).join("") : `<div class="strategy-muted">아직 실행/안전 로그가 없습니다.</div>`;
+    return `<div class="gs-card" data-zone-execution-log-card style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>실행/안전 로그</b><div class="strategy-muted">최근 실행 결과, 안전 차단, Fail Safe, 실행 전 상태, 실행 후 상태</div></div>
+        <button class="mini-btn" data-zone-log-refresh data-zone-log-domain="${domain}">새로고침</button>
+      </div>
+      ${rows}
+    </div>`;
   }
 
   _renderZoneEntityMappingCard(domain) {
@@ -5309,6 +5359,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
       ${this._renderControlScopeBar("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
+      ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
@@ -5469,6 +5520,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
+      ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
@@ -5551,6 +5603,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
+      ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
@@ -5811,6 +5864,11 @@ button.action:disabled{opacity:.5;cursor:default;}
         if (!confirm(`${this._controlDomainLabel(domain)} 최종 적용값을 Home Assistant service call로 실행할까요?`)) return;
         const ok = await this._executeZoneFinalTargets(domain);
         if (!ok) alert("최종값 실행 실패: 매핑/대상값/HA service call 로그를 확인해 주세요.");
+      });
+    });
+    root.querySelectorAll("[data-zone-log-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await this._fetchZoneExecutionLogs(btn.dataset.zoneLogDomain || "environment");
       });
     });
   }

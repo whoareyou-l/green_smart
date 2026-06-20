@@ -362,3 +362,42 @@ def test_zone_control_execution_blocks_with_interlock_and_failsafe_phase12():
         "Fail Safe",
     ):
         assert panel_marker in panel_source
+
+
+def test_zone_control_execution_log_card_surfaces_safety_details_phase13():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "_summarize_control_log_row",
+        "executionSummary",
+        "blockedCallCount",
+        "safeStateCallCount",
+        "stateReportCount",
+        "latestActualState",
+        "latestExpectedTarget",
+        "control-logs",
+    ):
+        assert api_marker in source
+
+    for panel_marker in (
+        "_zoneExecutionLogCache",
+        "_fetchZoneExecutionLogs(domain)",
+        "_renderZoneExecutionLogCard(domain)",
+        "data-zone-execution-log-card",
+        "실행/안전 로그",
+        "차단 사유",
+        "Fail Safe 적용",
+        "실행 전 상태",
+        "실행 후 상태",
+        "green_smart/zones/control-logs",
+        "실행 로그 조회 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source
+
+    for page_marker in (
+        '_renderZoneExecutionLogCard("environment")',
+        '_renderZoneExecutionLogCard("irrigation")',
+        '_renderZoneExecutionLogCard("device")',
+    ):
+        assert page_marker in panel_source

@@ -763,6 +763,28 @@ class ZoneDeviceEntityMappingsView(HomeAssistantView):
         return _json({"ok": True, "id": mapping_id})
 
 
+def _summarize_control_log_row(row: dict) -> dict:
+    before = row.get("before") or {}
+    after = row.get("after") or {}
+    state_reports = after.get("stateReports") or []
+    blocked_calls = after.get("blockedCalls") or before.get("blockedCalls") or []
+    safe_state_calls = after.get("safeStateCalls") or []
+    latest_report = state_reports[0] if state_reports else {}
+    return {
+        "blockedCallCount": len(blocked_calls),
+        "safeStateCallCount": len(safe_state_calls),
+        "stateReportCount": len(state_reports),
+        "errorCount": len(after.get("errors") or []),
+        "callCount": len(after.get("calls") or []),
+        "safetyStatus": after.get("safetyStatus") or ("blocked" if blocked_calls else "clear"),
+        "blockedByInterlock": bool(blocked_calls),
+        "failSafeApplied": bool(safe_state_calls),
+        "latestActualState": latest_report.get("actualState"),
+        "latestExpectedTarget": latest_report.get("expectedTarget"),
+        "interlockReasons": sorted({reason for call in blocked_calls for reason in (call.get("interlockReasons") or [])}),
+    }
+
+
 class ZoneControlLogsView(HomeAssistantView):
     """GET /api/green_smart/zones/control-logs."""
 
@@ -797,6 +819,7 @@ class ZoneControlLogsView(HomeAssistantView):
         for row in rows:
             row["before"] = _json_loads(row.pop("beforeJson", None), None)
             row["after"] = _json_loads(row.pop("afterJson", None), None)
+            row["executionSummary"] = _summarize_control_log_row(row)
         return _json({"items": rows})
 
 
