@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.5
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.6
 const DOMAIN = "green_smart";
-const VERSION = "1.9.5";
+const VERSION = "1.9.6";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5193,6 +5193,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         control_role: row.querySelector("[data-zone-interlock-rule-role]")?.value?.trim() || "",
         condition: row.querySelector("[data-zone-interlock-rule-condition]")?.value || "unavailable",
         threshold: row.querySelector("[data-zone-interlock-rule-threshold]")?.value?.trim() || "",
+        reasonCode: row.querySelector("[data-zone-interlock-rule-reason-code]")?.value?.trim() || "",
         action,
         message: row.querySelector("[data-zone-interlock-rule-message]")?.value?.trim() || "",
         block: action !== "warn",
@@ -5391,12 +5392,21 @@ button.action:disabled{opacity:.5;cursor:default;}
       ["above", "초과"],
       ["below", "미만"],
       ["equals", "일치"],
+      ["wind_speed_above", "강풍 초과"],
+      ["temperature_below", "저온 미만"],
+      ["temperature_above", "고온 초과"],
+      ["vwc_below", "VWC 미만"],
+      ["vwc_above", "VWC 초과"],
+      ["ec_below", "EC 미만"],
+      ["ec_above", "EC 초과"],
+      ["sensor_integrity", "센서 무결성"],
     ];
     const actionOptions = [["block", "차단"], ["failsafe", "Fail Safe"], ["warn", "경고"]];
-    const rows = rules.map((rule, index) => `<div data-zone-interlock-rule-row data-zone-interlock-rule-index="${index}" style="display:grid;grid-template-columns:1fr 1fr .8fr 1fr 1.4fr auto;gap:8px;align-items:end;border-top:1px solid #e2f0e4;padding:8px 0;">
+    const rows = rules.map((rule, index) => `<div data-zone-interlock-rule-row data-zone-interlock-rule-index="${index}" style="display:grid;grid-template-columns:1fr 1fr .8fr .9fr 1fr 1.4fr auto;gap:8px;align-items:end;border-top:1px solid #e2f0e4;padding:8px 0;">
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">제어 역할<input data-zone-interlock-rule-role value="${this._esc(rule.control_role || rule.controlRole || "")}" placeholder="예: ventilation"></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">조건<select data-zone-interlock-rule-condition>${conditionOptions.map(([value, label]) => `<option value="${value}" ${(rule.condition || "unavailable") === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">임계값<input data-zone-interlock-rule-threshold value="${this._esc(rule.threshold ?? "")}" placeholder="선택"></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">reasonCode<input data-zone-interlock-rule-reason-code value="${this._esc(rule.reasonCode || rule.reason_code || "")}" placeholder="예: wind_speed_above"></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">차단 동작<select data-zone-interlock-rule-action>${actionOptions.map(([value, label]) => `<option value="${value}" ${(rule.action || (rule.block === false ? "warn" : "block")) === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">운영자 메시지<input data-zone-interlock-rule-message value="${this._esc(rule.message || rule.reason || "")}" placeholder="예: 강풍으로 환기 차단"></label>
       <button class="mini-btn" data-zone-interlock-rule-delete data-zone-interlock-domain="${domain}" data-zone-interlock-rule-index="${index}">규칙 삭제</button>

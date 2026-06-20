@@ -680,3 +680,62 @@ def test_phase2a_safety_guard_decision_layer_contract():
         "안전 판단",
     ):
         assert panel_marker in panel_source
+
+def test_phase2b_safety_guard_semantic_rule_presets_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for marker in (
+        "SAFETY_GUARD_RULE_PRESETS",
+        "_safety_guard_numeric_value(pre_state, rule)",
+        "_safety_guard_reason_code(rule, default_code)",
+        "wind_speed_above",
+        "temperature_below",
+        "temperature_above",
+        "vwc_below",
+        "vwc_above",
+        "ec_below",
+        "ec_above",
+        "sensor_integrity",
+        "weather.wind_speed",
+        "sensor.temperature",
+        "sensor.vwc",
+        "sensor.ec",
+        "safety_guard_rule_matched",
+        "reasonCode",
+        "actualValue",
+        "threshold",
+    ):
+        assert marker in source
+
+    matcher_section = source.split("def _safety_guard_rule_matches", 1)[1].split("def _safety_guard_result_schema", 1)[0]
+    for behavior in (
+        "condition in {\"above\", \"wind_speed_above\", \"temperature_above\", \"vwc_above\", \"ec_above\"}",
+        "condition in {\"below\", \"temperature_below\", \"vwc_below\", \"ec_below\"}",
+        "condition == \"sensor_integrity\"",
+        "actual_value = _safety_guard_numeric_value(pre_state, rule)",
+        "reasonCode",
+        "actualValue",
+    ):
+        assert behavior in matcher_section
+
+    for panel_marker in (
+        "강풍 초과",
+        "저온 미만",
+        "고온 초과",
+        "VWC 미만",
+        "VWC 초과",
+        "EC 미만",
+        "EC 초과",
+        "센서 무결성",
+        "wind_speed_above",
+        "temperature_below",
+        "temperature_above",
+        "vwc_below",
+        "vwc_above",
+        "ec_below",
+        "ec_above",
+        "sensor_integrity",
+        "reasonCode",
+    ):
+        assert panel_marker in panel_source

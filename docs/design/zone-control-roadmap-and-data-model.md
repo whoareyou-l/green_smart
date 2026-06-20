@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.5` / Phase 2A SafetyGuard decision-layer baseline
+> 기준 버전: `v1.9.6` / Phase 2B SafetyGuard semantic rule presets
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -168,7 +168,7 @@ CREATE TABLE zone_interlock_settings (
 )
 ```
 
-**주의:** 현재는 JSON 설정 저장소다. Phase 2A부터 panel의 `settings_json.rules[]`는 SafetyGuard decision layer에서 실행 전 판단에 반영된다. 강풍/저온/고온/VWC/EC/센서 무결성 규칙이 확정되면 migration task로 필요한 컬럼/이벤트 테이블을 분리한다. Phase 1E부터 panel은 `settings_json.rules[]`를 구조화 rule builder UI로 편집하지만 DB/API contract는 유지한다.
+**주의:** 현재는 JSON 설정 저장소다. Phase 2A부터 panel의 `settings_json.rules[]`는 SafetyGuard decision layer에서 실행 전 판단에 반영된다. Phase 2B부터 강풍/저온/고온/VWC/EC/센서 무결성 semantic preset baseline은 `condition + threshold + reasonCode`로 표현한다. 추후 운영 규칙이 정교해지면 migration task로 필요한 컬럼/이벤트 테이블을 분리한다. Phase 1E부터 panel은 `settings_json.rules[]`를 구조화 rule builder UI로 편집하지만 DB/API contract는 유지한다.
 
 ---
 
@@ -681,7 +681,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.5` 기준으로 가능한 것:
+현재 `v1.9.6` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장

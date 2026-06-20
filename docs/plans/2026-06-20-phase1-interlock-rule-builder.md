@@ -1,6 +1,6 @@
 # Phase 1E — Interlock Rule Builder UI
 
-> 기준 버전: v1.9.5
+> 기준 버전: v1.9.6
 > 대상: Home Assistant side panel interlock settings card
 
 ## 목적

@@ -696,6 +696,18 @@ def _safe_state_service_call_for_mapping(mapping: dict) -> dict | None:
     return _service_call_for_mapping(mapping, safe_state)
 
 
+SAFETY_GUARD_RULE_PRESETS = {
+    "wind_speed_above": {"label": "강풍 초과", "attribute": "wind_speed", "entityClass": "weather.wind_speed", "reasonCode": "wind_speed_above"},
+    "temperature_below": {"label": "저온 미만", "attribute": "temperature", "entityClass": "sensor.temperature", "reasonCode": "temperature_below"},
+    "temperature_above": {"label": "고온 초과", "attribute": "temperature", "entityClass": "sensor.temperature", "reasonCode": "temperature_above"},
+    "vwc_below": {"label": "VWC 미만", "attribute": "vwc", "entityClass": "sensor.vwc", "reasonCode": "vwc_below"},
+    "vwc_above": {"label": "VWC 초과", "attribute": "vwc", "entityClass": "sensor.vwc", "reasonCode": "vwc_above"},
+    "ec_below": {"label": "EC 미만", "attribute": "ec", "entityClass": "sensor.ec", "reasonCode": "ec_below"},
+    "ec_above": {"label": "EC 초과", "attribute": "ec", "entityClass": "sensor.ec", "reasonCode": "ec_above"},
+    "sensor_integrity": {"label": "센서 무결성", "attribute": None, "entityClass": "sensor.integrity", "reasonCode": "sensor_integrity"},
+}
+
+
 def _safety_guard_policy(final_target, interlock_settings) -> dict:
     """Merge persisted interlock settings with final-target _safety overrides."""
     targets = final_target.get("targets") or {}
@@ -716,37 +728,72 @@ def _safety_guard_policy(final_target, interlock_settings) -> dict:
     return merged
 
 
+def _safety_guard_numeric_value(pre_state, rule):
+    attrs = (pre_state or {}).get("attributes") or {}
+    condition = str(rule.get("condition") or "").lower()
+    preset = SAFETY_GUARD_RULE_PRESETS.get(condition) or {}
+    candidates = [
+        rule.get("attribute"),
+        rule.get("attributeName"),
+        preset.get("attribute"),
+        "value",
+        "temperature",
+        "current_temperature",
+        "wind_speed",
+        "windSpeed",
+        "vwc",
+        "ec",
+        "current_position",
+    ]
+    for key in candidates:
+        if key and attrs.get(key) is not None:
+            return attrs.get(key)
+    return (pre_state or {}).get("state")
+
+
+def _safety_guard_reason_code(rule, default_code):
+    condition = str(rule.get("condition") or default_code or "interlock_rule").lower()
+    preset = SAFETY_GUARD_RULE_PRESETS.get(condition) or {}
+    return rule.get("reasonCode") or rule.get("reason_code") or preset.get("reasonCode") or default_code
+
+
 def _safety_guard_rule_matches(rule, mapping, pre_state, call) -> dict:
     role = rule.get("control_role") or rule.get("controlRole")
     device_type = rule.get("device_type") or rule.get("deviceType")
     entity_id = rule.get("entity_id") or rule.get("entityId")
     if role and role != mapping.get("controlRole"):
-        return {"matched": False, "reason": "role_mismatch", "rule": rule}
+        return {"matched": False, "reason": "role_mismatch", "reasonCode": "role_mismatch", "rule": rule}
     if device_type and device_type != mapping.get("deviceType"):
-        return {"matched": False, "reason": "device_type_mismatch", "rule": rule}
+        return {"matched": False, "reason": "device_type_mismatch", "reasonCode": "device_type_mismatch", "rule": rule}
     if entity_id and entity_id != mapping.get("entityId"):
-        return {"matched": False, "reason": "entity_mismatch", "rule": rule}
+        return {"matched": False, "reason": "entity_mismatch", "reasonCode": "entity_mismatch", "rule": rule}
     condition = str(rule.get("condition") or "unavailable").lower()
     state = str((pre_state or {}).get("state") or "unknown").lower()
+    threshold = rule.get("threshold")
+    actual_value = _safety_guard_numeric_value(pre_state, rule)
     matched = False
     if condition == "unavailable":
         matched = (not (pre_state or {}).get("available", True)) or state == "unavailable"
     elif condition == "unknown":
         matched = state == "unknown"
+    elif condition == "sensor_integrity":
+        matched = (not (pre_state or {}).get("available", True)) or state in {"unavailable", "unknown", "none", "nan", ""}
     elif condition == "equals":
-        matched = state == str(rule.get("threshold") or rule.get("value") or "").lower()
-    elif condition in {"above", "below"}:
-        attrs = (pre_state or {}).get("attributes") or {}
-        raw_actual = attrs.get("value") or attrs.get("temperature") or attrs.get("current_position") or (pre_state or {}).get("state")
+        matched = state == str(threshold or rule.get("value") or "").lower()
+    elif condition in {"above", "wind_speed_above", "temperature_above", "vwc_above", "ec_above"}:
         try:
-            actual = float(raw_actual)
-            threshold = float(rule.get("threshold"))
-            matched = actual > threshold if condition == "above" else actual < threshold
+            matched = float(actual_value) > float(threshold)
+        except Exception:
+            matched = False
+    elif condition in {"below", "temperature_below", "vwc_below", "ec_below"}:
+        try:
+            matched = float(actual_value) < float(threshold)
         except Exception:
             matched = False
     else:
         matched = bool(rule.get("block", True))
-    return {"matched": matched, "condition": condition, "state": state, "rule": rule, "call": call}
+    reason_code = _safety_guard_reason_code(rule, condition if matched else "safety_guard_rule_not_matched")
+    return {"matched": matched, "condition": condition, "state": state, "reason": "safety_guard_rule_matched" if matched else "safety_guard_rule_not_matched", "reasonCode": reason_code, "actualValue": actual_value, "threshold": threshold, "rule": rule, "call": call}
 
 
 def _safety_guard_result_schema(*, status: str, blocked: bool, fail_safe_required: bool, reasons: list[str], rule_results: list[dict], safe_state_call: dict | None) -> dict:
@@ -775,7 +822,7 @@ def _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_
         result = _safety_guard_rule_matches(rule, mapping, pre_state, call)
         rule_results.append(result)
         if result.get("matched") and rule.get("block", True) and str(rule.get("action") or "block") != "warn":
-            reasons.append(rule.get("message") or rule.get("reason") or "interlock_rule")
+            reasons.append(result.get("reasonCode") or rule.get("message") or rule.get("reason") or "interlock_rule")
     safe_state_call = _safe_state_service_call_for_mapping(mapping) if reasons and apply_safe_state_on_block else None
     status = "failsafe" if safe_state_call else ("blocked" if reasons else "clear")
     safety_guard = _safety_guard_result_schema(status=status, blocked=bool(reasons), fail_safe_required=bool(safe_state_call), reasons=reasons, rule_results=rule_results, safe_state_call=safe_state_call)
