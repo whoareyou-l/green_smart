@@ -401,3 +401,57 @@ def test_zone_control_execution_log_card_surfaces_safety_details_phase13():
         '_renderZoneExecutionLogCard("device")',
     ):
         assert page_marker in panel_source
+
+
+def test_phase1_interlock_settings_api_and_panel_contract():
+    db_source = DB.read_text(encoding="utf-8")
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for db_marker in (
+        "CREATE TABLE IF NOT EXISTS zone_interlock_settings",
+        "uniq_zone_interlock_settings",
+        "settings_json JSON NOT NULL",
+        "enabled TINYINT(1) NOT NULL DEFAULT 1",
+    ):
+        assert db_marker in db_source
+
+    for api_marker in (
+        "ZoneInterlockSettingsView",
+        'url = "/api/green_smart/zones/interlock-settings"',
+        "_interlock_settings_response",
+        "_upsert_interlock_settings",
+        "interlock_settings_saved",
+        "settings_json AS settingsJson",
+    ):
+        assert api_marker in source
+        if api_marker == "ZoneInterlockSettingsView":
+            assert api_marker in init_source
+
+    assert "hass.http.register_view(ZoneInterlockSettingsView())" in init_source
+
+    for panel_marker in (
+        "this._zoneInterlockSettingsCache",
+        "async _fetchZoneInterlockSettings(domain)",
+        "async _saveZoneInterlockSettings(domain)",
+        "_renderZoneInterlockSettingsCard(domain)",
+        "_bindZoneInterlockSettingsInputs(root)",
+        "green_smart/zones/interlock-settings",
+        "data-zone-interlock-settings-card",
+        "data-zone-interlock-refresh",
+        "data-zone-interlock-save",
+        "인터록 설정",
+        "안전 기준",
+        "인터록 저장",
+        "저장 완료",
+        "인터록 설정 조회 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source
+
+    for page_marker in (
+        '_renderZoneInterlockSettingsCard("environment")',
+        '_renderZoneInterlockSettingsCard("irrigation")',
+        '_renderZoneInterlockSettingsCard("device")',
+    ):
+        assert page_marker in panel_source

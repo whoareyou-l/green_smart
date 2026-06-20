@@ -36,12 +36,35 @@ control_pesticides
 
 ```text
 zone_control_settings
+zone_interlock_settings
 ai_zone_control_outputs
 zone_final_control_targets
 zone_device_entity_mappings
 zone_control_logs
 zone_control_copy_jobs
 ```
+
+### `zone_interlock_settings`
+
+Purpose: Phase 1A implemented table for zone/domain-scoped operator interlock configuration.
+
+Current columns:
+
+```text
+id
+farm_id
+crop_season_id
+zone_id
+domain
+settings_json
+enabled
+created_by
+updated_by
+created_at
+updated_at
+```
+
+The table stores JSON settings first to avoid premature schema churn. Phase 2 SafetyGuard may normalize parts into explicit columns only through a migration task.
 
 ## 3. Existing control relationships
 

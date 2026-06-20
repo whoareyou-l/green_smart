@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.42
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.0
 const DOMAIN = "green_smart";
-const VERSION = "1.8.42";
+const VERSION = "1.9.0";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -247,6 +247,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneFinalTargetCache = {};
     this._zoneEntityMappingCache = {};
     this._zoneExecutionLogCache = {};
+    this._zoneInterlockSettingsCache = {};
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -5087,6 +5088,73 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneInterlockSettings(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/interlock-settings?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._zoneInterlockSettingsCache[cacheKey] = res || { settings: {}, enabled: true };
+      this._pageRendered = null;
+      this._update();
+      return this._zoneInterlockSettingsCache[cacheKey];
+    } catch (err) {
+      console.warn("인터록 설정 조회 실패 시 fallback", err);
+      return this._zoneInterlockSettingsCache[cacheKey] || null;
+    }
+  }
+
+  async _saveZoneInterlockSettings(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const text = this.shadowRoot?.querySelector(`[data-zone-interlock-json=\"${domain}\"]`)?.value || "{}";
+    let settings = {};
+    try {
+      settings = JSON.parse(text || "{}");
+    } catch (err) {
+      alert("인터록 설정 JSON 형식을 확인해주세요.");
+      return false;
+    }
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/interlock-settings", {
+        crop_season_id: cropSeasonId,
+        zone_id: zoneId,
+        domain,
+        enabled: true,
+        settings,
+      });
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 인터록 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      await this._fetchZoneInterlockSettings(domain);
+      return !!res?.found || !!res?.id;
+    } catch (err) {
+      console.warn("인터록 설정 조회 실패 시 fallback", err);
+      return false;
+    }
+  }
+
+  _renderZoneInterlockSettingsCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneInterlockSettingsCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId() && !data) this._fetchZoneInterlockSettings(domain);
+    const settings = data?.settings || {
+      emergency_stop: false,
+      block_on_unavailable: true,
+      apply_safe_state_on_block: true,
+      rules: [],
+    };
+    const jsonText = this._esc(JSON.stringify(settings, null, 2));
+    return `<div class="gs-card" data-zone-interlock-settings-card style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>인터록 설정</b><div class="strategy-muted">AI가 없어도 동작해야 하는 안전 기준 · 현재 ${data?.enabled === false ? "비활성" : "활성"}</div></div>
+        <div style="display:flex;gap:6px;"><button class="mini-btn" data-zone-interlock-refresh data-zone-interlock-domain="${domain}">새로고침</button><button class="mini-btn primary" data-zone-interlock-save data-zone-interlock-domain="${domain}">인터록 저장</button></div>
+      </div>
+      <textarea data-zone-interlock-json="${domain}" style="width:100%;min-height:118px;font-family:monospace;font-size:12px;border:1px solid #dcebdd;border-radius:10px;padding:10px;">${jsonText}</textarea>
+      <div class="strategy-muted" style="margin-top:6px;">안전 기준 예: emergency_stop, block_on_unavailable, apply_safe_state_on_block, rules</div>
+    </div>`;
+  }
+
   _renderZoneExecutionLogCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const logs = this._zoneExecutionLogCache?.[cacheKey] || [];
@@ -5358,6 +5426,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page control-strategy-page">
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
       ${this._renderControlScopeBar("environment")}
+      ${this._renderZoneInterlockSettingsCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
@@ -5519,6 +5588,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page irrigation-control-page">
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
+      ${this._renderZoneInterlockSettingsCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
@@ -5602,6 +5672,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page device-control-page">
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
+      ${this._renderZoneInterlockSettingsCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
@@ -5840,6 +5911,21 @@ button.action:disabled{opacity:.5;cursor:default;}
     page.querySelector("#device-control-save")?.addEventListener("click", () => this._saveDeviceControl());
   }
 
+  _bindZoneInterlockSettingsInputs(root) {
+    root.querySelectorAll("[data-zone-interlock-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await this._fetchZoneInterlockSettings(btn.dataset.zoneInterlockDomain || "environment");
+      });
+    });
+    root.querySelectorAll("[data-zone-interlock-save]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneInterlockDomain || "environment";
+        const ok = await this._saveZoneInterlockSettings(domain);
+        if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+  }
+
   _bindZoneAiFinalTargetInputs(root) {
     root.querySelectorAll("[data-zone-ai-refresh]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -5959,6 +6045,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _bindDashboard(root) {
     this._bindControlScopeInputs(root);
+    this._bindZoneInterlockSettingsInputs(root);
     this._bindZoneAiFinalTargetInputs(root);
     this._bindZoneEntityMappingInputs(root);
     this._bindControlStrategyInputs(root);

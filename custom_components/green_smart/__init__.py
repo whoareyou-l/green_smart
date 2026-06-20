@@ -40,7 +40,7 @@ async def async_setup(hass, config):
     )
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView
     from .zone_control_views import (
-        ZoneControlSettingsView, ZoneControlCopySettingsView,
+        ZoneControlSettingsView, ZoneControlCopySettingsView, ZoneInterlockSettingsView,
         ZoneControlFinalTargetsView, ZoneControlLogsView,
         ZoneAiControlOutputsView, ZoneAiControlOutputApplyView, ZoneDeviceEntityMappingsView, ZoneFinalTargetExecutionView,
         EnvironmentControlSettingsView, IrrigationControlSettingsView, DeviceControlSettingsView,
@@ -77,6 +77,7 @@ async def async_setup(hass, config):
         hass.http.register_view(CropControlListView())
         hass.http.register_view(CropControlDeleteView())
         hass.http.register_view(ZoneControlSettingsView())
+        hass.http.register_view(ZoneInterlockSettingsView())
         hass.http.register_view(ZoneControlCopySettingsView())
         hass.http.register_view(ZoneControlFinalTargetsView())
         hass.http.register_view(ZoneControlLogsView())

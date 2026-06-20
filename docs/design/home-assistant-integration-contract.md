@@ -113,4 +113,4 @@ node --check custom_components/green_smart/panel/green-smart-panel.js
 python3 -m py_compile custom_components/green_smart/db.py custom_components/green_smart/zone_control_views.py custom_components/green_smart/__init__.py
 ```
 
-Expected current baseline: `98 passed`.
+Expected current baseline: `99 passed`.

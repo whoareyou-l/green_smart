@@ -55,6 +55,7 @@ No generic vendor proxy.
 
 ```text
 GET/POST       /api/green_smart/zones/control-settings
+GET/POST       /api/green_smart/zones/interlock-settings
 POST           /api/green_smart/zones/copy-control-settings
 GET/POST       /api/green_smart/zones/final-targets
 GET/POST       /api/green_smart/zones/ai-control-outputs
@@ -75,14 +76,6 @@ GET            /api/green_smart/zones/control-logs
 ## 3. Required future APIs
 
 Add through RED contract tests first.
-
-### Interlock settings
-
-```text
-GET/POST /api/green_smart/zones/interlock-settings
-```
-
-Purpose: zone/domain scoped safety thresholds, required sensors, required safe_state, auto/manual mode.
 
 ### Dry run / simulation
 

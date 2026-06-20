@@ -106,6 +106,66 @@ async def _upsert_settings(hass, *, farm_id: int, crop_season_id: int, zone_id: 
     return await _settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
 
 
+async def _interlock_settings_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    row = await fetchone(
+        hass,
+        """
+        SELECT id, farm_id AS farmId, crop_season_id AS cropSeasonId, zone_id AS zoneId,
+               domain, settings_json AS settingsJson, enabled, updated_at AS updatedAt
+        FROM zone_interlock_settings
+        WHERE farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s
+        """,
+        (farm_id, crop_season_id, zone_id, domain),
+    )
+    if not row:
+        return {
+            "farmId": farm_id,
+            "cropSeasonId": crop_season_id,
+            "zoneId": zone_id,
+            "domain": domain,
+            "enabled": True,
+            "settings": {},
+            "found": False,
+        }
+    row["settings"] = _json_loads(row.pop("settingsJson", None), {})
+    row["enabled"] = bool(row.get("enabled"))
+    row["found"] = True
+    return row
+
+
+async def _upsert_interlock_settings(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, settings: dict, enabled: bool, actor: str | None) -> dict:
+    before = await _interlock_settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    settings_json = json.dumps(settings, ensure_ascii=False)
+    await execute(
+        hass,
+        """
+        INSERT INTO zone_interlock_settings
+            (farm_id, crop_season_id, zone_id, domain, settings_json, enabled, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            settings_json = VALUES(settings_json),
+            enabled = VALUES(enabled),
+            updated_by = VALUES(updated_by),
+            updated_at = NOW()
+        """,
+        (farm_id, crop_season_id, zone_id, domain, settings_json, 1 if enabled else 0, actor, actor),
+    )
+    await _insert_log(
+        hass,
+        farm_id=farm_id,
+        crop_season_id=crop_season_id,
+        zone_id=zone_id,
+        domain=domain,
+        actor=actor,
+        action="interlock_settings_saved",
+        before={"enabled": before.get("enabled"), "settings": before.get("settings")},
+        after={"enabled": enabled, "settings": settings},
+        result="success",
+        message="zone interlock settings saved",
+    )
+    return await _interlock_settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+
+
 async def _insert_log(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, actor: str | None, action: str, before, after, result: str, message: str) -> None:
     await execute(
         hass,
@@ -127,6 +187,42 @@ async def _insert_log(hass, *, farm_id: int, crop_season_id: int, zone_id: int, 
             message,
         ),
     )
+
+
+class ZoneInterlockSettingsView(HomeAssistantView):
+    """GET/POST /api/green_smart/zones/interlock-settings."""
+
+    url = "/api/green_smart/zones/interlock-settings"
+    name = "api:green_smart:zones:interlock_settings"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        return _json(await _interlock_settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain))
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            domain = _validate_domain(body.get("domain"))
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            settings = body.get("settings") or {}
+            if not isinstance(settings, dict):
+                return _err("settings must be an object")
+            enabled = bool(body.get("enabled", True))
+        except Exception as exc:
+            return _err(str(exc))
+        return _json(await _upsert_interlock_settings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, settings=settings, enabled=enabled, actor=_actor(request)))
 
 
 class ZoneControlSettingsView(HomeAssistantView):

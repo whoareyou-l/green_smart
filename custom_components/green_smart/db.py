@@ -208,6 +208,23 @@ async def ensure_schema(hass: HomeAssistant) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
+        CREATE TABLE IF NOT EXISTS zone_interlock_settings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id INT NOT NULL DEFAULT 1,
+            crop_season_id INT NOT NULL,
+            zone_id INT NOT NULL,
+            domain VARCHAR(32) NOT NULL,
+            settings_json JSON NOT NULL,
+            enabled TINYINT(1) NOT NULL DEFAULT 1,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_zone_interlock_settings (farm_id, crop_season_id, zone_id, domain),
+            KEY idx_zone_interlock_settings_lookup (farm_id, crop_season_id, domain, enabled)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
         CREATE TABLE IF NOT EXISTS zone_final_control_targets (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             farm_id INT NOT NULL DEFAULT 1,

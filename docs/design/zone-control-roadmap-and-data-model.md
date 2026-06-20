@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20  
-> 기준 버전: `v1.8.42` / commit `b513a64`  
+> 기준 버전: `v1.9.0` / Phase 1A interlock settings baseline  
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -146,7 +146,33 @@ zone_control_settings 1개
 
 ---
 
-### 5.3 `ai_zone_control_outputs`
+### 5.3 `zone_interlock_settings`
+
+**목적:** Phase 1A에서 추가된 Zone/domain별 인터록/안전 기준 설정 저장.
+
+```sql
+CREATE TABLE zone_interlock_settings (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  farm_id INT NOT NULL DEFAULT 1,
+  crop_season_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  domain VARCHAR(32) NOT NULL,
+  settings_json JSON NOT NULL,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  created_by VARCHAR(128) NULL,
+  updated_by VARCHAR(128) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_zone_interlock_settings (farm_id, crop_season_id, zone_id, domain),
+  KEY idx_zone_interlock_settings_lookup (farm_id, crop_season_id, domain, enabled)
+)
+```
+
+**주의:** 현재는 JSON 설정 저장소다. Phase 2 SafetyGuard 실행 연동에서 강풍/저온/고온/VWC/EC/센서 무결성 규칙이 확정되면 migration task로 필요한 컬럼/이벤트 테이블을 분리한다.
+
+---
+
+### 5.4 `ai_zone_control_outputs`
 
 **목적:** AI Agent 또는 외부 계산기가 생성한 제어 전략 후보 저장.
 
@@ -185,7 +211,7 @@ ai_output_applied_to_final_targets
 
 ---
 
-### 5.4 `zone_final_control_targets`
+### 5.5 `zone_final_control_targets`
 
 **목적:** 실제 실행 대상으로 확정된 최종 제어값 저장.
 
@@ -234,7 +260,7 @@ zone_control_settings.id   ── optional ──> zone_final_control_targets.so
 
 ---
 
-### 5.5 `zone_device_entity_mappings`
+### 5.6 `zone_device_entity_mappings`
 
 **목적:** final target의 논리적 제어값을 Home Assistant entity/service call로 연결.
 
@@ -288,7 +314,7 @@ CREATE TABLE zone_device_entity_mappings (
 
 ---
 
-### 5.6 `zone_control_logs`
+### 5.7 `zone_control_logs`
 
 **목적:** 설정 저장, AI 적용, mapping 변경, 실행, 안전 차단, 상태검증 결과의 감사 로그.
 
@@ -353,7 +379,7 @@ Phase 13부터 API 응답 row에 `executionSummary`를 추가한다.
 
 ---
 
-### 5.7 `zone_control_copy_jobs`
+### 5.8 `zone_control_copy_jobs`
 
 **목적:** 특정 zone의 설정을 다른 zone들로 복사한 작업 이력 저장.
 
@@ -475,6 +501,7 @@ erDiagram
 | Method | Route | 목적 |
 |---|---|---|
 | GET/POST | `/api/green_smart/zones/control-settings` | scoped 설정 조회/저장 |
+| GET/POST | `/api/green_smart/zones/interlock-settings` | scoped 인터록/안전 기준 설정 조회/저장 |
 | POST | `/api/green_smart/zones/copy-control-settings` | zone 설정 복사 |
 | GET/POST | `/api/green_smart/zones/final-targets` | 최종 적용값 조회/저장 |
 | GET/POST | `/api/green_smart/zones/ai-control-outputs` | AI output 조회/저장 |
@@ -617,7 +644,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.8.42` 기준으로 가능한 것:
+현재 `v1.9.0` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장

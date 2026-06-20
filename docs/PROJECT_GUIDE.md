@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent  
 > **Repository:** `whoareyou-l/green_smart`  
-> **Current baseline:** `v1.8.42` / `green_smart` Home Assistant custom integration  
-> **Last verified locally:** 98 pytest contract tests + JS syntax check  
+> **Current baseline:** `v1.9.0` / `green_smart` Home Assistant custom integration  
+> **Last verified locally:** 99 pytest contract tests + JS syntax check  
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.8.42"
+  "version": "1.9.0"
 }
 ```
 
@@ -478,7 +478,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.8.42";
+const VERSION = "1.9.0";
 ```
 
 중요 UI 페이지:
@@ -661,7 +661,30 @@ farm_id, crop_season_id, zone_id, domain
 
 ---
 
-### 11.2 `ai_zone_control_outputs`
+### 11.2 `zone_interlock_settings`
+
+Phase 1A에서 추가된 Zone/domain별 인터록 설정 저장소.
+
+```text
+settings_json
+enabled
+created_by
+updated_by
+created_at
+updated_at
+```
+
+Unique:
+
+```text
+farm_id, crop_season_id, zone_id, domain
+```
+
+초기에는 JSON 설정으로 저장하고, Phase 2 SafetyGuard에서 필요한 항목만 migration task로 정규화한다.
+
+---
+
+### 11.3 `ai_zone_control_outputs`
 
 AI Agent 또는 시스템이 생성한 제어 전략 후보.
 
@@ -677,7 +700,7 @@ AI output은 “후보”다. 실행 대상이 아니다.
 
 ---
 
-### 11.3 `zone_final_control_targets`
+### 11.4 `zone_final_control_targets`
 
 실제 실행 대상으로 확정된 최종 target.
 
@@ -693,7 +716,7 @@ append-only 성격이다. 최신 target은 `created_at DESC, id DESC`로 조회�
 
 ---
 
-### 11.4 `zone_device_entity_mappings`
+### 11.5 `zone_device_entity_mappings`
 
 final target의 논리값을 Home Assistant entity로 연결.
 
@@ -717,7 +740,7 @@ target lookup 순서:
 
 ---
 
-### 11.5 `zone_control_logs`
+### 11.6 `zone_control_logs`
 
 모든 제어 변경/실행/차단/검증의 감사 로그.
 
@@ -777,6 +800,7 @@ erDiagram
     control_records ||--o{ control_pesticides : "control_id"
 
     crop_seasons ||--o{ zone_control_settings : "crop_season_id"
+    crop_seasons ||--o{ zone_interlock_settings : "crop_season_id"
     crop_seasons ||--o{ ai_zone_control_outputs : "crop_season_id"
     crop_seasons ||--o{ zone_final_control_targets : "crop_season_id"
     crop_seasons ||--o{ zone_device_entity_mappings : "crop_season_id"
@@ -941,7 +965,7 @@ python3 -m py_compile \
 현재 기대값:
 
 ```text
-98 passed
+99 passed
 node --check: no output / exit 0
 py_compile: no output / exit 0
 ```
@@ -1005,7 +1029,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.8.42
+v1.9.0
 ```
 
 ---
@@ -1152,7 +1176,7 @@ python3 -m py_compile custom_components/green_smart/db.py custom_components/gree
 
 ```text
 git status clean 또는 의도한 변경만 표시
-98 passed
+99 passed
 node --check exit 0
 py_compile exit 0
 ```
