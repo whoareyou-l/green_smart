@@ -1,6 +1,6 @@
 # Phase 2C — SafetyGuard Watchdog / Critical Notification Baseline
 
-> 기준 버전: v1.9.11
+> 기준 버전: v1.9.12
 > 대상: SafetyGuard watchdog API, persistent notification hook, panel watchdog card
 
 ## 목적

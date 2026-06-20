@@ -1027,3 +1027,68 @@ def test_phase3a_environment_strategy_mvp_contract():
 
     env_page = panel_source.split("  _renderEnvSettingsPage() {", 1)[1].split("  _cloneIrrigationDefaults()", 1)[0]
     assert '_renderEnvironmentStrategyPreviewCard("environment")' in env_page
+
+
+def test_phase3b_environment_strategy_input_source_and_diff_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "_environment_strategy_inputs_from_sources",
+        "_environment_strategy_diff_against_latest_target",
+        "sourceMode",
+        "sourceSummary",
+        "manualOverrides",
+        "latestFinalTarget",
+        "targetDiff",
+        "diffCount",
+        "entityStateSummary",
+        "weatherSource",
+        "operatorOverride",
+        "environment_strategy_input_source_resolved",
+    ):
+        assert api_marker in source
+
+    preview_section = source.split("async def _environment_strategy_preview_response", 1)[1].split("class ZoneEnvironmentStrategyPreviewView", 1)[0]
+    for behavior in (
+        "_entity_state_summary_response",
+        "_latest_final_target_response",
+        "_environment_strategy_inputs_from_sources",
+        "_environment_strategy_diff_against_latest_target",
+        "manualOverrides",
+        "targetDiff",
+        "sourceSummary",
+    ):
+        assert behavior in preview_section
+
+    post_section = source.split("async def post(self, request: web.Request) -> web.Response:", 1)[1].split("return _json(response)", 1)[0]
+    for behavior in (
+        "source_mode",
+        "sourceMode",
+        "manual_overrides",
+        "manualOverrides",
+        "weather_source",
+        "weatherSource",
+    ):
+        assert behavior in post_section
+
+    for panel_marker in (
+        "data-env-strategy-source-mode",
+        "data-env-strategy-manual-radiation",
+        "data-env-strategy-manual-temperature",
+        "data-env-strategy-manual-humidity",
+        "data-env-strategy-manual-co2",
+        "data-env-strategy-manual-override",
+        "입력 소스",
+        "HA 상태 요약",
+        "날씨/센서 자동",
+        "운영자 수동 보정",
+        "Preview Diff",
+        "targetDiff",
+        "diffCount",
+        "_environmentStrategyPreviewPayload(domain)",
+        "_readEnvironmentStrategyInputs(root, domain)",
+        "manualOverrides",
+        "sourceMode",
+    ):
+        assert panel_marker in panel_source

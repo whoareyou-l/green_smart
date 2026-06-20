@@ -544,12 +544,63 @@ def _environment_strategy_final_targets(inputs: dict, metrics: dict) -> dict:
     return {"component": "VENT/SCRN", "ventTarget": ventTarget, "screenTarget": screenTarget, "targets": {"ventTarget": ventTarget, "screenTarget": screenTarget, "strategy": "environment_strategy_mvp", "safetyPolicy": "SafetyGuard 우선"}}
 
 
-async def _environment_strategy_preview_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, inputs: dict | None = None) -> dict:
-    inputs = inputs or {}
+def _environment_strategy_inputs_from_sources(*, source_mode: str, entity_state_summary: dict | None, weather_source: dict | None, manual_overrides: dict | None) -> dict:
+    # Phase 3B: resolve inputs from HA 상태 요약, weatherSource, and operatorOverride/manualOverrides.
+    inputs = {"radiation": 450.0, "temperature": 24.0, "dayTemperature": 24.0, "nightTemperature": 18.0, "humidity": 70.0, "co2": 420.0}
+    sourceSummary = {"sourceMode": source_mode, "entityStateSummary": bool(entity_state_summary), "weatherSource": bool(weather_source), "operatorOverride": bool(manual_overrides), "manualOverrides": manual_overrides or {}}
+    for item in (entity_state_summary or {}).get("items") or []:
+        role = str(item.get("controlRole") or item.get("deviceType") or item.get("entityId") or "").lower()
+        state = item.get("state") or (item.get("preState") or {}).get("state")
+        if state in (None, ""):
+            continue
+        try:
+            value = float(state)
+        except Exception:
+            continue
+        if "radiation" in role or "solar" in role:
+            inputs["radiation"] = value
+        elif "humid" in role:
+            inputs["humidity"] = value
+        elif "co2" in role:
+            inputs["co2"] = value
+        elif "temp" in role:
+            inputs["temperature"] = value
+            inputs["dayTemperature"] = value
+    for key, value in (weather_source or {}).items():
+        if key in inputs and value not in (None, ""):
+            inputs[key] = _environment_strategy_float(weather_source or {}, key, inputs[key])
+    for key, value in (manual_overrides or {}).items():
+        if key in inputs and value not in (None, ""):
+            inputs[key] = _environment_strategy_float(manual_overrides or {}, key, inputs[key])
+    return {"inputs": inputs, "sourceSummary": sourceSummary}
+
+
+def _environment_strategy_diff_against_latest_target(targets: dict, latest_final_target: dict | None) -> dict:
+    previous = (latest_final_target or {}).get("targets") or {}
+    diffs = []
+    for key, value in (targets or {}).items():
+        if isinstance(value, (int, float)):
+            before = previous.get(key)
+            try:
+                delta = round(float(value) - float(before), 3) if before is not None else None
+            except Exception:
+                delta = None
+            diffs.append({"key": key, "previous": before, "next": value, "delta": delta})
+    return {"targetDiff": diffs, "diffCount": len(diffs), "latestFinalTarget": latest_final_target}
+
+
+async def _environment_strategy_preview_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, inputs: dict | None = None, source_mode: str = "auto", manual_overrides: dict | None = None, weather_source: dict | None = None) -> dict:
+    entity_state_summary = await _entity_state_summary_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment")
+    resolved = _environment_strategy_inputs_from_sources(source_mode=source_mode, entity_state_summary=entity_state_summary, weather_source=weather_source, manual_overrides=manual_overrides or inputs)
+    inputs = {**resolved["inputs"], **(inputs or {})}
     corp = _environment_strategy_g_index(inputs)
     temhum = _environment_strategy_adt_dif_vpd(inputs)
     final = _environment_strategy_final_targets(inputs, {"corp": corp, "temhum": temhum})
-    response = {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": "environment", "components": list(ENVIRONMENT_STRATEGY_COMPONENTS), "corp": corp, "temhum": temhum, "ventScreen": final, "corpGIndex": corp["corpGIndex"], "adt": temhum["adt"], "dif": temhum["dif"], "vpd": temhum["vpd"], "ventTarget": final["ventTarget"], "screenTarget": final["screenTarget"], "targets": final["targets"], "safetyPolicy": "SafetyGuard 우선"}
+    latest_final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment")
+    diff = _environment_strategy_diff_against_latest_target(final["targets"], latest_final_target)
+    targetDiff = diff.get("targetDiff")
+    diffCount = diff.get("diffCount")
+    response = {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": "environment", "components": list(ENVIRONMENT_STRATEGY_COMPONENTS), "corp": corp, "temhum": temhum, "ventScreen": final, "corpGIndex": corp["corpGIndex"], "adt": temhum["adt"], "dif": temhum["dif"], "vpd": temhum["vpd"], "ventTarget": final["ventTarget"], "screenTarget": final["screenTarget"], "targets": final["targets"], "safetyPolicy": "SafetyGuard 우선", "sourceMode": source_mode, "manualOverrides": manual_overrides or {}, "sourceSummary": resolved["sourceSummary"], "entityStateSummary": entity_state_summary, "weatherSource": weather_source or {}, "targetDiff": targetDiff, "diffCount": diffCount, "latestFinalTarget": diff.get("latestFinalTarget")}
     return response
 
 
@@ -565,11 +616,13 @@ class ZoneEnvironmentStrategyPreviewView(HomeAssistantView):
             farm_id = _query_int(request, "farm_id", 1) or 1
             crop_season_id = _query_int(request, "crop_season_id")
             zone_id = _query_int(request, "zone_id")
+            source_mode = request.query.get("source_mode") or request.query.get("sourceMode") or "auto"
             if not crop_season_id or not zone_id:
                 return _err("crop_season_id and zone_id are required")
         except Exception as exc:
             return _err(str(exc))
-        response = await _environment_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id)
+        response = await _environment_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, source_mode=source_mode)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", actor=_actor(request), action="environment_strategy_input_source_resolved", before=None, after=response.get("sourceSummary"), result="success", message="environment strategy input source resolved")
         await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", actor=_actor(request), action="environment_strategy_previewed", before=None, after=response, result="success", message="environment strategy MVP previewed")
         return _json(response)
 
@@ -581,10 +634,14 @@ class ZoneEnvironmentStrategyPreviewView(HomeAssistantView):
             crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
             zone_id = int(body.get("zone_id") or body.get("zoneId"))
             inputs = body.get("inputs") if isinstance(body.get("inputs"), dict) else body
+            source_mode = body.get("source_mode") or body.get("sourceMode") or "auto"
+            manual_overrides = body.get("manual_overrides") or body.get("manualOverrides") or {}
+            weather_source = body.get("weather_source") or body.get("weatherSource") or {}
             save_final_targets = bool(body.get("save_final_targets") or body.get("saveFinalTargets"))
         except Exception as exc:
             return _err(str(exc))
-        response = await _environment_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, inputs=inputs)
+        response = await _environment_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, inputs=inputs, source_mode=source_mode, manual_overrides=manual_overrides, weather_source=weather_source)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", actor=_actor(request), action="environment_strategy_input_source_resolved", before=None, after=response.get("sourceSummary"), result="success", message="environment strategy input source resolved")
         await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", actor=_actor(request), action="environment_strategy_previewed", before=None, after=response, result="success", message="environment strategy MVP previewed")
         if save_final_targets:
             response["finalTargetId"] = await _insert_final_targets(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="environment", targets=response["targets"], actor=_actor(request), calculated_by="environment_strategy_mvp", action="environment_strategy_final_targets_saved", message="environment strategy final targets saved")  # calculated_by="environment_strategy_mvp"

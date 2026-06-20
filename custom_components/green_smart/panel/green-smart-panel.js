@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.11
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.12
 const DOMAIN = "green_smart";
-const VERSION = "1.9.11";
+const VERSION = "1.9.12";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5047,14 +5047,37 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  _readEnvironmentStrategyInputs(root, domain) {
+    const card = root?.querySelector?.(`[data-env-strategy-preview-card][data-env-strategy-domain="${domain}"]`) || root?.querySelector?.("[data-env-strategy-preview-card]");
+    const readNumber = (selector) => {
+      const raw = card?.querySelector(selector)?.value;
+      return raw === "" || raw == null ? undefined : Number(raw);
+    };
+    return {
+      sourceMode: card?.querySelector("[data-env-strategy-source-mode]")?.value || "auto",
+      manualOverrides: {
+        radiation: readNumber("[data-env-strategy-manual-radiation]"),
+        temperature: readNumber("[data-env-strategy-manual-temperature]"),
+        humidity: readNumber("[data-env-strategy-manual-humidity]"),
+        co2: readNumber("[data-env-strategy-manual-co2]"),
+      },
+    };
+  }
+
+  _environmentStrategyPreviewPayload(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const input = this._readEnvironmentStrategyInputs(this.shadowRoot, domain);
+    return { crop_season_id: cropSeasonId, zone_id: zoneId, sourceMode: input.sourceMode, manualOverrides: input.manualOverrides, weatherSource: {}, inputs: input.manualOverrides };
+  }
+
   async _fetchEnvironmentStrategyPreview(domain) {
     const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId || domain !== "environment") return null;
-    const zoneId = Number(this._controlScope?.zoneId || 1);
     const cacheKey = this._scopedControlCacheKey(domain);
     try {
-      const res = await this._hass.callApi("GET", `green_smart/environment/strategy-preview?crop_season_id=${cropSeasonId}&zone_id=${zoneId}`);
+      const res = await this._hass.callApi("POST", "green_smart/environment/strategy-preview", this._environmentStrategyPreviewPayload(domain));
       this._zoneEnvironmentStrategyPreviewCache[cacheKey] = res;
       if (!patchOnly) { this._pageRendered = null; this._update(); }
       return res;
@@ -5067,9 +5090,8 @@ button.action:disabled{opacity:.5;cursor:default;}
   async _saveEnvironmentStrategyFinalTargets(domain) {
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId || domain !== "environment") return false;
-    const zoneId = Number(this._controlScope?.zoneId || 1);
     try {
-      const res = await this._hass.callApi("POST", "green_smart/environment/strategy-preview", { crop_season_id: cropSeasonId, zone_id: zoneId, save_final_targets: true, calculated_by: "environment_strategy_mvp" });
+      const res = await this._hass.callApi("POST", "green_smart/environment/strategy-preview", { ...this._environmentStrategyPreviewPayload(domain), save_final_targets: true, calculated_by: "environment_strategy_mvp" });
       this._zoneEnvironmentStrategyPreviewCache[this._scopedControlCacheKey(domain)] = res;
       await this._fetchZoneFinalTargets(domain);
       this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 환경 전략 MVP 최종값 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
@@ -5549,19 +5571,30 @@ button.action:disabled{opacity:.5;cursor:default;}
     const data = this._zoneEnvironmentStrategyPreviewCache?.[cacheKey] || null;
     if (this._numericControlSeasonId() && domain === "environment" && !data) this._fetchEnvironmentStrategyPreview(domain);
     const metric = (label, value, unit = "") => `<div class="strategy-status-row"><span>${label}</span><b>${this._esc(value ?? "-")}${unit}</b></div>`;
-    return `<div class="gs-card" data-env-strategy-preview-card style="padding:16px;margin-bottom:12px;">
+    const diffRows = (data?.targetDiff || []).map((d) => `<div class="strategy-status-row"><span>${this._esc(d.key)}</span><b>${this._esc(d.previous ?? "-")} → ${this._esc(d.next ?? "-")} (${this._esc(d.delta ?? "new")})</b></div>`).join("");
+    return `<div class="gs-card" data-env-strategy-preview-card data-env-strategy-domain="${domain}" style="padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
-        <div><b>환경 전략 MVP</b><div class="strategy-muted">CORP/TEMHUM/VENT/SCRN · SafetyGuard 우선 적용 · environment_strategy_mvp</div></div>
+        <div><b>환경 전략 MVP</b><div class="strategy-muted">CORP/TEMHUM/VENT/SCRN · SafetyGuard 우선 적용 · environment_strategy_mvp · diffCount ${this._esc(data?.diffCount ?? 0)}</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="mini-btn" data-env-strategy-preview-refresh data-env-strategy-preview-domain="${domain}">전략 새로고침</button>
           <button class="mini-btn" data-env-strategy-save-final data-env-strategy-preview-domain="${domain}">전략 최종값 저장</button>
         </div>
       </div>
+      <div class="strategy-muted" style="margin-bottom:8px;">입력 소스 · HA 상태 요약 · 날씨/센서 자동 · 운영자 수동 보정</div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:8px;">
+        <label>입력 소스<select data-env-strategy-source-mode><option value="auto" ${data?.sourceMode === "auto" ? "selected" : ""}>날씨/센서 자동</option><option value="entity_state" ${data?.sourceMode === "entity_state" ? "selected" : ""}>HA 상태 요약</option><option value="operator" ${data?.sourceMode === "operator" ? "selected" : ""}>운영자 수동 보정</option></select></label>
+        <label>일사 W<input data-env-strategy-manual-radiation data-env-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.radiation ?? data?.corp?.radiation ?? "")}"></label>
+        <label>온도 °C<input data-env-strategy-manual-temperature data-env-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.temperature ?? data?.temhum?.temperature ?? "")}"></label>
+        <label>습도 %<input data-env-strategy-manual-humidity data-env-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.humidity ?? data?.temhum?.humidity ?? "")}"></label>
+        <label>CO₂ ppm<input data-env-strategy-manual-co2 data-env-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.co2 ?? data?.corp?.co2 ?? "")}"></label>
+      </div>
       <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
         <div><b>CORP G-Index</b>${metric("corpGIndex", data?.corpGIndex)}${metric("radiation", data?.corp?.radiation, "W")}</div>
         <div><b>TEMHUM ADT/DIF/VPD</b>${metric("ADT", data?.adt, "°C")}${metric("DIF", data?.dif, "°C")}${metric("VPD", data?.vpd, "kPa")}</div>
         <div><b>VENT/SCRN 최종 목표</b>${metric("ventTarget", data?.ventTarget, "%")}${metric("screenTarget", data?.screenTarget, "%")}</div>
+        <div><b>Preview Diff</b><div class="strategy-muted">targetDiff · diffCount ${this._esc(data?.diffCount ?? 0)}</div>${diffRows || `<div class="strategy-muted">이전 final target이 없거나 차이가 없습니다.</div>`}</div>
       </div>
+      <div class="strategy-muted" style="margin-top:8px;">sourceMode ${this._esc(data?.sourceMode || "auto")} · manualOverrides ${this._esc(JSON.stringify(data?.manualOverrides || {}))}</div>
       <div class="strategy-muted" style="margin-top:8px;">SafetyGuard 우선 적용: 저장된 최종 목표도 실행 단계에서 SafetyGuard/Interlock gate를 먼저 통과합니다.</div>
     </div>`;
   }
