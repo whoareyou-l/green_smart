@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.27
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.28
 const DOMAIN = "green_smart";
-const VERSION = "1.8.27";
+const VERSION = "1.8.28";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -4914,8 +4914,29 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _irrigSummary(state) {
+    const tab = this._irrigationTab;
     const m = state.irrigationControlMode;
-    return `<div class="strategy-status-row"><div><span>오늘 관수 횟수</span><b>${m.todayCount}회</b></div><div><span>마지막 관수</span><b>${m.lastRunAt}</b></div><div><span>다음 예상</span><b>${m.nextRunAt}</b></div><div><span>누적 일사량</span><b>${m.accumulatedRadiation} J/cm²</b></div><div><span>현재 VWC</span><b>${m.currentVwc}%</b></div><div><span>급액 EC/pH</span><b>${m.currentEc} / ${m.currentPh}</b></div></div>`;
+    const b = state.baseIrrigationSettings;
+    const sat = state.saturationStrategy;
+    const sol = state.solarIrrigationStrategy;
+    const dry = state.drybackStrategy;
+    const df = state.drainFeedback;
+    const nut = state.nutrientStrategy;
+    const ai = state.aiIrrigationCorrection;
+    const safe = state.irrigationSafetyLimits;
+    const dev = state.fertigationDeviceSettings;
+    const f = state.finalIrrigationTargets;
+    if (tab === "base") return `<div class="strategy-status-row"><div><span>기본 시간</span><b>${b.startTime}~${b.endTime}</b></div><div><span>1회 급액량</span><b>${b.shotLiterPerZone}L/구역</b></div><div><span>최소 간격</span><b>${b.minIntervalMin}분</b></div><div><span>최대 횟수</span><b>${b.maxDailyCount}회/일</b></div><div><span>기본 EC/pH</span><b>${b.baseEc} / ${b.basePh}</b></div><div><span>최종 EC/pH</span><b>${f.targetEc} / ${f.targetPh}</b></div></div>`;
+    if (tab === "saturation") return `<div class="strategy-status-row"><div><span>목표 포수 VWC</span><b>${sat.targetVwc}%</b></div><div><span>완료 기준</span><b>${sat.completeVwc}%</b></div><div><span>포수 시작</span><b>${sat.startTime}</b></div><div><span>첫 배액 목표</span><b>${sat.firstDrainTargetTime}</b></div><div><span>분할 횟수</span><b>${sat.splitCount}회</b></div><div><span>필요 수량</span><b>${sat.requiredAmountL}L</b></div></div>`;
+    if (tab === "solar") return `<div class="strategy-status-row"><div><span>기준 누적 일사</span><b>${sol.baseAccumulatedRadiation} J/cm²</b></div><div><span>흐린 날</span><b>${sol.cloudyThreshold}</b></div><div><span>맑은 날</span><b>${sol.sunnyThreshold}</b></div><div><span>현재 누적</span><b>${sol.currentAccumulatedRadiation}</b></div><div><span>남은 일사</span><b>${sol.remainingRadiation}</b></div><div><span>다음 예상</span><b>${sol.nextExpectedAt}</b></div></div>`;
+    if (tab === "dryback") return `<div class="strategy-status-row"><div><span>주간 허용폭</span><b>${dry.dayDrybackRange}%</b></div><div><span>야간 목표폭</span><b>${dry.nightDrybackTarget}%</b></div><div><span>VWC 범위</span><b>${dry.targetVwcLower}~${dry.targetVwcUpper}%</b></div><div><span>현재 드라이백</span><b>${dry.currentDryback}%</b></div><div><span>목표 드라이백</span><b>${dry.targetDryback}%</b></div><div><span>야간 진행률</span><b>${dry.nightProgress}%</b></div></div>`;
+    if (tab === "drain") return `<div class="strategy-status-row"><div><span>전날 급액/배액</span><b>${df.previousFeedAmountL}/${df.previousDrainAmountL}L</b></div><div><span>배액률</span><b>${df.drainRate}%</b></div><div><span>목표 배액률</span><b>${df.targetDrainRate}%</b></div><div><span>배액 EC</span><b>${df.drainEc}</b></div><div><span>배액 pH</span><b>${df.drainPh}</b></div><div><span>염류 위험</span><b>${df.saltAccumulationRisk ? "있음" : "낮음"}</b></div></div>`;
+    if (tab === "nutrient") return `<div class="strategy-status-row"><div><span>작물군</span><b>${nut.cropGroup}</b></div><div><span>생육단계</span><b>${nut.growthStage}</b></div><div><span>기본 EC/pH</span><b>${nut.baseEc} / ${nut.basePh}</b></div><div><span>AI 보정</span><b>${nut.aiEcDelta} / ${nut.aiPhDelta}</b></div><div><span>최종 EC/pH</span><b>${nut.finalEc} / ${nut.finalPh}</b></div><div><span>편차</span><b>${nut.ecDeviation} / ${nut.phDeviation}</b></div></div>`;
+    if (tab === "ai") return `<div class="strategy-status-row"><div><span>G-Index</span><b>${ai.gIndex}</b></div><div><span>AI 판단</span><b>${ai.decision}</b></div><div><span>EC/pH 보정</span><b>${ai.ecDelta} / ${ai.phDelta}</b></div><div><span>급액량 보정</span><b>${ai.shotAmountDelta}L</b></div><div><span>간격 보정</span><b>${ai.intervalDeltaMin}분</b></div><div><span>적용 상태</span><b>${ai.applied ? "적용" : "미적용"}</b></div></div>`;
+    if (tab === "safety") return `<div class="strategy-status-row"><div><span>VWC 한계</span><b>${safe.minVwc}~${safe.maxVwc}%</b></div><div><span>EC 한계</span><b>${safe.minEc}~${safe.maxEc}</b></div><div><span>pH 한계</span><b>${safe.minPh}~${safe.maxPh}</b></div><div><span>최대 1회</span><b>${safe.maxShotAmountL}L</b></div><div><span>최대 일 관수</span><b>${safe.maxDailyAmountL}L</b></div><div><span>펌프 연속</span><b>${safe.maxPumpContinuousMin}분</b></div></div>`;
+    if (tab === "device") return `<div class="strategy-status-row"><div><span>관수 펌프</span><b>${dev.irrigationPumpEntity}</b></div><div><span>A/B 밸브</span><b>${dev.aValveEntity} / ${dev.bValveEntity}</b></div><div><span>EC 센서</span><b>${dev.ecSensorEntity}</b></div><div><span>pH 센서</span><b>${dev.phSensorEntity}</b></div><div><span>VWC 센서</span><b>${dev.vwcSensorEntity}</b></div><div><span>유량계</span><b>${dev.flowMeterEntity}</b></div></div>`;
+    if (tab === "logs") return `<div class="strategy-status-row"><div><span>최근 로그</span><b>${(state.irrigationLogs || []).length}건</b></div><div><span>마지막 실행</span><b>${m.lastRunAt}</b></div><div><span>오늘 관수</span><b>${m.todayCount}회</b></div><div><span>현재 상태</span><b>${m.status}</b></div><div><span>다음 예상</span><b>${m.nextRunAt}</b></div><div><span>오류 필터</span><b>전체</b></div></div>`;
+    return `<div class="strategy-status-row"><div><span>현재 제어 모드</span><b>${m.mode}</b></div><div><span>AI 보정</span><b>${m.aiEnabled ? "ON" : "OFF"}</b></div><div><span>자동 관수</span><b>${m.autoIrrigationEnabled ? "ON" : "OFF"}</b></div><div><span>현재 상태</span><b>${m.status}</b></div><div><span>오늘 관수</span><b>${m.todayCount}회</b></div><div><span>급액 EC/pH</span><b>${m.currentEc} / ${m.currentPh}</b></div></div>`;
   }
 
   _irrigTriad(label, base, ai, final, unit = "") {

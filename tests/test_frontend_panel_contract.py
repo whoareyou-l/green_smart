@@ -249,6 +249,16 @@ def test_irrigation_control_page_tabs_state_and_ai_interlock_contract():
     assert "_calculateFinalIrrigationTargets" in panel
 
 
+def test_irrigation_control_tabs_use_tab_specific_summaries_not_identical_status_values():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    summary = panel.split("  _irrigSummary(state)", 1)[1].split("  _irrigTriad", 1)[0]
+
+    assert "const tab = this._irrigationTab" in summary
+    for key in ["baseIrrigationSettings", "saturationStrategy", "solarIrrigationStrategy", "drybackStrategy", "drainFeedback", "nutrientStrategy", "aiIrrigationCorrection", "irrigationSafetyLimits", "fertigationDeviceSettings"]:
+        assert key in summary
+    assert summary.count("return `<div class=\"strategy-status-row\"") >= 8
+
+
 def test_irrigation_control_docs_cover_requested_development_deliverables():
     doc_path = ROOT / "docs" / "design" / "irrigation-control-page.md"
     doc = doc_path.read_text(encoding="utf-8")
