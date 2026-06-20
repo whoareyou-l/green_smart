@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.12
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.13
 const DOMAIN = "green_smart";
-const VERSION = "1.9.12";
+const VERSION = "1.9.13";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -254,6 +254,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneSafetyGuardWatchdogCache = {};
     this._zoneSafetyGuardEventCache = {};
     this._zoneEnvironmentStrategyPreviewCache = {};
+    this._zoneIrrigationStrategyPreviewCache = {};
     this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
@@ -320,6 +321,7 @@ class GreenSmartPanel extends HTMLElement {
       this._fetchZoneSafetyGuardWatchdog(domain, { patchOnly }),
       this._fetchZoneSafetyGuardEvents(domain, { patchOnly }),
       ...(domain === "environment" ? [this._fetchEnvironmentStrategyPreview(domain, { patchOnly })] : []),
+      ...(domain === "irrigation" ? [this._fetchIrrigationStrategyPreview(domain, { patchOnly })] : []),
       this._fetchZoneExecutionLogs(domain, { patchOnly }),
     ]);
     if (patchOnly) this._patchZoneControlElementCards(domain);
@@ -342,6 +344,7 @@ class GreenSmartPanel extends HTMLElement {
     this._replaceZoneControlCard("[data-zone-safety-watchdog-card]", this._renderZoneSafetyGuardWatchdogCard(domain));
     this._replaceZoneControlCard("[data-zone-safety-event-card]", this._renderZoneSafetyGuardEventHistoryCard(domain));
     if (domain === "environment") this._replaceZoneControlCard("[data-env-strategy-preview-card]", this._renderEnvironmentStrategyPreviewCard(domain));
+    if (domain === "irrigation") this._replaceZoneControlCard("[data-irrigation-strategy-preview-card]", this._renderIrrigationStrategyPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
     this._bindZoneControlModeInputs(this.shadowRoot);
@@ -349,6 +352,7 @@ class GreenSmartPanel extends HTMLElement {
     this._bindZoneSafetyGuardWatchdogInputs(this.shadowRoot);
     this._bindZoneSafetyGuardEventInputs(this.shadowRoot);
     this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
+    this._bindIrrigationStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
   }
 
@@ -5104,6 +5108,63 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  _readIrrigationStrategyInputs(root, domain) {
+    const card = root?.querySelector?.(`[data-irrigation-strategy-preview-card][data-irrigation-strategy-domain="${domain}"]`) || root?.querySelector?.("[data-irrigation-strategy-preview-card]");
+    const readNumber = (selector) => {
+      const raw = card?.querySelector(selector)?.value;
+      return raw === "" || raw == null ? undefined : Number(raw);
+    };
+    return {
+      sourceMode: card?.querySelector("[data-irrigation-strategy-source-mode]")?.value || "auto",
+      manualOverrides: {
+        accumulatedRadiation: readNumber("[data-irrigation-strategy-manual-radiation]"),
+        currentVwc: readNumber("[data-irrigation-strategy-manual-vwc]"),
+        currentEc: readNumber("[data-irrigation-strategy-manual-ec]"),
+        currentPh: readNumber("[data-irrigation-strategy-manual-ph]"),
+      },
+    };
+  }
+
+  _irrigationStrategyPreviewPayload(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const input = this._readIrrigationStrategyInputs(this.shadowRoot, domain);
+    return { crop_season_id: cropSeasonId, zone_id: zoneId, sourceMode: input.sourceMode, manualOverrides: input.manualOverrides, inputs: input.manualOverrides };
+  }
+
+  async _fetchIrrigationStrategyPreview(domain) {
+    const { patchOnly = false } = arguments[1] || {};
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId || domain !== "irrigation") return null;
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/irrigation/strategy-preview", this._irrigationStrategyPreviewPayload(domain));
+      this._zoneIrrigationStrategyPreviewCache[cacheKey] = res;
+      if (!patchOnly) { this._pageRendered = null; this._update(); }
+      return res;
+    } catch (err) {
+      console.warn("관수 전략 MVP 조회 실패 시 fallback", err);
+      return this._zoneIrrigationStrategyPreviewCache[cacheKey] || null;
+    }
+  }
+
+  async _saveIrrigationStrategyFinalTargets(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId || domain !== "irrigation") return false;
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/irrigation/strategy-preview", { ...this._irrigationStrategyPreviewPayload(domain), save_final_targets: true, calculated_by: "irrigation_strategy_mvp" });
+      this._zoneIrrigationStrategyPreviewCache[this._scopedControlCacheKey(domain)] = res;
+      await this._fetchZoneFinalTargets(domain);
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 관수 전략 MVP 최종값 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null;
+      this._update();
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("관수 전략 MVP 저장 실패 시 fallback", err);
+      return false;
+    }
+  }
+
   async _applyZoneAiOutput(domain, outputId) {
     if (!this._hass || !outputId) return false;
     try {
@@ -5563,6 +5624,39 @@ button.action:disabled{opacity:.5;cursor:default;}
         <button class="mini-btn" data-zone-safety-event-refresh data-zone-safety-event-domain="${domain}">이벤트 새로고침</button>
       </div>
       ${rows || `<div class="strategy-muted">SafetyGuard 이벤트 이력이 없습니다.</div>`}
+    </div>`;
+  }
+
+  _renderIrrigationStrategyPreviewCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneIrrigationStrategyPreviewCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId() && domain === "irrigation" && !data) this._fetchIrrigationStrategyPreview(domain);
+    const metric = (label, value, unit = "") => `<div class="strategy-status-row"><span>${label}</span><b>${this._esc(value ?? "-")}${unit}</b></div>`;
+    const diffRows = (data?.targetDiff || []).map((d) => `<div class="strategy-status-row"><span>${this._esc(d.key)}</span><b>${this._esc(d.previous ?? "-")} → ${this._esc(d.next ?? "-")} (${this._esc(d.delta ?? "new")})</b></div>`).join("");
+    return `<div class="gs-card" data-irrigation-strategy-preview-card data-irrigation-strategy-domain="${domain}" style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>관수 전략 MVP</b><div class="strategy-muted">IRR EC/pH/VWC/드라이백 · 일사 누적 관수 · SafetyGuard 우선 적용 · irrigation_strategy_mvp · diffCount ${this._esc(data?.diffCount ?? 0)}</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="mini-btn" data-irrigation-strategy-preview-refresh data-irrigation-strategy-preview-domain="${domain}">관수 전략 새로고침</button>
+          <button class="mini-btn" data-irrigation-strategy-save-final data-irrigation-strategy-preview-domain="${domain}">관수 전략 최종값 저장</button>
+        </div>
+      </div>
+      <div class="strategy-muted" style="margin-bottom:8px;">입력 소스 · HA 상태 요약 · 운영자 수동 보정 · VWC 하한 긴급 관수</div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:8px;">
+        <label>입력 소스<select data-irrigation-strategy-source-mode><option value="auto" ${data?.sourceMode === "auto" ? "selected" : ""}>HA 상태 자동</option><option value="entity_state" ${data?.sourceMode === "entity_state" ? "selected" : ""}>HA 상태 요약</option><option value="operator" ${data?.sourceMode === "operator" ? "selected" : ""}>운영자 수동 보정</option></select></label>
+        <label>누적 일사<input data-irrigation-strategy-manual-radiation data-irrigation-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.accumulatedRadiation ?? data?.accumulatedRadiation ?? "")}"></label>
+        <label>VWC %<input data-irrigation-strategy-manual-vwc data-irrigation-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.currentVwc ?? data?.currentVwc ?? "")}"></label>
+        <label>EC<input data-irrigation-strategy-manual-ec data-irrigation-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.currentEc ?? data?.currentEc ?? "")}"></label>
+        <label>pH<input data-irrigation-strategy-manual-ph data-irrigation-strategy-manual-override type="number" value="${this._esc(data?.manualOverrides?.currentPh ?? data?.currentPh ?? "")}"></label>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+        <div><b>IRR EC/pH/VWC/드라이백</b>${metric("currentVwc", data?.currentVwc, "%")}${metric("currentEc", data?.currentEc)}${metric("currentPh", data?.currentPh)}${metric("dryback", data?.dryback, "%")}</div>
+        <div><b>일사 누적 관수</b>${metric("accumulatedRadiation", data?.accumulatedRadiation)}${metric("emergencyIrrigation", data?.emergencyIrrigation ? "VWC 하한 긴급 관수" : "normal")}</div>
+        <div><b>관수 최종 목표</b>${metric("shotAmountL", data?.shotAmountL, "L")}${metric("minIntervalMin", data?.minIntervalMin, "분")}${metric("targetEc", data?.targetEc)}${metric("targetPh", data?.targetPh)}${metric("targetDryback", data?.targetDryback, "%")}${metric("targetDrainRate", data?.targetDrainRate, "%")}</div>
+        <div><b>Preview Diff</b><div class="strategy-muted">targetDiff · diffCount ${this._esc(data?.diffCount ?? 0)}</div>${diffRows || `<div class="strategy-muted">이전 final target이 없거나 차이가 없습니다.</div>`}</div>
+      </div>
+      <div class="strategy-muted" style="margin-top:8px;">sourceMode ${this._esc(data?.sourceMode || "auto")} · manualOverrides ${this._esc(JSON.stringify(data?.manualOverrides || {}))}</div>
+      <div class="strategy-muted" style="margin-top:8px;">SafetyGuard 우선 적용: 저장된 관수 최종 목표도 실행 단계에서 SafetyGuard/Interlock gate를 먼저 통과합니다.</div>
     </div>`;
   }
 
@@ -6104,6 +6198,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneEntityStateSummaryCard("irrigation")}
       ${this._renderZoneSafetyGuardWatchdogCard("irrigation")}
       ${this._renderZoneSafetyGuardEventHistoryCard("irrigation")}
+      ${this._renderIrrigationStrategyPreviewCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
@@ -6464,6 +6559,20 @@ button.action:disabled{opacity:.5;cursor:default;}
         const eventId = btn.dataset.zoneSafetyEventId;
         const note = this._zoneSafetyGuardEventNote(domain, eventId);
         await this._clearZoneSafetyGuardEvent(domain, eventId, note);
+      });
+    });
+  }
+
+  _bindIrrigationStrategyPreviewInputs(root) {
+    root.querySelectorAll("[data-irrigation-strategy-preview-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => await this._fetchIrrigationStrategyPreview(btn.dataset.irrigationStrategyPreviewDomain || "irrigation"));
+    });
+    root.querySelectorAll("[data-irrigation-strategy-save-final]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.irrigationStrategyPreviewDomain || "irrigation";
+        if (!confirm("관수 전략 MVP 결과를 최종 적용값으로 저장할까요? SafetyGuard 우선 적용은 실행 단계에서 유지됩니다.")) return;
+        const ok = await this._saveIrrigationStrategyFinalTargets(domain);
+        if (!ok) alert("관수 전략 MVP 최종값 저장 실패: API/로그를 확인해 주세요.");
       });
     });
   }

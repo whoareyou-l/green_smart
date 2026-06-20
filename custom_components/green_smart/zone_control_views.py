@@ -649,6 +649,129 @@ class ZoneEnvironmentStrategyPreviewView(HomeAssistantView):
         return _json(response)
 
 
+IRRIGATION_STRATEGY_COMPONENTS = ("IRR", "EC_PH", "VWC", "DRYBACK")
+
+
+def _irrigation_strategy_inputs_from_sources(*, source_mode: str, entity_state_summary: dict | None, manual_overrides: dict | None) -> dict:
+    # Phase 4: IRR 기본 EC/pH/VWC/드라이백/일사 누적 관수 source merge.
+    settings_row_marker = "zone_control_settings"
+    inputs = {
+        "accumulatedRadiation": 100.0,
+        "currentVwc": 62.0,
+        "currentEc": 2.4,
+        "currentPh": 6.0,
+        "dryback": 8.0,
+        "baseShotAmountL": 12.0,
+        "baseIntervalMin": 30.0,
+        "baseEc": 2.5,
+        "basePh": 6.0,
+        "targetDrainRate": 30.0,
+    }
+    sourceSummary = {"sourceMode": source_mode, "entityStateSummary": bool(entity_state_summary), "operatorOverride": bool(manual_overrides), "manualOverrides": manual_overrides or {}, "settingsSource": settings_row_marker}
+    for item in (entity_state_summary or {}).get("items") or []:
+        role = str(item.get("controlRole") or item.get("deviceType") or item.get("entityId") or "").lower()
+        state = item.get("state") or (item.get("preState") or {}).get("state")
+        if state in (None, ""):
+            continue
+        try:
+            value = float(state)
+        except Exception:
+            continue
+        if "radiation" in role or "solar" in role:
+            inputs["accumulatedRadiation"] = value
+        elif "vwc" in role or "moisture" in role:
+            inputs["currentVwc"] = value
+        elif "ec" in role:
+            inputs["currentEc"] = value
+        elif "ph" in role:
+            inputs["currentPh"] = value
+    # Settings keys intentionally mirror current panel state: solarIrrigationStrategy, drybackStrategy, drainFeedback, nutrientStrategy, irrigationSafetyLimits.
+    for key, value in (manual_overrides or {}).items():
+        if key in inputs and value not in (None, ""):
+            inputs[key] = _environment_strategy_float(manual_overrides or {}, key, inputs[key])
+    return {"inputs": inputs, "sourceSummary": sourceSummary}
+
+
+def _irrigation_strategy_ec_ph_vwc_dryback(inputs: dict) -> dict:
+    # IRR 기본 EC/pH/VWC/드라이백/일사 누적 관수 baseline metrics.
+    currentVwc = _environment_strategy_float(inputs, "currentVwc", 62.0)
+    currentEc = _environment_strategy_float(inputs, "currentEc", 2.4)
+    currentPh = _environment_strategy_float(inputs, "currentPh", 6.0)
+    dryback = _environment_strategy_float(inputs, "dryback", 8.0)
+    accumulatedRadiation = _environment_strategy_float(inputs, "accumulatedRadiation", 100.0)
+    emergencyIrrigation = currentVwc <= _environment_strategy_float(inputs, "minVwc", 45.0)
+    return {"component": "IRR", "currentVwc": currentVwc, "currentEc": currentEc, "currentPh": currentPh, "dryback": dryback, "accumulatedRadiation": accumulatedRadiation, "emergencyIrrigation": emergencyIrrigation, "reason": "VWC 하한 긴급 관수" if emergencyIrrigation else "IRR 기본 EC/pH/VWC/드라이백/일사 누적 관수"}
+
+
+def _irrigation_strategy_final_targets(inputs: dict, metrics: dict) -> dict:
+    irr = metrics.get("irr", {})
+    radiation = irr.get("accumulatedRadiation", _environment_strategy_float(inputs, "accumulatedRadiation", 100.0))
+    emergency = bool(irr.get("emergencyIrrigation"))
+    shotAmountL = round(max(1.0, min(25.0, _environment_strategy_float(inputs, "baseShotAmountL", 12.0) + (radiation - 100.0) / 40.0 + (3.0 if emergency else 0.0))), 2)
+    minIntervalMin = round(max(15.0, min(120.0, _environment_strategy_float(inputs, "baseIntervalMin", 30.0) - (radiation - 100.0) / 12.0 - (10.0 if emergency else 0.0))), 1)
+    targetEc = round(max(0.8, min(4.0, _environment_strategy_float(inputs, "baseEc", 2.5) + max(0.0, _environment_strategy_float(inputs, "dryback", 8.0) - 10.0) * 0.03)), 2)
+    targetPh = round(max(5.2, min(7.2, _environment_strategy_float(inputs, "basePh", 6.0))), 2)
+    targetDryback = round(max(4.0, min(18.0, _environment_strategy_float(inputs, "dryback", 8.0) + (0.5 if radiation > 120 else 0.0))), 1)
+    targetDrainRate = round(max(10.0, min(45.0, _environment_strategy_float(inputs, "targetDrainRate", 30.0))), 1)
+    targets = {"shotAmountL": shotAmountL, "minIntervalMin": minIntervalMin, "targetEc": targetEc, "targetPh": targetPh, "targetDryback": targetDryback, "targetDrainRate": targetDrainRate, "emergencyIrrigation": emergency, "strategy": "irrigation_strategy_mvp", "safetyPolicy": "SafetyGuard 우선"}
+    return {"component": "IRR final targets", **targets, "targets": targets}
+
+
+async def _irrigation_strategy_preview_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, inputs: dict | None = None, source_mode: str = "auto", manual_overrides: dict | None = None) -> dict:
+    entity_state_summary = await _entity_state_summary_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="irrigation")
+    resolved = _irrigation_strategy_inputs_from_sources(source_mode=source_mode, entity_state_summary=entity_state_summary, manual_overrides=manual_overrides or inputs)
+    merged_inputs = {**resolved["inputs"], **(inputs or {})}
+    irr = _irrigation_strategy_ec_ph_vwc_dryback(merged_inputs)
+    final = _irrigation_strategy_final_targets(merged_inputs, {"irr": irr})
+    latest_final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="irrigation")
+    diff = _environment_strategy_diff_against_latest_target(final["targets"], latest_final_target)
+    targetDiff = diff.get("targetDiff")
+    diffCount = diff.get("diffCount")
+    return {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": "irrigation", "components": list(IRRIGATION_STRATEGY_COMPONENTS), "irr": irr, "targets": final["targets"], "accumulatedRadiation": irr["accumulatedRadiation"], "currentVwc": irr["currentVwc"], "currentEc": irr["currentEc"], "currentPh": irr["currentPh"], "dryback": irr["dryback"], "shotAmountL": final["shotAmountL"], "minIntervalMin": final["minIntervalMin"], "targetEc": final["targetEc"], "targetPh": final["targetPh"], "targetDryback": final["targetDryback"], "targetDrainRate": final["targetDrainRate"], "emergencyIrrigation": final["emergencyIrrigation"], "safetyPolicy": "SafetyGuard 우선", "sourceMode": source_mode, "manualOverrides": manual_overrides or {}, "sourceSummary": resolved["sourceSummary"], "entityStateSummary": entity_state_summary, "targetDiff": targetDiff, "diffCount": diffCount, "latestFinalTarget": diff.get("latestFinalTarget"), "settingsHints": ["solarIrrigationStrategy", "drybackStrategy", "drainFeedback", "nutrientStrategy", "irrigationSafetyLimits"]}
+
+
+class ZoneIrrigationStrategyPreviewView(HomeAssistantView):
+    """GET/POST /api/green_smart/irrigation/strategy-preview."""
+
+    url = "/api/green_smart/irrigation/strategy-preview"
+    name = "api:green_smart:irrigation:strategy_preview"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            source_mode = request.query.get("source_mode") or request.query.get("sourceMode") or "auto"
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _irrigation_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, source_mode=source_mode)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="irrigation", actor=_actor(request), action="irrigation_strategy_previewed", before=None, after=response, result="success", message="irrigation strategy MVP previewed")
+        return _json(response)
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            inputs = body.get("inputs") if isinstance(body.get("inputs"), dict) else body
+            source_mode = body.get("source_mode") or body.get("sourceMode") or "auto"
+            manual_overrides = body.get("manual_overrides") or body.get("manualOverrides") or {}
+            save_final_targets = bool(body.get("save_final_targets") or body.get("saveFinalTargets"))
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _irrigation_strategy_preview_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, inputs=inputs, source_mode=source_mode, manual_overrides=manual_overrides)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="irrigation", actor=_actor(request), action="irrigation_strategy_previewed", before=None, after=response, result="success", message="irrigation strategy MVP previewed")
+        if save_final_targets:
+            response["finalTargetId"] = await _insert_final_targets(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain="irrigation", targets=response["targets"], actor=_actor(request), calculated_by="irrigation_strategy_mvp", action="irrigation_strategy_final_targets_saved", message="irrigation strategy final targets saved")  # calculated_by="irrigation_strategy_mvp"
+            response["saved"] = True
+        return _json(response)
+
+
 async def _latest_final_target_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict | None:
     row = await fetchone(
         hass,

@@ -1,6 +1,6 @@
 # Phase 3B — Environment Strategy Input Source + Preview Diff
 
-> 기준 버전: v1.9.12
+> 기준 버전: v1.9.13
 > 상태: 완료
 
 ## 목적

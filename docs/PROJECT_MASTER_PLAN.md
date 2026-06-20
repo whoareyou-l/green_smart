@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.12`, Phase 3B Environment Strategy Input Source + Preview Diff
+> 기준 버전: product code `v1.9.13`, Phase 4 Irrigation Strategy MVP
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -182,19 +182,26 @@ panel SafetyGuard 이벤트 이력 카드
 
 ### Phase 3. 환경 전략 MVP
 
-목표:
+현재 Phase 3A/3B 완료:
 
-- CORP 기본 G-Index
-- TEMHUM ADT/DIF/VPD
-- VENT/SCRN 기본 final target 생성
+```text
+CORP 기본 G-Index
+TEMHUM ADT/DIF/VPD
+VENT/SCRN 기본 final target 생성
+입력 소스 HA 상태/날씨/수동 보정 merge
+Preview Diff / latest final target 비교
+```
 
 ### Phase 4. 관수 전략 MVP
 
-목표:
+현재 Phase 4 완료:
 
-- IRR 기본 EC/pH/VWC/드라이백/일사 누적 관수
-- VWC 하한 긴급 관수
-- 관수 final target 생성
+```text
+IRR 기본 EC/pH/VWC/드라이백/일사 누적 관수
+VWC 하한 긴급 관수 marker
+관수 final target 생성/저장
+관수 Preview Diff / latest final target 비교
+```
 
 ### Phase 5. 제한적 자동제어와 알림 강화
 

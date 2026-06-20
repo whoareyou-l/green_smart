@@ -1092,3 +1092,93 @@ def test_phase3b_environment_strategy_input_source_and_diff_contract():
         "sourceMode",
     ):
         assert panel_marker in panel_source
+
+
+
+def test_phase4_irrigation_strategy_mvp_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "IRRIGATION_STRATEGY_COMPONENTS",
+        "_irrigation_strategy_inputs_from_sources",
+        "_irrigation_strategy_ec_ph_vwc_dryback",
+        "_irrigation_strategy_final_targets",
+        "_irrigation_strategy_preview_response",
+        "ZoneIrrigationStrategyPreviewView",
+        'url = "/api/green_smart/irrigation/strategy-preview"',
+        "irrigation_strategy_previewed",
+        "irrigation_strategy_final_targets_saved",
+        "calculated_by=\"irrigation_strategy_mvp\"",
+        "IRR",
+        "accumulatedRadiation",
+        "currentVwc",
+        "currentEc",
+        "currentPh",
+        "dryback",
+        "shotAmountL",
+        "minIntervalMin",
+        "targetEc",
+        "targetPh",
+        "targetDryback",
+        "targetDrainRate",
+        "emergencyIrrigation",
+        "SafetyGuard 우선",
+    ):
+        assert api_marker in source
+
+    assert "hass.http.register_view(ZoneIrrigationStrategyPreviewView())" in init_source
+
+    strategy_section = source.split("def _irrigation_strategy_inputs_from_sources", 1)[1].split("class ZoneIrrigationStrategyPreviewView", 1)[0]
+    for behavior in (
+        "_entity_state_summary_response",
+        "_latest_final_target_response",
+        "zone_control_settings",
+        "solarIrrigationStrategy",
+        "drybackStrategy",
+        "drainFeedback",
+        "nutrientStrategy",
+        "irrigationSafetyLimits",
+        "VWC 하한 긴급 관수",
+        "IRR 기본 EC/pH/VWC/드라이백/일사 누적 관수",
+        "targetDiff",
+        "diffCount",
+    ):
+        assert behavior in strategy_section
+
+    for panel_marker in (
+        "this._zoneIrrigationStrategyPreviewCache",
+        "async _fetchIrrigationStrategyPreview(domain",
+        "async _saveIrrigationStrategyFinalTargets(domain)",
+        "_renderIrrigationStrategyPreviewCard(domain)",
+        "_bindIrrigationStrategyPreviewInputs(root)",
+        "green_smart/irrigation/strategy-preview",
+        "data-irrigation-strategy-preview-card",
+        "data-irrigation-strategy-preview-refresh",
+        "data-irrigation-strategy-save-final",
+        "data-irrigation-strategy-source-mode",
+        "data-irrigation-strategy-manual-radiation",
+        "data-irrigation-strategy-manual-vwc",
+        "data-irrigation-strategy-manual-ec",
+        "data-irrigation-strategy-manual-ph",
+        "data-irrigation-strategy-manual-override",
+        "관수 전략 MVP",
+        "IRR EC/pH/VWC/드라이백",
+        "일사 누적 관수",
+        "VWC 하한 긴급 관수",
+        "관수 최종 목표",
+        "SafetyGuard 우선 적용",
+        "관수 전략 최종값 저장",
+        "irrigation_strategy_mvp",
+        "targetDiff",
+        "diffCount",
+        "_irrigationStrategyPreviewPayload(domain)",
+        "_readIrrigationStrategyInputs(root, domain)",
+        "manualOverrides",
+        "sourceMode",
+    ):
+        assert panel_marker in panel_source
+
+    irrigation_page = panel_source.split("  _renderIrrigSettingsPage() {", 1)[1].split("  _cloneDeviceDefaults()", 1)[0]
+    assert '_renderIrrigationStrategyPreviewCard("irrigation")' in irrigation_page
