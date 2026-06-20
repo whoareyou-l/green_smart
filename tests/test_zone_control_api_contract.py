@@ -505,3 +505,32 @@ def test_phase1_entity_state_summary_api_and_panel_contract():
         '_renderZoneEntityStateSummaryCard("device")',
     ):
         assert page_marker in panel_source
+
+
+def test_phase1_panel_uses_five_second_element_refresh_without_full_rerender_contract():
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for marker in (
+        "const PANEL_ELEMENT_REFRESH_MS = 5000",
+        "this._zoneElementRefreshInterval",
+        "_startZoneElementRefresh()",
+        "_stopZoneElementRefresh()",
+        "_refreshZoneControlElements({ patchOnly: true })",
+        "_isZoneControlPage()",
+        "_hasDirtyZoneControlEditor()",
+        "_patchZoneControlElementCards(domain)",
+        "_replaceZoneControlCard(",
+        "전체 화면 재렌더 금지",
+        "요소별 갱신",
+        "dirty state 보존",
+    ):
+        assert marker in panel_source
+
+    assert "setInterval(() => this._refreshZoneControlElements({ patchOnly: true }), PANEL_ELEMENT_REFRESH_MS)" in panel_source
+    assert "clearInterval(this._zoneElementRefreshInterval)" in panel_source
+
+    refresh_section = panel_source.split("async _refreshZoneControlElements", 1)[1].split("_patchZoneControlElementCards", 1)[0]
+    assert "this._update()" not in refresh_section
+    assert "this._fetchZoneEntityStateSummary(domain, { patchOnly })" in refresh_section
+    assert "this._fetchZoneExecutionLogs(domain, { patchOnly })" in refresh_section
+    assert "this._fetchZoneInterlockSettings(domain, { patchOnly })" in refresh_section

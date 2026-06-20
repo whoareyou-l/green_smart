@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20  
 > 기준 repo: `/home/smartfarm/green_smart`  
-> 기준 버전: product code `v1.9.1`, Phase 1B entity-state summary baseline  
+> 기준 버전: product code `v1.9.2`, Phase 1C panel element-refresh baseline  
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`  
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -106,7 +106,7 @@ zone_control_copy_jobs
 |---|---|---|---|---|---|
 | Phase 번호/순서 | 기존 문서는 Phase 1~13 완료 후 Phase 14 Dry Run UI를 다음 단계로 제안 | 새 플랜은 Phase 1 기반 모델+대시보드+인터록 설정, Phase 2 안전 실행 완성 등으로 재정렬 | 코드 영향 없음. 문서 로드맵만 재해석 필요 | 기존 Phase 1~13은 “pre-master completed history”로 보존하고, 앞으로는 새 Phase 1~6 로드맵 사용 | 사용자가 새 순서를 명시했으므로 이번 문서에서는 채택. 단 기존 문서의 Phase 14~21 표현은 후속 문서 정리 필요 |
 | Safety rule 범위 | 현재 실행 경로의 payload 기반 `_safety`, unavailable 차단, safe_state 중심 | 이벤트 기반 + 실행 직전 + 1분 fallback, 센서 무결성/강풍/저온/고온/VWC/EC 등 독립 Safety Guard | 현재 구현은 기반만 있음. 별도 safety engine/table/notification 필요 | Phase 1~2에서 migration 없이 추가 테이블/API로 확장 | 아니오, gap으로 처리 |
-| Panel refresh | 현재 panel에는 simulation 3초, chart 60초, weather/watchdog 10분 등 혼재. 일부 no-flicker partial refresh 있음 | panel 기본 5초, 전체 재렌더 금지, 요소별 갱신 | UI polling/refactor 필요. form dirty state 보호 필요 | Phase 1에서 refresh contract와 element-level update helper부터 고정 | 아니오, gap으로 처리 |
+| Panel refresh | 현재 panel에는 simulation 3초, chart 60초, weather/watchdog 10분 등 도메인별 주기가 남아 있음. Phase 1C에서 제어 API 카드 refresh는 5초 요소별 patch로 정렬됨 | panel 기본 5초, 전체 재렌더 금지, 요소별 갱신 | 환경/관수/장치제어의 인터록/Entity 상태/실행 로그 카드는 `_refreshZoneControlElements({ patchOnly: true })`로 `_update()` 없이 갱신. chart/weather/watchdog는 별도 목적 주기로 유지 | Phase 2부터 SafetyGuard 관련 카드도 같은 element refresh 패턴 사용 | 아니오, Phase 1C에서 기반 완료 |
 | DB 저장 범위 | 현재는 설정/AI output/final target/control log 중심. strategy snapshot 전용 테이블 없음 | 전략 판단 스냅샷 5분 + target 변경 즉시 저장. raw sensor 장기 저장은 HA recorder/InfluxDB | `zone_strategy_snapshots` 등 신규 테이블/API 필요 | 기존 테이블 유지, 신규 snapshot/event 테이블 추가 migration task | 아니오, gap으로 처리 |
 | 알림 | 현재 panel 알림/로그 중심, HA persistent notification 계약 없음 | MVP 알림은 panel + HA persistent notification | backend service call 또는 HA persistent_notification 연동 필요 | Phase 2/5에서 critical safety event부터 추가 | 아니오, gap으로 처리 |
 | SaaS/edge 확장 | 기존 docs는 farm_id 중심, deploy repo 분리 언급 | customer/site/edge 확장 가능, Linux NUC + Docker edge appliance, 오프라인 인터록 | 즉시 schema 변경은 위험. 향후 식별자 확장 여지 필요 | 현재 `farm_id` 유지, Phase 0 data model에 확장 슬롯 명시, 실제 migration은 별도 승인 | 예: `customer_id/site_id/edge_id`를 언제 DB에 추가할지 후속 결정 필요 |
@@ -127,7 +127,7 @@ zone_control_copy_jobs
 
 ### Phase 1. 기반 모델 + 대시보드 + 인터록 설정 화면
 
-현재 Phase 1A/1B 완료:
+현재 Phase 1A/1B/1C 완료:
 
 ```text
 zone_interlock_settings DB table
@@ -135,14 +135,14 @@ GET/POST /api/green_smart/zones/interlock-settings
 GET /api/green_smart/zones/entity-state-summary
 환경/관수/장치제어 공통 인터록 설정 카드 골격
 환경/관수/장치제어 공통 Entity 상태 요약 카드
+제어 페이지 5초 요소별 갱신 loop + dirty state 보존
 ```
 
 남은 목표:
 
-- Zone/entity 현재 상태 조회 기준 확정
-- 인터록 설정 화면 및 저장 구조 설계/구현
-- panel 5초 요소별 갱신 계약 정렬
 - 수동 명령/자동 모드/override 기본 모델 정리
+- Phase 2 SafetyGuard 실행 연동 전 세부 interlock rule UI 확장
+- HA persistent notification 계약을 critical safety event와 연결
 
 ### Phase 2. 인터록/안전 실행 완성
 

@@ -1,6 +1,7 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.1
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.2
 const DOMAIN = "green_smart";
-const VERSION = "1.9.1";
+const VERSION = "1.9.2";
+const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -249,6 +250,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneExecutionLogCache = {};
     this._zoneInterlockSettingsCache = {};
     this._zoneEntityStateSummaryCache = {};
+    this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -274,12 +276,64 @@ class GreenSmartPanel extends HTMLElement {
     this._stopVirtualSimulation();
     clearInterval(this._weatherInterval); this._weatherInterval = null;
     this._stopWatchdog();
+    this._stopZoneElementRefresh();
     if (this._haSidebarResizeHandler) window.removeEventListener("resize", this._haSidebarResizeHandler);
   }
 
   _syncHaSidebarOffset() {
     const left = Math.max(0, Math.round(this.getBoundingClientRect().left || 0));
     this.style.setProperty("--gs-ha-sidebar-left", `${left}px`);
+  }
+
+  _startZoneElementRefresh() {
+    if (this._zoneElementRefreshInterval) return;
+    this._zoneElementRefreshInterval = setInterval(() => this._refreshZoneControlElements({ patchOnly: true }), PANEL_ELEMENT_REFRESH_MS);
+  }
+
+  _stopZoneElementRefresh() {
+    clearInterval(this._zoneElementRefreshInterval);
+    this._zoneElementRefreshInterval = null;
+  }
+
+  _isZoneControlPage() {
+    return ["environment", "irrigation", "device"].includes(this._page);
+  }
+
+  _hasDirtyZoneControlEditor() {
+    const active = this.shadowRoot?.activeElement;
+    if (!active) return false;
+    return Boolean(active.closest?.("[data-zone-interlock-settings-card], [data-zone-entity-mapping-card]") || ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
+  }
+
+  async _refreshZoneControlElements({ patchOnly = false } = {}) {
+    // Phase 1C contract: panel 기본 갱신은 5초, 전체 화면 재렌더 금지, 요소별 갱신, dirty state 보존.
+    if (!this._isZoneControlPage() || this._hasDirtyZoneControlEditor()) return;
+    const domain = this._page === "device" ? "device" : this._page;
+    await Promise.allSettled([
+      this._fetchZoneInterlockSettings(domain, { patchOnly }),
+      this._fetchZoneEntityStateSummary(domain, { patchOnly }),
+      this._fetchZoneExecutionLogs(domain, { patchOnly }),
+    ]);
+    if (patchOnly) this._patchZoneControlElementCards(domain);
+  }
+
+  _replaceZoneControlCard(selector, html) {
+    const node = this.shadowRoot?.querySelector(selector);
+    if (!node) return;
+    const template = document.createElement("template");
+    template.innerHTML = html.trim();
+    const next = template.content.firstElementChild;
+    if (!next) return;
+    node.replaceWith(next);
+  }
+
+  _patchZoneControlElementCards(domain) {
+    this._replaceZoneControlCard("[data-zone-interlock-settings-card]", this._renderZoneInterlockSettingsCard(domain));
+    this._replaceZoneControlCard("[data-zone-entity-state-summary-card]", this._renderZoneEntityStateSummaryCard(domain));
+    this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
+    this._bindZoneInterlockSettingsInputs(this.shadowRoot);
+    this._bindZoneEntityStateSummaryInputs(this.shadowRoot);
+    this._bindZoneAiFinalTargetInputs(this.shadowRoot);
   }
 
   // ── Init & storage ──────────────────────────────────────────────────────────
@@ -300,6 +354,7 @@ class GreenSmartPanel extends HTMLElement {
       this._state = this._form.host ? "dashboard" : "wizard_step1";
       this._loading = false;
       this._update();
+      this._startZoneElementRefresh();
     } catch (err) {
       this._showError(err, "설정을 불러올 수 없습니다.");
     }
@@ -5014,6 +5069,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _fetchZoneExecutionLogs(domain) {
+    const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return [];
     const zoneId = Number(this._controlScope?.zoneId || 1);
@@ -5022,8 +5078,10 @@ button.action:disabled{opacity:.5;cursor:default;}
       const res = await this._hass.callApi("GET", `green_smart/zones/control-logs?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}&limit=8`);
       const items = Array.isArray(res?.items) ? res.items : [];
       this._zoneExecutionLogCache[cacheKey] = items;
-      this._pageRendered = null;
-      this._update();
+      if (!patchOnly) {
+        this._pageRendered = null;
+        this._update();
+      }
       return items;
     } catch (err) {
       console.warn("실행 로그 조회 실패 시 fallback", err);
@@ -5090,6 +5148,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _fetchZoneInterlockSettings(domain) {
+    const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return null;
     const zoneId = Number(this._controlScope?.zoneId || 1);
@@ -5097,8 +5156,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     try {
       const res = await this._hass.callApi("GET", `green_smart/zones/interlock-settings?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
       this._zoneInterlockSettingsCache[cacheKey] = res || { settings: {}, enabled: true };
-      this._pageRendered = null;
-      this._update();
+      if (!patchOnly) {
+        this._pageRendered = null;
+        this._update();
+      }
       return this._zoneInterlockSettingsCache[cacheKey];
     } catch (err) {
       console.warn("인터록 설정 조회 실패 시 fallback", err);
@@ -5136,6 +5197,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _fetchZoneEntityStateSummary(domain) {
+    const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return null;
     const zoneId = Number(this._controlScope?.zoneId || 1);
@@ -5143,8 +5205,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     try {
       const res = await this._hass.callApi("GET", `green_smart/zones/entity-state-summary?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
       this._zoneEntityStateSummaryCache[cacheKey] = res || { summary: {}, items: [] };
-      this._pageRendered = null;
-      this._update();
+      if (!patchOnly) {
+        this._pageRendered = null;
+        this._update();
+      }
       return this._zoneEntityStateSummaryCache[cacheKey];
     } catch (err) {
       console.warn("Entity 상태 요약 조회 실패 시 fallback", err);
