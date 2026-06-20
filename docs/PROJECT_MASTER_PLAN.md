@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.4`, Phase 1E interlock rule-builder baseline
+> 기준 버전: product code `v1.9.5`, Phase 2A SafetyGuard decision-layer baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -149,7 +149,18 @@ manual/auto/assist/disabled execution pre-gate
 
 ### Phase 2. 인터록/안전 실행 완성
 
-목표:
+현재 Phase 2A 완료:
+
+```text
+SafetyGuard helper 분리
+zone_interlock_settings.settings_json + final_target._safety policy merge
+unavailable/unknown/above/below/equals rule matcher baseline
+blocked/failsafe/clear result schema
+execution response/log safetyGuard summary
+panel 실행/안전 로그 SafetyGuard 요약 표시
+```
+
+남은 목표:
 
 - Safety Guard 독립 계층화
 - 이벤트 기반 + 실행 직전 + 1분 fallback 검사

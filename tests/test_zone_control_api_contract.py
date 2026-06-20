@@ -639,3 +639,44 @@ def test_phase1_interlock_rule_builder_ui_contract():
     bind_section = panel_source.split("_bindZoneInterlockSettingsInputs(root)", 1)[1].split("_bindZoneControlModeInputs(root)", 1)[0]
     assert "data-zone-interlock-rule-add" in bind_section
     assert "data-zone-interlock-rule-delete" in bind_section
+
+def test_phase2a_safety_guard_decision_layer_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for helper in (
+        "_safety_guard_policy(final_target, interlock_settings)",
+        "_safety_guard_rule_matches(rule, mapping, pre_state, call)",
+        "_safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)",
+        "_safety_guard_result_schema(",
+        "safetyGuard",
+        "ruleResults",
+        "failSafeRequired",
+        "zone_interlock_settings",
+        "settings_json AS settingsJson",
+        "safety_guard_blocked",
+    ):
+        assert helper in source
+
+    execution_section = source.split("class ZoneFinalTargetExecutionView", 1)[1].split("class ZoneAiControlOutputsView", 1)[0]
+    assert "interlock_settings = await _interlock_settings_response" in execution_section
+    assert "_safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)" in execution_section
+    assert "safety_decision[\"safetyGuard\"]" in execution_section
+    assert "response = {" in execution_section and "safetyGuard" in execution_section
+
+    for legacy_marker in (
+        "blockedByInterlock",
+        "failSafeApplied",
+        "interlockReasons",
+        "safeStateCall",
+        "safeStateResult",
+    ):
+        assert legacy_marker in source
+
+    for panel_marker in (
+        "safetyGuard",
+        "ruleResults",
+        "SafetyGuard",
+        "안전 판단",
+    ):
+        assert panel_marker in panel_source

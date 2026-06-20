@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.4` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.5` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.4"
+  "version": "1.9.5"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.4"
+const VERSION = "1.9.5"
 ```
 
 중요 UI 페이지:
@@ -737,7 +737,46 @@ disabled → 실제 실행 차단
 
 ---
 
-### 11.4 `ai_zone_control_outputs`
+### 11.4 SafetyGuard execution baseline
+
+Phase 2A부터 final target 실행 경로는 별도 SafetyGuard helper를 사용한다.
+
+```text
+_safety_guard_policy(final_target, interlock_settings)
+_safety_guard_rule_matches(rule, mapping, pre_state, call)
+_safety_guard_result_schema(...)
+_safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
+```
+
+Policy source:
+
+```text
+zone_interlock_settings.settings_json
++ zone_final_control_targets.targets._safety
+```
+
+Result schema:
+
+```text
+status: clear | blocked | failsafe
+blocked
+failSafeRequired
+reasons
+ruleResults
+safeStateCall
+```
+
+Execution log action marker:
+
+```text
+safety_guard_blocked
+```
+
+Panel 실행/안전 로그에는 `SafetyGuard 안전 판단`과 `ruleResults` count가 표시된다.
+
+---
+
+### 11.5 `ai_zone_control_outputs`
 
 AI Agent 또는 시스템이 생성한 제어 전략 후보.
 
@@ -1095,7 +1134,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.4
+v1.9.5
 ```
 
 ---

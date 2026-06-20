@@ -696,39 +696,104 @@ def _safe_state_service_call_for_mapping(mapping: dict) -> dict | None:
     return _service_call_for_mapping(mapping, safe_state)
 
 
-def _interlock_failsafe_decision(final_target: dict, mapping: dict, call: dict, pre_state: dict | None) -> dict:
+def _safety_guard_policy(final_target, interlock_settings) -> dict:
+    """Merge persisted interlock settings with final-target _safety overrides."""
     targets = final_target.get("targets") or {}
-    policy = targets.get("_safety") or targets.get("safety") or {}
+    target_policy = targets.get("_safety") or targets.get("safety") or {}
+    interlock_policy = (interlock_settings or {}).get("settings") or {}
+    enabled = (interlock_settings or {}).get("enabled", True) is not False
+    if not enabled:
+        interlock_policy = {}
+    merged = {
+        "emergency_stop": False,
+        "block_on_unavailable": True,
+        "apply_safe_state_on_block": True,
+        "rules": [],
+        **interlock_policy,
+        **target_policy,
+    }
+    merged["rules"] = list(interlock_policy.get("rules") or []) + list(target_policy.get("rules") or [])
+    return merged
+
+
+def _safety_guard_rule_matches(rule, mapping, pre_state, call) -> dict:
+    role = rule.get("control_role") or rule.get("controlRole")
+    device_type = rule.get("device_type") or rule.get("deviceType")
+    entity_id = rule.get("entity_id") or rule.get("entityId")
+    if role and role != mapping.get("controlRole"):
+        return {"matched": False, "reason": "role_mismatch", "rule": rule}
+    if device_type and device_type != mapping.get("deviceType"):
+        return {"matched": False, "reason": "device_type_mismatch", "rule": rule}
+    if entity_id and entity_id != mapping.get("entityId"):
+        return {"matched": False, "reason": "entity_mismatch", "rule": rule}
+    condition = str(rule.get("condition") or "unavailable").lower()
+    state = str((pre_state or {}).get("state") or "unknown").lower()
+    matched = False
+    if condition == "unavailable":
+        matched = (not (pre_state or {}).get("available", True)) or state == "unavailable"
+    elif condition == "unknown":
+        matched = state == "unknown"
+    elif condition == "equals":
+        matched = state == str(rule.get("threshold") or rule.get("value") or "").lower()
+    elif condition in {"above", "below"}:
+        attrs = (pre_state or {}).get("attributes") or {}
+        raw_actual = attrs.get("value") or attrs.get("temperature") or attrs.get("current_position") or (pre_state or {}).get("state")
+        try:
+            actual = float(raw_actual)
+            threshold = float(rule.get("threshold"))
+            matched = actual > threshold if condition == "above" else actual < threshold
+        except Exception:
+            matched = False
+    else:
+        matched = bool(rule.get("block", True))
+    return {"matched": matched, "condition": condition, "state": state, "rule": rule, "call": call}
+
+
+def _safety_guard_result_schema(*, status: str, blocked: bool, fail_safe_required: bool, reasons: list[str], rule_results: list[dict], safe_state_call: dict | None) -> dict:
+    return {
+        "status": status,
+        "blocked": blocked,
+        "failSafeRequired": fail_safe_required,
+        "reasons": reasons,
+        "ruleResults": rule_results,
+        "safeStateCall": safe_state_call,
+    }
+
+
+def _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state) -> dict:
+    policy = _safety_guard_policy(final_target, interlock_settings)
     emergency_stop = bool(policy.get("emergency_stop") or policy.get("emergencyStop") or False)
     block_on_unavailable = policy.get("block_on_unavailable", policy.get("blockOnUnavailable", True))
     apply_safe_state_on_block = policy.get("apply_safe_state_on_block", policy.get("applySafeStateOnBlock", True))
     reasons = []
+    rule_results = []
     if emergency_stop:
         reasons.append("emergency_stop")
     if block_on_unavailable and pre_state and not pre_state.get("available", True):
         reasons.append("entity_unavailable")
     for rule in policy.get("rules") or []:
-        role = rule.get("control_role") or rule.get("controlRole")
-        device_type = rule.get("device_type") or rule.get("deviceType")
-        entity_id = rule.get("entity_id") or rule.get("entityId")
-        if role and role != mapping.get("controlRole"):
-            continue
-        if device_type and device_type != mapping.get("deviceType"):
-            continue
-        if entity_id and entity_id != mapping.get("entityId"):
-            continue
-        if rule.get("block", True):
-            reasons.append(rule.get("reason") or "interlock_rule")
+        result = _safety_guard_rule_matches(rule, mapping, pre_state, call)
+        rule_results.append(result)
+        if result.get("matched") and rule.get("block", True) and str(rule.get("action") or "block") != "warn":
+            reasons.append(rule.get("message") or rule.get("reason") or "interlock_rule")
     safe_state_call = _safe_state_service_call_for_mapping(mapping) if reasons and apply_safe_state_on_block else None
+    status = "failsafe" if safe_state_call else ("blocked" if reasons else "clear")
+    safety_guard = _safety_guard_result_schema(status=status, blocked=bool(reasons), fail_safe_required=bool(safe_state_call), reasons=reasons, rule_results=rule_results, safe_state_call=safe_state_call)
     return {
         "blockedByInterlock": bool(reasons),
         "failSafeApplied": bool(safe_state_call),
         "interlockReasons": reasons,
-        "safetyStatus": "blocked" if reasons else "clear",
+        "safetyStatus": status,
         "safeStateCall": safe_state_call,
         "safeStateResult": None,
         "originalCall": call,
+        "safetyGuard": safety_guard,
     }
+
+
+def _interlock_failsafe_decision(final_target: dict, mapping: dict, call: dict, pre_state: dict | None) -> dict:
+    """Legacy wrapper kept for Phase 12 contracts; Phase 2A uses SafetyGuard directly."""
+    return _safety_guard_decision(final_target, {"enabled": True, "settings": {}}, mapping, call, pre_state)
 
 
 class ZoneFinalTargetExecutionView(HomeAssistantView):
@@ -758,6 +823,7 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         if not final_target or not isinstance(final_target.get("targets"), dict):
             return _err("final targets not found", status=404)
         mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        interlock_settings = await _interlock_settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
         calls = []
         errors = []
         state_reports = []
@@ -772,11 +838,12 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
             call["entityId"] = mapping.get("entityId")
             pre_state = _entity_state_snapshot(hass, call["entityId"])
             call["preState"] = pre_state
-            safety_decision = _interlock_failsafe_decision(final_target, mapping, call, pre_state)
+            safety_decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
             call["blockedByInterlock"] = safety_decision["blockedByInterlock"]
             call["failSafeApplied"] = safety_decision["failSafeApplied"]
             call["interlockReasons"] = safety_decision["interlockReasons"]
             call["safetyStatus"] = safety_decision["safetyStatus"]
+            call["safetyGuard"] = safety_decision["safetyGuard"]
             if safety_decision["blockedByInterlock"]:
                 blocked_calls.append(call)
                 safe_state_call = safety_decision.get("safeStateCall")
@@ -824,7 +891,7 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         elif blocked_calls and safe_state_calls:
             action = "failsafe_applied"
         elif blocked_calls:
-            action = "interlock_blocked"
+            action = "safety_guard_blocked"  # legacy marker: interlock_blocked
         elif not state_reports:
             action = "final_targets_executed"
         elif state_failures:
@@ -834,10 +901,11 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         if blocked_calls and not safe_state_calls:
             action = "execution_safety_blocked"
         result = "failed" if errors or state_failures or (blocked_calls and not safe_state_calls) else "success"
-        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "safetyStatus": "blocked" if blocked_calls and not safe_state_calls else ("failsafe" if safe_state_calls else "clear")}
+        safety_guard_summary = {"status": "blocked" if blocked_calls and not safe_state_calls else ("failsafe" if safe_state_calls else "clear"), "blockedCount": len(blocked_calls), "failSafeCount": len(safe_state_calls), "ruleResults": [r for c in blocked_calls + calls for r in ((c.get("safetyGuard") or {}).get("ruleResults") or [])], "reasons": [reason for c in blocked_calls + calls for reason in (c.get("interlockReasons") or [])]}
+        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "safetyStatus": safety_guard_summary["status"], "safetyGuard": safety_guard_summary}
         if response.get("stateMatched") and not blocked_calls:
             action = "state_verification_passed"
-        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "safetyStatus": response["safetyStatus"]}, result=result, message="final targets executed via Home Assistant services with interlock/fail safe and pre/post state verification")
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "safetyStatus": response["safetyStatus"], "safetyGuard": response["safetyGuard"]}, result=result, message="final targets executed via Home Assistant services with SafetyGuard/interlock/fail safe and pre/post state verification")
         return _json(response)
 
 
@@ -1083,6 +1151,7 @@ def _summarize_control_log_row(row: dict) -> dict:
         "latestActualState": latest_report.get("actualState"),
         "latestExpectedTarget": latest_report.get("expectedTarget"),
         "interlockReasons": sorted({reason for call in blocked_calls for reason in (call.get("interlockReasons") or [])}),
+        "safetyGuard": after.get("safetyGuard") or {"status": after.get("safetyStatus") or ("blocked" if blocked_calls else "clear"), "ruleResults": [r for call in blocked_calls for r in ((call.get("safetyGuard") or {}).get("ruleResults") or [])]},
     }
 
 

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.4
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.5
 const DOMAIN = "green_smart";
-const VERSION = "1.9.4";
+const VERSION = "1.9.5";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5445,9 +5445,12 @@ button.action:disabled{opacity:.5;cursor:default;}
       const reasons = (summary.interlockReasons || []).join(", ") || "-";
       const pre = (before.preState || [])[0]?.state || "-";
       const post = (after.postState || [])[0]?.state || summary.latestActualState || "-";
+      const safetyGuard = summary.safetyGuard || after.safetyGuard || {};
+      const ruleResultCount = Array.isArray(safetyGuard.ruleResults) ? safetyGuard.ruleResults.length : 0;
       return `<div style="border-top:1px solid #e2f0e4;padding:9px 0;display:grid;gap:5px;font-size:12px;">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><b>${this._esc(log.action || "execution")}</b><span>${this._esc(log.result || "-")} · ${this._esc(log.createdAt || "")}</span></div>
-        <div>안전 상태: <b>${this._esc(summary.safetyStatus || "clear")}</b> · ${blocked ? "안전 차단" : "차단 없음"} · ${failSafe ? "Fail Safe 적용" : "Fail Safe 미적용"}</div>
+        <div>안전 상태: <b>${this._esc(summary.safetyStatus || safetyGuard.status || "clear")}</b> · ${blocked ? "안전 차단" : "차단 없음"} · ${failSafe ? "Fail Safe 적용" : "Fail Safe 미적용"}</div>
+        <div>SafetyGuard 안전 판단: ${this._esc(safetyGuard.status || "clear")} · ruleResults ${ruleResultCount}</div>
         <div>차단 사유: ${this._esc(reasons)}</div>
         <div>실행 전 상태: ${this._esc(pre)} → 실행 후 상태: ${this._esc(post)} · 목표: ${this._esc(summary.latestExpectedTarget ?? "-")}</div>
         <div>호출 ${summary.callCount || 0} · 차단 ${summary.blockedCallCount || 0} · Fail Safe ${summary.safeStateCallCount || 0} · 상태 리포트 ${summary.stateReportCount || 0}</div>
