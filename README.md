@@ -7,12 +7,19 @@ Home Assistant custom integration and sidebar panel for Green Smart greenhouse m
 This repository is the active product repository for the `green_smart` Home Assistant custom integration.
 Paperclip-era documents are historical only and are not part of the active workflow.
 
+## Start here
+
+New developers should read the full project handbook first:
+
+- [`docs/PROJECT_GUIDE.md`](docs/PROJECT_GUIDE.md) — end-to-end project overview, architecture, DB model, API map, UI structure, testing, deployment, and roadmap.
+- [`docs/design/zone-control-roadmap-and-data-model.md`](docs/design/zone-control-roadmap-and-data-model.md) — detailed zone-control/AI/final-target/entity-mapping/execution data model.
+
 ## Active workflow
 
 - Hermes: orchestration, planning, security gates, user approval
-- Claude Code CLI: architecture, security review, hard root-cause analysis
-- Codex CLI: primary implementation and test/fix loop
-- Antigravity CLI: frontend, UX, documentation, independent review
+- Claude Code CLI: architecture, security review, hard root-cause analysis when explicitly used
+- Codex CLI / standard terminal-file-git tools: primary implementation and test/fix loop
+- Antigravity CLI is not part of the active workflow.
 
 ## Public HACS installation model
 
