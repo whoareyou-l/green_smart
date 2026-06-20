@@ -1182,3 +1182,88 @@ def test_phase4_irrigation_strategy_mvp_contract():
 
     irrigation_page = panel_source.split("  _renderIrrigSettingsPage() {", 1)[1].split("  _cloneDeviceDefaults()", 1)[0]
     assert '_renderIrrigationStrategyPreviewCard("irrigation")' in irrigation_page
+
+
+
+def test_phase5_limited_auto_control_and_alert_resume_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "LIMITED_AUTO_DEVICE_GROUPS",
+        "LIMITED_AUTO_POLICY_DEFAULTS",
+        "_limited_auto_policy_response",
+        "_limited_auto_policy_post",
+        "_device_group_auto_allowance",
+        "_limited_auto_execution_policy",
+        "_alert_resume_lifecycle_response",
+        "ZoneLimitedAutoPolicyView",
+        "ZoneAlertResumeView",
+        'url = "/api/green_smart/zones/limited-auto-policy"',
+        'url = "/api/green_smart/zones/alert-resume"',
+        "limited_auto_policy_saved",
+        "limited_auto_execution_allowed",
+        "limited_auto_execution_blocked",
+        "alert_resume_requested",
+        "alert_resume_approved",
+        "alert_resume_rejected",
+        "deviceGroupAutoAllow",
+        "semiAutoRequiresAck",
+        "maxAutoDurationMinutes",
+        "resumeState",
+        "resumeAllowed",
+        "operatorConfirmationRequired",
+        "SafetyGuard 우선",
+    ):
+        assert api_marker in source
+
+    for registration in (
+        "hass.http.register_view(ZoneLimitedAutoPolicyView())",
+        "hass.http.register_view(ZoneAlertResumeView())",
+    ):
+        assert registration in init_source
+
+    execution_section = source.split("async def _execute_latest_final_targets", 1)[1].split("class ZoneAiControlOutputsView", 1)[0]
+    for behavior in (
+        "_limited_auto_execution_policy",
+        "limited_auto_execution_allowed",
+        "limited_auto_execution_blocked",
+        "deviceGroupAutoAllow",
+        "semiAutoRequiresAck",
+        "operatorConfirmationRequired",
+    ):
+        assert behavior in execution_section
+
+    for panel_marker in (
+        "this._zoneLimitedAutoPolicyCache",
+        "this._zoneAlertResumeCache",
+        "async _fetchZoneLimitedAutoPolicy(domain",
+        "async _saveZoneLimitedAutoPolicy(domain)",
+        "async _requestZoneAlertResume(domain)",
+        "_readZoneLimitedAutoPolicy(root, domain)",
+        "_renderZoneLimitedAutoPolicyCard(domain)",
+        "_bindZoneLimitedAutoPolicyInputs(root)",
+        "green_smart/zones/limited-auto-policy",
+        "green_smart/zones/alert-resume",
+        "data-zone-limited-auto-card",
+        "data-zone-limited-auto-refresh",
+        "data-zone-limited-auto-save",
+        "data-zone-limited-auto-group",
+        "data-zone-limited-auto-enabled",
+        "data-zone-limited-auto-semi-ack",
+        "data-zone-limited-auto-duration",
+        "data-zone-alert-resume-request",
+        "제한적 자동제어",
+        "장비군별 자동 허용",
+        "반자동 승인 필요",
+        "자동 최대 지속 시간",
+        "알림 확인/조치/재개",
+        "재개 요청",
+        "SafetyGuard 우선 적용",
+    ):
+        assert panel_marker in panel_source
+
+    for domain in ("environment", "irrigation", "device"):
+        page = panel_source
+        assert f'_renderZoneLimitedAutoPolicyCard("{domain}")' in page

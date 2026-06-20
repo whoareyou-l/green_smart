@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.13
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.14
 const DOMAIN = "green_smart";
-const VERSION = "1.9.13";
+const VERSION = "1.9.14";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -255,6 +255,8 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneSafetyGuardEventCache = {};
     this._zoneEnvironmentStrategyPreviewCache = {};
     this._zoneIrrigationStrategyPreviewCache = {};
+    this._zoneLimitedAutoPolicyCache = {};
+    this._zoneAlertResumeCache = {};
     this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
@@ -320,6 +322,7 @@ class GreenSmartPanel extends HTMLElement {
       this._fetchZoneEntityStateSummary(domain, { patchOnly }),
       this._fetchZoneSafetyGuardWatchdog(domain, { patchOnly }),
       this._fetchZoneSafetyGuardEvents(domain, { patchOnly }),
+      this._fetchZoneLimitedAutoPolicy(domain, { patchOnly }),
       ...(domain === "environment" ? [this._fetchEnvironmentStrategyPreview(domain, { patchOnly })] : []),
       ...(domain === "irrigation" ? [this._fetchIrrigationStrategyPreview(domain, { patchOnly })] : []),
       this._fetchZoneExecutionLogs(domain, { patchOnly }),
@@ -343,6 +346,7 @@ class GreenSmartPanel extends HTMLElement {
     this._replaceZoneControlCard("[data-zone-entity-state-summary-card]", this._renderZoneEntityStateSummaryCard(domain));
     this._replaceZoneControlCard("[data-zone-safety-watchdog-card]", this._renderZoneSafetyGuardWatchdogCard(domain));
     this._replaceZoneControlCard("[data-zone-safety-event-card]", this._renderZoneSafetyGuardEventHistoryCard(domain));
+    this._replaceZoneControlCard("[data-zone-limited-auto-card]", this._renderZoneLimitedAutoPolicyCard(domain));
     if (domain === "environment") this._replaceZoneControlCard("[data-env-strategy-preview-card]", this._renderEnvironmentStrategyPreviewCard(domain));
     if (domain === "irrigation") this._replaceZoneControlCard("[data-irrigation-strategy-preview-card]", this._renderIrrigationStrategyPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
@@ -351,6 +355,7 @@ class GreenSmartPanel extends HTMLElement {
     this._bindZoneEntityStateSummaryInputs(this.shadowRoot);
     this._bindZoneSafetyGuardWatchdogInputs(this.shadowRoot);
     this._bindZoneSafetyGuardEventInputs(this.shadowRoot);
+    this._bindZoneLimitedAutoPolicyInputs(this.shadowRoot);
     this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
     this._bindIrrigationStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
@@ -5108,6 +5113,73 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  _readZoneLimitedAutoPolicy(root, domain) {
+    const card = root?.querySelector?.(`[data-zone-limited-auto-card][data-zone-limited-auto-domain="${domain}"]`) || root?.querySelector?.("[data-zone-limited-auto-card]");
+    const deviceGroupAutoAllow = {};
+    card?.querySelectorAll?.("[data-zone-limited-auto-group]").forEach((row) => {
+      const group = row.dataset.zoneLimitedAutoGroup;
+      deviceGroupAutoAllow[group] = !!row.querySelector("[data-zone-limited-auto-enabled]")?.checked;
+    });
+    const maxAutoDurationMinutes = Number(card?.querySelector("[data-zone-limited-auto-duration]")?.value || 15);
+    return {
+      deviceGroupAutoAllow,
+      semiAutoRequiresAck: !!card?.querySelector("[data-zone-limited-auto-semi-ack]")?.checked,
+      maxAutoDurationMinutes,
+      operatorConfirmationRequired: true,
+      safetyPolicy: "SafetyGuard 우선",
+    };
+  }
+
+  async _fetchZoneLimitedAutoPolicy(domain) {
+    const { patchOnly = false } = arguments[1] || {};
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/limited-auto-policy?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._zoneLimitedAutoPolicyCache[cacheKey] = res;
+      if (!patchOnly) { this._pageRendered = null; this._update(); }
+      return res;
+    } catch (err) {
+      console.warn("제한적 자동제어 정책 조회 실패 시 fallback", err);
+      return this._zoneLimitedAutoPolicyCache[cacheKey] || null;
+    }
+  }
+
+  async _saveZoneLimitedAutoPolicy(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const policy = this._readZoneLimitedAutoPolicy(this.shadowRoot, domain);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/limited-auto-policy", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, policy });
+      this._zoneLimitedAutoPolicyCache[this._scopedControlCacheKey(domain)] = res;
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 제한적 자동제어 정책 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null; this._update();
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("제한적 자동제어 정책 저장 실패", err);
+      return false;
+    }
+  }
+
+  async _requestZoneAlertResume(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/alert-resume", { crop_season_id: cropSeasonId, zone_id: zoneId, domain, resumeAction: "request", operatorNote: "panel resume request" });
+      this._zoneAlertResumeCache[this._scopedControlCacheKey(domain)] = res;
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 알림 확인/조치/재개 요청 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null; this._update();
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("알림 확인/조치/재개 요청 실패", err);
+      return false;
+    }
+  }
+
   _readIrrigationStrategyInputs(root, domain) {
     const card = root?.querySelector?.(`[data-irrigation-strategy-preview-card][data-irrigation-strategy-domain="${domain}"]`) || root?.querySelector?.("[data-irrigation-strategy-preview-card]");
     const readNumber = (selector) => {
@@ -5693,6 +5765,28 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderZoneLimitedAutoPolicyCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneLimitedAutoPolicyCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId() && !data) this._fetchZoneLimitedAutoPolicy(domain);
+    const groups = ["ventilation", "screen", "irrigation", "fertigation", "fan", "co2"];
+    const labels = { ventilation: "환기", screen: "스크린", irrigation: "관수", fertigation: "양액", fan: "팬", co2: "CO₂" };
+    const rows = groups.map((group) => `<label data-zone-limited-auto-group="${group}" style="font-size:12px;color:#5d7d64;display:flex;gap:6px;align-items:center;"><input type="checkbox" data-zone-limited-auto-enabled ${data?.deviceGroupAutoAllow?.[group] ? "checked" : ""}> ${labels[group]} 자동 허용</label>`).join("");
+    return `<div class="gs-card" data-zone-limited-auto-card data-zone-limited-auto-domain="${domain}" style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>제한적 자동제어</b><div class="strategy-muted">장비군별 자동 허용 · 반자동 승인 필요 · 자동 최대 지속 시간 · 알림 확인/조치/재개 · SafetyGuard 우선 적용</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="mini-btn" data-zone-limited-auto-refresh data-zone-limited-auto-domain="${domain}">새로고침</button><button class="mini-btn primary" data-zone-limited-auto-save data-zone-limited-auto-domain="${domain}">자동 정책 저장</button><button class="mini-btn" data-zone-alert-resume-request data-zone-limited-auto-domain="${domain}">재개 요청</button></div>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:8px;">${rows}</div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+        <label>반자동 승인 필요 <input type="checkbox" data-zone-limited-auto-semi-ack ${data?.semiAutoRequiresAck !== false ? "checked" : ""}></label>
+        <label>자동 최대 지속 시간 <input type="number" data-zone-limited-auto-duration value="${this._esc(data?.maxAutoDurationMinutes ?? 15)}"> 분</label>
+        <div>resumeState <b>${this._esc(data?.resumeState || this._zoneAlertResumeCache?.[cacheKey]?.resumeState || "idle")}</b> · resumeAllowed <b>${this._esc(String(data?.resumeAllowed || false))}</b></div>
+      </div>
+      <div class="strategy-muted" style="margin-top:8px;">실제 실행은 Control Mode 이후 제한적 자동제어 gate를 통과하고, 그 다음 SafetyGuard/Interlock/fail-safe/state verification을 통과합니다.</div>
+    </div>`;
+  }
+
   _renderZoneInterlockRuleBuilder(domain, settings) {
     // Phase 1E contract: structured rule UI keeps settings_json compatible while avoiding raw JSON-only editing.
     const rules = Array.isArray(settings?.rules) ? settings.rules : [];
@@ -6031,6 +6125,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneEntityStateSummaryCard("environment")}
       ${this._renderZoneSafetyGuardWatchdogCard("environment")}
       ${this._renderZoneSafetyGuardEventHistoryCard("environment")}
+      ${this._renderZoneLimitedAutoPolicyCard("environment")}
       ${this._renderEnvironmentStrategyPreviewCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
@@ -6198,6 +6293,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneEntityStateSummaryCard("irrigation")}
       ${this._renderZoneSafetyGuardWatchdogCard("irrigation")}
       ${this._renderZoneSafetyGuardEventHistoryCard("irrigation")}
+      ${this._renderZoneLimitedAutoPolicyCard("irrigation")}
       ${this._renderIrrigationStrategyPreviewCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
@@ -6287,6 +6383,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneEntityStateSummaryCard("device")}
       ${this._renderZoneSafetyGuardWatchdogCard("device")}
       ${this._renderZoneSafetyGuardEventHistoryCard("device")}
+      ${this._renderZoneLimitedAutoPolicyCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
@@ -6587,6 +6684,27 @@ button.action:disabled{opacity:.5;cursor:default;}
         if (!confirm("환경 전략 MVP 결과를 최종 적용값으로 저장할까요? SafetyGuard 우선 적용은 실행 단계에서 유지됩니다.")) return;
         const ok = await this._saveEnvironmentStrategyFinalTargets(domain);
         if (!ok) alert("환경 전략 MVP 최종값 저장 실패: API/로그를 확인해 주세요.");
+      });
+    });
+  }
+
+  _bindZoneLimitedAutoPolicyInputs(root) {
+    root.querySelectorAll("[data-zone-limited-auto-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => await this._fetchZoneLimitedAutoPolicy(btn.dataset.zoneLimitedAutoDomain || "environment"));
+    });
+    root.querySelectorAll("[data-zone-limited-auto-save]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneLimitedAutoDomain || "environment";
+        const ok = await this._saveZoneLimitedAutoPolicy(domain);
+        if (!ok) alert("제한적 자동제어 정책 저장 실패: API/로그를 확인해 주세요.");
+      });
+    });
+    root.querySelectorAll("[data-zone-alert-resume-request]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneLimitedAutoDomain || "environment";
+        if (!confirm("알림 확인/조치 후 자동제어 재개 요청을 기록할까요?")) return;
+        const ok = await this._requestZoneAlertResume(domain);
+        if (!ok) alert("재개 요청 실패: API/로그를 확인해 주세요.");
       });
     });
   }

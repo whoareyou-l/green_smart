@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.13` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 112 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.14` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 113 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.13"
+  "version": "1.9.14"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.13"
+const VERSION = "1.9.14"
 ```
 
 중요 UI 페이지:
@@ -901,6 +901,26 @@ irrigation_strategy_final_targets_saved
 
 Panel에는 `관수 전략 MVP` 카드가 표시되며, 운영자는 누적 일사/VWC/EC/pH 수동 보정값을 넣어 IRR preview를 확인하고 `관수 전략 최종값 저장`으로 `zone_final_control_targets`에 저장할 수 있다. 실제 실행은 기존 Control Mode/SafetyGuard/Interlock gate를 계속 통과한다.
 
+
+Phase 5 limited auto control + alert resume baseline:
+
+```text
+GET /api/green_smart/zones/limited-auto-policy
+POST /api/green_smart/zones/limited-auto-policy
+POST /api/green_smart/zones/alert-resume
+LIMITED_AUTO_DEVICE_GROUPS
+LIMITED_AUTO_POLICY_DEFAULTS
+deviceGroupAutoAllow
+semiAutoRequiresAck
+maxAutoDurationMinutes
+resumeState/resumeAllowed
+limited_auto_execution_allowed
+limited_auto_execution_blocked
+alert_resume_requested/approved/rejected
+```
+
+Panel에는 `제한적 자동제어` 카드가 환경/관수/장치제어에 공통 표시된다. 운영자는 장비군별 자동 허용, 반자동 승인 필요, 자동 최대 지속 시간을 저장하고, 알림 확인/조치 이후 재개 요청을 남길 수 있다. 실제 장비 실행은 Control Mode 다음에 제한적 자동제어 gate를 통과한 뒤 SafetyGuard/Interlock/fail-safe/state verification을 통과한다.
+
 ---
 
 ### 11.5 `ai_zone_control_outputs`
@@ -1261,7 +1281,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.13
+v1.9.14
 ```
 
 ---

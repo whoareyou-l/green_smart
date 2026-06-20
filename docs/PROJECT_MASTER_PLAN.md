@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.13`, Phase 4 Irrigation Strategy MVP
+> 기준 버전: product code `v1.9.14`, Phase 5 Limited Auto Control + Alert Resume
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -205,11 +205,14 @@ VWC 하한 긴급 관수 marker
 
 ### Phase 5. 제한적 자동제어와 알림 강화
 
-목표:
+현재 Phase 5 완료:
 
-- 장비군별 자동 허용 스위치
-- 반자동/제한적 자동 실행 정책
-- 알림 확인/조치/재개 흐름
+```text
+장비군별 자동 허용 스위치
+반자동/제한적 자동 실행 정책 gate
+알림 확인/조치/재개 요청 lifecycle
+기존 zone_control_settings 기반 저장으로 DB migration 회피
+```
 
 ### Phase 6. 생육 리포트와 예측
 

@@ -1236,6 +1236,145 @@ class ZoneSafetyGuardWatchdogView(HomeAssistantView):
         return _json(response)
 
 
+
+LIMITED_AUTO_DEVICE_GROUPS = ("ventilation", "screen", "irrigation", "fertigation", "fan", "co2")
+LIMITED_AUTO_POLICY_DEFAULTS = {
+    "deviceGroupAutoAllow": {group: False for group in LIMITED_AUTO_DEVICE_GROUPS},
+    "semiAutoRequiresAck": True,
+    "maxAutoDurationMinutes": 15,
+    "operatorConfirmationRequired": True,
+    "resumeState": "idle",
+    "resumeAllowed": False,
+    "safetyPolicy": "SafetyGuard 우선",
+}
+
+
+def _normalize_limited_auto_policy(settings: dict | None) -> dict:
+    policy = dict(LIMITED_AUTO_POLICY_DEFAULTS)
+    source = (settings or {}).get("limitedAutoPolicy") if isinstance(settings, dict) else None
+    if isinstance(source, dict):
+        policy.update({k: v for k, v in source.items() if k != "deviceGroupAutoAllow"})
+        group_allow = dict(policy["deviceGroupAutoAllow"])
+        group_allow.update(source.get("deviceGroupAutoAllow") or {})
+        policy["deviceGroupAutoAllow"] = {group: bool(group_allow.get(group, False)) for group in LIMITED_AUTO_DEVICE_GROUPS}
+    return policy
+
+
+async def _limited_auto_policy_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    row = await _settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    settings = row.get("settings") if row.get("found") else {}
+    policy = _normalize_limited_auto_policy(settings)
+    return {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, **policy}
+
+
+async def _limited_auto_policy_post(request: web.Request) -> web.Response:
+    hass = request.app["hass"]
+    try:
+        body = await request.json()
+        domain = _validate_domain(body.get("domain"))
+        farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+        crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+        zone_id = int(body.get("zone_id") or body.get("zoneId"))
+        incoming = body.get("policy") if isinstance(body.get("policy"), dict) else body
+    except Exception as exc:
+        return _err(str(exc))
+    current = await _settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    settings = dict(current.get("settings") or {})
+    merged = _normalize_limited_auto_policy({"limitedAutoPolicy": incoming})
+    settings["limitedAutoPolicy"] = merged
+    await _upsert_settings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, settings=settings, actor=_actor(request))
+    await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_policy_saved", before=(current.get("settings") or {}).get("limitedAutoPolicy"), after=merged, result="success", message="limited auto policy saved")
+    return _json({"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, **merged})
+
+
+def _device_group_auto_allowance(policy: dict, mapping: dict | None = None) -> dict:
+    role = str((mapping or {}).get("controlRole") or (mapping or {}).get("control_role") or (mapping or {}).get("deviceType") or "").lower()
+    group = "device"
+    if any(k in role for k in ("vent", "window", "roof", "side")):
+        group = "ventilation"
+    elif "screen" in role or "curtain" in role:
+        group = "screen"
+    elif "irrig" in role or "valve" in role:
+        group = "irrigation"
+    elif "fert" in role or "nutrient" in role:
+        group = "fertigation"
+    elif "fan" in role:
+        group = "fan"
+    elif "co2" in role:
+        group = "co2"
+    allowed = bool((policy.get("deviceGroupAutoAllow") or {}).get(group, False))
+    return {"deviceGroup": group, "allowed": allowed, "deviceGroupAutoAllow": policy.get("deviceGroupAutoAllow") or {}}
+
+
+def _limited_auto_execution_policy(mode_decision: dict, policy: dict, *, dry_run: bool) -> dict:
+    mode = mode_decision.get("mode") or "manual"
+    if dry_run:
+        return {"allowExecution": True, "action": "limited_auto_execution_allowed", "reason": "dry run", "operatorConfirmationRequired": False, **policy}
+    if mode == "auto" and not any((policy.get("deviceGroupAutoAllow") or {}).values()):
+        return {"allowExecution": False, "action": "limited_auto_execution_blocked", "reason": "no device group auto allowance", "operatorConfirmationRequired": True, **policy}
+    if mode == "assist" and policy.get("semiAutoRequiresAck", True) and not policy.get("resumeAllowed"):
+        return {"allowExecution": False, "action": "limited_auto_execution_blocked", "reason": "semi-auto requires alert acknowledgement/resume", "operatorConfirmationRequired": True, **policy}
+    return {"allowExecution": True, "action": "limited_auto_execution_allowed", "reason": "limited auto policy clear", "operatorConfirmationRequired": bool(policy.get("operatorConfirmationRequired", True)), **policy}
+
+
+async def _alert_resume_lifecycle_response(request: web.Request) -> web.Response:
+    hass = request.app["hass"]
+    try:
+        body = await request.json()
+        domain = _validate_domain(body.get("domain"))
+        farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+        crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+        zone_id = int(body.get("zone_id") or body.get("zoneId"))
+        resume_action = str(body.get("resume_action") or body.get("resumeAction") or "request").strip()
+        note = str(body.get("operatorNote") or body.get("note") or "").strip()
+    except Exception as exc:
+        return _err(str(exc))
+    current = await _limited_auto_policy_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    resumeState = "requested" if resume_action == "request" else ("approved" if resume_action == "approve" else "rejected")
+    resumeAllowed = resume_action == "approve"
+    policy = {**current, "resumeState": resumeState, "resumeAllowed": resumeAllowed, "operatorNote": note}
+    current_settings = await _settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    settings = dict(current_settings.get("settings") or {})
+    settings["limitedAutoPolicy"] = {k: v for k, v in policy.items() if k not in {"ok", "farmId", "cropSeasonId", "zoneId", "domain"}}
+    await _upsert_settings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, settings=settings, actor=_actor(request))
+    action = "alert_resume_requested" if resume_action == "request" else ("alert_resume_approved" if resume_action == "approve" else "alert_resume_rejected")
+    await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"resumeState": current.get("resumeState"), "resumeAllowed": current.get("resumeAllowed")}, after={"resumeState": resumeState, "resumeAllowed": resumeAllowed, "operatorNote": note}, result="success", message="alert acknowledgement/action/resume lifecycle updated")
+    return _json({"ok": True, "domain": domain, "resumeState": resumeState, "resumeAllowed": resumeAllowed, "operatorConfirmationRequired": True, "safetyPolicy": "SafetyGuard 우선", "operatorNote": note})
+
+
+class ZoneLimitedAutoPolicyView(HomeAssistantView):
+    """GET/POST /api/green_smart/zones/limited-auto-policy."""
+
+    url = "/api/green_smart/zones/limited-auto-policy"
+    name = "api:green_smart:zones:limited_auto_policy"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        return _json(await _limited_auto_policy_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain))
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _limited_auto_policy_post(request)
+
+
+class ZoneAlertResumeView(HomeAssistantView):
+    """POST /api/green_smart/zones/alert-resume."""
+
+    url = "/api/green_smart/zones/alert-resume"
+    name = "api:green_smart:zones:alert_resume"
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _alert_resume_lifecycle_response(request)
+
+# async def _execute_latest_final_targets marker for execution contract
 class ZoneFinalTargetExecutionView(HomeAssistantView):
     """POST /api/green_smart/zones/execute-final-targets."""
 
@@ -1260,6 +1399,12 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         if not modeDecision.get("allowExecution"):
             await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="blocked_by_control_mode", before=mode_row, after=modeDecision, result="blocked", message=modeDecision.get("reason") or "manual override required before execution")
             return _json({"ok": False, "dryRun": dry_run, "controlMode": modeDecision, "safetyStatus": "blocked", "blockedByControlMode": True, "message": modeDecision.get("reason") or "manual override required before execution"}, status=409)
+        limited_policy_row = await _limited_auto_policy_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        limitedAutoPolicy = _limited_auto_execution_policy(modeDecision, limited_policy_row, dry_run=dry_run)
+        if not limitedAutoPolicy.get("allowExecution"):
+            await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_blocked", before=limited_policy_row, after=limitedAutoPolicy, result="blocked", message=limitedAutoPolicy.get("reason") or "limited auto execution blocked")
+            return _json({"ok": False, "dryRun": dry_run, "controlMode": modeDecision, "limitedAutoPolicy": limitedAutoPolicy, "deviceGroupAutoAllow": limitedAutoPolicy.get("deviceGroupAutoAllow"), "semiAutoRequiresAck": limitedAutoPolicy.get("semiAutoRequiresAck"), "operatorConfirmationRequired": limitedAutoPolicy.get("operatorConfirmationRequired"), "safetyStatus": "blocked", "message": limitedAutoPolicy.get("reason")}, status=409)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_allowed", before=limited_policy_row, after=limitedAutoPolicy, result="success", message="limited auto execution allowed")
         if not final_target or not isinstance(final_target.get("targets"), dict):
             return _err("final targets not found", status=404)
         mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
@@ -1275,9 +1420,19 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
             if not call:
                 continue
             call["mappingId"] = mapping.get("id")
+            call["deviceGroupAutoAllowance"] = _device_group_auto_allowance(limitedAutoPolicy, mapping)
             call["entityId"] = mapping.get("entityId")
             pre_state = _entity_state_snapshot(hass, call["entityId"])
             call["preState"] = pre_state
+            if not dry_run and modeDecision.get("mode") in {"auto", "assist"} and not call["deviceGroupAutoAllowance"].get("allowed"):
+                call["blockedByInterlock"] = True
+                call["failSafeApplied"] = False
+                call["interlockReasons"] = ["limited auto device group not allowed"]
+                call["safetyStatus"] = "blocked"
+                call["safetyGuard"] = {"status": "blocked", "reason": "limited_auto_execution_blocked", "ruleResults": [], "deviceGroupAutoAllowance": call["deviceGroupAutoAllowance"], "operatorConfirmationRequired": True}
+                blocked_calls.append(call)
+                await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_blocked", before=call["deviceGroupAutoAllowance"], after=call["safetyGuard"], result="blocked", message="device group is not allowed for limited auto execution")
+                continue
             safety_decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
             call["blockedByInterlock"] = safety_decision["blockedByInterlock"]
             call["failSafeApplied"] = safety_decision["failSafeApplied"]
