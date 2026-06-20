@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.26
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.27
 const DOMAIN = "green_smart";
-const VERSION = "1.8.26";
+const VERSION = "1.8.27";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -4943,7 +4943,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page irrigation-control-page">
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       <div class="gs-card" style="padding:16px;">
-        <span hidden data-irrigation-control-tab data-irrigation-control-content>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
+        <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
         ${this._renderIrrigationControlTabBar()}
         <div data-irrigation-control-content>${this._renderIrrigationControlTabContent(this._irrigationControl)}</div>
       </div>
@@ -5091,6 +5091,46 @@ button.action:disabled{opacity:.5;cursor:default;}
       });
     });
     root.querySelector("#control-strategy-save")?.addEventListener("click", () => this._saveControlStrategy());
+  }
+
+  _bindIrrigationControlInputs(root) {
+    const page = root.querySelector(".irrigation-control-page");
+    if (!page) return;
+
+    page.querySelectorAll("button[data-irrigation-control-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const nextTab = btn.dataset.irrigationControlTab;
+        if (!nextTab || nextTab === this._irrigationTab) return;
+        this._irrigationTab = nextTab;
+        this._pageRendered = null;
+        this._update();
+      });
+    });
+
+    const readValue = (el) => {
+      if (el.type === "checkbox") return Boolean(el.checked);
+      if (el.type === "number") {
+        const n = Number(el.value);
+        return Number.isFinite(n) ? n : 0;
+      }
+      return el.value;
+    };
+
+    page.querySelectorAll("[data-irrigation-field]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const group = el.dataset.irrigationGroup;
+        const key = el.dataset.irrigationKey;
+        if (!group || !key) return;
+        if (!this._irrigationControl[group]) this._irrigationControl[group] = {};
+        this._irrigationControl[group][key] = readValue(el);
+        this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
+        // Do not call _update() here. Re-rendering on every field change causes the
+        // HA panel to flicker and can make unsaved edits appear reset. The next tab
+        // switch/save performs a controlled render with the in-memory state.
+      });
+    });
+
+    page.querySelector("#irrigation-control-save")?.addEventListener("click", () => this._saveIrrigationControl());
   }
 
   // ── Dashboard event binding ───────────────────────────────────────────────────

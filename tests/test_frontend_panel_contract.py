@@ -234,12 +234,13 @@ def test_irrigation_control_page_tabs_state_and_ai_interlock_contract():
 
     assert 'navBtn("irrigation",  "mdi:water",              "관수 제어"' in sidebar
     assert "기본 관수 인터록으로 안전하게 작동하고" in irrig_page
-    assert "data-irrigation-control-tab" in irrig_page
+    assert "data-irrigation-control-tab" in panel
     assert "data-irrigation-control-content" in irrig_page
     assert "_irrigationControlTabs()" in panel
     assert "_renderIrrigationControlTabBar" in panel
     assert "_renderIrrigationControlTabContent" in panel
-    assert "_bindIrrigationControlInputs" in panel
+    assert "  _bindIrrigationControlInputs(root) {" in panel
+    assert "data-irrigation-control-tab data-irrigation-control-content" not in irrig_page
     for tab in ["제어 모드", "기본 관수 설정", "포수 전략", "일사 비례 관수", "드라이백 전략", "배액 피드백", "양액 전략", "AI 관수 보정", "안전 한계", "양액기 설정", "관수 로그"]:
         assert tab in panel
     for state_key in ["irrigationControlMode", "baseIrrigationSettings", "saturationStrategy", "solarIrrigationStrategy", "drybackStrategy", "drainFeedback", "nutrientStrategy", "aiIrrigationCorrection", "irrigationSafetyLimits", "fertigationDeviceSettings", "finalIrrigationTargets", "irrigationLogs"]:
