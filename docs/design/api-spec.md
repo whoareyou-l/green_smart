@@ -56,6 +56,7 @@ No generic vendor proxy.
 ```text
 GET/POST       /api/green_smart/zones/control-settings
 GET/POST       /api/green_smart/zones/interlock-settings
+GET            /api/green_smart/zones/entity-state-summary
 POST           /api/green_smart/zones/copy-control-settings
 GET/POST       /api/green_smart/zones/final-targets
 GET/POST       /api/green_smart/zones/ai-control-outputs

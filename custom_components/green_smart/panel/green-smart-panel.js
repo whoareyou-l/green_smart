@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.0
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.1
 const DOMAIN = "green_smart";
-const VERSION = "1.9.0";
+const VERSION = "1.9.1";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -248,6 +248,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneEntityMappingCache = {};
     this._zoneExecutionLogCache = {};
     this._zoneInterlockSettingsCache = {};
+    this._zoneEntityStateSummaryCache = {};
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -5134,6 +5135,50 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneEntityStateSummary(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/entity-state-summary?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._zoneEntityStateSummaryCache[cacheKey] = res || { summary: {}, items: [] };
+      this._pageRendered = null;
+      this._update();
+      return this._zoneEntityStateSummaryCache[cacheKey];
+    } catch (err) {
+      console.warn("Entity 상태 요약 조회 실패 시 fallback", err);
+      return this._zoneEntityStateSummaryCache[cacheKey] || null;
+    }
+  }
+
+  _renderZoneEntityStateSummaryCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneEntityStateSummaryCache?.[cacheKey] || null;
+    if (this._numericControlSeasonId() && !data) this._fetchZoneEntityStateSummary(domain);
+    const summary = data?.summary || {};
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const rows = items.length ? items.map((item) => {
+      const state = item.state || "unknown";
+      const badge = item.available ? "사용 가능" : "unavailable";
+      const unknown = item.unknown ? " · unknown" : "";
+      return `<div style="display:grid;grid-template-columns:1.2fr 1.4fr .8fr 1fr;gap:8px;align-items:center;border-top:1px solid #e2f0e4;padding:7px 0;font-size:12px;">
+        <span>${this._esc(item.deviceType || "장치")}</span>
+        <code>${this._esc(item.entityId || "entity_id")}</code>
+        <span>${this._esc(item.controlRole || "role")}</span>
+        <span>현재 상태: <b>${this._esc(state)}</b> · ${badge}${unknown}</span>
+      </div>`;
+    }).join("") : `<div class="strategy-muted">Entity 매핑 후 현재 상태를 확인할 수 있습니다.</div>`;
+    return `<div class="gs-card" data-zone-entity-state-summary-card style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>Entity 상태 요약</b><div class="strategy-muted">현재 상태 · 사용 가능 ${summary.availableCount || 0}/${summary.totalCount || 0} · unavailable ${summary.unavailableCount || 0} · unknown ${summary.unknownCount || 0}</div></div>
+        <button class="mini-btn" data-zone-entity-state-refresh data-zone-entity-state-domain="${domain}">상태 새로고침</button>
+      </div>
+      ${summary.hasBlockingState ? `<div class="strategy-muted" style="color:#a45b00;margin-bottom:8px;">SafetyGuard 후보 차단 상태가 있습니다. Phase 2에서 실행 차단과 연결됩니다.</div>` : ""}
+      ${rows}
+    </div>`;
+  }
+
   _renderZoneInterlockSettingsCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const data = this._zoneInterlockSettingsCache?.[cacheKey] || null;
@@ -5427,6 +5472,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
       ${this._renderControlScopeBar("environment")}
       ${this._renderZoneInterlockSettingsCard("environment")}
+      ${this._renderZoneEntityStateSummaryCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
@@ -5589,6 +5635,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
       ${this._renderZoneInterlockSettingsCard("irrigation")}
+      ${this._renderZoneEntityStateSummaryCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
@@ -5673,6 +5720,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
       ${this._renderZoneInterlockSettingsCard("device")}
+      ${this._renderZoneEntityStateSummaryCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
@@ -5911,6 +5959,14 @@ button.action:disabled{opacity:.5;cursor:default;}
     page.querySelector("#device-control-save")?.addEventListener("click", () => this._saveDeviceControl());
   }
 
+  _bindZoneEntityStateSummaryInputs(root) {
+    root.querySelectorAll("[data-zone-entity-state-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await this._fetchZoneEntityStateSummary(btn.dataset.zoneEntityStateDomain || "environment");
+      });
+    });
+  }
+
   _bindZoneInterlockSettingsInputs(root) {
     root.querySelectorAll("[data-zone-interlock-refresh]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -6046,6 +6102,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   _bindDashboard(root) {
     this._bindControlScopeInputs(root);
     this._bindZoneInterlockSettingsInputs(root);
+    this._bindZoneEntityStateSummaryInputs(root);
     this._bindZoneAiFinalTargetInputs(root);
     this._bindZoneEntityMappingInputs(root);
     this._bindControlStrategyInputs(root);

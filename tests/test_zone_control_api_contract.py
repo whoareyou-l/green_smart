@@ -455,3 +455,53 @@ def test_phase1_interlock_settings_api_and_panel_contract():
         '_renderZoneInterlockSettingsCard("device")',
     ):
         assert page_marker in panel_source
+
+
+def test_phase1_entity_state_summary_api_and_panel_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "ZoneEntityStateSummaryView",
+        'url = "/api/green_smart/zones/entity-state-summary"',
+        "_entity_state_summary_response",
+        "_entity_state_summary_item",
+        "availableCount",
+        "unavailableCount",
+        "unknownCount",
+        "staleCount",
+        "hasBlockingState",
+        "zone_device_entity_mappings",
+        "hass.states.get",
+    ):
+        assert api_marker in source
+        if api_marker == "ZoneEntityStateSummaryView":
+            assert api_marker in init_source
+
+    assert "hass.http.register_view(ZoneEntityStateSummaryView())" in init_source
+
+    for panel_marker in (
+        "this._zoneEntityStateSummaryCache",
+        "async _fetchZoneEntityStateSummary(domain)",
+        "_renderZoneEntityStateSummaryCard(domain)",
+        "_bindZoneEntityStateSummaryInputs(root)",
+        "green_smart/zones/entity-state-summary",
+        "data-zone-entity-state-summary-card",
+        "data-zone-entity-state-refresh",
+        "Entity 상태 요약",
+        "현재 상태",
+        "사용 가능",
+        "unavailable",
+        "unknown",
+        "상태 새로고침",
+        "Entity 상태 요약 조회 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source
+
+    for page_marker in (
+        '_renderZoneEntityStateSummaryCard("environment")',
+        '_renderZoneEntityStateSummaryCard("irrigation")',
+        '_renderZoneEntityStateSummaryCard("device")',
+    ):
+        assert page_marker in panel_source

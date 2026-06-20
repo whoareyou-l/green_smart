@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20  
-> 기준 버전: `v1.9.0` / Phase 1A interlock settings baseline  
+> 기준 버전: `v1.9.1` / Phase 1B entity-state summary baseline  
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -502,6 +502,7 @@ erDiagram
 |---|---|---|
 | GET/POST | `/api/green_smart/zones/control-settings` | scoped 설정 조회/저장 |
 | GET/POST | `/api/green_smart/zones/interlock-settings` | scoped 인터록/안전 기준 설정 조회/저장 |
+| GET | `/api/green_smart/zones/entity-state-summary` | Entity Mapping 기준 HA 현재 상태 요약 조회 |
 | POST | `/api/green_smart/zones/copy-control-settings` | zone 설정 복사 |
 | GET/POST | `/api/green_smart/zones/final-targets` | 최종 적용값 조회/저장 |
 | GET/POST | `/api/green_smart/zones/ai-control-outputs` | AI output 조회/저장 |
@@ -644,7 +645,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.0` 기준으로 가능한 것:
+현재 `v1.9.1` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장

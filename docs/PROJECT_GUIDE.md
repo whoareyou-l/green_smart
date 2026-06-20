@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent  
 > **Repository:** `whoareyou-l/green_smart`  
-> **Current baseline:** `v1.9.0` / `green_smart` Home Assistant custom integration  
-> **Last verified locally:** 99 pytest contract tests + JS syntax check  
+> **Current baseline:** `v1.9.1` / `green_smart` Home Assistant custom integration  
+> **Last verified locally:** 100 pytest contract tests + JS syntax check  
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.0"
+  "version": "1.9.1"
 }
 ```
 
@@ -438,6 +438,8 @@ docs/design/zone-control-roadmap-and-data-model.md
 | Method | Route | 목적 |
 |---|---|---|
 | GET/POST | `/api/green_smart/zones/control-settings` | scoped 설정 조회/저장 |
+| GET/POST | `/api/green_smart/zones/interlock-settings` | scoped 인터록/안전 기준 설정 조회/저장 |
+| GET | `/api/green_smart/zones/entity-state-summary` | Entity Mapping 기준 HA 현재 상태 요약 조회 |
 | POST | `/api/green_smart/zones/copy-control-settings` | zone 설정 복사 |
 | GET/POST | `/api/green_smart/zones/final-targets` | 최종 적용값 조회/저장 |
 | GET/POST | `/api/green_smart/zones/ai-control-outputs` | AI output 조회/저장 |
@@ -478,7 +480,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.0";
+const VERSION = "1.9.1";
 ```
 
 중요 UI 페이지:
@@ -965,7 +967,7 @@ python3 -m py_compile \
 현재 기대값:
 
 ```text
-99 passed
+100 passed
 node --check: no output / exit 0
 py_compile: no output / exit 0
 ```
@@ -1029,7 +1031,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.0
+v1.9.1
 ```
 
 ---
@@ -1176,7 +1178,7 @@ python3 -m py_compile custom_components/green_smart/db.py custom_components/gree
 
 ```text
 git status clean 또는 의도한 변경만 표시
-99 passed
+100 passed
 node --check exit 0
 py_compile exit 0
 ```

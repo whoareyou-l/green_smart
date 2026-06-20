@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20  
 > 기준 repo: `/home/smartfarm/green_smart`  
-> 기준 버전: product code `v1.9.0`, docs HEAD `accbe8a` 이후 Phase 1A 문서화  
+> 기준 버전: product code `v1.9.1`, Phase 1B entity-state summary baseline  
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`  
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -127,12 +127,14 @@ zone_control_copy_jobs
 
 ### Phase 1. 기반 모델 + 대시보드 + 인터록 설정 화면
 
-현재 Phase 1A 완료:
+현재 Phase 1A/1B 완료:
 
 ```text
 zone_interlock_settings DB table
 GET/POST /api/green_smart/zones/interlock-settings
+GET /api/green_smart/zones/entity-state-summary
 환경/관수/장치제어 공통 인터록 설정 카드 골격
+환경/관수/장치제어 공통 Entity 상태 요약 카드
 ```
 
 남은 목표:

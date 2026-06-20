@@ -473,6 +473,57 @@ def _entity_state_snapshot(hass, entity_id: str | None) -> dict | None:
     }
 
 
+def _entity_state_summary_item(hass, mapping: dict) -> dict:
+    entity_id = mapping.get("entityId") or mapping.get("entity_id")
+    snapshot = _entity_state_snapshot(hass, entity_id) or {"entityId": entity_id, "state": "unavailable", "attributes": {}, "available": False}
+    state_text = str(snapshot.get("state") or "unknown").lower()
+    unavailable = (not snapshot.get("available")) or state_text == "unavailable"
+    unknown = state_text == "unknown"
+    # Phase 1B only surfaces current HA state. Stale threshold policy belongs to Phase 2 interlock settings.
+    stale = False
+    return {
+        "mappingId": mapping.get("id"),
+        "deviceType": mapping.get("deviceType"),
+        "controlRole": mapping.get("controlRole"),
+        "entityId": entity_id,
+        "state": snapshot.get("state"),
+        "available": not unavailable,
+        "unknown": unknown,
+        "stale": stale,
+        "lastChanged": snapshot.get("lastChanged"),
+        "lastUpdated": snapshot.get("lastUpdated"),
+        "attributes": snapshot.get("attributes") or {},
+        "safeState": mapping.get("safeState"),
+        "enabled": bool(mapping.get("enabled", True)),
+    }
+
+
+async def _entity_state_summary_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    items = [_entity_state_summary_item(hass, mapping) for mapping in mappings]
+    total = len(items)
+    available_count = sum(1 for item in items if item.get("available"))
+    unknown_count = sum(1 for item in items if item.get("unknown"))
+    unavailable_count = sum(1 for item in items if not item.get("available"))
+    stale_count = sum(1 for item in items if item.get("stale"))
+    return {
+        "ok": True,
+        "farmId": farm_id,
+        "cropSeasonId": crop_season_id,
+        "zoneId": zone_id,
+        "domain": domain,
+        "summary": {
+            "totalCount": total,
+            "availableCount": available_count,
+            "unavailableCount": unavailable_count,
+            "unknownCount": unknown_count,
+            "staleCount": stale_count,
+            "hasBlockingState": unavailable_count > 0 or unknown_count > 0 or stale_count > 0,
+        },
+        "items": items,
+    }
+
+
 def _states_match_expected_target(post_state: dict | None, expected_target) -> bool:
     if post_state is None or not post_state.get("available"):
         return False
@@ -763,6 +814,26 @@ class ZoneAiControlOutputApplyView(HomeAssistantView):
         await execute(hass, "UPDATE ai_zone_control_outputs SET applied = 1 WHERE id = %s", (int(output_id),))
         await _insert_log(hass, farm_id=output["farmId"], crop_season_id=output["cropSeasonId"], zone_id=output["zoneId"], domain=output["domain"], actor=_actor(request), action="ai_output_applied_to_final_targets", before=None, after=targets, result="success", message="AI output applied to final targets")
         return _json({"ok": True, "aiOutputId": int(output_id), "finalTargetId": final_id, "targets": targets})
+
+
+class ZoneEntityStateSummaryView(HomeAssistantView):
+    """GET /api/green_smart/zones/entity-state-summary."""
+
+    url = "/api/green_smart/zones/entity-state-summary"
+    name = "api:green_smart:zones:entity_state_summary"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        return _json(await _entity_state_summary_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain))
 
 
 class ZoneDeviceEntityMappingsView(HomeAssistantView):
