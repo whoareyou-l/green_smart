@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.29
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.30
 const DOMAIN = "green_smart";
-const VERSION = "1.8.29";
+const VERSION = "1.8.30";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -240,6 +240,7 @@ class GreenSmartPanel extends HTMLElement {
     this._irrigationTab = "mode";
     this._deviceControl = this._loadDeviceControl();
     this._deviceTab = "status";
+    this._controlScope = this._loadControlScope();
     this._pageRendered = null;
     this.attachShadow({ mode: "open" });
   }
@@ -4840,6 +4841,63 @@ button.action:disabled{opacity:.5;cursor:default;}
         `);
   }
 
+  _loadControlScope() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("green_smart_control_scope") || "{}");
+      return { seasonId: saved.seasonId || null, zoneId: Number(saved.zoneId || 1), applyMode: saved.applyMode || "current" };
+    } catch (_) {
+      return { seasonId: null, zoneId: 1, applyMode: "current" };
+    }
+  }
+
+  _saveControlScope() {
+    localStorage.setItem("green_smart_control_scope", JSON.stringify(this._controlScope));
+  }
+
+  _currentControlSeasonId() {
+    return this._controlScope?.seasonId || this._activeSeasonId || this._cropSeasons?.find((s) => !s.demolished)?.id || "default-season";
+  }
+
+  _controlSeasonOptions() {
+    const seasons = Array.isArray(this._cropSeasons) && this._cropSeasons.length ? this._cropSeasons : [];
+    if (!seasons.length) return [{ id: "default-season", label: "기본 작기" }];
+    return seasons.map((s) => ({ id: String(s.id), label: this._esc(this._seasonZoneLabel ? this._seasonZoneLabel(s) : (s.name || s.cropName || `작기 ${s.id}`)) }));
+  }
+
+  _controlZoneOptions(domain) {
+    const greenhouseZones = Math.max(1, Number(this._form?.greenhouse_zones || 1));
+    const nutrientZones = Math.max(1, Number(this._form?.nutrient_zones || greenhouseZones || 1));
+    const count = domain === "irrigation" ? nutrientZones : greenhouseZones;
+    return Array.from({ length: count }, (_, i) => ({ id: i + 1, label: `${i + 1}구역` }));
+  }
+
+  _renderControlScopeBar(domain) {
+    const selectedSeason = String(this._currentControlSeasonId());
+    const selectedZone = Number(this._controlScope?.zoneId || 1);
+    const seasonOptions = this._controlSeasonOptions();
+    const zoneOptions = this._controlZoneOptions(domain);
+    const safeZone = zoneOptions.some((z) => z.id === selectedZone) ? selectedZone : 1;
+    return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:190px;">현재 작기
+        <select data-control-scope-season>
+          ${seasonOptions.map((s) => `<option value="${this._esc(String(s.id))}" ${String(s.id) === selectedSeason ? "selected" : ""}>${s.label}</option>`).join("")}
+        </select>
+      </label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:120px;">현재 구역
+        <select data-control-scope-zone>
+          ${zoneOptions.map((z) => `<option value="${z.id}" ${z.id === safeZone ? "selected" : ""}>${z.label}</option>`).join("")}
+        </select>
+      </label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:170px;">적용 범위
+        <select data-control-scope-apply>
+          <option value="current" ${this._controlScope?.applyMode !== "all" ? "selected" : ""}>현재 구역만</option>
+          <option value="all" ${this._controlScope?.applyMode === "all" ? "selected" : ""}>전체 구역에 복사</option>
+        </select>
+      </label>
+      <div style="font-size:12px;color:#7a9780;line-height:1.4;">Phase 1: 작기/구역 선택 UI만 공통 적용. 다음 단계에서 설정 저장소를 작기+구역별로 분리합니다.</div>
+    </div>`;
+  }
+
   _renderEnvSettingsPage() {
     this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
     const s = this._controlStrategy;
@@ -4848,6 +4906,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const aiStatusOptions = [["ok", "AI 연결 정상"], ["standby", "AI 대기"], ["error", "AI 오류"]];
     return `<div class="page control-strategy-page">
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
+      ${this._renderControlScopeBar("environment")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
@@ -5002,6 +5061,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
     return `<div class="page irrigation-control-page">
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
+      ${this._renderControlScopeBar("irrigation")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
         ${this._renderIrrigationControlTabBar()}
@@ -5077,6 +5137,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   _renderDeviceControlPage() {
     return `<div class="page device-control-page">
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
+      ${this._renderControlScopeBar("device")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
         ${this._renderDeviceControlTabBar()}
@@ -5308,9 +5369,38 @@ button.action:disabled{opacity:.5;cursor:default;}
     page.querySelector("#device-control-save")?.addEventListener("click", () => this._saveDeviceControl());
   }
 
+  _bindControlScopeInputs(root) {
+    root.querySelectorAll("[data-control-scope-bar]").forEach((bar) => {
+      const domain = bar.dataset.controlScopeDomain || "environment";
+      const season = bar.querySelector("[data-control-scope-season]");
+      const zone = bar.querySelector("[data-control-scope-zone]");
+      const apply = bar.querySelector("[data-control-scope-apply]");
+      const updateScope = () => {
+        this._controlScope = {
+          seasonId: season?.value || this._currentControlSeasonId(),
+          zoneId: Number(zone?.value || 1),
+          applyMode: apply?.value || "current",
+        };
+        this._saveControlScope();
+        this._pageRendered = null;
+        this._update();
+      };
+      season?.addEventListener("change", updateScope);
+      zone?.addEventListener("change", updateScope);
+      apply?.addEventListener("change", () => {
+        this._controlScope = { ...this._controlScope, applyMode: apply.value || "current" };
+        this._saveControlScope();
+      });
+      if (domain === "irrigation" && zone && !this._controlZoneOptions(domain).some((z) => z.id === Number(zone.value))) {
+        zone.value = "1";
+      }
+    });
+  }
+
   // ── Dashboard event binding ───────────────────────────────────────────────────
 
   _bindDashboard(root) {
+    this._bindControlScopeInputs(root);
     this._bindControlStrategyInputs(root);
     this._bindIrrigationControlInputs(root);
     this._bindDeviceControlInputs(root);

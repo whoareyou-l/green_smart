@@ -305,3 +305,23 @@ def test_device_control_docs_cover_api_db_vue_and_flow_contracts():
         assert api in doc
     for comp in ["DeviceControlPage.vue", "DeviceStatusTab.vue", "ManualControlTab.vue", "VentilationDeviceSettingsTab.vue", "ScreenDeviceSettingsTab.vue", "InterlockRulesTab.vue", "FailSafeRulesTab.vue"]:
         assert comp in doc
+
+
+def test_control_pages_render_crop_season_zone_scope_bar_for_phase1():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _cloneIrrigationDefaults", 1)[0]
+    irrigation_page = panel.split("  _renderIrrigSettingsPage()", 1)[1].split("  _cloneDeviceDefaults", 1)[0]
+    device_page = panel.split("  _renderDeviceControlPage()", 1)[1].split("  _renderVentSettingsPage()", 1)[0]
+
+    assert "this._controlScope" in panel
+    assert "  _currentControlSeasonId() {" in panel
+    assert "  _controlZoneOptions(domain) {" in panel
+    assert "  _renderControlScopeBar(domain) {" in panel
+    assert "  _bindControlScopeInputs(root) {" in panel
+    assert "this._bindControlScopeInputs(root);" in panel
+    for page, domain in [(env_page, "environment"), (irrigation_page, "irrigation"), (device_page, "device")]:
+        assert f'this._renderControlScopeBar("{domain}")' in page
+    for marker in ["data-control-scope-bar", "data-control-scope-season", "data-control-scope-zone", "data-control-scope-domain"]:
+        assert marker in panel
+    for label in ["현재 작기", "현재 구역", "적용 범위", "현재 구역만", "전체 구역에 복사"]:
+        assert label in panel
