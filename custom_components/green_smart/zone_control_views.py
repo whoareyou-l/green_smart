@@ -1,6 +1,7 @@
 """Zone-scoped control settings HTTP views."""
 from __future__ import annotations
 
+import asyncio
 import json
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
@@ -360,6 +361,60 @@ def _service_call_for_mapping(mapping: dict, target_value) -> dict | None:
     return {"domain": entity_domain, "service": service, "serviceData": service_data, "targetValue": target_value}
 
 
+def _entity_state_snapshot(hass, entity_id: str | None) -> dict | None:
+    if not entity_id:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None:
+        return {"entityId": entity_id, "state": "unavailable", "attributes": {}, "available": False}
+    return {
+        "entityId": entity_id,
+        "state": state.state,
+        "attributes": dict(state.attributes or {}),
+        "available": True,
+        "lastChanged": state.last_changed.isoformat() if getattr(state, "last_changed", None) else None,
+        "lastUpdated": state.last_updated.isoformat() if getattr(state, "last_updated", None) else None,
+    }
+
+
+def _states_match_expected_target(post_state: dict | None, expected_target) -> bool:
+    if post_state is None or not post_state.get("available"):
+        return False
+    actual = str(post_state.get("state", "")).lower()
+    if isinstance(expected_target, dict):
+        expected_target = expected_target.get("value") or expected_target.get("expected_state") or expected_target.get("expectedState") or expected_target.get("state")
+    if isinstance(expected_target, (int, float)):
+        attrs = post_state.get("attributes") or {}
+        actual_num = attrs.get("current_position") or attrs.get("position") or attrs.get("temperature") or attrs.get("value")
+        if actual_num is None:
+            return False
+        try:
+            return abs(float(actual_num) - float(expected_target)) <= 1.0
+        except Exception:
+            return False
+    expected = str(expected_target).lower()
+    if expected in {"on", "open", "true", "1", "start"}:
+        return actual in {"on", "open", "opening"}
+    if expected in {"off", "close", "closed", "false", "0", "stop"}:
+        return actual in {"off", "closed", "closing", "stopped"}
+    return actual == expected
+
+
+def _execution_state_report(call: dict, pre_state: dict | None, post_state: dict | None) -> dict:
+    expected_target = call.get("targetValue")
+    state_matched = _states_match_expected_target(post_state, expected_target)
+    return {
+        "mappingId": call.get("mappingId"),
+        "entityId": call.get("entityId"),
+        "expectedTarget": expected_target,
+        "actualState": post_state.get("state") if post_state else None,
+        "preState": pre_state,
+        "postState": post_state,
+        "stateMatched": state_matched,
+        "stateVerification": "passed" if state_matched else "failed",
+    }
+
+
 class ZoneFinalTargetExecutionView(HomeAssistantView):
     """POST /api/green_smart/zones/execute-final-targets."""
 
@@ -375,6 +430,7 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
             crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
             zone_id = int(body.get("zone_id") or body.get("zoneId"))
             dry_run = bool(body.get("dry_run") or body.get("dryRun") or False)
+            post_state_delay = float(body.get("post_state_delay") or body.get("postStateDelay") or 0.4)
         except Exception as exc:
             return _err(str(exc))
         final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
@@ -383,6 +439,7 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
         calls = []
         errors = []
+        state_reports = []
         for mapping in mappings:
             target_value = _target_value_for_mapping(final_target["targets"], mapping)
             call = _service_call_for_mapping(mapping, target_value)
@@ -390,17 +447,43 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
                 continue
             call["mappingId"] = mapping.get("id")
             call["entityId"] = mapping.get("entityId")
+            pre_state = _entity_state_snapshot(hass, call["entityId"])
+            call["preState"] = pre_state
             calls.append(call)
             if dry_run:
+                call["postState"] = pre_state
+                call["stateMatched"] = None
+                call["stateVerification"] = "dry_run"
                 continue
             try:
                 await hass.services.async_call(call["domain"], call["service"], call["serviceData"], blocking=True)
+                await hass.services.async_call("homeassistant", "update_entity", {"entity_id": call["entityId"]}, blocking=True)  # async_update_entity
+                if post_state_delay > 0:
+                    await asyncio.sleep(min(post_state_delay, 3.0))
+                post_state = _entity_state_snapshot(hass, call["entityId"])
+                report = _execution_state_report(call, pre_state, post_state)
+                state_reports.append(report)
+                call["postState"] = post_state
+                call["stateMatched"] = report["stateMatched"]
+                call["stateVerification"] = report["stateVerification"]
             except Exception as exc:  # pragma: no cover - HA runtime path
-                errors.append({"entityId": call["entityId"], "error": str(exc)})
-        action = "final_target_execution_failed" if errors else "final_targets_executed"
-        result = "failed" if errors else "success"
-        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before=None, after={"dry_run": dry_run, "calls": calls, "errors": errors}, result=result, message="final targets executed via Home Assistant services")
-        return _json({"ok": not errors, "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls), "calls": calls, "errors": errors})
+                errors.append({"entityId": call["entityId"], "error": str(exc), "preState": pre_state})
+        state_matched = all(r.get("stateMatched") for r in state_reports) if state_reports else False
+        state_failures = [r for r in state_reports if not r.get("stateMatched")]
+        if errors:
+            action = "final_target_execution_failed"
+        elif not state_reports:
+            action = "final_targets_executed"
+        elif state_failures:
+            action = "state_verification_failed"
+        else:
+            action = "state_verification_passed"
+        result = "failed" if errors or state_failures else "success"
+        response = {"ok": not errors and not state_failures, "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed"}
+        if response.get("stateMatched"):
+            action = "state_verification_passed"
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports]}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports}, result=result, message="final targets executed via Home Assistant services with pre/post state verification")
+        return _json(response)
 
 
 class ZoneAiControlOutputsView(HomeAssistantView):

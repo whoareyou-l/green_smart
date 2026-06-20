@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.39
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.40
 const DOMAIN = "green_smart";
-const VERSION = "1.8.39";
+const VERSION = "1.8.40";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -4998,7 +4998,8 @@ button.action:disabled{opacity:.5;cursor:default;}
         domain,
         dry_run: false,
       });
-      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 (${res?.executedCount || 0}/${res?.plannedCount || 0})`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      const stateText = res?.stateVerification === "passed" ? "상태 확인 통과" : `상태 확인 ${res?.stateMatched ? "통과" : "주의"}`;
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 (${res?.executedCount || 0}/${res?.plannedCount || 0}) · ${stateText} · 실행 후 상태 ${res?.stateVerification || "unknown"}`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
       await this._fetchZoneFinalTargets(domain);
       return !!res?.ok;
     } catch (err) {

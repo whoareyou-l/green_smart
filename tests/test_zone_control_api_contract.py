@@ -278,3 +278,41 @@ def test_zone_control_executes_final_targets_via_ha_services_phase10():
         "final targets 실행 실패 시 fallback",
     ):
         assert panel_marker in panel_source
+
+
+def test_zone_control_execution_captures_pre_post_entity_state_phase11():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for helper in (
+        "_entity_state_snapshot",
+        "_states_match_expected_target",
+        "_execution_state_report",
+        "preState",
+        "postState",
+        "stateMatched",
+        "stateVerification",
+        "post_state_delay",
+        "async_update_entity",
+    ):
+        assert helper in source
+
+    for behavior in (
+        "state_verification_passed",
+        "state_verification_failed",
+        "before_json",
+        "after_json",
+        "expectedTarget",
+        "actualState",
+        "response.get(\"stateMatched\")",
+    ):
+        assert behavior in source
+
+    for panel_marker in (
+        "executedCount",
+        "stateMatched",
+        "stateVerification",
+        "상태 확인",
+        "실행 후 상태",
+    ):
+        assert panel_marker in panel_source
