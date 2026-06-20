@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.30
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.31
 const DOMAIN = "green_smart";
-const VERSION = "1.8.30";
+const VERSION = "1.8.31";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -241,6 +241,8 @@ class GreenSmartPanel extends HTMLElement {
     this._deviceControl = this._loadDeviceControl();
     this._deviceTab = "status";
     this._controlScope = this._loadControlScope();
+    this._zoneControlSettings = this._loadZoneControlSettings();
+    this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
     this.attachShadow({ mode: "open" });
   }
@@ -4657,8 +4659,9 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _saveControlStrategy() {
     this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
-    localStorage.setItem("green_smart_control_strategy", JSON.stringify(this._controlStrategy));
     this._pushControlLog("설정 저장 → 환경 제어 갱신");
+    this._setScopedControlState("environment", this._controlStrategy);
+    localStorage.setItem("green_smart_control_strategy", JSON.stringify(this._controlStrategy));
     this._pageRendered = null;
     this._update();
   }
@@ -4894,12 +4897,80 @@ button.action:disabled{opacity:.5;cursor:default;}
           <option value="all" ${this._controlScope?.applyMode === "all" ? "selected" : ""}>전체 구역에 복사</option>
         </select>
       </label>
-      <div style="font-size:12px;color:#7a9780;line-height:1.4;">Phase 1: 작기/구역 선택 UI만 공통 적용. 다음 단계에서 설정 저장소를 작기+구역별로 분리합니다.</div>
+      <div style="font-size:12px;color:#7a9780;line-height:1.4;">현재 저장 단위: 작기 + 구역 + 제어영역. 저장 시 선택된 구역의 ${domain} 설정만 갱신됩니다.</div>
     </div>`;
   }
 
+  _cloneControlState(domain, state) {
+    const fallback = this._defaultControlStateForDomain(domain);
+    return JSON.parse(JSON.stringify(state || fallback));
+  }
+
+  _defaultControlStateForDomain(domain) {
+    if (domain === "irrigation") return this._calculateFinalIrrigationTargets(this._cloneIrrigationDefaults());
+    if (domain === "device") return this._cloneDeviceDefaults();
+    return this._calculateFinalAppliedTargets(this._cloneControlStrategyDefaults());
+  }
+
+  _loadZoneControlSettings() {
+    const empty = { environment: {}, irrigation: {}, device: {} };
+    try {
+      const saved = JSON.parse(localStorage.getItem("green_smart_zone_control_settings") || "{}");
+      return { environment: saved.environment || {}, irrigation: saved.irrigation || {}, device: saved.device || {} };
+    } catch (_) { return empty; }
+  }
+
+  _saveZoneControlSettings() {
+    localStorage.setItem("green_smart_zone_control_settings", JSON.stringify(this._zoneControlSettings || { environment: {}, irrigation: {}, device: {} }));
+  }
+
+  _ensureScopedControlState(domain) {
+    const seasonId = String(this._currentControlSeasonId());
+    const zoneId = String(Number(this._controlScope?.zoneId || 1));
+    if (!this._zoneControlSettings) this._zoneControlSettings = this._loadZoneControlSettings();
+    if (!this._zoneControlSettings[domain]) this._zoneControlSettings[domain] = {};
+    if (!this._zoneControlSettings[domain][seasonId]) this._zoneControlSettings[domain][seasonId] = {};
+    if (!this._zoneControlSettings[domain][seasonId][zoneId]) {
+      this._zoneControlSettings[domain][seasonId][zoneId] = this._cloneControlState(domain, this._defaultControlStateForDomain(domain));
+      this._saveZoneControlSettings();
+    }
+    return this._zoneControlSettings[domain][seasonId][zoneId];
+  }
+
+  _getScopedControlState(domain) {
+    return this._cloneControlState(domain, this._ensureScopedControlState(domain));
+  }
+
+  _setScopedControlState(domain, state) {
+    const seasonId = String(this._currentControlSeasonId());
+    const zoneId = String(Number(this._controlScope?.zoneId || 1));
+    if (!this._zoneControlSettings) this._zoneControlSettings = this._loadZoneControlSettings();
+    if (!this._zoneControlSettings[domain]) this._zoneControlSettings[domain] = {};
+    if (!this._zoneControlSettings[domain][seasonId]) this._zoneControlSettings[domain][seasonId] = {};
+    this._zoneControlSettings[domain][seasonId][zoneId] = this._cloneControlState(domain, state);
+    this._saveZoneControlSettings();
+  }
+
+  _migrateLegacyControlStateToScoped() {
+    if (localStorage.getItem("green_smart_zone_control_migrated_v1") === "true") return;
+    const seasonId = String(this._currentControlSeasonId());
+    const zoneId = String(Number(this._controlScope?.zoneId || 1));
+    const legacy = {
+      environment: this._controlStrategy || this._loadControlStrategy(),
+      irrigation: this._irrigationControl || this._loadIrrigationControl(),
+      device: this._deviceControl || this._loadDeviceControl(),
+    };
+    Object.entries(legacy).forEach(([domain, state]) => {
+      if (!this._zoneControlSettings[domain]) this._zoneControlSettings[domain] = {};
+      if (!this._zoneControlSettings[domain][seasonId]) this._zoneControlSettings[domain][seasonId] = {};
+      if (!this._zoneControlSettings[domain][seasonId][zoneId]) this._zoneControlSettings[domain][seasonId][zoneId] = this._cloneControlState(domain, state);
+    });
+    this._saveZoneControlSettings();
+    localStorage.setItem("green_smart_zone_control_migrated_v1", "true");
+  }
+
   _renderEnvSettingsPage() {
-    this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
+    this._controlStrategy = this._calculateFinalAppliedTargets(this._getScopedControlState("environment"));
     const s = this._controlStrategy;
     const statusText = s.systemStatus.aiStatus === "ok" ? "AI 연결 정상" : s.systemStatus.aiStatus === "error" ? "AI 오류" : s.systemStatus.interlockActive ? "인터록 단독 작동중" : "AI 대기";
     const modeOptions = [["interlock", "인터록 모드"], ["ai_assist", "AI 보조 모드"], ["manual", "수동 모드"], ["emergency_stop", "비상 정지 모드"]];
@@ -4938,8 +5009,9 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _saveIrrigationControl() {
     this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
-    localStorage.setItem("green_smart_irrigation_control", JSON.stringify(this._irrigationControl));
     this._irrigationControl.irrigationLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 설정 저장 · 관수 제어 갱신 · 성공`, ...(this._irrigationControl.irrigationLogs || [])].slice(0, 20);
+    this._setScopedControlState("irrigation", this._irrigationControl);
+    localStorage.setItem("green_smart_irrigation_control", JSON.stringify(this._irrigationControl));
     this._pageRendered = null;
     this._update();
   }
@@ -5058,7 +5130,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _renderIrrigSettingsPage() {
-    this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
+    this._irrigationControl = this._calculateFinalIrrigationTargets(this._getScopedControlState("irrigation"));
     return `<div class="page irrigation-control-page">
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
@@ -5082,8 +5154,9 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _saveDeviceControl() {
-    localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
     this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 장치제어 설정 저장 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
+    this._setScopedControlState("device", this._deviceControl);
+    localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
     this._pageRendered = null;
     this._update();
   }
@@ -5135,6 +5208,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _renderDeviceControlPage() {
+    this._deviceControl = this._getScopedControlState("device");
     return `<div class="page device-control-page">
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
@@ -5362,6 +5436,8 @@ button.action:disabled{opacity:.5;cursor:default;}
         device.controller = "사용자";
         device.updated = "방금 전";
         this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} ${device.name} ${previous} → ${command} · 수동실행 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
+        this._setScopedControlState("device", this._deviceControl);
+        localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
         this._pageRendered = null;
         this._update();
       });
