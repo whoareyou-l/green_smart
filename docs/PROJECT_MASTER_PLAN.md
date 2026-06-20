@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.3`, Phase 1D control-mode baseline
+> 기준 버전: product code `v1.9.4`, Phase 1E interlock rule-builder baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -127,7 +127,7 @@ zone_control_copy_jobs
 
 ### Phase 1. 기반 모델 + 대시보드 + 인터록 설정 화면
 
-현재 Phase 1A/1B/1C/1D 완료:
+현재 Phase 1A/1B/1C/1D/1E 완료:
 
 ```text
 zone_interlock_settings DB table
@@ -136,6 +136,7 @@ GET/POST /api/green_smart/zones/interlock-settings
 GET/POST /api/green_smart/zones/control-mode
 GET /api/green_smart/zones/entity-state-summary
 환경/관수/장치제어 공통 인터록 설정 카드 골격
+환경/관수/장치제어 공통 세부 인터록 rule builder UI
 환경/관수/장치제어 공통 제어 모드 카드
 환경/관수/장치제어 공통 Entity 상태 요약 카드
 제어 페이지 5초 요소별 갱신 loop + dirty state 보존
@@ -144,7 +145,6 @@ manual/auto/assist/disabled execution pre-gate
 
 남은 목표:
 
-- Phase 2 SafetyGuard 실행 연동 전 세부 interlock rule UI 확장
 - HA persistent notification 계약을 critical safety event와 연결
 
 ### Phase 2. 인터록/안전 실행 완성

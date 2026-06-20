@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.3` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.4` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.3"
+  "version": "1.9.4"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.3"
+const VERSION = "1.9.4"
 ```
 
 중요 UI 페이지:
@@ -684,6 +684,22 @@ farm_id, crop_season_id, zone_id, domain
 ```
 
 초기에는 JSON 설정으로 저장하고, Phase 2 SafetyGuard에서 필요한 항목만 migration task로 정규화한다.
+
+Phase 1E부터 panel에서는 JSON textarea 직접 편집 대신 세부 rule builder UI를 제공한다. 저장 구조는 여전히 `settings_json.rules[]`이며, 기존 API/DB contract는 유지한다.
+
+Panel marker:
+
+```text
+data-zone-interlock-rule-builder
+data-zone-interlock-rule-row
+data-zone-interlock-rule-role
+data-zone-interlock-rule-condition
+data-zone-interlock-rule-threshold
+data-zone-interlock-rule-action
+data-zone-interlock-rule-message
+data-zone-interlock-rule-add
+data-zone-interlock-rule-delete
+```
 
 ---
 
@@ -1079,7 +1095,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.3
+v1.9.4
 ```
 
 ---

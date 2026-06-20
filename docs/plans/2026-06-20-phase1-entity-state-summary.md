@@ -1,6 +1,6 @@
 # Green Smart Phase 1B Entity State Summary Plan
 
-> 기준 버전: v1.9.3에서 유지되는 Phase 1B 산출물
+> 기준 버전: v1.9.4에서 유지되는 Phase 1B 산출물
 > 목표: Phase 2 SafetyGuard가 사용할 HA entity 현재 상태 조회 기반을 만든다.
 
 ## Scope

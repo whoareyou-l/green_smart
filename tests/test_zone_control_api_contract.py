@@ -600,3 +600,42 @@ def test_phase1_manual_auto_override_mode_contract():
 
     refresh_section = panel_source.split("async _refreshZoneControlElements", 1)[1].split("_patchZoneControlElementCards", 1)[0]
     assert "this._fetchZoneControlMode(domain, { patchOnly })" in refresh_section
+
+def test_phase1_interlock_rule_builder_ui_contract():
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for marker in (
+        "_defaultZoneInterlockSettings()",
+        "_normalizeZoneInterlockSettings(settings)",
+        "_readZoneInterlockSettingsFromCard(domain)",
+        "_addZoneInterlockRule(domain)",
+        "_deleteZoneInterlockRule(domain, index)",
+        "_renderZoneInterlockRuleBuilder(domain, settings)",
+        "data-zone-interlock-rule-builder",
+        "data-zone-interlock-rule-row",
+        "data-zone-interlock-rule-role",
+        "data-zone-interlock-rule-condition",
+        "data-zone-interlock-rule-threshold",
+        "data-zone-interlock-rule-action",
+        "data-zone-interlock-rule-message",
+        "data-zone-interlock-rule-add",
+        "data-zone-interlock-rule-delete",
+        "세부 인터록 규칙",
+        "규칙 추가",
+        "규칙 삭제",
+        "제어 역할",
+        "조건",
+        "임계값",
+        "차단 동작",
+        "운영자 메시지",
+        "structured rule UI",
+    ):
+        assert marker in panel_source
+
+    save_section = panel_source.split("async _saveZoneInterlockSettings(domain)", 1)[1].split("async _fetchZoneControlMode", 1)[0]
+    assert "_readZoneInterlockSettingsFromCard(domain)" in save_section
+    assert "JSON.parse(text || \"{}\")" not in save_section
+
+    bind_section = panel_source.split("_bindZoneInterlockSettingsInputs(root)", 1)[1].split("_bindZoneControlModeInputs(root)", 1)[0]
+    assert "data-zone-interlock-rule-add" in bind_section
+    assert "data-zone-interlock-rule-delete" in bind_section

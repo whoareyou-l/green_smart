@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.3
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.4
 const DOMAIN = "green_smart";
-const VERSION = "1.9.3";
+const VERSION = "1.9.4";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5151,6 +5151,74 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  _defaultZoneInterlockSettings() {
+    return {
+      emergency_stop: false,
+      block_on_unavailable: true,
+      apply_safe_state_on_block: true,
+      rules: [],
+    };
+  }
+
+  _normalizeZoneInterlockSettings(settings) {
+    const base = this._defaultZoneInterlockSettings();
+    const src = settings && typeof settings === "object" ? settings : {};
+    const rules = Array.isArray(src.rules) ? src.rules.map((rule) => ({
+      control_role: String(rule.control_role || rule.controlRole || "").trim(),
+      condition: String(rule.condition || "unavailable").trim(),
+      threshold: rule.threshold ?? "",
+      action: String(rule.action || (rule.block === false ? "warn" : "block")).trim(),
+      message: String(rule.message || rule.reason || "").trim(),
+      block: rule.block !== false,
+    })).filter((rule) => rule.control_role || rule.condition || rule.message) : [];
+    return {
+      ...base,
+      ...src,
+      emergency_stop: !!src.emergency_stop,
+      block_on_unavailable: src.block_on_unavailable !== false,
+      apply_safe_state_on_block: src.apply_safe_state_on_block !== false,
+      rules,
+    };
+  }
+
+  _readZoneInterlockSettingsFromCard(domain) {
+    const card = this.shadowRoot?.querySelector(`[data-zone-interlock-settings-card][data-zone-interlock-domain=\"${domain}\"]`);
+    const settings = this._defaultZoneInterlockSettings();
+    settings.emergency_stop = !!card?.querySelector("[data-zone-interlock-emergency-stop]")?.checked;
+    settings.block_on_unavailable = !!card?.querySelector("[data-zone-interlock-block-unavailable]")?.checked;
+    settings.apply_safe_state_on_block = !!card?.querySelector("[data-zone-interlock-apply-failsafe]")?.checked;
+    settings.rules = Array.from(card?.querySelectorAll("[data-zone-interlock-rule-row]") || []).map((row) => {
+      const action = row.querySelector("[data-zone-interlock-rule-action]")?.value || "block";
+      return {
+        control_role: row.querySelector("[data-zone-interlock-rule-role]")?.value?.trim() || "",
+        condition: row.querySelector("[data-zone-interlock-rule-condition]")?.value || "unavailable",
+        threshold: row.querySelector("[data-zone-interlock-rule-threshold]")?.value?.trim() || "",
+        action,
+        message: row.querySelector("[data-zone-interlock-rule-message]")?.value?.trim() || "",
+        block: action !== "warn",
+      };
+    }).filter((rule) => rule.control_role || rule.message || rule.condition !== "unavailable");
+    return this._normalizeZoneInterlockSettings(settings);
+  }
+
+  _addZoneInterlockRule(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const current = this._normalizeZoneInterlockSettings(this._zoneInterlockSettingsCache?.[cacheKey]?.settings);
+    current.rules.push({ control_role: "", condition: "unavailable", threshold: "", action: "block", message: "" });
+    this._zoneInterlockSettingsCache[cacheKey] = { ...(this._zoneInterlockSettingsCache[cacheKey] || {}), settings: current };
+    this._pageRendered = null;
+    this._update();
+  }
+
+  _deleteZoneInterlockRule(domain, index) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const current = this._normalizeZoneInterlockSettings(this._zoneInterlockSettingsCache?.[cacheKey]?.settings);
+    current.rules = current.rules.filter((_, i) => i !== Number(index));
+    this._zoneInterlockSettingsCache[cacheKey] = { ...(this._zoneInterlockSettingsCache[cacheKey] || {}), settings: current };
+    this._pageRendered = null;
+    this._update();
+  }
+
   async _fetchZoneInterlockSettings(domain) {
     const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
@@ -5175,14 +5243,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return false;
     const zoneId = Number(this._controlScope?.zoneId || 1);
-    const text = this.shadowRoot?.querySelector(`[data-zone-interlock-json=\"${domain}\"]`)?.value || "{}";
-    let settings = {};
-    try {
-      settings = JSON.parse(text || "{}");
-    } catch (err) {
-      alert("인터록 설정 JSON 형식을 확인해주세요.");
-      return false;
-    }
+    const settings = this._readZoneInterlockSettingsFromCard(domain);
     try {
       const res = await this._hass.callApi("POST", "green_smart/zones/interlock-settings", {
         crop_season_id: cropSeasonId,
@@ -5321,23 +5382,52 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderZoneInterlockRuleBuilder(domain, settings) {
+    // Phase 1E contract: structured rule UI keeps settings_json compatible while avoiding raw JSON-only editing.
+    const rules = Array.isArray(settings?.rules) ? settings.rules : [];
+    const conditionOptions = [
+      ["unavailable", "Entity unavailable"],
+      ["unknown", "Entity unknown"],
+      ["above", "초과"],
+      ["below", "미만"],
+      ["equals", "일치"],
+    ];
+    const actionOptions = [["block", "차단"], ["failsafe", "Fail Safe"], ["warn", "경고"]];
+    const rows = rules.map((rule, index) => `<div data-zone-interlock-rule-row data-zone-interlock-rule-index="${index}" style="display:grid;grid-template-columns:1fr 1fr .8fr 1fr 1.4fr auto;gap:8px;align-items:end;border-top:1px solid #e2f0e4;padding:8px 0;">
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">제어 역할<input data-zone-interlock-rule-role value="${this._esc(rule.control_role || rule.controlRole || "")}" placeholder="예: ventilation"></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">조건<select data-zone-interlock-rule-condition>${conditionOptions.map(([value, label]) => `<option value="${value}" ${(rule.condition || "unavailable") === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">임계값<input data-zone-interlock-rule-threshold value="${this._esc(rule.threshold ?? "")}" placeholder="선택"></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">차단 동작<select data-zone-interlock-rule-action>${actionOptions.map(([value, label]) => `<option value="${value}" ${(rule.action || (rule.block === false ? "warn" : "block")) === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;">운영자 메시지<input data-zone-interlock-rule-message value="${this._esc(rule.message || rule.reason || "")}" placeholder="예: 강풍으로 환기 차단"></label>
+      <button class="mini-btn" data-zone-interlock-rule-delete data-zone-interlock-domain="${domain}" data-zone-interlock-rule-index="${index}">규칙 삭제</button>
+    </div>`).join("");
+    return `<div data-zone-interlock-rule-builder style="border:1px solid #dcebdd;border-radius:12px;padding:10px;margin-top:10px;background:#fbfffb;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px;">
+        <div><b>세부 인터록 규칙</b><div class="strategy-muted">structured rule UI · rules[]는 기존 settings_json에 그대로 저장됩니다.</div></div>
+        <button class="mini-btn" data-zone-interlock-rule-add data-zone-interlock-domain="${domain}">규칙 추가</button>
+      </div>
+      ${rows || `<div class="strategy-muted">아직 세부 규칙이 없습니다. 규칙 추가로 강풍/저온/VWC/EC 등 SafetyGuard 후보 규칙을 준비하세요.</div>`}
+    </div>`;
+  }
+
   _renderZoneInterlockSettingsCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const data = this._zoneInterlockSettingsCache?.[cacheKey] || null;
     if (this._numericControlSeasonId() && !data) this._fetchZoneInterlockSettings(domain);
-    const settings = data?.settings || {
-      emergency_stop: false,
-      block_on_unavailable: true,
-      apply_safe_state_on_block: true,
-      rules: [],
-    };
+    const settings = this._normalizeZoneInterlockSettings(data?.settings);
     const jsonText = this._esc(JSON.stringify(settings, null, 2));
-    return `<div class="gs-card" data-zone-interlock-settings-card style="padding:16px;margin-bottom:12px;">
+    return `<div class="gs-card" data-zone-interlock-settings-card data-zone-interlock-domain="${domain}" style="padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
         <div><b>인터록 설정</b><div class="strategy-muted">AI가 없어도 동작해야 하는 안전 기준 · 현재 ${data?.enabled === false ? "비활성" : "활성"}</div></div>
         <div style="display:flex;gap:6px;"><button class="mini-btn" data-zone-interlock-refresh data-zone-interlock-domain="${domain}">새로고침</button><button class="mini-btn primary" data-zone-interlock-save data-zone-interlock-domain="${domain}">인터록 저장</button></div>
       </div>
-      <textarea data-zone-interlock-json="${domain}" style="width:100%;min-height:118px;font-family:monospace;font-size:12px;border:1px solid #dcebdd;border-radius:10px;padding:10px;">${jsonText}</textarea>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-bottom:8px;">
+        <label style="font-size:12px;color:#5d7d64;display:flex;gap:6px;align-items:center;"><input type="checkbox" data-zone-interlock-emergency-stop ${settings.emergency_stop ? "checked" : ""}> 긴급 정지</label>
+        <label style="font-size:12px;color:#5d7d64;display:flex;gap:6px;align-items:center;"><input type="checkbox" data-zone-interlock-block-unavailable ${settings.block_on_unavailable ? "checked" : ""}> unavailable 차단</label>
+        <label style="font-size:12px;color:#5d7d64;display:flex;gap:6px;align-items:center;"><input type="checkbox" data-zone-interlock-apply-failsafe ${settings.apply_safe_state_on_block ? "checked" : ""}> Fail Safe 적용</label>
+      </div>
+      ${this._renderZoneInterlockRuleBuilder(domain, settings)}
+      <details style="margin-top:10px;"><summary class="strategy-muted">settings_json 미리보기</summary><textarea data-zone-interlock-json="${domain}" readonly style="width:100%;min-height:118px;font-family:monospace;font-size:12px;border:1px solid #dcebdd;border-radius:10px;padding:10px;">${jsonText}</textarea></details>
       <div class="strategy-muted" style="margin-top:6px;">안전 기준 예: emergency_stop, block_on_unavailable, apply_safe_state_on_block, rules</div>
     </div>`;
   }
@@ -6124,6 +6214,12 @@ button.action:disabled{opacity:.5;cursor:default;}
         const ok = await this._saveZoneInterlockSettings(domain);
         if (ok) this._setControlSaveNotice(domain);
       });
+    });
+    root.querySelectorAll("[data-zone-interlock-rule-add]").forEach((btn) => {
+      btn.addEventListener("click", () => this._addZoneInterlockRule(btn.dataset.zoneInterlockDomain || "environment"));
+    });
+    root.querySelectorAll("[data-zone-interlock-rule-delete]").forEach((btn) => {
+      btn.addEventListener("click", () => this._deleteZoneInterlockRule(btn.dataset.zoneInterlockDomain || "environment", btn.dataset.zoneInterlockRuleIndex || 0));
     });
   }
 
