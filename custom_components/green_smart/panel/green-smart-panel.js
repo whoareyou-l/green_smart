@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.17
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.18
 const DOMAIN = "green_smart";
-const VERSION = "1.9.17";
+const VERSION = "1.9.18";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -352,6 +352,7 @@ class GreenSmartPanel extends HTMLElement {
     if (domain === "environment") this._replaceZoneControlCard("[data-env-strategy-preview-card]", this._renderEnvironmentStrategyPreviewCard(domain));
     if (domain === "irrigation") this._replaceZoneControlCard("[data-irrigation-strategy-preview-card]", this._renderIrrigationStrategyPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-dry-run-card]", this._renderZoneDryRunPreviewCard(domain));
+    this._replaceZoneControlCard("[data-zone-operator-confirm-card]", this._renderZoneOperatorConfirmCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._replaceZoneControlCard("[data-zone-entity-validation-card]", this._renderZoneEntityMappingValidationCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
@@ -361,6 +362,7 @@ class GreenSmartPanel extends HTMLElement {
     this._bindZoneSafetyGuardEventInputs(this.shadowRoot);
     this._bindZoneLimitedAutoPolicyInputs(this.shadowRoot);
     this._bindZoneDryRunPreviewInputs(this.shadowRoot);
+    this._bindZoneOperatorConfirmInputs(this.shadowRoot);
     this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
     this._bindIrrigationStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
@@ -5280,6 +5282,21 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  _operatorConfirmationPhrase(domain) {
+    return "실제 장비 실행 확인";
+  }
+
+  _operatorExecutionConfirmationPayload(domain) {
+    const card = this.shadowRoot?.querySelector(`[data-zone-operator-confirm-card][data-zone-operator-confirm-domain="${domain}"]`);
+    const enabled = !!card?.querySelector("[data-zone-operator-confirm-enabled]")?.checked;
+    return {
+      operator_confirmed: enabled,
+      operatorConfirmationText: card?.querySelector("[data-zone-operator-confirm-text]")?.value?.trim() || "",
+      operatorRole: card?.querySelector("[data-zone-operator-confirm-role]")?.value || "operator",
+      operatorOverrideReason: card?.querySelector("[data-zone-operator-confirm-reason]")?.value?.trim() || "panel operator confirmation",
+    };
+  }
+
   async _executeZoneFinalTargets(domain) {
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return false;
@@ -5290,10 +5307,11 @@ button.action:disabled{opacity:.5;cursor:default;}
         zone_id: zoneId,
         domain,
         dry_run: false,
+        ...this._operatorExecutionConfirmationPayload(domain),
       });
       const safetyText = res?.blockedByInterlock ? `안전 차단${res?.failSafeApplied ? " · Fail Safe 적용" : ""}` : "안전 상태 clear";
       const stateText = res?.stateVerification === "passed" ? "상태 확인 통과" : `상태 확인 ${res?.stateMatched ? "통과" : "주의"}`;
-      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 (${res?.executedCount || 0}/${res?.plannedCount || 0}) · ${safetyText} · ${stateText} · 실행 후 상태 ${res?.stateVerification || "unknown"} · safetyStatus ${res?.safetyStatus || "clear"}`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 최종값 실행 완료 · 운영자 확인 (${res?.executedCount || 0}/${res?.plannedCount || 0}) · ${safetyText} · ${stateText} · 실행 후 상태 ${res?.stateVerification || "unknown"} · safetyStatus ${res?.safetyStatus || "clear"}`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
       await this._fetchZoneFinalTargets(domain);
       await this._fetchZoneExecutionLogs(domain);
       return !!res?.ok;
@@ -5899,6 +5917,23 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderZoneOperatorConfirmCard(domain) {
+    const phrase = this._operatorConfirmationPhrase(domain);
+    return `<div class="gs-card" data-zone-operator-confirm-card data-zone-operator-confirm-domain="${domain}" style="padding:16px;margin-bottom:12px;border:1px solid #f0d9b5;background:#fffdf8;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>운영자 실행 확인</b><div class="strategy-muted">manual/assist/auto · 실제 장비 실행 확인 · 실행 권한 · override 사유 · 재개/override UX</div></div>
+        <button class="mini-btn primary" data-zone-final-execute-confirmed data-zone-final-execute-domain="${domain}">확인 후 최종값 실행</button>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+        <label>운영자 확인 <input type="checkbox" data-zone-operator-confirm-enabled></label>
+        <label>확인 문구 <input data-zone-operator-confirm-text placeholder="${this._esc(phrase)}"></label>
+        <label>실행 권한 <select data-zone-operator-confirm-role><option value="operator">operator</option><option value="technician">technician</option><option value="admin">admin</option><option value="owner">owner</option></select></label>
+        <label>override 사유 <input data-zone-operator-confirm-reason placeholder="예: 현장 점검 후 제한 운전"></label>
+      </div>
+      <div class="strategy-muted" style="margin-top:8px;">실제 장비 실행 확인 문구를 정확히 입력해야 실행됩니다: <code>${this._esc(phrase)}</code></div>
+    </div>`;
+  }
+
   _renderZoneDryRunPreviewCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const data = this._zoneDryRunPreviewCache?.[cacheKey] || null;
@@ -6231,6 +6266,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneLimitedAutoPolicyCard("environment")}
       ${this._renderEnvironmentStrategyPreviewCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
+      ${this._renderZoneOperatorConfirmCard("environment")}
       ${this._renderZoneDryRunPreviewCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
@@ -6401,6 +6437,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneLimitedAutoPolicyCard("irrigation")}
       ${this._renderIrrigationStrategyPreviewCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
+      ${this._renderZoneOperatorConfirmCard("irrigation")}
       ${this._renderZoneDryRunPreviewCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
@@ -6492,6 +6529,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneSafetyGuardEventHistoryCard("device")}
       ${this._renderZoneLimitedAutoPolicyCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
+      ${this._renderZoneOperatorConfirmCard("device")}
       ${this._renderZoneDryRunPreviewCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
@@ -6850,6 +6888,21 @@ button.action:disabled{opacity:.5;cursor:default;}
         const domain = btn.dataset.zoneControlModeDomain || "environment";
         const ok = await this._saveZoneControlMode(domain);
         if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+  }
+
+  _bindZoneOperatorConfirmInputs(root) {
+    root.querySelectorAll("[data-zone-final-execute-confirmed]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneFinalExecuteDomain || btn.dataset.zoneFinalExecuteConfirmed || "environment";
+        const payload = this._operatorExecutionConfirmationPayload(domain);
+        if (!payload.operator_confirmed || payload.operatorConfirmationText !== this._operatorConfirmationPhrase(domain)) {
+          alert(`실제 장비 실행 확인 필요: 확인 문구 '${this._operatorConfirmationPhrase(domain)}'를 입력하고 운영자 확인을 체크하세요.`);
+          return;
+        }
+        const ok = await this._executeZoneFinalTargets(domain);
+        if (!ok) alert("최종값 실행 실패: 운영자 확인/권한/override 사유와 SafetyGuard 상태를 확인하세요.");
       });
     });
   }

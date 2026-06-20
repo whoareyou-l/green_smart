@@ -1,6 +1,6 @@
 # Control Phase C16 — 실시간 Sensor 기반 Safety Rule
 
-> 기준 버전: v1.9.17
+> 기준 버전: v1.9.18
 > 상태: 완료
 > 대상: `zone_control_views.py`, `green-smart-panel.js`, `zone_control_logs`
 

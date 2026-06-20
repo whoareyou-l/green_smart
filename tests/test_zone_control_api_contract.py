@@ -1445,3 +1445,59 @@ def test_control_phase_c16_sensor_safety_rule_contract():
         "펌프 fault",
     ):
         assert panel_marker in panel_source
+
+
+
+def test_control_phase_c17_operator_confirmation_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "OPERATOR_CONFIRMATION_PHRASE",
+        "OPERATOR_EXECUTION_ROLES",
+        "_operator_execution_confirmation",
+        "operatorConfirmationRequired",
+        "operatorConfirmed",
+        "operatorConfirmationPhrase",
+        "operatorConfirmationText",
+        "operatorRole",
+        "operatorOverrideReason",
+        "operator_confirmation_required",
+        "operator_execution_confirmed",
+        "manual/assist/auto 실행 권한",
+        "운영자 확인",
+        "재개/override UX",
+    ):
+        assert api_marker in source
+
+    execution_section = source.split("class ZoneFinalTargetExecutionView", 1)[1].split("class ZoneAiControlOutputsView", 1)[0]
+    for execution_marker in (
+        "_operator_execution_confirmation",
+        "operatorConfirmationRequired",
+        "operatorConfirmed",
+        "operator_confirmation_required",
+        "operator_execution_confirmed",
+        "operatorOverrideReason",
+    ):
+        assert execution_marker in execution_section
+
+    for panel_marker in (
+        "_operatorConfirmationPhrase(domain)",
+        "_operatorExecutionConfirmationPayload(domain)",
+        "data-zone-operator-confirm-card",
+        "data-zone-operator-confirm-enabled",
+        "data-zone-operator-confirm-text",
+        "data-zone-operator-confirm-role",
+        "data-zone-operator-confirm-reason",
+        "data-zone-final-execute-confirmed",
+        "운영자 실행 확인",
+        "실제 장비 실행 확인",
+        "확인 문구",
+        "실행 권한",
+        "override 사유",
+        "manual/assist/auto",
+    ):
+        assert panel_marker in panel_source
+
+    for domain in ("environment", "irrigation", "device"):
+        assert f'_renderZoneOperatorConfirmCard("{domain}")' in panel_source

@@ -1,6 +1,6 @@
 # Phase 2F — SafetyGuard Notification Clear + Operator Note
 
-> 기준 버전: v1.9.17
+> 기준 버전: v1.9.18
 > 상태: 완료
 
 ## 목적

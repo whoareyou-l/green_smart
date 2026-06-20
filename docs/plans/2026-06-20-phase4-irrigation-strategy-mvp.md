@@ -1,6 +1,6 @@
 # Phase 4 — Irrigation Strategy MVP
 
-> 기준 버전: v1.9.17
+> 기준 버전: v1.9.18
 > 상태: 완료
 > 대상: `zone_control_views.py`, `green-smart-panel.js`, 관수 final target preview/save flow
 

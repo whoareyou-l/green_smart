@@ -235,12 +235,41 @@ async def _upsert_control_mode(hass, *, farm_id: int, crop_season_id: int, zone_
     return after
 
 
+
+OPERATOR_CONFIRMATION_PHRASE = "실제 장비 실행 확인"
+OPERATOR_EXECUTION_ROLES = {"operator", "admin", "owner", "technician"}
+
+
+def _operator_execution_confirmation(body: dict, mode_row: dict, limited_policy: dict, *, dry_run: bool) -> dict:
+    # Control Phase C17: manual/assist/auto 실행 권한 · 운영자 확인 · 재개/override UX.
+    mode = mode_row.get("mode") or "manual"
+    operator_role = str(body.get("operator_role") or body.get("operatorRole") or "operator").lower()
+    operator_confirmation_text = str(body.get("operator_confirmation_text") or body.get("operatorConfirmationText") or "").strip()
+    operator_override_reason = body.get("operator_override_reason") or body.get("operatorOverrideReason") or mode_row.get("overrideReason")
+    operator_confirmed = bool(body.get("operator_confirmed") or body.get("operatorConfirmed") or False)
+    operator_confirmation_required = bool(not dry_run and (limited_policy.get("operatorConfirmationRequired", True) or mode in {"manual", "assist", "auto"}))
+    phrase_ok = operator_confirmation_text == OPERATOR_CONFIRMATION_PHRASE
+    role_ok = operator_role in OPERATOR_EXECUTION_ROLES
+    override_ok = bool(operator_override_reason) if mode in {"manual", "assist"} else True
+    confirmed = bool((not operator_confirmation_required) or (operator_confirmed and phrase_ok and role_ok and override_ok))
+    reasons = []
+    if operator_confirmation_required and not operator_confirmed:
+        reasons.append("operator_confirmation_required")
+    if operator_confirmation_required and not phrase_ok:
+        reasons.append("operator_confirmation_phrase_mismatch")
+    if not role_ok:
+        reasons.append("operator_role_not_allowed")
+    if mode in {"manual", "assist"} and not override_ok:
+        reasons.append("operator_override_reason_required")
+    return {"operatorConfirmationRequired": operator_confirmation_required, "operatorConfirmed": confirmed, "operatorConfirmationPhrase": OPERATOR_CONFIRMATION_PHRASE, "operatorConfirmationText": operator_confirmation_text, "operatorRole": operator_role, "operatorOverrideReason": operator_override_reason, "confirmationReasons": reasons, "manualAssistAuto": mode in {"manual", "assist", "auto"}}
+
 async def _control_mode_decision(mode_row: dict, *, dry_run: bool) -> dict:
     mode = mode_row.get("mode") or "manual"
     allow_auto = bool(mode_row.get("allowAutoExecution"))
-    allow_execution = bool(dry_run or (mode in {"auto", "assist"} and allow_auto))
+    allow_execution = bool(dry_run or mode == "manual" or (mode in {"auto", "assist"} and allow_auto))
     reason = None if allow_execution else "manual override required before execution"
     if mode == "disabled" and not dry_run:
+        allow_execution = False
         reason = "control mode disabled"
     return {"mode": mode, "allowAutoExecution": allow_auto, "allowExecution": allow_execution, "reason": reason, "modeRow": mode_row}
 
@@ -1477,10 +1506,15 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
             return _json({"ok": False, "dryRun": dry_run, "controlMode": modeDecision, "safetyStatus": "blocked", "blockedByControlMode": True, "message": modeDecision.get("reason") or "manual override required before execution"}, status=409)
         limited_policy_row = await _limited_auto_policy_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
         limitedAutoPolicy = _limited_auto_execution_policy(modeDecision, limited_policy_row, dry_run=dry_run)
+        operatorConfirmation = _operator_execution_confirmation(body, mode_row, limitedAutoPolicy, dry_run=dry_run)
         if not limitedAutoPolicy.get("allowExecution"):
-            await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_blocked", before=limited_policy_row, after=limitedAutoPolicy, result="blocked", message=limitedAutoPolicy.get("reason") or "limited auto execution blocked")
-            return _json({"ok": False, "dryRun": dry_run, "controlMode": modeDecision, "limitedAutoPolicy": limitedAutoPolicy, "deviceGroupAutoAllow": limitedAutoPolicy.get("deviceGroupAutoAllow"), "semiAutoRequiresAck": limitedAutoPolicy.get("semiAutoRequiresAck"), "operatorConfirmationRequired": limitedAutoPolicy.get("operatorConfirmationRequired"), "safetyStatus": "blocked", "message": limitedAutoPolicy.get("reason")}, status=409)
-        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_allowed", before=limited_policy_row, after=limitedAutoPolicy, result="success", message="limited auto execution allowed")
+            await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_blocked", before=limited_policy_row, after={**limitedAutoPolicy, "operatorConfirmation": operatorConfirmation}, result="blocked", message=limitedAutoPolicy.get("reason") or "limited auto execution blocked")
+            return _json({"ok": False, "dryRun": dry_run, "controlMode": modeDecision, "limitedAutoPolicy": limitedAutoPolicy, "operatorConfirmation": operatorConfirmation, "deviceGroupAutoAllow": limitedAutoPolicy.get("deviceGroupAutoAllow"), "semiAutoRequiresAck": limitedAutoPolicy.get("semiAutoRequiresAck"), "operatorConfirmationRequired": limitedAutoPolicy.get("operatorConfirmationRequired"), "safetyStatus": "blocked", "message": limitedAutoPolicy.get("reason")}, status=409)
+        if not operatorConfirmation.get("operatorConfirmed"):
+            await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="operator_confirmation_required", before={"controlMode": modeDecision, "limitedAutoPolicy": limitedAutoPolicy}, after=operatorConfirmation, result="blocked", message="운영자 확인 required before final target execution")
+            return _json({"ok": False, "dryRun": dry_run, "controlMode": modeDecision, "limitedAutoPolicy": limitedAutoPolicy, "operatorConfirmation": operatorConfirmation, "operatorConfirmationRequired": operatorConfirmation.get("operatorConfirmationRequired"), "operatorConfirmationPhrase": operatorConfirmation.get("operatorConfirmationPhrase"), "operatorConfirmed": False, "safetyStatus": "blocked", "message": "operator confirmation required"}, status=409)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="operator_execution_confirmed", before={"controlMode": modeDecision, "limitedAutoPolicy": limitedAutoPolicy}, after=operatorConfirmation, result="success", message="operator execution confirmed")
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="limited_auto_execution_allowed", before=limited_policy_row, after={**limitedAutoPolicy, "operatorConfirmation": operatorConfirmation}, result="success", message="limited auto execution allowed")
         if not final_target or not isinstance(final_target.get("targets"), dict):
             return _err("final targets not found", status=404)
         mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
@@ -1580,10 +1614,10 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         sensorSafetyResults = [r for c in blocked_calls + calls for r in (c.get("sensorSafetyResults") or [])]
         sensorSafetyStatus = "blocked" if any(r.get("sensorRuleMatched") for r in sensorSafetyResults) else "clear"
         safety_guard_summary = {"status": "blocked" if blocked_calls and not safe_state_calls else ("failsafe" if safe_state_calls else "clear"), "blockedCount": len(blocked_calls), "failSafeCount": len(safe_state_calls), "ruleResults": [r for c in blocked_calls + calls for r in ((c.get("safetyGuard") or {}).get("ruleResults") or [])], "reasons": [reason for c in blocked_calls + calls for reason in (c.get("interlockReasons") or [])]}
-        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "safetyStatus": safety_guard_summary["status"], "sensorSafetyStatus": sensorSafetyStatus, "sensorSafetyResults": sensorSafetyResults, "safetyGuard": safety_guard_summary}
+        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "operatorConfirmed": operatorConfirmation.get("operatorConfirmed"), "operatorRole": operatorConfirmation.get("operatorRole"), "operatorOverrideReason": operatorConfirmation.get("operatorOverrideReason"), "safetyStatus": safety_guard_summary["status"], "sensorSafetyStatus": sensorSafetyStatus, "sensorSafetyResults": sensorSafetyResults, "safetyGuard": safety_guard_summary}
         if response.get("stateMatched") and not blocked_calls:
             action = "state_verification_passed"
-        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "safetyStatus": response["safetyStatus"], "sensorSafetyStatus": response.get("sensorSafetyStatus"), "sensorSafetyResults": response.get("sensorSafetyResults"), "safetyGuard": response["safetyGuard"]}, result=result, message="final targets executed via Home Assistant services with SafetyGuard/interlock/fail safe and pre/post state verification")
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "operatorConfirmation": operatorConfirmation, "safetyStatus": response["safetyStatus"], "sensorSafetyStatus": response.get("sensorSafetyStatus"), "sensorSafetyResults": response.get("sensorSafetyResults"), "safetyGuard": response["safetyGuard"]}, result=result, message="final targets executed via Home Assistant services with SafetyGuard/interlock/fail safe and pre/post state verification")
         return _json(response)
 
 
