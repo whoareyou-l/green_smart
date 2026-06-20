@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.37
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.38
 const DOMAIN = "green_smart";
-const VERSION = "1.8.37";
+const VERSION = "1.8.38";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -245,6 +245,7 @@ class GreenSmartPanel extends HTMLElement {
     this._apiScopedControlCache = {};
     this._zoneAiOutputCache = {};
     this._zoneFinalTargetCache = {};
+    this._zoneEntityMappingCache = {};
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -4986,6 +4987,91 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneEntityMappings(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return [];
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/device-entity-mappings?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      const items = Array.isArray(res?.items) ? res.items : [];
+      this._zoneEntityMappingCache[cacheKey] = items;
+      this._pageRendered = null;
+      this._update();
+      return items;
+    } catch (err) {
+      console.warn("Entity 매핑 조회 실패 시 fallback", err);
+      return this._zoneEntityMappingCache[cacheKey] || [];
+    }
+  }
+
+  async _saveZoneEntityMapping(domain, mapping) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/device-entity-mappings", {
+        crop_season_id: cropSeasonId,
+        zone_id: zoneId,
+        domain,
+        device_type: mapping.device_type || mapping.deviceType,
+        entity_id: mapping.entity_id || mapping.entityId,
+        control_role: mapping.control_role || mapping.controlRole,
+        safe_state: mapping.safe_state || mapping.safeState || "off",
+        enabled: mapping.enabled !== false,
+        note: mapping.note || "",
+      });
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · Entity 매핑 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      await this._fetchZoneEntityMappings(domain);
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("Entity 매핑 조회 실패 시 fallback", err);
+      return false;
+    }
+  }
+
+  async _deleteZoneEntityMapping(domain, mappingId) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId || !mappingId) return false;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    try {
+      const res = await this._hass.callApi("DELETE", `green_smart/zones/device-entity-mappings?id=${mappingId}&crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · Entity 매핑 삭제 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      await this._fetchZoneEntityMappings(domain);
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("Entity 매핑 조회 실패 시 fallback", err);
+      return false;
+    }
+  }
+
+  _renderZoneEntityMappingCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const mappings = this._zoneEntityMappingCache?.[cacheKey] || [];
+    if (this._numericControlSeasonId() && !this._zoneEntityMappingCache?.[cacheKey]) this._fetchZoneEntityMappings(domain);
+    const rows = mappings.length ? mappings.map((m) => `<div style="display:grid;grid-template-columns:1.1fr 1.4fr 1fr .9fr auto;gap:8px;align-items:center;border-top:1px solid #e2f0e4;padding:7px 0;font-size:12px;">
+      <span>${this._esc(m.deviceType || m.device_type || "장치")}</span>
+      <code>${this._esc(m.entityId || m.entity_id || "entity_id")}</code>
+      <span>${this._esc(m.controlRole || m.control_role || "control_role")}</span>
+      <span>safe_state: ${this._esc(m.safeState || m.safe_state || "off")}</span>
+      <button class="btn btn-ghost" data-zone-entity-delete data-zone-entity-domain="${domain}" data-zone-entity-id="${this._esc(String(m.id || ""))}">삭제</button>
+    </div>`).join("") : `<p style="font-size:12px;color:#5d7d64;">등록된 Entity 매핑 없음 · entity_id / control_role / safe_state를 입력해 실제 HA 장치와 연결하세요.</p>`;
+    return `<div class="gs-card" data-zone-entity-mapping-card data-zone-entity-domain="${domain}" style="padding:14px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div><b>장치/센서 Entity 매핑</b><br><span style="font-size:12px;color:#5d7d64;">작기+구역+domain별 HA entity_id, control_role, safe_state 연결</span></div>
+        <button class="btn btn-ghost" data-zone-entity-refresh data-zone-entity-domain="${domain}">Entity 매핑 새로고침</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0;">
+        <input data-zone-entity-device-type data-zone-entity-domain="${domain}" placeholder="device_type 예: roof_window">
+        <input data-zone-entity-id-input data-zone-entity-domain="${domain}" placeholder="entity_id 예: cover.zone1_roof">
+        <input data-zone-entity-control-role data-zone-entity-domain="${domain}" placeholder="control_role 예: ventilation">
+        <input data-zone-entity-safe-state data-zone-entity-domain="${domain}" placeholder="safe_state 예: closed/off">
+        <button class="btn" data-zone-entity-add data-zone-entity-domain="${domain}">Entity 매핑 추가</button>
+      </div>
+      ${rows}
+    </div>`;
+  }
+
   _renderZoneAiFinalTargetCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const outputs = this._zoneAiOutputCache?.[cacheKey] || [];
@@ -5200,6 +5286,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
       ${this._renderControlScopeBar("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
+      ${this._renderZoneEntityMappingCard("environment")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
@@ -5359,6 +5446,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
+      ${this._renderZoneEntityMappingCard("irrigation")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
         ${this._renderIrrigationControlTabBar()}
@@ -5440,6 +5528,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
+      ${this._renderZoneEntityMappingCard("device")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
         ${this._renderDeviceControlTabBar()}
@@ -5695,6 +5784,40 @@ button.action:disabled{opacity:.5;cursor:default;}
     });
   }
 
+  _bindZoneEntityMappingInputs(root) {
+    root.querySelectorAll("[data-zone-entity-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await this._fetchZoneEntityMappings(btn.dataset.zoneEntityDomain || "environment");
+      });
+    });
+    root.querySelectorAll("[data-zone-entity-add]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneEntityDomain || "environment";
+        const card = btn.closest("[data-zone-entity-mapping-card]");
+        const mapping = {
+          device_type: card?.querySelector("[data-zone-entity-device-type]")?.value?.trim(),
+          entity_id: card?.querySelector("[data-zone-entity-id-input]")?.value?.trim(),
+          control_role: card?.querySelector("[data-zone-entity-control-role]")?.value?.trim(),
+          safe_state: card?.querySelector("[data-zone-entity-safe-state]")?.value?.trim() || "off",
+        };
+        if (!mapping.device_type || !mapping.entity_id || !mapping.control_role) {
+          alert("device_type, entity_id, control_role을 입력해 주세요.");
+          return;
+        }
+        await this._saveZoneEntityMapping(domain, mapping);
+      });
+    });
+    root.querySelectorAll("[data-zone-entity-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneEntityDomain || "environment";
+        const id = btn.dataset.zoneEntityId;
+        if (!id) return;
+        if (!confirm(`${this._controlDomainLabel(domain)} Entity 매핑 #${id}를 삭제할까요?`)) return;
+        await this._deleteZoneEntityMapping(domain, id);
+      });
+    });
+  }
+
   _bindControlScopeInputs(root) {
     root.querySelectorAll("[data-control-scope-bar]").forEach((bar) => {
       const domain = bar.dataset.controlScopeDomain || "environment";
@@ -5748,6 +5871,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   _bindDashboard(root) {
     this._bindControlScopeInputs(root);
     this._bindZoneAiFinalTargetInputs(root);
+    this._bindZoneEntityMappingInputs(root);
     this._bindControlStrategyInputs(root);
     this._bindIrrigationControlInputs(root);
     this._bindDeviceControlInputs(root);

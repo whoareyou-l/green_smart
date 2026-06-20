@@ -271,6 +271,27 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             KEY idx_ai_zone_control_outputs (farm_id, crop_season_id, zone_id, domain, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+        """
+        CREATE TABLE IF NOT EXISTS zone_device_entity_mappings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id INT NOT NULL DEFAULT 1,
+            crop_season_id INT NOT NULL,
+            zone_id INT NOT NULL,
+            domain VARCHAR(32) NOT NULL,
+            device_type VARCHAR(64) NOT NULL,
+            entity_id VARCHAR(255) NOT NULL,
+            control_role VARCHAR(64) NOT NULL,
+            safe_state VARCHAR(64) NULL,
+            enabled TINYINT(1) NOT NULL DEFAULT 1,
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_zone_device_entity_mappings (farm_id, crop_season_id, zone_id, domain, entity_id, control_role),
+            KEY idx_zone_device_entity_mappings (farm_id, crop_season_id, zone_id, domain, enabled)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
         "INSERT IGNORE INTO zones (id, name) VALUES (1, '1구역')",
     )
     pool = await get_pool(hass)

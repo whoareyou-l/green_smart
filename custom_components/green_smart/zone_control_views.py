@@ -381,6 +381,100 @@ class ZoneAiControlOutputApplyView(HomeAssistantView):
         return _json({"ok": True, "aiOutputId": int(output_id), "finalTargetId": final_id, "targets": targets})
 
 
+class ZoneDeviceEntityMappingsView(HomeAssistantView):
+    """GET/POST/DELETE /api/green_smart/zones/device-entity-mappings."""
+
+    url = "/api/green_smart/zones/device-entity-mappings"
+    name = "api:green_smart:zones:device_entity_mappings"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        rows = await fetchall(
+            hass,
+            """
+            SELECT id, farm_id AS farmId, crop_season_id AS cropSeasonId, zone_id AS zoneId,
+                   domain, device_type AS deviceType, entity_id AS entityId,
+                   control_role AS controlRole, safe_state AS safeState, enabled,
+                   note, updated_at AS updatedAt
+            FROM zone_device_entity_mappings
+            WHERE farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s
+            ORDER BY enabled DESC, device_type ASC, control_role ASC, entity_id ASC
+            """,
+            (farm_id, crop_season_id, zone_id, domain),
+        )
+        for row in rows:
+            row["enabled"] = bool(row.get("enabled"))
+        return _json({"items": rows, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            domain = _validate_domain(body.get("domain"))
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            device_type = str(body.get("device_type") or body.get("deviceType") or "").strip()
+            entity_id = str(body.get("entity_id") or body.get("entityId") or "").strip()
+            control_role = str(body.get("control_role") or body.get("controlRole") or "").strip()
+            safe_state = body.get("safe_state") if "safe_state" in body else body.get("safeState")
+            enabled = 1 if body.get("enabled", True) else 0
+            note = body.get("note")
+            if not device_type or not entity_id or not control_role:
+                return _err("device_type, entity_id and control_role are required")
+        except Exception as exc:
+            return _err(str(exc))
+        actor = _actor(request)
+        new_id = await execute(
+            hass,
+            """
+            INSERT INTO zone_device_entity_mappings
+                (farm_id, crop_season_id, zone_id, domain, device_type, entity_id, control_role, safe_state, enabled, note, created_by, updated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                device_type = VALUES(device_type),
+                safe_state = VALUES(safe_state),
+                enabled = VALUES(enabled),
+                note = VALUES(note),
+                updated_by = VALUES(updated_by),
+                updated_at = NOW()
+            """,
+            (farm_id, crop_season_id, zone_id, domain, device_type, entity_id, control_role, safe_state, enabled, note, actor, actor),
+        )
+        mapping = {"deviceType": device_type, "entity_id": entity_id, "entityId": entity_id, "control_role": control_role, "controlRole": control_role, "safe_state": safe_state, "safeState": safe_state, "enabled": bool(enabled), "note": note}
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=actor, action="device_entity_mapping_saved", before=None, after=mapping, result="success", message="device entity mapping saved")
+        return _json({"ok": True, "id": new_id, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, **mapping})
+
+    async def delete(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            mapping_id = _query_int(request, "id")
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not mapping_id or not crop_season_id or not zone_id:
+                return _err("id, crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        await execute(
+            hass,
+            "DELETE FROM zone_device_entity_mappings WHERE id = %s AND farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s",
+            (mapping_id, farm_id, crop_season_id, zone_id, domain),
+        )
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="device_entity_mapping_deleted", before={"id": mapping_id}, after=None, result="success", message="device entity mapping deleted")
+        return _json({"ok": True, "id": mapping_id})
+
+
 class ZoneControlLogsView(HomeAssistantView):
     """GET /api/green_smart/zones/control-logs."""
 
@@ -462,6 +556,21 @@ async def _domain_ai_post(request: web.Request, domain: str) -> web.Response:
     return await ZoneAiControlOutputsView().post(request)
 
 
+async def _domain_entity_mapping_get(request: web.Request, domain: str) -> web.Response:
+    request = request.clone(rel_url=request.rel_url.with_query({**request.query, "domain": domain}))
+    return await ZoneDeviceEntityMappingsView().get(request)
+
+
+async def _domain_entity_mapping_post(request: web.Request, domain: str) -> web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        return _err("Invalid JSON")
+    body["domain"] = domain
+    request._read_bytes = json.dumps(body).encode()
+    return await ZoneDeviceEntityMappingsView().post(request)
+
+
 class EnvironmentControlSettingsView(HomeAssistantView):
     """Domain wrapper for Environment Control settings."""
 
@@ -538,3 +647,42 @@ class DeviceAiControlOutputsView(HomeAssistantView):
 
     async def post(self, request: web.Request) -> web.Response:
         return await _domain_ai_post(request, "device")
+
+
+class EnvironmentDeviceEntityMappingsView(HomeAssistantView):
+    """Domain wrapper for Environment device/entity mappings."""
+
+    url = "/api/green_smart/environment/device-entity-mappings"
+    name = "api:green_smart:environment:device_entity_mappings"
+
+    async def get(self, request: web.Request) -> web.Response:
+        return await _domain_entity_mapping_get(request, "environment")
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_entity_mapping_post(request, "environment")
+
+
+class IrrigationDeviceEntityMappingsView(HomeAssistantView):
+    """Domain wrapper for Irrigation device/entity mappings."""
+
+    url = "/api/green_smart/irrigation/device-entity-mappings"
+    name = "api:green_smart:irrigation:device_entity_mappings"
+
+    async def get(self, request: web.Request) -> web.Response:
+        return await _domain_entity_mapping_get(request, "irrigation")
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_entity_mapping_post(request, "irrigation")
+
+
+class DeviceEntityMappingsView(HomeAssistantView):
+    """Domain wrapper for Device Control device/entity mappings."""
+
+    url = "/api/green_smart/devices/device-entity-mappings"
+    name = "api:green_smart:devices:device_entity_mappings"
+
+    async def get(self, request: web.Request) -> web.Response:
+        return await _domain_entity_mapping_get(request, "device")
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_entity_mapping_post(request, "device")

@@ -157,3 +157,77 @@ def test_panel_shows_ai_outputs_and_final_targets_with_apply_action_phase8():
         "this._bindZoneAiFinalTargetInputs(root)",
     ):
         assert domain_call in source
+
+
+def test_zone_control_device_entity_mappings_phase9():
+    db_source = DB.read_text(encoding="utf-8")
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for db_marker in (
+        "CREATE TABLE IF NOT EXISTS zone_device_entity_mappings",
+        "uniq_zone_device_entity_mappings",
+        "device_type VARCHAR(64) NOT NULL",
+        "entity_id VARCHAR(255) NOT NULL",
+        "control_role VARCHAR(64) NOT NULL",
+        "safe_state VARCHAR(64) NULL",
+        "enabled TINYINT(1) NOT NULL DEFAULT 1",
+    ):
+        assert db_marker in db_source
+
+    for cls in (
+        "ZoneDeviceEntityMappingsView",
+        "EnvironmentDeviceEntityMappingsView",
+        "IrrigationDeviceEntityMappingsView",
+        "DeviceEntityMappingsView",
+    ):
+        assert cls in source
+        assert cls in init_source
+
+    for route in (
+        'url = "/api/green_smart/zones/device-entity-mappings"',
+        'url = "/api/green_smart/environment/device-entity-mappings"',
+        'url = "/api/green_smart/irrigation/device-entity-mappings"',
+        'url = "/api/green_smart/devices/device-entity-mappings"',
+    ):
+        assert route in source
+
+    for behavior in (
+        "INSERT INTO zone_device_entity_mappings",
+        "ON DUPLICATE KEY UPDATE",
+        "device_entity_mapping_saved",
+        "device_entity_mapping_deleted",
+        "control_role",
+        "safe_state",
+        "enabled",
+    ):
+        assert behavior in source
+
+    for panel_marker in (
+        "this._zoneEntityMappingCache",
+        "async _fetchZoneEntityMappings(domain)",
+        "async _saveZoneEntityMapping(domain, mapping)",
+        "async _deleteZoneEntityMapping(domain, mappingId)",
+        "_renderZoneEntityMappingCard(domain)",
+        "_bindZoneEntityMappingInputs(root)",
+        "green_smart/zones/device-entity-mappings",
+        "data-zone-entity-mapping-card",
+        "data-zone-entity-refresh",
+        "data-zone-entity-add",
+        "data-zone-entity-delete",
+        "장치/센서 Entity 매핑",
+        "entity_id",
+        "control_role",
+        "safe_state",
+        "Entity 매핑 조회 실패 시 fallback",
+    ):
+        assert panel_marker in panel_source
+
+    for domain_call in (
+        '_renderZoneEntityMappingCard("environment")',
+        '_renderZoneEntityMappingCard("irrigation")',
+        '_renderZoneEntityMappingCard("device")',
+        "this._bindZoneEntityMappingInputs(root)",
+    ):
+        assert domain_call in panel_source
