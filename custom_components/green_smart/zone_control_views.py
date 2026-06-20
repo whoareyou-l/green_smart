@@ -66,27 +66,14 @@ async def _settings_response(hass, *, farm_id: int, crop_season_id: int, zone_id
         (farm_id, crop_season_id, zone_id, domain),
     )
     if not row:
-        return {
-            "farmId": farm_id,
-            "cropSeasonId": crop_season_id,
-            "zoneId": zone_id,
-            "domain": domain,
-            "settings": None,
-            "found": False,
-        }
+        return {"farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "settings": None, "found": False}
     row["settings"] = _json_loads(row.pop("settingsJson", None), {})
     row["found"] = True
     return row
 
 
 async def _upsert_settings(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, settings: dict, actor: str | None) -> dict:
-    before = await _settings_response(
-        hass,
-        farm_id=farm_id,
-        crop_season_id=crop_season_id,
-        zone_id=zone_id,
-        domain=domain,
-    )
+    before = await _settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
     settings_json = json.dumps(settings, ensure_ascii=False)
     await execute(
         hass,
@@ -102,6 +89,23 @@ async def _upsert_settings(hass, *, farm_id: int, crop_season_id: int, zone_id: 
         """,
         (farm_id, crop_season_id, zone_id, domain, settings_json, actor, actor),
     )
+    await _insert_log(
+        hass,
+        farm_id=farm_id,
+        crop_season_id=crop_season_id,
+        zone_id=zone_id,
+        domain=domain,
+        actor=actor,
+        action="save_control_settings",
+        before=before.get("settings"),
+        after=settings,
+        result="success",
+        message="zone scoped control settings saved",
+    )
+    return await _settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+
+
+async def _insert_log(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, actor: str | None, action: str, before, after, result: str, message: str) -> None:
     await execute(
         hass,
         """
@@ -115,19 +119,12 @@ async def _upsert_settings(hass, *, farm_id: int, crop_season_id: int, zone_id: 
             zone_id,
             domain,
             actor,
-            "save_control_settings",
-            json.dumps(before.get("settings"), ensure_ascii=False),
-            settings_json,
-            "success",
-            "zone scoped control settings saved",
+            action,
+            json.dumps(before, ensure_ascii=False) if before is not None else None,
+            json.dumps(after, ensure_ascii=False) if after is not None else None,
+            result,
+            message,
         ),
-    )
-    return await _settings_response(
-        hass,
-        farm_id=farm_id,
-        crop_season_id=crop_season_id,
-        zone_id=zone_id,
-        domain=domain,
     )
 
 
@@ -204,22 +201,13 @@ class ZoneControlCopySettingsView(HomeAssistantView):
                 (farm_id, crop_season_id, domain, from_zone_id, to_zone_ids, copied_settings_json, actor, result)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (
-                farm_id,
-                crop_season_id,
-                domain,
-                from_zone_id,
-                json.dumps(to_zone_ids, ensure_ascii=False),
-                json.dumps(settings, ensure_ascii=False),
-                actor,
-                "success",
-            ),
+            (farm_id, crop_season_id, domain, from_zone_id, json.dumps(to_zone_ids, ensure_ascii=False), json.dumps(settings, ensure_ascii=False), actor, "success"),
         )
         return _json({"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "domain": domain, "fromZoneId": from_zone_id, "toZoneIds": to_zone_ids})
 
 
 class ZoneControlFinalTargetsView(HomeAssistantView):
-    """GET /api/green_smart/zones/final-targets."""
+    """GET/POST /api/green_smart/zones/final-targets."""
 
     url = "/api/green_smart/zones/final-targets"
     name = "api:green_smart:zones:final_targets"
@@ -253,6 +241,144 @@ class ZoneControlFinalTargetsView(HomeAssistantView):
         row["targets"] = _json_loads(row.pop("targetsJson", None), {})
         row["found"] = True
         return _json(row)
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            domain = _validate_domain(body.get("domain"))
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            targets = body.get("targets")
+            if not isinstance(targets, dict):
+                return _err("targets must be an object")
+            source_ai_output_id = body.get("source_ai_output_id") or body.get("sourceAiOutputId")
+            source_settings_id = body.get("source_settings_id") or body.get("sourceSettingsId")
+            calculated_by = body.get("calculated_by") or body.get("calculatedBy") or "system"
+        except Exception as exc:
+            return _err(str(exc))
+        targets_json = json.dumps(targets, ensure_ascii=False)
+        new_id = await execute(
+            hass,
+            """
+            INSERT INTO zone_final_control_targets
+                (farm_id, crop_season_id, zone_id, domain, targets_json, source_ai_output_id, source_settings_id, calculated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (farm_id, crop_season_id, zone_id, domain, targets_json, source_ai_output_id, source_settings_id, calculated_by),
+        )
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="final_targets_saved", before=None, after=targets, result="success", message="final targets saved")
+        return _json({"ok": True, "id": new_id, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "targets": targets})
+
+
+class ZoneAiControlOutputsView(HomeAssistantView):
+    """GET/POST /api/green_smart/zones/ai-control-outputs."""
+
+    url = "/api/green_smart/zones/ai-control-outputs"
+    name = "api:green_smart:zones:ai_control_outputs"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            limit = min(_query_int(request, "limit", 50) or 50, 200)
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        rows = await fetchall(
+            hass,
+            """
+            SELECT id, farm_id AS farmId, crop_season_id AS cropSeasonId, zone_id AS zoneId,
+                   domain, model_name AS modelName, strategy_json AS strategyJson,
+                   explanation, safety_status AS safetyStatus, applied AS `applied TINYINT`, created_at AS createdAt
+            FROM ai_zone_control_outputs
+            WHERE farm_id = %s AND crop_season_id = %s AND zone_id = %s AND domain = %s
+            ORDER BY created_at DESC, id DESC
+            LIMIT %s
+            """,
+            (farm_id, crop_season_id, zone_id, domain, limit),
+        )
+        for row in rows:
+            row["strategy"] = _json_loads(row.pop("strategyJson", None), {})
+            row["applied"] = bool(row.pop("applied TINYINT", 0))
+        return _json({"items": rows})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+            domain = _validate_domain(body.get("domain"))
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+            strategy = body.get("strategy") or body.get("strategy_json") or body.get("strategyJson")
+            if not isinstance(strategy, dict):
+                return _err("strategy must be an object")
+            model_name = body.get("model_name") or body.get("modelName")
+            explanation = body.get("explanation")
+            safety_status = body.get("safety_status") or body.get("safetyStatus") or "pending"
+        except Exception as exc:
+            return _err(str(exc))
+        strategy_json = json.dumps(strategy, ensure_ascii=False)
+        new_id = await execute(
+            hass,
+            """
+            INSERT INTO ai_zone_control_outputs
+                (farm_id, crop_season_id, zone_id, domain, model_name, strategy_json, explanation, safety_status, applied)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0)
+            """,
+            (farm_id, crop_season_id, zone_id, domain, model_name, strategy_json, explanation, safety_status),
+        )
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="ai_output_saved", before=None, after=strategy, result="success", message="AI control output saved")
+        return _json({"ok": True, "id": new_id, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "strategy": strategy, "safetyStatus": safety_status})
+
+
+class ZoneAiControlOutputApplyView(HomeAssistantView):
+    """POST /api/green_smart/zones/ai-control-outputs/{output_id}/apply."""
+
+    url = "/api/green_smart/zones/ai-control-outputs/{output_id}/apply"
+    name = "api:green_smart:zones:ai_control_output_apply"
+
+    async def post(self, request: web.Request, output_id: str) -> web.Response:
+        hass = request.app["hass"]
+        output = await fetchone(
+            hass,
+            """
+            SELECT id, farm_id AS farmId, crop_season_id AS cropSeasonId, zone_id AS zoneId,
+                   domain, strategy_json AS strategyJson
+            FROM ai_zone_control_outputs
+            WHERE id = %s
+            """,
+            (int(output_id),),
+        )
+        if not output:
+            return _err("AI output not found", status=404)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        targets = body.get("targets") or _json_loads(output.get("strategyJson"), {})
+        if not isinstance(targets, dict):
+            return _err("targets must be an object")
+        source_settings_id = body.get("source_settings_id") or body.get("sourceSettingsId")
+        targets_json = json.dumps(targets, ensure_ascii=False)
+        final_id = await execute(
+            hass,
+            """
+            INSERT INTO zone_final_control_targets
+                (farm_id, crop_season_id, zone_id, domain, targets_json, source_ai_output_id, source_settings_id, calculated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (output["farmId"], output["cropSeasonId"], output["zoneId"], output["domain"], targets_json, int(output_id), source_settings_id, "ai_agent"),
+        )
+        await execute(hass, "UPDATE ai_zone_control_outputs SET applied = 1 WHERE id = %s", (int(output_id),))
+        await _insert_log(hass, farm_id=output["farmId"], crop_season_id=output["cropSeasonId"], zone_id=output["zoneId"], domain=output["domain"], actor=_actor(request), action="ai_output_applied_to_final_targets", before=None, after=targets, result="success", message="AI output applied to final targets")
+        return _json({"ok": True, "aiOutputId": int(output_id), "finalTargetId": final_id, "targets": targets})
 
 
 class ZoneControlLogsView(HomeAssistantView):
@@ -320,6 +446,22 @@ async def _domain_post(request: web.Request, domain: str) -> web.Response:
     return _json(await _upsert_settings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, settings=settings, actor=_actor(request)))
 
 
+async def _domain_ai_get(request: web.Request, domain: str) -> web.Response:
+    request = request.clone(rel_url=request.rel_url.with_query({**request.query, "domain": domain}))
+    return await ZoneAiControlOutputsView().get(request)
+
+
+async def _domain_ai_post(request: web.Request, domain: str) -> web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        return _err("Invalid JSON")
+    body["domain"] = domain
+    # aiohttp caches json body from _read_bytes; this domain wrapper exists for explicit route contracts.
+    request._read_bytes = json.dumps(body).encode()
+    return await ZoneAiControlOutputsView().post(request)
+
+
 class EnvironmentControlSettingsView(HomeAssistantView):
     """Domain wrapper for Environment Control settings."""
 
@@ -357,3 +499,42 @@ class DeviceControlSettingsView(HomeAssistantView):
 
     async def post(self, request: web.Request) -> web.Response:
         return await _domain_post(request, "device")
+
+
+class EnvironmentAiControlOutputsView(HomeAssistantView):
+    """Domain wrapper for Environment AI outputs."""
+
+    url = "/api/green_smart/environment/ai-control-outputs"
+    name = "api:green_smart:environment:ai_control_outputs"
+
+    async def get(self, request: web.Request) -> web.Response:
+        return await _domain_ai_get(request, "environment")
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_ai_post(request, "environment")
+
+
+class IrrigationAiControlOutputsView(HomeAssistantView):
+    """Domain wrapper for Irrigation AI outputs."""
+
+    url = "/api/green_smart/irrigation/ai-control-outputs"
+    name = "api:green_smart:irrigation:ai_control_outputs"
+
+    async def get(self, request: web.Request) -> web.Response:
+        return await _domain_ai_get(request, "irrigation")
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_ai_post(request, "irrigation")
+
+
+class DeviceAiControlOutputsView(HomeAssistantView):
+    """Domain wrapper for Device AI outputs."""
+
+    url = "/api/green_smart/devices/ai-control-outputs"
+    name = "api:green_smart:devices:ai_control_outputs"
+
+    async def get(self, request: web.Request) -> web.Response:
+        return await _domain_ai_get(request, "device")
+
+    async def post(self, request: web.Request) -> web.Response:
+        return await _domain_ai_post(request, "device")

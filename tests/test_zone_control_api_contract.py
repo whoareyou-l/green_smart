@@ -83,3 +83,44 @@ def test_panel_has_zone_control_api_helpers_with_localstorage_fallback():
         "this._apiScopedControlCache",
     ):
         assert required in source
+
+
+def test_zone_control_views_persist_ai_outputs_and_final_targets_phase7():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+
+    for cls in (
+        "ZoneAiControlOutputsView",
+        "ZoneAiControlOutputApplyView",
+        "EnvironmentAiControlOutputsView",
+        "IrrigationAiControlOutputsView",
+        "DeviceAiControlOutputsView",
+    ):
+        assert cls in source
+        assert cls in init_source
+
+    for route in (
+        'url = "/api/green_smart/zones/ai-control-outputs"',
+        'url = "/api/green_smart/zones/ai-control-outputs/{output_id}/apply"',
+        'url = "/api/green_smart/environment/ai-control-outputs"',
+        'url = "/api/green_smart/irrigation/ai-control-outputs"',
+        'url = "/api/green_smart/devices/ai-control-outputs"',
+    ):
+        assert route in source
+
+    for behavior in (
+        "INSERT INTO ai_zone_control_outputs",
+        "strategy_json",
+        "safety_status",
+        "applied TINYINT",
+        "INSERT INTO zone_final_control_targets",
+        "source_ai_output_id",
+        "source_settings_id",
+        "ai_output_saved",
+        "ai_output_applied_to_final_targets",
+        "UPDATE ai_zone_control_outputs SET applied = 1",
+    ):
+        assert behavior in source
+
+    assert "hass.http.register_view(ZoneAiControlOutputsView())" in init_source
+    assert "hass.http.register_view(ZoneAiControlOutputApplyView())" in init_source
