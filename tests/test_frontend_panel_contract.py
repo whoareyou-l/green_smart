@@ -359,3 +359,30 @@ def test_control_pages_use_crop_season_zone_scoped_storage_for_phase2():
     assert 'this._setScopedControlState("environment", this._controlStrategy)' in panel
     assert 'this._setScopedControlState("irrigation", this._irrigationControl)' in panel
     assert 'this._setScopedControlState("device", this._deviceControl)' in panel
+
+
+def test_control_scope_save_ux_shows_current_crop_zone_and_domain_for_phase3():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    scope_bar = panel.split("  _renderControlScopeBar(domain) {", 1)[1].split("  _cloneControlState", 1)[0]
+
+    for required in [
+        "  _controlDomainLabel(domain) {",
+        "  _currentControlScopeLabel(domain) {",
+        "  _setControlSaveNotice(domain) {",
+        "this._controlSaveNotice",
+        "data-control-scope-summary",
+        "data-control-scope-storage-key",
+        "data-control-save-notice",
+        "저장 대상",
+        "작기 + 구역 + 제어영역",
+        "green_smart_zone_control_settings",
+        "마지막 저장",
+    ]:
+        assert required in panel
+    for domain_label in ["환경 제어", "관수 제어", "장치제어"]:
+        assert domain_label in panel
+    assert "this._setControlSaveNotice(\"environment\");" in panel
+    assert "this._setControlSaveNotice(\"irrigation\");" in panel
+    assert "this._setControlSaveNotice(\"device\");" in panel
+    assert "this._currentControlScopeLabel(domain)" in scope_bar
+    assert "this._controlDomainLabel(domain)" in scope_bar

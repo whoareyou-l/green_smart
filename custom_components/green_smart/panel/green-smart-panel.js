@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.8.31
+// Green Smart — Modern SaaS greenhouse dashboard  v1.8.32
 const DOMAIN = "green_smart";
-const VERSION = "1.8.31";
+const VERSION = "1.8.32";
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
 const DEFAULT_FORM = {
@@ -241,6 +241,7 @@ class GreenSmartPanel extends HTMLElement {
     this._deviceControl = this._loadDeviceControl();
     this._deviceTab = "status";
     this._controlScope = this._loadControlScope();
+    this._controlSaveNotice = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
     this._pageRendered = null;
@@ -4661,6 +4662,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._controlStrategy = this._calculateFinalAppliedTargets(this._controlStrategy);
     this._pushControlLog("설정 저장 → 환경 제어 갱신");
     this._setScopedControlState("environment", this._controlStrategy);
+    this._setControlSaveNotice("environment");
     localStorage.setItem("green_smart_control_strategy", JSON.stringify(this._controlStrategy));
     this._pageRendered = null;
     this._update();
@@ -4874,12 +4876,33 @@ button.action:disabled{opacity:.5;cursor:default;}
     return Array.from({ length: count }, (_, i) => ({ id: i + 1, label: `${i + 1}구역` }));
   }
 
+  _controlDomainLabel(domain) {
+    return { environment: "환경 제어", irrigation: "관수 제어", device: "장치제어" }[domain] || domain;
+  }
+
+  _currentControlScopeLabel(domain) {
+    const seasonId = String(this._currentControlSeasonId());
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const seasonLabel = this._controlSeasonOptions().find((s) => String(s.id) === seasonId)?.label || seasonId;
+    const zoneLabel = this._controlZoneOptions(domain).find((z) => z.id === zoneId)?.label || `${zoneId}구역`;
+    return `${seasonLabel} / ${zoneLabel} / ${this._controlDomainLabel(domain)}`;
+  }
+
+  _setControlSaveNotice(domain) {
+    this._controlSaveNotice = {
+      domain,
+      label: this._currentControlScopeLabel(domain),
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+  }
+
   _renderControlScopeBar(domain) {
     const selectedSeason = String(this._currentControlSeasonId());
     const selectedZone = Number(this._controlScope?.zoneId || 1);
     const seasonOptions = this._controlSeasonOptions();
     const zoneOptions = this._controlZoneOptions(domain);
     const safeZone = zoneOptions.some((z) => z.id === selectedZone) ? selectedZone : 1;
+    const saveNotice = this._controlSaveNotice?.domain === domain ? `${this._controlSaveNotice.time} · ${this._controlSaveNotice.label}` : "아직 저장 전";
     return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:190px;">현재 작기
         <select data-control-scope-season>
@@ -4897,7 +4920,12 @@ button.action:disabled{opacity:.5;cursor:default;}
           <option value="all" ${this._controlScope?.applyMode === "all" ? "selected" : ""}>전체 구역에 복사</option>
         </select>
       </label>
-      <div style="font-size:12px;color:#7a9780;line-height:1.4;">현재 저장 단위: 작기 + 구역 + 제어영역. 저장 시 선택된 구역의 ${domain} 설정만 갱신됩니다.</div>
+      <div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;min-width:260px;">
+        <b>저장 대상</b><br>${this._esc(this._currentControlScopeLabel(domain))}<br>
+        <span>제어영역: ${this._esc(this._controlDomainLabel(domain))}</span><br>
+        <span data-control-scope-storage-key>작기 + 구역 + 제어영역 → green_smart_zone_control_settings</span><br>
+        <span data-control-save-notice>마지막 저장: ${this._esc(saveNotice)}</span>
+      </div>
     </div>`;
   }
 
@@ -5011,6 +5039,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._irrigationControl = this._calculateFinalIrrigationTargets(this._irrigationControl);
     this._irrigationControl.irrigationLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 설정 저장 · 관수 제어 갱신 · 성공`, ...(this._irrigationControl.irrigationLogs || [])].slice(0, 20);
     this._setScopedControlState("irrigation", this._irrigationControl);
+    this._setControlSaveNotice("irrigation");
     localStorage.setItem("green_smart_irrigation_control", JSON.stringify(this._irrigationControl));
     this._pageRendered = null;
     this._update();
@@ -5156,6 +5185,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   _saveDeviceControl() {
     this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} 장치제어 설정 저장 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
     this._setScopedControlState("device", this._deviceControl);
+    this._setControlSaveNotice("device");
     localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
     this._pageRendered = null;
     this._update();
@@ -5437,6 +5467,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         device.updated = "방금 전";
         this._deviceControl.deviceControlLogs = [`${new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})} ${device.name} ${previous} → ${command} · 수동실행 · 사용자 · 성공`, ...(this._deviceControl.deviceControlLogs || [])].slice(0, 30);
         this._setScopedControlState("device", this._deviceControl);
+        this._setControlSaveNotice("device");
         localStorage.setItem("green_smart_device_control", JSON.stringify(this._deviceControl));
         this._pageRendered = null;
         this._update();
