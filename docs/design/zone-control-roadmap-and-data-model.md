@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.14` / Phase 5 Limited Auto Control + Alert Resume
+> 기준 버전: `v1.9.14` / Product Phase 5 완료, Control Phase C13 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -11,7 +11,7 @@
 1. 현재까지 구현된 제어 아키텍처의 목적과 범위
 2. DB 테이블 구성과 관계성
 3. API/UI/실행 흐름
-4. 완료된 Phase와 남은 Phase의 기준
+4. 완료된 Control Phase와 남은 Control Phase의 기준
 5. 실사용 가능 기준과 상용 배포 기준
 6. 앞으로 작업 시 지켜야 할 원칙과 중단 조건
 
@@ -52,23 +52,23 @@ farm_id + crop_season_id + zone_id + domain
 
 ---
 
-## 3. 현재 완료된 Phase
+## 3. 현재 완료된 Control Phase
 
-| Phase | 상태 | 요약 |
+| Control Phase | 상태 | 요약 |
 |---:|---|---|
-| 1 | 완료 | 공통 작기/구역 Scope Bar |
-| 2 | 완료 | 작기+구역별 localStorage 분리 저장 |
-| 3 | 완료 | 저장 대상/마지막 저장 UX |
-| 4 | 완료 | 구역별 설정 복사 |
-| 5 | 완료 | DB/API 설계 문서 및 방향 수립 |
-| 6 | 완료 | backend/API 저장 구조 구현 |
-| 7 | 완료 | AI output/final target 저장 API |
-| 8 | 완료 | UI에서 AI output/final target 조회/적용 |
-| 9 | 완료 | HA Entity 매핑 DB/API/UI |
-| 10 | 완료 | final targets → HA service call 실행 |
-| 11 | 완료 | 실행 전/후 entity state 수집 및 검증 |
-| 12 | 완료 | 인터록 / Fail Safe 실행 차단 엔진 |
-| 13 | 완료 | 운영 UI에서 실행/안전 로그 카드 표시 |
+| C1 | 완료 | 공통 작기/구역 Scope Bar |
+| C2 | 완료 | 작기+구역별 localStorage 분리 저장 |
+| C3 | 완료 | 저장 대상/마지막 저장 UX |
+| C4 | 완료 | 구역별 설정 복사 |
+| C5 | 완료 | DB/API 설계 문서 및 방향 수립 |
+| C6 | 완료 | backend/API 저장 구조 구현 |
+| C7 | 완료 | AI output/final target 저장 API |
+| C8 | 완료 | UI에서 AI output/final target 조회/적용 |
+| C9 | 완료 | HA Entity 매핑 DB/API/UI |
+| C10 | 완료 | final targets → HA service call 실행 |
+| C11 | 완료 | 실행 전/후 entity state 수집 및 검증 |
+| C12 | 완료 | 인터록 / Fail Safe 실행 차단 엔진 |
+| C13 | 완료 | 운영 UI에서 실행/안전 로그 카드 표시 |
 
 현재 상태는 **제어 데이터 저장 → final target 실행 → 안전 차단 → 로그 확인**까지 구조적으로 연결된 상태다. 다만 실제 현장 장비에 안정적으로 적용하려면 Dry Run UI, mapping 검증, 실시간 safety rule, 권한/확인 UX가 더 필요하다.
 
@@ -717,34 +717,34 @@ domain별 상세 설정 탭
 
 ---
 
-## 11. 남은 Phase 제안
+## 11. 남은 Control Phase 제안
 
 ### 최소 실사용 기준: 3단계
 
-| Phase | 목표 | 완료 기준 |
+| Control Phase | 목표 | 완료 기준 |
 |---:|---|---|
-| 14 | Dry Run UI | 실제 실행 전 예정 service call, 차단, Fail Safe, 현재 상태를 UI에서 확인 |
-| 15 | Entity Mapping 검증 | entity 존재 여부, domain/service 호환성, safe_state 유효성 검사 |
-| 16 | 실시간 Safety Rule | 풍속/강우/저온/탱크수위/펌프 fault 등 HA sensor 기반 차단 |
+| C14 | Dry Run UI | 실제 실행 전 예정 service call, 차단, Fail Safe, 현재 상태를 UI에서 확인 |
+| C15 | Entity Mapping 검증 | entity 존재 여부, domain/service 호환성, safe_state 유효성 검사 |
+| C16 | 실시간 Safety Rule | 풍속/강우/저온/탱크수위/펌프 fault 등 HA sensor 기반 차단 |
 
 이 3개가 끝나면 **제한적 현장 운영 테스트 가능**으로 본다.
 
 ### 운영 완성 기준: 추가 2단계
 
-| Phase | 목표 | 완료 기준 |
+| Control Phase | 목표 | 완료 기준 |
 |---:|---|---|
-| 17 | 운영 모드/권한/확인 UX | Dry Run 후 실행, 위험 제어 이중 확인, 관리자 실행 제한 |
-| 18 | AI Agent 추천 루프 | 센서/날씨/생육 데이터 기반 AI output 자동 생성, 운영자 승인 흐름 |
+| C17 | 운영 모드/권한/확인 UX | Dry Run 후 실행, 위험 제어 이중 확인, 관리자 실행 제한 |
+| C18 | AI Agent 추천 루프 | 센서/날씨/생육 데이터 기반 AI output 자동 생성, 운영자 승인 흐름 |
 
 이 5개가 끝나면 **운영자가 매일 쓰는 제어 보조 시스템** 수준으로 본다.
 
 ### 상용/고객 배포 기준: 추가 3단계
 
-| Phase | 목표 | 완료 기준 |
+| Control Phase | 목표 | 완료 기준 |
 |---:|---|---|
-| 19 | 알림/장애 통보 | 안전 차단, Fail Safe, 실행 실패, unavailable 알림 |
-| 20 | 현장 리허설/시나리오 테스트 | 정상/강풍/고장/차단/복구 시나리오 검증 |
-| 21 | 운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차 문서화 |
+| C19 | 알림/장애 통보 | 안전 차단, Fail Safe, 실행 실패, unavailable 알림 |
+| C20 | 현장 리허설/시나리오 테스트 | 정상/강풍/고장/차단/복구 시나리오 검증 |
+| C21 | 운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차 문서화 |
 
 ---
 
@@ -752,7 +752,7 @@ domain별 상세 설정 탭
 
 ### 12.1 더 이상 “기능만 추가”하지 않는다
 
-앞으로는 아래 순서 없이는 Phase를 진행하지 않는다.
+앞으로는 아래 순서 없이는 Control Phase를 진행하지 않는다.
 
 ```text
 1. 이 문서의 목적/데이터 모델에 맞는지 확인
@@ -817,10 +817,10 @@ domain별 상세 설정 탭
 
 ## 14. 다음 작업 권장 순서
 
-바로 다음은 Phase 14를 진행한다.
+바로 다음은 Control Phase C14를 진행한다.
 
 ```text
-Phase 14: Dry Run UI
+Control Phase C14: Dry Run UI
 ```
 
 작업 목표:
@@ -832,17 +832,17 @@ Phase 14: Dry Run UI
 그 다음:
 
 ```text
-Phase 15: Entity Mapping 검증 / Setup Assistant
-Phase 16: 실시간 Sensor 기반 Safety Rule
+Control Phase C15: Entity Mapping 검증 / Setup Assistant
+Control Phase C16: 실시간 Sensor 기반 Safety Rule
 ```
 
-이 3단계를 완료하면 “제한적 현장 운영 테스트 가능”으로 판단한다.
+C14~C16 3단계를 완료하면 “제한적 현장 운영 테스트 가능”으로 판단한다.
 
 ---
 
 ## 15. 문서 유지 규칙
 
-이 문서는 앞으로 Phase가 추가될 때 반드시 갱신한다.
+이 문서는 앞으로 Control Phase가 추가될 때 반드시 갱신한다.
 
 업데이트해야 하는 경우:
 

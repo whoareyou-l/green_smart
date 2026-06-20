@@ -57,14 +57,14 @@
 
 | 영역 | 상태 |
 |---|---|
-| Dry Run UI | 다음 Phase 14 권장 |
-| Entity mapping 실시간 검증 | 다음 Phase 15 권장 |
-| 실시간 센서 기반 safety rule | 다음 Phase 16 권장 |
-| 운영 권한/승인 UX | Phase 17 권장 |
-| 실제 AI Agent 추천 루프 | Phase 18 권장 |
-| 알림/장애 통보 | Phase 19 권장 |
-| 현장 리허설/시나리오 테스트 | Phase 20 권장 |
-| 운영 Runbook | Phase 21 권장 |
+| Dry Run UI | 다음 Control Phase C14 권장 |
+| Entity mapping 실시간 검증 | 다음 Control Phase C15 권장 |
+| 실시간 센서 기반 safety rule | 다음 Control Phase C16 권장 |
+| 운영 권한/승인 UX | Control Phase C17 권장 |
+| 실제 AI Agent 추천 루프 | Control Phase C18 권장 |
+| 알림/장애 통보 | Control Phase C19 권장 |
+| 현장 리허설/시나리오 테스트 | Control Phase C20 권장 |
+| 운영 Runbook | Control Phase C21 권장 |
 
 ---
 
@@ -1217,7 +1217,7 @@ python3 -m py_compile \
 현재 기대값:
 
 ```text
-101 passed
+113 passed
 node --check: no output / exit 0
 py_compile: no output / exit 0
 ```
@@ -1375,26 +1375,26 @@ README에는 과거 workflow 흔적이 남아 있을 수 있다. 현재 운영 �
 
 ### 20.2 최소 실사용까지 필요한 단계
 
-| Phase | 내용 | 이유 |
+| Control Phase | 내용 | 이유 |
 |---:|---|---|
-| 14 | Dry Run UI | 실제 장비 실행 전 call/safety/failsafe를 미리 봐야 함 |
-| 15 | Entity Mapping 검증 | entity_id 오입력, service 호환성, safe_state 검증 필요 |
-| 16 | 실시간 Sensor Safety Rule | 풍속/강우/탱크수위/펌프 fault 기반 차단 필요 |
+| C14 | Dry Run UI | 실제 장비 실행 전 call/safety/failsafe를 미리 봐야 함 |
+| C15 | Entity Mapping 검증 | entity_id 오입력, service 호환성, safe_state 검증 필요 |
+| C16 | 실시간 Sensor Safety Rule | 풍속/강우/탱크수위/펌프 fault 기반 차단 필요 |
 
 ### 20.3 운영 완성까지 필요한 단계
 
-| Phase | 내용 |
+| Control Phase | 내용 |
 |---:|---|
-| 17 | 운영 모드/권한/확인 UX |
-| 18 | 실제 AI Agent 추천 루프 |
+| C17 | 운영 모드/권한/확인 UX |
+| C18 | 실제 AI Agent 추천 루프 |
 
 ### 20.4 상용/고객 배포까지 필요한 단계
 
-| Phase | 내용 |
+| Control Phase | 내용 |
 |---:|---|
-| 19 | 알림/장애 통보 |
-| 20 | 현장 리허설/시나리오 테스트 |
-| 21 | 운영 Runbook |
+| C19 | 알림/장애 통보 |
+| C20 | 현장 리허설/시나리오 테스트 |
+| C21 | 운영 Runbook |
 
 ---
 
@@ -1428,7 +1428,7 @@ python3 -m py_compile custom_components/green_smart/db.py custom_components/gree
 
 ```text
 git status clean 또는 의도한 변경만 표시
-101 passed
+113 passed
 node --check exit 0
 py_compile exit 0
 ```

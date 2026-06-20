@@ -104,7 +104,7 @@ zone_control_copy_jobs
 
 | 항목 | 기존 기준 | 새 마스터 플랜 기준 | 현재 코드 영향 | 추천 선택지 | 사용자 결정 필요 여부 |
 |---|---|---|---|---|---|
-| Phase 번호/순서 | 기존 문서는 Phase 1~13 완료 후 Phase 14 Dry Run UI를 다음 단계로 제안 | 새 플랜은 Phase 1 기반 모델+대시보드+인터록 설정, Phase 2 안전 실행 완성 등으로 재정렬 | 코드 영향 없음. 문서 로드맵만 재해석 필요 | 기존 Phase 1~13은 “pre-master completed history”로 보존하고, 앞으로는 새 Phase 1~6 로드맵 사용 | 사용자가 새 순서를 명시했으므로 이번 문서에서는 채택. 단 기존 문서의 Phase 14~21 표현은 후속 문서 정리 필요 |
+| Phase 번호/순서 | 기존 제어 roadmap은 Control Phase C1~C13 완료 후 C14 Dry Run UI를 다음 단계로 제안 | 새 플랜은 Phase 1 기반 모델+대시보드+인터록 설정, Phase 2 안전 실행 완성 등으로 재정렬 | 코드 영향 없음. 문서 로드맵만 재해석 필요 | 기존 제어 단계는 Control Phase C1~C21로 분리하고, 제품 기능은 Phase 1~6 로드맵 사용 | 사용자가 새 순서를 명시했으므로 이번 문서에서는 채택. Control Phase C14~C21 표현으로 정리 완료 |
 | Safety rule 범위 | 현재 실행 경로의 payload 기반 `_safety`, unavailable 차단, safe_state 중심 | 이벤트 기반 + 실행 직전 + 1분 fallback, 센서 무결성/강풍/저온/고온/VWC/EC 등 독립 Safety Guard | 현재 구현은 기반만 있음. 별도 safety engine/table/notification 필요 | Phase 1~2에서 migration 없이 추가 테이블/API로 확장 | 아니오, gap으로 처리 |
 | Panel refresh | 현재 panel에는 simulation 3초, chart 60초, weather/watchdog 10분 등 도메인별 주기가 남아 있음. Phase 1C에서 제어 API 카드 refresh는 5초 요소별 patch로 정렬됨 | panel 기본 5초, 전체 재렌더 금지, 요소별 갱신 | 환경/관수/장치제어의 인터록/Entity 상태/실행 로그 카드는 `_refreshZoneControlElements({ patchOnly: true })`로 `_update()` 없이 갱신. chart/weather/watchdog는 별도 목적 주기로 유지 | Phase 2부터 SafetyGuard 관련 카드도 같은 element refresh 패턴 사용 | 아니오, Phase 1C에서 기반 완료 |
 | DB 저장 범위 | 현재는 설정/AI output/final target/control log 중심. strategy snapshot 전용 테이블 없음 | 전략 판단 스냅샷 5분 + target 변경 즉시 저장. raw sensor 장기 저장은 HA recorder/InfluxDB | `zone_strategy_snapshots` 등 신규 테이블/API 필요 | 기존 테이블 유지, 신규 snapshot/event 테이블 추가 migration task | 아니오, gap으로 처리 |
@@ -220,7 +220,38 @@ VWC 하한 긴급 관수 marker
 
 - 생육 추세, G-Index 추이, 수확량 예측, 병해 위험도, 주간 리포트
 
-## 6. 작업 원칙
+
+## 6. Control Stabilization Track
+
+마스터플랜의 `Phase N`은 제품 기능 축을 의미한다. 제어/현장 안정화 작업은 번호 충돌을 피하기 위해 별도 접두어 `Control Phase Cn`을 사용한다.
+
+| Control Phase | 상태 | 목표 | 완료 기준 |
+|---:|---|---|---|
+| C1 | 완료 | 공통 작기/구역 Scope Bar | 모든 제어 domain이 동일 scope를 사용 |
+| C2 | 완료 | 작기+구역별 localStorage 분리 저장 | zone별 local cache 격리 |
+| C3 | 완료 | 저장 대상/마지막 저장 UX | 저장 scope와 timestamp 표시 |
+| C4 | 완료 | 구역별 설정 복사 | 같은 작기 내 zone 설정 복사 |
+| C5 | 완료 | DB/API 설계 문서 및 방향 수립 | zone control data model 확정 |
+| C6 | 완료 | backend/API 저장 구조 구현 | core control tables/API 사용 가능 |
+| C7 | 완료 | AI output/final target 저장 API | AI 후보와 실행 대상 분리 저장 |
+| C8 | 완료 | UI에서 AI output/final target 조회/적용 | 운영자가 후보를 final target으로 승격 |
+| C9 | 완료 | HA Entity 매핑 DB/API/UI | domain mapping 관리 가능 |
+| C10 | 완료 | final targets → HA service call 실행 | HA service call plan/execute 연결 |
+| C11 | 완료 | 실행 전/후 entity state 수집 및 검증 | pre/post state verification 기록 |
+| C12 | 완료 | 인터록 / Fail Safe 실행 차단 엔진 | blocked/failsafe/clear 판단 |
+| C13 | 완료 | 운영 UI 실행/안전 로그 카드 | 실행/차단/검증 로그 확인 |
+| C14 | 남음 | Dry Run UI | 실제 실행 전 예정 service call, 차단, Fail Safe, 현재 상태 확인 |
+| C15 | 남음 | Entity Mapping 검증 | entity 존재, domain/service 호환성, safe_state 유효성 검사 |
+| C16 | 남음 | 실시간 Safety Rule | 풍속/강우/저온/탱크수위/펌프 fault 등 HA sensor 기반 차단 |
+| C17 | 남음 | 운영 모드/권한/확인 UX | Dry Run 후 실행, 위험 제어 이중 확인, 관리자 실행 제한 |
+| C18 | 남음 | AI Agent 추천 루프 | 센서/날씨/생육 기반 AI output 자동 생성 및 승인 흐름 |
+| C19 | 남음 | 알림/장애 통보 | 안전 차단, Fail Safe, 실행 실패, unavailable 알림 |
+| C20 | 남음 | 현장 리허설/시나리오 테스트 | 정상/강풍/고장/차단/복구 시나리오 검증 |
+| C21 | 남음 | 운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차 문서화 |
+
+운영 안정성 기준으로는 `C14~C16` 완료 후 **제한적 현장 운영 테스트 가능**으로 판단한다. 제품 기능 기준으로는 다음 큰 기능이 `Phase 6 — 생육 리포트와 예측`이다.
+
+## 7. 작업 원칙
 
 1. 기존 DB/API/test contract는 뒤집지 않는다.
 2. 변경이 필요하면 migration task로 분리한다.
