@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.7` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.8` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 101 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.7"
+  "version": "1.9.8"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.7"
+const VERSION = "1.9.8"
 ```
 
 중요 UI 페이지:
@@ -809,6 +809,21 @@ persistent_notification.create
 ```
 
 Panel에는 `SafetyGuard Watchdog` 카드가 표시되며, 5초 요소별 refresh loop가 `_fetchZoneSafetyGuardWatchdog(domain, { patchOnly })`를 호출한다.
+
+Phase 2D scheduler/stale baseline:
+
+```text
+async_track_time_interval
+_setup_safety_guard_watchdog_scheduler
+_teardown_safety_guard_watchdog_scheduler
+_run_safety_guard_watchdog_tick
+_safety_guard_state_age_seconds
+_safety_guard_is_stale
+SAFETY_GUARD_LAST_NOTIFIED_KEY
+safety_guard_notification_deduped
+```
+
+Scheduler는 `safety_guard_watchdog_scopes`에 저장된 scope를 대상으로 1분마다 watchdog을 실행한다.
 
 ---
 
@@ -1170,7 +1185,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.7
+v1.9.8
 ```
 
 ---

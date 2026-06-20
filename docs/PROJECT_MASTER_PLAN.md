@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.7`, Phase 2C SafetyGuard watchdog baseline
+> 기준 버전: product code `v1.9.8`, Phase 2D SafetyGuard scheduler and stale policy
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -149,7 +149,7 @@ manual/auto/assist/disabled execution pre-gate
 
 ### Phase 2. 인터록/안전 실행 완성
 
-현재 Phase 2A/2B/2C 완료:
+현재 Phase 2A/2B/2C/2D 완료:
 
 ```text
 SafetyGuard helper 분리
@@ -165,6 +165,9 @@ SafetyGuard watchdog API baseline
 1분 fallback 검사 marker + staleThresholdSeconds baseline
 criticalEvents response + persistent_notification.create hook
 panel SafetyGuard Watchdog 카드
+async_track_time_interval 기반 1분 scheduler
+stale timestamp age policy
+persistent notification dedup baseline
 ```
 
 남은 목표:

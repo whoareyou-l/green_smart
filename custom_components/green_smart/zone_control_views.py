@@ -698,6 +698,7 @@ def _safe_state_service_call_for_mapping(mapping: dict) -> dict | None:
 
 
 SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS = 60
+SAFETY_GUARD_LAST_NOTIFIED_KEY = "safety_guard_last_notified"
 
 SAFETY_GUARD_RULE_PRESETS = {
     "wind_speed_above": {"label": "강풍 초과", "attribute": "wind_speed", "entityClass": "weather.wind_speed", "reasonCode": "wind_speed_above"},
@@ -846,9 +847,37 @@ def _interlock_failsafe_decision(final_target: dict, mapping: dict, call: dict, 
     return _safety_guard_decision(final_target, {"enabled": True, "settings": {}}, mapping, call, pre_state)
 
 
+def _safety_guard_state_age_seconds(pre_state) -> float | None:
+    timestamp = (pre_state or {}).get("lastUpdated") or (pre_state or {}).get("lastChanged")
+    if not timestamp:
+        return None
+    try:
+        updated = dt_util.parse_datetime(timestamp) if isinstance(timestamp, str) else timestamp
+        if updated is None:
+            return None
+        now = dt_util.utcnow()
+        if getattr(updated, "tzinfo", None) is not None and getattr(now, "tzinfo", None) is None:
+            now = dt_util.as_utc(now)
+        return max(0.0, (now - updated).total_seconds())
+    except Exception:
+        return None
+
+
+def _safety_guard_is_stale(pre_state, stale_threshold_seconds) -> bool:
+    age_seconds = _safety_guard_state_age_seconds(pre_state)
+    return age_seconds is not None and age_seconds > stale_threshold_seconds
+
+
 def _notify_safety_guard_critical(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, critical_events: list[dict]) -> None:
     if not critical_events:
         return
+    notification_key = f"{crop_season_id}:{zone_id}:{domain}:{','.join(sorted(str(e.get('entityId')) for e in critical_events))}"
+    domain_data = hass.data.setdefault("green_smart", {})
+    last_notified = domain_data.setdefault(SAFETY_GUARD_LAST_NOTIFIED_KEY, {})
+    if last_notified.get(notification_key):
+        domain_data["safety_guard_notification_deduped"] = notification_key
+        return
+    last_notified[notification_key] = dt_util.utcnow().isoformat()
     message = f"SafetyGuard critical safety event: farm={farm_id}, cropSeason={crop_season_id}, zone={zone_id}, domain={domain}, events={len(critical_events)}"
     hass.async_create_task(hass.services.async_call("persistent_notification", "create", {"title": "Green Smart SafetyGuard", "message": message, "notification_id": f"green_smart_safety_guard_{crop_season_id}_{zone_id}_{domain}"}, blocking=False))  # persistent_notification.create
 
@@ -861,9 +890,10 @@ def _safety_guard_watchdog_item(hass, *, final_target: dict, interlock_settings:
     call["entityId"] = mapping.get("entityId")
     decision = _safety_guard_decision(final_target, interlock_settings, mapping, call, pre_state)
     state_text = str((pre_state or {}).get("state") or "unknown").lower()
-    stale = False  # staleThresholdSeconds baseline; timestamp age policy is Phase 2D.
+    stale = _safety_guard_is_stale(pre_state, stale_threshold_seconds)
+    age_seconds = _safety_guard_state_age_seconds(pre_state)
     critical = bool(decision.get("blockedByInterlock")) or state_text in {"unavailable", "unknown"} or stale
-    return {"mappingId": mapping.get("id"), "entityId": mapping.get("entityId"), "controlRole": mapping.get("controlRole"), "deviceType": mapping.get("deviceType"), "preState": pre_state, "dryRun": True, "watchdog": True, "stale": stale, "staleThresholdSeconds": stale_threshold_seconds, "watchdogStatus": "critical" if critical else "clear", "safetyGuard": decision.get("safetyGuard"), "critical": critical}
+    return {"mappingId": mapping.get("id"), "entityId": mapping.get("entityId"), "controlRole": mapping.get("controlRole"), "deviceType": mapping.get("deviceType"), "preState": pre_state, "dryRun": True, "watchdog": True, "stale": stale, "ageSeconds": age_seconds, "staleThresholdSeconds": stale_threshold_seconds, "watchdogStatus": "critical" if critical else "clear", "safetyGuard": decision.get("safetyGuard"), "critical": critical}
 
 
 async def _safety_guard_watchdog_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str, notify: bool = False, stale_threshold_seconds: int = SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS * 2) -> dict:
@@ -898,6 +928,11 @@ class ZoneSafetyGuardWatchdogView(HomeAssistantView):
                 return _err("crop_season_id and zone_id are required")
         except Exception as exc:
             return _err(str(exc))
+        scope = {"farm_id": farm_id, "crop_season_id": crop_season_id, "zone_id": zone_id, "domain": domain}
+        domain_data = hass.data.setdefault("green_smart", {})
+        scopes = domain_data.setdefault("safety_guard_watchdog_scopes", [])
+        if scope not in scopes:
+            scopes.append(scope)
         response = await _safety_guard_watchdog_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, notify=notify, stale_threshold_seconds=stale_threshold_seconds)
         await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="safety_guard_critical_event" if response.get("criticalEvents") else "safety_guard_watchdog_checked", before=None, after=response, result="critical" if response.get("criticalEvents") else "success", message="SafetyGuard watchdog checked")
         return _json(response)

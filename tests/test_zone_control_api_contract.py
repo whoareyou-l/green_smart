@@ -798,3 +798,53 @@ def test_phase2c_safety_guard_watchdog_and_notification_contract():
 
     refresh_section = panel_source.split("async _refreshZoneControlElements", 1)[1].split("_patchZoneControlElementCards", 1)[0]
     assert "this._fetchZoneSafetyGuardWatchdog(domain, { patchOnly })" in refresh_section
+
+def test_phase2d_safety_guard_scheduler_and_stale_policy_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+
+    for marker in (
+        "async_track_time_interval",
+        "_setup_safety_guard_watchdog_scheduler",
+        "_teardown_safety_guard_watchdog_scheduler",
+        "_run_safety_guard_watchdog_tick",
+        "_safety_guard_state_age_seconds",
+        "_safety_guard_is_stale(pre_state, stale_threshold_seconds)",
+        "SAFETY_GUARD_LAST_NOTIFIED_KEY",
+        "safety_guard_watchdog_scheduler_started",
+        "safety_guard_watchdog_scheduler_stopped",
+        "safety_guard_notification_deduped",
+        "unsub_safety_guard_watchdog",
+        "timedelta(seconds=SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS)",
+    ):
+        assert marker in init_source or marker in source
+
+    assert "await _setup_safety_guard_watchdog_scheduler(hass)" in init_source
+    assert "_teardown_safety_guard_watchdog_scheduler(hass)" in init_source
+    assert "async_track_time_interval(hass, _tick, timedelta(seconds=SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS))" in init_source
+
+    scheduler_section = init_source.split("async def _setup_safety_guard_watchdog_scheduler", 1)[1].split("async def async_setup", 1)[0]
+    for behavior in (
+        "domain_data.get(\"unsub_safety_guard_watchdog\")",
+        "hass.async_create_task(_run_safety_guard_watchdog_tick(hass, now))",
+        "SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS",
+        "safety_guard_watchdog_scheduler_started",
+    ):
+        assert behavior in scheduler_section
+
+    stale_section = source.split("def _safety_guard_is_stale", 1)[1].split("def _safety_guard_watchdog_item", 1)[0]
+    for behavior in (
+        "_safety_guard_state_age_seconds(pre_state)",
+        "age_seconds is not None",
+        "age_seconds > stale_threshold_seconds",
+    ):
+        assert behavior in stale_section
+
+    notify_section = source.split("def _notify_safety_guard_critical", 1)[1].split("def _safety_guard_watchdog_item", 1)[0]
+    for behavior in (
+        "SAFETY_GUARD_LAST_NOTIFIED_KEY",
+        "safety_guard_notification_deduped",
+        "last_notified",
+        "notification_key",
+    ):
+        assert behavior in notify_section

@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
+
+from homeassistant.helpers.event import async_track_time_interval
 
 from .const import DOMAIN
 from .frontend_panel import async_setup_panel
@@ -20,6 +23,41 @@ REQUIRED_KEYS = (
 )
 
 PLATFORMS: list[str] = []
+
+
+async def _run_safety_guard_watchdog_tick(hass, now) -> None:
+    from .zone_control_views import _safety_guard_watchdog_response
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    scopes = list(domain_data.get("safety_guard_watchdog_scopes") or [])
+    for scope in scopes:
+        try:
+            await _safety_guard_watchdog_response(hass, farm_id=int(scope.get("farm_id", 1)), crop_season_id=int(scope["crop_season_id"]), zone_id=int(scope["zone_id"]), domain=scope["domain"], notify=True)
+        except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+            _LOGGER.warning("SafetyGuard watchdog scheduler tick failed: %s", exc)
+    domain_data["last_safety_guard_watchdog_tick"] = now
+
+
+async def _setup_safety_guard_watchdog_scheduler(hass) -> None:
+    from .zone_control_views import SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("unsub_safety_guard_watchdog"):
+        return
+
+    def _tick(now):
+        hass.async_create_task(_run_safety_guard_watchdog_tick(hass, now))
+
+    domain_data["unsub_safety_guard_watchdog"] = async_track_time_interval(hass, _tick, timedelta(seconds=SAFETY_GUARD_WATCHDOG_INTERVAL_SECONDS))
+    domain_data["safety_guard_watchdog_scheduler_started"] = True
+
+
+def _teardown_safety_guard_watchdog_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    unsub = domain_data.pop("unsub_safety_guard_watchdog", None)
+    if unsub:
+        unsub()
+        domain_data["safety_guard_watchdog_scheduler_stopped"] = True
 
 
 async def async_setup(hass, config):
@@ -101,6 +139,7 @@ async def async_setup(hass, config):
         hass.http.register_view(IrrigationFinalTargetExecutionView())
         hass.http.register_view(DeviceFinalTargetExecutionView())
         domain_data["_views_registered"] = True
+    await _setup_safety_guard_watchdog_scheduler(hass)
     return True
 
 
@@ -133,6 +172,7 @@ async def async_unload_entry(hass, entry):
     if PLATFORMS:
         unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
+        _teardown_safety_guard_watchdog_scheduler(hass)
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
         from .db import close_pool
         await close_pool()

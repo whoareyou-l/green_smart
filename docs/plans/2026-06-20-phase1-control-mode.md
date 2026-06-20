@@ -1,6 +1,6 @@
 # Phase 1D — Manual / Auto / Override Control Mode
 
-> 기준 버전: v1.9.7
+> 기준 버전: v1.9.8
 > 대상: Home Assistant side panel zone control pages + `zone_control_modes` API foundation
 
 ## 목적
