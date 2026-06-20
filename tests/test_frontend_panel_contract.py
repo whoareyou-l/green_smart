@@ -412,3 +412,48 @@ def test_control_scope_can_copy_current_zone_settings_for_phase4():
     assert "this._copyScopedControlSettingsToAllZones(domain" in binder
     assert "confirm(" in binder
     assert "this._setControlSaveNotice(domain)" in panel
+
+
+def test_zone_scoped_control_settings_docs_cover_db_api_ai_phase5():
+    doc_path = ROOT / "docs" / "design" / "zone-scoped-control-settings.md"
+    assert doc_path.exists()
+    doc = doc_path.read_text(encoding="utf-8")
+    for heading in [
+        "목표",
+        "현재 UI 저장 구조",
+        "DB 설계",
+        "API 설계",
+        "환경 제어 API wrapper",
+        "관수 제어 API wrapper",
+        "장치제어 API wrapper",
+        "마이그레이션 정책",
+        "구역 복사 정책",
+        "AI Agent output 연동",
+        "Home Assistant 제어 흐름",
+        "권한 및 감사 로그",
+        "단계별 backend 적용 순서",
+    ]:
+        assert heading in doc
+    for table in ["zone_control_settings", "zone_final_control_targets", "zone_control_logs", "zone_control_copy_jobs", "ai_zone_control_outputs"]:
+        assert table in doc
+    for column in ["farm_id", "crop_season_id", "zone_id", "domain", "settings_json", "targets_json", "source_ai_output_id"]:
+        assert column in doc
+    for api in [
+        "GET /api/zones/control-settings",
+        "POST /api/zones/control-settings",
+        "POST /api/zones/copy-control-settings",
+        "GET /api/zones/final-targets",
+        "GET /api/zones/control-logs",
+        "GET /api/environment/control-settings",
+        "GET /api/irrigation/control-settings",
+        "GET /api/devices/control-settings",
+    ]:
+        assert api in doc
+    for flow in [
+        "AI Agent → 전략 생성 → DB 저장 → Home Assistant → 장치 제어 → 장치 상태 수집 → DB 저장",
+        "green_smart_zone_control_settings",
+        "environment",
+        "irrigation",
+        "device",
+    ]:
+        assert flow in doc

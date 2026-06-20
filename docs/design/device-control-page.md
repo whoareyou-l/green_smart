@@ -16,6 +16,8 @@ AI Agent
 
 제어 명령은 항상 인터록과 Fail Safe 규칙을 통과해야 하며, 실행 결과는 `device_control_logs`에 저장한다.
 
+작기+구역별 저장, DB/API, 구역 복사, AI output 연동의 공통 설계는 [`zone-scoped-control-settings.md`](./zone-scoped-control-settings.md)를 따른다.
+
 ## 메뉴별 화면 구성
 
 ### 장치 현황

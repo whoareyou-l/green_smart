@@ -16,6 +16,8 @@ baseIrrigationSettings
 
 AI가 꺼져 있거나 오류면 `irrigationControlMode`는 즉시 인터록 기준으로 복귀하고, 최종 목표값은 기본 관수 설정과 안전 한계만으로 산출한다.
 
+작기+구역별 저장, DB/API, 구역 복사, AI output 연동의 공통 설계는 [`zone-scoped-control-settings.md`](./zone-scoped-control-settings.md)를 따른다.
+
 ## 하위 탭 구조
 
 1. 제어 모드
