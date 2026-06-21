@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.18`, Phase 5 Limited Auto Control + Alert Resume
+> 기준 버전: product code `v1.9.19`, Phase 5 Limited Auto Control + Alert Resume
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -249,7 +249,7 @@ VWC 하한 긴급 관수 marker
 | C20 | 남음 | 현장 리허설/시나리오 테스트 | 정상/강풍/고장/차단/복구 시나리오 검증 |
 | C21 | 남음 | 운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차 문서화 |
 
-운영 안정성 기준으로는 `C14~C16` 완료 상태이며, 이제 **제한적 현장 운영 테스트 가능** 기준에 도달했다. C17 운영 모드/권한/확인 UX도 완료됐다. 다음은 현장 리허설/시나리오 테스트 준비다. 제품 기능 기준으로는 다음 큰 기능이 `Phase 6 — 생육 리포트와 예측`이다.
+운영 안정성 기준으로는 `C14~C16` 완료 상태이며, 이제 **제한적 현장 운영 테스트 가능** 기준에 도달했다. C18 현장 리허설/시나리오 테스트 준비도 완료됐다. 다음은 알림/장애 통보(C19)와 운영 Runbook 정리다. 제품 기능 기준으로는 다음 큰 기능이 `Phase 6 — 생육 리포트와 예측`이다.
 
 ## 7. 작업 원칙
 

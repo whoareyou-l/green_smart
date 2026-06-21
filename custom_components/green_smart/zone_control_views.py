@@ -1937,6 +1937,88 @@ class ZoneDeviceEntityMappingsView(HomeAssistantView):
         return _json({"ok": True, "id": mapping_id})
 
 
+
+REHEARSAL_SCENARIO_IDS = (
+    "normal_operation",
+    "strong_wind_block",
+    "rain_block",
+    "low_temperature_block",
+    "sensor_fault_block",
+    "failsafe_recovery",
+    "operator_recovery",
+)
+
+
+def _rehearsal_scenario_templates() -> list[dict]:
+    return [
+        {"id": "normal_operation", "label": "정상", "goal": "Dry Run 후 operator confirmation으로 제한 운전이 가능한지 확인", "requiredChecks": ["dryRun", "entityMapping", "operatorConfirmation"]},
+        {"id": "strong_wind_block", "label": "강풍", "goal": "풍속 sensor rule이 환기/스크린 target을 차단하는지 확인", "requiredChecks": ["sensorSafety", "safetyGuard", "failsafe"]},
+        {"id": "rain_block", "label": "강우", "goal": "강우 sensor rule이 개폐 장비를 차단하는지 확인", "requiredChecks": ["sensorSafety", "safetyGuard", "failsafe"]},
+        {"id": "low_temperature_block", "label": "저온", "goal": "저온 rule이 환기/관수 위험 동작을 차단하는지 확인", "requiredChecks": ["sensorSafety", "safetyGuard"]},
+        {"id": "sensor_fault_block", "label": "센서 고장", "goal": "unknown/unavailable sensor 상태에서 차단되는지 확인", "requiredChecks": ["entityState", "safetyGuard"]},
+        {"id": "failsafe_recovery", "label": "Fail Safe", "goal": "차단 시 safe_state 대체 call과 복구 절차를 확인", "requiredChecks": ["failsafe", "executionLog"]},
+        {"id": "operator_recovery", "label": "복구", "goal": "알림 확인/재개/override 후 운영자 확인 UX를 확인", "requiredChecks": ["operatorConfirmation", "resume", "executionLog"]},
+    ]
+
+
+async def _rehearsal_readiness_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    mapping_validation = await _validate_entity_mapping_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    watchdog = await _safety_guard_watchdog_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, notify=False)
+    final_target = await _latest_final_target_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain) or {"targets": {}}
+    mode_row = await _control_mode_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    limited_policy = await _limited_auto_policy_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    mappings = await _enabled_entity_mappings(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    sensor_rule_count = 0
+    safe_state_count = 0
+    interlock_settings = await _interlock_settings_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    for rule in ((interlock_settings or {}).get("settings") or {}).get("rules") or []:
+        if rule.get("sensor_entity_id") or rule.get("sensorEntityId"):
+            sensor_rule_count += 1
+    for mapping in mappings:
+        if mapping.get("safeState") not in (None, ""):
+            safe_state_count += 1
+    checks = {
+        "dryRun": True,
+        "entityMapping": mapping_validation.get("mappingValidationStatus") in {"valid", "needs_attention"},
+        "operatorConfirmation": True,
+        "sensorSafety": sensor_rule_count > 0,
+        "safetyGuard": True,
+        "failsafe": safe_state_count > 0,
+        "entityState": bool(watchdog.get("items") is not None),
+        "executionLog": True,
+        "resume": bool(limited_policy.get("resumeState") is not None),
+    }
+    scenarioChecklist = []
+    for scenario in _rehearsal_scenario_templates():
+        missing = [check for check in scenario["requiredChecks"] if not checks.get(check)]
+        status = "ready" if not missing else "needs_setup"
+        scenarioChecklist.append({**scenario, "status": status, "missingChecks": missing})
+    ready_count = sum(1 for item in scenarioChecklist if item.get("status") == "ready")
+    scenarioReadinessStatus = "ready" if ready_count == len(scenarioChecklist) else ("partial" if ready_count else "needs_setup")
+    return {"ok": True, "farmId": farm_id, "cropSeasonId": crop_season_id, "zoneId": zone_id, "domain": domain, "scenarioReadinessStatus": scenarioReadinessStatus, "readyScenarioCount": ready_count, "scenarioCount": len(scenarioChecklist), "scenarioChecklist": scenarioChecklist, "checks": checks, "mappingValidation": mapping_validation, "watchdogStatus": watchdog.get("watchdogStatus"), "finalTargetExists": bool(final_target.get("targets")), "controlMode": mode_row, "limitedAutoPolicy": limited_policy, "sensorRuleCount": sensor_rule_count, "safeStateCount": safe_state_count}
+
+
+class ZoneRehearsalReadinessView(HomeAssistantView):
+    """GET /api/green_smart/zones/rehearsal-readiness."""
+
+    url = "/api/green_smart/zones/rehearsal-readiness"
+    name = "api:green_smart:zones:rehearsal_readiness"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            domain = _validate_domain(request.query.get("domain"))
+            farm_id = _query_int(request, "farm_id", 1) or 1
+            crop_season_id = _query_int(request, "crop_season_id")
+            zone_id = _query_int(request, "zone_id")
+            if not crop_season_id or not zone_id:
+                return _err("crop_season_id and zone_id are required")
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _rehearsal_readiness_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="rehearsal_readiness_checked", before=None, after=response, result=response.get("scenarioReadinessStatus") or "partial", message="현장 리허설 시나리오 테스트 readiness checked")
+        return _json(response)
+
 def _summarize_control_log_row(row: dict) -> dict:
     before = row.get("before") or {}
     after = row.get("after") or {}

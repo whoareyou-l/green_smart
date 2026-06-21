@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.18
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.19
 const DOMAIN = "green_smart";
-const VERSION = "1.9.18";
+const VERSION = "1.9.19";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -248,6 +248,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneFinalTargetCache = {};
     this._zoneEntityMappingCache = {};
     this._zoneEntityMappingValidationCache = {};
+    this._zoneRehearsalReadinessCache = {};
     this._zoneExecutionLogCache = {};
     this._zoneInterlockSettingsCache = {};
     this._zoneControlModeCache = {};
@@ -353,6 +354,7 @@ class GreenSmartPanel extends HTMLElement {
     if (domain === "irrigation") this._replaceZoneControlCard("[data-irrigation-strategy-preview-card]", this._renderIrrigationStrategyPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-dry-run-card]", this._renderZoneDryRunPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-operator-confirm-card]", this._renderZoneOperatorConfirmCard(domain));
+    this._replaceZoneControlCard("[data-zone-rehearsal-card]", this._renderZoneRehearsalReadinessCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._replaceZoneControlCard("[data-zone-entity-validation-card]", this._renderZoneEntityMappingValidationCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
@@ -363,6 +365,7 @@ class GreenSmartPanel extends HTMLElement {
     this._bindZoneLimitedAutoPolicyInputs(this.shadowRoot);
     this._bindZoneDryRunPreviewInputs(this.shadowRoot);
     this._bindZoneOperatorConfirmInputs(this.shadowRoot);
+    this._bindZoneRehearsalReadinessInputs(this.shadowRoot);
     this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
     this._bindIrrigationStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
@@ -5282,6 +5285,24 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _fetchZoneRehearsalReadiness(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("GET", `green_smart/zones/rehearsal-readiness?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
+      this._zoneRehearsalReadinessCache[cacheKey] = res;
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 현장 리허설 준비도 확인 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null;
+      this._update();
+      return res;
+    } catch (err) {
+      console.warn("현장 리허설 readiness 조회 실패 시 fallback", err);
+      return this._zoneRehearsalReadinessCache[cacheKey] || null;
+    }
+  }
+
   _operatorConfirmationPhrase(domain) {
     return "실제 장비 실행 확인";
   }
@@ -5917,6 +5938,29 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderZoneRehearsalReadinessCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneRehearsalReadinessCache?.[cacheKey] || null;
+    const scenarioRows = (data?.scenarioChecklist || []).map((item) => `<div data-zone-rehearsal-scenario-row style="border-top:1px solid #e4f0e5;padding:8px 0;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;gap:8px;"><b>${this._esc(item.label || item.id)}</b><span>${this._esc(item.status || "대기")}</span></div>
+      <div class="strategy-muted">시나리오 테스트: ${this._esc(item.goal || "-")}</div>
+      ${(item.requiredChecks || []).map((check) => `<span data-zone-rehearsal-check-row class="strategy-muted" style="display:inline-block;margin-right:8px;">${this._esc(check)} ${data?.checks?.[check] ? "✓" : "확인 필요"}</span>`).join("")}
+    </div>`).join("");
+    return `<div class="gs-card" data-zone-rehearsal-card data-zone-rehearsal-domain="${domain}" style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>현장 리허설</b><div class="strategy-muted">시나리오 테스트 · 정상 · 강풍 · 강우 · 저온 · 센서 고장 · 차단 · Fail Safe · 복구</div></div>
+        <button class="mini-btn primary" data-zone-rehearsal-refresh data-zone-rehearsal-domain="${domain}">리허설 준비도 확인</button>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:8px;">
+        <div>리허설 준비도 <b>${this._esc(data?.scenarioReadinessStatus || "대기")}</b></div>
+        <div>ready <b>${this._esc(data?.readyScenarioCount ?? "-")}</b> / ${this._esc(data?.scenarioCount ?? "-")}</div>
+        <div>sensor rules <b>${this._esc(data?.sensorRuleCount ?? "-")}</b></div>
+        <div>safe_state <b>${this._esc(data?.safeStateCount ?? "-")}</b></div>
+      </div>
+      ${scenarioRows || `<div class="strategy-muted">리허설 준비도 확인을 누르면 정상/강풍/강우/저온/센서 고장/차단/Fail Safe/복구 체크리스트를 생성합니다.</div>`}
+    </div>`;
+  }
+
   _renderZoneOperatorConfirmCard(domain) {
     const phrase = this._operatorConfirmationPhrase(domain);
     return `<div class="gs-card" data-zone-operator-confirm-card data-zone-operator-confirm-domain="${domain}" style="padding:16px;margin-bottom:12px;border:1px solid #f0d9b5;background:#fffdf8;">
@@ -6267,6 +6311,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderEnvironmentStrategyPreviewCard("environment")}
       ${this._renderZoneAiFinalTargetCard("environment")}
       ${this._renderZoneOperatorConfirmCard("environment")}
+      ${this._renderZoneRehearsalReadinessCard("environment")}
       ${this._renderZoneDryRunPreviewCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
@@ -6438,6 +6483,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderIrrigationStrategyPreviewCard("irrigation")}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
       ${this._renderZoneOperatorConfirmCard("irrigation")}
+      ${this._renderZoneRehearsalReadinessCard("irrigation")}
       ${this._renderZoneDryRunPreviewCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
@@ -6530,6 +6576,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneLimitedAutoPolicyCard("device")}
       ${this._renderZoneAiFinalTargetCard("device")}
       ${this._renderZoneOperatorConfirmCard("device")}
+      ${this._renderZoneRehearsalReadinessCard("device")}
       ${this._renderZoneDryRunPreviewCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
@@ -6888,6 +6935,16 @@ button.action:disabled{opacity:.5;cursor:default;}
         const domain = btn.dataset.zoneControlModeDomain || "environment";
         const ok = await this._saveZoneControlMode(domain);
         if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+  }
+
+  _bindZoneRehearsalReadinessInputs(root) {
+    root.querySelectorAll("[data-zone-rehearsal-refresh]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneRehearsalDomain || "environment";
+        const res = await this._fetchZoneRehearsalReadiness(domain);
+        if (!res) alert("현장 리허설 readiness 조회 실패: mapping, dry run, SafetyGuard, operator confirmation 설정을 확인하세요.");
       });
     });
   }

@@ -1,6 +1,6 @@
 # Phase 2D — SafetyGuard Scheduler + Stale Policy
 
-> 기준 버전: v1.9.18
+> 기준 버전: v1.9.19
 > 대상: Home Assistant scheduler wiring, SafetyGuard stale timestamp policy, notification dedup baseline
 
 ## 목적

@@ -1501,3 +1501,66 @@ def test_control_phase_c17_operator_confirmation_contract():
 
     for domain in ("environment", "irrigation", "device"):
         assert f'_renderZoneOperatorConfirmCard("{domain}")' in panel_source
+
+
+
+def test_control_phase_c18_rehearsal_readiness_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "REHEARSAL_SCENARIO_IDS",
+        "_rehearsal_scenario_templates",
+        "_rehearsal_readiness_response",
+        "ZoneRehearsalReadinessView",
+        'url = "/api/green_smart/zones/rehearsal-readiness"',
+        "rehearsal_readiness_checked",
+        "scenarioReadinessStatus",
+        "scenarioChecklist",
+        "normal_operation",
+        "strong_wind_block",
+        "rain_block",
+        "low_temperature_block",
+        "sensor_fault_block",
+        "failsafe_recovery",
+        "operator_recovery",
+        "정상",
+        "강풍",
+        "강우",
+        "저온",
+        "센서 고장",
+        "차단",
+        "Fail Safe",
+        "복구",
+    ):
+        assert api_marker in source
+
+    assert "hass.http.register_view(ZoneRehearsalReadinessView())" in init_source
+
+    for panel_marker in (
+        "this._zoneRehearsalReadinessCache",
+        "async _fetchZoneRehearsalReadiness(domain)",
+        "_renderZoneRehearsalReadinessCard(domain)",
+        "_bindZoneRehearsalReadinessInputs(root)",
+        "green_smart/zones/rehearsal-readiness",
+        "data-zone-rehearsal-card",
+        "data-zone-rehearsal-refresh",
+        "data-zone-rehearsal-scenario-row",
+        "data-zone-rehearsal-check-row",
+        "현장 리허설",
+        "시나리오 테스트",
+        "정상",
+        "강풍",
+        "강우",
+        "저온",
+        "센서 고장",
+        "차단",
+        "Fail Safe",
+        "복구",
+        "리허설 준비도",
+    ):
+        assert panel_marker in panel_source
+
+    for domain in ("environment", "irrigation", "device"):
+        assert f'_renderZoneRehearsalReadinessCard("{domain}")' in panel_source

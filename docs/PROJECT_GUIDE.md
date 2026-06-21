@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.18` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 117 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.19` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 118 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.18"
+  "version": "1.9.19"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.18"
+const VERSION = "1.9.19"
 ```
 
 중요 UI 페이지:
@@ -998,6 +998,29 @@ operator_execution_confirmed
 
 실제 final target 실행은 운영자 확인 체크, 정확한 확인 문구, 실행 권한 role, manual/assist override 사유를 포함해야 한다. Panel에는 `운영자 실행 확인` 카드가 표시되며 `확인 후 최종값 실행` 버튼은 확인 문구가 일치할 때만 실행을 요청한다.
 
+
+Control Phase C18 현장 리허설 readiness baseline:
+
+```text
+GET /api/green_smart/zones/rehearsal-readiness
+REHEARSAL_SCENARIO_IDS
+_rehearsal_scenario_templates
+_rehearsal_readiness_response
+ZoneRehearsalReadinessView
+rehearsal_readiness_checked
+scenarioReadinessStatus
+scenarioChecklist
+normal_operation
+strong_wind_block
+rain_block
+low_temperature_block
+sensor_fault_block
+failsafe_recovery
+operator_recovery
+```
+
+Panel에는 `현장 리허설` 카드가 표시되며 정상/강풍/강우/저온/센서 고장/차단/Fail Safe/복구 시나리오별 준비도를 확인한다. 이 단계는 실제 장비를 움직이지 않고 C14~C17 준비 요소를 묶어 체크리스트와 smoke 절차를 만든다.
+
 ---
 
 ### 11.5 `ai_zone_control_outputs`
@@ -1294,7 +1317,7 @@ python3 -m py_compile \
 현재 기대값:
 
 ```text
-117 passed
+118 passed
 node --check: no output / exit 0
 py_compile: no output / exit 0
 ```
@@ -1358,7 +1381,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.18
+v1.9.19
 ```
 
 ---
@@ -1505,7 +1528,7 @@ python3 -m py_compile custom_components/green_smart/db.py custom_components/gree
 
 ```text
 git status clean 또는 의도한 변경만 표시
-117 passed
+118 passed
 node --check exit 0
 py_compile exit 0
 ```

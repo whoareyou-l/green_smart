@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.18` / Product Phase 5 완료, Control Phase C17 완료
+> 기준 버전: `v1.9.19` / Product Phase 5 완료, Control Phase C18 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -681,7 +681,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.18` 기준으로 가능한 것:
+현재 `v1.9.19` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장
@@ -734,7 +734,7 @@ C14~C16은 완료됐고, 이제 **제한적 현장 운영 테스트 가능** 기
 | Control Phase | 목표 | 완료 기준 |
 |---:|---|---|
 | C17 | 운영 모드/권한/확인 UX | Dry Run 후 실행, 위험 제어 이중 확인, 관리자 실행 제한 |
-| C18 | AI Agent 추천 루프 | 센서/날씨/생육 데이터 기반 AI output 자동 생성, 운영자 승인 흐름 |
+| C18 | 현장 리허설/시나리오 테스트 준비 | 완료: 정상/강풍/강우/저온/센서 고장/차단/Fail Safe/복구 체크리스트와 smoke 가능한 readiness API/UI |
 
 이 5개가 끝나면 **운영자가 매일 쓰는 제어 보조 시스템** 수준으로 본다.
 
@@ -743,7 +743,7 @@ C14~C16은 완료됐고, 이제 **제한적 현장 운영 테스트 가능** 기
 | Control Phase | 목표 | 완료 기준 |
 |---:|---|---|
 | C19 | 알림/장애 통보 | 안전 차단, Fail Safe, 실행 실패, unavailable 알림 |
-| C20 | 현장 리허설/시나리오 테스트 | 정상/강풍/고장/차단/복구 시나리오 검증 |
+| C20 | 현장 리허설/시나리오 테스트 | C18 체크리스트 기반 실제 현장 정상/강풍/고장/차단/복구 검증 |
 | C21 | 운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차 문서화 |
 
 ---
@@ -816,21 +816,21 @@ C14~C16은 완료됐고, 이제 **제한적 현장 운영 테스트 가능** 기
 
 ## 14. 다음 작업 권장 순서
 
-바로 다음은 Control Phase C18을 진행한다.
+바로 다음은 Control Phase C19를 진행한다.
 
 ```text
-Control Phase C18: 현장 리허설/시나리오 테스트 준비
+Control Phase C19: 알림/장애 통보
 ```
 
 작업 목표:
 
 ```text
-정상/강풍/강우/저온/센서 고장/차단/Fail Safe/복구 시나리오를 운영 테스트 체크리스트로 정리하고 smoke 가능한 절차를 만든다.
+안전 차단, Fail Safe, 실행 실패, unavailable 상태를 운영자가 놓치지 않도록 알림/장애 통보 경로를 정리한다.
 ```
 
-그 다음은 알림/장애 통보와 운영 Runbook 정리로 넘어간다.
+그 다음은 현장 리허설 실테스트(C20)와 운영 Runbook(C21)으로 넘어간다.
 
-C14~C16 완료로 “제한적 현장 운영 테스트 가능” 기준에 도달했다.
+C14~C18 완료로 “제한적 현장 운영 테스트 준비” 기준에 도달했다.
 
 ---
 
