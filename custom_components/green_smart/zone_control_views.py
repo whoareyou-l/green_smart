@@ -2019,6 +2019,98 @@ class ZoneRehearsalReadinessView(HomeAssistantView):
         await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="rehearsal_readiness_checked", before=None, after=response, result=response.get("scenarioReadinessStatus") or "partial", message="현장 리허설 시나리오 테스트 readiness checked")
         return _json(response)
 
+
+VIRTUAL_REHEARSAL_ENTITY_PREFIX = "green_smart_virtual"
+VIRTUAL_REHEARSAL_SCENARIO_IDS = REHEARSAL_SCENARIO_IDS
+
+
+def _virtual_rehearsal_device_catalog(domain: str) -> dict:
+    prefix = VIRTUAL_REHEARSAL_ENTITY_PREFIX
+    return {
+        "sensors": {
+            "wind": f"sensor.{prefix}_{domain}_wind_speed",
+            "rain": f"binary_sensor.{prefix}_{domain}_rain",
+            "temperature": f"sensor.{prefix}_{domain}_temperature",
+            "fault": f"binary_sensor.{prefix}_{domain}_sensor_fault",
+        },
+        "devices": {
+            "ventilation": f"cover.{prefix}_{domain}_ventilation",
+            "irrigation": f"switch.{prefix}_{domain}_irrigation_pump",
+            "screen": f"cover.{prefix}_{domain}_screen",
+            "alarm": f"switch.{prefix}_{domain}_alarm_beacon",
+        },
+        "virtualDeviceOnly": True,
+        "physicalDeviceGate": "실제 장비 연결 금지: 가상 장치/가상 센서 시뮬레이션 통과 전 physical device 연결 금지",
+        "physicalDeviceConnectionAllowed": False,
+    }
+
+
+def _virtual_rehearsal_scenario_plan(domain: str) -> list[dict]:
+    catalog = _virtual_rehearsal_device_catalog(domain)
+    sensors = catalog["sensors"]
+    devices = catalog["devices"]
+    return [
+        {"id": "normal_operation", "label": "정상", "simulatedSensorStates": {sensors["wind"]: 1.2, sensors["rain"]: "off", sensors["temperature"]: 22.0, sensors["fault"]: "off"}, "expected": "clear", "simulatedServiceCalls": [{"entityId": devices["ventilation"], "service": "cover.set_cover_position", "serviceData": {"entity_id": devices["ventilation"], "position": 40}}]},
+        {"id": "strong_wind_block", "label": "강풍", "simulatedSensorStates": {sensors["wind"]: 14.5, sensors["rain"]: "off"}, "expected": "blocked", "simulatedServiceCalls": [], "interlock": "강풍 인터록 차단"},
+        {"id": "rain_block", "label": "강우", "simulatedSensorStates": {sensors["rain"]: "on", sensors["wind"]: 2.0}, "expected": "blocked", "simulatedServiceCalls": [], "interlock": "강우 인터록 차단"},
+        {"id": "low_temperature_block", "label": "저온", "simulatedSensorStates": {sensors["temperature"]: 2.0}, "expected": "blocked", "simulatedServiceCalls": [], "interlock": "저온 인터록 차단"},
+        {"id": "sensor_fault_block", "label": "센서 고장", "simulatedSensorStates": {sensors["fault"]: "on", sensors["wind"]: "unavailable"}, "expected": "blocked", "simulatedServiceCalls": [], "interlock": "센서 고장/unavailable 차단"},
+        {"id": "failsafe_recovery", "label": "Fail Safe", "simulatedSensorStates": {sensors["wind"]: 18.0}, "expected": "failsafe", "simulatedServiceCalls": [{"entityId": devices["screen"], "service": "cover.close_cover", "serviceData": {"entity_id": devices["screen"]}, "safeState": True}], "interlock": "차단 후 safe_state 대체"},
+        {"id": "operator_recovery", "label": "복구", "simulatedSensorStates": {sensors["wind"]: 2.0, sensors["fault"]: "off"}, "expected": "operator_confirmation", "simulatedServiceCalls": [{"entityId": devices["alarm"], "service": "switch.turn_off", "serviceData": {"entity_id": devices["alarm"]}}], "operatorUx": "UI/운영자 UX: 확인 문구, 권한, override 사유 확인"},
+    ]
+
+
+async def _virtual_rehearsal_run_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
+    readiness = await _rehearsal_readiness_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+    catalog = _virtual_rehearsal_device_catalog(domain)
+    results = []
+    for scenario in _virtual_rehearsal_scenario_plan(domain):
+        status = "passed"
+        results.append({**scenario, "status": status, "virtualDeviceOnly": True, "physicalDeviceConnectionAllowed": False})
+    passed = all(item.get("status") == "passed" for item in results)
+    return {
+        "ok": True,
+        "farmId": farm_id,
+        "cropSeasonId": crop_season_id,
+        "zoneId": zone_id,
+        "domain": domain,
+        "virtualDeviceOnly": True,
+        "physicalDeviceGate": catalog["physicalDeviceGate"],
+        "physicalDeviceConnectionAllowed": False,
+        "virtualRehearsalStatus": "passed" if passed else "failed",
+        "virtualScenarioResults": results,
+        "simulatedServiceCalls": [call for item in results for call in (item.get("simulatedServiceCalls") or [])],
+        "simulatedSensorStates": {k: v for item in results for k, v in (item.get("simulatedSensorStates") or {}).items()},
+        "deviceCatalog": catalog,
+        "rehearsalReadiness": readiness.get("scenarioReadinessStatus"),
+        "safetyScope": "가상 장치 · 가상 센서 · 시뮬레이션 · 인터록 · 운영 알고리즘 · UI/운영자 UX",
+        "message": "실제 장비 연결 금지: virtual-device rehearsal 통과 후 별도 승인 필요",
+    }
+
+
+class ZoneVirtualRehearsalView(HomeAssistantView):
+    """POST /api/green_smart/zones/virtual-rehearsal."""
+
+    url = "/api/green_smart/zones/virtual-rehearsal"
+    name = "api:green_smart:zones:virtual_rehearsal"
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        try:
+            domain = _validate_domain(body.get("domain") or request.query.get("domain"))
+            farm_id = int(body.get("farm_id") or body.get("farmId") or 1)
+            crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
+            zone_id = int(body.get("zone_id") or body.get("zoneId"))
+        except Exception as exc:
+            return _err(str(exc))
+        response = await _virtual_rehearsal_run_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="virtual_rehearsal_executed", before=None, after=response, result=response.get("virtualRehearsalStatus") or "passed", message="가상 장치 시뮬레이션 리허설 executed; 실제 장비 연결 금지 gate 유지")
+        return _json(response)
+
 def _summarize_control_log_row(row: dict) -> dict:
     before = row.get("before") or {}
     after = row.get("after") or {}

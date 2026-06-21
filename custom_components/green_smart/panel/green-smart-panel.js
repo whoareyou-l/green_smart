@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.19
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.20
 const DOMAIN = "green_smart";
-const VERSION = "1.9.19";
+const VERSION = "1.9.20";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -249,6 +249,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneEntityMappingCache = {};
     this._zoneEntityMappingValidationCache = {};
     this._zoneRehearsalReadinessCache = {};
+    this._zoneVirtualRehearsalCache = {};
     this._zoneExecutionLogCache = {};
     this._zoneInterlockSettingsCache = {};
     this._zoneControlModeCache = {};
@@ -355,6 +356,7 @@ class GreenSmartPanel extends HTMLElement {
     this._replaceZoneControlCard("[data-zone-dry-run-card]", this._renderZoneDryRunPreviewCard(domain));
     this._replaceZoneControlCard("[data-zone-operator-confirm-card]", this._renderZoneOperatorConfirmCard(domain));
     this._replaceZoneControlCard("[data-zone-rehearsal-card]", this._renderZoneRehearsalReadinessCard(domain));
+    this._replaceZoneControlCard("[data-zone-virtual-rehearsal-card]", this._renderZoneVirtualRehearsalCard(domain));
     this._replaceZoneControlCard("[data-zone-execution-log-card]", this._renderZoneExecutionLogCard(domain));
     this._replaceZoneControlCard("[data-zone-entity-validation-card]", this._renderZoneEntityMappingValidationCard(domain));
     this._bindZoneInterlockSettingsInputs(this.shadowRoot);
@@ -366,6 +368,7 @@ class GreenSmartPanel extends HTMLElement {
     this._bindZoneDryRunPreviewInputs(this.shadowRoot);
     this._bindZoneOperatorConfirmInputs(this.shadowRoot);
     this._bindZoneRehearsalReadinessInputs(this.shadowRoot);
+    this._bindZoneVirtualRehearsalInputs(this.shadowRoot);
     this._bindEnvironmentStrategyPreviewInputs(this.shadowRoot);
     this._bindIrrigationStrategyPreviewInputs(this.shadowRoot);
     this._bindZoneAiFinalTargetInputs(this.shadowRoot);
@@ -5303,6 +5306,24 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _runZoneVirtualRehearsal(domain) {
+    const cropSeasonId = this._numericControlSeasonId();
+    if (!this._hass || !cropSeasonId) return null;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const cacheKey = this._scopedControlCacheKey(domain);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/virtual-rehearsal", { crop_season_id: cropSeasonId, zone_id: zoneId, domain });
+      this._zoneVirtualRehearsalCache[cacheKey] = res;
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 가상 장치 리허설 완료 · 실제 장비 연결 금지`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._pageRendered = null;
+      this._update();
+      return res;
+    } catch (err) {
+      console.warn("가상 장치 rehearsal 실행 실패 시 fallback", err);
+      return this._zoneVirtualRehearsalCache[cacheKey] || null;
+    }
+  }
+
   _operatorConfirmationPhrase(domain) {
     return "실제 장비 실행 확인";
   }
@@ -5938,6 +5959,30 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderZoneVirtualRehearsalCard(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const data = this._zoneVirtualRehearsalCache?.[cacheKey] || null;
+    const scenarioRows = (data?.virtualScenarioResults || []).map((item) => `<div data-zone-virtual-rehearsal-scenario-row style="border-top:1px solid #dfe8ff;padding:8px 0;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;gap:8px;"><b>${this._esc(item.label || item.id)}</b><span>${this._esc(item.status || "대기")}</span></div>
+      <div class="strategy-muted">시뮬레이션: ${this._esc(item.expected || "-")} · ${this._esc(item.interlock || item.operatorUx || "가상 장치/가상 센서")}</div>
+      ${(item.simulatedServiceCalls || []).map((call) => `<div data-zone-virtual-rehearsal-call-row class="strategy-muted">가상 service call: ${this._esc(call.service)} · ${this._esc(call.entityId || call.serviceData?.entity_id || "-")}</div>`).join("")}
+    </div>`).join("");
+    return `<div class="gs-card" data-zone-virtual-rehearsal-card data-zone-virtual-rehearsal-domain="${domain}" style="padding:16px;margin-bottom:12px;border:1px solid #c9d8ff;background:#fbfdff;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>가상 장치 리허설</b><div class="strategy-muted">가상 장치 · 가상 센서 · 시뮬레이션 · 인터록 · 운영 알고리즘 · UI/운영자 UX · 실제 장비 연결 금지</div></div>
+        <button class="mini-btn primary" data-zone-virtual-rehearsal-run data-zone-virtual-rehearsal-domain="${domain}">가상 리허설 실행</button>
+      </div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:8px;">
+        <div>상태 <b>${this._esc(data?.virtualRehearsalStatus || "대기")}</b></div>
+        <div>physical gate <b>${data?.physicalDeviceConnectionAllowed ? "허용" : "금지"}</b></div>
+        <div>sim calls <b>${this._esc((data?.simulatedServiceCalls || []).length)}</b></div>
+        <div>sensor states <b>${this._esc(Object.keys(data?.simulatedSensorStates || {}).length)}</b></div>
+      </div>
+      <div class="strategy-muted" style="margin-bottom:8px;">${this._esc(data?.physicalDeviceGate || "실제 장비 연결 금지: 가상 장치/시뮬레이션 통과 전 physical device 연결 금지")}</div>
+      ${scenarioRows || `<div class="strategy-muted">가상 리허설 실행을 누르면 정상/강풍/강우/저온/센서 고장/Fail Safe/복구 시나리오를 가상 장치로 검증합니다.</div>`}
+    </div>`;
+  }
+
   _renderZoneRehearsalReadinessCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const data = this._zoneRehearsalReadinessCache?.[cacheKey] || null;
@@ -6312,6 +6357,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneAiFinalTargetCard("environment")}
       ${this._renderZoneOperatorConfirmCard("environment")}
       ${this._renderZoneRehearsalReadinessCard("environment")}
+      ${this._renderZoneVirtualRehearsalCard("environment")}
       ${this._renderZoneDryRunPreviewCard("environment")}
       ${this._renderZoneExecutionLogCard("environment")}
       ${this._renderZoneEntityMappingCard("environment")}
@@ -6484,6 +6530,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneAiFinalTargetCard("irrigation")}
       ${this._renderZoneOperatorConfirmCard("irrigation")}
       ${this._renderZoneRehearsalReadinessCard("irrigation")}
+      ${this._renderZoneVirtualRehearsalCard("irrigation")}
       ${this._renderZoneDryRunPreviewCard("irrigation")}
       ${this._renderZoneExecutionLogCard("irrigation")}
       ${this._renderZoneEntityMappingCard("irrigation")}
@@ -6577,6 +6624,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneAiFinalTargetCard("device")}
       ${this._renderZoneOperatorConfirmCard("device")}
       ${this._renderZoneRehearsalReadinessCard("device")}
+      ${this._renderZoneVirtualRehearsalCard("device")}
       ${this._renderZoneDryRunPreviewCard("device")}
       ${this._renderZoneExecutionLogCard("device")}
       ${this._renderZoneEntityMappingCard("device")}
@@ -6935,6 +6983,17 @@ button.action:disabled{opacity:.5;cursor:default;}
         const domain = btn.dataset.zoneControlModeDomain || "environment";
         const ok = await this._saveZoneControlMode(domain);
         if (ok) this._setControlSaveNotice(domain);
+      });
+    });
+  }
+
+  _bindZoneVirtualRehearsalInputs(root) {
+    root.querySelectorAll("[data-zone-virtual-rehearsal-run]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneVirtualRehearsalDomain || "environment";
+        const res = await this._runZoneVirtualRehearsal(domain);
+        if (!res) alert("가상 장치 리허설 실패: 가상 센서/인터록/운영 알고리즘/UI 설정을 확인하세요.");
+        if (res?.physicalDeviceConnectionAllowed) alert("주의: 실제 장비 연결 gate가 열려 있습니다. 별도 승인 전에는 연결하지 마세요.");
       });
     });
   }

@@ -1564,3 +1564,65 @@ def test_control_phase_c18_rehearsal_readiness_contract():
 
     for domain in ("environment", "irrigation", "device"):
         assert f'_renderZoneRehearsalReadinessCard("{domain}")' in panel_source
+
+
+
+def test_control_phase_c19_virtual_device_rehearsal_harness_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    init_source = INIT.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "VIRTUAL_REHEARSAL_ENTITY_PREFIX",
+        "VIRTUAL_REHEARSAL_SCENARIO_IDS",
+        "_virtual_rehearsal_device_catalog",
+        "_virtual_rehearsal_scenario_plan",
+        "_virtual_rehearsal_run_response",
+        "ZoneVirtualRehearsalView",
+        'url = "/api/green_smart/zones/virtual-rehearsal"',
+        "virtual_rehearsal_executed",
+        "virtualDeviceOnly",
+        "physicalDeviceGate",
+        "physicalDeviceConnectionAllowed",
+        "virtualRehearsalStatus",
+        "virtualScenarioResults",
+        "simulatedServiceCalls",
+        "simulatedSensorStates",
+        "normal_operation",
+        "strong_wind_block",
+        "rain_block",
+        "low_temperature_block",
+        "sensor_fault_block",
+        "failsafe_recovery",
+        "operator_recovery",
+        "가상 장치",
+        "실제 장비 연결 금지",
+        "시뮬레이션",
+    ):
+        assert api_marker in source
+
+    assert "hass.http.register_view(ZoneVirtualRehearsalView())" in init_source
+
+    for panel_marker in (
+        "this._zoneVirtualRehearsalCache",
+        "async _runZoneVirtualRehearsal(domain)",
+        "_renderZoneVirtualRehearsalCard(domain)",
+        "_bindZoneVirtualRehearsalInputs(root)",
+        "green_smart/zones/virtual-rehearsal",
+        "data-zone-virtual-rehearsal-card",
+        "data-zone-virtual-rehearsal-run",
+        "data-zone-virtual-rehearsal-scenario-row",
+        "data-zone-virtual-rehearsal-call-row",
+        "가상 장치",
+        "가상 센서",
+        "가상 리허설 실행",
+        "실제 장비 연결 금지",
+        "시뮬레이션",
+        "인터록",
+        "운영 알고리즘",
+        "UI/운영자 UX",
+    ):
+        assert panel_marker in panel_source
+
+    for domain in ("environment", "irrigation", "device"):
+        assert f'_renderZoneVirtualRehearsalCard("{domain}")' in panel_source

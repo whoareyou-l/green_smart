@@ -1,6 +1,6 @@
 # Control Phase C18 — 현장 리허설/시나리오 테스트 준비
 
-> 기준 버전: v1.9.19
+> 기준 버전: v1.9.20
 > 상태: 완료
 > 대상: `zone_control_views.py`, `green-smart-panel.js`, `zone_control_logs`
 

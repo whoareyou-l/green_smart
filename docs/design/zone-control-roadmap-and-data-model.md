@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.19` / Product Phase 5 완료, Control Phase C18 완료
+> 기준 버전: `v1.9.20` / Product Phase 5 완료, Control Phase C19 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -681,7 +681,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.19` 기준으로 가능한 것:
+현재 `v1.9.20` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장
@@ -742,9 +742,9 @@ C14~C16은 완료됐고, 이제 **제한적 현장 운영 테스트 가능** 기
 
 | Control Phase | 목표 | 완료 기준 |
 |---:|---|---|
-| C19 | 알림/장애 통보 | 안전 차단, Fail Safe, 실행 실패, unavailable 알림 |
-| C20 | 현장 리허설/시나리오 테스트 | C18 체크리스트 기반 실제 현장 정상/강풍/고장/차단/복구 검증 |
-| C21 | 운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차 문서화 |
+| C19 | 가상 장치 기반 리허설 테스트 하네스 | 완료: 실제 장비 연결 전 가상 장치/가상 센서로 인터록·운영 알고리즘·UI/운영자 UX 시뮬레이션 |
+| C20 | 제한적 실제 현장 리허설 | C19 가상 리허설 통과 후 정상/강풍/고장/차단/복구 실제 현장 검증 |
+| C21 | 실제 장비 연결/운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차와 physical device 연결 절차 문서화 |
 
 ---
 
@@ -782,6 +782,8 @@ C14~C16은 완료됐고, 이제 **제한적 현장 운영 테스트 가능** 기
 4. safety rule 실패 시 실제 target 대신 safe_state 또는 차단으로 간다.
 5. 실행 후 postState 검증 실패는 성공으로 간주하지 않는다.
 
+6. 실제 장비로 검증해야 하는 인터록, 운영 알고리즘, UI/운영자 UX가 가상 장치/가상 센서/시뮬레이션에서 통과하기 전에는 physical device를 연결하지 않는다.
+
 ### 12.4 AI Agent 원칙
 
 1. AI는 처음에는 “추천 생성”만 한다.
@@ -816,21 +818,21 @@ C14~C16은 완료됐고, 이제 **제한적 현장 운영 테스트 가능** 기
 
 ## 14. 다음 작업 권장 순서
 
-바로 다음은 Control Phase C19를 진행한다.
+바로 다음은 Control Phase C20를 진행한다.
 
 ```text
-Control Phase C19: 알림/장애 통보
+Control Phase C20: 제한적 실제 현장 리허설
 ```
 
 작업 목표:
 
 ```text
-안전 차단, Fail Safe, 실행 실패, unavailable 상태를 운영자가 놓치지 않도록 알림/장애 통보 경로를 정리한다.
+C19 가상 장치 리허설 통과 결과를 바탕으로 제한된 실제 현장 리허설을 준비하되, 실제 장비 연결은 별도 승인과 Runbook 이후에만 진행한다.
 ```
 
-그 다음은 현장 리허설 실테스트(C20)와 운영 Runbook(C21)으로 넘어간다.
+그 다음은 실제 장비 연결/운영 Runbook(C21)으로 넘어간다.
 
-C14~C18 완료로 “제한적 현장 운영 테스트 준비” 기준에 도달했다.
+C14~C19 완료로 “가상 장치 기반 현장 리허설 준비” 기준에 도달했다. 실제 장비 연결은 아직 금지다.
 
 ---
 
