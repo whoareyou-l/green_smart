@@ -22,7 +22,7 @@ REQUIRED_KEYS = (
     "weatherflow_prefix",
 )
 
-PLATFORMS: list[str] = []
+PLATFORMS: list[str] = ["sensor", "binary_sensor", "switch", "cover"]
 
 
 async def _run_safety_guard_watchdog_tick(hass, now) -> None:
@@ -161,7 +161,9 @@ async def async_setup_entry(hass, entry):
     _LOGGER.warning("green_smart async_setup_panel call finished")
 
     if entry.data.get("virtual") or entry.data.get("host") == "virtual":
-        _LOGGER.warning("green_smart virtual device mode: skipping real coordinator setup")
+        _LOGGER.warning("green_smart virtual device mode: forwarding virtual entity platforms")
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"entry": entry, "virtual": True}
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         _LOGGER.warning("green_smart async_setup_entry completed (virtual)")
         return True
 

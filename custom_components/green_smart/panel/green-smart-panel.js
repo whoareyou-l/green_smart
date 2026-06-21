@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.20
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.21
 const DOMAIN = "green_smart";
-const VERSION = "1.9.20";
+const VERSION = "1.9.21";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5978,6 +5978,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div>sim calls <b>${this._esc((data?.simulatedServiceCalls || []).length)}</b></div>
         <div>sensor states <b>${this._esc(Object.keys(data?.simulatedSensorStates || {}).length)}</b></div>
       </div>
+      <div class="strategy-muted" style="margin-bottom:8px;">가상 HA 엔티티: <code>sensor.green_smart_virtual_environment_wind_speed</code> · <code>cover.green_smart_virtual_environment_ventilation</code> · <code>switch.green_smart_virtual_environment_irrigation_pump</code> · Entity 상태 요약에서 확인</div>
       <div class="strategy-muted" style="margin-bottom:8px;">${this._esc(data?.physicalDeviceGate || "실제 장비 연결 금지: 가상 장치/시뮬레이션 통과 전 physical device 연결 금지")}</div>
       ${scenarioRows || `<div class="strategy-muted">가상 리허설 실행을 누르면 정상/강풍/강우/저온/센서 고장/Fail Safe/복구 시나리오를 가상 장치로 검증합니다.</div>`}
     </div>`;

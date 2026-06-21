@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.20` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 119 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.21` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 120 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.20"
+  "version": "1.9.21"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.20"
+const VERSION = "1.9.21"
 ```
 
 중요 UI 페이지:
@@ -1001,6 +1001,29 @@ operator_execution_confirmed
 
 
 
+
+
+Control Phase C19B 가상 HA 엔티티 생성 baseline:
+
+```text
+PLATFORMS = ["sensor", "binary_sensor", "switch", "cover"]
+sensor.py / switch.py / cover.py
+GreenSmartVirtualSensor
+GreenSmartVirtualSwitch
+GreenSmartVirtualCover
+sensor.green_smart_virtual_environment_wind_speed
+sensor.green_smart_virtual_irrigation_temperature
+binary_sensor.green_smart_virtual_device_rain
+cover.green_smart_virtual_environment_ventilation
+cover.green_smart_virtual_device_screen
+switch.green_smart_virtual_environment_irrigation_pump
+switch.green_smart_virtual_device_alarm_beacon
+_set_virtual_rehearsal_entity_states
+virtualEntityStatesApplied
+```
+
+가상 장치 모드에서도 실제 장비는 연결하지 않는다. 대신 HA state machine에 가상 HA 엔티티를 등록해서 Entity Mapping, Entity 상태 요약, Dry Run, SafetyGuard, Virtual Rehearsal을 실제 entity_id 기준으로 검증한다.
+
 Control Phase C19 가상 장치 리허설 하네스 baseline:
 
 ```text
@@ -1345,7 +1368,7 @@ python3 -m py_compile \
 현재 기대값:
 
 ```text
-119 passed
+120 passed
 node --check: no output / exit 0
 py_compile: no output / exit 0
 ```
@@ -1409,7 +1432,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.20
+v1.9.21
 ```
 
 ---
@@ -1556,7 +1579,7 @@ python3 -m py_compile custom_components/green_smart/db.py custom_components/gree
 
 ```text
 git status clean 또는 의도한 변경만 표시
-119 passed
+120 passed
 node --check exit 0
 py_compile exit 0
 ```

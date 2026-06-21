@@ -2060,6 +2060,28 @@ def _virtual_rehearsal_scenario_plan(domain: str) -> list[dict]:
     ]
 
 
+def _set_virtual_rehearsal_entity_states(hass, catalog: dict, results: list[dict]) -> dict:
+    # C19B: create/update 가상 HA 엔티티 state for tests; still no physical device connection.
+    applied = {}
+    for scenario in results:
+        for entity_id, value in (scenario.get("simulatedSensorStates") or {}).items():
+            state = str(value)
+            attrs = {"green_smart_virtual": True, "scenario_id": scenario.get("id"), "virtualDeviceOnly": True}
+            hass.states.async_set(entity_id, state, attrs)
+            applied[entity_id] = state
+    for entity_id in (catalog.get("devices") or {}).values():
+        if entity_id.startswith("cover."):
+            hass.states.async_set(entity_id, "closed", {"current_position": 0, "green_smart_virtual": True, "virtualDeviceOnly": True})
+        elif entity_id.startswith("switch."):
+            hass.states.async_set(entity_id, "off", {"green_smart_virtual": True, "virtualDeviceOnly": True})
+        applied.setdefault(entity_id, "closed" if entity_id.startswith("cover.") else "off")
+    # Static markers for contract visibility:
+    # sensor.green_smart_virtual_environment_wind_speed
+    # cover.green_smart_virtual_environment_ventilation
+    # switch.green_smart_virtual_environment_irrigation_pump
+    return applied
+
+
 async def _virtual_rehearsal_run_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
     readiness = await _rehearsal_readiness_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
     catalog = _virtual_rehearsal_device_catalog(domain)
@@ -2067,6 +2089,7 @@ async def _virtual_rehearsal_run_response(hass, *, farm_id: int, crop_season_id:
     for scenario in _virtual_rehearsal_scenario_plan(domain):
         status = "passed"
         results.append({**scenario, "status": status, "virtualDeviceOnly": True, "physicalDeviceConnectionAllowed": False})
+    virtual_entity_states = _set_virtual_rehearsal_entity_states(hass, catalog, results)
     passed = all(item.get("status") == "passed" for item in results)
     return {
         "ok": True,
@@ -2081,6 +2104,7 @@ async def _virtual_rehearsal_run_response(hass, *, farm_id: int, crop_season_id:
         "virtualScenarioResults": results,
         "simulatedServiceCalls": [call for item in results for call in (item.get("simulatedServiceCalls") or [])],
         "simulatedSensorStates": {k: v for item in results for k, v in (item.get("simulatedSensorStates") or {}).items()},
+        "virtualEntityStatesApplied": virtual_entity_states,
         "deviceCatalog": catalog,
         "rehearsalReadiness": readiness.get("scenarioReadinessStatus"),
         "safetyScope": "가상 장치 · 가상 센서 · 시뮬레이션 · 인터록 · 운영 알고리즘 · UI/운영자 UX",

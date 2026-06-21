@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.20`, Phase 5 Limited Auto Control + Alert Resume
+> 기준 버전: product code `v1.9.21`, Phase 5 Limited Auto Control + Alert Resume
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -245,11 +245,11 @@ VWC 하한 긴급 관수 marker
 | C16 | 완료 | 실시간 Safety Rule | 풍속/강우/저온/탱크수위/펌프 fault 등 HA sensor 기반 차단 |
 | C17 | 완료 | 운영 모드/권한/확인 UX | Dry Run 후 실행, 위험 제어 이중 확인, 관리자 실행 제한 |
 | C18 | 완료 | 현장 리허설/시나리오 테스트 준비 | 정상/강풍/강우/저온/센서 고장/차단/Fail Safe/복구 readiness API/UI |
-| C19 | 완료 | 가상 장치 기반 리허설 테스트 하네스 | 실제 장비 연결 전 가상 장치/가상 센서로 인터록·운영 알고리즘·UI/운영자 UX 시뮬레이션 |
+| C19 | 완료 | 가상 장치 기반 리허설 테스트 하네스 | 가상 HA 엔티티(sensor/switch/cover) 생성 + 실제 장비 연결 전 인터록·운영 알고리즘·UI/운영자 UX 시뮬레이션 |
 | C20 | 남음 | 제한적 실제 현장 리허설 | C19 가상 리허설 통과 후 정상/강풍/고장/차단/복구 실제 현장 검증 |
 | C21 | 남음 | 실제 장비 연결/운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차와 physical device 연결 절차 문서화 |
 
-운영 안정성 기준으로는 `C14~C19` 완료 상태이며, **가상 장치 기반 리허설 테스트 하네스**까지 도달했다. 실제 장비 연결은 아직 금지이며, 인터록·운영 알고리즘·UI/운영자 UX가 가상 장치/시뮬레이션에서 충분히 검증된 뒤 C20 제한적 실제 현장 리허설로 넘어간다. 제품 기능 기준으로는 다음 큰 기능이 `Phase 6 — 생육 리포트와 예측`이다.
+운영 안정성 기준으로는 `C14~C19B` 완료 상태이며, **가상 HA 엔티티 기반 리허설 테스트 하네스**까지 도달했다. 실제 장비 연결은 아직 금지이며, 인터록·운영 알고리즘·UI/운영자 UX가 가상 장치/시뮬레이션에서 충분히 검증된 뒤 C20 제한적 실제 현장 리허설로 넘어간다. 제품 기능 기준으로는 다음 큰 기능이 `Phase 6 — 생육 리포트와 예측`이다.
 
 ## 7. 작업 원칙
 

@@ -1,6 +1,6 @@
 # Control Phase C17 — 운영 모드/권한/확인 UX 강화
 
-> 기준 버전: v1.9.20
+> 기준 버전: v1.9.21
 > 상태: 완료
 > 대상: `zone_control_views.py`, `green-smart-panel.js`, `zone_control_logs`
 

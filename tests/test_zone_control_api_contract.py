@@ -1626,3 +1626,81 @@ def test_control_phase_c19_virtual_device_rehearsal_harness_contract():
 
     for domain in ("environment", "irrigation", "device"):
         assert f'_renderZoneVirtualRehearsalCard("{domain}")' in panel_source
+
+
+
+def test_control_phase_c19b_virtual_ha_entities_contract():
+    init_source = INIT.read_text(encoding="utf-8")
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+    sensor_source = (ROOT / "custom_components" / "green_smart" / "sensor.py").read_text(encoding="utf-8")
+    binary_sensor_source = (ROOT / "custom_components" / "green_smart" / "binary_sensor.py").read_text(encoding="utf-8")
+    switch_source = (ROOT / "custom_components" / "green_smart" / "switch.py").read_text(encoding="utf-8")
+    cover_source = (ROOT / "custom_components" / "green_smart" / "cover.py").read_text(encoding="utf-8")
+
+    for marker in (
+        'PLATFORMS: list[str] = ["sensor", "binary_sensor", "switch", "cover"]',
+        "async_forward_entry_setups(entry, PLATFORMS)",
+        "green_smart virtual device mode: forwarding virtual entity platforms",
+    ):
+        assert marker in init_source
+
+    for marker in (
+        "GREEN_SMART_VIRTUAL_DOMAINS",
+        "GREEN_SMART_VIRTUAL_SENSOR_SPECS",
+        "GreenSmartVirtualSensor",
+        "async_setup_entry",
+        "sensor.green_smart_virtual_environment_wind_speed",
+        "sensor.green_smart_virtual_irrigation_temperature",
+        "가상 센서",
+    ):
+        assert marker in sensor_source
+
+    for marker in (
+        "GREEN_SMART_VIRTUAL_BINARY_SENSOR_SPECS",
+        "GreenSmartVirtualBinarySensor",
+        "binary_sensor.green_smart_virtual_device_rain",
+        "가상 센서",
+    ):
+        assert marker in binary_sensor_source
+
+    for marker in (
+        "GREEN_SMART_VIRTUAL_SWITCH_SPECS",
+        "GreenSmartVirtualSwitch",
+        "async_turn_on",
+        "async_turn_off",
+        "switch.green_smart_virtual_environment_irrigation_pump",
+        "switch.green_smart_virtual_device_alarm_beacon",
+        "가상 장치",
+    ):
+        assert marker in switch_source
+
+    for marker in (
+        "GREEN_SMART_VIRTUAL_COVER_SPECS",
+        "GreenSmartVirtualCover",
+        "async_open_cover",
+        "async_close_cover",
+        "async_set_cover_position",
+        "cover.green_smart_virtual_environment_ventilation",
+        "cover.green_smart_virtual_device_screen",
+        "가상 장치",
+    ):
+        assert marker in cover_source
+
+    for marker in (
+        "_set_virtual_rehearsal_entity_states",
+        "virtualEntityStatesApplied",
+        "sensor.green_smart_virtual_environment_wind_speed",
+        "cover.green_smart_virtual_environment_ventilation",
+        "switch.green_smart_virtual_environment_irrigation_pump",
+    ):
+        assert marker in source
+
+    for marker in (
+        "가상 HA 엔티티",
+        "sensor.green_smart_virtual_environment_wind_speed",
+        "cover.green_smart_virtual_environment_ventilation",
+        "switch.green_smart_virtual_environment_irrigation_pump",
+        "Entity 상태 요약에서 확인",
+    ):
+        assert marker in panel_source
