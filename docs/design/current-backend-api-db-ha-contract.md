@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.22`
+> 기준 버전: `v1.9.23`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.22"
+  "version": "1.9.23"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.22` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.23` |
 
 ### 4.2 WebSocket commands
 
@@ -134,7 +134,25 @@ docs/design/ui-information-architecture-and-rbac.md
 | `green_smart/get_config` | wizard/config entry data 반환 |
 | `green_smart/save_config` | wizard 설정 저장 |
 
-### 4.3 저장 가능한 wizard/config fields
+### 4.3 RBAC/Auth API baseline
+
+v1.9.23에서 Phase U0/U1 baseline으로 Home Assistant 사용자 ID → Green Smart 역할 매핑 계약이 추가되었다.
+
+| Method/Path | 역할 |
+|---|---|
+| `GET /api/green_smart/auth/me` | 현재 HA 사용자를 `admin`/`farm_owner`/`farm_staff` 역할과 permissions로 반환 |
+
+역할 매핑 source:
+
+```text
+Home Assistant user ID
+→ Green Smart role mapping
+→ permissions
+```
+
+1차 persistence는 HA Store key `green_smart_ha_user_roles`를 사용한다. 별도 Green Smart username/password 체계는 사용하지 않는다.
+
+### 4.4 저장 가능한 wizard/config fields
 
 ```text
 host

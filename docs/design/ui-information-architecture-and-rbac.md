@@ -1,6 +1,6 @@
 # Green Smart UI Information Architecture and RBAC Plan
 
-> 기준 버전: `v1.9.22`
+> 기준 버전: `v1.9.23`
 > 목적: 앞으로 Green Smart UI 요소를 어디에 배치하고, 어떤 역할이 어떤 페이지/기능을 볼 수 있으며, 비전공자인 농장주·농장직원이 직관적으로 사용할 수 있게 만드는 기준을 고정한다.
 
 ---

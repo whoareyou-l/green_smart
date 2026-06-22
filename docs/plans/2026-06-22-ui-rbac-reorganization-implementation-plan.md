@@ -24,6 +24,8 @@
 
 ## 1. Ambiguity Gate — 모호성 10% 이하 원칙
 
+> v1.9.23 status: Phase U0/U1 baseline started. RED contract `tests/test_rbac_contract.py` was added first, then backend `/auth/me`, HA user role mapping helpers, panel RBAC helper, taxonomy markers, and admin-only sidebar baseline were implemented.
+
 이 작업은 사용자 경험과 권한 체계 기준을 바꾸는 작업이다. 기준이 흔들린 상태에서 코드부터 고치면 다시 뒤죽박죽이 된다. 따라서 각 slice는 아래 질문의 답이 90% 이상 확정됐을 때만 구현한다.
 
 ### 1.1 매 slice 공통 질문

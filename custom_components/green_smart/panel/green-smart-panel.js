@@ -1,9 +1,28 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.22
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.23
 const DOMAIN = "green_smart";
-const VERSION = "1.9.22";
+const VERSION = "1.9.23";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
+const GREEN_SMART_ROLES = ["admin", "farm_owner", "farm_staff"];
+const GREEN_SMART_ROLE_PERMISSIONS = {
+  admin: new Set([
+    "view_dashboard", "view_crop_records", "edit_crop_records", "manage_crop_seasons",
+    "view_control_pages", "edit_strategy_settings", "edit_interlock_thresholds",
+    "edit_interlock_rules", "edit_entity_mapping", "run_dry_run", "execute_final_targets",
+    "manual_device_control", "ack_safety_event", "clear_safety_event",
+    "manage_users_roles", "system_settings", "view_audit_logs",
+  ]),
+  farm_owner: new Set([
+    "view_dashboard", "view_crop_records", "edit_crop_records", "manage_crop_seasons",
+    "view_control_pages", "edit_strategy_settings", "edit_interlock_thresholds",
+    "run_dry_run", "execute_final_targets", "manual_device_control", "view_audit_logs",
+  ]),
+  farm_staff: new Set([
+    "view_dashboard", "view_crop_records", "edit_crop_records", "view_control_pages",
+    "run_dry_run", "manual_device_control",
+  ]),
+};
 const DEFAULT_FORM = {
   host: "", port: 502, unit_id: 1,
   greenhouse_zones: 1, nutrient_zones: 1, stevenson_screens: 1,
@@ -201,6 +220,7 @@ class GreenSmartPanel extends HTMLElement {
     this._loading = true;
     this._saving = false;
     this._error = "";
+    this._authMe = null;
     this._mqttLoaded = false;
     this._entry = null;
     this._form = { ...DEFAULT_FORM };
@@ -378,12 +398,48 @@ class GreenSmartPanel extends HTMLElement {
 
   // ── Init & storage ──────────────────────────────────────────────────────────
 
+  async _fetchAuthMe() {
+    try {
+      this._authMe = await this._hass.callApi("GET", "green_smart/auth/me");
+    } catch (err) {
+      // Transitional fallback only. Production RBAC source is /api/green_smart/auth/me.
+      this._authMe = { role: "farm_staff", roleSource: "auth_me_unavailable", permissions: [...GREEN_SMART_ROLE_PERMISSIONS.farm_staff] };
+    }
+    return this._authMe;
+  }
+
+  _currentUserRole() {
+    const role = this._authMe && this._authMe.role;
+    return GREEN_SMART_ROLES.includes(role) ? role : "farm_staff";
+  }
+
+  _permissionsForRole(role) {
+    const normalized = GREEN_SMART_ROLES.includes(role) ? role : "farm_staff";
+    return GREEN_SMART_ROLE_PERMISSIONS[normalized] || GREEN_SMART_ROLE_PERMISSIONS.farm_staff;
+  }
+
+  _hasPermission(permission) {
+    const apiPermissions = Array.isArray(this._authMe?.permissions) ? new Set(this._authMe.permissions) : null;
+    if (apiPermissions) return apiPermissions.has(permission);
+    return this._permissionsForRole(this._currentUserRole()).has(permission);
+  }
+
+  _visibilityForPermission(permission, { allowSummary = false } = {}) {
+    if (this._hasPermission(permission)) return "visible_enabled";
+    return allowSummary ? "summary_only" : "hidden";
+  }
+
+  _renderPermissionHint(reason) {
+    return `<div class="permission-hint" data-ui-section="safety" style="font-size:12px;color:#7a9780;margin-top:6px;">${this._esc(reason || "현재 역할에서는 이 기능을 사용할 수 없습니다.")}</div>`;
+  }
+
   async _init() {
     this._state = "init";
     this._loading = true;
     this._error = "";
     this._update();
     try {
+      await this._fetchAuthMe();
       await this._refreshEntries();
       if (this._entry && this._entry.state === "loaded") this._loadFormFromEntry();
       if (!this._form.host) {
@@ -1526,6 +1582,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     else if (this._page === "environment") html = this._renderEnvSettingsPage();
     else if (this._page === "irrigation")  html = this._renderIrrigSettingsPage();
     else if (this._page === "device")      html = this._renderDeviceControlPage();
+    else if (this._page === "admin" && this._hasPermission("system_settings")) html = this._renderAdminSystemPage();
     else html = this._renderHomePage(sim); // home (default)
     content.innerHTML = html;
     this._bindDashboard(content);
@@ -1603,6 +1660,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       navBtn("environment", "mdi:thermometer-lines",  "환경 제어", "온도 · 습도/VPD · CO₂ · AI 보정 제어"),
       navBtn("irrigation",  "mdi:water",              "관수 제어", "기본 관수 인터록 · AI 보정 · 양액 전략"),
       navBtn("device",      "mdi:cog-box",            "장치제어", "설비 운영 · 수동 제어 · 인터록 · Fail Safe"),
+      this._hasPermission("system_settings") ? navBtn("admin", "mdi:shield-account", "Admin/System", "사용자 권한 · HA 연결 · API · 진단 관리") : "",
     ].join("");
     return `
     <div class="sb-desktop">
@@ -1674,6 +1732,38 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   // ── Home page ─────────────────────────────────────────────────────────────────
+
+  _renderAdminSystemPage() {
+    const role = this._currentUserRole();
+    return `<div class="page admin-system-page" data-ui-section="admin" data-required-permission="system_settings" data-role-visibility="admin">
+      ${this._renderSubHero("Admin/System", "HA 사용자 권한, Entity 매핑, 외부 API, 진단을 admin 전용으로 관리합니다.", "mdi:shield-account")}
+      <div class="gs-card" data-ui-section="view" data-required-permission="system_settings" data-role-visibility="admin" style="padding:16px;margin-bottom:14px;">
+        <div style="font-size:13px;color:#7a9780;margin-bottom:4px;">현재 역할</div>
+        <div style="font-size:18px;font-weight:800;color:#24323F;">${this._esc(role)}</div>
+        <div style="font-size:12px;color:#7a9780;margin-top:6px;">Home Assistant 사용자 ID를 Green Smart 역할에 매핑합니다.</div>
+      </div>
+      <div class="gs-card" data-ui-section="record" data-required-permission="manage_users_roles" data-role-visibility="admin" style="padding:16px;margin-bottom:14px;">
+        <div class="sec-title">사용자/권한</div>
+        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">HA 사용자 → admin/farm_owner/farm_staff 역할 매핑 관리 영역입니다.</div>
+      </div>
+      <div class="gs-card" data-ui-section="strategy" data-required-permission="edit_strategy_settings" data-role-visibility="admin,farm_owner" style="padding:16px;margin-bottom:14px;">
+        <div class="sec-title">전략 설정 권한 기준</div>
+        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">농장주는 전략 설정과 기본 임계값만 확인 팝업 후 수정하고, 고급 rule builder는 admin만 수정합니다.</div>
+      </div>
+      <div class="gs-card" data-ui-section="approval" data-required-permission="edit_interlock_thresholds" data-role-visibility="admin,farm_owner" style="padding:16px;margin-bottom:14px;">
+        <div class="sec-title">승인/확인 기준</div>
+        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">기본 임계값 변경은 위험 안내와 변경 이력을 남기는 확인 절차를 거칩니다.</div>
+      </div>
+      <div class="gs-card" data-ui-section="execute" data-required-permission="execute_final_targets" data-role-visibility="admin,farm_owner" style="padding:16px;margin-bottom:14px;">
+        <div class="sec-title">실행 권한 기준</div>
+        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">실제 실행은 Control Mode, 운영자 확인, SafetyGuard, Interlock을 통과해야 합니다.</div>
+      </div>
+      <div class="gs-card" data-ui-section="safety" data-required-permission="edit_interlock_rules" data-role-visibility="admin" style="padding:16px;">
+        <div class="sec-title">SafetyGuard 고급 설정</div>
+        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">고급 rule builder, Fail Safe/safe_state, Entity Mapping은 admin 전용입니다.</div>
+      </div>
+    </div>`;
+  }
 
   _renderHomePage(sim) {
     const kpi = (sim && sim.kpi) || {};
