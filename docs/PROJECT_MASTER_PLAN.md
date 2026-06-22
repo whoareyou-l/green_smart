@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.27`, Product Phase 6 crop-specific yield model baseline
+> 기준 버전: product code `v1.9.28`, Product Phase 6 pest risk weather/control baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -256,15 +256,17 @@ GET /api/green_smart/crop/seasons/{season_id}/growth-report
 생육 추세 height/leafCount/stemDia
 G-Index 추이 baseline
 수확량 예측 baseline(작물별 tomato/lettuce/generic 모델, 주당/면적당 예측, confidence 표시)
-병해 위험도 baseline(최근 pest severity score)
+병해 위험도 baseline(최근 pest severity + weather cache + 환경/날씨 risk + 방제 이력)
 주간 리포트 summary/actions
 작물별 수확 모델 상세 UI(모델명/version, 주당 예측, 면적당 예측, 예측 근거)
+병해 위험 모델 상세 UI(환경 위험, 날씨 위험, 방제 이력, 위험 요인, 권장 조치)
+작기 선택 카드 crop key 한국어 표시
 ```
 
 남은 목표:
 
 - 작물별 모델 계수 현장 데이터 기반 calibration
-- 병해 위험도 예측에 환경/날씨/방제 이력 결합
+- 병해 위험도 모델 현장 데이터 기반 calibration
 - 주간 리포트 export/notification
 
 

@@ -121,6 +121,22 @@ def test_growth_survey_payload_list_and_export_use_dynamic_crop_metrics():
     assert "metricsJson" in export_section
 
 
+def test_crop_season_selector_displays_korean_crop_labels_instead_of_raw_keys():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    selector = panel.split("  _renderSeasonSelector()", 1)[1].split("  _renderCropTabContent()", 1)[0]
+
+    for marker in (
+        "CROP_LABELS",
+        'tomato:"토마토"',
+        'lettuce:"상추"',
+        'paprika:"파프리카"',
+        'cucumber:"오이"',
+        "cropLabel",
+    ):
+        assert marker in selector
+    assert "s.variety || s.cropType" not in selector
+
+
 def test_product_phase6_growth_report_panel_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     growth_tab = panel.split("  _renderCropGrowthTab()", 1)[1].split("  _renderCropPestTab()", 1)[0]
@@ -163,6 +179,26 @@ def test_product_phase6_yield_model_panel_surfaces_model_details_contract():
         "주당 예측",
         "면적당 예측",
         "예측 근거",
+    ):
+        assert marker in report_card
+
+
+def test_product_phase6_pest_risk_panel_surfaces_environment_weather_control_details_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCropGrowthTab()", 1)[0]
+
+    for marker in (
+        "environmentDrivers",
+        "weatherDrivers",
+        "controlHistoryDrivers",
+        "riskFactors",
+        "recommendedActions",
+        "modelVersion",
+        "병해 위험 모델",
+        "환경 위험",
+        "날씨 위험",
+        "방제 이력",
+        "권장 조치",
     ):
         assert marker in report_card
 

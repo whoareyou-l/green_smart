@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.27` / Product Phase 6 baseline 완료, Control Phase C19C 완료
+> 기준 버전: `v1.9.28` / Product Phase 6 baseline 완료, Control Phase C19C 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -689,7 +689,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.27` 기준으로 가능한 것:
+현재 `v1.9.28` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장

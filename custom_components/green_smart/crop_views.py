@@ -315,6 +315,113 @@ def _growth_days_between(a, b) -> int:
         return 7
 
 
+def _weather_risk_snapshot(hass) -> dict:
+    domain_data = getattr(hass, "data", {}).get("green_smart", {}) if hass else {}
+    store = domain_data.get("weather_store")
+    current = {}
+    forecast = []
+    if store:
+        current = store.get_cached("current") or store.get_stale("current") or {}
+        forecast = store.get_cached("forecast") or store.get_stale("forecast") or []
+    humidities = []
+    temperatures = []
+    rain_hits = 0
+    if current:
+        if current.get("humidity") not in (None, "--"):
+            humidities.append(float(current.get("humidity") or 0))
+        if current.get("temperature") not in (None, "--"):
+            temperatures.append(float(current.get("temperature") or 0))
+        if float(current.get("precipitation") or 0) > 0 or current.get("precipitation_type") not in (None, "", "없음"):
+            rain_hits += 1
+    for item in forecast[:24] if isinstance(forecast, list) else []:
+        if item.get("humidity") not in (None, "--"):
+            humidities.append(float(item.get("humidity") or 0))
+        temp = item.get("temp", item.get("temperature"))
+        if temp not in (None, "--"):
+            temperatures.append(float(temp or 0))
+        if item.get("precipitation_type") not in (None, "", "없음") or float(item.get("pop") or 0) >= 60:
+            rain_hits += 1
+    avg_humidity = round(sum(humidities) / len(humidities), 1) if humidities else None
+    avg_temperature = round(sum(temperatures) / len(temperatures), 1) if temperatures else None
+    humidityRisk = 6 if avg_humidity is not None and avg_humidity >= 88 else 3 if avg_humidity is not None and avg_humidity >= 78 else 0
+    rainRisk = 5 if rain_hits >= 3 else 3 if rain_hits else 0
+    temperatureRisk = 3 if avg_temperature is not None and 18 <= avg_temperature <= 28 else 1 if avg_temperature is not None and 15 <= avg_temperature <= 32 else 0
+    return {
+        "avgHumidity": avg_humidity,
+        "avgTemperature": avg_temperature,
+        "rainSignalCount": rain_hits,
+        "humidityRisk": humidityRisk,
+        "rainRisk": rainRisk,
+        "temperatureRisk": temperatureRisk,
+        "source": "weather_store_cache" if store else "unavailable",
+    }
+
+
+def _days_since(value) -> int | None:
+    if not value:
+        return None
+    try:
+        day = datetime.fromisoformat(str(value)).date()
+        return max((date.today() - day).days, 0)
+    except Exception:
+        return None
+
+
+def _growth_pest_risk(hass, pest_rows: list[dict], control_rows: list[dict]) -> dict:
+    weatherDrivers = _weather_risk_snapshot(hass)
+    pest_history_score = sum(int(r.get("severity") or 0) for r in pest_rows[:5])
+    lastControlDate = control_rows[0].get("date") if control_rows else None
+    daysSinceLastControl = _days_since(lastControlDate)
+    control_score = 0
+    if daysSinceLastControl is None:
+        control_score = 3
+    elif daysSinceLastControl > 21:
+        control_score = 4
+    elif daysSinceLastControl > 10:
+        control_score = 2
+    elif daysSinceLastControl <= 3:
+        control_score = -2
+    environmentDrivers = {
+        "humidityRisk": weatherDrivers["humidityRisk"],
+        "temperatureRisk": weatherDrivers["temperatureRisk"],
+        "combinedHumidityTemperatureRisk": weatherDrivers["humidityRisk"] + weatherDrivers["temperatureRisk"],
+    }
+    controlHistoryDrivers = {
+        "lastControlDate": lastControlDate,
+        "daysSinceLastControl": daysSinceLastControl,
+        "controlHistoryScore": control_score,
+        "recentControlCount": len(control_rows),
+    }
+    score = max(0, pest_history_score + weatherDrivers["humidityRisk"] + weatherDrivers["rainRisk"] + weatherDrivers["temperatureRisk"] + control_score)
+    level = "high" if score >= 14 else "medium" if score >= 7 else "low"
+    riskFactors = ["pest_history_score"] if pest_history_score else []
+    if weatherDrivers["humidityRisk"]:
+        riskFactors.append("humidityRisk")
+    if weatherDrivers["rainRisk"]:
+        riskFactors.append("rainRisk")
+    if weatherDrivers["temperatureRisk"]:
+        riskFactors.append("temperatureRisk")
+    if control_score > 0:
+        riskFactors.append("controlHistoryRisk")
+    recommendedActions = ["예찰 기록을 최신 상태로 유지"]
+    if level in ("medium", "high"):
+        recommendedActions.extend(["고습/강우 후 병해충 예찰 강화", "최근 방제 기록과 약제 PLS 준수 여부 확인"])
+    if level == "high":
+        recommendedActions.append("관리자 승인 후 방제 계획 검토")
+    return {
+        "level": level,
+        "score": score,
+        "recentCount": len(pest_rows[:5]),
+        "modelVersion": "weather_environment_control_model_v1",
+        "environmentDrivers": environmentDrivers,
+        "weatherDrivers": weatherDrivers,
+        "controlHistoryDrivers": controlHistoryDrivers,
+        "riskFactors": riskFactors,
+        "recommendedActions": recommendedActions,
+        "pestHistoryScore": pest_history_score,
+    }
+
+
 def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_rows: list[dict], latest_g: float, weekly_growth: float) -> dict:
     crop_type = str(season.get("cropType") or latest.get("cropType") or "default").lower()
     model = YIELD_MODEL_BY_CROP.get(crop_type, YIELD_MODEL_BY_CROP["default"])
@@ -397,8 +504,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     days = _growth_days_between(oldest.get("date"), latest.get("date")) if growth_rows else 7
     weekly_growth = round((height_now - height_old) / days * 7, 2) if days else 0
     latest_g = _growth_g_index(latest) if latest else 0
-    pest_score = sum(int(r.get("severity") or 0) for r in pest_rows[:5])
-    pest_level = "high" if pest_score >= 12 else "medium" if pest_score >= 5 else "low"
+    pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)
     yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
     growthTrend = {
         "height": _growth_report_points(growth_rows, "height", "height"),
@@ -407,7 +513,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     }
     gIndexTrend = [{"date": row.get("date"), "value": _growth_g_index(row)} for row in reversed(growth_rows)]
     weeklyReport = {
-        "summary": f"최근 생육조사 {len(growth_rows)}건 기준 주간 초장 증가 {weekly_growth}cm, 병해 위험도 {pest_level}",
+        "summary": f"최근 생육조사 {len(growth_rows)}건 기준 주간 초장 증가 {weekly_growth}cm, 병해 위험도 {pestRisk['level']}",
         "actions": ["생육조사 주 1회 이상 기록", "병해 위험도 medium 이상이면 예찰/방제 기록 확인", "G-Index 급변 시 환경 전략 preview 확인"],
         "lastControlDate": control_rows[0].get("date") if control_rows else None,
     }
@@ -419,7 +525,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "growthTrend": growthTrend,
         "gIndexTrend": gIndexTrend,
         "yieldPrediction": yieldPrediction,
-        "pestRisk": {"level": pest_level, "score": pest_score, "recentCount": len(pest_rows[:5])},
+        "pestRisk": pestRisk,
         "weeklyReport": weeklyReport,
     }
 

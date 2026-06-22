@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.27
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.28
 const DOMAIN = "green_smart";
-const VERSION = "1.9.27";
+const VERSION = "1.9.28";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3608,6 +3608,10 @@ button.action:disabled{opacity:.5;cursor:default;}
       tomato:'🍅', paprika:'🫑', strawberry:'🍓',
       lettuce:'🥬', herb:'🌿', cucumber:'🥒', other:'🌱',
     };
+    const CROP_LABELS = {
+      tomato:"토마토", paprika:"파프리카", strawberry:"딸기",
+      lettuce:"상추", herb:"허브", cucumber:"오이", other:"기타",
+    };
     if (!this._dbReady && this._cropSeasons.length === 0) {
       return `<div style="text-align:center;padding:32px;color:#7a9780;font-size:13px;">
         <div style="font-size:24px;margin-bottom:8px;">🌱</div>데이터를 불러오는 중...</div>`;
@@ -3622,13 +3626,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     const cards = this._cropSeasons.map(s => {
       const selected = s.id === this._activeSeasonId;
       const emoji = CROP_EMOJI[s.cropType] || '🌱';
+      const cropLabel = CROP_LABELS[s.cropType] || s.cropType || '작물';
+      const varietyLabel = s.variety ? ` · ${this._esc(s.variety)}` : '';
       const active = !s.demolishDate;
       return `<div data-season-id="${s.id}"
         style="flex-shrink:0;border:2px solid ${selected ? '#51AE60' : '#e0e0e0'};
                border-radius:12px;padding:10px 14px;cursor:pointer;min-width:148px;
                background:${selected ? '#f0faf1' : '#fafafa'};">
         <div style="font-size:12px;font-weight:700;color:${selected ? '#24323F' : '#666'};">
-          ${emoji} ${s.variety || s.cropType} · ${s.zoneName || 'Zone'}</div>
+          ${emoji} ${this._esc(cropLabel)}${varietyLabel} · ${this._esc(s.zoneName || 'Zone')}</div>
         <div style="font-size:11px;color:${selected ? '#7a9780' : '#aaa'};margin-top:2px;">
           ${s.plantDate} 정식</div>
         <div style="font-size:10px;font-weight:700;margin-top:4px;
@@ -3888,6 +3894,11 @@ button.action:disabled{opacity:.5;cursor:default;}
     const actions = Array.isArray(weeklyReport.actions) ? weeklyReport.actions : [];
     const yieldDrivers = yieldPrediction.yieldDrivers || {};
     const confidenceReasons = Array.isArray(yieldPrediction.confidenceReasons) ? yieldPrediction.confidenceReasons : [];
+    const environmentDrivers = pestRisk.environmentDrivers || {};
+    const weatherDrivers = pestRisk.weatherDrivers || {};
+    const controlHistoryDrivers = pestRisk.controlHistoryDrivers || {};
+    const riskFactors = Array.isArray(pestRisk.riskFactors) ? pestRisk.riskFactors : [];
+    const recommendedActions = Array.isArray(pestRisk.recommendedActions) ? pestRisk.recommendedActions : [];
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
         <div>
@@ -3914,6 +3925,21 @@ button.action:disabled{opacity:.5;cursor:default;}
           <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">밀도 계수 ${this._esc(String(yieldDrivers.densityFactor ?? "-"))}</span>
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">예측 근거: ${this._esc(yieldPrediction.basis || "crop-specific growth model")}${confidenceReasons.length ? ` · ${confidenceReasons.map(r => this._esc(r)).join(" · ")}` : ""}</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #f4ece8;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">병해 위험 모델</div>
+        <div style="font-size:12px;color:#6b5b4d;line-height:1.6;">
+          <b>${riskLabel}</b><span style="color:#9aae9d;"> · ${this._esc(pestRisk.modelVersion || "weather_environment_control_model_v1")}</span><br>
+          환경 위험 ${this._esc(String(environmentDrivers.combinedHumidityTemperatureRisk ?? 0))} · 날씨 위험 ${this._esc(String((weatherDrivers.humidityRisk ?? 0) + (weatherDrivers.rainRisk ?? 0) + (weatherDrivers.temperatureRisk ?? 0)))} · 방제 이력 ${this._esc(String(controlHistoryDrivers.controlHistoryScore ?? 0))}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">습도 ${this._esc(String(weatherDrivers.avgHumidity ?? "-"))}%</span>
+          <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">온도 ${this._esc(String(weatherDrivers.avgTemperature ?? "-"))}℃</span>
+          <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">강우 신호 ${this._esc(String(weatherDrivers.rainSignalCount ?? 0))}</span>
+          <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">최근 방제 ${this._esc(String(controlHistoryDrivers.daysSinceLastControl ?? "없음"))}일</span>
+        </div>
+        <div style="font-size:11px;color:#7a9780;margin-top:7px;">위험 요인: ${riskFactors.length ? riskFactors.map(r => this._esc(r)).join(" · ") : "기록 부족"}</div>
+        ${recommendedActions.length ? `<div style="font-size:11px;color:#7a9780;margin-top:5px;">권장 조치: ${recommendedActions.map(a => this._esc(a)).join(" · ")}</div>` : ""}
       </div>
       <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
       ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}

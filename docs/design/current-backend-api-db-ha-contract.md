@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.27`
+> 기준 버전: `v1.9.28`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.27"
+  "version": "1.9.28"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.27` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.28` |
 
 ### 4.2 WebSocket commands
 
@@ -414,6 +414,25 @@ yieldDrivers.velocityFactor
 yieldDrivers.densityFactor
 yieldDrivers.growthVelocityCmPerWeek
 confidenceReasons
+```
+
+`pestRisk`는 최근 병해충 예찰, weather store cache, 최근 방제 이력을 결합하는 `weather_environment_control_model_v1` baseline이며 다음 필드를 포함한다.
+
+```text
+modelVersion
+environmentDrivers.humidityRisk
+environmentDrivers.temperatureRisk
+environmentDrivers.combinedHumidityTemperatureRisk
+weatherDrivers.avgHumidity
+weatherDrivers.avgTemperature
+weatherDrivers.rainSignalCount
+weatherDrivers.rainRisk
+controlHistoryDrivers.lastControlDate
+controlHistoryDrivers.daysSinceLastControl
+controlHistoryDrivers.controlHistoryScore
+riskFactors
+recommendedActions
+pestHistoryScore
 ```
 
 ### 10.2 Generic zone APIs

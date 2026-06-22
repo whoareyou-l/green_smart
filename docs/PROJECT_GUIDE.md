@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.27` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 131 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.28` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 134 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -238,7 +238,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.27"
+  "version": "1.9.28"
 }
 ```
 
@@ -484,7 +484,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.27"
+const VERSION = "1.9.28"
 ```
 
 중요 UI 페이지:
@@ -937,11 +937,12 @@ GET /api/green_smart/crop/seasons/{season_id}/growth-report
 crop_seasons: plantDate, totalPlants, plantDensity
 신규 테이블 변경 없음
 growth_surveys: growthTrend, gIndexTrend, latestMetrics
-pest_surveys: pestRisk
-control_records: weeklyReport lastControlDate
+pest_surveys: pestRisk.pestHistoryScore/recentCount
+control_records: pestRisk.controlHistoryDrivers + weeklyReport lastControlDate
+weather_store cache: pestRisk.weatherDrivers/environmentDrivers
 ```
 
-Panel의 작물 설정 > 생육조사 탭에는 `생육 리포트` 카드가 표시된다. 현재 수확량 예측은 tomato/lettuce/generic 작물별 모델 baseline이며, `modelVersion`, `cropModelLabel`, `estimatedKgPerPlant`, `estimatedKgPerArea`, `yieldDrivers`, `confidenceReasons`를 포함한다. 현장 데이터 기반 계수 calibration, 환경·날씨 기반 병해 예측, 주간 리포트 export는 후속 고도화로 남긴다.
+Panel의 작물 설정 > 생육조사 탭에는 `생육 리포트` 카드가 표시된다. 현재 수확량 예측은 tomato/lettuce/generic 작물별 모델 baseline이며, `modelVersion`, `cropModelLabel`, `estimatedKgPerPlant`, `estimatedKgPerArea`, `yieldDrivers`, `confidenceReasons`를 포함한다. 병해 위험도는 `weather_environment_control_model_v1` 기준으로 최근 예찰 이력, weather cache의 습도/온도/강우 신호, 최근 방제 이력을 결합해 `environmentDrivers`, `weatherDrivers`, `controlHistoryDrivers`, `riskFactors`, `recommendedActions`를 표시한다. 작기 선택 카드의 crop key는 한국어 crop label로 표시한다. 현장 데이터 기반 계수 calibration과 주간 리포트 export는 후속 고도화로 남긴다.
 
 Control Phase C14 Dry Run UI baseline:
 
@@ -1468,7 +1469,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.27
+v1.9.28
 ```
 
 ---

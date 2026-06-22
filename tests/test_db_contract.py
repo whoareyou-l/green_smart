@@ -128,6 +128,31 @@ def test_product_phase6_crop_specific_yield_model_contract():
     assert '"yieldPrediction": yieldPrediction' in report_section
 
 
+def test_product_phase6_environment_weather_control_pest_risk_contract():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    report_section = source.split("async def _growth_report_response", 1)[1].split("class CropGrowthReportView", 1)[0]
+
+    for marker in (
+        "_growth_pest_risk(",
+        "_weather_risk_snapshot(",
+        "environmentDrivers",
+        "weatherDrivers",
+        "controlHistoryDrivers",
+        "riskFactors",
+        "recommendedActions",
+        "lastControlDate",
+        "daysSinceLastControl",
+        "humidityRisk",
+        "rainRisk",
+        "temperatureRisk",
+        "pest_history_score",
+        "weather_environment_control_model_v1",
+    ):
+        assert marker in source
+    assert "pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)" in report_section
+    assert '"pestRisk": pestRisk' in report_section
+
+
 def test_integration_setup_runs_db_schema_bootstrap_before_crop_views():
     init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
 
