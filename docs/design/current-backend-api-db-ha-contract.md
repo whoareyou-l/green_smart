@@ -424,6 +424,119 @@ green_smart_central
 
 ---
 
+## 9A. 통합 모델 contract
+
+v1.9.34 이후 제품 설계 기준은 `작기 모델 → 환경 전략 모델 → 관수 전략 모델 → 장치 운영 모델`의 관계를 따른다.
+
+```text
+Crop Season Model
+→ Environment Strategy Model
+→ Irrigation Strategy Model
+→ Device Operation Model
+→ Control Mode / Limited Auto / Operator Confirmation / SafetyGuard / Interlock
+→ HA service call / post-state verification / logs
+→ feedback back to Crop/Environment/Irrigation models
+```
+
+### 9A.1 작기 모델
+
+작기 모델은 `crop_season_id + zone_id`를 기준으로 한다.
+
+입력:
+
+- `crop_seasons.crop_type`, `variety`, `plant_date`, `plant_density`, `zone_id`
+- `growth_surveys.metrics_json`
+- `pest_surveys`
+- `control_records` / `control_pesticides`
+- weather/cache and recent environment/control history
+
+출력:
+
+- crop profile label/version
+- growth stage baseline
+- G-Index and trend
+- yield prediction and confidence
+- pest risk and recommended actions
+- model drivers usable by environment/irrigation strategy models
+
+### 9A.2 환경 전략 모델
+
+환경 전략 모델은 `crop_season_id + zone_id + domain=environment`를 기준으로 한다.
+
+입력:
+
+- 작기 모델 output: crop type/profile, growth stage, G-Index, pest/yield risk hints
+- HA entity state summary
+- weather source
+- operator manual override
+- `zone_control_settings.settings_json`
+- SafetyGuard policy hints
+
+출력:
+
+- CORP G-Index interpretation
+- TEMHUM ADT/DIF/VPD
+- CO₂ target
+- VENT/SCRN/난방 final target candidate
+- `targetDiff`, `diffCount`, confidence/reason list
+
+현재 API 호환:
+
+- route: `GET/POST /api/green_smart/environment/strategy-preview`
+- legacy save marker: `calculated_by = environment_strategy_mvp`
+- UI label: `환경 전략 모델`
+
+### 9A.3 관수 전략 모델
+
+관수 전략 모델은 `crop_season_id + zone_id + domain=irrigation`를 기준으로 한다.
+
+입력:
+
+- 작기 모델 output: crop profile/growth stage/G-Index
+- 환경 전략 모델 output: VPD, temperature, humidity, radiation, stress/risk hints
+- VWC/EC/pH/dryback/drain feedback
+- operator manual override
+- `zone_control_settings.settings_json`
+
+출력:
+
+- shotAmountL
+- minIntervalMin
+- targetEc / targetPh
+- targetDryback / targetDrainRate
+- emergencyIrrigation marker
+- `targetDiff`, `diffCount`, confidence/reason list
+
+현재 API 호환:
+
+- route: `GET/POST /api/green_smart/irrigation/strategy-preview`
+- legacy save marker: `calculated_by = irrigation_strategy_mvp`
+- UI label: `관수 전략 모델`
+
+### 9A.4 장치 운영 모델
+
+장치 운영 모델은 final target을 실제 HA service call plan으로 바꾸는 실행 전 모델이다.
+
+입력:
+
+- environment/irrigation/device final targets
+- `zone_device_entity_mappings`
+- `devices`, `device_status`, `device_interlocks`, `device_failsafe_rules`, `device_alarms`
+- HA entity current state and supported service domain
+- safe_state / device capability / operator confirmation
+
+출력:
+
+- dry-run service call plan
+- executable service call plan
+- blocked/failsafe/clear decision
+- post-state verification expectation
+- device risk/alarm summary
+
+장치 운영 모델은 직접 실행 권한을 갖지 않는다. 실행은 반드시 `execute-final-targets`의 Control Mode, Limited Auto, Operator Confirmation, SafetyGuard, Interlock gate를 통과해야 한다.
+
+---
+
 ## 10. Zone control common contract
 
 파일: `zone_control_views.py`
@@ -541,7 +654,7 @@ Home baseline은 operator-first UX를 위한 빠른 진입점이며, 실제 장�
 
 ### 10.3 Domain wrapper APIs
 
-Environment wrappers:
+Environment wrappers / 환경 전략 모델:
 
 ```text
 GET/POST /api/green_smart/environment/control-settings
@@ -551,7 +664,7 @@ POST /api/green_smart/environment/execute-final-targets
 GET/POST /api/green_smart/environment/strategy-preview
 ```
 
-Irrigation wrappers:
+Irrigation wrappers / 관수 전략 모델:
 
 ```text
 GET/POST /api/green_smart/irrigation/control-settings
@@ -561,7 +674,7 @@ POST /api/green_smart/irrigation/execute-final-targets
 GET/POST /api/green_smart/irrigation/strategy-preview
 ```
 
-Device wrappers:
+Device wrappers / 장치 운영 모델:
 
 ```text
 GET/POST /api/green_smart/devices/control-settings
@@ -572,9 +685,9 @@ POST /api/green_smart/devices/execute-final-targets
 
 ---
 
-## 11. Strategy preview APIs
+## 11. Strategy model preview APIs
 
-### 11.1 Environment strategy
+### 11.1 Environment strategy model
 
 Route:
 
@@ -609,10 +722,10 @@ SCRN
 저장 시:
 
 ```text
-calculated_by = environment_strategy_mvp
+calculated_by = environment_strategy_mvp  # legacy identifier, UI label은 환경 전략 모델
 ```
 
-### 11.2 Irrigation strategy
+### 11.2 Irrigation strategy model
 
 Route:
 
@@ -656,7 +769,7 @@ DRYBACK
 저장 시:
 
 ```text
-calculated_by = irrigation_strategy_mvp
+calculated_by = irrigation_strategy_mvp  # legacy identifier, UI label은 관수 전략 모델
 ```
 
 ---

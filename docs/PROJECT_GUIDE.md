@@ -859,7 +859,7 @@ data-zone-safety-event-note
 
 `조치 완료`는 같은 작기/구역/domain의 SafetyGuard persistent notification을 해제하고 dedupe cache를 reset한다. Panel은 active 상태에서 `운영자 확인`, acknowledged 상태에서 `조치 완료`만 노출하며, 운영자는 `조치 메모`를 lifecycle에 남길 수 있다.
 
-Phase 3A environment strategy MVP baseline:
+Phase 3A environment strategy model baseline:
 
 ```text
 GET /api/green_smart/environment/strategy-preview
@@ -872,7 +872,7 @@ environment_strategy_mvp
 environment_strategy_final_targets_saved
 ```
 
-Panel에는 `환경 전략 MVP` 카드가 표시되며, 운영자는 CORP G-Index, TEMHUM ADT/DIF/VPD, VENT/SCRN 최종 목표 preview를 확인하고 `전략 최종값 저장`으로 `zone_final_control_targets`에 저장할 수 있다. 실제 실행은 기존 Control Mode/SafetyGuard/Interlock gate를 계속 통과한다.
+Panel에는 `환경 전략 모델` 카드가 표시되며, 운영자는 CORP G-Index, TEMHUM ADT/DIF/VPD, VENT/SCRN 최종 목표 preview를 확인하고 `전략 최종값 저장`으로 `zone_final_control_targets`에 저장할 수 있다. 실제 실행은 기존 Control Mode/SafetyGuard/Interlock gate를 계속 통과한다.
 
 Phase 3B input source + preview diff baseline:
 
@@ -889,7 +889,7 @@ Preview Diff
 Panel은 `입력 소스`를 `날씨/센서 자동`, `HA 상태 요약`, `운영자 수동 보정` 중 선택하고, 일사/온도/습도/CO₂ 수동 보정값을 POST payload로 보낸다. Preview response는 최신 final target 대비 `targetDiff`와 `diffCount`를 제공한다.
 
 
-Phase 4 irrigation strategy MVP baseline:
+Phase 4 irrigation strategy model baseline:
 
 ```text
 GET /api/green_smart/irrigation/strategy-preview
@@ -903,7 +903,7 @@ irrigation_strategy_mvp
 irrigation_strategy_final_targets_saved
 ```
 
-Panel에는 `관수 전략 MVP` 카드가 표시되며, 운영자는 누적 일사/VWC/EC/pH 수동 보정값을 넣어 IRR preview를 확인하고 `관수 전략 최종값 저장`으로 `zone_final_control_targets`에 저장할 수 있다. 실제 실행은 기존 Control Mode/SafetyGuard/Interlock gate를 계속 통과한다.
+Panel에는 `관수 전략 모델` 카드가 표시되며, 운영자는 누적 일사/VWC/EC/pH 수동 보정값을 넣어 IRR preview를 확인하고 `관수 전략 최종값 저장`으로 `zone_final_control_targets`에 저장할 수 있다. 실제 실행은 기존 Control Mode/SafetyGuard/Interlock gate를 계속 통과한다.
 
 
 Phase 5 limited auto control + alert resume baseline:
@@ -1388,6 +1388,33 @@ _replaceZoneControlCard(selector, html)
 주기 refresh는 전체 `_update()`를 호출하지 않는다. 사용자가 textarea/input/select 또는 zone-control editor 카드에서 입력 중이면 `_hasDirtyZoneControlEditor()`가 tick을 건너뛰어 dirty state를 보존한다.
 
 ---
+
+## 14.1 작기·환경·관수·장치 통합 모델 기준
+
+v1.9.34 이후 Green Smart의 전략/AI 작업은 다음 4개 모델 관계를 따른다.
+
+```text
+작기 모델(Crop Season Model)
+→ 환경 전략 모델(Environment Strategy Model)
+→ 관수 전략 모델(Irrigation Strategy Model)
+→ 장치 운영 모델(Device Operation Model)
+→ SafetyGuard/Interlock/Control Mode
+→ HA service call / log / feedback
+```
+
+작업 기준:
+
+- 사용자-facing UI/문서에서는 `MVP` 대신 `모델`, `전략 모델`, `운영 모델`을 사용한다.
+- 내부 `calculated_by` 값인 `environment_strategy_mvp`, `irrigation_strategy_mvp`는 기존 DB/API 호환을 위해 유지할 수 있다.
+- 작기 모델은 crop profile, 생육단계, G-Index, 수확량 예측, 병해 위험도를 제공한다.
+- 환경 전략 모델은 작기 모델과 날씨/센서/운영자 보정을 입력으로 ADT/DIF/VPD/CO₂/환기/스크린 target을 만든다.
+- 관수 전략 모델은 작기 모델과 환경 전략 모델 출력, VWC/EC/pH/배액 feedback을 입력으로 급액량/간격/EC/pH/드라이백/배액률 target을 만든다.
+- 장치 운영 모델은 final target을 entity mapping, 장치 capability, dry-run, service call plan, safe_state, post-state verification으로 변환한다.
+- 모든 모델 출력은 SafetyGuard/Interlock/Control Mode보다 우선하지 않는다.
+
+다음 구현은 `docs/PROJECT_MASTER_PLAN.md`의 `Model Phase M0~M8` 순서를 따른다.
+
+
 
 ## 15. 테스트 구조
 

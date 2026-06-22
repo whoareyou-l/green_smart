@@ -872,7 +872,7 @@ AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, 
 | 안전 한계 | 절대 최고/최저온도, 최대/최소 환기 개도율, 강풍 폐쇄 풍속, 센서/AI 오류 모드 |
 | 로그 | `controlLogs` 배열 |
 
-### 10.4 환경 전략 MVP 카드
+### 10.4 환경 전략 모델 카드
 
 렌더 함수: `_renderEnvironmentStrategyPreviewCard(domain)`
 
@@ -958,7 +958,7 @@ SubHero:
 비상 정지 → 안전 한계 → 기본 관수 인터록 → AI 관수 보정 → 수동 명령
 ```
 
-### 11.4 관수 전략 MVP 카드
+### 11.4 관수 전략 모델 카드
 
 렌더 함수: `_renderIrrigationStrategyPreviewCard(domain)`
 

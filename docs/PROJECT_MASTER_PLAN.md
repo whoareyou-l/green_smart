@@ -28,6 +28,7 @@ AI가 작동하지 않아도 문제가 생기지 않게 인터록/안전 제어�
 | [`docs/design/current-ui-design-and-navigation.md`](design/current-ui-design-and-navigation.md) | 사용자 선호 디자인, 사이드바, 모바일 topbar, Home/Crop/환경/관수/장치 페이지, 하위탭, 설정값, data attribute, no-flicker UI 정책 | UI/UX, 페이지 구조, 탭, 카드, 입력값, WebView flicker, 디자인 변경 |
 | [`docs/design/ui-information-architecture-and-rbac.md`](design/ui-information-architecture-and-rbac.md) | UI 요소 배치 원칙, 비전공자 농장주/직원 UX, RBAC 역할(admin/farm_owner/farm_staff), 역할별 페이지/기능 권한 | 화면이 뒤죽박죽 섞이는 문제 정리, 역할별 UI, 권한, 쉬운 용어/작업 흐름 설계 |
 | [`docs/plans/2026-06-22-ui-rbac-reorganization-implementation-plan.md`](plans/2026-06-22-ui-rbac-reorganization-implementation-plan.md) | 새 UI/RBAC 기준을 실제 개발로 옮기기 위한 단계별 실행 플랜, 불필요 요소 정리, merge/split/module화, 모호성 10% 이하 질문 gate | UI/RBAC 재구성 구현 착수 전, Phase U0~U8 작업 분해/검증/질문 기준 |
+| [`docs/plans/2026-06-23-integrated-crop-environment-irrigation-device-models.md`](plans/2026-06-23-integrated-crop-environment-irrigation-device-models.md) | 작기 모델, 환경 전략 모델, 관수 전략 모델, 장치 운영 모델을 관계형으로 구현하기 위한 Model Phase M0~M8 실행 플랜 | 전략/AI/model/예측/장치 운영 모델 작업 착수 전, MVP 용어 정리와 모델 관계 구현 기준 |
 | [`docs/design/current-backend-api-db-ha-contract.md`](design/current-backend-api-db-ha-contract.md) | HA integration lifecycle, panel registration, DB schema, API routes, zone control, strategy preview, SafetyGuard, execution flow, virtual entities | Backend/API/DB/schema, SafetyGuard, final target execution, HA service call, virtual device, 운영 smoke |
 | [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md) | 제어 기능 로드맵과 데이터 모델 관계 | Control Phase 추가/변경, DB/API 관계 변경 |
 | [`docs/design/api-spec.md`](design/api-spec.md) | 초기 API spec baseline | public API 형태를 정리하거나 wrapper API를 변경할 때 |
@@ -212,24 +213,24 @@ panel SafetyGuard 이벤트 이력 카드
 - 강풍/저온/고온/센서 무결성/EC/VWC/unavailable 차단
 - panel + HA persistent notification 알림
 
-### Phase 3. 환경 전략 MVP
+### Phase 3. 환경 전략 모델 baseline
 
 현재 Phase 3A/3B 완료:
 
 ```text
-CORP 기본 G-Index
-TEMHUM ADT/DIF/VPD
+작기 모델 입력 기반 CORP 기본 G-Index
+TEMHUM ADT/DIF/VPD 환경 전략 모델
 VENT/SCRN 기본 final target 생성
 입력 소스 HA 상태/날씨/수동 보정 merge
 Preview Diff / latest final target 비교
 ```
 
-### Phase 4. 관수 전략 MVP
+### Phase 4. 관수 전략 모델 baseline
 
 현재 Phase 4 완료:
 
 ```text
-IRR 기본 EC/pH/VWC/드라이백/일사 누적 관수
+작기+환경 모델 입력 기반 IRR EC/pH/VWC/드라이백/일사 누적 관수
 VWC 하한 긴급 관수 marker
 관수 final target 생성/저장
 관수 Preview Diff / latest final target 비교
@@ -306,6 +307,72 @@ G-Index 추이 baseline
 | C21 | 남음 | 실제 장비 연결/운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차와 physical device 연결 절차 문서화 |
 
 운영 안정성 기준으로는 `C14~C19D` 완료 상태이며, **가상 HA 엔티티 기반 리허설 테스트 하네스, 관수설정 no-flicker hydration, C20 gate 전 가상 시나리오 증거 리포트**까지 도달했다. 실제 장비 연결은 아직 금지이며, 인터록·운영 알고리즘·UI/운영자 UX가 가상 장치/시뮬레이션에서 충분히 검증된 뒤 C20 제한적 실제 현장 리허설로 넘어간다. 제품 기능 기준으로는 `Phase 6 — 생육 리포트와 예측` baseline 완료 상태다.
+
+## 7. 통합 모델 트랙: 작기·환경·관수·장치 모델 관계
+
+v1.9.34 이후 작업은 `MVP`라는 개발 단계명을 사용자-facing UI/문서의 중심 용어로 쓰지 않는다. 내부 DB/API 호환을 위해 `environment_strategy_mvp`, `irrigation_strategy_mvp` 같은 legacy identifier는 유지할 수 있지만, 제품/문서/화면의 기준 용어는 다음 4개 모델로 정렬한다.
+
+```text
+작기 모델(Crop Season Model)
+→ 환경 전략 모델(Environment Strategy Model)
+→ 관수 전략 모델(Irrigation Strategy Model)
+→ 장치 운영 모델(Device Operation Model)
+→ SafetyGuard/Interlock/Control Mode
+→ HA service call / log / feedback
+→ 다시 작기·환경·관수 모델 보정
+```
+
+### 7.1 모델별 책임
+
+| 모델 | 기준 scope | 주요 입력 | 주요 출력 | 저장/연결 |
+|---|---|---|---|---|
+| 작기 모델 | `crop_season_id + zone_id` | 작물 종류, 품종, 정식일, 재식밀도, 생육조사, 병해충/방제 기록, crop profile | 생육단계, G-Index, 수확량 예측, 병해 위험도, 작물별 목표 범위 | `crop_seasons`, `growth_surveys`, `pest_surveys`, `control_records`, growth-report API |
+| 환경 전략 모델 | `crop_season_id + zone_id + environment` | 작기 모델, 날씨, HA sensor, 온도/습도/VPD/CO₂ 설정, 운영자 보정 | ADT/DIF/VPD, CO₂, 환기/스크린/난방 target, 환경 risk | `zone_control_settings`, `ai_zone_control_outputs`, `zone_final_control_targets` |
+| 관수 전략 모델 | `crop_season_id + zone_id + irrigation` | 작기 모델, 환경 모델 출력, 일사, VWC, EC/pH, 드라이백, 배액 feedback | 급액량, 최소 간격, 목표 EC/pH, 목표 드라이백/배액률, 긴급 관수 여부 | `irrigation_*`, `zone_control_settings`, `zone_final_control_targets` |
+| 장치 운영 모델 | `crop_season_id + zone_id + device/domain` | 환경/관수 final target, 장치 capability, HA entity state, mapping, interlock | 실행 가능한 service call plan, safe_state, dry-run, post-state 검증, 장치 이상 판단 | `devices`, `device_*`, `zone_device_entity_mappings`, `zone_control_logs` |
+
+### 7.2 관계성 원칙
+
+1. **작기 모델이 기준이다.** 모든 환경/관수/장치 판단은 현재 활성 작기와 구역을 기준으로 한다. 작물 종류·생육단계·재식밀도·정식일이 바뀌면 환경/관수 target의 해석도 바뀐다.
+2. **환경 모델은 관수 모델의 입력이다.** VPD, 온도, 습도, 일사, CO₂ 상태는 관수량·간격·드라이백 판단에 영향을 준다.
+3. **관수 모델은 작기 모델에 feedback을 준다.** VWC/EC/pH/배액률/관수 로그는 생육 리포트, 병해 위험도, 수확량 예측의 confidence와 risk driver로 재사용한다.
+4. **장치 모델은 실행 계층이다.** 환경/관수 모델이 만든 final target은 곧바로 장치를 움직이는 명령이 아니며, 장치 운영 모델에서 mapping/capability/dry-run/service-call plan으로 변환된다.
+5. **SafetyGuard는 모든 모델보다 우선한다.** 모델 출력은 candidate/final target일 뿐이고, 실행 전 `Control Mode → Limited Auto → Operator Confirmation → SafetyGuard → Interlock` gate를 반드시 통과한다.
+6. **예측과 실행은 분리한다.** 예측 모델은 `ai_zone_control_outputs` 또는 report response에 기록하고, 실행 대상은 `zone_final_control_targets`로 승격된 값만 사용한다.
+7. **feedback loop는 로그 기반이어야 한다.** 실행 전후 HA state, 차단 사유, 운영자 override, 수동 보정값은 나중에 모델 calibration 근거가 되도록 로그/스냅샷으로 남긴다.
+
+### 7.3 구현해야 할 예측/기능 묶음
+
+| 묶음 | 필요한 기능 | 우선 구현 기준 |
+|---|---|---|
+| 작기 모델 고도화 | crop profile, 생육단계 추정, G-Index, 수확량 예측, 병해 위험도, 주간 리포트 | 토마토/상추 baseline 유지 후 계수 calibration 슬롯 추가 |
+| 환경 전략 모델 | 작기 목표 기반 온도/습도/VPD/CO₂ target, 날씨/센서 입력 merge, manual override, diff preview | 기존 strategy-preview를 `환경 전략 모델`로 UI/문서 정리 |
+| 관수 전략 모델 | 작기/환경 기반 관수량·간격·EC/pH·드라이백·배액률 target, VWC 긴급 관수, diff preview | 기존 strategy-preview를 `관수 전략 모델`로 UI/문서 정리 |
+| 장치 운영 모델 | 장치 capability, entity mapping, dry-run, service plan, safe_state, post-state verification, device alarms | 장치제어에도 `장치 운영 모델` 카드/문서 기준 추가 |
+| 모델 관계 API | 작기 모델 snapshot을 환경/관수/장치 모델이 공통으로 읽는 helper/API | 중복 계산 금지, scope key 통일 |
+| 모델 스냅샷/감사 | model input/output/version/confidence/safety policy 저장 | 필요 시 `zone_strategy_snapshots` 또는 기존 JSON field 확장으로 migration 분리 |
+
+### 7.4 다음 구현 순서 — Model Phase
+
+| Phase | 이름 | 목표 | 완료 기준 |
+|---:|---|---|---|
+| M0 | 용어 정리 | UI/문서에서 사용자-facing `MVP`를 `모델`로 정리하고 내부 legacy identifier는 호환 설명 추가 | `환경 전략 모델`, `관수 전략 모델`, `장치 운영 모델` 표기 통일 |
+| M1 | 작기 모델 contract | 작기 모델 입력/출력/crop profile/schema/API contract 확정 | 작기 모델 snapshot response 정의, 토마토/상추 profile 기준 문서화 |
+| M2 | 환경 전략 모델 | 작기 모델을 환경 target 계산 입력으로 연결 | 환경 preview에 crop profile/growth stage/modelVersion/confidence 표시 |
+| M3 | 관수 전략 모델 | 작기+환경 모델 출력을 관수 target 계산 입력으로 연결 | 관수 preview에 VPD/일사/작물 생육단계 영향과 confidence 표시 |
+| M4 | 장치 운영 모델 | final target을 장치 capability/service plan으로 변환하는 모델 기준 정리 | 장치제어 AI 운영 탭에 dry-run/service plan/device risk 표시 |
+| M5 | 통합 모델 관계 UI | 한 구역에서 4개 모델 관계를 한눈에 보는 요약 카드 제공 | 작기→환경→관수→장치→SafetyGuard chain 표시 |
+| M6 | Feedback/calibration | 실행 로그·생육 결과·배액 feedback으로 모델 confidence/calibration 근거 생성 | 모델별 confidenceReasons와 calibrationNeeded 표시 |
+| M7 | Snapshot/audit | 모델 입력/출력/version/safety decision을 재현 가능하게 저장 | DB/API contract와 migration task 확정 후 구현 |
+| M8 | 제한적 자동화 readiness | 모델 관계와 SafetyGuard 통과 결과를 C20 실제 현장 리허설 gate에 연결 | virtual rehearsal에서 모델 chain evidence pass |
+
+### 7.5 작업 원칙 추가
+
+- 새 기능은 어느 모델에 속하는지 먼저 분류한 뒤 구현한다.
+- 작기·환경·관수·장치 모델 간 관계가 바뀌면 이 마스터플랜과 `current-backend-api-db-ha-contract.md`, `current-ui-design-and-navigation.md`, `zone-control-roadmap-and-data-model.md`를 함께 갱신한다.
+- 사용자-facing 용어는 `모델`, `전략 모델`, `운영 모델`, `예측`, `최종 적용값`을 사용한다. `MVP`는 계획/이력 또는 내부 legacy identifier 설명에만 둔다.
+- 실제 장비 제어는 여전히 C20 전까지 금지이며, 모델 출력은 virtual HA entity rehearsal과 dry-run으로 먼저 검증한다.
+
 
 ## 8. 구현 기능 고도화/완성도 강화 마스터플랜
 
