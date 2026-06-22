@@ -64,6 +64,52 @@ def test_db_bootstrap_creates_crop_management_tables_and_default_zone():
     assert "_ensure_column" in source
 
 
+def test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tables():
+    source = DB.read_text(encoding="utf-8")
+    for table in (
+        "devices",
+        "device_groups",
+        "device_group_items",
+        "device_status",
+        "device_control_logs",
+        "device_interlocks",
+        "device_failsafe_rules",
+        "device_alarms",
+        "ventilation_device_settings",
+        "screen_device_settings",
+        "irrigation_settings",
+        "sensor_readings",
+        "irrigation_drain_feedback",
+        "ai_irrigation_outputs",
+        "final_irrigation_targets",
+        "irrigation_control_logs",
+        "audit_logs",
+        "green_smart_admin_role_mappings",
+        "green_smart_admin_system_config",
+        "green_smart_admin_diagnostics",
+        "green_smart_admin_backups",
+    ):
+        assert f"CREATE TABLE IF NOT EXISTS {table}" in source
+    for index_or_key in (
+        "idx_devices_farm_type",
+        "idx_sensor_readings_lookup",
+        "idx_irrigation_control_logs_lookup",
+        "idx_audit_logs_lookup",
+        "uniq_admin_role_mappings",
+        "uniq_admin_system_config",
+    ):
+        assert index_or_key in source
+    for admin_column in (
+        "ha_user_id VARCHAR(128) NOT NULL",
+        "role VARCHAR(64) NOT NULL",
+        "config_key VARCHAR(128) NOT NULL",
+        "config_json JSON NOT NULL",
+        "diagnostic_json JSON NOT NULL",
+        "backup_json JSON NOT NULL",
+    ):
+        assert admin_column in source
+
+
 def test_growth_survey_backend_persists_dynamic_crop_metrics_json():
     source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
     growth_section = source.split("class CropGrowthListView", 1)[1].split("class CropGrowthDeleteView", 1)[0]

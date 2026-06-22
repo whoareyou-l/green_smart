@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.33
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.34
 const DOMAIN = "green_smart";
-const VERSION = "1.9.33";
+const VERSION = "1.9.34";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -6923,20 +6923,24 @@ button.action:disabled{opacity:.5;cursor:default;}
     const zones = this._controlZoneOptions(domain);
     const season = (this._cropSeasons || []).find((s) => String(s.id) === String(this._currentControlSeasonId())) || this._activeSeason();
     const saveNotice = this._controlSaveNotice?.domain === domain ? `${this._controlSaveNotice.time} · ${this._controlSaveNotice.label}` : "아직 저장 전";
-    const cropStatus = season?.demolishDate ? "재배 종료" : "재배 중";
-    return `<div data-control-active-zone="${selectedZone}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;flex:1 1 100%;">
+    const cropActive = !season?.demolishDate;
+    return `<div id="control-zone-selector" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;flex:1 1 100%;">
       ${zones.map((z) => {
-        const active = z.id === selectedZone;
+        const selected = z.id === selectedZone;
         const state = this._getScopedControlState(domain);
-        return `<button class="crop-season-card control-season-card ${active ? "active" : ""}" data-control-zone-tab data-control-zone-tab-card data-control-zone-id="${z.id}" style="text-align:left;border:${active ? "2px solid #51AE60" : "1px solid #dce9de"};border-radius:12px;padding:12px 14px;background:${active ? "#f0faf1" : "#fff"};min-width:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;">
-            <div style="font-size:13px;font-weight:900;color:#24323F;">${this._esc(z.label)}</div>
-            <span style="font-size:10px;font-weight:900;color:${active ? "#51AE60" : "#9aa6a0"};">${active ? "선택됨" : "탭 선택"}</span>
-          </div>
-          <div style="font-size:11px;color:#5d7d64;line-height:1.55;">재배 상태: ${cropStatus} · 정식일: ${season?.plantDate || "미기록"}</div>
-          <div style="font-size:11px;color:#7a9780;line-height:1.55;">제어영역: ${this._esc(this._controlDomainLabel(domain))} · 마지막 저장: ${this._esc(saveNotice)}</div>
+        return `<div data-control-zone-tab data-control-zone-tab-card data-control-zone-id="${z.id}"
+          style="flex-shrink:0;border:2px solid ${selected ? '#51AE60' : '#e0e0e0'};
+                 border-radius:12px;padding:10px 14px;cursor:pointer;min-width:148px;
+                 background:${selected ? '#f0faf1' : '#fafafa'};">
+          <div style="font-size:12px;font-weight:700;color:${selected ? '#24323F' : '#666'};">
+            ${this._esc(z.label)} · 제어영역: ${this._esc(this._controlDomainLabel(domain))}</div>
+          <div style="font-size:11px;color:${selected ? '#7a9780' : '#aaa'};margin-top:2px;">
+            정식일: ${season?.plantDate || "미기록"}</div>
+          <div style="font-size:10px;font-weight:700;margin-top:4px;
+            color:${cropActive ? '#51AE60' : '#bbb'};">
+            ${cropActive ? '● 재배 중' : '○ 철거완료'} · 마지막 저장: ${this._esc(saveNotice)}</div>
           <span hidden data-control-state-bound>${Object.keys(state || {}).slice(0, 3).join(",")}</span>
-        </button>`;
+        </div>`;
       }).join("")}
     </div>`;
   }

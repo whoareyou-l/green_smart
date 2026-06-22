@@ -380,19 +380,19 @@ def test_ui_polish_v1932_control_pages_use_crop_card_style_and_grouped_tabs_cont
         assert content_marker in panel
 
 
-def test_ui_polish_v1933_control_zone_cards_are_tab_selectors_with_preset_modal_contract():
+def test_ui_polish_v1934_control_zone_cards_match_crop_season_selector_with_preset_only_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    crop_selector = panel.split("  _renderSeasonSelector()", 1)[1].split("  _renderCropTabContent", 1)[0]
     scope_bar = panel.split("  _renderControlScopeBar(domain) {", 1)[1].split("  _cloneControlState", 1)[0]
     card_helper = panel.split("  _renderControlZoneTabs(domain)", 1)[1].split("  _renderControlPresetModal", 1)[0]
-    preset_modal = panel.split("  _renderControlPresetModal", 1)[1].split("  _bindControlScopeInputs", 1)[0]
+    preset_modal = panel.split("  _renderControlPresetModal", 1)[1].split("  _renderControlScopeBar", 1)[0]
     binder = panel.split("  _bindControlScopeInputs(root)", 1)[1].split("  // ── Dashboard event binding", 1)[0]
 
     for marker in (
         "_renderControlZoneTabs(domain)",
-        "data-control-zone-tab-card",
-        "data-control-zone-tab",
+        "id=\"control-zone-selector\"",
         "data-control-zone-id",
-        "data-control-active-zone",
+        "data-control-zone-tab-card",
         "data-control-preset-open",
         "프리셋 설정",
         "_selectControlZoneFromCard(domain, zoneId)",
@@ -400,6 +400,17 @@ def test_ui_polish_v1933_control_zone_cards_are_tab_selectors_with_preset_modal_
         "_renderControlPresetModal(domain)",
     ):
         assert marker in panel
+
+    assert "id=\"season-selector\"" in crop_selector
+    assert "data-season-id" in crop_selector
+    for style_marker in (
+        "flex-shrink:0",
+        "border:2px solid ${selected ? '#51AE60' : '#e0e0e0'}",
+        "border-radius:12px;padding:10px 14px;cursor:pointer;min-width:148px",
+        "background:${selected ? '#f0faf1' : '#fafafa'}",
+    ):
+        assert style_marker in crop_selector
+        assert style_marker.replace("selected", "selected") in card_helper
 
     assert "data-control-scope-season" not in scope_bar
     assert "data-control-scope-zone" not in scope_bar
@@ -409,18 +420,16 @@ def test_ui_polish_v1933_control_zone_cards_are_tab_selectors_with_preset_modal_
     assert "data-control-copy-all-zones" not in scope_bar
     assert "select" not in scope_bar.lower()
     assert "_renderControlZoneTabs(domain)" in scope_bar
-    assert "재배 상태" in card_helper
-    assert "정식일" in card_helper
     assert "제어영역" in card_helper
+    assert "정식일" in card_helper
     assert "마지막 저장" in card_helper
-    assert "_getScopedControlState(domain)" in card_helper
-    assert "active" in card_helper
     assert "_selectControlZoneFromCard" in binder
     assert "_openControlPresetModal" in binder
     assert "data-control-preset-copy-one" in preset_modal
     assert "data-control-preset-copy-all" in preset_modal
     assert "data-control-preset-target-zone" in preset_modal
-    assert "_copyScopedControlSettingsViaApi" in preset_modal or "_copyScopedControlSettingsViaApi" in binder
+    modal_binder = panel.split("  _openControlPresetModal(domain) {", 1)[1].split("  _saveAdminRoleMapping", 1)[0]
+    assert "_copyScopedControlSettingsViaApi" in modal_binder
 
 
 def test_admin_system_page_has_real_management_tabs_and_bindings_contract():

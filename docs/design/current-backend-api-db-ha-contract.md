@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.33`
+> 기준 버전: `v1.9.34`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.33"
+  "version": "1.9.34"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.33` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.34` |
 
 ### 4.2 WebSocket commands
 
@@ -242,7 +242,52 @@ aiomysql.create_pool(
 | `zone_control_logs` | 설정/실행/차단/SafetyGuard audit trail | farm_id + crop_season_id + zone_id + domain |
 | `zone_control_copy_jobs` | zone 설정 복사 이력 | farm_id + crop_season_id + domain |
 
-### 6.3 Candidate/future tables
+### 6.3 Device/Irrigation/Admin bootstrap closure tables
+
+v1.9.34 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
+
+장치제어:
+
+| table | 역할 |
+|---|---|
+| `devices` | HA entity와 대응되는 장치 master |
+| `device_groups` | 장치 그룹 master |
+| `device_group_items` | 그룹-장치 membership |
+| `device_status` | 장치 현재 상태/통신 상태 snapshot |
+| `device_control_logs` | 장치 수동/자동 제어 로그 |
+| `device_interlocks` | 장치 인터록 rule JSON |
+| `device_failsafe_rules` | 장치 Fail Safe rule JSON |
+| `device_alarms` | 장치 알람/장애 이력 |
+| `ventilation_device_settings` | 환기 장치 설정 |
+| `screen_device_settings` | 스크린 장치 설정 |
+
+관수제어:
+
+| table | 역할 |
+|---|---|
+| `irrigation_settings` | 관수 설정 JSON |
+| `sensor_readings` | 센서 측정값 적재 baseline |
+| `irrigation_drain_feedback` | 배액 피드백 입력 |
+| `ai_irrigation_outputs` | CORP/IRR 관수 AI 출력 |
+| `final_irrigation_targets` | 관수 최종 적용값 |
+| `irrigation_control_logs` | 관수 실행 로그 |
+| `audit_logs` | 공통 audit log |
+
+Admin/System:
+
+| table | 역할 |
+|---|---|
+| `green_smart_admin_role_mappings` | HA 사용자 ID → Green Smart role 매핑 |
+| `green_smart_admin_system_config` | Admin/System 설정 JSON |
+| `green_smart_admin_diagnostics` | 진단 결과 JSON |
+| `green_smart_admin_backups` | Admin/System 백업 JSON |
+
+정적 contract:
+
+- `tests/test_db_contract.py::test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tables`
+- 문서 `CREATE TABLE` 목록과 `db.py` bootstrap 목록 비교 시 missing count 0
+
+### 6.4 Candidate/future tables
 
 기존 설계 문서에는 있으나 현재 `db.py`에는 아직 생성되지 않는 candidate/future table:
 

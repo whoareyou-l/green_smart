@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.33`
+> 기준 버전: `v1.9.34`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.33` |
+| 현재 version | `1.9.34` |
 
 작업 시 우선순위:
 
@@ -985,7 +985,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.33 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.34 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 
@@ -1008,9 +1008,9 @@ _patchZoneControlElementCards(domain)
 
 ---
 
-### 11.6 v1.9.33 생육 AI 전략/제어 페이지 정보 구조 contract
+### 11.6 v1.9.34 생육 AI 전략/제어 페이지 정보 구조 contract
 
-v1.9.33 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
+v1.9.34 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
 
 작물 관리:
 
@@ -1024,9 +1024,13 @@ v1.9.33 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지�
 환경/관수/장치 제어 공통:
 
 - 최상단 범위 선택은 `_renderControlScopeBar(domain)` 안에서 `_renderControlZoneTabs(domain)`을 호출한다.
-- 구역 카드는 `data-control-zone-tab-card` / `data-control-zone-tab` 탭 버튼으로 동작하며, 클릭 시 `_selectControlZoneFromCard(domain, zoneId)`가 `crop_season_id + zone_id + domain` scope를 즉시 바꾼다.
+- 구역 선택 카드는 작물 설정의 작기 선택 카드와 동일한 flex 카드 구조를 사용한다.
+  - wrapper: `id="control-zone-selector"`, `display:flex`, `gap:8px`, `overflow-x:auto`
+  - card marker: `data-control-zone-tab-card`, `data-control-zone-tab`, `data-control-zone-id`
+  - selected style: `border:2px solid #51AE60`, `background:#f0faf1`
+  - default style: `border:2px solid #e0e0e0`, `background:#fafafa`
+- 카드 클릭 시 `_selectControlZoneFromCard(domain, zoneId)`가 `crop_season_id + zone_id + domain` scope를 즉시 바꾼다.
 - 현재 작기는 별도 dropdown으로 고르지 않고 작물 설정의 현재 활성 작기(`_activeSeasonId` / 미철거 작기)를 따라간다.
-- 구역 카드 문구는 `재배 상태 · 정식일`을 먼저 보여주고, 그 아래에 `제어영역 · 마지막 저장`을 보여준다.
 - 상단 scope bar에는 구역 dropdown, 작기 dropdown, 적용 범위 dropdown, 즉시 복사 버튼을 두지 않는다.
 - 설정 복사는 제목 옆 `프리셋 설정` 버튼에서 `_renderControlPresetModal(domain)` 팝업을 열어 `선택 구역에 복사` 또는 `전체 구역에 적용`으로 수행한다.
 - 상단 과밀 카드들은 페이지 본문 상단에 펼쳐두지 않고 하위탭 내부로 정리한다.
@@ -1047,7 +1051,7 @@ v1.9.33 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지�
 
 ---
 
-### 11.7 v1.9.33 Admin/System 관리 기능 contract
+### 11.7 v1.9.34 Admin/System 관리 기능 contract
 
 Admin/System 페이지는 placeholder가 아니라 다음 탭과 바인딩을 제공한다.
 

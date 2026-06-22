@@ -328,6 +328,293 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             KEY idx_zone_device_entity_mappings (farm_id, crop_season_id, zone_id, domain, enabled)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+        """
+        CREATE TABLE IF NOT EXISTS devices (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id INT NULL,
+            name VARCHAR(100) NOT NULL,
+            device_type VARCHAR(64) NOT NULL,
+            entity_id VARCHAR(255) NULL,
+            enabled TINYINT(1) NOT NULL DEFAULT 1,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_devices_entity (farm_id, entity_id),
+            KEY idx_devices_farm_type (farm_id, device_type, enabled)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS device_groups (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            name VARCHAR(100) NOT NULL,
+            group_type VARCHAR(64) NOT NULL,
+            description TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_device_groups_farm_type (farm_id, group_type)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS device_group_items (
+            group_id BIGINT NOT NULL,
+            device_id BIGINT NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (group_id, device_id),
+            KEY idx_device_group_items_device (device_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS device_status (
+            device_id BIGINT PRIMARY KEY,
+            current_state VARCHAR(64) NULL,
+            operation_mode VARCHAR(64) NULL,
+            controller VARCHAR(64) NULL,
+            communication_status VARCHAR(64) NULL,
+            telemetry_json JSON NULL,
+            last_updated TIMESTAMP NULL,
+            KEY idx_device_status_updated (last_updated)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS device_control_logs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            device_id BIGINT NULL,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id INT NULL,
+            previous_state VARCHAR(64) NULL,
+            next_state VARCHAR(64) NULL,
+            control_type VARCHAR(64) NULL,
+            actor VARCHAR(128) NULL,
+            result VARCHAR(64) NULL,
+            message TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_device_control_logs_device (device_id, created_at),
+            KEY idx_device_control_logs_farm_zone (farm_id, zone_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS device_interlocks (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            name VARCHAR(100) NOT NULL,
+            enabled TINYINT(1) NOT NULL DEFAULT 1,
+            priority INT NOT NULL DEFAULT 100,
+            description TEXT NULL,
+            condition_json JSON NOT NULL,
+            action_json JSON NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_device_interlocks_farm_enabled (farm_id, enabled, priority)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS device_failsafe_rules (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            trigger_type VARCHAR(64) NOT NULL,
+            enabled TINYINT(1) NOT NULL DEFAULT 1,
+            priority INT NOT NULL DEFAULT 100,
+            action_json JSON NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_device_failsafe_farm_enabled (farm_id, enabled, priority)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS device_alarms (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            device_id BIGINT NULL,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            alarm_type VARCHAR(64) NULL,
+            message TEXT NULL,
+            status VARCHAR(64) NULL,
+            occurred_at TIMESTAMP NULL,
+            cleared_at TIMESTAMP NULL,
+            KEY idx_device_alarms_device_status (device_id, status, occurred_at),
+            KEY idx_device_alarms_farm_status (farm_id, status, occurred_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS ventilation_device_settings (
+            device_id BIGINT PRIMARY KEY,
+            enabled TINYINT(1) NULL,
+            auto_control TINYINT(1) NULL,
+            manual_allowed TINYINT(1) NULL,
+            min_open_percent INT NULL,
+            max_open_percent INT NULL,
+            default_open_percent INT NULL,
+            control_unit VARCHAR(32) NULL,
+            delay_sec INT NULL,
+            max_continuous_min INT NULL,
+            direction VARCHAR(32) NULL,
+            position_feedback TINYINT(1) NULL,
+            settings_json JSON NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS screen_device_settings (
+            device_id BIGINT PRIMARY KEY,
+            enabled TINYINT(1) NULL,
+            auto_control TINYINT(1) NULL,
+            manual_allowed TINYINT(1) NULL,
+            min_open_percent INT NULL,
+            max_open_percent INT NULL,
+            default_open_percent INT NULL,
+            control_unit VARCHAR(32) NULL,
+            delay_sec INT NULL,
+            max_continuous_min INT NULL,
+            direction VARCHAR(32) NULL,
+            position_feedback TINYINT(1) NULL,
+            settings_json JSON NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS irrigation_settings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            crop_season_id INT NULL,
+            zone_id INT NULL,
+            settings_json JSON NOT NULL,
+            updated_by VARCHAR(128) NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_irrigation_settings_lookup (farm_id, crop_season_id, zone_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS sensor_readings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id INT NULL,
+            reading_type VARCHAR(64) NOT NULL,
+            value DOUBLE NOT NULL,
+            unit VARCHAR(32) NULL,
+            captured_at TIMESTAMP NOT NULL,
+            KEY idx_sensor_readings_lookup (farm_id, zone_id, reading_type, captured_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS irrigation_drain_feedback (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id INT NULL,
+            feed_amount_l DOUBLE NULL,
+            drain_amount_l DOUBLE NULL,
+            drain_rate DOUBLE NULL,
+            drain_ec DOUBLE NULL,
+            drain_ph DOUBLE NULL,
+            measured_at TIMESTAMP NULL,
+            created_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_irrigation_drain_feedback_lookup (farm_id, zone_id, measured_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS ai_irrigation_outputs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            crop_season_id INT NULL,
+            zone_id INT NULL,
+            agent_name VARCHAR(64) NOT NULL DEFAULT 'CORP/IRR',
+            output_json JSON NOT NULL,
+            healthy TINYINT(1) NOT NULL DEFAULT 1,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_ai_irrigation_outputs_lookup (farm_id, crop_season_id, zone_id, healthy, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS final_irrigation_targets (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            crop_season_id INT NULL,
+            zone_id INT NULL,
+            targets_json JSON NOT NULL,
+            source_ai_output_id BIGINT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_final_irrigation_targets_lookup (farm_id, crop_season_id, zone_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS irrigation_control_logs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id INT NULL,
+            amount_l DOUBLE NULL,
+            reason VARCHAR(64) NULL,
+            feed_ec DOUBLE NULL,
+            feed_ph DOUBLE NULL,
+            drain_amount_l DOUBLE NULL,
+            drain_ec DOUBLE NULL,
+            drain_ph DOUBLE NULL,
+            result VARCHAR(64) NULL,
+            has_error TINYINT(1) NOT NULL DEFAULT 0,
+            executed_at TIMESTAMP NOT NULL,
+            KEY idx_irrigation_control_logs_lookup (farm_id, zone_id, executed_at, has_error)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            actor VARCHAR(128) NULL,
+            action VARCHAR(128) NULL,
+            before_json JSON NULL,
+            after_json JSON NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_audit_logs_lookup (farm_id, action, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_admin_role_mappings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            ha_user_id VARCHAR(128) NOT NULL,
+            ha_user_name VARCHAR(128) NULL,
+            role VARCHAR(64) NOT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_admin_role_mappings (farm_id, ha_user_id),
+            KEY idx_admin_role_mappings_role (farm_id, role)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_admin_system_config (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            config_key VARCHAR(128) NOT NULL,
+            config_json JSON NOT NULL,
+            updated_by VARCHAR(128) NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_admin_system_config (farm_id, config_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_admin_diagnostics (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            diagnostic_json JSON NOT NULL,
+            status VARCHAR(64) NOT NULL DEFAULT 'completed',
+            created_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_admin_diagnostics_lookup (farm_id, status, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_admin_backups (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            backup_json JSON NOT NULL,
+            backup_type VARCHAR(64) NOT NULL DEFAULT 'admin_system',
+            created_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_admin_backups_lookup (farm_id, backup_type, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
         "INSERT IGNORE INTO zones (id, name) VALUES (1, '1구역')",
     )
     pool = await get_pool(hass)
