@@ -26,6 +26,7 @@ AI가 작동하지 않아도 문제가 생기지 않게 인터록/안전 제어�
 | 상세 기준 문서 | 담당 범위 | 반드시 읽어야 하는 작업 |
 |---|---|---|
 | [`docs/design/current-ui-design-and-navigation.md`](design/current-ui-design-and-navigation.md) | 사용자 선호 디자인, 사이드바, 모바일 topbar, Home/Crop/환경/관수/장치 페이지, 하위탭, 설정값, data attribute, no-flicker UI 정책 | UI/UX, 페이지 구조, 탭, 카드, 입력값, WebView flicker, 디자인 변경 |
+| [`docs/design/ui-information-architecture-and-rbac.md`](design/ui-information-architecture-and-rbac.md) | UI 요소 배치 원칙, 비전공자 농장주/직원 UX, RBAC 역할(admin/farm_owner/farm_staff), 역할별 페이지/기능 권한 | 화면이 뒤죽박죽 섞이는 문제 정리, 역할별 UI, 권한, 쉬운 용어/작업 흐름 설계 |
 | [`docs/design/current-backend-api-db-ha-contract.md`](design/current-backend-api-db-ha-contract.md) | HA integration lifecycle, panel registration, DB schema, API routes, zone control, strategy preview, SafetyGuard, execution flow, virtual entities | Backend/API/DB/schema, SafetyGuard, final target execution, HA service call, virtual device, 운영 smoke |
 | [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md) | 제어 기능 로드맵과 데이터 모델 관계 | Control Phase 추가/변경, DB/API 관계 변경 |
 | [`docs/design/api-spec.md`](design/api-spec.md) | 초기 API spec baseline | public API 형태를 정리하거나 wrapper API를 변경할 때 |
@@ -39,6 +40,7 @@ AI가 작동하지 않아도 문제가 생기지 않게 인터록/안전 제어�
 UI runtime: Home Assistant panel_custom + Vanilla JS Web Component
 Sidebar pages: home, crop, environment, irrigation, device
 Design preference: Modern SaaS greenhouse dashboard + 카드형 운영 UI + 안전/인터록 우선 UX
+UX/RBAC baseline: 비전공자 농장주·농장직원용 직관 UI + admin/farm_owner/farm_staff 역할별 페이지/기능 권한
 DB/API scope: farm_id + crop_season_id + zone_id + domain
 Execution path: final target → Control Mode → Limited Auto → Operator Confirmation → SafetyGuard → HA service call → state verification → log
 Physical device gate: C20 전까지 실제 장비 연결 금지, virtual HA entities/rehearsal 우선
@@ -145,6 +147,7 @@ zone_control_copy_jobs
 
 - `docs/PROJECT_MASTER_PLAN.md`
 - `docs/design/current-ui-design-and-navigation.md`
+- `docs/design/ui-information-architecture-and-rbac.md`
 - `docs/design/current-backend-api-db-ha-contract.md`
 - `docs/design/system-architecture.md`
 - `docs/design/data-model.md`

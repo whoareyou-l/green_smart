@@ -22,9 +22,39 @@
 작업 시 우선순위:
 
 1. 실제 구현 기준은 `green-smart-panel.js`다.
-2. 이 문서는 해당 파일에서 추출한 상세 기준이다.
-3. `docs/design/irrigation-control-page.md`, `docs/design/device-control-page.md`는 현재 구현과 상당히 일치하지만 일부 API 경로/프레임워크 초안은 미래 설계 흔적이다.
-4. UI 동작 변경 후에는 manifest/panel `VERSION`을 함께 올려 HA/WebView cache 문제를 방지한다.
+2. UI 요소를 어디에 배치할지, 어떤 역할이 볼 수/실행할 수 있는지는 [`ui-information-architecture-and-rbac.md`](ui-information-architecture-and-rbac.md)를 먼저 따른다.
+3. 이 문서는 해당 파일에서 추출한 상세 현재 UI 기준이다.
+4. `docs/design/irrigation-control-page.md`, `docs/design/device-control-page.md`는 현재 구현과 상당히 일치하지만 일부 API 경로/프레임워크 초안은 미래 설계 흔적이다.
+5. UI 동작 변경 후에는 manifest/panel `VERSION`을 함께 올려 HA/WebView cache 문제를 방지한다.
+
+---
+
+## 1.1 정보구조/RBAC 기준
+
+Green Smart의 최종 사용자인 농장주와 농장직원은 컴퓨터 전공자가 아니다. 따라서 UI는 기능을 개발 순서대로 나열하지 않고, 농장 운영 흐름과 역할별 권한에 맞게 정리한다.
+
+상세 기준:
+
+```text
+docs/design/ui-information-architecture-and-rbac.md
+```
+
+핵심 역할:
+
+| role | 한국어 | UI 방향 |
+|---|---|---|
+| `admin` | 어드민 | 설치, 시스템, DB/API/HA, 권한, 고급 설정 |
+| `farm_owner` | 농장주 | 상태 확인, 전략 승인, 중요 실행, 리포트/이력 |
+| `farm_staff` | 농장직원 | 오늘 할 일, 기록 입력, 알림 확인, 허용된 수동 조작 |
+
+핵심 배치 원칙:
+
+```text
+조회/기록/전략/실행/안전/고급설정을 섞지 않는다.
+농장직원에게 entity_id, PID, raw JSON, API key를 노출하지 않는다.
+권한이 없거나 안전상 실행 불가하면 이유를 표시한다.
+위험 실행은 항상 SafetyGuard 상태와 운영자 확인 근처에 둔다.
+```
 
 ---
 
