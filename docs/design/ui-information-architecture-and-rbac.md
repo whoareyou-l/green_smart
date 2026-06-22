@@ -574,9 +574,10 @@ UI/RBAC 관련 작업은 아래 조건을 모두 만족해야 완료다.
 앞으로 Green Smart UI를 수정할 때는 다음 순서로 확인한다.
 
 1. 이 문서: 정보구조/RBAC/비전공자 UX 기준
-2. `current-ui-design-and-navigation.md`: 현재 페이지/탭/필드 구조
-3. `current-backend-api-db-ha-contract.md`: API/DB/실행/SafetyGuard 기준
-4. `PROJECT_MASTER_PLAN.md`: Phase와 완료 기준
+2. `../plans/2026-06-22-ui-rbac-reorganization-implementation-plan.md`: 실제 정리·업데이트·모듈화 실행 플랜과 모호성 10% 이하 질문 gate
+3. `current-ui-design-and-navigation.md`: 현재 페이지/탭/필드 구조
+4. `current-backend-api-db-ha-contract.md`: API/DB/실행/SafetyGuard 기준
+5. `PROJECT_MASTER_PLAN.md`: Phase와 완료 기준
 
 구현 전에 반드시 답해야 하는 질문:
 

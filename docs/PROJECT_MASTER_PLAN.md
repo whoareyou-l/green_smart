@@ -27,6 +27,7 @@ AI가 작동하지 않아도 문제가 생기지 않게 인터록/안전 제어�
 |---|---|---|
 | [`docs/design/current-ui-design-and-navigation.md`](design/current-ui-design-and-navigation.md) | 사용자 선호 디자인, 사이드바, 모바일 topbar, Home/Crop/환경/관수/장치 페이지, 하위탭, 설정값, data attribute, no-flicker UI 정책 | UI/UX, 페이지 구조, 탭, 카드, 입력값, WebView flicker, 디자인 변경 |
 | [`docs/design/ui-information-architecture-and-rbac.md`](design/ui-information-architecture-and-rbac.md) | UI 요소 배치 원칙, 비전공자 농장주/직원 UX, RBAC 역할(admin/farm_owner/farm_staff), 역할별 페이지/기능 권한 | 화면이 뒤죽박죽 섞이는 문제 정리, 역할별 UI, 권한, 쉬운 용어/작업 흐름 설계 |
+| [`docs/plans/2026-06-22-ui-rbac-reorganization-implementation-plan.md`](plans/2026-06-22-ui-rbac-reorganization-implementation-plan.md) | 새 UI/RBAC 기준을 실제 개발로 옮기기 위한 단계별 실행 플랜, 불필요 요소 정리, merge/split/module화, 모호성 10% 이하 질문 gate | UI/RBAC 재구성 구현 착수 전, Phase U0~U8 작업 분해/검증/질문 기준 |
 | [`docs/design/current-backend-api-db-ha-contract.md`](design/current-backend-api-db-ha-contract.md) | HA integration lifecycle, panel registration, DB schema, API routes, zone control, strategy preview, SafetyGuard, execution flow, virtual entities | Backend/API/DB/schema, SafetyGuard, final target execution, HA service call, virtual device, 운영 smoke |
 | [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md) | 제어 기능 로드맵과 데이터 모델 관계 | Control Phase 추가/변경, DB/API 관계 변경 |
 | [`docs/design/api-spec.md`](design/api-spec.md) | 초기 API spec baseline | public API 형태를 정리하거나 wrapper API를 변경할 때 |
@@ -148,6 +149,7 @@ zone_control_copy_jobs
 - `docs/PROJECT_MASTER_PLAN.md`
 - `docs/design/current-ui-design-and-navigation.md`
 - `docs/design/ui-information-architecture-and-rbac.md`
+- `docs/plans/2026-06-22-ui-rbac-reorganization-implementation-plan.md`
 - `docs/design/current-backend-api-db-ha-contract.md`
 - `docs/design/system-architecture.md`
 - `docs/design/data-model.md`
