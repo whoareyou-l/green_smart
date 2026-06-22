@@ -309,6 +309,77 @@ def test_ui_polish_v1931_home_kpi_crop_tab_and_master_plan_contract():
     assert "data-pesticide-card" not in weather_fetch
 
 
+def test_ui_polish_v1932_crop_ai_tab_refresh_spinner_and_icon_toggle_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    crop_page = panel.split("  _renderCropSettingsPage()", 1)[1].split("  _renderCropPager", 1)[0]
+    growth_tab = panel.split("  _renderCropGrowthTab()", 1)[1].split("  _renderCropAiStrategyTab", 1)[0]
+    ai_tab = panel.split("  _renderCropAiStrategyTab()", 1)[1].split("  _renderCropPestTab", 1)[0]
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  async _fetchGrowthReport", 1)[0]
+    bind_section = panel.split("  _bindCropContent(root)", 1)[1].split("  _bindSeasonButtons", 1)[0]
+    refresh_helper = panel.split("  async _refreshWeeklyGrowthReportFromButton(button)", 1)[1].split("  async _exportWeeklyGrowthReport", 1)[0]
+    styles = panel.split("/* Animations */", 1)[1].split("/* ── Wizard", 1)[0]
+
+    assert '{ key: "ai",       label: "AI 전략" }' in crop_page
+    assert 'if (this._cropSubTab === "ai")      return this._renderCropAiStrategyTab();' in panel
+    assert "_renderGrowthReportCard()" not in growth_tab
+    assert "_renderGrowthReportCard()" in ai_tab
+    assert "data-weekly-report-notification-toggle" in report_card
+    assert "type=\"checkbox\"" not in report_card
+    assert "data-weekly-report-notification-icon" in report_card
+    assert "mdi:bell-ring-outline" in report_card
+    assert "mdi:bell-off-outline" in report_card
+    assert "#f5a623" in report_card
+    assert "#9aa6a0" in report_card
+    assert "data-weekly-report-refresh-icon" in report_card
+    assert "data-weekly-report-refreshing" in report_card
+    assert "gs-spin" in styles
+    assert "_refreshWeeklyGrowthReportFromButton" in panel
+    assert "_refreshWeeklyGrowthReportFromButton(event.currentTarget)" in bind_section
+    assert "classList.add(\"is-spinning\")" in refresh_helper
+    assert "classList.remove(\"is-spinning\")" in refresh_helper
+
+
+def test_ui_polish_v1932_control_pages_use_crop_card_style_and_grouped_tabs_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    scope_bar = panel.split("  _renderControlScopeBar(domain) {", 1)[1].split("  _cloneControlState", 1)[0]
+    env_page = panel.split("  _renderEnvSettingsPage()", 1)[1].split("  _renderIrrigSettingsPage()", 1)[0]
+    irrigation_page = panel.split("  _renderIrrigSettingsPage()", 1)[1].split("  _renderDeviceControlPage", 1)[0]
+    device_page = panel.split("  _renderDeviceControlPage()", 1)[1].split("  _renderVentSettingsPage", 1)[0]
+
+    for marker in (
+        "data-control-season-card",
+        "control-season-card",
+        "crop-season-card",
+        "_renderControlSeasonCard(domain)",
+        "_renderCropSeasonLikeControlScope(domain)",
+    ):
+        assert marker in panel
+    assert "data-control-scope-summary" in scope_bar
+    assert "_renderControlSeasonCard(domain)" in scope_bar
+
+    for page, tab_marker in (
+        (env_page, "data-env-strategy-content"),
+        (irrigation_page, "data-irrigation-control-content"),
+        (device_page, "data-device-control-content"),
+    ):
+        before_tab = page.split(tab_marker, 1)[0]
+        assert "_renderZoneAiFinalTargetCard" not in before_tab
+        assert "_renderZoneEntityMappingCard" not in before_tab
+        assert "_renderZoneDryRunPreviewCard" not in before_tab
+        assert "_renderZoneSafetyGuardWatchdogCard" not in before_tab
+        assert "_renderZoneSafetyGuardEventHistoryCard" not in before_tab
+        assert "_renderZoneRehearsalReadinessCard" not in before_tab
+
+    for tab_key in ('key: "aiOps"', 'key: "safetyOps"', 'key: "deviceMap"'):
+        assert tab_key in panel
+    for content_marker in (
+        "_renderControlAiOpsTabContent(domain)",
+        "_renderControlSafetyOpsTabContent(domain)",
+        "_renderControlDeviceMapTabContent(domain)",
+    ):
+        assert content_marker in panel
+
+
 def test_green_smart_sidebar_offsets_from_ha_sidebar_not_viewport_left():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     styles = panel.split("/* ── Sidebar / TopBar ─── */", 1)[1].split("/* Animations */", 1)[0]

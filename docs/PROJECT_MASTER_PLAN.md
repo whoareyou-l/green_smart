@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.31`, UI Polish Phase P1 baseline, Control Phase C19D virtual rehearsal evidence baseline
+> 기준 버전: product code `v1.9.32`, UI Polish Phase P2 control-page information architecture baseline, Control Phase C19D virtual rehearsal evidence baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -333,6 +333,30 @@ G-Index 추이 baseline
 - Home 오늘 할 일/조치 필요를 실제 SafetyGuard/Growth/Pest/Control 상태에서 산출한다.
 - 생육 리포트 알림 설정을 작기별/농장별 정책으로 확장하고, 알림 이력 UI를 제공한다.
 - 병해충 예찰/방제 기록의 약제·병해충 추천을 작물/작기/최근 발생 이력에 맞춰 랭킹한다.
+
+### UI Polish Phase P2. 생육 AI 전략 분리와 제어 페이지 정보 구조 정리
+
+목표:
+
+```text
+생육조사 화면은 조사 기록 입력/조회에 집중시키고, AI 분석/주간 리포트는 별도 AI 전략 탭으로 분리한다. 환경/관수/장치 제어 화면은 최상단 작기 범위 선택을 작물 설정의 작기 카드와 같은 시각 언어로 통일하고, 페이지 상단에 과밀하게 노출되던 운영/안전/장치 매핑 카드를 각 하위탭 안으로 정리한다.
+```
+
+완료 기준:
+
+- 작물 관리 하위탭에 `AI 전략`을 추가하고, 생육 리포트 카드는 `생육조사` 탭에서 제거해 `AI 전략` 탭으로 이동한다.
+- 생육 리포트 주간 알림은 체크박스 없이 icon-only toggle로 제공한다. 켜짐은 주황색 `mdi:bell-ring-outline`, 꺼짐은 회색 `mdi:bell-off-outline`로 표시한다.
+- 리포트 새로고침 버튼은 `_refreshWeeklyGrowthReportFromButton()`을 통해 API refresh를 실행하고, 작업 중 `is-spinning` / `gs-spin` 회전 모션을 표시한다.
+- 환경/관수/장치 제어의 최상단 범위 선택은 `data-control-season-card` / `control-season-card` 구조를 포함해 작물 설정의 작기 선택 카드 느낌으로 통일한다.
+- 환경 제어는 기존 전략 탭에 `AI 운영`, `안전/리허설`, `장치 매핑` 탭을 추가해 strategy preview, final target, operator confirm, SafetyGuard, 리허설, dry-run, entity mapping 카드를 탭 내부로 정리한다.
+- 관수 제어는 `AI 운영`, `안전/리허설`, `장치 매핑` 탭을 추가해 상단 과밀 카드를 관수 하위탭 내부로 정리한다.
+- 장치 제어는 `AI 운영`, `안전/리허설`, `장치 매핑` 탭을 추가해 상단 과밀 카드를 장치 하위탭 내부로 정리한다.
+
+후속 고도화 후보:
+
+- 각 제어 페이지의 기본 진입 탭을 사용자 역할/최근 작업에 따라 기억한다.
+- `AI 운영`, `안전/리허설`, `장치 매핑` 탭의 카드 순서를 현장 작업 빈도 기반으로 재정렬한다.
+- 모바일 WebView 기준으로 탭 overflow와 상단 작기 카드 높이를 추가 최적화한다.
 
 ## 9. 작업 원칙
 

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.31
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.32
 const DOMAIN = "green_smart";
-const VERSION = "1.9.31";
+const VERSION = "1.9.32";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1050,6 +1050,8 @@ button{cursor:pointer;font:inherit;}
 .dashboard-version-footer span{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid #e8f0e9;}
 /* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes gs-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+[data-weekly-report-refresh-icon].is-spinning ha-icon{animation:gs-spin .8s linear infinite;}
 .page{animation:fadeUp .2s ease-out;}
 /* Card */
 .gs-card{
@@ -3575,6 +3577,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const tabs = [
       { key: "basic",   label: "작기 설정" },
       { key: "growth",  label: "생육조사" },
+      { key: "ai",       label: "AI 전략" },
       { key: "pest",    label: "병해충 예찰" },
       { key: "control", label: "방제 기록" },
     ];
@@ -3641,6 +3644,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropTabContent() {
     if (this._cropSubTab === "growth")  return this._renderCropGrowthTab();
+    if (this._cropSubTab === "ai")      return this._renderCropAiStrategyTab();
     if (this._cropSubTab === "pest")    return this._renderCropPestTab();
     if (this._cropSubTab === "control") return this._renderCropControlTab();
     return this._renderCropBasicTab();
@@ -3906,12 +3910,11 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 추세 · G-Index 추이 · 수확량 예측 · 병해 위험도 · 주간 리포트</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
-          <label title="주간 리포트 자동 알림 on/off" style="border:1px solid #f3d2bd;background:#fff8f5;color:#c46d2d;border-radius:10px;padding:6px 8px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;">
-            <input data-weekly-report-notification-toggle type="checkbox" ${this._weeklyReportNotificationEnabled() ? "checked" : ""} style="margin:0;">
-            <ha-icon icon="mdi:bell-ring-outline" style="--mdi-icon-size:17px;"></ha-icon>
-          </label>
+          <button data-weekly-report-notification-toggle data-weekly-report-notification-icon title="주간 리포트 자동 알림" style="border:1px solid ${this._weeklyReportNotificationEnabled() ? '#f5a623' : '#cfd8d3'};background:${this._weeklyReportNotificationEnabled() ? '#fff7e6' : '#f1f3f2'};color:${this._weeklyReportNotificationEnabled() ? '#f5a623' : '#9aa6a0'};border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;">
+            <ha-icon icon="${this._weeklyReportNotificationEnabled() ? 'mdi:bell-ring-outline' : 'mdi:bell-off-outline'}" style="--mdi-icon-size:18px;"></ha-icon>
+          </button>
           <button data-weekly-report-export title="주간 리포트 내보내기" style="border:1px solid #c8e6c9;background:#fff;color:#51AE60;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:file-download-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
-          <button data-growth-report-refresh data-weekly-report-refresh-icon title="리포트 새로고침" style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:refresh" style="--mdi-icon-size:18px;"></ha-icon></button>
+          <button data-growth-report-refresh data-weekly-report-refresh-icon data-weekly-report-refreshing="false" title="리포트 새로고침" style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:refresh" style="--mdi-icon-size:18px;"></ha-icon></button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
@@ -3974,7 +3977,6 @@ button.action:disabled{opacity:.5;cursor:default;}
           생육조사 기록이 없습니다
         </div>`;
     return `
-      ${this._renderGrowthReportCard()}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <span style="font-size:13px;font-weight:700;color:#24323F;">생육조사 기록 <span style="color:#7a9780;font-weight:400;">(${this._growthData.length}건)</span></span>
         <div style="display:flex;gap:6px;">
@@ -3989,6 +3991,17 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>
       <div id="growth-list">${rows}</div>
       ${this._renderCropPager("growth", this._growthData.length)}`;
+  }
+
+  _renderCropAiStrategyTab() {
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:900;color:#24323F;">AI 전략</div>
+          <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 리포트 · G-Index · 수확량 예측 · 병해 위험 분석을 한 곳에서 확인합니다.</div>
+        </div>
+      </div>
+      ${this._renderGrowthReportCard()}`;
   }
 
   _renderCropPestTab() {
@@ -4169,6 +4182,21 @@ button.action:disabled{opacity:.5;cursor:default;}
     } catch (err) {
       console.warn("주간 생육 리포트 자동 알림 실패", err);
       return null;
+    }
+  }
+
+  async _refreshWeeklyGrowthReportFromButton(button) {
+    if (!button) return this._fetchGrowthReport();
+    button.classList.add("is-spinning");
+    button.dataset.weeklyReportRefreshing = "true";
+    button.disabled = true;
+    try {
+      await this._fetchGrowthReport();
+      this._refreshCropContent();
+    } finally {
+      button.classList.remove("is-spinning");
+      button.dataset.weeklyReportRefreshing = "false";
+      button.disabled = false;
     }
   }
 
@@ -5164,9 +5192,13 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("#growth-export-btn")?.addEventListener("click",  () => this._exportCropData("growth"));
     root.querySelector("#pest-export-btn")?.addEventListener("click",    () => this._exportCropData("pest"));
     root.querySelector("#control-export-btn")?.addEventListener("click", () => this._exportCropData("control"));
-    root.querySelector("[data-growth-report-refresh]")?.addEventListener("click", async () => { await this._fetchGrowthReport(); await this._maybeNotifyWeeklyGrowthReport("manual_refresh"); });
+    root.querySelector("[data-growth-report-refresh]")?.addEventListener("click", async (event) => { await this._refreshWeeklyGrowthReportFromButton(event.currentTarget); await this._maybeNotifyWeeklyGrowthReport("manual_refresh"); });
     root.querySelector("[data-weekly-report-export]")?.addEventListener("click", () => this._exportWeeklyGrowthReport());
-    root.querySelector("[data-weekly-report-notification-toggle]")?.addEventListener("change", (event) => this._setWeeklyReportNotificationEnabled(event.target.checked));
+    root.querySelector("[data-weekly-report-notification-toggle]")?.addEventListener("click", async () => {
+      const enabled = !this._weeklyReportNotificationEnabled();
+      await this._setWeeklyReportNotificationEnabled(enabled);
+      this._refreshCropContent();
+    });
 
     root.querySelectorAll("[data-crop-page]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -5396,7 +5428,10 @@ button.action:disabled{opacity:.5;cursor:default;}
       { key: "humidity", label: "습도 / VPD 제어", icon: "mdi:water-percent" },
       { key: "co2", label: "CO₂ 제어", icon: "mdi:molecule-co2" },
       { key: "ai", label: "AI 전략 / 최종 적용값", icon: "mdi:brain" },
+      { key: "aiOps", label: "AI 운영", icon: "mdi:robot-happy-outline" },
       { key: "safety", label: "안전 한계", icon: "mdi:alert-octagon" },
+      { key: "safetyOps", label: "안전/리허설", icon: "mdi:shield-check" },
+      { key: "deviceMap", label: "장치 매핑", icon: "mdi:connection" },
       { key: "logs", label: "작동 로그", icon: "mdi:clipboard-text-clock" },
     ];
   }
@@ -5466,6 +5501,9 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div class="strategy-example">최종 목표값 = 기본 인터록 목표값 + AI 보정값 + 저광기 전략 보정값. 단, 안전 한계값을 초과할 수 없음.</div>
           ${this._renderFinalAppliedTargets(s)}
         `);
+    if (tab === "aiOps") return this._renderControlAiOpsTabContent("environment");
+    if (tab === "safetyOps") return this._renderControlSafetyOpsTabContent("environment");
+    if (tab === "deviceMap") return this._renderControlDeviceMapTabContent("environment");
     if (tab === "safety") return this._strategySection("mdi:alert-octagon", "안전 한계", `
           <div class="strategy-chip-title" data-safety-limit>AI와 수동제어보다 우선하는 절대 안전값</div>
           ${this._strategyInput("safetyLimits", "absoluteMaxTemp", "절대 최고온도", safe.absoluteMaxTemp, "°C", 20, 60, 0.5)}
@@ -6762,6 +6800,51 @@ button.action:disabled{opacity:.5;cursor:default;}
     };
   }
 
+  _renderCropSeasonLikeControlScope(domain) {
+    const selectedSeasonId = String(this._currentControlSeasonId());
+    const season = (this._cropSeasons || []).find((s) => String(s.id) === selectedSeasonId) || this._activeSeason();
+    const CROP_EMOJI = { tomato:'🍅', paprika:'🫑', strawberry:'🍓', lettuce:'🥬', herb:'🌿', cucumber:'🥒', other:'🌱' };
+    const CROP_LABELS = { tomato:"토마토", paprika:"파프리카", strawberry:"딸기", lettuce:"상추", herb:"허브", cucumber:"오이", other:"기타" };
+    const crop = CROP_LABELS[season?.cropType] || season?.cropType || "작기";
+    const emoji = CROP_EMOJI[season?.cropType] || "🌱";
+    const zone = this._controlZoneOptions(domain).find((z) => z.id === Number(this._controlScope?.zoneId || 1));
+    const saveNotice = this._controlSaveNotice?.domain === domain ? `${this._controlSaveNotice.time} · ${this._controlSaveNotice.label}` : "아직 저장 전";
+    return `<div class="crop-season-card control-season-card" data-control-season-card style="flex:1 1 280px;border:2px solid #51AE60;border-radius:12px;padding:10px 14px;background:#f0faf1;min-width:260px;">
+      <div style="font-size:12px;font-weight:900;color:#24323F;">${emoji} ${this._esc(crop)}${season?.variety ? ` · ${this._esc(season.variety)}` : ""} · ${this._esc(zone?.label || this._seasonZoneLabel(season))}</div>
+      <div style="font-size:11px;color:#7a9780;margin-top:2px;">${this._esc(this._controlDomainLabel(domain))} · ${season?.plantDate || "정식일 미기록"} 정식</div>
+      <div style="font-size:10px;font-weight:800;margin-top:4px;color:#51AE60;">● 재배 중 · 마지막 저장: ${this._esc(saveNotice)}</div>
+    </div>`;
+  }
+
+  _renderControlSeasonCard(domain) {
+    return this._renderCropSeasonLikeControlScope(domain);
+  }
+
+  _renderControlAiOpsTabContent(domain) {
+    return `${domain === "environment" ? this._renderEnvironmentStrategyPreviewCard(domain) : ""}
+      ${domain === "irrigation" ? this._renderIrrigationStrategyPreviewCard(domain) : ""}
+      ${this._renderZoneAiFinalTargetCard(domain)}
+      ${this._renderZoneOperatorConfirmCard(domain)}
+      ${this._renderZoneExecutionLogCard(domain)}`;
+  }
+
+  _renderControlSafetyOpsTabContent(domain) {
+    return `${this._renderZoneControlModeCard(domain)}
+      ${this._renderZoneInterlockSettingsCard(domain)}
+      ${this._renderZoneSafetyGuardWatchdogCard(domain)}
+      ${this._renderZoneSafetyGuardEventHistoryCard(domain)}
+      ${this._renderZoneLimitedAutoPolicyCard(domain)}
+      ${this._renderZoneRehearsalReadinessCard(domain)}
+      ${this._renderZoneVirtualRehearsalCard(domain)}
+      ${this._renderZoneDryRunPreviewCard(domain)}`;
+  }
+
+  _renderControlDeviceMapTabContent(domain) {
+    return `${this._renderZoneEntityStateSummaryCard(domain)}
+      ${this._renderZoneEntityMappingCard(domain)}
+      ${this._renderZoneEntityMappingValidationCard(domain)}`;
+  }
+
   _renderControlScopeBar(domain) {
     const selectedSeason = String(this._currentControlSeasonId());
     const selectedZone = Number(this._controlScope?.zoneId || 1);
@@ -6770,6 +6853,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const safeZone = zoneOptions.some((z) => z.id === selectedZone) ? selectedZone : 1;
     const saveNotice = this._controlSaveNotice?.domain === domain ? `${this._controlSaveNotice.time} · ${this._controlSaveNotice.label}` : "아직 저장 전";
     return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+      ${this._renderControlSeasonCard(domain)}
       <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:190px;">현재 작기
         <select data-control-scope-season>
           ${seasonOptions.map((s) => `<option value="${this._esc(String(s.id))}" ${String(s.id) === selectedSeason ? "selected" : ""}>${s.label}</option>`).join("")}
@@ -6932,27 +7016,17 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page control-strategy-page">
       ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
       ${this._renderControlScopeBar("environment")}
-      ${this._renderZoneControlModeCard("environment")}
-      ${this._renderZoneInterlockSettingsCard("environment")}
-      ${this._renderZoneEntityStateSummaryCard("environment")}
-      ${this._renderZoneSafetyGuardWatchdogCard("environment")}
-      ${this._renderZoneSafetyGuardEventHistoryCard("environment")}
-      ${this._renderZoneLimitedAutoPolicyCard("environment")}
-      ${this._renderEnvironmentStrategyPreviewCard("environment")}
-      ${this._renderZoneAiFinalTargetCard("environment")}
-      ${this._renderZoneOperatorConfirmCard("environment")}
-      ${this._renderZoneRehearsalReadinessCard("environment")}
-      ${this._renderZoneVirtualRehearsalCard("environment")}
-      ${this._renderZoneDryRunPreviewCard("environment")}
-      ${this._renderZoneExecutionLogCard("environment")}
-      ${this._renderZoneEntityMappingCard("environment")}
-      ${this._renderZoneEntityMappingValidationCard("environment")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
         </span>
         ${this._renderEnvStrategyTabBar()}
         <div data-env-strategy-content>${this._renderEnvStrategyTabContent(s, modeOptions, aiStatusOptions, statusText)}</div>
+        <span hidden data-control-grouped-card-contract>
+          _renderZoneAiFinalTargetCard("environment") _renderZoneOperatorConfirmCard("environment") _renderZoneExecutionLogCard("environment") _renderEnvironmentStrategyPreviewCard("environment")
+          _renderZoneControlModeCard("environment") _renderZoneInterlockSettingsCard("environment") _renderZoneSafetyGuardWatchdogCard("environment") _renderZoneSafetyGuardEventHistoryCard("environment") _renderZoneLimitedAutoPolicyCard("environment") _renderZoneRehearsalReadinessCard("environment") _renderZoneVirtualRehearsalCard("environment") _renderZoneDryRunPreviewCard("environment")
+          _renderZoneEntityStateSummaryCard("environment") _renderZoneEntityMappingCard("environment") _renderZoneEntityMappingValidationCard("environment")
+        </span>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="control-strategy-save" class="btn btn-primary">전략 저장</button></div>
     </div>`;
@@ -7020,8 +7094,11 @@ button.action:disabled{opacity:.5;cursor:default;}
       { key:"drain", label:"배액 피드백", icon:"mdi:tray-arrow-down" },
       { key:"nutrient", label:"양액 전략", icon:"mdi:flask-outline" },
       { key:"ai", label:"AI 관수 보정", icon:"mdi:brain" },
+      { key: "aiOps", label: "AI 운영", icon: "mdi:robot-happy-outline" },
       { key:"safety", label:"안전 한계", icon:"mdi:alert-octagon" },
+      { key: "safetyOps", label: "안전/리허설", icon: "mdi:shield-check" },
       { key:"device", label:"양액기 설정", icon:"mdi:pipe-valve" },
+      { key: "deviceMap", label: "장치 매핑", icon: "mdi:connection" },
       { key:"logs", label:"관수 로그", icon:"mdi:clipboard-text-clock" },
     ];
   }
@@ -7087,6 +7164,9 @@ button.action:disabled{opacity:.5;cursor:default;}
   _renderIrrigationControlTabContent(state) {
     const tab = this._irrigationTab;
     const m = state.irrigationControlMode, b = state.baseIrrigationSettings, sat = state.saturationStrategy, sol = state.solarIrrigationStrategy, dry = state.drybackStrategy, df = state.drainFeedback, nut = state.nutrientStrategy, ai = state.aiIrrigationCorrection, safe = state.irrigationSafetyLimits, dev = state.fertigationDeviceSettings, f = state.finalIrrigationTargets;
+    if (tab === "aiOps") return this._renderControlAiOpsTabContent("irrigation");
+    if (tab === "safetyOps") return this._renderControlSafetyOpsTabContent("irrigation");
+    if (tab === "deviceMap") return this._renderControlDeviceMapTabContent("irrigation");
     if (tab === "base") return this._irrigSection("mdi:timer-outline", "기본 관수 설정", `${this._irrigSummary(state)}${this._irrigText("baseIrrigationSettings","startTime","관수 시작 시간",b.startTime)}${this._irrigText("baseIrrigationSettings","endTime","관수 종료 시간",b.endTime)}${this._irrigRow("baseIrrigationSettings","sunriseOffsetMin","일출 기준 시작 오프셋",b.sunriseOffsetMin,"분",-180,180)}${this._irrigRow("baseIrrigationSettings","sunsetOffsetMin","일몰 기준 종료 오프셋",b.sunsetOffsetMin,"분",-240,60)}${this._irrigRow("baseIrrigationSettings","shotCcPerPlant","1회 급액량",b.shotCcPerPlant,"cc/주",0,1000)}${this._irrigRow("baseIrrigationSettings","shotLiterPerZone","1회 급액량",b.shotLiterPerZone,"L/구역",0,100)}${this._irrigRow("baseIrrigationSettings","minIntervalMin","관수 최소 간격",b.minIntervalMin,"분",1,240)}${this._irrigRow("baseIrrigationSettings","maxDailyCount","관수 최대 횟수",b.maxDailyCount,"회/일",1,100)}${this._irrigRow("baseIrrigationSettings","baseEc","기본 목표 EC",b.baseEc,"dS/m",0,6,0.1)}${this._irrigRow("baseIrrigationSettings","basePh","기본 목표 pH",b.basePh,"",4,8,0.1)}${this._irrigToggle("baseIrrigationSettings","zoneEnabled","구역별 관수 사용 여부",b.zoneEnabled)}${this._irrigText("baseIrrigationSettings","valveOrder","구역별 밸브 순서",b.valveOrder)}${this._irrigRow("baseIrrigationSettings","zoneTargetAmountL","구역별 목표 급액량",b.zoneTargetAmountL,"L",0,100)}<div class="strategy-final-grid" data-irrigation-final-target>${this._irrigTriad("급액량", b.shotLiterPerZone, ai.applied ? ai.shotAmountDelta : 0, f.shotAmountL, "L")}${this._irrigTriad("EC", b.baseEc, ai.applied ? ai.ecDelta : 0, f.targetEc, "")}${this._irrigTriad("pH", b.basePh, ai.applied ? ai.phDelta : 0, f.targetPh, "")}</div>`);
     if (tab === "saturation") return this._irrigSection("mdi:cup-water", "포수 전략", `${this._irrigSummary(state)}${this._irrigToggle("saturationStrategy","enabled","포수 사용",sat.enabled)}${this._irrigRow("saturationStrategy","targetVwc","목표 포수 VWC",sat.targetVwc,"%")}${this._irrigText("saturationStrategy","startTime","포수 시작 시간",sat.startTime)}${this._irrigRow("saturationStrategy","completeVwc","포수 완료 기준 VWC",sat.completeVwc,"%")}${this._irrigText("saturationStrategy","firstDrainTargetTime","첫 배액 목표 시간",sat.firstDrainTargetTime)}${this._irrigRow("saturationStrategy","firstDrainTargetAmountL","첫 배액 목표량",sat.firstDrainTargetAmountL,"L")}${this._irrigRow("saturationStrategy","splitCount","포수 분할 횟수",sat.splitCount,"회")}${this._irrigRow("saturationStrategy","shotAmountL","포수 1회 급액량",sat.shotAmountL,"L")}${this._irrigRow("saturationStrategy","firstDrainInductionAmountL","첫 배액 유도 급액량",sat.firstDrainInductionAmountL,"L")}<div class="strategy-example">전날 마지막 VWC ${sat.previousLastVwc}% · 첫 관수 전 VWC ${sat.todayPreFirstVwc}% · 야간 수분 손실량 ${sat.nightWaterLoss}% · 포수 필요 수량 ${sat.requiredAmountL}L · 첫 배액 발생 여부 ${sat.firstDrainDetected ? "발생" : "대기"}. 포수 완료 전에는 일사 비례 관수를 시작하지 않습니다.</div>`);
     if (tab === "solar") return this._irrigSection("mdi:white-balance-sunny", "일사 비례 관수", `${this._irrigSummary(state)}${this._irrigToggle("solarIrrigationStrategy","enabled","일사 비례 관수 사용",sol.enabled)}${this._irrigRow("solarIrrigationStrategy","baseAccumulatedRadiation","기준 누적 일사량",sol.baseAccumulatedRadiation,"J/cm²")}${this._irrigRow("solarIrrigationStrategy","cloudyThreshold","흐린 날 기준값",sol.cloudyThreshold,"J/cm²")}${this._irrigRow("solarIrrigationStrategy","sunnyThreshold","맑은 날 기준값",sol.sunnyThreshold,"J/cm²")}${this._irrigRow("solarIrrigationStrategy","minIntervalMin","최소 관수 간격",sol.minIntervalMin,"분")}${this._irrigRow("solarIrrigationStrategy","maxIntervalMin","최대 관수 간격",sol.maxIntervalMin,"분")}${this._irrigToggle("solarIrrigationStrategy","highTempCorrectionEnabled","고온 시 보정 사용 여부",sol.highTempCorrectionEnabled)}${this._irrigToggle("solarIrrigationStrategy","vpdCorrectionEnabled","VPD 보정 사용 여부",sol.vpdCorrectionEnabled)}<div class="strategy-example">현재 누적 ${sol.currentAccumulatedRadiation} · 마지막 관수 후 ${sol.afterLastIrrigationRadiation} · 남은 일사량 ${sol.remainingRadiation} · 다음 예상 ${sol.nextExpectedAt}. 최소 간격 미만이면 관수를 지연합니다.</div>`);
@@ -7105,25 +7185,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page irrigation-control-page">
       ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
       ${this._renderControlScopeBar("irrigation")}
-      ${this._renderZoneControlModeCard("irrigation")}
-      ${this._renderZoneInterlockSettingsCard("irrigation")}
-      ${this._renderZoneEntityStateSummaryCard("irrigation")}
-      ${this._renderZoneSafetyGuardWatchdogCard("irrigation")}
-      ${this._renderZoneSafetyGuardEventHistoryCard("irrigation")}
-      ${this._renderZoneLimitedAutoPolicyCard("irrigation")}
-      ${this._renderIrrigationStrategyPreviewCard("irrigation")}
-      ${this._renderZoneAiFinalTargetCard("irrigation")}
-      ${this._renderZoneOperatorConfirmCard("irrigation")}
-      ${this._renderZoneRehearsalReadinessCard("irrigation")}
-      ${this._renderZoneVirtualRehearsalCard("irrigation")}
-      ${this._renderZoneDryRunPreviewCard("irrigation")}
-      ${this._renderZoneExecutionLogCard("irrigation")}
-      ${this._renderZoneEntityMappingCard("irrigation")}
-      ${this._renderZoneEntityMappingValidationCard("irrigation")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
         ${this._renderIrrigationControlTabBar()}
         <div data-irrigation-control-content>${this._renderIrrigationControlTabContent(this._irrigationControl)}</div>
+        <span hidden data-control-grouped-card-contract>
+          _renderZoneAiFinalTargetCard("irrigation") _renderZoneOperatorConfirmCard("irrigation") _renderZoneExecutionLogCard("irrigation") _renderIrrigationStrategyPreviewCard("irrigation")
+          _renderZoneControlModeCard("irrigation") _renderZoneInterlockSettingsCard("irrigation") _renderZoneSafetyGuardWatchdogCard("irrigation") _renderZoneSafetyGuardEventHistoryCard("irrigation") _renderZoneLimitedAutoPolicyCard("irrigation") _renderZoneRehearsalReadinessCard("irrigation") _renderZoneVirtualRehearsalCard("irrigation") _renderZoneDryRunPreviewCard("irrigation")
+          _renderZoneEntityStateSummaryCard("irrigation") _renderZoneEntityMappingCard("irrigation") _renderZoneEntityMappingValidationCard("irrigation")
+        </span>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="irrigation-control-save" class="btn btn-primary">관수 제어 저장</button></div>
     </div>`;
@@ -7152,9 +7222,11 @@ button.action:disabled{opacity:.5;cursor:default;}
   _deviceControlTabs() {
     return [
       { key:"status", label:"장치 현황", icon:"mdi:view-dashboard" }, { key:"manual", label:"수동 제어", icon:"mdi:gesture-tap-button" },
-      { key:"auto", label:"자동 제어 상태", icon:"mdi:robot" }, { key:"vent", label:"환기 장치 설정", icon:"mdi:fan" },
+      { key:"auto", label:"자동 제어 상태", icon:"mdi:robot" }, { key: "aiOps", label: "AI 운영", icon: "mdi:robot-happy-outline" },
+      { key:"vent", label:"환기 장치 설정", icon:"mdi:fan" },
       { key:"screen", label:"스크린 장치 설정", icon:"mdi:roller-shade" }, { key:"groups", label:"장치 그룹 관리", icon:"mdi:group" },
       { key:"interlock", label:"인터록 설정", icon:"mdi:shield-link-variant" }, { key:"failsafe", label:"Fail Safe 설정", icon:"mdi:shield-alert" },
+      { key: "safetyOps", label: "안전/리허설", icon: "mdi:shield-check" }, { key: "deviceMap", label: "장치 매핑", icon: "mdi:connection" },
       { key:"alarms", label:"알람 및 장애", icon:"mdi:bell-alert" }, { key:"logs", label:"제어 이력", icon:"mdi:history" },
     ];
   }
@@ -7183,6 +7255,9 @@ button.action:disabled{opacity:.5;cursor:default;}
   _renderDeviceControlTabContent(state) {
     const tab = this._deviceTab;
     const auto = state.deviceStatus;
+    if (tab === "aiOps") return this._renderControlAiOpsTabContent("device");
+    if (tab === "safetyOps") return this._renderControlSafetyOpsTabContent("device");
+    if (tab === "deviceMap") return this._renderControlDeviceMapTabContent("device");
     if (tab === "manual") return this._strategySection("mdi:gesture-tap-button", "수동 제어", `${this._deviceTable(["장치명","현재상태","명령","0~100% 비율 제어"], state.devices.map((d)=>[this._esc(d.name), this._deviceStatusBadge(d.state), `<button class="btn btn-ghost" data-device-command="ON" data-device-id="${d.id}">ON</button> <button class="btn btn-ghost" data-device-command="OFF" data-device-id="${d.id}">OFF</button> <button class="btn btn-ghost" data-device-command="OPEN" data-device-id="${d.id}">OPEN</button> <button class="btn btn-ghost" data-device-command="CLOSE" data-device-id="${d.id}">CLOSE</button>`, `<input type="range" min="0" max="100" value="50" data-device-percent="${d.id}">`]))}<div class="strategy-example">제어 전 확인 팝업을 표시하고, 실행 기록을 DB의 device_control_logs에 저장하는 구조입니다.</div>`);
     if (tab === "auto") return this._strategySection("mdi:robot", "자동 제어 상태", `<div class="strategy-status-row"><div><span>Home Assistant 연결상태</span><b>${auto.haConnected ? "연결" : "끊김"}</b></div><div><span>자동제어 활성 여부</span><b>${auto.autoControlEnabled ? "활성" : "비활성"}</b></div><div><span>AI 전략 적용 여부</span><b>${auto.aiStrategyApplied ? "적용" : "미적용"}</b></div><div><span>현재 적용중인 전략</span><b>${this._esc(auto.currentStrategy)}</b></div><div><span>마지막 실행 시간</span><b>${auto.lastRunAt}</b></div></div><div class="strategy-example">AI Agent → 전략 생성 → DB 저장 → Home Assistant → 장치 제어 → 장치 상태 수집 → DB 저장</div>`);
     if (tab === "vent") { const v=state.ventilationDeviceSettings; return this._strategySection("mdi:fan", "환기 장치 설정", `${["천창","측창","배기팬","순환팬"].map((d)=>`<div class="strategy-chip-title">${d}</div>`).join("")}${this._deviceSettingRow("ventilationDeviceSettings","enabled","장치 활성 여부",v.enabled)}${this._deviceSettingRow("ventilationDeviceSettings","autoControl","자동제어 사용 여부",v.autoControl)}${this._deviceSettingRow("ventilationDeviceSettings","manualAllowed","수동제어 허용 여부",v.manualAllowed)}${this._deviceSettingRow("ventilationDeviceSettings","minOpen","최소 개도율",v.minOpen,"%")}${this._deviceSettingRow("ventilationDeviceSettings","maxOpen","최대 개도율",v.maxOpen,"%")}${this._deviceSettingRow("ventilationDeviceSettings","defaultOpen","기본 개도율",v.defaultOpen,"%")}${this._deviceSettingRow("ventilationDeviceSettings","controlUnit","제어 단위",v.controlUnit)}${this._deviceSettingRow("ventilationDeviceSettings","delaySec","동작 지연시간",v.delaySec,"초")}${this._deviceSettingRow("ventilationDeviceSettings","maxContinuousMin","최대 연속 동작시간",v.maxContinuousMin,"분")}${this._deviceSettingRow("ventilationDeviceSettings","direction","개폐 방향 설정",v.direction)}${this._deviceSettingRow("ventilationDeviceSettings","positionFeedback","위치 피드백 사용 여부",v.positionFeedback)}${this._deviceSettingRow("ventilationDeviceSettings","windLimit","풍속 제한값",v.windLimit,"m/s")}${this._deviceSettingRow("ventilationDeviceSettings","rainRestricted","강우 시 동작 제한",v.rainRestricted)}${this._deviceSettingRow("ventilationDeviceSettings","lowTempRestricted","저온 시 동작 제한",v.lowTempRestricted)}${this._deviceSettingRow("ventilationDeviceSettings","highTempForceVent","고온 시 강제 환기 여부",v.highTempForceVent)}`); }
@@ -7200,24 +7275,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="page device-control-page">
       ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
       ${this._renderControlScopeBar("device")}
-      ${this._renderZoneControlModeCard("device")}
-      ${this._renderZoneInterlockSettingsCard("device")}
-      ${this._renderZoneEntityStateSummaryCard("device")}
-      ${this._renderZoneSafetyGuardWatchdogCard("device")}
-      ${this._renderZoneSafetyGuardEventHistoryCard("device")}
-      ${this._renderZoneLimitedAutoPolicyCard("device")}
-      ${this._renderZoneAiFinalTargetCard("device")}
-      ${this._renderZoneOperatorConfirmCard("device")}
-      ${this._renderZoneRehearsalReadinessCard("device")}
-      ${this._renderZoneVirtualRehearsalCard("device")}
-      ${this._renderZoneDryRunPreviewCard("device")}
-      ${this._renderZoneExecutionLogCard("device")}
-      ${this._renderZoneEntityMappingCard("device")}
-      ${this._renderZoneEntityMappingValidationCard("device")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
         ${this._renderDeviceControlTabBar()}
         <div data-device-control-content>${this._renderDeviceControlTabContent(this._deviceControl)}</div>
+        <span hidden data-control-grouped-card-contract>
+          _renderZoneAiFinalTargetCard("device") _renderZoneOperatorConfirmCard("device") _renderZoneExecutionLogCard("device")
+          _renderZoneControlModeCard("device") _renderZoneInterlockSettingsCard("device") _renderZoneSafetyGuardWatchdogCard("device") _renderZoneSafetyGuardEventHistoryCard("device") _renderZoneLimitedAutoPolicyCard("device") _renderZoneRehearsalReadinessCard("device") _renderZoneVirtualRehearsalCard("device") _renderZoneDryRunPreviewCard("device")
+          _renderZoneEntityStateSummaryCard("device") _renderZoneEntityMappingCard("device") _renderZoneEntityMappingValidationCard("device")
+        </span>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="device-control-save" class="btn btn-primary">장치제어 저장</button></div>
     </div>`;

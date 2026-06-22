@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.31`
+> 기준 버전: `v1.9.32`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.31` |
+| 현재 version | `1.9.32` |
 
 작업 시 우선순위:
 
@@ -985,7 +985,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.31 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.32 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 
@@ -1005,6 +1005,41 @@ _patchZoneControlElementCards(domain)
 - API hydration은 in-flight guard로 1회 묶음
 - 응답마다 `_update()` 금지
 - hydration settle 후 dirty editor가 없으면 카드 단위 patch
+
+---
+
+### 11.6 v1.9.32 생육 AI 전략/제어 페이지 정보 구조 contract
+
+v1.9.32 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
+
+작물 관리:
+
+- 하위탭: `작기 설정`, `생육조사`, `AI 전략`, `병해충 예찰`, `방제 기록`
+- `생육조사` 탭: 생육조사 기록 목록/등록/수정/삭제/내보내기에 집중한다.
+- `AI 전략` 탭: `_renderGrowthReportCard()`를 렌더링해 생육 리포트, G-Index, 수확량 예측, 병해 위험 분석을 모아 보여준다.
+- 주간 리포트 알림: `data-weekly-report-notification-toggle` 버튼으로 제공하며 체크박스를 사용하지 않는다.
+- 알림 상태 색상: ON `#f5a623` + `mdi:bell-ring-outline`, OFF `#9aa6a0` + `mdi:bell-off-outline`
+- 리포트 새로고침: `data-growth-report-refresh` 클릭 시 `_refreshWeeklyGrowthReportFromButton()`이 `_fetchGrowthReport()`를 호출하고, 작업 중 `is-spinning` / `gs-spin` 회전 모션을 적용한다.
+
+환경/관수/장치 제어 공통:
+
+- 최상단 범위 선택은 `_renderControlScopeBar(domain)` 안에서 `_renderControlSeasonCard(domain)`을 호출한다.
+- `_renderControlSeasonCard(domain)`은 `_renderCropSeasonLikeControlScope(domain)`으로 작물 설정의 작기 선택 카드와 같은 카드형 시각 언어를 사용한다.
+- 상단 과밀 카드들은 페이지 본문 상단에 펼쳐두지 않고 하위탭 내부로 정리한다.
+
+제어 하위탭 정리:
+
+| 페이지 | 신규/정리 탭 | 포함 카드 |
+|---|---|---|
+| 환경 제어 | `AI 운영` | 환경 전략 preview, AI 최종 적용값, 운영자 확인, 실행 로그 |
+| 환경 제어 | `안전/리허설` | ControlMode, Interlock, SafetyGuard watchdog/event, 제한적 자동제어, readiness, virtual rehearsal, dry-run |
+| 환경 제어 | `장치 매핑` | entity 상태 요약, entity mapping, mapping validation |
+| 관수 제어 | `AI 운영` | 관수 전략 preview, AI 최종 적용값, 운영자 확인, 실행 로그 |
+| 관수 제어 | `안전/리허설` | ControlMode, Interlock, SafetyGuard, 제한적 자동제어, readiness, virtual rehearsal, dry-run |
+| 관수 제어 | `장치 매핑` | entity 상태 요약, entity mapping, mapping validation |
+| 장치 제어 | `AI 운영` | AI 최종 적용값, 운영자 확인, 실행 로그 |
+| 장치 제어 | `안전/리허설` | ControlMode, Interlock, SafetyGuard, 제한적 자동제어, readiness, virtual rehearsal, dry-run |
+| 장치 제어 | `장치 매핑` | entity 상태 요약, entity mapping, mapping validation |
 
 ---
 
