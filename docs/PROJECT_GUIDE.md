@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.29` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 137 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.30` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 138 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -64,6 +64,7 @@
 | 현장 리허설 readiness | Control Phase C18 완료 |
 | 가상 장치 리허설/가상 HA 엔티티 | Control Phase C19/C19B 완료 |
 | 관수설정 초기 진입 no-flicker hydration | Control Phase C19C 완료 |
+| 가상 리허설 시나리오 증거 리포트 | Control Phase C19D 완료 |
 | 생육 리포트와 예측 | Product Phase 6 baseline 완료 |
 | 제한적 실제 현장 리허설 | Control Phase C20 남음 |
 | 실제 장비 연결/운영 Runbook | Control Phase C21 남음 |
@@ -238,7 +239,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.29"
+  "version": "1.9.30"
 }
 ```
 
@@ -484,7 +485,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.29"
+const VERSION = "1.9.30"
 ```
 
 중요 UI 페이지:
@@ -1079,6 +1080,24 @@ virtualRehearsalStatus
 virtualScenarioResults
 simulatedServiceCalls
 simulatedSensorStates
+virtualRehearsalEvidence
+scenarioPassCount
+scenarioFailCount
+scenarioPassRate
+c20GateStatus
+c20GateReason
+c20ReadyAfterVirtualPass
+virtual_rehearsal_evidence_generated
+```
+
+Control Phase C19D 가상 리허설 시나리오 증거 리포트 baseline:
+
+```text
+_virtual_rehearsal_evidence_report
+virtualRehearsalEvidence.evidenceRows
+normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery
+C20 제한적 실제 현장 리허설 전 가상 시나리오 증거
+실제 장비 연결 금지
 ```
 
 실제 장비 연결 원칙:
@@ -1469,7 +1488,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.29
+v1.9.30
 ```
 
 ---

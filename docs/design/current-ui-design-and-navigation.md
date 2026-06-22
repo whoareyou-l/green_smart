@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.29`
+> 기준 버전: `v1.9.30`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.29` |
+| 현재 version | `1.9.30` |
 
 작업 시 우선순위:
 
@@ -768,6 +768,20 @@ cover.green_smart_virtual_environment_ventilation
 switch.green_smart_virtual_environment_irrigation_pump
 ```
 
+C19D evidence marker:
+
+```text
+_virtualRehearsalEvidenceText(data)
+data-zone-virtual-rehearsal-evidence-row
+data-zone-virtual-rehearsal-evidence-copy
+data-zone-virtual-rehearsal-pass-rate
+data-zone-virtual-rehearsal-c20-gate
+가상 시나리오 증거
+C20 gate
+normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery
+실제 장비 연결 금지
+```
+
 ### 9.13 Dry Run UI 카드
 
 렌더 함수: `_renderZoneDryRunPreviewCard(domain)`
@@ -971,7 +985,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.29 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.30 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 

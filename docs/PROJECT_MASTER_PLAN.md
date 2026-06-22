@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.29`, Product Phase 6 weekly report export/notification baseline
+> 기준 버전: product code `v1.9.30`, Control Phase C19D virtual rehearsal evidence baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -301,10 +301,11 @@ G-Index 추이 baseline
 | C19 | 완료 | 가상 장치 기반 리허설 테스트 하네스 | 실제 장비 연결 전 인터록·운영 알고리즘·UI/운영자 UX 시뮬레이션 |
 | C19B | 완료 | 가상 HA 엔티티 생성 | virtual mode에서 sensor/binary_sensor/switch/cover 엔티티 생성 |
 | C19C | 완료 | 관수설정 초기 진입 no-flicker hydration | 초기 API hydration은 in-flight/patchOnly로 묶고 전체 재렌더 없이 카드 단위 갱신 |
+| C19D | 완료 | 가상 리허설 시나리오 증거 리포트 | 정상/강풍/강우/저온/센서 고장/차단/Fail Safe/복구 가상 시나리오 pass-rate와 C20 gate 증거 표시 |
 | C20 | 남음 | 제한적 실제 현장 리허설 | C19 가상 리허설 통과 후 정상/강풍/고장/차단/복구 실제 현장 검증 |
 | C21 | 남음 | 실제 장비 연결/운영 Runbook | mapping, safe_state, dry run, 긴급정지, 복구 절차와 physical device 연결 절차 문서화 |
 
-운영 안정성 기준으로는 `C14~C19C` 완료 상태이며, **가상 HA 엔티티 기반 리허설 테스트 하네스와 관수설정 no-flicker hydration**까지 도달했다. 실제 장비 연결은 아직 금지이며, 인터록·운영 알고리즘·UI/운영자 UX가 가상 장치/시뮬레이션에서 충분히 검증된 뒤 C20 제한적 실제 현장 리허설로 넘어간다. 제품 기능 기준으로는 다음 큰 기능이 `Phase 6 — 생육 리포트와 예측`이다.
+운영 안정성 기준으로는 `C14~C19D` 완료 상태이며, **가상 HA 엔티티 기반 리허설 테스트 하네스, 관수설정 no-flicker hydration, C20 gate 전 가상 시나리오 증거 리포트**까지 도달했다. 실제 장비 연결은 아직 금지이며, 인터록·운영 알고리즘·UI/운영자 UX가 가상 장치/시뮬레이션에서 충분히 검증된 뒤 C20 제한적 실제 현장 리허설로 넘어간다. 제품 기능 기준으로는 `Phase 6 — 생육 리포트와 예측` baseline 완료 상태다.
 
 ## 7. 작업 원칙
 

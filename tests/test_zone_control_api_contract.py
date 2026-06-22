@@ -1657,6 +1657,41 @@ def test_control_phase_c19_virtual_device_rehearsal_harness_contract():
 
 
 
+def test_control_phase_c19d_virtual_rehearsal_evidence_report_contract():
+    source = VIEWS.read_text(encoding="utf-8")
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for api_marker in (
+        "_virtual_rehearsal_evidence_report",
+        "virtualRehearsalEvidence",
+        "scenarioPassCount",
+        "scenarioFailCount",
+        "scenarioPassRate",
+        "c20GateStatus",
+        "c20GateReason",
+        "c20ReadyAfterVirtualPass",
+        "virtual_rehearsal_evidence_generated",
+        "normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery",
+        "실제 장비 연결 금지",
+        "C20 제한적 실제 현장 리허설 전 가상 시나리오 증거",
+    ):
+        assert api_marker in source
+
+    for panel_marker in (
+        "_virtualRehearsalEvidenceText(data)",
+        "data-zone-virtual-rehearsal-evidence-row",
+        "data-zone-virtual-rehearsal-evidence-copy",
+        "data-zone-virtual-rehearsal-pass-rate",
+        "data-zone-virtual-rehearsal-c20-gate",
+        "가상 시나리오 증거",
+        "C20 gate",
+        "실제 장비 연결 금지",
+        "normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery",
+    ):
+        assert panel_marker in panel_source
+
+
+
 def test_control_phase_c19b_virtual_ha_entities_contract():
     init_source = INIT.read_text(encoding="utf-8")
     source = VIEWS.read_text(encoding="utf-8")

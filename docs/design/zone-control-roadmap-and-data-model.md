@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.29` / Product Phase 6 baseline 완료, Control Phase C19C 완료
+> 기준 버전: `v1.9.30` / Product Phase 6 baseline 완료, Control Phase C19D 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -77,8 +77,9 @@ farm_id + crop_season_id + zone_id + domain
 | C19 | 완료 | 가상 장치 기반 리허설 테스트 하네스 |
 | C19B | 완료 | 가상 HA 엔티티 생성 |
 | C19C | 완료 | 관수설정 초기 진입 no-flicker hydration |
+| C19D | 완료 | 가상 리허설 시나리오 증거 리포트 |
 
-현재 상태는 **제어 데이터 저장 → final target 실행 → 안전 차단 → 로그 확인 → Dry Run → 가상 HA 엔티티 기반 리허설 → 관수설정 no-flicker hydration**까지 구조적으로 연결된 상태다. 실제 장비 연결은 아직 금지이며, 제한적 실제 현장 리허설과 운영 Runbook이 다음 안정화 단계다.
+현재 상태는 **제어 데이터 저장 → final target 실행 → 안전 차단 → 로그 확인 → Dry Run → 가상 HA 엔티티 기반 리허설 → 관수설정 no-flicker hydration → C20 gate 전 가상 시나리오 증거 리포트**까지 구조적으로 연결된 상태다. 실제 장비 연결은 아직 금지이며, 제한적 실제 현장 리허설과 운영 Runbook이 다음 안정화 단계다.
 
 ---
 
@@ -689,7 +690,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.29` 기준으로 가능한 것:
+현재 `v1.9.30` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장

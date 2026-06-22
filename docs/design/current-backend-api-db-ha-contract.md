@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.29`
+> 기준 버전: `v1.9.30`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.29"
+  "version": "1.9.30"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.29` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.30` |
 
 ### 4.2 WebSocket commands
 
@@ -983,8 +983,24 @@ POST /api/green_smart/zones/virtual-rehearsal
 ```json
 {
   "virtualDeviceOnly": true,
-  "physicalDeviceConnectionAllowed": false
+  "physicalDeviceConnectionAllowed": false,
+  "scenarioPassCount": 7,
+  "scenarioFailCount": 0,
+  "scenarioPassRate": 1.0,
+  "c20GateStatus": "virtual_passed_review_required",
+  "c20ReadyAfterVirtualPass": true,
+  "virtualRehearsalEvidence": {
+    "coverage": "normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery",
+    "message": "C20 제한적 실제 현장 리허설 전 가상 시나리오 증거: 실제 장비 연결 금지"
+  }
 }
+```
+
+로그 action:
+
+```text
+virtual_rehearsal_executed
+virtual_rehearsal_evidence_generated
 ```
 
 ### 16.3 Virtual entity platforms

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.29
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.30
 const DOMAIN = "green_smart";
-const VERSION = "1.9.29";
+const VERSION = "1.9.30";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -6481,6 +6481,19 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _virtualRehearsalEvidenceText(data) {
+    const evidence = data?.virtualRehearsalEvidence || {};
+    const rows = evidence.evidenceRows || [];
+    return [
+      `가상 시나리오 증거 · ${data?.domain || "-"}`,
+      `coverage: ${evidence.coverage || "normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery"}`,
+      `pass: ${evidence.scenarioPassCount ?? data?.scenarioPassCount ?? 0}/${evidence.scenarioCount ?? rows.length}`,
+      `C20 gate: ${evidence.c20GateStatus || data?.c20GateStatus || "blocked_by_virtual_rehearsal"}`,
+      `실제 장비 연결 금지: ${data?.physicalDeviceConnectionAllowed ? "주의" : "유지"}`,
+      ...rows.map((row) => `- ${row.scenarioId}: ${row.status} · ${row.expected || "-"} · sensors ${row.sensorStateCount ?? 0} · calls ${row.simulatedCallCount ?? 0}`),
+    ].join("\n");
+  }
+
   _renderZoneVirtualRehearsalCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const data = this._zoneVirtualRehearsalCache?.[cacheKey] || null;
@@ -6489,19 +6502,27 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div class="strategy-muted">시뮬레이션: ${this._esc(item.expected || "-")} · ${this._esc(item.interlock || item.operatorUx || "가상 장치/가상 센서")}</div>
       ${(item.simulatedServiceCalls || []).map((call) => `<div data-zone-virtual-rehearsal-call-row class="strategy-muted">가상 service call: ${this._esc(call.service)} · ${this._esc(call.entityId || call.serviceData?.entity_id || "-")}</div>`).join("")}
     </div>`).join("");
+    const evidence = data?.virtualRehearsalEvidence || null;
+    const evidenceRows = (evidence?.evidenceRows || []).map((row) => `<div data-zone-virtual-rehearsal-evidence-row style="border-top:1px solid #e6ecff;padding:7px 0;font-size:12px;">
+      <b>${this._esc(row.label || row.scenarioId)}</b> · ${this._esc(row.status || "-")} · ${this._esc(row.expected || "-")} · sensors ${this._esc(row.sensorStateCount ?? 0)} · calls ${this._esc(row.simulatedCallCount ?? 0)}
+    </div>`).join("");
     return `<div class="gs-card" data-zone-virtual-rehearsal-card data-zone-virtual-rehearsal-domain="${domain}" style="padding:16px;margin-bottom:12px;border:1px solid #c9d8ff;background:#fbfdff;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
         <div><b>가상 장치 리허설</b><div class="strategy-muted">가상 장치 · 가상 센서 · 시뮬레이션 · 인터록 · 운영 알고리즘 · UI/운영자 UX · 실제 장비 연결 금지</div></div>
-        <button class="mini-btn primary" data-zone-virtual-rehearsal-run data-zone-virtual-rehearsal-domain="${domain}">가상 리허설 실행</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="mini-btn" data-zone-virtual-rehearsal-evidence-copy data-zone-virtual-rehearsal-domain="${domain}">증거 복사</button><button class="mini-btn primary" data-zone-virtual-rehearsal-run data-zone-virtual-rehearsal-domain="${domain}">가상 리허설 실행</button></div>
       </div>
       <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:8px;">
         <div>상태 <b>${this._esc(data?.virtualRehearsalStatus || "대기")}</b></div>
         <div>physical gate <b>${data?.physicalDeviceConnectionAllowed ? "허용" : "금지"}</b></div>
         <div>sim calls <b>${this._esc((data?.simulatedServiceCalls || []).length)}</b></div>
         <div>sensor states <b>${this._esc(Object.keys(data?.simulatedSensorStates || {}).length)}</b></div>
+        <div data-zone-virtual-rehearsal-pass-rate>pass rate <b>${this._esc(data?.scenarioPassRate ?? "-")}</b></div>
+        <div data-zone-virtual-rehearsal-c20-gate>C20 gate <b>${this._esc(data?.c20GateStatus || "blocked_by_virtual_rehearsal")}</b></div>
       </div>
       <div class="strategy-muted" style="margin-bottom:8px;">가상 HA 엔티티: <code>sensor.green_smart_virtual_environment_wind_speed</code> · <code>cover.green_smart_virtual_environment_ventilation</code> · <code>switch.green_smart_virtual_environment_irrigation_pump</code> · Entity 상태 요약에서 확인</div>
       <div class="strategy-muted" style="margin-bottom:8px;">${this._esc(data?.physicalDeviceGate || "실제 장비 연결 금지: 가상 장치/시뮬레이션 통과 전 physical device 연결 금지")}</div>
+      <div class="strategy-muted" style="margin-bottom:8px;">가상 시나리오 증거: ${this._esc(evidence?.coverage || "normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery")} · ${this._esc(data?.c20GateReason || "C20 gate는 가상 증거 통과 후에도 별도 승인 필요")}</div>
+      ${evidenceRows}
       ${scenarioRows || `<div class="strategy-muted">가상 리허설 실행을 누르면 정상/강풍/강우/저온/센서 고장/Fail Safe/복구 시나리오를 가상 장치로 검증합니다.</div>`}
     </div>`;
   }
@@ -7539,6 +7560,21 @@ button.action:disabled{opacity:.5;cursor:default;}
         const res = await this._runZoneVirtualRehearsal(domain);
         if (!res) alert("가상 장치 리허설 실패: 가상 센서/인터록/운영 알고리즘/UI 설정을 확인하세요.");
         if (res?.physicalDeviceConnectionAllowed) alert("주의: 실제 장비 연결 gate가 열려 있습니다. 별도 승인 전에는 연결하지 마세요.");
+      });
+    });
+    root.querySelectorAll("[data-zone-virtual-rehearsal-evidence-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.zoneVirtualRehearsalDomain || "environment";
+        const cacheKey = this._scopedControlCacheKey(domain);
+        const data = this._zoneVirtualRehearsalCache?.[cacheKey] || null;
+        const text = this._virtualRehearsalEvidenceText(data || { domain });
+        try {
+          await navigator.clipboard?.writeText(text);
+          this._setControlSaveNotice(domain, "가상 시나리오 증거를 복사했습니다.");
+        } catch (err) {
+          console.warn("가상 리허설 evidence copy fallback", err);
+          alert(text);
+        }
       });
     });
   }

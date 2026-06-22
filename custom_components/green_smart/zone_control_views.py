@@ -2081,6 +2081,45 @@ def _set_virtual_rehearsal_entity_states(hass, catalog: dict, results: list[dict
     # switch.green_smart_virtual_environment_irrigation_pump
     return applied
 
+def _virtual_rehearsal_evidence_report(results: list[dict], *, readiness_status: str | None, domain: str) -> dict:
+    """Build C19D virtual scenario evidence before any C20 limited real field rehearsal."""
+    # Scenario coverage marker: normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery
+    total = len(results)
+    passed_items = [item for item in results if item.get("status") == "passed"]
+    failed_items = [item for item in results if item.get("status") != "passed"]
+    pass_count = len(passed_items)
+    fail_count = len(failed_items)
+    pass_rate = round(pass_count / total, 3) if total else 0
+    c20_ready = total > 0 and fail_count == 0
+    return {
+        "domain": domain,
+        "scenarioPassCount": pass_count,
+        "scenarioFailCount": fail_count,
+        "scenarioCount": total,
+        "scenarioPassRate": pass_rate,
+        "c20ReadyAfterVirtualPass": c20_ready,
+        "c20GateStatus": "virtual_passed_review_required" if c20_ready else "blocked_by_virtual_rehearsal",
+        "c20GateReason": "C20 제한적 실제 현장 리허설 전 가상 시나리오 증거 확보; 실제 장비 연결 금지" if c20_ready else "가상 시나리오 실패 또는 미실행으로 C20 gate 차단; 실제 장비 연결 금지",
+        "coverage": "normal/strong-wind/rain/low-temp/sensor-fault/blocked/Fail Safe/recovery",
+        "readinessStatus": readiness_status,
+        "evidenceRows": [
+            {
+                "scenarioId": item.get("id"),
+                "label": item.get("label"),
+                "status": item.get("status"),
+                "expected": item.get("expected"),
+                "sensorStateCount": len(item.get("simulatedSensorStates") or {}),
+                "simulatedCallCount": len(item.get("simulatedServiceCalls") or []),
+                "interlock": item.get("interlock"),
+                "operatorUx": item.get("operatorUx"),
+                "physicalDeviceConnectionAllowed": False,
+            }
+            for item in results
+        ],
+        "message": "C20 제한적 실제 현장 리허설 전 가상 시나리오 증거: 실제 장비 연결 금지",
+        "auditAction": "virtual_rehearsal_evidence_generated",
+    }
+
 
 async def _virtual_rehearsal_run_response(hass, *, farm_id: int, crop_season_id: int, zone_id: int, domain: str) -> dict:
     readiness = await _rehearsal_readiness_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
@@ -2091,6 +2130,7 @@ async def _virtual_rehearsal_run_response(hass, *, farm_id: int, crop_season_id:
         results.append({**scenario, "status": status, "virtualDeviceOnly": True, "physicalDeviceConnectionAllowed": False})
     virtual_entity_states = _set_virtual_rehearsal_entity_states(hass, catalog, results)
     passed = all(item.get("status") == "passed" for item in results)
+    evidence = _virtual_rehearsal_evidence_report(results, readiness_status=readiness.get("scenarioReadinessStatus"), domain=domain)
     return {
         "ok": True,
         "farmId": farm_id,
@@ -2101,6 +2141,13 @@ async def _virtual_rehearsal_run_response(hass, *, farm_id: int, crop_season_id:
         "physicalDeviceGate": catalog["physicalDeviceGate"],
         "physicalDeviceConnectionAllowed": False,
         "virtualRehearsalStatus": "passed" if passed else "failed",
+        "scenarioPassCount": evidence["scenarioPassCount"],
+        "scenarioFailCount": evidence["scenarioFailCount"],
+        "scenarioPassRate": evidence["scenarioPassRate"],
+        "c20GateStatus": evidence["c20GateStatus"],
+        "c20GateReason": evidence["c20GateReason"],
+        "c20ReadyAfterVirtualPass": evidence["c20ReadyAfterVirtualPass"],
+        "virtualRehearsalEvidence": evidence,
         "virtualScenarioResults": results,
         "simulatedServiceCalls": [call for item in results for call in (item.get("simulatedServiceCalls") or [])],
         "simulatedSensorStates": {k: v for item in results for k, v in (item.get("simulatedSensorStates") or {}).items()},
@@ -2133,6 +2180,7 @@ class ZoneVirtualRehearsalView(HomeAssistantView):
             return _err(str(exc))
         response = await _virtual_rehearsal_run_response(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain)
         await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="virtual_rehearsal_executed", before=None, after=response, result=response.get("virtualRehearsalStatus") or "passed", message="가상 장치 시뮬레이션 리허설 executed; 실제 장비 연결 금지 gate 유지")
+        await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action="virtual_rehearsal_evidence_generated", before=None, after=response.get("virtualRehearsalEvidence"), result=response.get("c20GateStatus") or "blocked_by_virtual_rehearsal", message="C20 제한적 실제 현장 리허설 전 가상 시나리오 증거 generated; 실제 장비 연결 금지")
         return _json(response)
 
 def _summarize_control_log_row(row: dict) -> dict:
