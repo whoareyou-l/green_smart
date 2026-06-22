@@ -355,7 +355,7 @@ def test_ui_polish_v1932_control_pages_use_crop_card_style_and_grouped_tabs_cont
     ):
         assert marker in panel
     assert "data-control-scope-summary" in scope_bar
-    assert "_renderControlSeasonCard(domain)" in scope_bar
+    assert "_renderControlZoneTabs(domain)" in scope_bar
 
     for page, tab_marker in (
         (env_page, "data-env-strategy-content"),
@@ -378,6 +378,89 @@ def test_ui_polish_v1932_control_pages_use_crop_card_style_and_grouped_tabs_cont
         "_renderControlDeviceMapTabContent(domain)",
     ):
         assert content_marker in panel
+
+
+def test_ui_polish_v1933_control_zone_cards_are_tab_selectors_with_preset_modal_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    scope_bar = panel.split("  _renderControlScopeBar(domain) {", 1)[1].split("  _cloneControlState", 1)[0]
+    card_helper = panel.split("  _renderControlZoneTabs(domain)", 1)[1].split("  _renderControlPresetModal", 1)[0]
+    preset_modal = panel.split("  _renderControlPresetModal", 1)[1].split("  _bindControlScopeInputs", 1)[0]
+    binder = panel.split("  _bindControlScopeInputs(root)", 1)[1].split("  // ── Dashboard event binding", 1)[0]
+
+    for marker in (
+        "_renderControlZoneTabs(domain)",
+        "data-control-zone-tab-card",
+        "data-control-zone-tab",
+        "data-control-zone-id",
+        "data-control-active-zone",
+        "data-control-preset-open",
+        "프리셋 설정",
+        "_selectControlZoneFromCard(domain, zoneId)",
+        "_openControlPresetModal(domain)",
+        "_renderControlPresetModal(domain)",
+    ):
+        assert marker in panel
+
+    assert "data-control-scope-season" not in scope_bar
+    assert "data-control-scope-zone" not in scope_bar
+    assert "data-control-scope-apply" not in scope_bar
+    assert "data-control-copy-target-zone" not in scope_bar
+    assert "data-control-copy-zone" not in scope_bar
+    assert "data-control-copy-all-zones" not in scope_bar
+    assert "select" not in scope_bar.lower()
+    assert "_renderControlZoneTabs(domain)" in scope_bar
+    assert "재배 상태" in card_helper
+    assert "정식일" in card_helper
+    assert "제어영역" in card_helper
+    assert "마지막 저장" in card_helper
+    assert "_getScopedControlState(domain)" in card_helper
+    assert "active" in card_helper
+    assert "_selectControlZoneFromCard" in binder
+    assert "_openControlPresetModal" in binder
+    assert "data-control-preset-copy-one" in preset_modal
+    assert "data-control-preset-copy-all" in preset_modal
+    assert "data-control-preset-target-zone" in preset_modal
+    assert "_copyScopedControlSettingsViaApi" in preset_modal or "_copyScopedControlSettingsViaApi" in binder
+
+
+def test_admin_system_page_has_real_management_tabs_and_bindings_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    admin_page = panel.split("  _renderAdminSystemPage()", 1)[1].split("  _renderHomePage", 1)[0]
+    binder = panel.split("  _bindAdminSystemInputs(root)", 1)[1].split("  _bindControlScopeInputs", 1)[0]
+
+    for marker in (
+        "_adminSystemTabs()",
+        "_renderAdminSystemTabBar()",
+        "_renderAdminSystemTabContent()",
+        "_bindAdminSystemInputs(root)",
+        "data-admin-system-tab",
+        "data-admin-role-row",
+        "data-admin-role-save",
+        "data-admin-health-refresh",
+        "data-admin-config-save",
+        "data-admin-diagnostic-run",
+        "data-admin-backup-export",
+        "data-admin-audit-log",
+        "_saveAdminRoleMapping",
+        "_saveAdminSystemConfig",
+        "_runAdminDiagnostics",
+        "_exportAdminBackup",
+        "사용자/권한",
+        "연동 상태",
+        "시스템 설정",
+        "진단/백업",
+        "감사 로그",
+        "HA 사용자",
+        "Central API",
+        "MariaDB",
+        "MQTT",
+    ):
+        assert marker in panel
+    assert "data-admin-system-content" in admin_page
+    assert "현재 역할" in admin_page
+    assert "btn.dataset.adminSystemTab" in binder
+    assert "localStorage.setItem(\"green_smart_admin_role_mappings\"" in panel
+    assert "localStorage.setItem(\"green_smart_admin_system_config\"" in panel
 
 
 def test_green_smart_sidebar_offsets_from_ha_sidebar_not_viewport_left():
@@ -569,9 +652,9 @@ def test_control_pages_render_crop_season_zone_scope_bar_for_phase1():
     assert "this._bindControlScopeInputs(root);" in panel
     for page, domain in [(env_page, "environment"), (irrigation_page, "irrigation"), (device_page, "device")]:
         assert f'this._renderControlScopeBar("{domain}")' in page
-    for marker in ["data-control-scope-bar", "data-control-scope-season", "data-control-scope-zone", "data-control-scope-domain"]:
+    for marker in ["data-control-scope-bar", "data-control-zone-tab", "data-control-zone-id", "data-control-scope-domain"]:
         assert marker in panel
-    for label in ["현재 작기", "현재 구역", "적용 범위", "현재 구역만", "전체 구역에 복사"]:
+    for label in ["구역 선택", "탭처럼 선택", "프리셋 설정", "선택 구역에 복사", "전체 구역에 적용"]:
         assert label in panel
 
 
@@ -620,7 +703,7 @@ def test_control_scope_save_ux_shows_current_crop_zone_and_domain_for_phase3():
         "this._controlSaveNotice",
         "data-control-scope-summary",
         "data-control-scope-storage-key",
-        "data-control-save-notice",
+        "data-control-state-bound",
         "저장 대상",
         "작기 + 구역 + 제어영역",
         "green_smart_zone_control_settings",
@@ -644,21 +727,23 @@ def test_control_scope_can_copy_current_zone_settings_for_phase4():
     for required in [
         "  _copyScopedControlSettings(domain, fromZoneId, toZoneId) {",
         "  _copyScopedControlSettingsToAllZones(domain, fromZoneId) {",
-        "data-control-copy-target-zone",
-        "data-control-copy-zone",
-        "data-control-copy-all-zones",
+        "data-control-preset-target-zone",
+        "data-control-preset-copy-one",
+        "data-control-preset-copy-all",
         "복사 대상 구역",
-        "현재 설정 복사",
+        "선택 구역에 복사",
         "전체 구역에 적용",
-        "복사 완료",
+        "프리셋 복사 완료",
     ]:
         assert required in panel
-    assert "data-control-copy-target-zone" in scope_bar
-    assert "data-control-copy-zone" in scope_bar
-    assert "data-control-copy-all-zones" in scope_bar
-    assert "this._copyScopedControlSettings(domain" in binder
-    assert "this._copyScopedControlSettingsToAllZones(domain" in binder
-    assert "confirm(" in binder
+    preset_modal = panel.split("  _renderControlPresetModal", 1)[1].split("  _renderControlScopeBar", 1)[0]
+    assert "data-control-preset-target-zone" in preset_modal
+    assert "data-control-preset-copy-one" in preset_modal
+    assert "data-control-preset-copy-all" in preset_modal
+    modal_binder = panel.split("  _openControlPresetModal(domain) {", 1)[1].split("  _saveAdminRoleMapping", 1)[0]
+    assert "this._copyScopedControlSettings(domain" in modal_binder
+    assert "this._copyScopedControlSettingsToAllZones(domain" in modal_binder
+    assert "_openControlPresetModal(domain)" in binder
     assert "this._setControlSaveNotice(domain)" in panel
 
 

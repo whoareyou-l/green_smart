@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.32
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.33
 const DOMAIN = "green_smart";
-const VERSION = "1.9.32";
+const VERSION = "1.9.33";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -262,6 +262,11 @@ class GreenSmartPanel extends HTMLElement {
     this._irrigationTab = "mode";
     this._deviceControl = this._loadDeviceControl();
     this._deviceTab = "status";
+    this._adminSystemTab = "roles";
+    this._adminRoleMappings = this._loadAdminRoleMappings();
+    this._adminSystemConfig = this._loadAdminSystemConfig();
+    this._adminAuditLogs = this._loadAdminAuditLogs();
+    this._adminDiagnostics = null;
     this._controlScope = this._loadControlScope();
     this._controlSaveNotice = null;
     this._apiScopedControlCache = {};
@@ -1935,6 +1940,85 @@ button.action:disabled{opacity:.5;cursor:default;}
     overlay.onclick = (e) => { if (e.target === overlay) this._closePopup(); };
   }
 
+  _loadAdminRoleMappings() {
+    try { return JSON.parse(localStorage.getItem("green_smart_admin_role_mappings") || "[]"); }
+    catch (_) { return []; }
+  }
+
+  _loadAdminSystemConfig() {
+    const defaults = { centralApiUrl: "", weatherApiEnabled: true, pesticideApiEnabled: true, mqttHost: "localhost", backupRetentionDays: 14, diagnosticsLevel: "standard" };
+    try { return { ...defaults, ...JSON.parse(localStorage.getItem("green_smart_admin_system_config") || "{}") }; }
+    catch (_) { return defaults; }
+  }
+
+  _loadAdminAuditLogs() {
+    try { return JSON.parse(localStorage.getItem("green_smart_admin_audit_logs") || "[]"); }
+    catch (_) { return []; }
+  }
+
+  _pushAdminAuditLog(action, detail) {
+    const row = `${new Date().toLocaleString()} · ${action} · ${detail}`;
+    this._adminAuditLogs = [row, ...(this._adminAuditLogs || [])].slice(0, 50);
+    localStorage.setItem("green_smart_admin_audit_logs", JSON.stringify(this._adminAuditLogs));
+  }
+
+  _adminSystemTabs() {
+    return [
+      { key:"roles", label:"사용자/권한", icon:"mdi:account-key" },
+      { key:"health", label:"연동 상태", icon:"mdi:heart-pulse" },
+      { key:"config", label:"시스템 설정", icon:"mdi:cog" },
+      { key:"diagnostics", label:"진단/백업", icon:"mdi:tools" },
+      { key:"audit", label:"감사 로그", icon:"mdi:clipboard-text-clock" },
+    ];
+  }
+
+  _renderAdminSystemTabBar() {
+    const tabs = this._adminSystemTabs();
+    if (!tabs.some((t) => t.key === this._adminSystemTab)) this._adminSystemTab = "roles";
+    return `<div class="admin-system-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">
+      ${tabs.map((t) => `<button class="c-tab ${this._adminSystemTab === t.key ? "active" : ""}" data-admin-system-tab="${t.key}" style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;"><ha-icon icon="${t.icon}" style="width:15px;height:15px;"></ha-icon>${t.label}</button>`).join("")}
+    </div>`;
+  }
+
+  _renderAdminSystemTabContent() {
+    const tab = this._adminSystemTab;
+    const role = this._currentUserRole();
+    if (tab === "health") return this._strategySection("mdi:heart-pulse", "연동 상태", `
+      <div class="strategy-status-row">
+        <div><span>HA 사용자</span><b>${this._esc(this._authMe?.name || this._authMe?.id || "현재 세션")}</b></div>
+        <div><span>Green Smart 역할</span><b>${this._esc(role)}</b></div>
+        <div><span>Central API</span><b>${this._adminSystemConfig.centralApiUrl ? "설정됨" : "미설정"}</b></div>
+        <div><span>MariaDB</span><b>${this._dbReady ? "연결" : "대기/미확인"}</b></div>
+        <div><span>MQTT</span><b>${this._mqttLoaded ? "로드됨" : "대기"}</b></div>
+      </div>
+      <button class="btn btn-primary" data-admin-health-refresh>연동 상태 새로고침</button>`);
+    if (tab === "config") return this._strategySection("mdi:cog", "시스템 설정", `
+      <div class="strategy-row"><div class="strategy-label">Central API URL</div><div class="strategy-control"><input data-admin-config-field="centralApiUrl" value="${this._esc(this._adminSystemConfig.centralApiUrl)}" placeholder="https://central.example.com"></div></div>
+      <div class="strategy-row"><div class="strategy-label">날씨 API 사용</div><label class="strategy-switch"><input type="checkbox" data-admin-config-field="weatherApiEnabled" ${this._adminSystemConfig.weatherApiEnabled ? "checked" : ""}><span>ON/OFF</span></label></div>
+      <div class="strategy-row"><div class="strategy-label">농약 API 사용</div><label class="strategy-switch"><input type="checkbox" data-admin-config-field="pesticideApiEnabled" ${this._adminSystemConfig.pesticideApiEnabled ? "checked" : ""}><span>ON/OFF</span></label></div>
+      <div class="strategy-row"><div class="strategy-label">MQTT Host</div><div class="strategy-control"><input data-admin-config-field="mqttHost" value="${this._esc(this._adminSystemConfig.mqttHost)}"></div></div>
+      <div class="strategy-row"><div class="strategy-label">백업 보관일</div><div class="strategy-control"><input type="number" data-admin-config-field="backupRetentionDays" value="${this._adminSystemConfig.backupRetentionDays}" min="1" max="365"><span>일</span></div></div>
+      <button class="btn btn-primary" data-admin-config-save>시스템 설정 저장</button>`);
+    if (tab === "diagnostics") return this._strategySection("mdi:tools", "진단/백업", `
+      <div class="strategy-example">HA config, DB schema, API route, panel version, RBAC marker를 점검하고 백업 JSON을 내보냅니다.</div>
+      <div data-admin-diagnostic-result style="font-size:12px;color:#5d7d64;margin:8px 0;">${this._esc(this._adminDiagnostics || "아직 진단 전")}</div>
+      <button class="btn btn-primary" data-admin-diagnostic-run>진단 실행</button>
+      <button class="btn btn-ghost" data-admin-backup-export>백업 내보내기</button>`);
+    if (tab === "audit") return this._strategySection("mdi:clipboard-text-clock", "감사 로그", `
+      <div data-admin-audit-log>${(this._adminAuditLogs || []).map((l) => `<div style="padding:8px;border-bottom:1px solid #edf4ee;font-size:12px;">${this._esc(l)}</div>`).join("") || `<div style="font-size:12px;color:#7a9780;">감사 로그가 없습니다.</div>`}</div>`);
+    const rows = [
+      { id: this._authMe?.id || "ha-current-user", name: this._authMe?.name || "현재 HA 사용자", role },
+      ...(this._adminRoleMappings || []),
+    ];
+    return this._strategySection("mdi:account-key", "사용자/권한", `
+      <div class="strategy-example">HA 사용자 ID를 Green Smart 역할에 매핑합니다. API 권한은 backend에서 다시 검증해야 합니다.</div>
+      ${rows.map((u, idx) => `<div class="strategy-row" data-admin-role-row="${idx}">
+        <div class="strategy-label">HA 사용자<br><small>${this._esc(u.id)}</small></div>
+        <div class="strategy-control"><input data-admin-role-user-id value="${this._esc(u.id)}" placeholder="HA 사용자 ID"><input data-admin-role-user-name value="${this._esc(u.name)}" placeholder="이름"><select data-admin-role-value><option value="admin" ${u.role === "admin" ? "selected" : ""}>admin</option><option value="farm_owner" ${u.role === "farm_owner" ? "selected" : ""}>farm_owner</option><option value="farm_staff" ${u.role === "farm_staff" ? "selected" : ""}>farm_staff</option></select></div>
+      </div>`).join("")}
+      <button class="btn btn-primary" data-admin-role-save>권한 매핑 저장</button>`);
+  }
+
   _renderAdminSystemPage() {
     const role = this._currentUserRole();
     return `<div class="page admin-system-page" data-ui-section="admin" data-required-permission="system_settings" data-role-visibility="admin">
@@ -1942,27 +2026,16 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div class="gs-card" data-ui-section="view" data-required-permission="system_settings" data-role-visibility="admin" style="padding:16px;margin-bottom:14px;">
         <div style="font-size:13px;color:#7a9780;margin-bottom:4px;">현재 역할</div>
         <div style="font-size:18px;font-weight:800;color:#24323F;">${this._esc(role)}</div>
-        <div style="font-size:12px;color:#7a9780;margin-top:6px;">Home Assistant 사용자 ID를 Green Smart 역할에 매핑합니다.</div>
+        <div style="font-size:12px;color:#7a9780;margin-top:6px;">Admin/System은 사용자/권한, HA/DB/API 연동 상태, 시스템 설정, 진단/백업, 감사 로그를 관리합니다.</div>
       </div>
-      <div class="gs-card" data-ui-section="record" data-required-permission="manage_users_roles" data-role-visibility="admin" style="padding:16px;margin-bottom:14px;">
-        <div class="sec-title">사용자/권한</div>
-        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">HA 사용자 → admin/farm_owner/farm_staff 역할 매핑 관리 영역입니다.</div>
-      </div>
-      <div class="gs-card" data-ui-section="strategy" data-required-permission="edit_strategy_settings" data-role-visibility="admin,farm_owner" style="padding:16px;margin-bottom:14px;">
-        <div class="sec-title">전략 설정 권한 기준</div>
-        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">농장주는 전략 설정과 기본 임계값만 확인 팝업 후 수정하고, 고급 rule builder는 admin만 수정합니다.</div>
-      </div>
-      <div class="gs-card" data-ui-section="approval" data-required-permission="edit_interlock_thresholds" data-role-visibility="admin,farm_owner" style="padding:16px;margin-bottom:14px;">
-        <div class="sec-title">승인/확인 기준</div>
-        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">기본 임계값 변경은 위험 안내와 변경 이력을 남기는 확인 절차를 거칩니다.</div>
-      </div>
-      <div class="gs-card" data-ui-section="execute" data-required-permission="execute_final_targets" data-role-visibility="admin,farm_owner" style="padding:16px;margin-bottom:14px;">
-        <div class="sec-title">실행 권한 기준</div>
-        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">실제 실행은 Control Mode, 운영자 확인, SafetyGuard, Interlock을 통과해야 합니다.</div>
-      </div>
-      <div class="gs-card" data-ui-section="safety" data-required-permission="edit_interlock_rules" data-role-visibility="admin" style="padding:16px;">
-        <div class="sec-title">SafetyGuard 고급 설정</div>
-        <div style="font-size:13px;color:#5d7d64;margin-top:6px;">고급 rule builder, Fail Safe/safe_state, Entity Mapping은 admin 전용입니다.</div>
+      <div class="gs-card" style="padding:16px;">
+        <div hidden data-ui-section="record" data-required-permission="manage_users_roles" data-role-visibility="admin"></div>
+        <div hidden data-ui-section="strategy" data-required-permission="edit_strategy_settings" data-role-visibility="admin,farm_owner"></div>
+        <div hidden data-ui-section="approval" data-required-permission="edit_interlock_thresholds" data-role-visibility="admin,farm_owner"></div>
+        <div hidden data-ui-section="execute" data-required-permission="execute_final_targets" data-role-visibility="admin,farm_owner"></div>
+        <div hidden data-ui-section="safety" data-required-permission="edit_interlock_rules" data-role-visibility="admin"></div>
+        ${this._renderAdminSystemTabBar()}
+        <div data-admin-system-content>${this._renderAdminSystemTabContent()}</div>
       </div>
     </div>`;
   }
@@ -6764,7 +6837,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _currentControlSeasonId() {
-    return this._controlScope?.seasonId || this._activeSeasonId || this._cropSeasons?.find((s) => !s.demolished)?.id || "default-season";
+    return this._activeSeasonId || this._cropSeasons?.find((s) => !s.demolished && !s.demolishDate)?.id || this._controlScope?.seasonId || "default-season";
   }
 
   _controlSeasonOptions() {
@@ -6845,43 +6918,50 @@ button.action:disabled{opacity:.5;cursor:default;}
       ${this._renderZoneEntityMappingValidationCard(domain)}`;
   }
 
-  _renderControlScopeBar(domain) {
-    const selectedSeason = String(this._currentControlSeasonId());
+  _renderControlZoneTabs(domain) {
     const selectedZone = Number(this._controlScope?.zoneId || 1);
-    const seasonOptions = this._controlSeasonOptions();
-    const zoneOptions = this._controlZoneOptions(domain);
-    const safeZone = zoneOptions.some((z) => z.id === selectedZone) ? selectedZone : 1;
+    const zones = this._controlZoneOptions(domain);
+    const season = (this._cropSeasons || []).find((s) => String(s.id) === String(this._currentControlSeasonId())) || this._activeSeason();
     const saveNotice = this._controlSaveNotice?.domain === domain ? `${this._controlSaveNotice.time} · ${this._controlSaveNotice.label}` : "아직 저장 전";
-    return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-      ${this._renderControlSeasonCard(domain)}
-      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:190px;">현재 작기
-        <select data-control-scope-season>
-          ${seasonOptions.map((s) => `<option value="${this._esc(String(s.id))}" ${String(s.id) === selectedSeason ? "selected" : ""}>${s.label}</option>`).join("")}
-        </select>
-      </label>
-      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:120px;">현재 구역
-        <select data-control-scope-zone>
-          ${zoneOptions.map((z) => `<option value="${z.id}" ${z.id === safeZone ? "selected" : ""}>${z.label}</option>`).join("")}
-        </select>
-      </label>
-      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:170px;">적용 범위
-        <select data-control-scope-apply>
-          <option value="current" ${this._controlScope?.applyMode !== "all" ? "selected" : ""}>현재 구역만</option>
-          <option value="all" ${this._controlScope?.applyMode === "all" ? "selected" : ""}>전체 구역에 복사</option>
-        </select>
-      </label>
-      <label style="font-size:12px;color:#5d7d64;display:flex;flex-direction:column;gap:4px;min-width:130px;">복사 대상 구역
-        <select data-control-copy-target-zone>
-          ${zoneOptions.filter((z) => z.id !== safeZone).map((z) => `<option value="${z.id}">${z.label}</option>`).join("") || `<option value="${safeZone}">${safeZone}구역</option>`}
-        </select>
-      </label>
-      <button class="btn btn-ghost" data-control-copy-zone style="height:34px;">현재 설정 복사</button>
-      <button class="btn btn-ghost" data-control-copy-all-zones style="height:34px;">전체 구역에 적용</button>
-      <div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;min-width:260px;">
-        <b>저장 대상</b><br>${this._esc(this._currentControlScopeLabel(domain))}<br>
-        <span>제어영역: ${this._esc(this._controlDomainLabel(domain))}</span><br>
-        <span data-control-scope-storage-key>작기 + 구역 + 제어영역 → green_smart_zone_control_settings</span><br>
-        <span data-control-save-notice>마지막 저장: ${this._esc(saveNotice)}</span>
+    const cropStatus = season?.demolishDate ? "재배 종료" : "재배 중";
+    return `<div data-control-active-zone="${selectedZone}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;flex:1 1 100%;">
+      ${zones.map((z) => {
+        const active = z.id === selectedZone;
+        const state = this._getScopedControlState(domain);
+        return `<button class="crop-season-card control-season-card ${active ? "active" : ""}" data-control-zone-tab data-control-zone-tab-card data-control-zone-id="${z.id}" style="text-align:left;border:${active ? "2px solid #51AE60" : "1px solid #dce9de"};border-radius:12px;padding:12px 14px;background:${active ? "#f0faf1" : "#fff"};min-width:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;">
+            <div style="font-size:13px;font-weight:900;color:#24323F;">${this._esc(z.label)}</div>
+            <span style="font-size:10px;font-weight:900;color:${active ? "#51AE60" : "#9aa6a0"};">${active ? "선택됨" : "탭 선택"}</span>
+          </div>
+          <div style="font-size:11px;color:#5d7d64;line-height:1.55;">재배 상태: ${cropStatus} · 정식일: ${season?.plantDate || "미기록"}</div>
+          <div style="font-size:11px;color:#7a9780;line-height:1.55;">제어영역: ${this._esc(this._controlDomainLabel(domain))} · 마지막 저장: ${this._esc(saveNotice)}</div>
+          <span hidden data-control-state-bound>${Object.keys(state || {}).slice(0, 3).join(",")}</span>
+        </button>`;
+      }).join("")}
+    </div>`;
+  }
+
+  _renderControlPresetModal(domain) {
+    const zones = this._controlZoneOptions(domain);
+    const selectedZone = Number(this._controlScope?.zoneId || 1);
+    return `<div class="popup-card" style="width:min(560px,94vw);" data-control-preset-modal data-control-preset-domain="${domain}">
+      <div class="pop-header"><div class="pop-icon-box"><ha-icon icon="mdi:content-copy" style="--mdi-icon-size:22px;"></ha-icon></div><div><div class="pop-title-main">프리셋 설정</div><div style="font-size:12px;color:#7a9780;margin-top:3px;">${this._esc(this._controlDomainLabel(domain))} 현재 구역 설정을 다른 구역에 복사합니다.</div></div></div>
+      <div class="strategy-row"><div class="strategy-label">현재 구역</div><div class="strategy-control"><b>${selectedZone}구역</b></div></div>
+      <div class="strategy-row"><div class="strategy-label">복사 대상 구역</div><div class="strategy-control"><select data-control-preset-target-zone>${zones.filter((z) => z.id !== selectedZone).map((z) => `<option value="${z.id}">${z.label}</option>`).join("") || `<option value="${selectedZone}">${selectedZone}구역</option>`}</select></div></div>
+      <div class="pop-actions"><button class="btn btn-ghost" data-control-preset-cancel>닫기</button><button class="btn btn-ghost" data-control-preset-copy-one>선택 구역에 복사</button><button class="btn btn-primary" data-control-preset-copy-all>전체 구역에 적용</button></div>
+    </div>`;
+  }
+
+  _renderControlScopeBar(domain) {
+    return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1 1 100%;">
+        <div><div class="sec-title">구역 선택</div><div style="font-size:12px;color:#7a9780;margin-top:3px;">구역 카드를 탭처럼 선택하면 해당 구역의 ${this._esc(this._controlDomainLabel(domain))} 설정값이 바로 연동됩니다.</div></div>
+        <button class="btn btn-ghost" data-control-preset-open>프리셋 설정</button>
+      </div>
+      ${this._renderControlZoneTabs(domain)}
+      <div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;flex:1 1 100%;">
+        <b>저장 대상</b> · ${this._esc(this._currentControlScopeLabel(domain))}
+        <span data-control-scope-storage-key style="margin-left:8px;">작기 + 구역 + 제어영역 → green_smart_zone_control_settings</span>
       </div>
     </div>`;
   }
@@ -7776,51 +7856,98 @@ button.action:disabled{opacity:.5;cursor:default;}
     });
   }
 
+  _selectControlZoneFromCard(domain, zoneId) {
+    this._controlScope = { ...this._controlScope, seasonId: this._currentControlSeasonId(), zoneId: Number(zoneId || 1), applyMode: "current" };
+    this._saveControlScope();
+    this._setControlSaveNotice(domain);
+    this._pageRendered = null;
+    this._update();
+  }
+
+  _openControlPresetModal(domain) {
+    const overlay = this.shadowRoot.getElementById("popup-overlay");
+    const inner = this.shadowRoot.getElementById("popup-inner");
+    if (!overlay || !inner) return;
+    overlay.removeAttribute("hidden");
+    inner.innerHTML = this._renderControlPresetModal(domain);
+    inner.querySelector("[data-control-preset-cancel]")?.addEventListener("click", () => this._closePopup());
+    inner.querySelector("[data-control-preset-copy-one]")?.addEventListener("click", () => {
+      const fromZone = Number(this._controlScope?.zoneId || 1);
+      const toZone = Number(inner.querySelector("[data-control-preset-target-zone]")?.value || fromZone);
+      if (fromZone === toZone) return;
+      this._copyScopedControlSettings(domain, fromZone, toZone);
+      this._copyScopedControlSettingsViaApi(domain, fromZone, [toZone]);
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} → ${toZone}구역 프리셋 복사 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._closePopup(); this._pageRendered = null; this._update();
+    });
+    inner.querySelector("[data-control-preset-copy-all]")?.addEventListener("click", () => {
+      const fromZone = Number(this._controlScope?.zoneId || 1);
+      const copied = this._copyScopedControlSettingsToAllZones(domain, fromZone);
+      this._copyScopedControlSettingsViaApi(domain, fromZone, copied);
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} → 전체 구역(${copied.length}개) 프리셋 적용 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._closePopup(); this._pageRendered = null; this._update();
+    });
+    overlay.onclick = (e) => { if (e.target === overlay) this._closePopup(); };
+  }
+
+  _saveAdminRoleMapping(root) {
+    const rows = Array.from(root.querySelectorAll("[data-admin-role-row]")).map((row) => ({
+      id: row.querySelector("[data-admin-role-user-id]")?.value?.trim() || "",
+      name: row.querySelector("[data-admin-role-user-name]")?.value?.trim() || "",
+      role: row.querySelector("[data-admin-role-value]")?.value || "farm_staff",
+    })).filter((r) => r.id);
+    this._adminRoleMappings = rows;
+    localStorage.setItem("green_smart_admin_role_mappings", JSON.stringify(rows));
+    this._pushAdminAuditLog("role_mapping_saved", `${rows.length}명 저장`);
+    this._pageRendered = null; this._update();
+  }
+
+  _saveAdminSystemConfig(root) {
+    const next = { ...this._adminSystemConfig };
+    root.querySelectorAll("[data-admin-config-field]").forEach((el) => {
+      const key = el.dataset.adminConfigField;
+      next[key] = el.type === "checkbox" ? Boolean(el.checked) : el.type === "number" ? Number(el.value) : el.value;
+    });
+    this._adminSystemConfig = next;
+    localStorage.setItem("green_smart_admin_system_config", JSON.stringify(next));
+    this._pushAdminAuditLog("system_config_saved", "시스템 설정 저장");
+    this._pageRendered = null; this._update();
+  }
+
+  _runAdminDiagnostics() {
+    this._adminDiagnostics = `진단 완료 · panel v${VERSION} · role ${this._currentUserRole()} · DB ${this._dbReady ? "연결" : "대기"} · MQTT ${this._mqttLoaded ? "로드" : "대기"}`;
+    this._pushAdminAuditLog("diagnostics_run", this._adminDiagnostics);
+    this._pageRendered = null; this._update();
+  }
+
+  _exportAdminBackup() {
+    const payload = { version: VERSION, roleMappings: this._adminRoleMappings, systemConfig: this._adminSystemConfig, auditLogs: this._adminAuditLogs, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `green_smart_admin_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+    URL.revokeObjectURL(url);
+    this._pushAdminAuditLog("backup_exported", "Admin/System 백업 내보내기");
+  }
+
+  _bindAdminSystemInputs(root) {
+    const page = root.querySelector(".admin-system-page");
+    if (!page) return;
+    page.querySelectorAll("button[data-admin-system-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => { this._adminSystemTab = btn.dataset.adminSystemTab; this._pageRendered = null; this._update(); });
+    });
+    page.querySelector("[data-admin-role-save]")?.addEventListener("click", () => this._saveAdminRoleMapping(page));
+    page.querySelector("[data-admin-config-save]")?.addEventListener("click", () => this._saveAdminSystemConfig(page));
+    page.querySelector("[data-admin-health-refresh]")?.addEventListener("click", () => { this._pushAdminAuditLog("health_refreshed", "연동 상태 새로고침"); this._pageRendered = null; this._update(); });
+    page.querySelector("[data-admin-diagnostic-run]")?.addEventListener("click", () => this._runAdminDiagnostics());
+    page.querySelector("[data-admin-backup-export]")?.addEventListener("click", () => this._exportAdminBackup());
+  }
+
   _bindControlScopeInputs(root) {
     root.querySelectorAll("[data-control-scope-bar]").forEach((bar) => {
       const domain = bar.dataset.controlScopeDomain || "environment";
-      const season = bar.querySelector("[data-control-scope-season]");
-      const zone = bar.querySelector("[data-control-scope-zone]");
-      const apply = bar.querySelector("[data-control-scope-apply]");
-      const updateScope = () => {
-        this._controlScope = {
-          seasonId: season?.value || this._currentControlSeasonId(),
-          zoneId: Number(zone?.value || 1),
-          applyMode: apply?.value || "current",
-        };
-        this._saveControlScope();
-        this._pageRendered = null;
-        this._update();
-      };
-      season?.addEventListener("change", updateScope);
-      zone?.addEventListener("change", updateScope);
-      apply?.addEventListener("change", () => {
-        this._controlScope = { ...this._controlScope, applyMode: apply.value || "current" };
-        this._saveControlScope();
-      });
-      bar.querySelector("[data-control-copy-zone]")?.addEventListener("click", () => {
-        const fromZone = Number(zone?.value || this._controlScope?.zoneId || 1);
-        const toZone = Number(bar.querySelector("[data-control-copy-target-zone]")?.value || fromZone);
-        if (fromZone === toZone) return;
-        if (!confirm(`${this._controlDomainLabel(domain)} 현재 설정을 ${toZone}구역으로 복사할까요?`)) return;
-        this._copyScopedControlSettings(domain, fromZone, toZone);
-        this._copyScopedControlSettingsViaApi(domain, fromZone, [toZone]);
-        this._controlSaveNotice = { ...this._controlSaveNotice, label: `${this._currentControlScopeLabel(domain)} → ${toZone}구역 복사 완료` };
-        this._pageRendered = null;
-        this._update();
-      });
-      bar.querySelector("[data-control-copy-all-zones]")?.addEventListener("click", () => {
-        const fromZone = Number(zone?.value || this._controlScope?.zoneId || 1);
-        if (!confirm(`${this._controlDomainLabel(domain)} 현재 설정을 전체 구역에 적용할까요?`)) return;
-        const copied = this._copyScopedControlSettingsToAllZones(domain, fromZone);
-        this._copyScopedControlSettingsViaApi(domain, fromZone, copied);
-        this._controlSaveNotice = { ...this._controlSaveNotice, label: `${this._currentControlScopeLabel(domain)} → 전체 구역(${copied.length}개) 복사 완료` };
-        this._pageRendered = null;
-        this._update();
-      });
-      if (domain === "irrigation" && zone && !this._controlZoneOptions(domain).some((z) => z.id === Number(zone.value))) {
-        zone.value = "1";
-      }
+      bar.querySelectorAll("[data-control-zone-tab]").forEach((btn) => btn.addEventListener("click", () => this._selectControlZoneFromCard(domain, btn.dataset.controlZoneId)));
+      bar.querySelector("[data-control-preset-open]")?.addEventListener("click", () => this._openControlPresetModal(domain));
     });
   }
 
@@ -7828,6 +7955,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _bindDashboard(root) {
     this._bindControlScopeInputs(root);
+    this._bindAdminSystemInputs(root);
     this._bindZoneInterlockSettingsInputs(root);
     this._bindZoneControlModeInputs(root);
     this._bindZoneEntityStateSummaryInputs(root);
