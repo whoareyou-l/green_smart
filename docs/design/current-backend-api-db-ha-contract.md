@@ -28,7 +28,7 @@ Home Assistant
 1. AI output은 직접 실행 명령이 아니다.
 2. 실행 대상은 `zone_final_control_targets`다.
 3. 실제 장비 실행은 항상 Control Mode, Limited Auto, Operator Confirmation, SafetyGuard, Interlock, Entity Mapping, State Verification을 통과해야 한다.
-4. RBAC 기준 역할은 `admin`, `farm_owner`, `farm_staff`이며, frontend 표시 제한은 UX 보조일 뿐 모든 write/execute API는 backend에서 role/permission을 다시 검증해야 한다.
+4. RBAC 기준 역할은 `admin`, `farm_owner`, `farm_staff`이며, Home Assistant 사용자 ID를 Green Smart 역할에 매핑한다. frontend 표시 제한은 UX 보조일 뿐 모든 write/execute API는 backend에서 role/permission을 다시 검증해야 한다.
 5. 로컬 HA/DB/entity 상태만으로도 안전 차단이 가능해야 한다.
 6. Central/SaaS/API는 편의/데이터 공급자이며, 로컬 안전보다 우선하지 않는다.
 

@@ -86,6 +86,18 @@ home, crop, environment, irrigation, device
 | `farm_owner` | 농장주 | 농장 운영 책임자. 전략 승인, 중요 실행, 기록/리포트 확인 가능 |
 | `farm_staff` | 농장직원 | 현장 작업자. 조회, 기록 입력, 알림 확인, 허용된 수동 조작 가능 |
 
+### 3.1.1 계정/역할 매핑
+
+Green Smart는 별도 사용자/비밀번호 체계를 만들지 않고 Home Assistant 사용자를 기준으로 역할을 매핑한다.
+
+```text
+Home Assistant user ID
+→ Green Smart role(admin/farm_owner/farm_staff)
+→ permissions
+```
+
+Admin/System의 사용자/권한 화면은 `admin`에게만 보이며, HA 사용자 목록/ID와 Green Smart role mapping을 관리하는 방향으로 구현한다. Admin/System은 `admin` 전용 sidebar 별도 메뉴로 추가한다.
+
 ### 3.2 권한 레벨
 
 | 권한 | 설명 | admin | farm_owner | farm_staff |
@@ -96,13 +108,14 @@ home, crop, environment, irrigation, device
 | `manage_crop_seasons` | 작기 생성/수정/철거/삭제 | ✓ | ✓ | 제한 또는 요청 |
 | `view_control_pages` | 환경/관수/장치 제어 페이지 조회 | ✓ | ✓ | ✓ |
 | `edit_strategy_settings` | 환경/관수 전략 설정 변경 | ✓ | ✓ | ✕ |
-| `edit_interlock_settings` | 인터록/SafetyGuard 규칙 변경 | ✓ | 승인 기반 | ✕ |
+| `edit_interlock_thresholds` | SafetyGuard/인터록 기본 임계값 변경 | ✓ | 확인 팝업 후 가능 | ✕ |
+| `edit_interlock_rules` | 고급 rule builder 변경 | ✓ | ✕ | ✕ |
 | `edit_entity_mapping` | HA entity mapping 변경 | ✓ | ✕ | ✕ |
 | `run_dry_run` | Dry Run 실행 | ✓ | ✓ | ✓ |
 | `execute_final_targets` | 실제/제한적 실행 | ✓ | ✓ | 제한된 장비만 |
-| `manual_device_control` | 수동 장치 조작 | ✓ | ✓ | 허용된 장치만 |
-| `ack_safety_event` | 알림 확인 | ✓ | ✓ | ✓ |
-| `clear_safety_event` | 조치 완료/알림 해제 | ✓ | ✓ | 제한 |
+| `manual_device_control` | 수동 장치 조작 | ✓ | ✓ | 농장주가 허용한 장치별 범위 |
+| `ack_safety_event` | 안전 이벤트 확인 | ✓ | ✕ | ✕ |
+| `clear_safety_event` | 안전 이벤트 조치 완료/해제 | ✓ | ✕ | ✕ |
 | `manage_users_roles` | 사용자/권한 관리 | ✓ | 선택적 위임 | ✕ |
 | `system_settings` | HA/Central/API/DB/날씨 key 설정 | ✓ | 일부 조회 | ✕ |
 | `view_audit_logs` | 감사 로그/실행 이력 상세 | ✓ | ✓ | 제한 요약 |
@@ -128,8 +141,8 @@ home, crop, environment, irrigation, device
 | 관수 제어 | ✓ | ✓ | 조회+일부 실행/기록 | 양액기/PID/entity는 admin |
 | 장치제어 | ✓ | ✓ | 현황+허용 수동조작 | Fail Safe/interlock은 admin/owner |
 | 알림/작업 | ✓ | ✓ | ✓ | 향후 별도 페이지 권장 |
-| 시스템 설정 | ✓ | 제한 조회 | ✕ | HA/API/DB/Central/key |
-| 사용자/권한 | ✓ | 선택적 | ✕ | RBAC 관리 |
+| 시스템 설정 | ✓ | ✕ | ✕ | Admin/System은 admin 전용 sidebar 메뉴 |
+| 사용자/권한 | ✓ | ✕ | ✕ | HA 사용자 → Green Smart 역할 매핑 |
 | 진단/개발자 | ✓ | ✕ | ✕ | 로그, API 상태, DB 상태 |
 
 ### 4.2 홈 화면 역할별 구성
@@ -170,14 +183,15 @@ home, crop, environment, irrigation, device
 | 상태 요약 | ✓ | ✓ | ✓ |
 | 전략 preview | ✓ | ✓ | 요약만 |
 | 설정값 입력 | ✓ | ✓ | ✕ |
-| 인터록 rule builder | ✓ | 승인 기반 | ✕ |
-| SafetyGuard watchdog | ✓ | ✓ | 요약만 |
-| 이벤트 확인 | ✓ | ✓ | ✓ |
-| 이벤트 clear | ✓ | ✓ | 제한 |
+| 인터록 기본 임계값 | ✓ | 확인 팝업 후 가능 | ✕ |
+| 인터록 고급 rule builder | ✓ | ✕ | ✕ |
+| SafetyGuard watchdog | ✓ | 요약 조회 | 요약만 |
+| 이벤트 확인 | ✓ | ✕ | ✕ |
+| 이벤트 clear | ✓ | ✕ | ✕ |
 | Dry Run | ✓ | ✓ | ✓ |
 | 실제 실행 | ✓ | ✓ | 제한된 시나리오만 |
 | Entity mapping | ✓ | ✕ | ✕ |
-| Fail Safe 설정 | ✓ | 제한 | ✕ |
+| Fail Safe/safe_state 설정 | ✓ | ✕ | ✕ |
 | PID/센서 보정 | ✓ | ✕ | ✕ |
 
 ---
@@ -444,18 +458,18 @@ home, crop, environment, irrigation, device
 
 ## 7. 구현 시 필요한 데이터 모델 / API 방향
 
-현재 Home Assistant 인증은 기본적으로 HA user context에 의존한다. Green Smart 자체 RBAC를 명확히 하려면 다음이 필요하다.
+현재 Home Assistant 인증은 기본적으로 HA user context에 의존한다. Green Smart RBAC는 별도 로그인 체계가 아니라 **HA 사용자 ID → Green Smart 역할 매핑**으로 구현한다.
 
 ### 7.1 권장 신규 개념
 
 ```text
-green_smart_users 또는 HA user mapping
-green_smart_roles
-green_smart_role_permissions
-green_smart_user_farm_roles
+HA user ID
+Green Smart role mapping
+Green Smart role permissions
+optional farm/zone scope mapping
 ```
 
-단, 즉시 DB migration을 강제하지 않는다. 먼저 UI/contract 문서와 frontend role gate를 정리하고, backend enforcement는 별도 Phase로 진행한다.
+1차 persistence는 HA Store 기반 role mapping을 우선 검토한다. MariaDB role table은 multi-farm/edge tenancy나 복잡한 권한 query가 필요해질 때 별도 migration으로 추가한다. 별도 Green Smart username/password 체계는 이번 기준에서 제외한다.
 
 ### 7.2 최소 API 방향
 

@@ -41,7 +41,7 @@ AI가 작동하지 않아도 문제가 생기지 않게 인터록/안전 제어�
 UI runtime: Home Assistant panel_custom + Vanilla JS Web Component
 Sidebar pages: home, crop, environment, irrigation, device
 Design preference: Modern SaaS greenhouse dashboard + 카드형 운영 UI + 안전/인터록 우선 UX
-UX/RBAC baseline: 비전공자 농장주·농장직원용 직관 UI + admin/farm_owner/farm_staff 역할별 페이지/기능 권한
+UX/RBAC baseline: 비전공자 농장주·농장직원용 직관 UI + admin/farm_owner/farm_staff 역할별 페이지/기능 권한 + HA 사용자 ID 기반 역할 매핑
 DB/API scope: farm_id + crop_season_id + zone_id + domain
 Execution path: final target → Control Mode → Limited Auto → Operator Confirmation → SafetyGuard → HA service call → state verification → log
 Physical device gate: C20 전까지 실제 장비 연결 금지, virtual HA entities/rehearsal 우선

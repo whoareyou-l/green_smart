@@ -40,19 +40,23 @@
 
 ### 1.2 질문이 필요한 모호한 부분
 
-아래는 구현 전에 사용자에게 확인해야 하는 항목이다.
+아래는 구현 전에 사용자와 하나씩 확인한 결정 상태다.
 
-| 항목 | 모호성 | 질문 |
+| 항목 | 상태 | 확정/남은 질문 |
 |---|---:|---|
-| 농장주 권한 범위 | 높음 | 농장주가 인터록/SafetyGuard rule을 직접 수정할 수 있어야 하나, 아니면 승인/요청만 해야 하나? |
-| 농장직원 수동제어 | 높음 | 농장직원에게 허용할 수동 조작 범위는 무엇인가? 예: 관수 시작/정지, 장치 정지, 알림 확인만? |
-| Admin 계정 출처 | 높음 | RBAC 사용자는 Home Assistant 사용자와 매핑할 것인가, Green Smart 자체 사용자 테이블을 둘 것인가? |
-| 알림/작업 페이지 | 중간 | `알림/작업`을 별도 sidebar page로 만들 것인가, 홈의 첫 카드로 유지할 것인가? |
-| 시스템 설정 위치 | 중간 | 기존 settings page를 Admin/System으로 완전히 분리할 것인가, 일반 설정 일부를 농장주에게 남길 것인가? |
-| crop season 삭제 | 중간 | 농장직원이 삭제/철거 요청을 만들 수 있어야 하나, 삭제는 농장주 이상만 가능한가? |
-| 실제 실행 승인 | 중간 | 농장주와 admin 모두 실제 실행 가능인가, 농장주는 일부 domain만 가능한가? |
+| 기본 역할 | 확정 | `admin`, `farm_owner`, `farm_staff` 3개 역할로 확정 |
+| 농장직원 수동제어 | 확정 | `farm_staff`는 농장주가 허용한 장치별 범위 안에서만 수동 조작 가능 |
+| 농장주 SafetyGuard 이벤트 처리 | 확정 | SafetyGuard/인터록 상태 이벤트 확인·조치 처리는 `admin`만 가능 |
+| 농장주 SafetyGuard 임계값 | 확정 | `farm_owner`는 기본 임계값을 확인 팝업/위험 안내/변경 이력 조건으로 수정 가능 |
+| 농장주 고급 rule builder | 확정 | 고급 rule builder는 `admin`만 수정 가능 |
+| 농장주 Fail Safe/safe_state | 확정 | Fail Safe/safe_state 설정은 `admin`만 수정 가능 |
+| Admin/System 위치 | 확정 | `admin`에게만 보이는 sidebar 별도 메뉴로 추가 |
+| Admin 계정 출처 | 확정 | Home Assistant 사용자와 Green Smart 역할을 매핑한다 |
+| 알림/작업 페이지 | 남음 | 별도 sidebar page로 만들지, 홈 첫 카드로 유지할지 후속 slice에서 질문 |
+| crop season 삭제 | 남음 | 농장직원이 삭제/철거 요청을 만들 수 있는지 후속 crop slice에서 질문 |
+| 실제 실행 승인 | 남음 | 농장주와 admin의 실제 실행 범위를 domain별로 나눌지 후속 execution slice에서 질문 |
 
-**Rule:** 위 질문 중 현재 slice와 직접 관련된 질문이 남아 있으면 구현하지 않고 사용자에게 질문한다.
+**Rule:** 남은 질문 중 현재 slice와 직접 관련된 질문이 있으면 구현하지 않고 사용자에게 한 번에 하나씩 질문한다.
 
 ---
 
@@ -283,7 +287,9 @@ _renderPermissionHint(reason)
 ```
 
 - Initial role source:
-  - until `/auth/me` exists, use `this._currentRole || "admin"` and optionally localStorage for dev role preview.
+  - Final direction is Home Assistant user → Green Smart role mapping.
+  - Phase U1 must call/prepare `/api/green_smart/auth/me` contract rather than relying on a long-lived mock/local role.
+  - Temporary dev fallback may exist only when auth API is unavailable in tests, and must default to least-surprising safe behavior documented in tests.
 
 **Acceptance:**
 
@@ -291,9 +297,10 @@ _renderPermissionHint(reason)
 - Permission matrix contract matches docs
 - No page behavior changes yet except optional hidden dev preview
 
-**Question gate:**
+**Decision:**
 
-- Should default runtime role be `admin` until backend auth exists? Recommended yes.
+- Runtime role source is Home Assistant user → Green Smart role mapping.
+- If `/api/green_smart/auth/me` is not available during a transitional test, the fallback must be explicit and covered by contract tests; it must not become the production RBAC source.
 
 ---
 
@@ -489,9 +496,10 @@ Entity Mapping
 - farm_owner sees only allowed summaries if configured
 - admin can manage current settings
 
-**Question gate:**
+**Decision:**
 
-- Add sidebar item now, or keep Settings button and expand settings page? User decision required.
+- Add Admin/System as a separate sidebar menu that is visible only to `admin`.
+- Do not expose Admin/System to `farm_owner` or `farm_staff`; show only safe operational summaries in their normal pages.
 
 ---
 
@@ -506,14 +514,20 @@ Entity Mapping
 - Modify: `db.py` if persistent role mapping is approved
 - Test: backend permission contract tests
 
-**Possible DB tables:**
+**Approved identity model:**
 
 ```text
-green_smart_user_roles
-green_smart_role_permissions
+Home Assistant user ID
+→ Green Smart role mapping
+→ permissions
 ```
 
-or HA user ID mapping via HA Store first.
+Recommended persistence options:
+
+```text
+HA Store role mapping first
+MariaDB role tables later if multi-farm/edge tenancy needs richer queries
+```
 
 **Acceptance:**
 
@@ -521,9 +535,10 @@ or HA user ID mapping via HA Store first.
 - actor_role is logged
 - frontend no longer solely controls access
 
-**Question gate:**
+**Decision:**
 
-- Use HA users only, HA user → Green Smart role mapping, or Green Smart native users?
+- Use Home Assistant users and map each HA user ID to a Green Smart role.
+- Do not create a separate Green Smart username/password system for this phase.
 
 ---
 
@@ -638,24 +653,29 @@ git diff --check
 - 먼저 모든 요소에 taxonomy와 role 기준을 붙여야 한다.
 - role helper가 있어야 이후 page별 정리가 반복 가능하다.
 
-### 사용자에게 먼저 확인할 질문
+### 확정된 구현 전제
 
-다음 답을 받은 뒤 Phase U0/U1을 구현한다.
+Phase U0/U1을 시작하기 위한 핵심 질문은 사용자와 하나씩 확인하여 아래처럼 확정했다.
 
-1. 기본 역할 3개는 확정인가? `admin`, `farm_owner`, `farm_staff`
-2. 농장직원이 허용받을 수 있는 수동 조작 범위는 어디까지인가?
-   - A. 알림 확인/기록 입력만
-   - B. 관수/장치 정지까지
-   - C. 제한된 관수 시작/정지까지
-   - D. 농장주가 허용한 장치별 조작
-3. 농장주가 인터록/SafetyGuard rule을 직접 수정할 수 있어야 하나?
-   - A. 불가, admin만
-   - B. 가능하되 승인/확인 필요
-   - C. 가능
-4. Admin/System은 sidebar에 별도 메뉴로 만들까, 기존 설정 버튼 안에 둘까?
-5. RBAC는 우선 HA 사용자와 매핑할까, Green Smart 자체 사용자/비밀번호 체계를 만들까?
+1. 기본 역할은 `admin`, `farm_owner`, `farm_staff` 3개로 확정한다.
+2. `farm_staff` 수동 조작은 농장주가 허용한 장치별 범위 안에서만 가능하다.
+3. `farm_owner` SafetyGuard/인터록 권한은 기능별로 나눈다.
+   - 이벤트 확인·조치 처리: `admin`만 가능
+   - 기본 임계값 수정: `farm_owner`도 확인 팝업/위험 안내/변경 이력 조건으로 가능
+   - 고급 rule builder: `admin`만 가능
+   - Fail Safe/safe_state 설정: `admin`만 가능
+4. Admin/System은 `admin`에게만 보이는 sidebar 별도 메뉴로 추가한다.
+5. RBAC는 Home Assistant 사용자와 Green Smart 역할을 매핑한다.
 
-이 5개가 답변되면 모호성은 10% 이하로 내려가고 Phase U0/U1 구현을 시작할 수 있다.
+### Phase U0/U1 진행 가능 여부
+
+위 5개가 확정되었으므로 Phase U0/U1의 모호성은 10% 이하로 본다. 다만 아래 질문은 해당 slice에 도달할 때 한 번에 하나씩 추가 확인한다.
+
+| 후속 질문 | 질문 시점 |
+|---|---|
+| 알림/작업을 별도 sidebar page로 만들지, 홈 첫 카드로 유지할지 | Home redesign 또는 alert/task page slice 시작 전 |
+| 농장직원이 crop season 삭제/철거 요청을 만들 수 있는지 | Crop page role gate slice 시작 전 |
+| 농장주와 admin의 실제 실행 범위를 domain별로 나눌지 | Execution permission backend slice 시작 전 |
 
 ---
 
