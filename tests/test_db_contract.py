@@ -101,6 +101,33 @@ def test_product_phase6_growth_report_api_contract():
     assert "hass.http.register_view(CropGrowthReportView())" in init_source
 
 
+def test_product_phase6_crop_specific_yield_model_contract():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    report_section = source.split("async def _growth_report_response", 1)[1].split("class CropGrowthReportView", 1)[0]
+
+    for marker in (
+        "YIELD_MODEL_BY_CROP",
+        '"tomato"',
+        '"lettuce"',
+        "_growth_yield_prediction(",
+        "cropType",
+        "estimatedKgPerPlant",
+        "estimatedKgPerArea",
+        "modelVersion",
+        "cropModelLabel",
+        "yieldDrivers",
+        "growthVelocityCmPerWeek",
+        "gIndexFactor",
+        "densityFactor",
+        "confidenceReasons",
+        "tomato_growth_model_v1",
+        "lettuce_growth_model_v1",
+    ):
+        assert marker in source
+    assert "_growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)" in report_section
+    assert '"yieldPrediction": yieldPrediction' in report_section
+
+
 def test_integration_setup_runs_db_schema_bootstrap_before_crop_views():
     init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
 

@@ -9,6 +9,39 @@ from .db import fetchall, fetchone, execute
 
 _LOGGER = logging.getLogger(__name__)
 
+YIELD_MODEL_BY_CROP = {
+    "tomato": {
+        "modelVersion": "tomato_growth_model_v1",
+        "cropModelLabel": "토마토 생육 기반 수확 모델 v1",
+        "baseKgPerPlant": 3.2,
+        "densityKgPerM2": 8.5,
+        "gIndexOptimal": 18.0,
+        "velocityOptimal": 12.0,
+    },
+    "lettuce": {
+        "modelVersion": "lettuce_growth_model_v1",
+        "cropModelLabel": "상추 생육 기반 수확 모델 v1",
+        "baseKgPerPlant": 0.18,
+        "densityKgPerM2": 3.0,
+        "gIndexOptimal": 9.0,
+        "velocityOptimal": 5.0,
+    },
+    "default": {
+        "modelVersion": "generic_growth_model_v1",
+        "cropModelLabel": "일반 생육 기반 수확 모델 v1",
+        "baseKgPerPlant": 0.8,
+        "densityKgPerM2": 3.5,
+        "gIndexOptimal": 12.0,
+        "velocityOptimal": 7.0,
+    },
+}
+
+
+def _bounded_factor(value: float, optimal: float, *, floor: float = 0.35, ceiling: float = 1.45) -> float:
+    if optimal <= 0:
+        return 1.0
+    return round(max(floor, min(ceiling, value / optimal)), 3)
+
 
 def _json(data) -> web.Response:
     return web.Response(
@@ -282,6 +315,48 @@ def _growth_days_between(a, b) -> int:
         return 7
 
 
+def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_rows: list[dict], latest_g: float, weekly_growth: float) -> dict:
+    crop_type = str(season.get("cropType") or latest.get("cropType") or "default").lower()
+    model = YIELD_MODEL_BY_CROP.get(crop_type, YIELD_MODEL_BY_CROP["default"])
+    total_plants = float(season.get("totalPlants") or 0)
+    density = float(season.get("plantDensity") or 0)
+    gIndexFactor = _bounded_factor(float(latest_g or 0), float(model["gIndexOptimal"]))
+    growthVelocityCmPerWeek = round(float(weekly_growth or 0), 2)
+    velocityFactor = _bounded_factor(growthVelocityCmPerWeek, float(model["velocityOptimal"]), floor=0.45, ceiling=1.35)
+    densityFactor = _bounded_factor(density, 3.0 if crop_type == "tomato" else 16.0 if crop_type == "lettuce" else max(density, 1), floor=0.65, ceiling=1.2) if density else 1.0
+    estimatedKgPerPlant = round(float(model["baseKgPerPlant"]) * gIndexFactor * velocityFactor, 3)
+    estimatedKgPerArea = round(float(model["densityKgPerM2"]) * gIndexFactor * velocityFactor * densityFactor, 2)
+    estimatedKg = round(estimatedKgPerPlant * total_plants, 1) if total_plants else round(estimatedKgPerArea * 100, 1) if density else 0
+    confidenceReasons = []
+    if len(growth_rows) < 3:
+        confidenceReasons.append("생육조사 3건 미만")
+    if not total_plants and not density:
+        confidenceReasons.append("총 주수/재식밀도 없음")
+    if not latest:
+        confidenceReasons.append("최신 생육조사 없음")
+    confidence = "high" if len(growth_rows) >= 6 and (total_plants or density) else "medium" if len(growth_rows) >= 3 else "low"
+    yieldDrivers = {
+        "cropType": crop_type,
+        "gIndexFactor": gIndexFactor,
+        "velocityFactor": velocityFactor,
+        "densityFactor": densityFactor,
+        "growthVelocityCmPerWeek": growthVelocityCmPerWeek,
+        "totalPlants": total_plants,
+        "plantDensity": density,
+    }
+    return {
+        "estimatedKg": estimatedKg,
+        "estimatedKgPerPlant": estimatedKgPerPlant,
+        "estimatedKgPerArea": estimatedKgPerArea,
+        "confidence": confidence,
+        "confidenceReasons": confidenceReasons,
+        "modelVersion": model["modelVersion"],
+        "cropModelLabel": model["cropModelLabel"],
+        "basis": "crop-specific growth model + growth_surveys + plant_density",
+        "yieldDrivers": yieldDrivers,
+    }
+
+
 async def _growth_report_response(hass, season_id: int) -> dict:
     season = await fetchone(hass, """
         SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
@@ -324,10 +399,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     latest_g = _growth_g_index(latest) if latest else 0
     pest_score = sum(int(r.get("severity") or 0) for r in pest_rows[:5])
     pest_level = "high" if pest_score >= 12 else "medium" if pest_score >= 5 else "low"
-    total_plants = float(season.get("totalPlants") or 0)
-    density = float(season.get("plantDensity") or 0)
-    base_yield = max(total_plants, density * 100) if (total_plants or density) else 0
-    yield_kg = round((base_yield * max(latest_g, 1) / 100), 1) if base_yield else 0
+    yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
     growthTrend = {
         "height": _growth_report_points(growth_rows, "height", "height"),
         "leafCount": _growth_report_points(growth_rows, "leafCount", "leafCount"),
@@ -346,7 +418,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "latestMetrics": latest,
         "growthTrend": growthTrend,
         "gIndexTrend": gIndexTrend,
-        "yieldPrediction": {"estimatedKg": yield_kg, "confidence": "low" if len(growth_rows) < 3 else "medium", "basis": "growth_surveys + plant_density baseline"},
+        "yieldPrediction": yieldPrediction,
         "pestRisk": {"level": pest_level, "score": pest_score, "recentCount": len(pest_rows[:5])},
         "weeklyReport": weeklyReport,
     }

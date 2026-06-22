@@ -148,6 +148,25 @@ def test_product_phase6_growth_report_panel_contract():
     assert "this._fetchGrowthReport()" in panel
 
 
+def test_product_phase6_yield_model_panel_surfaces_model_details_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCropGrowthTab()", 1)[0]
+
+    for marker in (
+        "estimatedKgPerPlant",
+        "estimatedKgPerArea",
+        "modelVersion",
+        "cropModelLabel",
+        "yieldDrivers",
+        "confidenceReasons",
+        "작물별 수확 모델",
+        "주당 예측",
+        "면적당 예측",
+        "예측 근거",
+    ):
+        assert marker in report_card
+
+
 def test_home_dashboard_does_not_render_or_fetch_pesticide_card():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     home = panel.split("  _renderHomePage(sim)", 1)[1].split("  _renderKPIStrip", 1)[0]

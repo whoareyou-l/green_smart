@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.26
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.27
 const DOMAIN = "green_smart";
-const VERSION = "1.9.26";
+const VERSION = "1.9.27";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3886,6 +3886,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const latestG = gIndexTrend.length ? gIndexTrend[gIndexTrend.length - 1].value : "-";
     const riskLabel = { low: "낮음", medium: "보통", high: "높음" }[pestRisk.level] || "기록 부족";
     const actions = Array.isArray(weeklyReport.actions) ? weeklyReport.actions : [];
+    const yieldDrivers = yieldPrediction.yieldDrivers || {};
+    const confidenceReasons = Array.isArray(yieldPrediction.confidenceReasons) ? yieldPrediction.confidenceReasons : [];
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
         <div>
@@ -3898,6 +3900,20 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">G-Index 추이</div><b style="font-size:20px;color:#24323F;">${this._esc(String(latestG))}</b><div style="font-size:11px;color:#7a9780;">${gIndexTrend.length}개 point · 초장 ${heightTrend.length}개</div></div>
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">수확량 예측</div><b style="font-size:20px;color:#24323F;">${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg</b><div style="font-size:11px;color:#7a9780;">신뢰도 ${this._esc(yieldPrediction.confidence || "low")}</div></div>
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">병해 위험도</div><b style="font-size:20px;color:${pestRisk.level === 'high' ? '#c0392b' : pestRisk.level === 'medium' ? '#f39c12' : '#51AE60'};">${riskLabel}</b><div style="font-size:11px;color:#7a9780;">score ${this._esc(String(pestRisk.score ?? 0))}</div></div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #eef6ef;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">작물별 수확 모델</div>
+        <div style="font-size:12px;color:#5d7d64;line-height:1.6;">
+          <b>${this._esc(yieldPrediction.cropModelLabel || "일반 생육 기반 수확 모델")}</b>
+          <span style="color:#9aae9d;"> · ${this._esc(yieldPrediction.modelVersion || "generic_growth_model_v1")}</span><br>
+          총 예측 ${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg · 주당 예측 ${this._esc(String(yieldPrediction.estimatedKgPerPlant ?? 0))}kg · 면적당 예측 ${this._esc(String(yieldPrediction.estimatedKgPerArea ?? 0))}kg/100㎡
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">G 계수 ${this._esc(String(yieldDrivers.gIndexFactor ?? "-"))}</span>
+          <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">생육속도 ${this._esc(String(yieldDrivers.growthVelocityCmPerWeek ?? "-"))}cm/주</span>
+          <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">밀도 계수 ${this._esc(String(yieldDrivers.densityFactor ?? "-"))}</span>
+        </div>
+        <div style="font-size:11px;color:#7a9780;margin-top:7px;">예측 근거: ${this._esc(yieldPrediction.basis || "crop-specific growth model")}${confidenceReasons.length ? ` · ${confidenceReasons.map(r => this._esc(r)).join(" · ")}` : ""}</div>
       </div>
       <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
       ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}
