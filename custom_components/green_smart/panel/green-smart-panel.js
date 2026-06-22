@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.23
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.24
 const DOMAIN = "green_smart";
-const VERSION = "1.9.23";
+const VERSION = "1.9.24";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1733,6 +1733,117 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   // ── Home page ─────────────────────────────────────────────────────────────────
 
+  _statusLevelMeta(level) {
+    const meta = {
+      normal: { label: "정상", color: "#51AE60", bg: "#edf8ef" },
+      warning: { label: "주의", color: "#b7791f", bg: "#fff8e1" },
+      danger: { label: "위험", color: "#c0392b", bg: "#fff0ee" },
+    };
+    return meta[level] || meta.normal;
+  }
+
+  _levelForMetric(key, value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "warning";
+    if (key === "temp") return n < 15 || n > 34 ? "danger" : n < 18 || n > 30 ? "warning" : "normal";
+    if (key === "humidity") return n < 45 || n > 95 ? "danger" : n < 55 || n > 88 ? "warning" : "normal";
+    if (key === "co2") return n < 250 || n > 1600 ? "danger" : n < 350 || n > 1200 ? "warning" : "normal";
+    if (key === "vpd") return n < 0.3 || n > 1.8 ? "danger" : n < 0.5 || n > 1.4 ? "warning" : "normal";
+    return "normal";
+  }
+
+  _homeStatusItems(kpi = {}) {
+    return [
+      { key: "temp", label: "온도", value: this._kpiText("temp", kpi.temp), raw: kpi.temp, unit: "°C", target: "18~30°C", page: "environment" },
+      { key: "humidity", label: "습도", value: this._kpiText("humidity", kpi.humidity), raw: kpi.humidity, unit: "%", target: "55~88%", page: "environment" },
+      { key: "co2", label: "CO₂", value: this._kpiText("co2", kpi.co2), raw: kpi.co2, unit: "ppm", target: "350~1200ppm", page: "environment" },
+      { key: "vpd", label: "VPD", value: this._kpiText("vpd", kpi.vpd), raw: kpi.vpd, unit: "kPa", target: "0.5~1.4kPa", page: "environment" },
+    ].map((item) => ({ ...item, level: this._levelForMetric(item.key, item.raw) }));
+  }
+
+  _renderHomeActionSummaryCard(kpi = {}) {
+    const riskCount = this._alerts.filter((a) => !a.isUpdate).length;
+    const role = this._currentUserRole();
+    const statusItems = this._homeStatusItems(kpi);
+    const statusHtml = statusItems.map((item) => {
+      const meta = this._statusLevelMeta(item.level);
+      return `<button class="home-status-chip" data-home-status-card data-status-key="${item.key}" data-status-level="${item.level}" style="border:1px solid ${meta.color};background:${meta.bg};color:${meta.color};border-radius:14px;padding:10px 12px;text-align:left;cursor:pointer;">
+        <div style="font-size:12px;font-weight:700;opacity:.86;">${item.label}</div>
+        <div style="font-size:20px;font-weight:900;color:#24323F;margin-top:2px;">${item.value}</div>
+        <div style="font-size:11px;font-weight:800;margin-top:4px;">${meta.label}</div>
+      </button>`;
+    }).join("");
+    return `<section class="gs-card home-action-summary" data-home-action-summary data-ui-section="view" style="padding:18px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div style="font-size:18px;font-weight:900;color:#24323F;">오늘 농장 확인</div>
+          <div style="font-size:12px;color:#7a9780;margin-top:4px;">위험 알림 → 오늘 할 일 → 조치 필요 → 현재 온실 상태 순서로 확인합니다.</div>
+        </div>
+        <span style="font-size:11px;font-weight:800;color:#7a9780;background:#f5faf6;border-radius:999px;padding:6px 10px;">${this._esc(role)}</span>
+      </div>
+      <div data-home-risk-alerts style="padding:12px;border-radius:14px;background:${riskCount ? '#fff0ee' : '#edf8ef'};margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:800;color:#7a9780;">위험 알림</div>
+        <div style="font-size:15px;font-weight:900;color:#24323F;margin-top:3px;">${riskCount ? `${riskCount}건 확인 필요` : '현재 위험 알림 없음'}</div>
+      </div>
+      <div data-home-today-tasks style="padding:12px;border-radius:14px;background:#f8fbf8;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:800;color:#7a9780;">오늘 할 일</div>
+        <div style="font-size:14px;font-weight:800;color:#24323F;margin-top:3px;">작물 상태 확인 · 관수 상태 확인 · 장치 이상 여부 확인</div>
+      </div>
+      <div data-home-required-actions style="padding:12px;border-radius:14px;background:#fffaf0;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:800;color:#7a9780;">조치 필요</div>
+        <div style="font-size:14px;font-weight:800;color:#24323F;margin-top:3px;">알림 확인, 조치 완료 기록, 권한 내 장치 정지를 여기서 시작합니다.</div>
+      </div>
+      <div data-home-greenhouse-summary>
+        <div style="font-size:12px;font-weight:800;color:#7a9780;margin-bottom:8px;">현재 온실 상태</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;">${statusHtml}</div>
+      </div>
+    </section>`;
+  }
+
+  _renderHomeStatusPopup(item) {
+    const meta = this._statusLevelMeta(item.level);
+    const role = this._currentUserRole();
+    const canStaffStop = role === "farm_staff" && this._hasPermission("manual_device_control");
+    const canOwnerExecute = role === "farm_owner" && this._hasPermission("execute_final_targets");
+    const admin = role === "admin";
+    const actions = [
+      `<button class="btn" data-role-action="acknowledge">확인</button>`,
+      `<button class="btn" data-role-action="complete">조치 완료 기록</button>`,
+      ...(canStaffStop || canOwnerExecute || admin ? [`<button class="btn" data-role-action="stop-device">장치 정지</button>`] : []),
+      ...(canOwnerExecute || admin ? [`<button class="btn btn-primary" data-role-action="limited-execute">제한 실행</button>`] : []),
+      ...(admin ? [`<button class="btn" data-role-action="admin-diagnostics">진단/고급 설정</button>`] : []),
+    ].join("");
+    return `<div class="popup" data-home-status-popup style="width:460px;max-width:96vw;padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:17px;font-weight:900;color:#24323F;">${item.label} 상세</div>
+        <button class="wm-close-btn" style="background:none;border:none;cursor:pointer;font-size:22px;color:#7a9780;">&times;</button>
+      </div>
+      <div style="border-radius:16px;background:${meta.bg};padding:16px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:800;color:${meta.color};">${meta.label}</div>
+        <div style="font-size:30px;font-weight:900;color:#24323F;margin-top:3px;">${item.value}</div>
+        <div style="font-size:12px;color:#5d7d64;margin-top:6px;">목표 범위: ${item.target}</div>
+      </div>
+      <div style="font-size:13px;color:#5d7d64;line-height:1.55;margin-bottom:16px;">현재 ${item.label} 값은 ${meta.label} 상태입니다. 색상 배지는 빠른 판단을 돕고, 상세 설정은 관련 제어 페이지에서 확인합니다.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">${actions}</div>
+    </div>`;
+  }
+
+  _openHomeStatusPopup(key) {
+    const kpi = (this._simData && this._simData.kpi) || {};
+    const item = this._homeStatusItems(kpi).find((x) => x.key === key);
+    const overlay = this.shadowRoot.getElementById("popup-overlay");
+    const inner = this.shadowRoot.getElementById("popup-inner");
+    if (!item || !overlay || !inner) return;
+    overlay.removeAttribute("hidden");
+    inner.innerHTML = this._renderHomeStatusPopup(item);
+    inner.querySelectorAll(".wm-close-btn,[data-role-action='acknowledge']").forEach((btn) => btn.addEventListener("click", () => this._closePopup()));
+    inner.querySelectorAll("[data-role-action='complete']").forEach((btn) => btn.addEventListener("click", () => { alert("조치 완료 기록은 다음 단계에서 API와 연결됩니다."); this._closePopup(); }));
+    inner.querySelectorAll("[data-role-action='stop-device']").forEach((btn) => btn.addEventListener("click", () => alert("장치 정지는 확인 팝업과 권한 검증 API 연결 후 활성화됩니다.")));
+    inner.querySelectorAll("[data-role-action='limited-execute']").forEach((btn) => btn.addEventListener("click", () => alert("제한 실행은 SafetyGuard 확인 후 다음 단계에서 연결됩니다.")));
+    inner.querySelectorAll("[data-role-action='admin-diagnostics']").forEach((btn) => btn.addEventListener("click", () => { this._page = "admin"; this._closePopup(); this._update(); }));
+    overlay.onclick = (e) => { if (e.target === overlay) this._closePopup(); };
+  }
+
   _renderAdminSystemPage() {
     const role = this._currentUserRole();
     return `<div class="page admin-system-page" data-ui-section="admin" data-required-permission="system_settings" data-role-visibility="admin">
@@ -1778,6 +1889,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <ha-icon icon="mdi:test-tube"></ha-icon>가상 장치 모드 — 시뮬레이션 데이터
         ${sim ? `<span style="margin-left:8px;color:#7a9780;font-weight:400;">업데이트: <span data-sim-ts>${sim.updated}</span></span>` : ""}
       </div>` : ""}
+      ${this._renderHomeActionSummaryCard(kpi)}
       ${this._renderKPIStrip(kpi)}
       <div class="chart-row">
         ${this._renderTrendChart()}
@@ -7287,6 +7399,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._bindControlStrategyInputs(root);
     this._bindIrrigationControlInputs(root);
     this._bindDeviceControlInputs(root);
+    root.querySelectorAll("[data-home-status-card]").forEach((card) => {
+      card.addEventListener("click", () => this._openHomeStatusPopup(card.dataset.statusKey));
+    });
     // Trend chart zone tabs — patch polylines only (no full re-render)
     root.querySelectorAll("[data-zone-tab]").forEach((btn) =>
       btn.addEventListener("click", () => {

@@ -457,3 +457,37 @@ def test_zone_scoped_control_settings_docs_cover_db_api_ai_phase5():
         "device",
     ]:
         assert flow in doc
+
+def test_home_operator_first_card_numeric_status_popup_and_role_actions_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    home = panel.split("  _renderHomePage(sim)", 1)[1].split("  _renderKPIStrip", 1)[0]
+    binder = panel.split("  _bindDashboard(root)", 1)[1].split("  _onSave", 1)[0]
+
+    assert "_renderHomeActionSummaryCard" in home
+    assert home.index("_renderHomeActionSummaryCard") < home.index("_renderKPIStrip")
+    for marker in (
+        "data-home-action-summary",
+        "data-home-risk-alerts",
+        "data-home-today-tasks",
+        "data-home-required-actions",
+        "data-home-greenhouse-summary",
+    ):
+        assert marker in panel
+    for order_text in ("위험 알림", "오늘 할 일", "조치 필요", "현재 온실 상태"):
+        assert order_text in panel
+    for marker in (
+        "_homeStatusItems(kpi)",
+        "data-home-status-card",
+        "data-status-level",
+        "data-status-key",
+        "_openHomeStatusPopup",
+        "_renderHomeStatusPopup",
+        "data-home-status-popup",
+        "data-role-action",
+        "farm_staff",
+        "farm_owner",
+        "장치 정지",
+        "제한 실행",
+    ):
+        assert marker in panel
+    assert "[data-home-status-card]" in binder

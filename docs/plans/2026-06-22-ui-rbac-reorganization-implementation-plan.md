@@ -319,12 +319,20 @@ _renderPermissionHint(reason)
 **Updates:**
 
 - Add/reorder cards:
-  1. 위험/주의 알림 Hero
+  1. 위험 알림
   2. 오늘 할 일
-  3. 환경/관수/장치 요약
-  4. 날씨/외부 조건
-  5. 최근 실행/차단 로그 요약
-  6. AI/자동제어 요약
+  3. 조치 필요 작업
+  4. 현재 온실 상태 간단 요약
+  5. KPI 상세 카드: 온도/습도/VPD/CO₂/관수/장치 상태
+  6. 날씨/외부 조건
+  7. 최근 실행/차단 로그 요약
+  8. AI/자동제어 요약
+- Home first card remains the `알림/작업` area; do not create a separate sidebar page in this slice.
+- Status cards use numeric-first values with color/status badges and open a popup on click.
+- Popup buttons are role-aware:
+  - `farm_staff`: acknowledge, complete action, stop owner-allowed devices.
+  - `farm_owner`: acknowledge, complete action, stop devices, limited execution.
+  - `admin`: all actions plus diagnostics/admin navigation.
 - Move/hide diagnostics from home.
 - farm_staff gets task/action language.
 
