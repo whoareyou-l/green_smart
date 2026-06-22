@@ -1,6 +1,6 @@
 # Phase 2A — SafetyGuard Decision Layer Baseline
 
-> 기준 버전: v1.9.21
+> 기준 버전: v1.9.22
 > 대상: `zone_control_views.py`, execution log summary, panel execution log card
 
 ## 목적

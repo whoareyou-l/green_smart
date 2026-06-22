@@ -535,6 +535,34 @@ def test_phase1_panel_uses_five_second_element_refresh_without_full_rerender_con
     assert "this._fetchZoneExecutionLogs(domain, { patchOnly })" in refresh_section
     assert "this._fetchZoneInterlockSettings(domain, { patchOnly })" in refresh_section
 
+def test_irrigation_page_initial_hydration_does_not_full_rerender_contract():
+    panel_source = PANEL.read_text(encoding="utf-8")
+
+    for marker in (
+        "_zoneControlHydrationInFlight",
+        "_requestZoneControlHydration(domain)",
+        "관수설정 초기 진입 깜박임 방지",
+        "if (this._zoneControlHydrationInFlight?.[cacheKey]) return this._zoneControlHydrationInFlight[cacheKey]",
+        "this._fetchScopedControlStateFromApi(domain, { patchOnly: true })",
+        "this._fetchZoneAiOutputs(domain, { patchOnly: true })",
+        "this._fetchZoneFinalTargets(domain, { patchOnly: true })",
+        "this._fetchIrrigationStrategyPreview(domain, { patchOnly: true })",
+        "this._patchZoneControlElementCards(domain)",
+    ):
+        assert marker in panel_source
+
+    scoped_fetch = panel_source.split("async _fetchScopedControlStateFromApi(domain", 1)[1].split("async _saveScopedControlStateToApi", 1)[0]
+    assert "const { patchOnly = false } = arguments[1] || {}" in scoped_fetch
+    assert "if (!patchOnly) { this._pageRendered = null; this._update(); }" in scoped_fetch
+    assert "this._pageRendered = null;\n        this._update();" not in scoped_fetch
+
+    ai_card = panel_source.split("  _renderZoneAiFinalTargetCard(domain) {", 1)[1].split("  _currentControlSeasonId()", 1)[0]
+    assert "this._fetchZoneAiOutputs(domain, { patchOnly: true })" in ai_card
+    assert "this._fetchZoneFinalTargets(domain, { patchOnly: true })" in ai_card
+    assert "this._fetchZoneAiOutputs(domain);" not in ai_card
+    assert "this._fetchZoneFinalTargets(domain);" not in ai_card
+
+
 def test_phase1_manual_auto_override_mode_contract():
     db_source = DB.read_text(encoding="utf-8")
     source = VIEWS.read_text(encoding="utf-8")

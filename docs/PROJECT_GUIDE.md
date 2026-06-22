@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.21` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 120 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.22` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 121 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -235,7 +235,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.21"
+  "version": "1.9.22"
 }
 ```
 
@@ -481,7 +481,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.21"
+const VERSION = "1.9.22"
 ```
 
 중요 UI 페이지:
@@ -1024,6 +1024,21 @@ virtualEntityStatesApplied
 
 가상 장치 모드에서도 실제 장비는 연결하지 않는다. 대신 HA state machine에 가상 HA 엔티티를 등록해서 Entity Mapping, Entity 상태 요약, Dry Run, SafetyGuard, Virtual Rehearsal을 실제 entity_id 기준으로 검증한다.
 
+Control Phase C19C 관수설정 초기 진입 no-flicker hydration baseline:
+
+```text
+_zoneControlHydrationInFlight
+_requestZoneControlHydration(domain)
+관수설정 초기 진입 깜박임 방지
+_fetchScopedControlStateFromApi(domain, { patchOnly: true })
+_fetchZoneAiOutputs(domain, { patchOnly: true })
+_fetchZoneFinalTargets(domain, { patchOnly: true })
+_fetchIrrigationStrategyPreview(domain, { patchOnly: true })
+_patchZoneControlElementCards(domain)
+```
+
+관수설정 페이지는 localStorage fallback으로 즉시 표시하되, 초기 API hydration 응답마다 전체 화면을 재렌더하지 않는다. hydration은 in-flight guard로 한 번만 묶고, 응답 settle 후 dirty editor가 없을 때 카드 단위 patch로만 반영해서 HA WebView 깜박임과 입력 reset 느낌을 방지한다.
+
 Control Phase C19 가상 장치 리허설 하네스 baseline:
 
 ```text
@@ -1432,7 +1447,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.21
+v1.9.22
 ```
 
 ---

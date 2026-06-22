@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.21` / Product Phase 5 완료, Control Phase C19 완료
+> 기준 버전: `v1.9.22` / Product Phase 5 완료, Control Phase C19 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -69,8 +69,16 @@ farm_id + crop_season_id + zone_id + domain
 | C11 | 완료 | 실행 전/후 entity state 수집 및 검증 |
 | C12 | 완료 | 인터록 / Fail Safe 실행 차단 엔진 |
 | C13 | 완료 | 운영 UI에서 실행/안전 로그 카드 표시 |
+| C14 | 완료 | Dry Run UI |
+| C15 | 완료 | Entity Mapping 실시간 검증 |
+| C16 | 완료 | 실시간 센서 기반 Safety Rule |
+| C17 | 완료 | 운영자 실행 확인 UX |
+| C18 | 완료 | 현장 리허설 readiness |
+| C19 | 완료 | 가상 장치 기반 리허설 테스트 하네스 |
+| C19B | 완료 | 가상 HA 엔티티 생성 |
+| C19C | 완료 | 관수설정 초기 진입 no-flicker hydration |
 
-현재 상태는 **제어 데이터 저장 → final target 실행 → 안전 차단 → 로그 확인**까지 구조적으로 연결된 상태다. 다만 실제 현장 장비에 안정적으로 적용하려면 Dry Run UI, mapping 검증, 실시간 safety rule, 권한/확인 UX가 더 필요하다.
+현재 상태는 **제어 데이터 저장 → final target 실행 → 안전 차단 → 로그 확인 → Dry Run → 가상 HA 엔티티 기반 리허설 → 관수설정 no-flicker hydration**까지 구조적으로 연결된 상태다. 실제 장비 연결은 아직 금지이며, 제한적 실제 현장 리허설과 운영 Runbook이 다음 안정화 단계다.
 
 ---
 
@@ -681,7 +689,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.21` 기준으로 가능한 것:
+현재 `v1.9.22` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장

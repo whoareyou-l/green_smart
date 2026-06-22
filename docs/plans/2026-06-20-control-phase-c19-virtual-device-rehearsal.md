@@ -1,6 +1,6 @@
 # Control Phase C19 — 가상 장치 기반 리허설 테스트 하네스
 
-> 기준 버전: v1.9.21
+> 기준 버전: v1.9.22
 > 상태: 완료
 > 대상: `zone_control_views.py`, `green-smart-panel.js`, `zone_control_logs`
 

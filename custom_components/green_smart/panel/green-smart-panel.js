@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.21
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.22
 const DOMAIN = "green_smart";
-const VERSION = "1.9.21";
+const VERSION = "1.9.22";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -244,6 +244,7 @@ class GreenSmartPanel extends HTMLElement {
     this._controlScope = this._loadControlScope();
     this._controlSaveNotice = null;
     this._apiScopedControlCache = {};
+    this._zoneControlHydrationInFlight = {};
     this._zoneAiOutputCache = {};
     this._zoneFinalTargetCache = {};
     this._zoneEntityMappingCache = {};
@@ -4980,6 +4981,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _fetchScopedControlStateFromApi(domain) {
+    const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return null;
     const zoneId = Number(this._controlScope?.zoneId || 1);
@@ -4990,8 +4992,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       if (res && res.found && res.settings) {
         this._apiScopedControlCache[cacheKey] = this._cloneControlState(domain, res.settings);
         this._setScopedControlState(domain, res.settings);
-        this._pageRendered = null;
-        this._update();
+        if (!patchOnly) { this._pageRendered = null; this._update(); }
         return this._apiScopedControlCache[cacheKey];
       }
     } catch (err) {
@@ -5036,6 +5037,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _fetchZoneAiOutputs(domain) {
+    const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return [];
     const zoneId = Number(this._controlScope?.zoneId || 1);
@@ -5044,8 +5046,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       const res = await this._hass.callApi("GET", `green_smart/zones/ai-control-outputs?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}&limit=5`);
       const items = Array.isArray(res?.items) ? res.items : [];
       this._zoneAiOutputCache[cacheKey] = items;
-      this._pageRendered = null;
-      this._update();
+      if (!patchOnly) { this._pageRendered = null; this._update(); }
       return items;
     } catch (err) {
       console.warn("AI output 조회 실패 시 fallback", err);
@@ -5054,6 +5055,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _fetchZoneFinalTargets(domain) {
+    const { patchOnly = false } = arguments[1] || {};
     const cropSeasonId = this._numericControlSeasonId();
     if (!this._hass || !cropSeasonId) return null;
     const zoneId = Number(this._controlScope?.zoneId || 1);
@@ -5061,8 +5063,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     try {
       const res = await this._hass.callApi("GET", `green_smart/zones/final-targets?crop_season_id=${cropSeasonId}&zone_id=${zoneId}&domain=${domain}`);
       this._zoneFinalTargetCache[cacheKey] = res?.found ? res : null;
-      this._pageRendered = null;
-      this._update();
+      if (!patchOnly) { this._pageRendered = null; this._update(); }
       return this._zoneFinalTargetCache[cacheKey];
     } catch (err) {
       console.warn("AI output 조회 실패 시 fallback", err);
@@ -6139,8 +6140,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const outputs = this._zoneAiOutputCache?.[cacheKey] || [];
     const finalTarget = this._zoneFinalTargetCache?.[cacheKey] || null;
     if (this._numericControlSeasonId()) {
-      if (!this._zoneAiOutputCache?.[cacheKey]) this._fetchZoneAiOutputs(domain);
-      if (!(cacheKey in (this._zoneFinalTargetCache || {}))) this._fetchZoneFinalTargets(domain);
+      if (!this._zoneAiOutputCache?.[cacheKey]) this._fetchZoneAiOutputs(domain, { patchOnly: true });
+      if (!(cacheKey in (this._zoneFinalTargetCache || {}))) this._fetchZoneFinalTargets(domain, { patchOnly: true });
     }
     const latest = outputs[0] || null;
     const strategySummary = latest ? Object.entries(latest.strategy || {}).slice(0, 4).map(([k, v]) => `${this._esc(k)}: ${this._esc(String(v))}`).join(" · ") : "저장된 AI 전략 출력 없음";
@@ -6276,10 +6277,32 @@ button.action:disabled{opacity:.5;cursor:default;}
     return this._zoneControlSettings[domain][seasonId][zoneId];
   }
 
+  _requestZoneControlHydration(domain) {
+    // 관수설정 초기 진입 깜박임 방지: 렌더 중 비동기 조회는 한 번만 묶고, 응답마다 전체 화면을 재렌더하지 않는다.
+    const cacheKey = this._scopedControlCacheKey(domain);
+    if (this._zoneControlHydrationInFlight?.[cacheKey]) return this._zoneControlHydrationInFlight[cacheKey];
+    const tasks = [
+      this._fetchScopedControlStateFromApi(domain, { patchOnly: true }),
+      this._fetchZoneAiOutputs(domain, { patchOnly: true }),
+      this._fetchZoneFinalTargets(domain, { patchOnly: true }),
+      ...(domain === "environment" ? [this._fetchEnvironmentStrategyPreview(domain, { patchOnly: true })] : []),
+      ...(domain === "irrigation" ? [this._fetchIrrigationStrategyPreview(domain, { patchOnly: true })] : []),
+    ];
+    const job = Promise.allSettled(tasks).then(() => {
+      if (this._state === "dashboard" && this._page === domain && !this._hasDirtyZoneControlEditor()) {
+        this._patchZoneControlElementCards(domain);
+      }
+    }).finally(() => {
+      if (this._zoneControlHydrationInFlight) delete this._zoneControlHydrationInFlight[cacheKey];
+    });
+    this._zoneControlHydrationInFlight[cacheKey] = job;
+    return job;
+  }
+
   _getScopedControlState(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     if (this._apiScopedControlCache?.[cacheKey]) return this._cloneControlState(domain, this._apiScopedControlCache[cacheKey]);
-    this._fetchScopedControlStateFromApi(domain); // async best-effort; localStorage fallback renders immediately
+    this._requestZoneControlHydration(domain); // async best-effort; localStorage fallback renders immediately
     return this._cloneControlState(domain, this._ensureScopedControlState(domain));
   }
 

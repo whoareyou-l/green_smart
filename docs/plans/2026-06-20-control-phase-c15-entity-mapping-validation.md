@@ -1,6 +1,6 @@
 # Control Phase C15 — Entity Mapping 검증 / Setup Assistant
 
-> 기준 버전: v1.9.21
+> 기준 버전: v1.9.22
 > 상태: 완료
 > 대상: `zone_control_views.py`, `green-smart-panel.js`, `zone_device_entity_mappings`
 

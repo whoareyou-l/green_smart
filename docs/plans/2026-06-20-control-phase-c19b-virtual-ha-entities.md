@@ -1,6 +1,6 @@
 # Control Phase C19B — 가상 HA 엔티티 생성/제어 하네스
 
-> 기준 버전: v1.9.21
+> 기준 버전: v1.9.22
 > 상태: 완료
 > 대상: `__init__.py`, `sensor.py`, `switch.py`, `cover.py`, `zone_control_views.py`, `green-smart-panel.js`
 
