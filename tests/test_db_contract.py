@@ -170,11 +170,21 @@ def test_product_phase6_weekly_report_export_notification_contract():
         "persistent_notification",
         "green_smart_weekly_report",
         "주간 생육 리포트",
+        "WEEKLY_REPORT_INTERVAL_DAYS = 7",
+        "_growth_report_health_signature",
+        "_growth_report_worsened",
+        "_maybe_send_growth_report_auto_notification",
+        "_run_growth_report_notification_tick",
+        "_setup_growth_report_notification_scheduler",
+        "growth_report_notification_checked",
+        "weekly_report_auto_sent",
+        "growth_report_worsened_sent",
     ):
-        assert marker in source
+        assert marker in source + init_source
     assert "weeklyReport = _growth_weekly_report(season_id, growth_rows, control_rows, weekly_growth, pestRisk, yieldPrediction)" in report_section
     assert "CropGrowthReportNotifyView" in init_source
     assert "hass.http.register_view(CropGrowthReportNotifyView())" in init_source
+    assert "await _setup_growth_report_notification_scheduler(hass)" in init_source
 
 
 def test_integration_setup_runs_db_schema_bootstrap_before_crop_views():

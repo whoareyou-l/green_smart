@@ -2,12 +2,16 @@
 from __future__ import annotations
 import json
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from .db import fetchall, fetchone, execute
 
 _LOGGER = logging.getLogger(__name__)
+
+WEEKLY_REPORT_INTERVAL_DAYS = 7
+GROWTH_REPORT_NOTIFICATION_SETTINGS_KEY = "growth_report_notification_settings"
+GROWTH_REPORT_NOTIFICATION_STATE_KEY = "growth_report_notification_state"
 
 YIELD_MODEL_BY_CROP = {
     "tomato": {
@@ -576,6 +580,110 @@ class CropGrowthReportView(HomeAssistantView):
     async def get(self, request: web.Request, season_id: str) -> web.Response:
         return _json(await _growth_report_response(request.app["hass"], int(season_id)))
 
+def _growth_report_health_signature(report: dict) -> dict:
+    pest_rank = {"low": 0, "medium": 1, "high": 2}
+    pest = report.get("pestRisk") or {}
+    yield_prediction = report.get("yieldPrediction") or {}
+    g_index_trend = report.get("gIndexTrend") or []
+    latest_g = float((g_index_trend[-1] or {}).get("value") or 0) if g_index_trend else 0.0
+    return {
+        "pestRiskLevel": pest.get("level") or "low",
+        "pestRiskRank": pest_rank.get(str(pest.get("level") or "low"), 0),
+        "pestRiskScore": float(pest.get("score") or 0),
+        "yieldEstimatedKg": float(yield_prediction.get("estimatedKg") or 0),
+        "gIndex": latest_g,
+    }
+
+
+def _growth_report_worsened(previous: dict | None, current: dict) -> bool:
+    if not previous:
+        return False
+    if int(current.get("pestRiskRank", 0)) > int(previous.get("pestRiskRank", 0)):
+        return True
+    if float(current.get("pestRiskScore", 0)) > float(previous.get("pestRiskScore", 0)):
+        return True
+    previous_yield = float(previous.get("yieldEstimatedKg") or 0)
+    current_yield = float(current.get("yieldEstimatedKg") or 0)
+    if previous_yield and current_yield < previous_yield:
+        return True
+    previous_g = float(previous.get("gIndex") or 0)
+    current_g = float(current.get("gIndex") or 0)
+    if previous_g and current_g < previous_g:
+        return True
+    return False
+
+
+async def _send_growth_report_notification(hass, season_id: int, report: dict, *, reason: str = "weekly_report_auto_sent") -> dict:
+    weekly = report.get("weeklyReport") or {}
+    message = weekly.get("notificationDraft") or weekly.get("summary") or "주간 생육 리포트"
+    await hass.services.async_call(
+        "persistent_notification",
+        "create",
+        {
+            "title": "주간 생육 리포트",
+            "message": message,
+            "notification_id": f"green_smart_weekly_report_{season_id}",
+        },
+        blocking=False,
+    )
+    return {"ok": True, "notificationId": f"green_smart_weekly_report_{season_id}", "message": message, "reason": reason}
+
+
+def _growth_report_notification_maps(hass) -> tuple[dict, dict]:
+    domain_data = hass.data.setdefault("green_smart", {})
+    settings = domain_data.setdefault(GROWTH_REPORT_NOTIFICATION_SETTINGS_KEY, {})
+    state = domain_data.setdefault(GROWTH_REPORT_NOTIFICATION_STATE_KEY, {})
+    return settings, state
+
+
+def _growth_report_notification_enabled(settings: dict, season_id: int) -> bool:
+    season_settings = settings.get(str(season_id)) or {}
+    return bool(season_settings.get("enabled", True))
+
+
+async def _maybe_send_growth_report_auto_notification(hass, season_id: int, *, now: datetime | None = None) -> dict:
+    settings, state = _growth_report_notification_maps(hass)
+    if not _growth_report_notification_enabled(settings, season_id):
+        return {"ok": True, "sent": False, "reason": "disabled"}
+    now = now or datetime.utcnow()
+    key = str(season_id)
+    previous_state = state.get(key) or {}
+    report = await _growth_report_response(hass, season_id)
+    current_signature = _growth_report_health_signature(report)
+    previous_signature = previous_state.get("signature")
+    last_sent_raw = previous_state.get("lastSentAt")
+    last_sent_at = datetime.fromisoformat(last_sent_raw) if last_sent_raw else None
+    due_weekly = not last_sent_at or (now - last_sent_at) >= timedelta(days=WEEKLY_REPORT_INTERVAL_DAYS)
+    worsened = _growth_report_worsened(previous_signature, current_signature)
+    if not due_weekly and not worsened:
+        state[key] = {**previous_state, "lastCheckedAt": now.isoformat(), "signature": current_signature}
+        return {"ok": True, "sent": False, "reason": "growth_report_notification_checked", "worsened": False}
+    reason = "growth_report_worsened_sent" if worsened else "weekly_report_auto_sent"
+    result = await _send_growth_report_notification(hass, season_id, report, reason=reason)
+    state[key] = {
+        "lastCheckedAt": now.isoformat(),
+        "lastSentAt": now.isoformat(),
+        "signature": current_signature,
+        "reason": reason,
+    }
+    return {**result, "sent": True, "worsened": worsened, "signature": current_signature}
+
+
+async def _run_growth_report_notification_tick(hass, now) -> None:
+    try:
+        rows = await fetchall(hass, """
+            SELECT id
+            FROM crop_seasons
+            WHERE deleted_at IS NULL AND demolish_date IS NULL
+            ORDER BY plant_date DESC
+            LIMIT 20
+        """)
+        for row in rows:
+            await _maybe_send_growth_report_auto_notification(hass, int(row["id"]), now=now.replace(tzinfo=None) if hasattr(now, "replace") else datetime.utcnow())
+        hass.data.setdefault("green_smart", {})["growth_report_notification_checked"] = datetime.utcnow().isoformat()
+    except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+        _LOGGER.warning("Growth report notification scheduler tick failed: %s", exc)
+
 
 class CropGrowthReportNotifyView(HomeAssistantView):
     """POST /api/green_smart/crop/seasons/{season_id}/growth-report/notify."""
@@ -585,19 +693,35 @@ class CropGrowthReportNotifyView(HomeAssistantView):
     async def post(self, request: web.Request, season_id: str) -> web.Response:
         hass = request.app["hass"]
         report = await _growth_report_response(hass, int(season_id))
-        weekly = report.get("weeklyReport") or {}
-        message = weekly.get("notificationDraft") or weekly.get("summary") or "주간 생육 리포트"
-        await hass.services.async_call(
-            "persistent_notification",
-            "create",
-            {
-                "title": "주간 생육 리포트",
-                "message": message,
-                "notification_id": f"green_smart_weekly_report_{season_id}",
-            },
-            blocking=False,
-        )
-        return _json({"ok": True, "notificationId": f"green_smart_weekly_report_{season_id}", "message": message})
+        result = await _send_growth_report_notification(hass, int(season_id), report, reason="manual_notify")
+        settings, state = _growth_report_notification_maps(hass)
+        state[str(season_id)] = {
+            **(state.get(str(season_id)) or {}),
+            "lastSentAt": datetime.utcnow().isoformat(),
+            "signature": _growth_report_health_signature(report),
+            "reason": result.get("reason"),
+        }
+        return _json(result)
+
+
+class CropGrowthReportNotificationSettingsView(HomeAssistantView):
+    """POST /api/green_smart/crop/seasons/{season_id}/growth-report/notification-settings."""
+    url  = "/api/green_smart/crop/seasons/{season_id}/growth-report/notification-settings"
+    name = "api:green_smart:crop:growth_report_notification_settings"
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        settings, _state = _growth_report_notification_maps(hass)
+        settings[str(season_id)] = {
+            "enabled": bool(body.get("enabled", True)),
+            "weeklyIntervalDays": int(body.get("weeklyIntervalDays") or WEEKLY_REPORT_INTERVAL_DAYS),
+            "worseningAlerts": bool(body.get("worseningAlerts", True)),
+        }
+        return _json({"ok": True, "seasonId": int(season_id), **settings[str(season_id)]})
 
 
 class CropGrowthDeleteView(HomeAssistantView):

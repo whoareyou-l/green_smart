@@ -149,7 +149,8 @@ def test_crop_pest_and_control_popups_use_season_location_scope_and_pest_autocom
         "MAX_PEST_TYPES",
         "#p-add-type",
         "p-location-scope",
-        "p-location-detail",
+        "data-pest-type-entry",
+        "data-pest-severity-select",
         "전체",
         "부분",
         "_activeSeasonLabel()",
@@ -158,18 +159,22 @@ def test_crop_pest_and_control_popups_use_season_location_scope_and_pest_autocom
         assert marker in pest_popup
     assert "id=\"p-type\"" not in pest_popup
     assert "id=\"p-loc\"" not in pest_popup
+    assert "p-location-detail" not in pest_popup
+    assert "상세 위치" not in pest_popup
 
     for marker in (
         "c-location-scope",
-        "c-location-detail",
         "_activeSeasonLabel()",
         "전체",
         "부분",
         "currentSeasonLabel",
-        "처리 위치",
+        "처리 범위",
+        "비고",
     ):
         assert marker in control_popup
     assert "id=\"c-zone\"" not in control_popup
+    assert "c-location-detail" not in control_popup
+    assert "처리 위치 상세" not in control_popup
 
 
 def test_product_phase6_growth_report_panel_contract():
@@ -245,24 +250,55 @@ def test_product_phase6_weekly_report_export_notification_panel_contract():
 
     for marker in (
         "data-weekly-report-export",
-        "data-weekly-report-notify",
+        "data-weekly-report-notification-toggle",
+        "data-weekly-report-refresh-icon",
         "_exportWeeklyGrowthReport()",
-        "_notifyWeeklyGrowthReport()",
+        "_weeklyReportNotificationEnabled()",
+        "_setWeeklyReportNotificationEnabled",
+        "_maybeNotifyWeeklyGrowthReport",
         "exportCsv",
         "exportFilename",
         "notificationDraft",
         "green_smart/crop/seasons/${this._activeSeasonId}/growth-report/notify",
-        "주간 리포트 내보내기",
-        "알림 보내기",
+        "mdi:file-download-outline",
+        "mdi:bell-ring-outline",
+        "mdi:refresh",
     ):
         assert marker in panel
     assert "data-weekly-report-export" in report_card
-    assert "data-weekly-report-notify" in report_card
+    assert "data-weekly-report-notification-toggle" in report_card
+    assert "data-weekly-report-notify" not in report_card
+    assert ">주간 리포트 내보내기<" not in report_card
+    assert ">알림 보내기<" not in report_card
+    assert ">리포트 새로고침<" not in report_card
     assert "_exportWeeklyGrowthReport" in bind_section
-    assert "_notifyWeeklyGrowthReport" in bind_section
+    assert "_maybeNotifyWeeklyGrowthReport" in bind_section
 
 
-def test_home_dashboard_does_not_render_or_fetch_pesticide_card():
+def test_ui_polish_v1931_home_kpi_crop_tab_and_master_plan_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    master = (ROOT / "docs" / "PROJECT_MASTER_PLAN.md").read_text(encoding="utf-8")
+    home_card = panel.split("  _renderHomeActionSummaryCard(kpi = {})", 1)[1].split("  _renderHomeStatusPopup", 1)[0]
+    crop_page = panel.split("  _renderCropSettingsPage()", 1)[1].split("  _emptyCropState", 1)[0]
+
+    assert "data-home-greenhouse-kpi-inline" not in home_card
+    assert "_homeStatusItems(kpi)" not in home_card
+    assert "현재 온실 상태는 아래 KPI 카드에서 확인" in home_card
+    assert "${this._renderKPIStrip(kpi)}" in panel
+    assert "기본 설정" not in crop_page
+    assert "작기 설정" in crop_page
+    assert "작기 설정 탭에서 첫 작기를 등록" in panel
+    for marker in (
+        "## 8. 구현 기능 고도화/완성도 강화 마스터플랜",
+        "UI Polish Phase P1",
+        "오늘 농장 확인 카드와 KPI 카드 분리",
+        "작물 기본 설정 명칭을 작기 설정으로 변경",
+        "주간 리포트 알림은 on/off 토글 + 백그라운드 자동 전송",
+        "병해충 예찰 모달 compact layout",
+        "방제 기록 모달 compact layout",
+    ):
+        assert marker in master
+
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     home = panel.split("  _renderHomePage(sim)", 1)[1].split("  _renderKPIStrip", 1)[0]
     weather_fetch = panel.split("  async _fetchWeather()", 1)[1].split("  _generateSimData", 1)[0]

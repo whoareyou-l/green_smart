@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.30
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.31
 const DOMAIN = "green_smart";
-const VERSION = "1.9.30";
+const VERSION = "1.9.31";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1765,20 +1765,11 @@ button.action:disabled{opacity:.5;cursor:default;}
   _renderHomeActionSummaryCard(kpi = {}) {
     const riskCount = this._alerts.filter((a) => !a.isUpdate).length;
     const role = this._currentUserRole();
-    const statusItems = this._homeStatusItems(kpi);
-    const statusHtml = statusItems.map((item) => {
-      const meta = this._statusLevelMeta(item.level);
-      return `<button class="home-status-chip" data-home-status-card data-status-key="${item.key}" data-status-level="${item.level}" style="border:1px solid ${meta.color};background:${meta.bg};color:${meta.color};border-radius:14px;padding:10px 12px;text-align:left;cursor:pointer;">
-        <div style="font-size:12px;font-weight:700;opacity:.86;">${item.label}</div>
-        <div style="font-size:20px;font-weight:900;color:#24323F;margin-top:2px;">${item.value}</div>
-        <div style="font-size:11px;font-weight:800;margin-top:4px;">${meta.label}</div>
-      </button>`;
-    }).join("");
     return `<section class="gs-card home-action-summary" data-home-action-summary data-ui-section="view" style="padding:18px;margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;">
         <div>
           <div style="font-size:18px;font-weight:900;color:#24323F;">오늘 농장 확인</div>
-          <div style="font-size:12px;color:#7a9780;margin-top:4px;">위험 알림 → 오늘 할 일 → 조치 필요 → 현재 온실 상태 순서로 확인합니다.</div>
+          <div style="font-size:12px;color:#7a9780;margin-top:4px;">위험 알림 → 오늘 할 일 → 조치 필요 순서로 확인합니다. 현재 온실 상태는 아래 KPI 카드에서 확인하세요.</div>
         </div>
         <span style="font-size:11px;font-weight:800;color:#7a9780;background:#f5faf6;border-radius:999px;padding:6px 10px;">${this._esc(role)}</span>
       </div>
@@ -1790,13 +1781,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div style="font-size:12px;font-weight:800;color:#7a9780;">오늘 할 일</div>
         <div style="font-size:14px;font-weight:800;color:#24323F;margin-top:3px;">작물 상태 확인 · 관수 상태 확인 · 장치 이상 여부 확인</div>
       </div>
-      <div data-home-required-actions style="padding:12px;border-radius:14px;background:#fffaf0;margin-bottom:12px;">
+      <div data-home-required-actions style="padding:12px;border-radius:14px;background:#fffaf0;">
         <div style="font-size:12px;font-weight:800;color:#7a9780;">조치 필요</div>
         <div style="font-size:14px;font-weight:800;color:#24323F;margin-top:3px;">알림 확인, 조치 완료 기록, 권한 내 장치 정지를 여기서 시작합니다.</div>
-      </div>
-      <div data-home-greenhouse-summary>
-        <div style="font-size:12px;font-weight:800;color:#7a9780;margin-bottom:8px;">현재 온실 상태</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;">${statusHtml}</div>
       </div>
     </section>`;
   }
@@ -2050,14 +2037,18 @@ button.action:disabled{opacity:.5;cursor:default;}
       { label:"DLI", icon:"mdi:weather-sunny", valKey:"dli", raw:kpi.dli, spark:"light" },
       { label:"누적광량", icon:"mdi:white-balance-sunny", valKey:"light", raw:kpi.light, spark:"light" },
     ];
-    return `<div class="kpi-strip">${cards.map((c) => `
-      <div class="kpi-card">
+    const statusByKey = Object.fromEntries(this._homeStatusItems(kpi).map((item) => [item.key, item]));
+    return `<div class="kpi-strip" data-home-greenhouse-summary>${cards.map((c) => {
+      const status = statusByKey[c.valKey] || { level: "ok" };
+      return `
+      <div class="kpi-card" data-home-status-card data-status-key="${c.valKey}" data-status-level="${status.level}">
         <div class="kpi-top">
           <div><div class="kpi-label">${c.label}</div><div class="kpi-value"><span data-kpi-val="${c.valKey}">${this._kpiText(c.valKey, c.raw == null ? null : c.raw)}</span></div></div>
           <ha-icon icon="${c.icon}" class="kpi-icon"></ha-icon>
         </div>
         <div class="kpi-bottom">${delta(c.raw, c.spark)}<span data-kpi-spark="${c.valKey}">${sparkOf(c.spark)}</span></div>
-      </div>`).join("")}
+      </div>`;
+    }).join("")}
     </div>`;
   }
 
@@ -3582,7 +3573,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       this._loadCropData();  // 비동기; 완료 시 _refreshCropContent() 자동 호출
     }
     const tabs = [
-      { key: "basic",   label: "기본 설정" },
+      { key: "basic",   label: "작기 설정" },
       { key: "growth",  label: "생육조사" },
       { key: "pest",    label: "병해충 예찰" },
       { key: "control", label: "방제 기록" },
@@ -3620,7 +3611,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       return `<div style="text-align:center;padding:32px;">
         <div style="font-size:32px;margin-bottom:10px;">🌿</div>
         <div style="font-size:14px;font-weight:700;color:#24323F;margin-bottom:6px;">등록된 작기가 없습니다</div>
-        <div style="font-size:12px;color:#7a9780;">기본 설정 탭에서 첫 작기를 등록해보세요</div>
+        <div style="font-size:12px;color:#7a9780;">작기 설정 탭에서 첫 작기를 등록해보세요</div>
       </div>`;
     }
     const cards = this._cropSeasons.map(s => {
@@ -3914,10 +3905,13 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div style="font-size:15px;font-weight:900;color:#24323F;">생육 리포트</div>
           <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 추세 · G-Index 추이 · 수확량 예측 · 병해 위험도 · 주간 리포트</div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-          <button data-weekly-report-export title="주간 리포트 내보내기" style="border:1px solid #c8e6c9;background:#fff;color:#51AE60;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">주간 리포트 내보내기</button>
-          <button data-weekly-report-notify title="알림 보내기" style="border:1px solid #f3d2bd;background:#fff8f5;color:#c46d2d;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">알림 보내기</button>
-          <button data-growth-report-refresh style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">리포트 새로고침</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
+          <label title="주간 리포트 자동 알림 on/off" style="border:1px solid #f3d2bd;background:#fff8f5;color:#c46d2d;border-radius:10px;padding:6px 8px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;">
+            <input data-weekly-report-notification-toggle type="checkbox" ${this._weeklyReportNotificationEnabled() ? "checked" : ""} style="margin:0;">
+            <ha-icon icon="mdi:bell-ring-outline" style="--mdi-icon-size:17px;"></ha-icon>
+          </label>
+          <button data-weekly-report-export title="주간 리포트 내보내기" style="border:1px solid #c8e6c9;background:#fff;color:#51AE60;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:file-download-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
+          <button data-growth-report-refresh data-weekly-report-refresh-icon title="리포트 새로고침" style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:refresh" style="--mdi-icon-size:18px;"></ha-icon></button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
@@ -4143,6 +4137,38 @@ button.action:disabled{opacity:.5;cursor:default;}
     } catch (err) {
       console.warn("생육 리포트 조회 실패", err);
       return this._growthReportData;
+    }
+  }
+
+  _weeklyReportNotificationEnabled() {
+    try { return localStorage.getItem("green_smart_weekly_report_notifications") !== "off"; } catch (_) { return true; }
+  }
+
+  async _setWeeklyReportNotificationEnabled(enabled) {
+    try { localStorage.setItem("green_smart_weekly_report_notifications", enabled ? "on" : "off"); } catch (_) {}
+    if (!this._hass || !this._activeSeasonId) return;
+    try {
+      await this._hass.callApi("POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth-report/notification-settings`, {
+        enabled,
+        weeklyIntervalDays: 7,
+        worseningAlerts: true,
+      });
+    } catch (err) {
+      console.warn("주간 리포트 알림 설정 저장 실패", err);
+    }
+  }
+
+  async _maybeNotifyWeeklyGrowthReport(reason = "manual_refresh") {
+    if (!this._weeklyReportNotificationEnabled() || !this._hass || !this._activeSeasonId) return null;
+    try {
+      return await this._hass.callApi("POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth-report/notify`, {
+        reason,
+        automatic: true,
+        message: this._growthReportData?.weeklyReport?.notificationDraft || "주간 생육 리포트",
+      });
+    } catch (err) {
+      console.warn("주간 생육 리포트 자동 알림 실패", err);
+      return null;
     }
   }
 
@@ -4538,7 +4564,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const today = new Date().toISOString().slice(0, 10);
     const MAX_PEST_TYPES = 6;
     const currentSeasonLabel = this._activeSeasonLabel();
-    const pestTypes = [{ name: "", source: "" }];
+    const pestTypes = [{ name: "", source: "", severity: "1" }];
     const debounceTimers = {};
     this._openCropPopup(`
       <div class="popup-card">
@@ -4556,11 +4582,11 @@ button.action:disabled{opacity:.5;cursor:default;}
             <label>조사일</label>
             <input type="date" id="p-date" value="${today}">
           </div>
-          <div class="pop-field">
-            <label>현재 작기</label>
-            <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
-          </div>
           <div class="pop-field-row">
+            <div class="pop-field">
+              <label>현재 작기</label>
+              <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
+            </div>
             <div class="pop-field">
               <label>발생 범위</label>
               <select id="p-location-scope">
@@ -4568,24 +4594,11 @@ button.action:disabled{opacity:.5;cursor:default;}
                 <option value="부분">부분</option>
               </select>
             </div>
-            <div class="pop-field">
-              <label>상세 위치</label>
-              <input type="text" id="p-location-detail" placeholder="예) 북측 2동, 베드 3">
-            </div>
           </div>
           <div class="pop-field">
-            <label>병해충 종류 <span style="font-weight:400;color:#7a9780;font-size:11px;">(농약 API 자동완성, 여러 개 입력 가능)</span></label>
+            <label>병해충 종류 / 발생 정도 <span style="font-weight:400;color:#7a9780;font-size:11px;">(농약 API 자동완성, 행 단위 추가)</span></label>
             <div id="p-type-list"></div>
-            <button id="p-add-type" type="button" style="background:#fff8f5;color:#e67e22;border:1.5px dashed #f3c79d;border-radius:10px;padding:8px;width:100%;font-size:12px;font-weight:800;cursor:pointer;">+ 병해충 추가 (최대 ${MAX_PEST_TYPES}개)</button>
-          </div>
-          <div class="pop-field">
-            <label>발생 정도</label>
-            <select id="p-sev">
-              <option value="1">🟢 낮음 — 소수 발생, 즉각 위협 없음</option>
-              <option value="2">🟡 보통 — 확산 가능, 주의 필요</option>
-              <option value="3">🟠 높음 — 빠른 방제 필요</option>
-              <option value="4">🔴 위험 — 즉시 방제 요망</option>
-            </select>
+            <button id="p-add-type" type="button" style="background:#fff8f5;color:#e67e22;border:1.5px dashed #f3c79d;border-radius:10px;padding:8px;width:100%;font-size:12px;font-weight:800;cursor:pointer;">+ 병해충/발생 정도 추가 (최대 ${MAX_PEST_TYPES}개)</button>
           </div>
           <div class="pop-field">
             <label>비고</label>
@@ -4601,12 +4614,18 @@ button.action:disabled{opacity:.5;cursor:default;}
       const addBtn = inner.querySelector("#p-add-type");
       const renderTypes = () => {
         listEl.innerHTML = pestTypes.map((item, idx) => `
-          <div data-pest-type-entry="${idx}" style="position:relative;display:flex;gap:6px;align-items:flex-start;margin-bottom:7px;">
-            <div style="flex:1;position:relative;">
+          <div data-pest-type-entry="${idx}" style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:6px;align-items:start;margin-bottom:7px;">
+            <div style="position:relative;">
               <input type="text" data-pest-type-input="${idx}" value="${this._esc(item.name)}" placeholder="예) 잿빛곰팡이, 응애, 총채벌레" autocomplete="off">
               <div data-pest-type-suggestions="${idx}" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1.5px solid #e8f0e9;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:320;max-height:180px;overflow-y:auto;margin-top:2px;"></div>
             </div>
-            ${idx > 0 ? `<button data-pest-type-del="${idx}" type="button" style="background:none;border:none;color:#c0392b;font-size:17px;cursor:pointer;padding:8px 2px;">✕</button>` : ""}
+            <select data-pest-severity-select="${idx}">
+              <option value="1" ${item.severity === "1" ? "selected" : ""}>🟢 낮음</option>
+              <option value="2" ${item.severity === "2" ? "selected" : ""}>🟡 보통</option>
+              <option value="3" ${item.severity === "3" ? "selected" : ""}>🟠 높음</option>
+              <option value="4" ${item.severity === "4" ? "selected" : ""}>🔴 위험</option>
+            </select>
+            ${idx > 0 ? `<button data-pest-type-del="${idx}" type="button" style="background:none;border:none;color:#c0392b;font-size:17px;cursor:pointer;padding:8px 2px;">✕</button>` : `<span></span>`}
           </div>`).join("");
         addBtn.style.display = pestTypes.length >= MAX_PEST_TYPES ? "none" : "";
         bindTypeRows();
@@ -4635,22 +4654,28 @@ button.action:disabled{opacity:.5;cursor:default;}
             }, 250);
           });
         });
+        listEl.querySelectorAll("[data-pest-severity-select]").forEach(select => {
+          select.addEventListener("change", () => {
+            const idx = Number(select.dataset.pestSeveritySelect);
+            if (pestTypes[idx]) pestTypes[idx].severity = select.value || "1";
+          });
+        });
         listEl.querySelectorAll("[data-pest-type-del]").forEach(btn => btn.addEventListener("click", () => {
           pestTypes.splice(Number(btn.dataset.pestTypeDel), 1);
           renderTypes();
         }));
       };
-      addBtn?.addEventListener("click", () => { if (pestTypes.length < MAX_PEST_TYPES) { pestTypes.push({ name: "", source: "" }); renderTypes(); } });
+      addBtn?.addEventListener("click", () => { if (pestTypes.length < MAX_PEST_TYPES) { pestTypes.push({ name: "", source: "", severity: "1" }); renderTypes(); } });
       renderTypes();
       inner.querySelector("#p-save")?.addEventListener("click", async () => {
         const selectedTypes = pestTypes.map(p => p.name.trim()).filter(Boolean);
+        const maxSeverity = pestTypes.filter(p => p.name.trim()).reduce((max, p) => Math.max(max, Number(p.severity || 1)), 1);
         const scope = inner.querySelector("#p-location-scope")?.value || "전체";
-        const detail = inner.querySelector("#p-location-detail")?.value?.trim() || "";
         const body = {
           date:     inner.querySelector("#p-date")?.value || today,
           type:     selectedTypes.join(", "),
-          location: `${currentSeasonLabel} · ${scope}${detail ? ` · ${detail}` : ""}`,
-          severity: inner.querySelector("#p-sev")?.value || "low",
+          location: `${currentSeasonLabel} · ${scope}`,
+          severity: String(maxSeverity),
           note:     inner.querySelector("#p-note")?.value || "",
         };
         try {
@@ -4749,6 +4774,20 @@ button.action:disabled{opacity:.5;cursor:default;}
             <label>방제일</label>
             <input type="date" id="c-date" value="${today}">
           </div>
+          <!-- 처리 범위 -->
+          <div class="pop-field-row">
+            <div class="pop-field">
+              <label>현재 작기</label>
+              <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
+            </div>
+            <div class="pop-field">
+              <label>처리 범위</label>
+              <select id="c-location-scope">
+                <option value="전체">전체</option>
+                <option value="부분">부분</option>
+              </select>
+            </div>
+          </div>
           <!-- 약제 목록 -->
           <div id="c-pest-list"></div>
           <!-- 약제 추가 버튼 -->
@@ -4759,25 +4798,6 @@ button.action:disabled{opacity:.5;cursor:default;}
           </button>
           <!-- 혼용 경고는 약제명 아래에 자동 표시된다 -->
           <div id="c-mix-summary" style="display:none;margin-top:2px;font-size:11px;color:#856404;"></div>
-          <div style="height:1px;background:#f0f7f1;margin:4px 0;"></div>
-          <!-- 처리 위치 -->
-          <div class="pop-field">
-            <label>현재 작기</label>
-            <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
-          </div>
-          <div class="pop-field-row">
-            <div class="pop-field">
-              <label>처리 범위</label>
-              <select id="c-location-scope">
-                <option value="전체">전체</option>
-                <option value="부분">부분</option>
-              </select>
-            </div>
-            <div class="pop-field">
-              <label>처리 위치 상세</label>
-              <input type="text" id="c-location-detail" placeholder="예) 북측 2동, 베드 3">
-            </div>
-          </div>
           <!-- 비고 -->
           <div class="pop-field">
             <label>비고</label>
@@ -5092,10 +5112,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         }
 
         const locationScope = inner.querySelector("#c-location-scope")?.value || "전체";
-        const locationDetail = inner.querySelector("#c-location-detail")?.value?.trim() || "";
         const controlBody = {
           controlDate: inner.querySelector("#c-date")?.value || today,
-          zone: `${currentSeasonLabel} · ${locationScope}${locationDetail ? ` · ${locationDetail}` : ""}`,
+          zone: `${currentSeasonLabel} · ${locationScope}`,
           note: inner.querySelector("#c-note")?.value || "",
           pesticides: validEntries.map(e => ({
             name: e.name, regNo: e.regNo || null,
@@ -5145,9 +5164,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("#growth-export-btn")?.addEventListener("click",  () => this._exportCropData("growth"));
     root.querySelector("#pest-export-btn")?.addEventListener("click",    () => this._exportCropData("pest"));
     root.querySelector("#control-export-btn")?.addEventListener("click", () => this._exportCropData("control"));
-    root.querySelector("[data-growth-report-refresh]")?.addEventListener("click", () => this._fetchGrowthReport());
+    root.querySelector("[data-growth-report-refresh]")?.addEventListener("click", async () => { await this._fetchGrowthReport(); await this._maybeNotifyWeeklyGrowthReport("manual_refresh"); });
     root.querySelector("[data-weekly-report-export]")?.addEventListener("click", () => this._exportWeeklyGrowthReport());
-    root.querySelector("[data-weekly-report-notify]")?.addEventListener("click", () => this._notifyWeeklyGrowthReport());
+    root.querySelector("[data-weekly-report-notification-toggle]")?.addEventListener("change", (event) => this._setWeeklyReportNotificationEnabled(event.target.checked));
 
     root.querySelectorAll("[data-crop-page]").forEach((btn) => {
       btn.addEventListener("click", () => {

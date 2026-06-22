@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.30`, Control Phase C19D virtual rehearsal evidence baseline
+> 기준 버전: product code `v1.9.31`, UI Polish Phase P1 baseline, Control Phase C19D virtual rehearsal evidence baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -307,7 +307,34 @@ G-Index 추이 baseline
 
 운영 안정성 기준으로는 `C14~C19D` 완료 상태이며, **가상 HA 엔티티 기반 리허설 테스트 하네스, 관수설정 no-flicker hydration, C20 gate 전 가상 시나리오 증거 리포트**까지 도달했다. 실제 장비 연결은 아직 금지이며, 인터록·운영 알고리즘·UI/운영자 UX가 가상 장치/시뮬레이션에서 충분히 검증된 뒤 C20 제한적 실제 현장 리허설로 넘어간다. 제품 기능 기준으로는 `Phase 6 — 생육 리포트와 예측` baseline 완료 상태다.
 
-## 7. 작업 원칙
+## 8. 구현 기능 고도화/완성도 강화 마스터플랜
+
+앞으로의 기본 방향은 새 기능을 계속 얹기보다, 이미 구현된 Home/Crop/Product Phase 6/Control Phase 기능을 사용자 흐름 기준으로 더 구체적이고 완성도 있게 다듬는 것이다. 새 구현은 기존 마스터플랜을 대체하지 않고 이 섹션에 이어서 누적한다.
+
+### UI Polish Phase P1. Home/Crop 운영 UX 정리
+
+목표:
+
+```text
+비전공자 농장주/직원이 Home → 작기 설정 → 생육조사 → 병해충 예찰 → 방제 기록 흐름을 직관적으로 이해하고, 중복 KPI/불필요 텍스트 버튼/자유 입력성 위치 필드를 줄인다.
+```
+
+완료 기준:
+
+- 오늘 농장 확인 카드와 KPI 카드 분리: 오늘 농장 확인 카드는 위험 알림/오늘 할 일/조치 필요만 담당하고, 온도/습도/CO₂/VPD 수치 확인은 기존 `_renderKPIStrip(kpi)` KPI 카드가 담당한다.
+- 작물 기본 설정 명칭을 작기 설정으로 변경: 사용자에게 “작기 등록/수정/철거” 기능임을 명확히 표현한다.
+- 주간 리포트 알림은 on/off 토글 + 백그라운드 자동 전송: 기본 1주일 1회 자동 알림, 병해 위험도/수확량 예측/G-Index 등 주요 상태가 이전 알림 대비 악화될 때 변화 알림을 보낸다.
+- 주간 리포트 내보내기/새로고침은 텍스트 버튼이 아니라 icon-only UI로 제공한다. 수동 “알림 보내기” 버튼은 제거한다.
+- 병해충 예찰 모달 compact layout: 현재 작기와 발생 범위를 같은 줄에 배치하고 상세 위치 입력을 제거한다. 병해충 종류와 발생 정도는 한 행 단위로 함께 추가/삭제한다.
+- 방제 기록 모달 compact layout: 방제일 아래 현재 작기와 처리 범위를 같은 줄에 배치하고 처리 위치 상세를 제거한다. 그 아래에 약제명/추가 버튼/비고 순서로 배치한다.
+
+후속 고도화 후보:
+
+- Home 오늘 할 일/조치 필요를 실제 SafetyGuard/Growth/Pest/Control 상태에서 산출한다.
+- 생육 리포트 알림 설정을 작기별/농장별 정책으로 확장하고, 알림 이력 UI를 제공한다.
+- 병해충 예찰/방제 기록의 약제·병해충 추천을 작물/작기/최근 발생 이력에 맞춰 랭킹한다.
+
+## 9. 작업 원칙
 
 1. 기존 DB/API/test contract는 뒤집지 않는다.
 2. 변경이 필요하면 migration task로 분리한다.

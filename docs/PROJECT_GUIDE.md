@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.30` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.31` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** 138 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -239,7 +239,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.30"
+  "version": "1.9.31"
 }
 ```
 
@@ -485,7 +485,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.30"
+const VERSION = "1.9.31"
 ```
 
 중요 UI 페이지:
@@ -1488,7 +1488,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.30
+v1.9.31
 ```
 
 ---

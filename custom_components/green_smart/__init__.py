@@ -60,6 +60,32 @@ def _teardown_safety_guard_watchdog_scheduler(hass) -> None:
         domain_data["safety_guard_watchdog_scheduler_stopped"] = True
 
 
+async def _run_growth_report_notification_scheduler_tick(hass, now) -> None:
+    from .crop_views import _run_growth_report_notification_tick
+
+    await _run_growth_report_notification_tick(hass, now)
+
+
+async def _setup_growth_report_notification_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("unsub_growth_report_notification"):
+        return
+
+    def _tick(now):
+        hass.loop.call_soon_threadsafe(hass.async_create_task, _run_growth_report_notification_scheduler_tick(hass, now))
+
+    domain_data["unsub_growth_report_notification"] = async_track_time_interval(hass, _tick, timedelta(hours=1))
+    domain_data["growth_report_notification_scheduler_started"] = True
+
+
+def _teardown_growth_report_notification_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    unsub = domain_data.pop("unsub_growth_report_notification", None)
+    if unsub:
+        unsub()
+        domain_data["growth_report_notification_scheduler_stopped"] = True
+
+
 async def async_setup(hass, config):
     """컴포넌트 레벨 설정 — HTTP Views 등록."""
     from .weather_api import WeatherStore
@@ -72,7 +98,7 @@ async def async_setup(hass, config):
     from .db import ensure_schema
     from .crop_views import (
         CropSeasonsView, CropSeasonDemolishView, CropSeasonDeleteView,
-        CropGrowthListView, CropGrowthReportView, CropGrowthReportNotifyView, CropGrowthDeleteView,
+        CropGrowthListView, CropGrowthReportView, CropGrowthReportNotifyView, CropGrowthReportNotificationSettingsView, CropGrowthDeleteView,
         CropPestListView, CropPestDeleteView,
         CropControlListView, CropControlDeleteView,
     )
@@ -113,6 +139,7 @@ async def async_setup(hass, config):
         hass.http.register_view(CropGrowthListView())
         hass.http.register_view(CropGrowthReportView())
         hass.http.register_view(CropGrowthReportNotifyView())
+        hass.http.register_view(CropGrowthReportNotificationSettingsView())
         hass.http.register_view(CropGrowthDeleteView())
         hass.http.register_view(CropPestListView())
         hass.http.register_view(CropPestDeleteView())
@@ -154,6 +181,7 @@ async def async_setup(hass, config):
         hass.http.register_view(DeviceFinalTargetExecutionView())
         domain_data["_views_registered"] = True
     await _setup_safety_guard_watchdog_scheduler(hass)
+    await _setup_growth_report_notification_scheduler(hass)
     return True
 
 
@@ -189,6 +217,7 @@ async def async_unload_entry(hass, entry):
         unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         _teardown_safety_guard_watchdog_scheduler(hass)
+        _teardown_growth_report_notification_scheduler(hass)
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
         from .db import close_pool
         await close_pool()
