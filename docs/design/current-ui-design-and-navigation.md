@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.28`
+> 기준 버전: `v1.9.29`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.28` |
+| 현재 version | `1.9.29` |
 
 작업 시 우선순위:
 
@@ -427,6 +427,11 @@ virtual = true
 - 환경/날씨/방제 이력 driver 표시
 - 권장 조치 표시
 - 주간 리포트 summary/actions 표시
+- 주간 리포트 CSV 내보내기
+- 주간 리포트 Home Assistant 알림 보내기
+- 병해충 예찰 추가 팝업: 현재 작기 기준 발생 위치, 전체/부분 범위, 상세 위치
+- 병해충 예찰 추가 팝업: 농약 API 자동완성 기반 다중 병해충 입력
+- 방제 기록 추가 팝업: 현재 작기 기준 처리 위치, 전체/부분 범위, 상세 위치
 - 리포트 새로고침
 - CSV 내보내기
 - 생육조사 추가
@@ -966,7 +971,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.28 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.29 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 

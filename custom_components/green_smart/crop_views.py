@@ -422,6 +422,48 @@ def _growth_pest_risk(hass, pest_rows: list[dict], control_rows: list[dict]) -> 
     }
 
 
+def _weekly_report_export_csv(weekly_report: dict) -> str:
+    rows = [
+        ["항목", "내용"],
+        ["요약", weekly_report.get("summary", "")],
+        ["마지막 방제일", weekly_report.get("lastControlDate") or ""],
+        ["예상 수확량(kg)", weekly_report.get("yieldEstimatedKg", "")],
+        ["병해 위험도", weekly_report.get("pestRiskLevel", "")],
+        ["권장 조치", " / ".join(weekly_report.get("actions") or [])],
+    ]
+    return "\n".join(",".join('"' + str(col).replace('"', '""') + '"' for col in row) for row in rows)
+
+
+def _growth_weekly_report(season_id: int, growth_rows: list[dict], control_rows: list[dict], weekly_growth: float, pestRisk: dict, yieldPrediction: dict) -> dict:
+    last_control = control_rows[0].get("date") if control_rows else None
+    summary = f"최근 생육조사 {len(growth_rows)}건 기준 주간 초장 증가 {weekly_growth}cm, 병해 위험도 {pestRisk['level']}, 예상 수확량 {yieldPrediction.get('estimatedKg', 0)}kg"
+    actions = ["생육조사 주 1회 이상 기록", "병해 위험도 medium 이상이면 예찰/방제 기록 확인", "G-Index 급변 시 환경 전략 preview 확인"]
+    actions.extend(pestRisk.get("recommendedActions") or [])
+    actions = list(dict.fromkeys(actions))
+    export_text = "\n".join([
+        "주간 생육 리포트",
+        f"작기 ID: {season_id}",
+        f"요약: {summary}",
+        f"예상 수확량: {yieldPrediction.get('estimatedKg', 0)}kg",
+        f"병해 위험도: {pestRisk['level']} (score {pestRisk.get('score', 0)})",
+        f"마지막 방제일: {last_control or '기록 없음'}",
+        "권장 조치:",
+        *[f"- {a}" for a in actions],
+    ])
+    report = {
+        "summary": summary,
+        "actions": actions,
+        "lastControlDate": last_control,
+        "yieldEstimatedKg": yieldPrediction.get("estimatedKg", 0),
+        "pestRiskLevel": pestRisk["level"],
+        "exportText": export_text,
+        "exportFilename": f"green_smart_weekly_report_{season_id}.csv",
+        "notificationDraft": f"주간 생육 리포트: {summary}",
+    }
+    report["exportCsv"] = _weekly_report_export_csv(report)
+    return report
+
+
 def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_rows: list[dict], latest_g: float, weekly_growth: float) -> dict:
     crop_type = str(season.get("cropType") or latest.get("cropType") or "default").lower()
     model = YIELD_MODEL_BY_CROP.get(crop_type, YIELD_MODEL_BY_CROP["default"])
@@ -512,11 +554,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "stemDia": _growth_report_points(growth_rows, "stemDia", "stemDia"),
     }
     gIndexTrend = [{"date": row.get("date"), "value": _growth_g_index(row)} for row in reversed(growth_rows)]
-    weeklyReport = {
-        "summary": f"최근 생육조사 {len(growth_rows)}건 기준 주간 초장 증가 {weekly_growth}cm, 병해 위험도 {pestRisk['level']}",
-        "actions": ["생육조사 주 1회 이상 기록", "병해 위험도 medium 이상이면 예찰/방제 기록 확인", "G-Index 급변 시 환경 전략 preview 확인"],
-        "lastControlDate": control_rows[0].get("date") if control_rows else None,
-    }
+    weeklyReport = _growth_weekly_report(season_id, growth_rows, control_rows, weekly_growth, pestRisk, yieldPrediction)
     return {
         "ok": True,
         "seasonId": season_id,
@@ -537,6 +575,29 @@ class CropGrowthReportView(HomeAssistantView):
 
     async def get(self, request: web.Request, season_id: str) -> web.Response:
         return _json(await _growth_report_response(request.app["hass"], int(season_id)))
+
+
+class CropGrowthReportNotifyView(HomeAssistantView):
+    """POST /api/green_smart/crop/seasons/{season_id}/growth-report/notify."""
+    url  = "/api/green_smart/crop/seasons/{season_id}/growth-report/notify"
+    name = "api:green_smart:crop:growth_report_notify"
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        report = await _growth_report_response(hass, int(season_id))
+        weekly = report.get("weeklyReport") or {}
+        message = weekly.get("notificationDraft") or weekly.get("summary") or "주간 생육 리포트"
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": "주간 생육 리포트",
+                "message": message,
+                "notification_id": f"green_smart_weekly_report_{season_id}",
+            },
+            blocking=False,
+        )
+        return _json({"ok": True, "notificationId": f"green_smart_weekly_report_{season_id}", "message": message})
 
 
 class CropGrowthDeleteView(HomeAssistantView):

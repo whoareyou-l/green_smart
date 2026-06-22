@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.28`
+> 기준 버전: `v1.9.29`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.28"
+  "version": "1.9.29"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.28` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.29` |
 
 ### 4.2 WebSocket commands
 
@@ -400,6 +400,7 @@ farm_id + crop_season_id + zone_id + domain
 ```
 
 | `GET /api/green_smart/crop/seasons/{season_id}/growth-report` | Phase 6 생육 리포트/G-Index/작물별 수확량 예측/병해 위험도/주간 리포트 |
+| `POST /api/green_smart/crop/seasons/{season_id}/growth-report/notify` | 주간 생육 리포트를 Home Assistant persistent notification으로 전송 |
 
 `yieldPrediction`은 tomato/lettuce/generic 작물별 baseline 모델을 사용하며 다음 필드를 포함한다.
 
@@ -434,6 +435,22 @@ riskFactors
 recommendedActions
 pestHistoryScore
 ```
+
+`weeklyReport`는 UI export/notification 용도로 다음 필드를 포함한다.
+
+```text
+summary
+actions
+lastControlDate
+yieldEstimatedKg
+pestRiskLevel
+exportText
+exportCsv
+exportFilename
+notificationDraft
+```
+
+`POST /growth-report/notify`는 `persistent_notification.create`를 호출하며 `notification_id`는 `green_smart_weekly_report_{season_id}`다.
 
 ### 10.2 Generic zone APIs
 

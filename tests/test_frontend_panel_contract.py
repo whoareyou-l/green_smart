@@ -137,6 +137,41 @@ def test_crop_season_selector_displays_korean_crop_labels_instead_of_raw_keys():
     assert "s.variety || s.cropType" not in selector
 
 
+def test_crop_pest_and_control_popups_use_season_location_scope_and_pest_autocomplete():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    pest_popup = panel.split("  _openPestAddPopup()", 1)[1].split("  _formatPesticideMoa", 1)[0]
+    control_popup = panel.split("  _openControlAddPopup()", 1)[1].split("  _refreshCropContent", 1)[0]
+
+    for marker in (
+        "data-pest-type-entry",
+        "data-pest-type-suggestions",
+        "green_smart/central/pesticide/search",
+        "MAX_PEST_TYPES",
+        "#p-add-type",
+        "p-location-scope",
+        "p-location-detail",
+        "전체",
+        "부분",
+        "_activeSeasonLabel()",
+        "selectedTypes.join",
+    ):
+        assert marker in pest_popup
+    assert "id=\"p-type\"" not in pest_popup
+    assert "id=\"p-loc\"" not in pest_popup
+
+    for marker in (
+        "c-location-scope",
+        "c-location-detail",
+        "_activeSeasonLabel()",
+        "전체",
+        "부분",
+        "currentSeasonLabel",
+        "처리 위치",
+    ):
+        assert marker in control_popup
+    assert "id=\"c-zone\"" not in control_popup
+
+
 def test_product_phase6_growth_report_panel_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     growth_tab = panel.split("  _renderCropGrowthTab()", 1)[1].split("  _renderCropPestTab()", 1)[0]
@@ -201,6 +236,30 @@ def test_product_phase6_pest_risk_panel_surfaces_environment_weather_control_det
         "권장 조치",
     ):
         assert marker in report_card
+
+
+def test_product_phase6_weekly_report_export_notification_panel_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCropGrowthTab()", 1)[0]
+    bind_section = panel.split("  _bindCropContent(root)", 1)[1].split("  _openSeasonBasicPopup", 1)[0]
+
+    for marker in (
+        "data-weekly-report-export",
+        "data-weekly-report-notify",
+        "_exportWeeklyGrowthReport()",
+        "_notifyWeeklyGrowthReport()",
+        "exportCsv",
+        "exportFilename",
+        "notificationDraft",
+        "green_smart/crop/seasons/${this._activeSeasonId}/growth-report/notify",
+        "주간 리포트 내보내기",
+        "알림 보내기",
+    ):
+        assert marker in panel
+    assert "data-weekly-report-export" in report_card
+    assert "data-weekly-report-notify" in report_card
+    assert "_exportWeeklyGrowthReport" in bind_section
+    assert "_notifyWeeklyGrowthReport" in bind_section
 
 
 def test_home_dashboard_does_not_render_or_fetch_pesticide_card():

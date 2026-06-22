@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.28` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 134 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.29` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 137 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -238,7 +238,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.28"
+  "version": "1.9.29"
 }
 ```
 
@@ -484,7 +484,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.28"
+const VERSION = "1.9.29"
 ```
 
 중요 UI 페이지:
@@ -942,7 +942,7 @@ control_records: pestRisk.controlHistoryDrivers + weeklyReport lastControlDate
 weather_store cache: pestRisk.weatherDrivers/environmentDrivers
 ```
 
-Panel의 작물 설정 > 생육조사 탭에는 `생육 리포트` 카드가 표시된다. 현재 수확량 예측은 tomato/lettuce/generic 작물별 모델 baseline이며, `modelVersion`, `cropModelLabel`, `estimatedKgPerPlant`, `estimatedKgPerArea`, `yieldDrivers`, `confidenceReasons`를 포함한다. 병해 위험도는 `weather_environment_control_model_v1` 기준으로 최근 예찰 이력, weather cache의 습도/온도/강우 신호, 최근 방제 이력을 결합해 `environmentDrivers`, `weatherDrivers`, `controlHistoryDrivers`, `riskFactors`, `recommendedActions`를 표시한다. 작기 선택 카드의 crop key는 한국어 crop label로 표시한다. 현장 데이터 기반 계수 calibration과 주간 리포트 export는 후속 고도화로 남긴다.
+Panel의 작물 설정 > 생육조사 탭에는 `생육 리포트` 카드가 표시된다. 현재 수확량 예측은 tomato/lettuce/generic 작물별 모델 baseline이며, `modelVersion`, `cropModelLabel`, `estimatedKgPerPlant`, `estimatedKgPerArea`, `yieldDrivers`, `confidenceReasons`를 포함한다. 병해 위험도는 `weather_environment_control_model_v1` 기준으로 최근 예찰 이력, weather cache의 습도/온도/강우 신호, 최근 방제 이력을 결합해 `environmentDrivers`, `weatherDrivers`, `controlHistoryDrivers`, `riskFactors`, `recommendedActions`를 표시한다. `weeklyReport`는 `summary`, `actions`, `exportText`, `exportCsv`, `exportFilename`, `notificationDraft`를 포함하며, UI에서 CSV 내보내기와 Home Assistant persistent notification 전송을 제공한다. 병해충 예찰 추가 팝업은 현재 작기 기준 발생 위치, 전체/부분 범위, 상세 위치, 농약 API 자동완성 기반 다중 병해충 입력을 제공한다. 방제 기록 추가 팝업은 현재 작기 기준 처리 위치, 전체/부분 범위, 상세 위치를 제공한다. 작기 선택 카드의 crop key는 한국어 crop label로 표시한다. 현장 데이터 기반 계수 calibration은 후속 고도화로 남긴다.
 
 Control Phase C14 Dry Run UI baseline:
 
@@ -1469,7 +1469,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.28
+v1.9.29
 ```
 
 ---

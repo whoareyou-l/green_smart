@@ -153,6 +153,30 @@ def test_product_phase6_environment_weather_control_pest_risk_contract():
     assert '"pestRisk": pestRisk' in report_section
 
 
+def test_product_phase6_weekly_report_export_notification_contract():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
+    report_section = source.split("async def _growth_report_response", 1)[1].split("class CropGrowthReportView", 1)[0]
+
+    for marker in (
+        "_growth_weekly_report(",
+        "_weekly_report_export_csv(",
+        "exportText",
+        "exportCsv",
+        "exportFilename",
+        "notificationDraft",
+        "class CropGrowthReportNotifyView(HomeAssistantView)",
+        'url  = "/api/green_smart/crop/seasons/{season_id}/growth-report/notify"',
+        "persistent_notification",
+        "green_smart_weekly_report",
+        "주간 생육 리포트",
+    ):
+        assert marker in source
+    assert "weeklyReport = _growth_weekly_report(season_id, growth_rows, control_rows, weekly_growth, pestRisk, yieldPrediction)" in report_section
+    assert "CropGrowthReportNotifyView" in init_source
+    assert "hass.http.register_view(CropGrowthReportNotifyView())" in init_source
+
+
 def test_integration_setup_runs_db_schema_bootstrap_before_crop_views():
     init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
 

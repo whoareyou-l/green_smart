@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.28`, Product Phase 6 pest risk weather/control baseline
+> 기준 버전: product code `v1.9.29`, Product Phase 6 weekly report export/notification baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -257,7 +257,12 @@ GET /api/green_smart/crop/seasons/{season_id}/growth-report
 G-Index 추이 baseline
 수확량 예측 baseline(작물별 tomato/lettuce/generic 모델, 주당/면적당 예측, confidence 표시)
 병해 위험도 baseline(최근 pest severity + weather cache + 환경/날씨 risk + 방제 이력)
-주간 리포트 summary/actions
+주간 리포트 summary/actions/exportCsv/exportText/notificationDraft
+주간 리포트 CSV 내보내기 UI
+주간 리포트 HA persistent notification 전송 API/UI
+병해충 예찰 추가 팝업: 현재 작기 기준 발생 위치 + 전체/부분 드롭다운 + 상세 위치
+병해충 예찰 추가 팝업: 농약 API 자동완성 기반 다중 병해충 입력
+방제 기록 추가 팝업: 현재 작기 기준 처리 위치 + 전체/부분 드롭다운 + 상세 위치
 작물별 수확 모델 상세 UI(모델명/version, 주당 예측, 면적당 예측, 예측 근거)
 병해 위험 모델 상세 UI(환경 위험, 날씨 위험, 방제 이력, 위험 요인, 권장 조치)
 작기 선택 카드 crop key 한국어 표시
@@ -267,7 +272,6 @@ G-Index 추이 baseline
 
 - 작물별 모델 계수 현장 데이터 기반 calibration
 - 병해 위험도 모델 현장 데이터 기반 calibration
-- 주간 리포트 export/notification
 
 
 ## 6. Control Stabilization Track

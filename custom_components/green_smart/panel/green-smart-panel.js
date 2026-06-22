@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.28
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.29
 const DOMAIN = "green_smart";
-const VERSION = "1.9.28";
+const VERSION = "1.9.29";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3668,6 +3668,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     return (this._cropSeasons || []).find(s => s.id === this._activeSeasonId) || this._cropSeasons?.[0] || null;
   }
 
+  _activeSeasonLabel() {
+    const s = this._activeSeason();
+    if (!s) return "선택된 작기 없음";
+    const CROP_LABELS = { tomato:"토마토", paprika:"파프리카", strawberry:"딸기", lettuce:"상추", herb:"허브", cucumber:"오이", other:"기타" };
+    const crop = CROP_LABELS[s.cropType] || s.cropType || "작물";
+    const variety = s.variety ? ` · ${s.variety}` : "";
+    return `${crop}${variety} · ${this._seasonZoneLabel(s)}`;
+  }
+
   _growthFieldConfigForCrop(cropType) {
     const common = {
       tomato: { title: "토마토 생육조사", desc: "초장·엽수·줄기경·화방·착과 절위를 기록합니다", fields: [
@@ -3905,7 +3914,11 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div style="font-size:15px;font-weight:900;color:#24323F;">생육 리포트</div>
           <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 추세 · G-Index 추이 · 수확량 예측 · 병해 위험도 · 주간 리포트</div>
         </div>
-        <button data-growth-report-refresh style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">리포트 새로고침</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+          <button data-weekly-report-export title="주간 리포트 내보내기" style="border:1px solid #c8e6c9;background:#fff;color:#51AE60;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">주간 리포트 내보내기</button>
+          <button data-weekly-report-notify title="알림 보내기" style="border:1px solid #f3d2bd;background:#fff8f5;color:#c46d2d;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">알림 보내기</button>
+          <button data-growth-report-refresh style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">리포트 새로고침</button>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">G-Index 추이</div><b style="font-size:20px;color:#24323F;">${this._esc(String(latestG))}</b><div style="font-size:11px;color:#7a9780;">${gIndexTrend.length}개 point · 초장 ${heightTrend.length}개</div></div>
@@ -4130,6 +4143,30 @@ button.action:disabled{opacity:.5;cursor:default;}
     } catch (err) {
       console.warn("생육 리포트 조회 실패", err);
       return this._growthReportData;
+    }
+  }
+
+  async _exportWeeklyGrowthReport() {
+    const report = this._growthReportData || await this._fetchGrowthReport();
+    const weeklyReport = report?.weeklyReport || {};
+    const csv = weeklyReport.exportCsv || weeklyReport.exportText || weeklyReport.summary || "주간 생육 리포트";
+    const filename = weeklyReport.exportFilename || `green_smart_weekly_report_${this._activeSeasonId || "current"}.csv`;
+    const bom = "\ufeff";
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
+  async _notifyWeeklyGrowthReport() {
+    if (!this._hass || !this._activeSeasonId) return;
+    try {
+      await this._hass.callApi("POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth-report/notify`, {
+        message: this._growthReportData?.weeklyReport?.notificationDraft || "주간 생육 리포트",
+      });
+      alert("주간 생육 리포트 알림을 보냈습니다.");
+    } catch (err) {
+      alert("알림 전송 실패: " + (err?.message || "unknown"));
     }
   }
 
@@ -4499,6 +4536,10 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _openPestAddPopup() {
     const today = new Date().toISOString().slice(0, 10);
+    const MAX_PEST_TYPES = 6;
+    const currentSeasonLabel = this._activeSeasonLabel();
+    const pestTypes = [{ name: "", source: "" }];
+    const debounceTimers = {};
     this._openCropPopup(`
       <div class="popup-card">
         <div class="pop-header">
@@ -4507,7 +4548,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           </div>
           <div>
             <div class="pop-title-main">병해충 예찰 추가</div>
-            <div class="pop-title-sub">발견한 병해충 정보를 기록합니다</div>
+            <div class="pop-title-sub">선택된 작기 기준으로 여러 병해충을 기록합니다</div>
           </div>
         </div>
         <div class="pop-fields">
@@ -4515,17 +4556,35 @@ button.action:disabled{opacity:.5;cursor:default;}
             <label>조사일</label>
             <input type="date" id="p-date" value="${today}">
           </div>
+          <div class="pop-field">
+            <label>현재 작기</label>
+            <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
+          </div>
           <div class="pop-field-row">
-            <div class="pop-field"><label>병해충 종류</label><input type="text" id="p-type" placeholder="예) 잿빛곰팡이, 응애"></div>
-            <div class="pop-field"><label>발생 위치</label><input type="text" id="p-loc" placeholder="예) Zone1 북측"></div>
+            <div class="pop-field">
+              <label>발생 범위</label>
+              <select id="p-location-scope">
+                <option value="전체">전체</option>
+                <option value="부분">부분</option>
+              </select>
+            </div>
+            <div class="pop-field">
+              <label>상세 위치</label>
+              <input type="text" id="p-location-detail" placeholder="예) 북측 2동, 베드 3">
+            </div>
+          </div>
+          <div class="pop-field">
+            <label>병해충 종류 <span style="font-weight:400;color:#7a9780;font-size:11px;">(농약 API 자동완성, 여러 개 입력 가능)</span></label>
+            <div id="p-type-list"></div>
+            <button id="p-add-type" type="button" style="background:#fff8f5;color:#e67e22;border:1.5px dashed #f3c79d;border-radius:10px;padding:8px;width:100%;font-size:12px;font-weight:800;cursor:pointer;">+ 병해충 추가 (최대 ${MAX_PEST_TYPES}개)</button>
           </div>
           <div class="pop-field">
             <label>발생 정도</label>
             <select id="p-sev">
-              <option value="low">🟢 낮음 — 소수 발생, 즉각 위협 없음</option>
-              <option value="mid">🟡 보통 — 확산 가능, 주의 필요</option>
-              <option value="high">🟠 높음 — 빠른 방제 필요</option>
-              <option value="critical">🔴 위험 — 즉시 방제 요망</option>
+              <option value="1">🟢 낮음 — 소수 발생, 즉각 위협 없음</option>
+              <option value="2">🟡 보통 — 확산 가능, 주의 필요</option>
+              <option value="3">🟠 높음 — 빠른 방제 필요</option>
+              <option value="4">🔴 위험 — 즉시 방제 요망</option>
             </select>
           </div>
           <div class="pop-field">
@@ -4538,11 +4597,59 @@ button.action:disabled{opacity:.5;cursor:default;}
           <button id="p-save" class="pop-btn-save">저장</button>
         </div>
       </div>`, (inner) => {
+      const listEl = inner.querySelector("#p-type-list");
+      const addBtn = inner.querySelector("#p-add-type");
+      const renderTypes = () => {
+        listEl.innerHTML = pestTypes.map((item, idx) => `
+          <div data-pest-type-entry="${idx}" style="position:relative;display:flex;gap:6px;align-items:flex-start;margin-bottom:7px;">
+            <div style="flex:1;position:relative;">
+              <input type="text" data-pest-type-input="${idx}" value="${this._esc(item.name)}" placeholder="예) 잿빛곰팡이, 응애, 총채벌레" autocomplete="off">
+              <div data-pest-type-suggestions="${idx}" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1.5px solid #e8f0e9;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:320;max-height:180px;overflow-y:auto;margin-top:2px;"></div>
+            </div>
+            ${idx > 0 ? `<button data-pest-type-del="${idx}" type="button" style="background:none;border:none;color:#c0392b;font-size:17px;cursor:pointer;padding:8px 2px;">✕</button>` : ""}
+          </div>`).join("");
+        addBtn.style.display = pestTypes.length >= MAX_PEST_TYPES ? "none" : "";
+        bindTypeRows();
+      };
+      const bindTypeRows = () => {
+        listEl.querySelectorAll("[data-pest-type-input]").forEach(input => {
+          const idx = Number(input.dataset.pestTypeInput);
+          input.addEventListener("input", () => {
+            pestTypes[idx].name = input.value;
+            clearTimeout(debounceTimers[idx]);
+            debounceTimers[idx] = setTimeout(async () => {
+              const q = input.value.trim();
+              const sug = listEl.querySelector(`[data-pest-type-suggestions="${idx}"]`);
+              if (!q || q.length < 2 || !sug) { if (sug) sug.style.display = "none"; return; }
+              try {
+                const json = await this._hass.callApi("POST", "green_smart/central/pesticide/search", { query: q });
+                const rows = Array.isArray(json) ? json : (json.results || json.items || []);
+                const names = [...new Set(rows.map(it => it.pest || it.disease || it.targetPest || it.name || it.pestiKorName).filter(Boolean))].slice(0, 8);
+                sug.innerHTML = names.length ? names.map(name => `<button type="button" data-pest-suggest="${idx}" data-value="${this._esc(name)}" style="display:block;width:100%;text-align:left;background:#fff;border:none;padding:8px 10px;font-size:12px;cursor:pointer;">${this._esc(name)}</button>`).join("") : `<div style="padding:8px 10px;font-size:12px;color:#7a9780;">검색 결과 없음</div>`;
+                sug.style.display = "block";
+                sug.querySelectorAll("[data-pest-suggest]").forEach(btn => btn.addEventListener("click", () => {
+                  pestTypes[idx].name = btn.dataset.value || "";
+                  renderTypes();
+                }));
+              } catch (_) { if (sug) sug.style.display = "none"; }
+            }, 250);
+          });
+        });
+        listEl.querySelectorAll("[data-pest-type-del]").forEach(btn => btn.addEventListener("click", () => {
+          pestTypes.splice(Number(btn.dataset.pestTypeDel), 1);
+          renderTypes();
+        }));
+      };
+      addBtn?.addEventListener("click", () => { if (pestTypes.length < MAX_PEST_TYPES) { pestTypes.push({ name: "", source: "" }); renderTypes(); } });
+      renderTypes();
       inner.querySelector("#p-save")?.addEventListener("click", async () => {
+        const selectedTypes = pestTypes.map(p => p.name.trim()).filter(Boolean);
+        const scope = inner.querySelector("#p-location-scope")?.value || "전체";
+        const detail = inner.querySelector("#p-location-detail")?.value?.trim() || "";
         const body = {
           date:     inner.querySelector("#p-date")?.value || today,
-          type:     inner.querySelector("#p-type")?.value || "",
-          location: inner.querySelector("#p-loc")?.value || "",
+          type:     selectedTypes.join(", "),
+          location: `${currentSeasonLabel} · ${scope}${detail ? ` · ${detail}` : ""}`,
           severity: inner.querySelector("#p-sev")?.value || "low",
           note:     inner.querySelector("#p-note")?.value || "",
         };
@@ -4551,6 +4658,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             "POST", `green_smart/crop/seasons/${this._activeSeasonId}/pest`, body
           );
           this._pestData.unshift(result);
+          await this._fetchGrowthReport();
           this._closePopup();
           this._refreshCropContent();
         } catch (e) {
@@ -4601,6 +4709,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   _openControlAddPopup() {
     const today = new Date().toISOString().slice(0, 10);
     const MAX_PESTS = 5;
+    const currentSeasonLabel = this._activeSeasonLabel();
 
     // ── 로컬 상태 ───────────────────────────────────────────────────────────────
     const entries = [{ name: "", regNo: "", moa: "", dil: "", amount: "", pls: null, mixWarning: "", plsWarning: "" }];
@@ -4651,10 +4760,23 @@ button.action:disabled{opacity:.5;cursor:default;}
           <!-- 혼용 경고는 약제명 아래에 자동 표시된다 -->
           <div id="c-mix-summary" style="display:none;margin-top:2px;font-size:11px;color:#856404;"></div>
           <div style="height:1px;background:#f0f7f1;margin:4px 0;"></div>
-          <!-- 처리구역 -->
+          <!-- 처리 위치 -->
           <div class="pop-field">
-            <label>처리구역</label>
-            <input type="text" id="c-zone" placeholder="예) Zone1 전체, 북측 2동">
+            <label>현재 작기</label>
+            <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
+          </div>
+          <div class="pop-field-row">
+            <div class="pop-field">
+              <label>처리 범위</label>
+              <select id="c-location-scope">
+                <option value="전체">전체</option>
+                <option value="부분">부분</option>
+              </select>
+            </div>
+            <div class="pop-field">
+              <label>처리 위치 상세</label>
+              <input type="text" id="c-location-detail" placeholder="예) 북측 2동, 베드 3">
+            </div>
           </div>
           <!-- 비고 -->
           <div class="pop-field">
@@ -4969,9 +5091,11 @@ button.action:disabled{opacity:.5;cursor:default;}
           return;
         }
 
+        const locationScope = inner.querySelector("#c-location-scope")?.value || "전체";
+        const locationDetail = inner.querySelector("#c-location-detail")?.value?.trim() || "";
         const controlBody = {
           controlDate: inner.querySelector("#c-date")?.value || today,
-          zone: inner.querySelector("#c-zone")?.value || "",
+          zone: `${currentSeasonLabel} · ${locationScope}${locationDetail ? ` · ${locationDetail}` : ""}`,
           note: inner.querySelector("#c-note")?.value || "",
           pesticides: validEntries.map(e => ({
             name: e.name, regNo: e.regNo || null,
@@ -4985,6 +5109,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             "POST", `green_smart/crop/seasons/${this._activeSeasonId}/control`, controlBody
           );
           this._controlData.unshift(result);
+          await this._fetchGrowthReport();
           this._closePopup();
           this._refreshCropContent();
         } catch (e) {
@@ -5021,6 +5146,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("#pest-export-btn")?.addEventListener("click",    () => this._exportCropData("pest"));
     root.querySelector("#control-export-btn")?.addEventListener("click", () => this._exportCropData("control"));
     root.querySelector("[data-growth-report-refresh]")?.addEventListener("click", () => this._fetchGrowthReport());
+    root.querySelector("[data-weekly-report-export]")?.addEventListener("click", () => this._exportWeeklyGrowthReport());
+    root.querySelector("[data-weekly-report-notify]")?.addEventListener("click", () => this._notifyWeeklyGrowthReport());
 
     root.querySelectorAll("[data-crop-page]").forEach((btn) => {
       btn.addEventListener("click", () => {
