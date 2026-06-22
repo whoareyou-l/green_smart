@@ -2,8 +2,8 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.25` / `green_smart` Home Assistant custom integration
-> **Last verified locally:** 127 pytest contract tests + JS syntax check
+> **Current baseline:** `v1.9.26` / `green_smart` Home Assistant custom integration
+> **Last verified locally:** 129 pytest contract tests + JS syntax check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
 ---
@@ -42,7 +42,7 @@
 | Home Assistant 통합 | `green_smart` custom integration, config flow, HTTP API views 등록 |
 | Sidebar panel | `green-smart-panel.js` 단일 Web Component 기반 UI |
 | 작기 관리 | 구역별 작기 등록/수정/철거/삭제 |
-| 생육조사 | 작기별 생육 데이터 기록, 작물별 dynamic metric 저장 |
+| 생육조사 | 작기별 생육 데이터 기록, 작물별 dynamic metric 저장, 생육 리포트/G-Index/수확량 예측 baseline |
 | 병해충 예찰 | 작기별 병해충 발생 기록 |
 | 방제 기록 | 방제 일자, 약제 목록, PLS 여부 등 기록 |
 | 날씨 연동 | 기상청 단기/중기 API, 위치 검색, 7일 예보 UI |
@@ -59,12 +59,15 @@
 |---|---|
 | Dry Run UI | Control Phase C14 완료 |
 | Entity mapping 실시간 검증 | Control Phase C15 완료 |
-| 실시간 센서 기반 safety rule | 다음 Control Phase C16 권장 |
-| 운영 권한/승인 UX | Control Phase C17 권장 |
-| 실제 AI Agent 추천 루프 | Control Phase C18 권장 |
-| 알림/장애 통보 | Control Phase C19 권장 |
-| 현장 리허설/시나리오 테스트 | Control Phase C20 권장 |
-| 운영 Runbook | Control Phase C21 권장 |
+| 실시간 센서 기반 safety rule | Control Phase C16 완료 |
+| 운영 권한/승인 UX | Control Phase C17 완료 |
+| 현장 리허설 readiness | Control Phase C18 완료 |
+| 가상 장치 리허설/가상 HA 엔티티 | Control Phase C19/C19B 완료 |
+| 관수설정 초기 진입 no-flicker hydration | Control Phase C19C 완료 |
+| 생육 리포트와 예측 | Product Phase 6 baseline 완료 |
+| 제한적 실제 현장 리허설 | Control Phase C20 남음 |
+| 실제 장비 연결/운영 Runbook | Control Phase C21 남음 |
+| 실제 작물별 수확량 모델 고도화 | Product Phase 6 후속 |
 
 ---
 
@@ -235,7 +238,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.25"
+  "version": "1.9.26"
 }
 ```
 
@@ -481,7 +484,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.25"
+const VERSION = "1.9.26"
 ```
 
 중요 UI 페이지:
@@ -921,6 +924,24 @@ alert_resume_requested/approved/rejected
 
 Panel에는 `제한적 자동제어` 카드가 환경/관수/장치제어에 공통 표시된다. 운영자는 장비군별 자동 허용, 반자동 승인 필요, 자동 최대 지속 시간을 저장하고, 알림 확인/조치 이후 재개 요청을 남길 수 있다. 실제 장비 실행은 Control Mode 다음에 제한적 자동제어 gate를 통과한 뒤 SafetyGuard/Interlock/fail-safe/state verification을 통과한다.
 
+
+Phase 6 생육 리포트와 예측 baseline:
+
+```text
+GET /api/green_smart/crop/seasons/{season_id}/growth-report
+```
+
+응답은 기존 테이블을 집계한다.
+
+```text
+crop_seasons: plantDate, totalPlants, plantDensity
+신규 테이블 변경 없음
+growth_surveys: growthTrend, gIndexTrend, latestMetrics
+pest_surveys: pestRisk
+control_records: weeklyReport lastControlDate
+```
+
+Panel의 작물 설정 > 생육조사 탭에는 `생육 리포트` 카드가 표시된다. 현재 예측은 baseline heuristics이며 실제 작물별 수확량 모델/환경·날씨 기반 병해 예측/주간 리포트 export는 후속 고도화로 남긴다.
 
 Control Phase C14 Dry Run UI baseline:
 
@@ -1447,7 +1468,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.22
+v1.9.26
 ```
 
 ---

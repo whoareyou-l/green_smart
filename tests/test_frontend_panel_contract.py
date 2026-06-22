@@ -121,6 +121,33 @@ def test_growth_survey_payload_list_and_export_use_dynamic_crop_metrics():
     assert "metricsJson" in export_section
 
 
+def test_product_phase6_growth_report_panel_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    growth_tab = panel.split("  _renderCropGrowthTab()", 1)[1].split("  _renderCropPestTab()", 1)[0]
+
+    for marker in (
+        "this._growthReportData",
+        "async _fetchGrowthReport()",
+        "_renderGrowthReportCard()",
+        "data-growth-report-card",
+        "data-growth-report-refresh",
+        "green_smart/crop/seasons/${this._activeSeasonId}/growth-report",
+        "growthTrend",
+        "gIndexTrend",
+        "yieldPrediction",
+        "pestRisk",
+        "weeklyReport",
+        "생육 리포트",
+        "G-Index 추이",
+        "수확량 예측",
+        "병해 위험도",
+        "주간 리포트",
+    ):
+        assert marker in panel
+    assert "_renderGrowthReportCard()" in growth_tab
+    assert "this._fetchGrowthReport()" in panel
+
+
 def test_home_dashboard_does_not_render_or_fetch_pesticide_card():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     home = panel.split("  _renderHomePage(sim)", 1)[1].split("  _renderKPIStrip", 1)[0]

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.25
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.26
 const DOMAIN = "green_smart";
-const VERSION = "1.9.25";
+const VERSION = "1.9.26";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -242,6 +242,7 @@ class GreenSmartPanel extends HTMLElement {
     this._cropSubTab = "basic";
     this._cropSeasons = [];
     this._growthData = [];
+    this._growthReportData = null;
     this._pestData = [];
     this._pesticideSearchData = null;
     this._controlData = [];
@@ -3874,6 +3875,35 @@ button.action:disabled{opacity:.5;cursor:default;}
     }).join("");
   }
 
+  _renderGrowthReportCard() {
+    const report = this._growthReportData || {};
+    const yieldPrediction = report.yieldPrediction || {};
+    const pestRisk = report.pestRisk || {};
+    const weeklyReport = report.weeklyReport || {};
+    const gIndexTrend = Array.isArray(report.gIndexTrend) ? report.gIndexTrend : [];
+    const growthTrend = report.growthTrend || {};
+    const heightTrend = Array.isArray(growthTrend.height) ? growthTrend.height : [];
+    const latestG = gIndexTrend.length ? gIndexTrend[gIndexTrend.length - 1].value : "-";
+    const riskLabel = { low: "낮음", medium: "보통", high: "높음" }[pestRisk.level] || "기록 부족";
+    const actions = Array.isArray(weeklyReport.actions) ? weeklyReport.actions : [];
+    return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:900;color:#24323F;">생육 리포트</div>
+          <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 추세 · G-Index 추이 · 수확량 예측 · 병해 위험도 · 주간 리포트</div>
+        </div>
+        <button data-growth-report-refresh style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;">리포트 새로고침</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
+        <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">G-Index 추이</div><b style="font-size:20px;color:#24323F;">${this._esc(String(latestG))}</b><div style="font-size:11px;color:#7a9780;">${gIndexTrend.length}개 point · 초장 ${heightTrend.length}개</div></div>
+        <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">수확량 예측</div><b style="font-size:20px;color:#24323F;">${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg</b><div style="font-size:11px;color:#7a9780;">신뢰도 ${this._esc(yieldPrediction.confidence || "low")}</div></div>
+        <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">병해 위험도</div><b style="font-size:20px;color:${pestRisk.level === 'high' ? '#c0392b' : pestRisk.level === 'medium' ? '#f39c12' : '#51AE60'};">${riskLabel}</b><div style="font-size:11px;color:#7a9780;">score ${this._esc(String(pestRisk.score ?? 0))}</div></div>
+      </div>
+      <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
+      ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}
+    </section>`;
+  }
+
   _renderCropGrowthTab() {
     const pageRows = this._paginatedCropRows("growth", this._growthData);
     const rows = pageRows.length
@@ -3895,6 +3925,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           생육조사 기록이 없습니다
         </div>`;
     return `
+      ${this._renderGrowthReportCard()}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <span style="font-size:13px;font-weight:700;color:#24323F;">생육조사 기록 <span style="color:#7a9780;font-weight:400;">(${this._growthData.length}건)</span></span>
         <div style="display:flex;gap:6px;">
@@ -4035,14 +4066,29 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _loadSeasonDetail(seasonId) {
-    const [growth, pest, control] = await Promise.all([
+    const [growth, pest, control, report] = await Promise.all([
       this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/growth`).catch(() => []),
       this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/pest`).catch(()  => []),
       this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/control`).catch(() => []),
+      this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/growth-report`).catch(() => null),
     ]);
     this._growthData  = growth  || [];
     this._pestData    = pest    || [];
     this._controlData = control || [];
+    this._growthReportData = report || null;
+  }
+
+  async _fetchGrowthReport() {
+    if (!this._hass || !this._activeSeasonId) return null;
+    try {
+      const report = await this._hass.callApi("GET", `green_smart/crop/seasons/${this._activeSeasonId}/growth-report`);
+      this._growthReportData = report;
+      this._refreshCropContent();
+      return report;
+    } catch (err) {
+      console.warn("생육 리포트 조회 실패", err);
+      return this._growthReportData;
+    }
   }
 
   async _migrateFromLocalStorage() {
@@ -4399,6 +4445,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           );
           this._growthData.unshift(result);
           this._cropPage.growth = 1;
+          await this._fetchGrowthReport();
           this._closePopup();
           this._refreshCropContent();
         } catch (e) {
@@ -4931,6 +4978,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("#growth-export-btn")?.addEventListener("click",  () => this._exportCropData("growth"));
     root.querySelector("#pest-export-btn")?.addEventListener("click",    () => this._exportCropData("pest"));
     root.querySelector("#control-export-btn")?.addEventListener("click", () => this._exportCropData("control"));
+    root.querySelector("[data-growth-report-refresh]")?.addEventListener("click", () => this._fetchGrowthReport());
 
     root.querySelectorAll("[data-crop-page]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -4960,6 +5008,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         const id  = this._growthData[idx]?.id;
         if (id) await this._hass.callApi("DELETE", `green_smart/crop/growth/${id}`).catch(() => {});
         this._growthData.splice(idx, 1);
+        await this._fetchGrowthReport();
         this._refreshCropContent();
       })
     );
@@ -5009,7 +5058,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           const active = this._cropSeasons.find(s => !s.demolishDate) || this._cropSeasons[0];
           this._activeSeasonId = active?.id || null;
           if (this._activeSeasonId) await this._loadSeasonDetail(this._activeSeasonId);
-          else { this._growthData = []; this._pestData = []; this._controlData = []; }
+          else { this._growthData = []; this._growthReportData = null; this._pestData = []; this._controlData = []; }
         }
         this._refreshCropContent();
       })

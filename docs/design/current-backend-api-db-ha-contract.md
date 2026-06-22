@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.25`
+> 기준 버전: `v1.9.26`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.25"
+  "version": "1.9.26"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.25` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.26` |
 
 ### 4.2 WebSocket commands
 
@@ -398,6 +398,8 @@ Scope:
 ```text
 farm_id + crop_season_id + zone_id + domain
 ```
+
+| `GET /api/green_smart/crop/seasons/{season_id}/growth-report` | Phase 6 생육 리포트/G-Index/수확량 예측/병해 위험도/주간 리포트 |
 
 ### 10.2 Generic zone APIs
 

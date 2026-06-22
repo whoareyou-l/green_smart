@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.25`
+> 기준 버전: `v1.9.26`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.25` |
+| 현재 version | `1.9.26` |
 
 작업 시 우선순위:
 
@@ -365,7 +365,7 @@ virtual = true
 | key | label | 목적 |
 |---|---|---|
 | `basic` | 기본 설정 | 작기 등록/수정/철거/삭제 |
-| `growth` | 생육조사 | 작물별 dynamic metrics 기록 |
+| `growth` | 생육조사 | 작물별 dynamic metrics 기록 + Phase 6 생육 리포트 |
 | `pest` | 병해충 예찰 | 발생 위치/심각도 기록 |
 | `control` | 방제 기록 | 약제/PLS/방제 이력 기록 |
 
@@ -416,9 +416,24 @@ virtual = true
 
 기능:
 
+- 생육 리포트 카드 표시
+- G-Index 추이 표시
+- 수확량 예측 baseline 표시
+- 병해 위험도 표시
+- 주간 리포트 summary/actions 표시
+- 리포트 새로고침
 - CSV 내보내기
 - 생육조사 추가
 - 조사 row 삭제
+
+구현/API marker:
+
+```text
+_renderGrowthReportCard()
+data-growth-report-card
+data-growth-report-refresh
+GET green_smart/crop/seasons/{season_id}/growth-report
+```
 
 작물별 dynamic metrics:
 
@@ -945,7 +960,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.22 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.26 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 

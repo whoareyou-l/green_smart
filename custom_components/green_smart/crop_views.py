@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 import logging
-from datetime import date
+from datetime import date, datetime
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from .db import fetchall, fetchone, execute
@@ -235,6 +235,130 @@ class CropGrowthListView(HomeAssistantView):
             FROM growth_surveys WHERE id = %s
         """, (new_id,))
         return _json(row)
+
+
+def _growth_metric_value(row: dict, key: str, fallback_key: str | None = None) -> float | None:
+    try:
+        metrics = json.loads(row.get("metricsJson") or "[]")
+    except Exception:
+        metrics = []
+    for metric in metrics if isinstance(metrics, list) else []:
+        if metric.get("key") == key and metric.get("value") not in (None, ""):
+            try:
+                return float(metric.get("value"))
+            except Exception:
+                return None
+    value = row.get(fallback_key or key)
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _growth_report_points(rows: list[dict], key: str, fallback_key: str | None = None) -> list[dict]:
+    points = []
+    for row in reversed(rows):
+        value = _growth_metric_value(row, key, fallback_key)
+        if value is not None:
+            points.append({"date": row.get("date"), "value": value})
+    return points
+
+
+def _growth_g_index(row: dict) -> float:
+    height = _growth_metric_value(row, "height", "height") or 0
+    leaf = _growth_metric_value(row, "leafCount", "leafCount") or 0
+    stem = _growth_metric_value(row, "stemDia", "stemDia") or 0
+    return round((height * 0.08) + (leaf * 0.55) + (stem * 0.35), 2)
+
+
+def _growth_days_between(a, b) -> int:
+    try:
+        da = datetime.fromisoformat(str(a)).date()
+        db = datetime.fromisoformat(str(b)).date()
+        return max((db - da).days, 1)
+    except Exception:
+        return 7
+
+
+async def _growth_report_response(hass, season_id: int) -> dict:
+    season = await fetchone(hass, """
+        SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
+               demolish_date AS demolishDate, total_plants AS totalPlants,
+               plant_density AS plantDensity, zone_id AS zoneId
+        FROM crop_seasons
+        WHERE id = %s AND deleted_at IS NULL
+    """, (season_id,)) or {"id": season_id}
+    growth_rows = await fetchall(hass, """
+        SELECT id, survey_date AS date, plant_height AS height,
+               leaf_count AS leafCount, stem_diameter AS stemDia,
+               truss_count AS truss, node_count AS node,
+               crop_type AS cropType, metrics_json AS metricsJson,
+               notes AS note
+        FROM growth_surveys
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY survey_date DESC
+        LIMIT 60
+    """, (season_id,))
+    pest_rows = await fetchall(hass, """
+        SELECT id, survey_date AS date, pest_type AS type, severity, notes AS note
+        FROM pest_surveys
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY survey_date DESC
+        LIMIT 30
+    """, (season_id,))
+    control_rows = await fetchall(hass, """
+        SELECT id, control_date AS date, notes AS note
+        FROM control_records
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY control_date DESC
+        LIMIT 10
+    """, (season_id,))
+    latest = growth_rows[0] if growth_rows else {}
+    oldest = growth_rows[-1] if growth_rows else latest
+    height_now = _growth_metric_value(latest, "height", "height") or 0
+    height_old = _growth_metric_value(oldest, "height", "height") or height_now
+    days = _growth_days_between(oldest.get("date"), latest.get("date")) if growth_rows else 7
+    weekly_growth = round((height_now - height_old) / days * 7, 2) if days else 0
+    latest_g = _growth_g_index(latest) if latest else 0
+    pest_score = sum(int(r.get("severity") or 0) for r in pest_rows[:5])
+    pest_level = "high" if pest_score >= 12 else "medium" if pest_score >= 5 else "low"
+    total_plants = float(season.get("totalPlants") or 0)
+    density = float(season.get("plantDensity") or 0)
+    base_yield = max(total_plants, density * 100) if (total_plants or density) else 0
+    yield_kg = round((base_yield * max(latest_g, 1) / 100), 1) if base_yield else 0
+    growthTrend = {
+        "height": _growth_report_points(growth_rows, "height", "height"),
+        "leafCount": _growth_report_points(growth_rows, "leafCount", "leafCount"),
+        "stemDia": _growth_report_points(growth_rows, "stemDia", "stemDia"),
+    }
+    gIndexTrend = [{"date": row.get("date"), "value": _growth_g_index(row)} for row in reversed(growth_rows)]
+    weeklyReport = {
+        "summary": f"최근 생육조사 {len(growth_rows)}건 기준 주간 초장 증가 {weekly_growth}cm, 병해 위험도 {pest_level}",
+        "actions": ["생육조사 주 1회 이상 기록", "병해 위험도 medium 이상이면 예찰/방제 기록 확인", "G-Index 급변 시 환경 전략 preview 확인"],
+        "lastControlDate": control_rows[0].get("date") if control_rows else None,
+    }
+    return {
+        "ok": True,
+        "seasonId": season_id,
+        "season": season,
+        "latestMetrics": latest,
+        "growthTrend": growthTrend,
+        "gIndexTrend": gIndexTrend,
+        "yieldPrediction": {"estimatedKg": yield_kg, "confidence": "low" if len(growth_rows) < 3 else "medium", "basis": "growth_surveys + plant_density baseline"},
+        "pestRisk": {"level": pest_level, "score": pest_score, "recentCount": len(pest_rows[:5])},
+        "weeklyReport": weeklyReport,
+    }
+
+
+class CropGrowthReportView(HomeAssistantView):
+    """GET /api/green_smart/crop/seasons/{season_id}/growth-report."""
+    url  = "/api/green_smart/crop/seasons/{season_id}/growth-report"
+    name = "api:green_smart:crop:growth_report"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        return _json(await _growth_report_response(request.app["hass"], int(season_id)))
 
 
 class CropGrowthDeleteView(HomeAssistantView):

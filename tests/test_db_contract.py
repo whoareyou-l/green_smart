@@ -76,6 +76,31 @@ def test_growth_survey_backend_persists_dynamic_crop_metrics_json():
     assert "metricsJson" in growth_section
 
 
+def test_product_phase6_growth_report_api_contract():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
+
+    for marker in (
+        "class CropGrowthReportView(HomeAssistantView)",
+        'url  = "/api/green_smart/crop/seasons/{season_id}/growth-report"',
+        "_growth_report_response",
+        "growthTrend",
+        "gIndexTrend",
+        "yieldPrediction",
+        "pestRisk",
+        "weeklyReport",
+        "latestMetrics",
+        "growth_surveys",
+        "pest_surveys",
+        "control_records",
+        "plant_density AS plantDensity",
+        "metrics_json AS metricsJson",
+    ):
+        assert marker in source
+    assert "CropGrowthReportView" in init_source
+    assert "hass.http.register_view(CropGrowthReportView())" in init_source
+
+
 def test_integration_setup_runs_db_schema_bootstrap_before_crop_views():
     init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
 

@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.25`, Home action API/Dry Run baseline
+> 기준 버전: product code `v1.9.26`, Product Phase 6 growth report baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -248,9 +248,24 @@ VWC 하한 긴급 관수 marker
 
 ### Phase 6. 생육 리포트와 예측
 
-목표:
+현재 Phase 6 baseline 완료:
 
-- 생육 추세, G-Index 추이, 수확량 예측, 병해 위험도, 주간 리포트
+```text
+GET /api/green_smart/crop/seasons/{season_id}/growth-report
+기존 crop_seasons/growth_surveys/pest_surveys/control_records 집계
+생육 추세 height/leafCount/stemDia
+G-Index 추이 baseline
+수확량 예측 baseline(plant count/density + G-Index 기반, confidence 표시)
+병해 위험도 baseline(최근 pest severity score)
+주간 리포트 summary/actions
+작물 설정 > 생육조사 탭의 생육 리포트 카드
+```
+
+남은 목표:
+
+- 실제 작물별 수확량 모델 고도화
+- 병해 위험도 예측에 환경/날씨/방제 이력 결합
+- 주간 리포트 export/notification
 
 
 ## 6. Control Stabilization Track
