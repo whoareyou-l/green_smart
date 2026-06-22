@@ -1,0 +1,1064 @@
+# Green Smart Current Backend, API, DB and Home Assistant Integration Contract
+
+> 기준 버전: `v1.9.22`
+> 기준 파일: `custom_components/green_smart/*.py`
+> 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
+
+---
+
+## 1. 제품 아키텍처 한 줄 정의
+
+Green Smart는 독립 서버가 아니라 **Home Assistant custom integration**이다.
+
+```text
+Home Assistant
+└─ custom_components/green_smart/
+   ├─ HomeAssistantView 기반 HTTP API
+   ├─ MariaDB schema bootstrap + aiomysql query helper
+   ├─ panel_custom sidebar panel
+   ├─ HA entity/service-call 기반 장치 실행
+   ├─ SafetyGuard / Interlock / Fail Safe / audit log
+   ├─ Central allowlisted adapter client
+   ├─ KMA/PSIS weather/pesticide adapter
+   └─ virtual rehearsal용 sensor/binary_sensor/switch/cover entities
+```
+
+핵심 원칙:
+
+1. AI output은 직접 실행 명령이 아니다.
+2. 실행 대상은 `zone_final_control_targets`다.
+3. 실제 장비 실행은 항상 Control Mode, Limited Auto, Operator Confirmation, SafetyGuard, Interlock, Entity Mapping, State Verification을 통과해야 한다.
+4. 로컬 HA/DB/entity 상태만으로도 안전 차단이 가능해야 한다.
+5. Central/SaaS/API는 편의/데이터 공급자이며, 로컬 안전보다 우선하지 않는다.
+
+---
+
+## 2. 주요 모듈 역할
+
+| 파일 | 역할 |
+|---|---|
+| `__init__.py` | integration setup, DB bootstrap, HTTP view registration, panel setup, platform forwarding, SafetyGuard watchdog scheduler |
+| `db.py` | MariaDB pool/query/schema bootstrap |
+| `crop_views.py` | 작기/생육/병해충/방제 API |
+| `weather_api.py` | KMA/PSIS API client, HA Store 기반 key/config 저장 |
+| `weather_views.py` | 날씨/농약 HTTP API |
+| `central_api.py` | Central activation/token/allowlisted vendor adapter client |
+| `central_store.py` | Central token material HA Store 저장 |
+| `central_views.py` | Central weather/pesticide adapter HTTP views |
+| `zone_control_views.py` | zone control, strategy, SafetyGuard, execution, rehearsal, logs 대부분 |
+| `frontend_panel.py` | sidebar panel static path/websocket command registration |
+| `config_flow.py` | sidebar wizard와 연결되는 hidden config flow |
+| `sensor.py` | virtual sensor entities |
+| `binary_sensor.py` | virtual binary_sensor entities |
+| `switch.py` | virtual switch entities |
+| `cover.py` | virtual cover entities |
+
+---
+
+## 3. Integration lifecycle
+
+### 3.1 Manifest
+
+`manifest.json` 기준:
+
+```json
+{
+  "domain": "green_smart",
+  "name": "Green Smart",
+  "after_dependencies": ["http"],
+  "config_flow": true,
+  "iot_class": "local_push",
+  "requirements": ["aiomysql==0.2.0"],
+  "version": "1.9.22"
+}
+```
+
+### 3.2 `async_setup(hass, config)`
+
+현재 실제 구현에서 `async_setup()`은 다음을 수행한다.
+
+1. `ensure_schema(hass)`로 DB schema 보장
+2. `_views_registered` 플래그로 HTTP views 중복 등록 방지
+3. crop/weather/central/zone-control views 등록
+4. SafetyGuard watchdog scheduler 시작
+
+주의: 일부 기존 설계 문서는 view/schema registration을 `async_setup_entry()` 기준으로 설명하지만, 현재 구현 기준은 `async_setup()`이다.
+
+### 3.3 `async_setup_entry(hass, entry)`
+
+1. `async_setup_panel(hass)` 호출
+2. entry가 virtual mode이면:
+   - `hass.data[DOMAIN][entry.entry_id] = {"entry": entry, "virtual": True}`
+   - `sensor`, `binary_sensor`, `switch`, `cover` platforms forwarding
+3. virtual이 아니면서 필수 config 부족 시 panel-only mode로 return
+4. 실제 device config가 있으면 platforms forwarding
+
+### 3.4 `async_unload_entry`
+
+- platforms unload
+- SafetyGuard watchdog scheduler 해제
+- `hass.data[DOMAIN][entry.entry_id]` 제거
+- DB pool close
+
+---
+
+## 4. Panel / WebSocket integration
+
+파일: `frontend_panel.py`
+
+### 4.1 Sidebar panel
+
+| 항목 | 값 |
+|---|---|
+| frontend url path | `green_smart` |
+| component name | `green-smart-panel` |
+| title | `Green Smart` |
+| icon | `mdi:greenhouse` |
+| require_admin | `False` |
+| static path | `custom_components/green_smart/panel` |
+| static URL | `/green_smart_panel` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.22` |
+
+### 4.2 WebSocket commands
+
+| command | 역할 |
+|---|---|
+| `green_smart/is_configured` | config entry 존재/로드 여부 확인 |
+| `green_smart/get_config` | wizard/config entry data 반환 |
+| `green_smart/save_config` | wizard 설정 저장 |
+
+### 4.3 저장 가능한 wizard/config fields
+
+```text
+host
+port
+unit_id
+greenhouse_zones
+nutrient_zones
+stevenson_screens
+weatherflow_prefix
+virtual
+greenhouse_address
+location_name
+nx
+ny
+land_regid
+ta_regid
+central_base_url
+central_installation_id
+weather_mid_land_reg_id
+weather_mid_ta_reg_id
+```
+
+activation code는 저장하지 않는다.
+
+---
+
+## 5. DB layer
+
+파일: `db.py`
+
+### 5.1 DB environment
+
+| env | default |
+|---|---|
+| `DB_HOST` | `127.0.0.1` |
+| `DB_PORT` | `3306` |
+| `DB_USER` | `gs_user` |
+| `DB_PASSWORD` | empty |
+| `DB_NAME` | `green_smart` |
+
+### 5.2 Pool
+
+```python
+aiomysql.create_pool(
+    charset="utf8mb4",
+    autocommit=True,
+    minsize=2,
+    maxsize=10,
+)
+```
+
+### 5.3 Query helpers
+
+| helper | 역할 |
+|---|---|
+| `fetchall(hass, sql, args=())` | DictCursor row list 반환, date/datetime ISO 변환 |
+| `fetchone(hass, sql, args=())` | 단일 row 반환 |
+| `execute(hass, sql, args=())` | insert면 lastrowid, 그 외 rowcount |
+| `ensure_schema(hass)` | idempotent schema bootstrap |
+| `close_pool()` | pool close |
+
+---
+
+## 6. 현재 DB schema 역할
+
+### 6.1 Crop/basic tables
+
+| table | 역할 |
+|---|---|
+| `zones` | zone master/reference |
+| `crop_seasons` | 작기/재배 시즌 master |
+| `growth_surveys` | 생육조사 record, crop_type/metrics_json 포함 |
+| `pest_surveys` | 병해충 예찰 record |
+| `control_records` | 방제 기록 header |
+| `control_pesticides` | 방제 약제 detail/list |
+
+### 6.2 Control core tables
+
+| table | 역할 | scope |
+|---|---|---|
+| `zone_control_settings` | domain별 운영/전략 설정 JSON | farm_id + crop_season_id + zone_id + domain |
+| `zone_interlock_settings` | 인터록/SafetyGuard settings JSON | farm_id + crop_season_id + zone_id + domain |
+| `zone_control_modes` | manual/auto/assist/disabled 및 자동실행 허용 | farm_id + crop_season_id + zone_id + domain |
+| `ai_zone_control_outputs` | AI/model strategy 후보 | farm_id + crop_season_id + zone_id + domain |
+| `zone_final_control_targets` | 최종 실행 target insert-only latest model | farm_id + crop_season_id + zone_id + domain |
+| `zone_device_entity_mappings` | device/control role ↔ HA entity 매핑 | farm_id + crop_season_id + zone_id + domain |
+| `zone_control_logs` | 설정/실행/차단/SafetyGuard audit trail | farm_id + crop_season_id + zone_id + domain |
+| `zone_control_copy_jobs` | zone 설정 복사 이력 | farm_id + crop_season_id + domain |
+
+### 6.3 Candidate/future tables
+
+기존 설계 문서에는 있으나 현재 `db.py`에는 아직 생성되지 않는 candidate/future table:
+
+```text
+zone_strategy_snapshots
+zone_control_safety_events
+crop_growth_scores
+```
+
+현재 SafetyGuard event lifecycle은 별도 table이 아니라 `zone_control_logs`의 action/before/after JSON으로 표현한다.
+
+---
+
+## 7. Crop API
+
+파일: `crop_views.py`
+
+| View | Method/Path | 역할 |
+|---|---|---|
+| `CropSeasonsView` | `GET /api/green_smart/crop/seasons` | 작기 목록 |
+| `CropSeasonsView` | `POST /api/green_smart/crop/seasons` | 작기 생성 |
+| `CropSeasonDemolishView` | `PATCH /api/green_smart/crop/seasons/{season_id}/demolish` | 철거일 설정 |
+| `CropSeasonDeleteView` | `PATCH /api/green_smart/crop/seasons/{season_id}` | 작기 수정 |
+| `CropSeasonDeleteView` | `DELETE /api/green_smart/crop/seasons/{season_id}` | 작기 hard delete 및 관련 row 삭제 |
+| `CropGrowthListView` | `GET/POST /api/green_smart/crop/seasons/{season_id}/growth` | 생육조사 목록/추가 |
+| `CropGrowthDeleteView` | `DELETE /api/green_smart/crop/growth/{record_id}` | 생육조사 soft delete |
+| `CropPestListView` | `GET/POST /api/green_smart/crop/seasons/{season_id}/pest` | 병해충 예찰 목록/추가 |
+| `CropPestDeleteView` | `DELETE /api/green_smart/crop/pest/{record_id}` | 병해충 soft delete |
+| `CropControlListView` | `GET/POST /api/green_smart/crop/seasons/{season_id}/control` | 방제 기록 목록/추가 |
+| `CropControlDeleteView` | `DELETE /api/green_smart/crop/control/{record_id}` | 방제 기록 soft delete |
+
+---
+
+## 8. Weather / pesticide API
+
+파일:
+
+- `weather_api.py`
+- `weather_views.py`
+
+### 8.1 Storage
+
+HA Store key:
+
+```text
+green_smart_weather
+```
+
+저장 항목:
+
+- short API key
+- mid API key
+- PSIS API key
+- nx/ny
+- location_name
+- ta_regid/land_regid
+
+보안:
+
+- 원본 key는 response에 노출하지 않는다.
+- masked key만 반환한다.
+
+### 8.2 Routes
+
+| Method/Path | 역할 |
+|---|---|
+| `GET /api/green_smart/weather/current` | KMA current, key 없으면 virtual/dummy fallback |
+| `GET /api/green_smart/weather/forecast` | KMA short forecast |
+| `GET /api/green_smart/weather/weekly` | 단기+중기 7일 예보 |
+| `GET/POST/DELETE /api/green_smart/weather/config` | weather config/key 저장/조회/삭제 |
+| `POST /api/green_smart/weather/validate-key` | 단기 key 검증 |
+| `POST /api/green_smart/weather/validate-mid-key` | 중기 key 검증 |
+| `POST /api/green_smart/weather/search-location` | 주소/읍면동 기반 KMA grid 위치 검색 |
+| `GET /api/green_smart/pesticide/search?q=...` | PSIS 농약 검색 |
+| `GET/POST /api/green_smart/pesticide/config` | PSIS key 조회/저장 |
+| `POST /api/green_smart/pesticide/mix-check` | 약제 혼용 가능 여부 조회 |
+
+---
+
+## 9. Central adapter API
+
+파일:
+
+- `central_api.py`
+- `central_store.py`
+- `central_views.py`
+
+### 9.1 Central design
+
+Central 연동은 generic proxy가 아니라 allowlisted adapter만 노출한다.
+
+기본 base URL:
+
+```text
+http://127.0.0.1:18000
+```
+
+activation/token flow:
+
+```text
+activation_code
+→ /activation/exchange
+→ access_token/refresh_token
+→ CentralTokenStore
+→ adapter call 시 Bearer token
+→ 필요 시 /tokens/refresh
+```
+
+### 9.2 HA Store
+
+HA Store key:
+
+```text
+green_smart_central
+```
+
+저장:
+
+- base_url
+- installation_id
+- access_token
+- refresh_token
+- token_type
+- expires_at
+
+### 9.3 Routes
+
+| Method/Path | Central endpoint | 역할 |
+|---|---|---|
+| `POST /api/green_smart/central/weather/current` | `/vendor/adapters/weather/current` | current weather |
+| `POST /api/green_smart/central/weather/forecast` | `/vendor/adapters/weather/forecast` | forecast |
+| `POST /api/green_smart/central/weather/mid` | `/vendor/adapters/weather/mid` | mid forecast |
+| `POST /api/green_smart/central/pesticide/search` | `/vendor/adapters/pesticide/search` | pesticide search |
+
+---
+
+## 10. Zone control common contract
+
+파일: `zone_control_views.py`
+
+### 10.1 Domain and scope
+
+Valid domains:
+
+```text
+environment
+irrigation
+device
+```
+
+Scope:
+
+```text
+farm_id + crop_season_id + zone_id + domain
+```
+
+### 10.2 Generic zone APIs
+
+| Method/Path | DB/기능 |
+|---|---|
+| `GET/POST /api/green_smart/zones/control-settings` | `zone_control_settings` 조회/upsert |
+| `GET/POST /api/green_smart/zones/interlock-settings` | `zone_interlock_settings` 조회/upsert |
+| `GET/POST /api/green_smart/zones/control-mode` | `zone_control_modes` 조회/upsert |
+| `POST /api/green_smart/zones/copy-control-settings` | 현재 설정을 다른 zone으로 복사 |
+| `GET/POST /api/green_smart/zones/final-targets` | latest final target 조회 / 새 target 저장 |
+| `GET/POST /api/green_smart/zones/ai-control-outputs` | AI output 후보 조회/저장 |
+| `POST /api/green_smart/zones/ai-control-outputs/{output_id}/apply` | AI output을 final target으로 승격 |
+| `GET/POST/DELETE /api/green_smart/zones/device-entity-mappings` | HA entity mapping CRUD |
+| `GET /api/green_smart/zones/entity-state-summary` | mapping별 HA state summary |
+| `GET /api/green_smart/zones/entity-mapping-validation` | entity/mapping/service/safe_state 검증 |
+| `GET /api/green_smart/zones/control-logs` | audit log 조회 |
+| `POST /api/green_smart/zones/execute-final-targets` | dry-run/실제 final target 실행 |
+| `GET /api/green_smart/zones/safety-guard-watchdog` | SafetyGuard watchdog 검사 |
+| `GET /api/green_smart/zones/safety-guard-events` | SafetyGuard event lifecycle 조회 |
+| `POST /api/green_smart/zones/safety-guard-events/ack` | 이벤트 운영자 확인 |
+| `POST /api/green_smart/zones/safety-guard-events/clear` | 이벤트 조치 완료/해제 |
+| `GET/POST /api/green_smart/zones/limited-auto-policy` | 제한적 자동제어 policy |
+| `POST /api/green_smart/zones/alert-resume` | 알림 확인 후 재개 요청 |
+| `GET /api/green_smart/zones/rehearsal-readiness` | 현장 리허설 readiness |
+| `POST /api/green_smart/zones/virtual-rehearsal` | 가상 장치 리허설 |
+
+### 10.3 Domain wrapper APIs
+
+Environment wrappers:
+
+```text
+GET/POST /api/green_smart/environment/control-settings
+GET/POST /api/green_smart/environment/ai-control-outputs
+GET/POST/DELETE /api/green_smart/environment/device-entity-mappings
+POST /api/green_smart/environment/execute-final-targets
+GET/POST /api/green_smart/environment/strategy-preview
+```
+
+Irrigation wrappers:
+
+```text
+GET/POST /api/green_smart/irrigation/control-settings
+GET/POST /api/green_smart/irrigation/ai-control-outputs
+GET/POST/DELETE /api/green_smart/irrigation/device-entity-mappings
+POST /api/green_smart/irrigation/execute-final-targets
+GET/POST /api/green_smart/irrigation/strategy-preview
+```
+
+Device wrappers:
+
+```text
+GET/POST /api/green_smart/devices/control-settings
+GET/POST /api/green_smart/devices/ai-control-outputs
+GET/POST/DELETE /api/green_smart/devices/device-entity-mappings
+POST /api/green_smart/devices/execute-final-targets
+```
+
+---
+
+## 11. Strategy preview APIs
+
+### 11.1 Environment strategy
+
+Route:
+
+```text
+GET/POST /api/green_smart/environment/strategy-preview
+```
+
+Components:
+
+```text
+CORP
+TEMHUM
+VENT
+SCRN
+```
+
+입력 source:
+
+- HA entity state summary
+- weather source
+- manual/operator override
+
+출력:
+
+- corpGIndex
+- ADT/DIF/VPD
+- ventTarget
+- screenTarget
+- targetDiff
+- final target save 가능
+
+저장 시:
+
+```text
+calculated_by = environment_strategy_mvp
+```
+
+### 11.2 Irrigation strategy
+
+Route:
+
+```text
+GET/POST /api/green_smart/irrigation/strategy-preview
+```
+
+Components:
+
+```text
+IRR
+EC_PH
+VWC
+DRYBACK
+```
+
+입력:
+
+- accumulatedRadiation
+- currentVwc
+- currentEc
+- currentPh
+- dryback
+- baseShotAmountL
+- baseIntervalMin
+- baseEc
+- basePh
+- targetDrainRate
+
+출력 targets:
+
+- shotAmountL
+- minIntervalMin
+- targetEc
+- targetPh
+- targetDryback
+- targetDrainRate
+- emergencyIrrigation
+- safetyPolicy = SafetyGuard 우선
+
+저장 시:
+
+```text
+calculated_by = irrigation_strategy_mvp
+```
+
+---
+
+## 12. Final target execution flow
+
+Route:
+
+```text
+POST /api/green_smart/zones/execute-final-targets
+```
+
+### 12.1 입력
+
+```json
+{
+  "farmId": 1,
+  "cropSeasonId": 1,
+  "zoneId": 1,
+  "domain": "environment",
+  "dryRun": false,
+  "postStateDelay": 0.4,
+  "operatorConfirmed": true,
+  "operatorConfirmationText": "실제 장비 실행 확인",
+  "operatorRole": "operator",
+  "operatorOverrideReason": "panel operator confirmation"
+}
+```
+
+### 12.2 실행 순서
+
+```text
+request body parse
+→ latest final target 조회
+→ control mode 조회
+→ control mode decision
+→ limited auto policy 조회
+→ limited auto decision
+→ operator confirmation 검사
+→ enabled entity mappings 조회
+→ interlock settings 조회
+→ mapping별 target value resolve
+→ HA service call 생성
+→ pre-state snapshot
+→ SafetyGuard decision
+→ blocked이면 safe_state/failsafe call 생성
+→ dry_run이면 실행하지 않고 계획만 반환
+→ 실제 실행이면 hass.services.async_call
+→ homeassistant.update_entity
+→ post-state snapshot
+→ state verification
+→ zone_control_logs 기록
+→ JSON response
+```
+
+### 12.3 Operator confirmation
+
+필수 문구:
+
+```text
+실제 장비 실행 확인
+```
+
+허용 role:
+
+```text
+operator
+admin
+owner
+technician
+```
+
+manual/assist mode에서는 override reason이 필요하다.
+
+### 12.4 HA service mapping
+
+| entity domain | service 변환 |
+|---|---|
+| `switch`, `input_boolean`, `fan` | `turn_on` / `turn_off` |
+| `cover` | `set_cover_position` / `open_cover` / `close_cover` / `stop_cover` |
+| `light` | `turn_on` / `turn_off` |
+| `climate` | `set_temperature` |
+| `number`, `input_number` | `set_value` |
+| unknown | turn_on/turn_off fallback |
+
+### 12.5 Target value resolution
+
+target value는 아래 우선순위로 찾는다.
+
+```text
+mapping.controlRole
+mapping.deviceType
+mapping.entityId
+mapping.entityId with "." replaced by "_"
+```
+
+---
+
+## 13. SafetyGuard / Interlock / Fail Safe
+
+### 13.1 우선순위
+
+```text
+SafetyGuard
+> Manual emergency/override policy
+> final target
+> AI/strategy recommendation
+> optimization
+```
+
+### 13.2 Policy merge
+
+SafetyGuard policy source:
+
+1. `zone_interlock_settings.settings_json`
+2. `zone_final_control_targets.targets_json._safety` 또는 `targets_json.safety`
+
+기본 policy:
+
+```json
+{
+  "emergency_stop": false,
+  "block_on_unavailable": true,
+  "apply_safe_state_on_block": true,
+  "rules": []
+}
+```
+
+### 13.3 지원 conditions
+
+```text
+unavailable
+unknown
+equals
+above
+below
+wind_speed_above
+temperature_below
+temperature_above
+vwc_below
+vwc_above
+ec_below
+ec_above
+sensor_integrity
+```
+
+### 13.4 Sensor rule fields
+
+```text
+sensor_entity_id
+sensor_attribute
+sensor_operator
+sensor_threshold
+reasonCode
+action
+message
+```
+
+operators:
+
+```text
+above, below, equals, not_equals, is_on, is_off, truthy, falsy
+```
+
+### 13.5 Decision output 핵심
+
+```json
+{
+  "blockedByInterlock": true,
+  "failSafeApplied": true,
+  "safetyStatus": "failsafe",
+  "safeStateCall": {},
+  "safetyGuard": {
+    "status": "failsafe",
+    "blocked": true,
+    "failSafeRequired": true,
+    "reasons": [],
+    "ruleResults": []
+  }
+}
+```
+
+status:
+
+```text
+clear
+blocked
+failsafe
+```
+
+### 13.6 Safe state
+
+source:
+
+```text
+zone_device_entity_mappings.safe_state
+```
+
+없으면 default:
+
+```text
+off
+```
+
+blocked 시 `apply_safe_state_on_block`가 true이면 original call 대신 safe_state call이 생성/실행된다.
+
+---
+
+## 14. SafetyGuard watchdog / event lifecycle
+
+### 14.1 Scheduler
+
+`__init__.py`에서 60초마다 실행:
+
+```text
+async_track_time_interval(..., 60초)
+→ _run_safety_guard_watchdog_tick()
+→ zone_control_views._safety_guard_watchdog_response(...)
+```
+
+### 14.2 Watchdog route
+
+```text
+GET /api/green_smart/zones/safety-guard-watchdog
+```
+
+query:
+
+- farm_id
+- crop_season_id
+- zone_id
+- domain
+- notify
+- stale_threshold_seconds
+
+기본 stale threshold:
+
+```text
+120 seconds
+```
+
+### 14.3 Persistent notification
+
+critical event + `notify=true`이면 HA persistent notification 생성.
+
+notification id:
+
+```text
+green_smart_safety_guard_{crop_season_id}_{zone_id}_{domain}
+```
+
+### 14.4 Event lifecycle
+
+Routes:
+
+```text
+GET /api/green_smart/zones/safety-guard-events
+POST /api/green_smart/zones/safety-guard-events/ack
+POST /api/green_smart/zones/safety-guard-events/clear
+```
+
+lifecycle:
+
+```text
+active → acknowledged → cleared
+```
+
+현재 저장소는 별도 event table이 아니라 `zone_control_logs`다.
+
+---
+
+## 15. Entity mapping / validation / state summary
+
+### 15.1 Mapping fields
+
+```text
+device_type
+entity_id
+control_role
+safe_state
+enabled
+note
+```
+
+unique:
+
+```text
+farm_id + crop_season_id + zone_id + domain + entity_id + control_role
+```
+
+### 15.2 State summary
+
+Route:
+
+```text
+GET /api/green_smart/zones/entity-state-summary
+```
+
+summary:
+
+- total
+- available
+- unavailable
+- unknown
+- stale
+- hasBlockingState
+
+### 15.3 Validation
+
+Route:
+
+```text
+GET /api/green_smart/zones/entity-mapping-validation
+```
+
+검사:
+
+- entity_id 존재
+- domain/service 호환성
+- safe_state 유효성
+- 위험 장비 mapping 누락
+
+---
+
+## 16. Rehearsal / Virtual entities
+
+### 16.1 Rehearsal readiness
+
+Route:
+
+```text
+GET /api/green_smart/zones/rehearsal-readiness
+```
+
+시나리오:
+
+```text
+normal_operation
+strong_wind_block
+rain_block
+low_temperature_block
+sensor_fault_block
+failsafe_recovery
+operator_recovery
+```
+
+검사:
+
+- dryRun
+- entityMapping
+- operatorConfirmation
+- sensorSafety
+- safetyGuard
+- failsafe
+- entityState
+- executionLog
+- resume
+
+### 16.2 Virtual rehearsal
+
+Route:
+
+```text
+POST /api/green_smart/zones/virtual-rehearsal
+```
+
+핵심 gate:
+
+```json
+{
+  "virtualDeviceOnly": true,
+  "physicalDeviceConnectionAllowed": false
+}
+```
+
+### 16.3 Virtual entity platforms
+
+Virtual mode에서 forward되는 platform:
+
+```text
+sensor
+binary_sensor
+switch
+cover
+```
+
+### 16.4 Virtual entities
+
+Domains:
+
+```text
+environment
+irrigation
+device
+```
+
+각 domain별 entities:
+
+| platform | entities |
+|---|---|
+| sensor | `wind_speed`, `temperature` |
+| binary_sensor | `rain`, `sensor_fault` |
+| switch | `irrigation_pump`, `alarm_beacon` |
+| cover | `ventilation`, `screen` |
+
+예시:
+
+```text
+sensor.green_smart_virtual_environment_wind_speed
+binary_sensor.green_smart_virtual_irrigation_rain
+switch.green_smart_virtual_device_alarm_beacon
+cover.green_smart_virtual_environment_ventilation
+```
+
+총 24개 entity가 생성된다.
+
+---
+
+## 17. Config flow
+
+파일: `config_flow.py`
+
+특징:
+
+- sidebar wizard가 config entry 저장을 담당
+- 이미 entry가 있으면 `already_configured`
+- activation code가 있으면 central activation exchange 수행
+- activation code 자체는 저장하지 않음
+- token pair는 `CentralTokenStore`에 저장
+
+Wizard keys:
+
+```text
+host
+port
+unit_id
+greenhouse_zones
+nutrient_zones
+stevenson_screens
+weatherflow_prefix
+virtual
+greenhouse_address
+location_name
+nx
+ny
+land_regid
+ta_regid
+central_base_url
+central_installation_id
+weather_mid_land_reg_id
+weather_mid_ta_reg_id
+```
+
+---
+
+## 18. Logging / audit 기준
+
+모든 중요한 제어 관련 행위는 `zone_control_logs`에 남겨야 한다.
+
+대표 action:
+
+```text
+save_control_settings
+interlock_settings_saved
+control_mode_saved
+final_targets_saved
+ai_output_applied
+device_entity_mapping_saved
+device_entity_mapping_deleted
+entity_mapping_validation_checked
+blocked_by_control_mode
+limited_auto_execution_blocked
+operator_confirmation_required
+operator_execution_confirmed
+limited_auto_execution_allowed
+final_target_execution_failed
+failsafe_applied
+safety_guard_blocked
+sensor_safety_rule_blocked
+execution_safety_blocked
+state_verification_failed
+state_verification_passed
+final_targets_executed
+safety_guard_watchdog_checked
+safety_guard_event_acknowledged
+safety_guard_event_cleared
+```
+
+---
+
+## 19. 현재 구현과 기존 설계 문서의 차이
+
+| 항목 | 현재 구현 | 기존/미래 설계 문서 |
+|---|---|---|
+| setup 위치 | schema/view registration은 `async_setup()` | 일부 문서는 `async_setup_entry()` 중심 |
+| safety event 저장 | `zone_control_logs` action lifecycle | `zone_control_safety_events` candidate table |
+| strategy snapshot | 아직 table 없음 | `zone_strategy_snapshots` candidate |
+| raw sensor 장기 저장 | HA recorder/InfluxDB 위임 | MariaDB에는 전략/final/log 중심 |
+| 장치 직접 통신 | HA entity/service call | MQTT/Modbus/PLC는 HA 뒤쪽 |
+| Central adapter | allowlisted routes only | generic proxy 금지 |
+
+---
+
+## 20. Backend/API/DB 변경 시 필수 검증
+
+최소 검증:
+
+```bash
+pytest -q
+python3 -m py_compile custom_components/green_smart/*.py
+node --check custom_components/green_smart/panel/green-smart-panel.js
+git diff --check
+```
+
+운영 반영 전/후:
+
+```bash
+docker exec greenity-prod-homeassistant python -m homeassistant --script check_config --config /config
+docker restart greenity-prod-homeassistant
+# HTTP ready 확인
+# 최근 로그에서 Traceback/ERROR 확인
+```
+
+DB/API 변경 시 추가 확인:
+
+1. `ensure_schema()` idempotent 여부
+2. 기존 table data migration 안전성
+3. JSON key backward compatibility
+4. contract test 추가
+5. UI data attribute/API path 동시 갱신
+6. secrets/API key가 response/log/commit에 노출되지 않는지 확인
+
+---
+
+## 21. 앞으로의 문서 분리 기준
+
+이 문서가 더 커질 경우 다음으로 분리한다.
+
+| 분리 후보 | 기준 |
+|---|---|
+| `current-api-reference.md` | route별 request/response/log action이 더 상세해질 때 |
+| `current-db-schema.md` | column/index/migration 상세가 늘어날 때 |
+| `current-safetyguard-contract.md` | rule DSL/watchdog/event lifecycle이 확장될 때 |
+| `current-control-execution-flow.md` | service adapter/state verification이 복잡해질 때 |
+| `current-virtual-rehearsal.md` | 가상 시나리오/fixture가 늘어날 때 |

@@ -19,6 +19,31 @@ AI가 작동하지 않아도 문제가 생기지 않게 인터록/안전 제어�
 
 ## 2. 현재 repo 현황 요약
 
+### 2.0 상세 기준 문서 색인
+
+이 마스터플랜은 앞으로 작업의 최상위 기준 문서다. 다만 UI/DB/API/Backend/HA 세부사항을 모두 이 파일에 직접 넣으면 문서가 비대해지므로, 상세 기준은 아래 문서로 분리한다. 앞으로 기능 구현/수정/검증을 시작하기 전에 관련 상세 문서를 먼저 읽고, 구현 결과가 바뀌면 해당 문서와 이 마스터플랜을 함께 갱신한다.
+
+| 상세 기준 문서 | 담당 범위 | 반드시 읽어야 하는 작업 |
+|---|---|---|
+| [`docs/design/current-ui-design-and-navigation.md`](design/current-ui-design-and-navigation.md) | 사용자 선호 디자인, 사이드바, 모바일 topbar, Home/Crop/환경/관수/장치 페이지, 하위탭, 설정값, data attribute, no-flicker UI 정책 | UI/UX, 페이지 구조, 탭, 카드, 입력값, WebView flicker, 디자인 변경 |
+| [`docs/design/current-backend-api-db-ha-contract.md`](design/current-backend-api-db-ha-contract.md) | HA integration lifecycle, panel registration, DB schema, API routes, zone control, strategy preview, SafetyGuard, execution flow, virtual entities | Backend/API/DB/schema, SafetyGuard, final target execution, HA service call, virtual device, 운영 smoke |
+| [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md) | 제어 기능 로드맵과 데이터 모델 관계 | Control Phase 추가/변경, DB/API 관계 변경 |
+| [`docs/design/api-spec.md`](design/api-spec.md) | 초기 API spec baseline | public API 형태를 정리하거나 wrapper API를 변경할 때 |
+| [`docs/design/data-model.md`](design/data-model.md) | 초기 data model baseline | schema 확장, migration 설계 |
+| [`docs/design/control-engine-contracts.md`](design/control-engine-contracts.md) | control engine/SafetyGuard 계약 | 실행/차단/Fail Safe/로그 계약 변경 |
+| [`docs/design/home-assistant-integration-contract.md`](design/home-assistant-integration-contract.md) | HA integration contract | HA setup lifecycle, panel registration, entity/platform 변경 |
+
+상세 문서 기준의 현재 핵심 사실:
+
+```text
+UI runtime: Home Assistant panel_custom + Vanilla JS Web Component
+Sidebar pages: home, crop, environment, irrigation, device
+Design preference: Modern SaaS greenhouse dashboard + 카드형 운영 UI + 안전/인터록 우선 UX
+DB/API scope: farm_id + crop_season_id + zone_id + domain
+Execution path: final target → Control Mode → Limited Auto → Operator Confirmation → SafetyGuard → HA service call → state verification → log
+Physical device gate: C20 전까지 실제 장비 연결 금지, virtual HA entities/rehearsal 우선
+```
+
 ### 2.1 제품 형태
 
 Green Smart는 독립 웹서비스가 아니라 Home Assistant 위에서 동작하는 HACS-compatible custom integration이다.
@@ -119,6 +144,8 @@ zone_control_copy_jobs
 산출물:
 
 - `docs/PROJECT_MASTER_PLAN.md`
+- `docs/design/current-ui-design-and-navigation.md`
+- `docs/design/current-backend-api-db-ha-contract.md`
 - `docs/design/system-architecture.md`
 - `docs/design/data-model.md`
 - `docs/design/control-engine-contracts.md`
