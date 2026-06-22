@@ -491,3 +491,40 @@ def test_home_operator_first_card_numeric_status_popup_and_role_actions_contract
     ):
         assert marker in panel
     assert "[data-home-status-card]" in binder
+
+
+def test_home_action_buttons_call_event_lifecycle_and_dry_run_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    popup = panel.split("  _openHomeStatusPopup(key)", 1)[1].split("  _renderAdminSystemPage", 1)[0]
+
+    for marker in (
+        "async _homeAcknowledgeStatusAction(item)",
+        "async _homeCompleteStatusAction(item)",
+        "async _homePreviewStopDeviceDryRun(item)",
+        "async _homePreviewLimitedExecutionDryRun(item)",
+        "_homeActionDomainForStatus(item)",
+        "_homeActionPayloadForStatus(item)",
+        "green_smart/zones/safety-guard-events/ack",
+        "green_smart/zones/safety-guard-events/clear",
+        "green_smart/zones/execute-final-targets",
+        "dry_run: true",
+        "operatorNote",
+        "home_status_acknowledge",
+        "home_status_complete",
+        "home_stop_device_dry_run",
+        "home_limited_execute_dry_run",
+        "data-home-action-result",
+    ):
+        assert marker in panel
+
+    for button_contract in (
+        "_homeAcknowledgeStatusAction(item)",
+        "_homeCompleteStatusAction(item)",
+        "_homePreviewStopDeviceDryRun(item)",
+        "_homePreviewLimitedExecutionDryRun(item)",
+    ):
+        assert button_contract in popup
+
+    assert "장치 정지 Dry Run" in panel
+    assert "제한 실행 Dry Run" in panel
+    assert "실제 장비 실행 안 함" in panel

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.24
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.25
 const DOMAIN = "green_smart";
-const VERSION = "1.9.24";
+const VERSION = "1.9.25";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1809,8 +1809,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const actions = [
       `<button class="btn" data-role-action="acknowledge">확인</button>`,
       `<button class="btn" data-role-action="complete">조치 완료 기록</button>`,
-      ...(canStaffStop || canOwnerExecute || admin ? [`<button class="btn" data-role-action="stop-device">장치 정지</button>`] : []),
-      ...(canOwnerExecute || admin ? [`<button class="btn btn-primary" data-role-action="limited-execute">제한 실행</button>`] : []),
+      ...(canStaffStop || canOwnerExecute || admin ? [`<button class="btn" data-role-action="stop-device">장치 정지 Dry Run</button>`] : []),
+      ...(canOwnerExecute || admin ? [`<button class="btn btn-primary" data-role-action="limited-execute">제한 실행 Dry Run</button>`] : []),
       ...(admin ? [`<button class="btn" data-role-action="admin-diagnostics">진단/고급 설정</button>`] : []),
     ].join("");
     return `<div class="popup" data-home-status-popup style="width:460px;max-width:96vw;padding:24px;">
@@ -1824,8 +1824,108 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div style="font-size:12px;color:#5d7d64;margin-top:6px;">목표 범위: ${item.target}</div>
       </div>
       <div style="font-size:13px;color:#5d7d64;line-height:1.55;margin-bottom:16px;">현재 ${item.label} 값은 ${meta.label} 상태입니다. 색상 배지는 빠른 판단을 돕고, 상세 설정은 관련 제어 페이지에서 확인합니다.</div>
+      <div data-home-action-result style="display:none;font-size:12px;font-weight:800;color:#3c6e47;background:#edf8ef;border-radius:12px;padding:10px;margin-bottom:12px;"></div>
+      <div style="font-size:12px;color:#7a9780;line-height:1.45;margin-bottom:12px;">장치 정지 Dry Run과 제한 실행 Dry Run은 SafetyGuard/Control Mode 사전점검만 수행합니다. 실제 장비 실행 안 함.</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">${actions}</div>
     </div>`;
+  }
+
+  _homeActionDomainForStatus(item) {
+    if (item?.key === "humidity" || item?.key === "vpd") return "environment";
+    if (item?.key === "temp" || item?.key === "co2") return "environment";
+    return item?.page === "irrigation" ? "irrigation" : "environment";
+  }
+
+  _homeSafetyEventId(domain) {
+    const cache = this._zoneSafetyGuardEventCache?.[this._scopedControlCacheKey(domain)] || this._zoneSafetyGuardEventCache?.[domain] || null;
+    const active = Array.isArray(cache?.activeEvents) ? cache.activeEvents[0] : null;
+    return Number(active?.id || active?.eventId || -1);
+  }
+
+  _homeActionPayloadForStatus(item) {
+    const domain = this._homeActionDomainForStatus(item);
+    const cropSeasonId = this._numericControlSeasonId() || 1;
+    const zoneId = Number(this._controlScope?.zoneId || 1);
+    const eventId = this._homeSafetyEventId(domain);
+    const operatorNote = `Home 상태 조치 · ${item?.label || item?.key || "status"} · ${item?.value || "-"} · ${this._statusLevelMeta(item?.level).label}`;
+    return { domain, crop_season_id: cropSeasonId, zone_id: zoneId, event_id: eventId, eventId, operatorNote, note: operatorNote };
+  }
+
+  _setHomeActionResult(message, ok = true) {
+    const result = this.shadowRoot?.querySelector("[data-home-action-result]");
+    if (!result) return;
+    result.style.display = "block";
+    result.style.color = ok ? "#3c6e47" : "#b03a2e";
+    result.style.background = ok ? "#edf8ef" : "#fff0ee";
+    result.textContent = message;
+  }
+
+  async _homeAcknowledgeStatusAction(item) {
+    const payload = this._homeActionPayloadForStatus(item);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/ack", { ...payload, operatorNote: `${payload.operatorNote} · home_status_acknowledge` });
+      this._setHomeActionResult("확인 기록 완료");
+      await this._fetchZoneSafetyGuardEvents(payload.domain, { patchOnly: true }).catch(() => null);
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("Home 상태 확인 기록 실패", err);
+      this._setHomeActionResult("확인 기록 실패: SafetyGuard 이벤트 로그를 확인하세요.", false);
+      return false;
+    }
+  }
+
+  async _homeCompleteStatusAction(item) {
+    const payload = this._homeActionPayloadForStatus(item);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/safety-guard-events/clear", { ...payload, operatorNote: `${payload.operatorNote} · home_status_complete` });
+      this._setHomeActionResult("조치 완료 기록 완료");
+      await this._fetchZoneSafetyGuardEvents(payload.domain, { patchOnly: true }).catch(() => null);
+      return !!res?.ok;
+    } catch (err) {
+      console.warn("Home 조치 완료 기록 실패", err);
+      this._setHomeActionResult("조치 완료 기록 실패: SafetyGuard 이벤트 로그를 확인하세요.", false);
+      return false;
+    }
+  }
+
+  async _homePreviewStopDeviceDryRun(item) {
+    const payload = this._homeActionPayloadForStatus(item);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/execute-final-targets", {
+        crop_season_id: payload.crop_season_id,
+        zone_id: payload.zone_id,
+        domain: "device",
+        dry_run: true,
+        operatorNote: `${payload.operatorNote} · home_stop_device_dry_run`,
+        post_state_delay: 0,
+      });
+      this._setHomeActionResult(`장치 정지 Dry Run 완료 · planned ${res?.plannedCount ?? 0} · 실제 장비 실행 안 함`);
+      return res;
+    } catch (err) {
+      console.warn("Home 장치 정지 Dry Run 실패", err);
+      this._setHomeActionResult("장치 정지 Dry Run 실패: entity mapping/final target/SafetyGuard를 확인하세요.", false);
+      return null;
+    }
+  }
+
+  async _homePreviewLimitedExecutionDryRun(item) {
+    const payload = this._homeActionPayloadForStatus(item);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/execute-final-targets", {
+        crop_season_id: payload.crop_season_id,
+        zone_id: payload.zone_id,
+        domain: payload.domain,
+        dry_run: true,
+        operatorNote: `${payload.operatorNote} · home_limited_execute_dry_run`,
+        post_state_delay: 0,
+      });
+      this._setHomeActionResult(`제한 실행 Dry Run 완료 · planned ${res?.plannedCount ?? 0} · 실제 장비 실행 안 함`);
+      return res;
+    } catch (err) {
+      console.warn("Home 제한 실행 Dry Run 실패", err);
+      this._setHomeActionResult("제한 실행 Dry Run 실패: Control Mode/SafetyGuard/final target를 확인하세요.", false);
+      return null;
+    }
   }
 
   _openHomeStatusPopup(key) {
@@ -1836,10 +1936,11 @@ button.action:disabled{opacity:.5;cursor:default;}
     if (!item || !overlay || !inner) return;
     overlay.removeAttribute("hidden");
     inner.innerHTML = this._renderHomeStatusPopup(item);
-    inner.querySelectorAll(".wm-close-btn,[data-role-action='acknowledge']").forEach((btn) => btn.addEventListener("click", () => this._closePopup()));
-    inner.querySelectorAll("[data-role-action='complete']").forEach((btn) => btn.addEventListener("click", () => { alert("조치 완료 기록은 다음 단계에서 API와 연결됩니다."); this._closePopup(); }));
-    inner.querySelectorAll("[data-role-action='stop-device']").forEach((btn) => btn.addEventListener("click", () => alert("장치 정지는 확인 팝업과 권한 검증 API 연결 후 활성화됩니다.")));
-    inner.querySelectorAll("[data-role-action='limited-execute']").forEach((btn) => btn.addEventListener("click", () => alert("제한 실행은 SafetyGuard 확인 후 다음 단계에서 연결됩니다.")));
+    inner.querySelectorAll(".wm-close-btn").forEach((btn) => btn.addEventListener("click", () => this._closePopup()));
+    inner.querySelectorAll("[data-role-action='acknowledge']").forEach((btn) => btn.addEventListener("click", async () => await this._homeAcknowledgeStatusAction(item)));
+    inner.querySelectorAll("[data-role-action='complete']").forEach((btn) => btn.addEventListener("click", async () => await this._homeCompleteStatusAction(item)));
+    inner.querySelectorAll("[data-role-action='stop-device']").forEach((btn) => btn.addEventListener("click", async () => await this._homePreviewStopDeviceDryRun(item)));
+    inner.querySelectorAll("[data-role-action='limited-execute']").forEach((btn) => btn.addEventListener("click", async () => await this._homePreviewLimitedExecutionDryRun(item)));
     inner.querySelectorAll("[data-role-action='admin-diagnostics']").forEach((btn) => btn.addEventListener("click", () => { this._page = "admin"; this._closePopup(); this._update(); }));
     overlay.onclick = (e) => { if (e.target === overlay) this._closePopup(); };
   }

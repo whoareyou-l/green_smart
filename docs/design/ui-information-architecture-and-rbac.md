@@ -1,6 +1,6 @@
 # Green Smart UI Information Architecture and RBAC Plan
 
-> 기준 버전: `v1.9.24`
+> 기준 버전: `v1.9.25`
 > 목적: 앞으로 Green Smart UI 요소를 어디에 배치하고, 어떤 역할이 어떤 페이지/기능을 볼 수 있으며, 비전공자인 농장주·농장직원이 직관적으로 사용할 수 있게 만드는 기준을 고정한다.
 
 ---
@@ -242,9 +242,20 @@ Home의 첫 카드는 `알림/작업` 영역으로 유지한다. 별도 sidebar 
 
 | 역할 | Home 팝업 조치 |
 |---|---|
-| `farm_staff` | 알림 확인, 조치 완료 기록, 농장주가 허용한 장치 정지 |
-| `farm_owner` | 알림 확인, 조치 완료 기록, 장치 정지, 제한 실행 |
-| `admin` | 모든 조치 + 진단/고급 설정 이동 |
+| `farm_staff` | `확인`, `조치 완료 기록`, 권한이 있으면 `장치 정지 Dry Run` |
+| `farm_owner` | `확인`, `조치 완료 기록`, `장치 정지 Dry Run`, `제한 실행 Dry Run` |
+| `admin` | 모든 Home 조치 + 진단/고급 설정 이동 |
+
+Home 팝업 버튼의 현재 baseline은 **실제 장비 실행이 아니라 감사 로그와 Dry Run 사전점검**이다.
+
+```text
+확인              → safety-guard-events/ack 기록
+조치 완료 기록    → safety-guard-events/clear 기록
+장치 정지 Dry Run → execute-final-targets(dry_run=true, domain=device)
+제한 실행 Dry Run → execute-final-targets(dry_run=true, status domain)
+```
+
+Home에서 실제 장치를 움직이는 버튼은 제공하지 않는다. 실제 실행은 제어 페이지에서 운영자 확인/권한/Control Mode/SafetyGuard/Interlock/fail-safe를 통과해야 한다.
 
 ---
 

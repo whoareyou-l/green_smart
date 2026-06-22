@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.24`
+> 기준 버전: `v1.9.25`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.24` |
+| 현재 version | `1.9.25` |
 
 작업 시 우선순위:
 
@@ -182,11 +182,39 @@ AI보다 안전/인터록/운영자 확인을 우선하는 현장 친화 UI
 ### 5.1 구성 순서
 
 1. Virtual mode badge
-2. KPI strip
-3. 환경 trend chart + alerts + weather card
-4. 관수 chart + 목표 환경 + 관수 계획
-5. zone cards
-6. 장비 상태 grid + zone selector
+2. Home operator-first action summary card
+   - 위험 알림
+   - 오늘 할 일
+   - 조치 필요
+   - 현재 온실 상태 숫자 chip
+3. KPI strip
+4. 환경 trend chart + alerts + weather card
+5. 관수 chart + 목표 환경 + 관수 계획
+6. zone cards
+7. 장비 상태 grid + zone selector
+
+### 5.1.1 Home action summary API/Dry Run 기준
+
+Home 첫 카드의 상태 chip을 누르면 `_openHomeStatusPopup(key)`가 상태 팝업을 연다. 팝업 버튼은 다음 baseline만 수행한다.
+
+| 버튼 | 실제 연결 | 안전 기준 |
+|---|---|---|
+| `확인` | `POST green_smart/zones/safety-guard-events/ack` | SafetyGuard event lifecycle/audit log에 확인 기록 |
+| `조치 완료 기록` | `POST green_smart/zones/safety-guard-events/clear` | 조치 완료 lifecycle/audit log 기록 및 notification clear 흐름 사용 |
+| `장치 정지 Dry Run` | `POST green_smart/zones/execute-final-targets` with `domain: "device"`, `dry_run: true` | 실제 장비 실행 안 함. device final-target/Mapping/SafetyGuard 사전점검만 수행 |
+| `제한 실행 Dry Run` | `POST green_smart/zones/execute-final-targets` with status domain, `dry_run: true` | 실제 장비 실행 안 함. Control Mode/Limited Auto/SafetyGuard 사전점검만 수행 |
+
+구현 marker:
+
+```text
+_homeAcknowledgeStatusAction(item)
+_homeCompleteStatusAction(item)
+_homePreviewStopDeviceDryRun(item)
+_homePreviewLimitedExecutionDryRun(item)
+data-home-action-result
+```
+
+Home에서 실제 장비 실행은 아직 연결하지 않는다. 실제 실행은 각 제어 페이지의 운영자 확인/권한/Control Mode/SafetyGuard/Interlock/fail-safe 경로를 통과해야 한다.
 
 ### 5.2 환경 KPI series
 

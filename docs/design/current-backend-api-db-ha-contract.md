@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.24`
+> 기준 버전: `v1.9.25`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.24"
+  "version": "1.9.25"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.24` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.25` |
 
 ### 4.2 WebSocket commands
 
@@ -423,6 +423,23 @@ farm_id + crop_season_id + zone_id + domain
 | `POST /api/green_smart/zones/alert-resume` | 알림 확인 후 재개 요청 |
 | `GET /api/green_smart/zones/rehearsal-readiness` | 현장 리허설 readiness |
 | `POST /api/green_smart/zones/virtual-rehearsal` | 가상 장치 리허설 |
+
+Home 첫 카드 상태 팝업은 위 generic zone API를 재사용한다.
+
+```text
+확인/조치 완료:
+- safety-guard-events/ack
+- safety-guard-events/clear
+- zone_control_logs 기반 event lifecycle/audit log 기록
+
+장치 정지/제한 실행:
+- zones/execute-final-targets
+- dry_run=true
+- post_state_delay=0
+- 실제 HA service call 실행 없음
+```
+
+Home baseline은 operator-first UX를 위한 빠른 진입점이며, 실제 장비 실행은 각 제어 페이지에서 운영자 확인 문구, role/permission, Control Mode, Limited Auto, SafetyGuard, Interlock/fail-safe를 다시 통과해야 한다.
 
 ### 10.3 Domain wrapper APIs
 
