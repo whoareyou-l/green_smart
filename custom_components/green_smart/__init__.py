@@ -14,6 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
 CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
+EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS = 60
 
 REQUIRED_KEYS = (
     "host",
@@ -148,6 +149,66 @@ def _teardown_center_crop_interlock_snapshot_sync_scheduler(hass) -> None:
         domain_data["center_crop_interlock_snapshot_sync_scheduler_stopped"] = True
 
 
+async def _run_edge_environment_telemetry_sync_tick(hass, now) -> None:
+    from .central_views import sync_environment_telemetry_snapshot
+    from .db import fetchall
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    try:
+        zones = await fetchall(
+            hass,
+            """
+            SELECT DISTINCT COALESCE(zone_id, 1) AS zone_id
+            FROM sensor_readings
+            WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+            ORDER BY zone_id ASC
+            LIMIT 20
+            """,
+        )
+    except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+        _LOGGER.warning("Edge environment telemetry zone lookup failed: %s", exc)
+        return
+    if not zones:
+        zones = [{"zone_id": None}]
+    ok_count = 0
+    fail_count = 0
+    for zone in zones:
+        try:
+            await sync_environment_telemetry_snapshot(
+                hass,
+                farm_id=1,
+                zone_id=int(zone["zone_id"]) if zone.get("zone_id") else None,
+                trigger="scheduled_1m",
+            )
+            ok_count += 1
+        except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+            fail_count += 1
+            _LOGGER.warning("Edge environment telemetry sync failed for zone=%s: %s", zone.get("zone_id"), exc)
+    domain_data["last_edge_environment_telemetry_sync"] = now
+    domain_data["last_edge_environment_telemetry_sync_ok_count"] = ok_count
+    domain_data["last_edge_environment_telemetry_sync_fail_count"] = fail_count
+
+
+async def _setup_edge_environment_telemetry_sync_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("unsub_edge_environment_telemetry_sync"):
+        return
+
+    def _tick(now):
+        hass.loop.call_soon_threadsafe(hass.async_create_task, _run_edge_environment_telemetry_sync_tick(hass, now))
+
+    domain_data["unsub_edge_environment_telemetry_sync"] = async_track_time_interval(hass, _tick, timedelta(seconds=EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS))
+    domain_data["edge_environment_telemetry_sync_scheduler_started"] = True
+
+
+def _teardown_edge_environment_telemetry_sync_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    unsub = domain_data.pop("unsub_edge_environment_telemetry_sync", None)
+    if unsub:
+        unsub()
+        domain_data["edge_environment_telemetry_sync_scheduler_stopped"] = True
+
+
 async def async_setup(hass, config):
     """컴포넌트 레벨 설정 — HTTP Views 등록."""
     from .weather_api import WeatherStore
@@ -251,6 +312,7 @@ async def async_setup(hass, config):
     await _setup_safety_guard_watchdog_scheduler(hass)
     await _setup_growth_report_notification_scheduler(hass)
     await _setup_center_crop_interlock_snapshot_sync_scheduler(hass)
+    await _setup_edge_environment_telemetry_sync_scheduler(hass)
     return True
 
 
@@ -288,6 +350,7 @@ async def async_unload_entry(hass, entry):
         _teardown_safety_guard_watchdog_scheduler(hass)
         _teardown_growth_report_notification_scheduler(hass)
         _teardown_center_crop_interlock_snapshot_sync_scheduler(hass)
+        _teardown_edge_environment_telemetry_sync_scheduler(hass)
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
         from .db import close_pool
         await close_pool()

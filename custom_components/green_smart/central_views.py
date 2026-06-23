@@ -9,9 +9,11 @@ from .central_api import DEFAULT_CENTRAL_BASE_URL, CentralApiError, GreenityCent
 from .central_store import CentralTokenStore
 from .crop_views import _growth_report_response
 
-EDGE_VERSION = "1.9.49"
+EDGE_VERSION = "1.9.50"
 EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
 CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
+EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS = 60
+RATE_LIMIT_DELTA_KEYS = ("temperatureDelta1m", "humidityDelta1m", "co2Delta1m", "ecDelta1m", "phDelta1m")
 
 
 class _CentralAdapterView(HomeAssistantView):
@@ -73,6 +75,90 @@ async def sync_crop_interlock_snapshot_for_season(
     client = GreenityCentralClient(hass, base_url)
     token = await ensure_access_token(store, client)
     result = await client.sync_crop_interlock_snapshot(token, payload)
+    return {"ok": True, "center": result, "payload": payload}
+
+
+async def sync_environment_telemetry_snapshot(
+    hass,
+    farm_id: int = 1,
+    season_id: int | None = None,
+    zone_id: int | None = None,
+    trigger: str = "scheduled_1m",
+) -> dict:
+    """Push 1-minute environment telemetry/rate-limit input to Center for models."""
+    from .db import fetchall
+
+    rows = await fetchall(
+        hass,
+        """
+        SELECT reading_type, value, unit, captured_at
+        FROM sensor_readings
+        WHERE farm_id = %s
+          AND (%s IS NULL OR zone_id = %s)
+          AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+        ORDER BY reading_type ASC, captured_at DESC
+        """,
+        (int(farm_id or 1), zone_id, zone_id),
+    )
+    latest: dict[str, dict] = {}
+    previous: dict[str, dict] = {}
+    for row in rows:
+        key = str(row.get("reading_type") or "").strip()
+        if not key:
+            continue
+        if key not in latest:
+            latest[key] = row
+        elif key not in previous:
+            previous[key] = row
+    metrics: dict[str, float] = {}
+    deltas: dict[str, float] = {}
+    for key, row in latest.items():
+        try:
+            metrics[key] = float(row.get("value"))
+        except (TypeError, ValueError):
+            continue
+        if key in previous:
+            try:
+                deltas[f"{key}Delta1m"] = round(metrics[key] - float(previous[key].get("value")), 4)
+            except (TypeError, ValueError):
+                pass
+    rate_limit_flags = []
+    thresholds = {
+        "temperature": (1.0, "temperature_delta_1m_high"),
+        "humidity": (5.0, "humidity_delta_1m_high"),
+        "co2": (200.0, "co2_delta_1m_high"),
+        "ec": (0.3, "ec_delta_1m_high"),
+        "ph": (0.2, "ph_delta_1m_high"),
+    }
+    for metric, (limit_value, reason_code) in thresholds.items():
+        delta_key = f"{metric}Delta1m"
+        if abs(float(deltas.get(delta_key, 0))) > limit_value:
+            rate_limit_flags.append({
+                "metric": metric,
+                "delta": deltas[delta_key],
+                "limit": limit_value,
+                "window_seconds": EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS,
+                "severity": "warning",
+                "reason_code": reason_code,
+            })
+    payload = {
+        "farm_id": int(farm_id or 1),
+        "season_id": season_id,
+        "zone_id": zone_id,
+        "metrics": metrics,
+        "deltas": deltas,
+        "rateLimitFlags": rate_limit_flags,
+        "source": trigger,
+        "edgeVersions": {
+            "green_smart": EDGE_VERSION,
+            "edgeEnvironmentTelemetrySyncIntervalSeconds": EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS,
+        },
+    }
+    store = CentralTokenStore(hass)
+    base_url = (await store.get_base_url()) or DEFAULT_CENTRAL_BASE_URL
+    client = GreenityCentralClient(hass, base_url)
+    token = await ensure_access_token(store, client)
+    result = await client.sync_environment_telemetry(token, payload)
     return {"ok": True, "center": result, "payload": payload}
 
 

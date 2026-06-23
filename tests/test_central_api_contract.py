@@ -82,7 +82,9 @@ def test_central_api_authorization_header_only_uses_access_token_for_adapter():
     assert "demo_status" in source
     assert "get_weather" in source
     assert "get_pesticide_data" in source
-    assert source.count("Authorization") == 5
+    assert "sync_environment_telemetry" in source
+    assert "get_environment_telemetry_summary" in source
+    assert source.count("Authorization") == 7
 
 
 def test_central_api_errors_do_not_embed_raw_secret_material():

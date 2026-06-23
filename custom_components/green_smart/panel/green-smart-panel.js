@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.49
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.50
 const DOMAIN = "green_smart";
-const VERSION = "1.9.49";
+const VERSION = "1.9.50";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];

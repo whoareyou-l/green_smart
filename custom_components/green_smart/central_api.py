@@ -23,6 +23,8 @@ TOKEN_REVOKE_PATH = "/tokens/revoke"
 DEMO_STATUS_PATH = "/vendor/adapters/demo/status"
 CROP_INTERLOCK_SNAPSHOT_PATH = "/edge/snapshots/crop-interlock"
 CROP_INTERLOCK_ANALYTICS_SUMMARY_PATH = "/analytics/crop-interlock/summary"
+ENVIRONMENT_TELEMETRY_PATH = "/edge/telemetry/environment"
+ENVIRONMENT_TELEMETRY_SUMMARY_PATH = "/analytics/environment/telemetry/summary"
 
 
 @dataclass(slots=True)
@@ -162,6 +164,35 @@ class GreenityCentralClient:
         return await self._get_json(
             CROP_INTERLOCK_ANALYTICS_SUMMARY_PATH,
             params={"farm_id": farm_id, "season_id": season_id},
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    async def sync_environment_telemetry(self, access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._post_json(
+            ENVIRONMENT_TELEMETRY_PATH,
+            {
+                "farm_id": payload.get("farm_id", 1),
+                "season_id": payload.get("season_id") or payload.get("seasonId"),
+                "zone_id": payload.get("zone_id") or payload.get("zoneId"),
+                "recorded_at": payload.get("recorded_at") or payload.get("recordedAt"),
+                "metrics": payload.get("metrics") or {},
+                "deltas": payload.get("deltas") or {},
+                "rateLimitFlags": payload.get("rateLimitFlags") or [],
+                "source": payload.get("source") or "edge_1m",
+            },
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    async def get_environment_telemetry_summary(
+        self,
+        access_token: str,
+        farm_id: int = 1,
+        season_id: int | None = None,
+        zone_id: int | None = None,
+    ) -> dict[str, Any]:
+        return await self._get_json(
+            ENVIRONMENT_TELEMETRY_SUMMARY_PATH,
+            params={"farm_id": farm_id, "season_id": season_id, "zone_id": zone_id},
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
