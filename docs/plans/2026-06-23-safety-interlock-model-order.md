@@ -55,7 +55,7 @@ Domain reference order: Crop → Environment → Irrigation → Device
 
 ---
 
-## Current status after v1.9.51
+## Current status after v1.9.52
 
 Completed:
 

@@ -18,6 +18,7 @@ CROP_INTERLOCK_VERSION = "crop_interlock_policy_v1"
 CROP_STAGE_DIAGNOSIS_VERSION = "crop_stage_diagnosis_v1"
 CROP_STAGE_INTERLOCK_VERSION = "crop_stage_interlock_v1"
 CROP_INTERLOCK_APPROVAL_VERSION = "crop_interlock_approval_v1"
+CENTER_CROP_POLICY_INTEGRATION_VERSION = "center_crop_policy_integration_v1"
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
@@ -777,11 +778,25 @@ def _crop_interlock_approval_resolved_reasons(reasons: set[str], approvalAudit: 
     return resolved & reasons
 
 
-def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | None = None, control_rows: list[dict] | None = None, approvalAudit: list[dict] | None = None) -> dict:
+def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | None = None, control_rows: list[dict] | None = None, approvalAudit: list[dict] | None = None, centerCropPolicy: dict | None = None) -> dict:
     safety = cropSafety or {}
+    center_policy = centerCropPolicy or {}
     stage_rule_results = _crop_stage_interlock_rule_results(stageDiagnosis, control_rows)
     reasons = set(safety.get("cropSafetyReasons") or [])
     reasons.update(item["reasonCode"] for item in stage_rule_results if item.get("matched"))
+    center_policy_status = str(center_policy.get("policyStatus") or "")
+    center_reason_codes = set(center_policy.get("reasonCodes") or [])
+    if center_policy_status == "stale_restricted":
+        reasons.add("center_policy_stale_restricted")
+    if center_policy_status == "fallback_safe":
+        reasons.add("center_policy_fallback_safe")
+    if center_policy_status == "rejected":
+        reasons.add("center_policy_rejected")
+    if center_policy.get("applyMode") == "recommend_only":
+        reasons.add("center_policy_recommend_only")
+    if center_policy.get("recommendationHints"):
+        reasons.add("center_policy_recommendation_hint")
+    reasons.update(code for code in center_reason_codes if str(code).startswith("center_policy_"))
     matched_results = [item for item in safety.get("cropSafetyRuleResults") or [] if item.get("matched")] + [item for item in stage_rule_results if item.get("matched")]
     confirm_reasons = {item.get("reasonCode") for item in matched_results if item.get("severity") == "confirm"}
 
@@ -804,6 +819,11 @@ def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | 
         "crop_confidence_low",
         "stage_index_caution",
         "stage_missing_evidence",
+        "center_policy_stale_restricted",
+        "center_policy_fallback_safe",
+        "center_policy_rejected",
+        "center_policy_recommend_only",
+        "center_policy_recommendation_hint",
     }
 
     actions = []
@@ -837,6 +857,13 @@ def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | 
         actions.append("require_harvest_safety_clearance")
     if reasons & {"crop_confidence_low", "crop_control_record_stale", "crop_growth_anomaly", "crop_metric_anomaly", "stage_index_hard_block", "stage_index_problem", "stage_missing_evidence", "stage_harvest_phi_rei_unknown"}:
         actions.append("fallback_conservative_crop_baseline")
+    if reasons & {"center_policy_stale_restricted", "center_policy_fallback_safe", "center_policy_rejected"}:
+        actions.append("fallback_conservative_crop_baseline")
+        actions.append("require_operator_confirmation")
+    if "center_policy_recommend_only" in reasons:
+        actions.append("center_policy_read_only_recommendation")
+    if "center_policy_recommendation_hint" in reasons:
+        actions.append("review_center_crop_recommendation_hint")
     if reasons & hard_block_reasons:
         actions.append("fallback_conservative_crop_baseline")
 
@@ -872,6 +899,7 @@ def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | 
         "approvalResolvedReasons": sorted(approval_resolved_reasons),
         "approvalUnresolvedReasons": sorted(unresolved_for_target),
         "approvalAudit": approvalAudit or [],
+        "centerCropPolicy": centerCropPolicy or {},
         "stageDiagnosis": stageDiagnosis or {},
         "stageInterlockRuleResults": stage_rule_results,
         "fallbackToConservativeBaseline": "fallback_conservative_crop_baseline" in actions,
@@ -1050,7 +1078,7 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
     }
 
 
-def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict], stageDiagnosis: dict | None = None, approvalAudit: list[dict] | None = None) -> dict:
+def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict], stageDiagnosis: dict | None = None, approvalAudit: list[dict] | None = None, centerCropPolicy: dict | None = None) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     oldest = growth_rows[-1] if growth_rows else latest
     height_now = _growth_metric_value(latest, "height", "height") or 0
@@ -1063,7 +1091,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     if stageDiagnosis is None:
         stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows)
     cropSafety = _crop_safety_rule_snapshot(season=season, growth_rows=growth_rows, pestRisk=pestRisk, yieldPrediction=yieldPrediction, latest_g=latest_g, weekly_growth=weekly_growth, control_rows=control_rows)
-    cropInterlock = _crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows, approvalAudit=approvalAudit)
+    cropInterlock = _crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows, approvalAudit=approvalAudit, centerCropPolicy=centerCropPolicy)
     growthStage = _crop_growth_stage(season, latest, growth_rows)
     cropProfile = _crop_profile_for_season(season, latest)
     confidenceReasons = list(dict.fromkeys(
@@ -1078,6 +1106,14 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "cropProfile": cropProfile,
         "growthStage": growthStage,
         "stageDiagnosis": stageDiagnosis,
+        "centerCropPolicy": centerCropPolicy or {},
+        "cropPolicyAppliedToModel": bool((centerCropPolicy or {}).get("cropPolicyAppliedToModel")),
+        "cropPolicyAppliedToInterlock": bool((centerCropPolicy or {}).get("cropPolicyAppliedToInterlock")),
+        "cropModelVariables": (centerCropPolicy or {}).get("cropModelVariables") or {},
+        "cropInterlockVariables": (centerCropPolicy or {}).get("cropInterlockVariables") or {},
+        "recommendationHints": (centerCropPolicy or {}).get("recommendationHints") or {},
+        "policyStatus": (centerCropPolicy or {}).get("policyStatus"),
+        "applyMode": (centerCropPolicy or {}).get("applyMode") or "recommend_only",
         "gIndex": latest_g,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,
@@ -1091,6 +1127,90 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "confidence": yieldPrediction.get("confidence") or "low",
         "confidenceReasons": confidenceReasons,
         "sourceTables": ["crop_seasons", "growth_surveys", "pest_surveys", "control_records"],
+    }
+
+
+async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zone_id: int | None = None) -> dict:
+    """Read the latest validated Center crop policy candidate from Edge cache.
+
+    Center policy may not unblock crop interlock; it is recommend_only model/interlock input.
+    """
+    row = await fetchone(
+        hass,
+        """
+        SELECT policy_version, policy_json, status, received_at, validated_at, active_from, valid_until,
+               stale_after_seconds, fallback_after_seconds, last_error
+        FROM edge_crop_policy_cache
+        WHERE farm_id = %s
+          AND season_id = %s
+          AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
+        ORDER BY FIELD(status, 'fresh', 'stale_usable', 'stale_restricted', 'fallback_safe', 'rejected'), received_at DESC
+        LIMIT 1
+        """,
+        (int(farm_id or 1), int(season_id), zone_id, zone_id),
+    )
+    if not row:
+        return {
+            "version": CENTER_CROP_POLICY_INTEGRATION_VERSION,
+            "policyStatus": "fallback_safe",
+            "applyMode": "recommend_only",
+            "reasonCodes": ["center_policy_fallback_safe"],
+            "cropModelVariables": {},
+            "cropInterlockVariables": {},
+            "recommendationHints": {"nextAction": "wait_for_center_crop_policy"},
+            "cropPolicyAppliedToModel": False,
+            "cropPolicyAppliedToInterlock": True,
+            "message": "No cached Center crop policy; using local crop fallback policy.",
+        }
+    policy = _parse_json_object(row.get("policy_json"))
+    status = str(row.get("status") or "fallback_safe")
+    valid_until = row.get("valid_until")
+    received_at = row.get("received_at")
+    stale_after = int(row.get("stale_after_seconds") or policy.get("stale_after_seconds") or 600)
+    fallback_after = int(row.get("fallback_after_seconds") or policy.get("fallback_after_seconds") or 1800)
+    now = datetime.now()
+    age_seconds = None
+    if received_at:
+        try:
+            age_seconds = max(0, int((now - received_at.replace(tzinfo=None)).total_seconds()))
+        except Exception:
+            age_seconds = None
+    if status == "rejected":
+        reason_codes = ["center_policy_rejected"]
+    elif age_seconds is not None and age_seconds >= fallback_after:
+        status = "fallback_safe"
+        reason_codes = ["center_policy_fallback_safe"]
+    elif age_seconds is not None and age_seconds >= stale_after:
+        status = "stale_restricted"
+        reason_codes = ["center_policy_stale_restricted"]
+    elif valid_until and valid_until.replace(tzinfo=None) < now:
+        status = "stale_usable"
+        reason_codes = ["center_policy_stale_usable"]
+    else:
+        status = "fresh"
+        reason_codes = ["center_policy_recommend_only"]
+    hints = policy.get("recommendation_hints") or {}
+    if hints:
+        reason_codes.append("center_policy_recommendation_hint")
+    return {
+        "version": CENTER_CROP_POLICY_INTEGRATION_VERSION,
+        "policyVersion": policy.get("policy_version") or row.get("policy_version"),
+        "policyStatus": status,
+        "applyMode": policy.get("apply_mode") or "recommend_only",
+        "reasonCodes": reason_codes,
+        "cropModelVariables": policy.get("crop_model_variables") or {},
+        "cropInterlockVariables": policy.get("crop_interlock_variables") or {},
+        "recommendationHints": hints,
+        "confidence": policy.get("confidence"),
+        "validUntil": valid_until,
+        "receivedAt": received_at,
+        "ageSeconds": age_seconds,
+        "staleAfterSeconds": stale_after,
+        "fallbackAfterSeconds": fallback_after,
+        "lastError": row.get("last_error"),
+        "cropPolicyAppliedToModel": status in {"fresh", "stale_usable", "stale_restricted"},
+        "cropPolicyAppliedToInterlock": True,
+        "message": "Center crop policy is recommend_only; Edge crop safety/interlock remains authoritative.",
     }
 
 
@@ -1160,7 +1280,8 @@ async def _crop_model_snapshot(hass, season_id: int) -> dict:
     calibration_response = await _crop_stage_calibrations_response(hass, farm_id=1, crop_type=crop_type, cultivation_method=method)
     stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows, calibration_response)
     approvalAudit = (await _crop_interlock_approval_response(hass, season_id, farm_id=1)).get("approvalAudit") or []
-    return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis, approvalAudit)
+    centerCropPolicy = await _active_center_crop_policy(hass, season_id, farm_id=1, zone_id=season.get("zoneId"))
+    return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis, approvalAudit, centerCropPolicy)
 
 
 async def _growth_report_response(hass, season_id: int) -> dict:
@@ -1195,7 +1316,8 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     calibration_response = await _crop_stage_calibrations_response(hass, farm_id=1, crop_type=crop_type, cultivation_method=method)
     stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows, calibration_response)
     approvalAudit = (await _crop_interlock_approval_response(hass, season_id, farm_id=1)).get("approvalAudit") or []
-    cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis, approvalAudit)
+    centerCropPolicy = await _active_center_crop_policy(hass, season_id, farm_id=1, zone_id=season.get("zoneId"))
+    cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis, approvalAudit, centerCropPolicy)
     latest = cropModel["latestMetrics"]
     oldest = growth_rows[-1] if growth_rows else latest
     weekly_growth = cropModel["weeklyGrowthCm"]
