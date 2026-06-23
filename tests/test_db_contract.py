@@ -201,6 +201,32 @@ def test_crop_stage_diagnosis_api_contract():
     assert "/api/green_smart/crop/seasons/{season_id}/stage-diagnosis" in design_doc
 
 
+def test_crop_stage_diagnosis_interlock_integration_contract():
+    crop_source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    design_doc = (ROOT / "docs" / "plans" / "2026-06-23-crop-safety-interlock-real-use-design.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "CROP_STAGE_INTERLOCK_VERSION",
+        "def _crop_stage_interlock_rule_results",
+        "stage_index_hard_block",
+        "stage_index_problem",
+        "stage_index_caution",
+        "stage_missing_evidence",
+        "stage_harvest_phi_rei_unknown",
+        "block_stage_based_target_promotion",
+        "limit_stage_based_correction_magnitude",
+        "require_stage_evidence_survey",
+        "require_harvest_safety_clearance",
+        "stageInterlockRuleResults",
+        "stageDiagnosis",
+        "_crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows)",
+    ):
+        assert marker in crop_source
+
+    assert "Stage diagnosis → cropInterlock integration" in design_doc
+    assert "stage_harvest_phi_rei_unknown" in design_doc
+
+
 def test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tables():
     source = DB.read_text(encoding="utf-8")
     for table in (

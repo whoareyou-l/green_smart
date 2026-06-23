@@ -16,6 +16,7 @@ CROP_MODEL_VERSION = "crop_season_model_v1"
 CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
 CROP_INTERLOCK_VERSION = "crop_interlock_policy_v1"
 CROP_STAGE_DIAGNOSIS_VERSION = "crop_stage_diagnosis_v1"
+CROP_STAGE_INTERLOCK_VERSION = "crop_stage_interlock_v1"
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
@@ -707,10 +708,66 @@ def _crop_safety_rule_result(reason_code: str, matched: bool, *, severity: str =
     }
 
 
-def _crop_interlock_decision(cropSafety: dict | None) -> dict:
+def _crop_stage_interlock_rule_results(stageDiagnosis: dict | None, control_rows: list[dict] | None = None) -> list[dict]:
+    diagnosis = stageDiagnosis or {}
+    band = str(diagnosis.get("indexBand") or "unknown")
+    stage_id = str(diagnosis.get("stageId") or "unknown")
+    missing = list(diagnosis.get("missingEvidence") or [])
+    entry_status = diagnosis.get("entryEvidenceStatus") or {}
+    if entry_status.get("missing"):
+        missing = list(dict.fromkeys(missing + list(entry_status.get("missing") or [])))
+    pesticide_entries = []
+    for control in control_rows or []:
+        for pesticide in control.get("pesticides") or []:
+            pesticide_entries.append({**pesticide, "controlDate": control.get("date")})
+    harvest_stage = any(token in stage_id for token in ("harvest", "pre_harvest", "continuous_harvest"))
+    phi_rei_unknown = harvest_stage and bool(pesticide_entries) and any(
+        p.get("PHI") in (None, "") and p.get("phi") in (None, "") and p.get("REI") in (None, "") and p.get("rei") in (None, "")
+        for p in pesticide_entries
+    )
+    return [
+        _crop_safety_rule_result(
+            "stage_index_hard_block",
+            band == "hardBlock",
+            message="생육단계별 index가 hard block 범위라 target promotion과 자동 실행을 차단",
+            evidence={"stageId": stage_id, "indexBand": band, "indexValue": diagnosis.get("indexValue")},
+        ),
+        _crop_safety_rule_result(
+            "stage_index_problem",
+            band == "problem",
+            severity="block",
+            message="생육단계별 index가 problem 범위라 자동 실행 차단 및 보수 fallback 필요",
+            evidence={"stageId": stage_id, "indexBand": band, "indexValue": diagnosis.get("indexValue")},
+        ),
+        _crop_safety_rule_result(
+            "stage_index_caution",
+            band == "caution",
+            severity="confirm",
+            message="생육단계별 index가 caution 범위라 preview는 허용하되 보정 폭 제한 필요",
+            evidence={"stageId": stage_id, "indexBand": band, "indexValue": diagnosis.get("indexValue")},
+        ),
+        _crop_safety_rule_result(
+            "stage_missing_evidence",
+            bool(missing),
+            severity="confirm",
+            message="생육단계 판단 증거가 부족해 최신 조사 또는 운영자 확인 필요",
+            evidence={"stageId": stage_id, "missingEvidence": missing, "nextRequiredSurvey": diagnosis.get("nextRequiredSurvey")},
+        ),
+        _crop_safety_rule_result(
+            "stage_harvest_phi_rei_unknown",
+            phi_rei_unknown,
+            message="수확 관련 단계에서 최근 방제 PHI/REI 확인값이 없어 수확/target promotion 차단",
+            evidence={"stageId": stage_id, "pesticides": pesticide_entries},
+        ),
+    ]
+
+
+def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | None = None, control_rows: list[dict] | None = None) -> dict:
     safety = cropSafety or {}
+    stage_rule_results = _crop_stage_interlock_rule_results(stageDiagnosis, control_rows)
     reasons = set(safety.get("cropSafetyReasons") or [])
-    matched_results = [item for item in safety.get("cropSafetyRuleResults") or [] if item.get("matched")]
+    reasons.update(item["reasonCode"] for item in stage_rule_results if item.get("matched"))
+    matched_results = [item for item in safety.get("cropSafetyRuleResults") or [] if item.get("matched")] + [item for item in stage_rule_results if item.get("matched")]
     confirm_reasons = {item.get("reasonCode") for item in matched_results if item.get("severity") == "confirm"}
 
     hard_block_reasons = {
@@ -720,6 +777,9 @@ def _crop_interlock_decision(cropSafety: dict | None) -> dict:
         "crop_pest_risk_high",
         "crop_growth_anomaly",
         "crop_metric_anomaly",
+        "stage_index_hard_block",
+        "stage_index_problem",
+        "stage_harvest_phi_rei_unknown",
     }
     uncertain_reasons = {
         "crop_type_unknown",
@@ -727,6 +787,8 @@ def _crop_interlock_decision(cropSafety: dict | None) -> dict:
         "pesticide_mix_unknown",
         "crop_control_record_stale",
         "crop_confidence_low",
+        "stage_index_caution",
+        "stage_missing_evidence",
     }
 
     actions = []
@@ -750,7 +812,15 @@ def _crop_interlock_decision(cropSafety: dict | None) -> dict:
         actions.append("block_pesticide_mix_targets")
     if "pesticide_mix_unknown" in reasons:
         actions.append("require_pesticide_mix_confirmation")
-    if reasons & {"crop_confidence_low", "crop_control_record_stale", "crop_growth_anomaly", "crop_metric_anomaly"}:
+    if reasons & {"stage_index_hard_block", "stage_index_problem", "stage_harvest_phi_rei_unknown"}:
+        actions.append("block_stage_based_target_promotion")
+    if "stage_index_caution" in reasons:
+        actions.append("limit_stage_based_correction_magnitude")
+    if "stage_missing_evidence" in reasons:
+        actions.append("require_stage_evidence_survey")
+    if "stage_harvest_phi_rei_unknown" in reasons:
+        actions.append("require_harvest_safety_clearance")
+    if reasons & {"crop_confidence_low", "crop_control_record_stale", "crop_growth_anomaly", "crop_metric_anomaly", "stage_index_hard_block", "stage_index_problem", "stage_missing_evidence", "stage_harvest_phi_rei_unknown"}:
         actions.append("fallback_conservative_crop_baseline")
     if reasons & hard_block_reasons:
         actions.append("fallback_conservative_crop_baseline")
@@ -763,14 +833,17 @@ def _crop_interlock_decision(cropSafety: dict | None) -> dict:
 
     return {
         "cropInterlockVersion": CROP_INTERLOCK_VERSION,
+        "cropStageInterlockVersion": CROP_STAGE_INTERLOCK_VERSION,
         "cropInterlockStatus": status,
         "cropInterlockBlocked": blocked,
         "cropInterlockReasons": sorted(reasons),
         "cropInterlockActions": actions,
+        "stageDiagnosis": stageDiagnosis or {},
+        "stageInterlockRuleResults": stage_rule_results,
         "fallbackToConservativeBaseline": "fallback_conservative_crop_baseline" in actions,
         "operatorConfirmationRequired": needs_confirm,
-        "managerApprovalRequired": bool(reasons & {"crop_pest_risk_high", "pesticide_pls_noncompliant", "pesticide_mix_forbidden"}),
-        "adminApprovalRequired": bool(reasons & {"pesticide_pls_noncompliant", "pesticide_mix_forbidden", "crop_growth_anomaly", "crop_metric_anomaly"}),
+        "managerApprovalRequired": bool(reasons & {"crop_pest_risk_high", "pesticide_pls_noncompliant", "pesticide_mix_forbidden", "stage_harvest_phi_rei_unknown", "stage_index_hard_block"}),
+        "adminApprovalRequired": bool(reasons & {"pesticide_pls_noncompliant", "pesticide_mix_forbidden", "crop_growth_anomaly", "crop_metric_anomaly", "stage_harvest_phi_rei_unknown"}),
         "blockTargetPromotion": blocked,
         "blockAutoExecution": blocked,
         "useGenericSafeRangesOnly": "use_generic_safe_ranges_only" in actions,
@@ -908,7 +981,42 @@ def _crop_safety_rule_snapshot(*, season: dict, growth_rows: list[dict], pestRis
     }
 
 
-def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict]) -> dict:
+def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: list[dict], control_rows: list[dict], calibration_response: dict | None = None) -> dict:
+    latest = growth_rows[0] if growth_rows else {}
+    crop_type = str(season.get("cropType") or latest.get("cropType") or "tomato").lower()
+    method = str(season.get("method") or "hydro").lower()
+    calibration_response = calibration_response or {"version": CROP_STAGE_CALIBRATION_VERSION, "calibrations": []}
+    calibrations = calibration_response.get("calibrations") or []
+    days_after_transplant = _days_since(season.get("plantDate"))
+    selected = _stage_diagnosis_select_calibration(crop_type, calibrations, days_after_transplant, latest, control_rows) or {}
+    latest_index = _growth_g_index(latest) if latest else 0.0
+    threshold = selected.get("threshold") or {}
+    boundary = selected.get("boundary") or {}
+    evidence_status = _stage_diagnosis_entry_evidence_status(latest, selected) if selected else {"required": [], "available": [], "missing": []}
+    missing_evidence = list(dict.fromkeys(list(boundary.get("missingEvidence") or []) + list(evidence_status.get("missing") or [])))
+    stage_confidence = boundary.get("stageConfidence") or "low"
+    if not latest:
+        stage_confidence = "low"
+        missing_evidence = list(dict.fromkeys(missing_evidence + ["latestGrowthSurvey"]))
+    return {
+        "stageId": selected.get("stageId") or "unknown",
+        "stageLabel": selected.get("stageLabel") or "생육단계 미확정",
+        "indexType": selected.get("indexType") or ("L-Index" if crop_type == "lettuce" else "G-Index"),
+        "indexValue": latest_index,
+        "indexBand": _stage_diagnosis_index_band(latest_index, threshold),
+        "stageConfidence": stage_confidence,
+        "entryEvidenceStatus": evidence_status,
+        "missingEvidence": missing_evidence,
+        "nextRequiredSurvey": boundary.get("nextRequiredSurvey") or "최신 생육조사와 단계 전환 증거를 기록하세요.",
+        "threshold": threshold,
+        "boundary": boundary,
+        "source": selected.get("source") or {},
+        "daysAfterTransplant": days_after_transplant,
+        "calibrationVersion": calibration_response.get("version"),
+    }
+
+
+def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict], stageDiagnosis: dict | None = None) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     oldest = growth_rows[-1] if growth_rows else latest
     height_now = _growth_metric_value(latest, "height", "height") or 0
@@ -918,8 +1026,10 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     latest_g = _growth_g_index(latest) if latest else 0
     pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)
     yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
+    if stageDiagnosis is None:
+        stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows)
     cropSafety = _crop_safety_rule_snapshot(season=season, growth_rows=growth_rows, pestRisk=pestRisk, yieldPrediction=yieldPrediction, latest_g=latest_g, weekly_growth=weekly_growth, control_rows=control_rows)
-    cropInterlock = _crop_interlock_decision(cropSafety)
+    cropInterlock = _crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows)
     growthStage = _crop_growth_stage(season, latest, growth_rows)
     cropProfile = _crop_profile_for_season(season, latest)
     confidenceReasons = list(dict.fromkeys(
@@ -933,6 +1043,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "season": season,
         "cropProfile": cropProfile,
         "growthStage": growthStage,
+        "stageDiagnosis": stageDiagnosis,
         "gIndex": latest_g,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,
@@ -1010,7 +1121,11 @@ async def _crop_model_snapshot(hass, season_id: int) -> dict:
         LIMIT 30
     """, (season_id,))
     control_rows = await _crop_control_rows_with_pesticides(hass, season_id, limit=10)
-    return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows)
+    crop_type = str(season.get("cropType") or (growth_rows[0].get("cropType") if growth_rows else "tomato")).lower()
+    method = str(season.get("method") or "hydro").lower()
+    calibration_response = await _crop_stage_calibrations_response(hass, farm_id=1, crop_type=crop_type, cultivation_method=method)
+    stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows, calibration_response)
+    return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis)
 
 
 async def _growth_report_response(hass, season_id: int) -> dict:
@@ -1040,7 +1155,11 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         LIMIT 30
     """, (season_id,))
     control_rows = await _crop_control_rows_with_pesticides(hass, season_id, limit=10)
-    cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows)
+    crop_type = str(season.get("cropType") or (growth_rows[0].get("cropType") if growth_rows else "tomato")).lower()
+    method = str(season.get("method") or "hydro").lower()
+    calibration_response = await _crop_stage_calibrations_response(hass, farm_id=1, crop_type=crop_type, cultivation_method=method)
+    stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows, calibration_response)
+    cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis)
     latest = cropModel["latestMetrics"]
     oldest = growth_rows[-1] if growth_rows else latest
     weekly_growth = cropModel["weeklyGrowthCm"]
