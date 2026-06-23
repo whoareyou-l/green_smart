@@ -660,6 +660,30 @@ async def ensure_schema(hass: HomeAssistant) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
+        CREATE TABLE IF NOT EXISTS crop_model_training_snapshots (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            season_id INT NOT NULL,
+            zone_id INT NULL,
+            crop_type VARCHAR(50) NOT NULL DEFAULT 'other',
+            model_family VARCHAR(64) NOT NULL DEFAULT 'hybrid_rule_score_v1',
+            target_horizon_days INT NOT NULL DEFAULT 7,
+            source_survey_id INT NULL,
+            prediction_date DATE NOT NULL,
+            predicted_for_date DATE NOT NULL,
+            feature_snapshot_json JSON NOT NULL,
+            prediction_json JSON NOT NULL,
+            actual_validation_json JSON NULL,
+            readiness_json JSON NOT NULL,
+            actual_survey_id INT NULL,
+            validation_status VARCHAR(32) NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_crop_model_training_lookup (farm_id, season_id, zone_id, crop_type, validation_status, prediction_date),
+            KEY idx_crop_model_training_predicted_for (predicted_for_date, validation_status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
         CREATE TABLE IF NOT EXISTS edge_crop_policy_cache (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             farm_id BIGINT NOT NULL DEFAULT 1,

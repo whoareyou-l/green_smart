@@ -415,3 +415,76 @@ def test_crop_model_snapshot_includes_crop_interlock_summary():
     assert "modelAllowed" in result
     assert "modelBlockedBySafety" in result
     assert "modelBlockedByInterlock" in result
+
+
+def test_crop_specific_growth_survey_metrics_use_tomato_g_index_and_lettuce_l_index():
+    crop_views = _load_crop_views_for_helper_tests()
+
+    tomato = {
+        "date": "2026-06-20",
+        "cropType": "tomato",
+        "height": 150,
+        "leafCount": 28,
+        "stemDia": 12,
+        "truss": 5,
+        "node": 8,
+        "metricsJson": '[{"key":"plantHeight","value":150},{"key":"leafCount","value":28},{"key":"stemDiameter","value":12},{"key":"flowerClusterNo","value":5},{"key":"fruitSetNode","value":8}]',
+    }
+    lettuce = {
+        "date": "2026-06-20",
+        "cropType": "lettuce",
+        "height": 18,
+        "leafCount": 16,
+        "stemDia": 12,
+        "truss": 130,
+        "node": 20,
+        "metricsJson": '[{"key":"leafLength","value":18},{"key":"leafWidth","value":12},{"key":"leafCount","value":16},{"key":"freshWeight","value":130},{"key":"plantHeight","value":20}]',
+    }
+
+    assert hasattr(crop_views, "CROP_GROWTH_INDEX_VERSION")
+    assert crop_views._crop_growth_index_type({"cropType": "tomato"}) == "G-Index"
+    assert crop_views._crop_growth_index_type({"cropType": "lettuce"}) == "L-Index"
+
+    tomato_index = crop_views._crop_growth_index(tomato)
+    lettuce_index = crop_views._crop_growth_index(lettuce)
+
+    assert tomato_index["indexType"] == "G-Index"
+    assert tomato_index["formula"] == "plantHeight*0.08 + leafCount*0.55 + stemDiameter*0.35"
+    assert tomato_index["inputs"] == {"plantHeight": 150.0, "leafCount": 28.0, "stemDiameter": 12.0}
+    assert tomato_index["value"] == round((150 * 0.08) + (28 * 0.55) + (12 * 0.35), 2)
+
+    assert lettuce_index["indexType"] == "L-Index"
+    assert lettuce_index["formula"] == "leafLength*0.35 + leafWidth*0.25 + leafCount*0.25 + freshWeight*0.10 + plantHeight*0.05"
+    assert lettuce_index["inputs"] == {"leafLength": 18.0, "leafWidth": 12.0, "leafCount": 16.0, "freshWeight": 130.0, "plantHeight": 20.0}
+    assert lettuce_index["value"] == round((18 * 0.35) + (12 * 0.25) + (16 * 0.25) + (130 * 0.10) + (20 * 0.05), 2)
+
+
+def test_crop_model_snapshot_exposes_growth_index_formula_and_model_values():
+    crop_views = _load_crop_views_for_helper_tests()
+    lettuce_row = {
+        "date": "2026-06-20",
+        "cropType": "lettuce",
+        "height": 18,
+        "leafCount": 16,
+        "stemDia": 12,
+        "truss": 130,
+        "node": 20,
+        "metricsJson": '[{"key":"leafLength","value":18},{"key":"leafWidth","value":12},{"key":"leafCount","value":16},{"key":"freshWeight","value":130},{"key":"plantHeight","value":20}]',
+    }
+
+    result = crop_views._crop_model_snapshot_from_report_parts(
+        None,
+        12,
+        {"id": 12, "cropType": "lettuce", "plantDate": "2026-06-01", "plantDensity": 16},
+        [lettuce_row],
+        [],
+        [],
+    )
+
+    assert result["growthIndex"]["indexType"] == "L-Index"
+    assert result["growthIndex"]["formulaVersion"] == crop_views.CROP_GROWTH_INDEX_VERSION
+    assert result["modelValues"]["growthIndex"]["indexType"] == "L-Index"
+    assert result["modelValues"]["yieldPotential"]["formula"]
+    assert result["yieldPrediction"]["yieldDrivers"]["indexType"] == "L-Index"
+    assert "gIndexFactor" not in result["yieldPrediction"]["yieldDrivers"]
+    assert "growthIndexFactor" in result["yieldPrediction"]["yieldDrivers"]

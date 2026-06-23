@@ -15,6 +15,31 @@ GROWTH_REPORT_NOTIFICATION_STATE_KEY = "growth_report_notification_state"
 CROP_POLICY_NOTIFICATION_SETTINGS_KEY = "crop_policy_notification_settings"
 CROP_POLICY_NOTIFICATION_STATE_KEY = "crop_policy_notification_state"
 CROP_MODEL_VERSION = "crop_season_model_v1"
+CROP_TRAINABLE_BASELINE_VERSION = "crop_trainable_baseline_v1"
+CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
+CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
+CROP_GROWTH_METRIC_CONFIGS = {
+    "tomato": {
+        "indexType": "G-Index",
+        "fields": [
+            {"key": "plantHeight", "label": "초장", "unit": "cm"},
+            {"key": "leafCount", "label": "엽수", "unit": "매"},
+            {"key": "stemDiameter", "label": "줄기경", "unit": "mm"},
+            {"key": "flowerClusterNo", "label": "화방 위치", "unit": "단"},
+            {"key": "fruitSetNode", "label": "착과 절위", "unit": "절"},
+        ],
+    },
+    "lettuce": {
+        "indexType": "L-Index",
+        "fields": [
+            {"key": "leafLength", "label": "엽장", "unit": "cm"},
+            {"key": "leafWidth", "label": "엽폭", "unit": "cm"},
+            {"key": "leafCount", "label": "엽수", "unit": "매"},
+            {"key": "freshWeight", "label": "생체중", "unit": "g"},
+            {"key": "plantHeight", "label": "초장", "unit": "cm"},
+        ],
+    },
+}
 CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
 CROP_INTERLOCK_VERSION = "crop_interlock_policy_v1"
 CROP_STAGE_DIAGNOSIS_VERSION = "crop_stage_diagnosis_v1"
@@ -365,6 +390,61 @@ class CropSeasonDeleteView(HomeAssistantView):
         return _json({"ok": True, "id": sid, "hardDeleted": True})
 
 
+def _normalize_growth_metrics(raw_metrics, crop_type: str) -> list[dict]:
+    config = CROP_GROWTH_METRIC_CONFIGS.get(str(crop_type or "").lower(), CROP_GROWTH_METRIC_CONFIGS["tomato"])
+    field_meta = {item["key"]: item for item in config.get("fields") or []}
+    normalized = []
+    for metric in raw_metrics or []:
+        if not isinstance(metric, dict):
+            continue
+        key = str(metric.get("key") or "").strip()
+        if not key:
+            continue
+        meta = field_meta.get(key, {})
+        value = metric.get("value")
+        if value == "":
+            value = None
+        normalized.append({
+            "key": key,
+            "label": metric.get("label") or meta.get("label") or key,
+            "value": value,
+            "unit": metric.get("unit") or meta.get("unit") or "",
+        })
+    existing = {item["key"] for item in normalized}
+    for key, meta in field_meta.items():
+        if key not in existing:
+            normalized.append({"key": key, "label": meta.get("label") or key, "value": None, "unit": meta.get("unit") or ""})
+    return normalized
+
+
+def _growth_legacy_payload_from_metrics(metrics: list[dict], crop_type: str) -> dict:
+    def _metric_value(key: str):
+        for metric in metrics or []:
+            if metric.get("key") == key and metric.get("value") not in (None, ""):
+                try:
+                    return float(metric.get("value"))
+                except Exception:
+                    return None
+        return None
+
+    crop_type = str(crop_type or "").lower()
+    if crop_type == "lettuce":
+        return {
+            "height": _metric_value("plantHeight"),
+            "leafCount": _metric_value("leafCount"),
+            "stemDia": None,
+            "truss": None,
+            "node": None,
+        }
+    return {
+        "height": _metric_value("plantHeight"),
+        "leafCount": _metric_value("leafCount"),
+        "stemDia": _metric_value("stemDiameter"),
+        "truss": _metric_value("flowerClusterNo"),
+        "node": _metric_value("fruitSetNode"),
+    }
+
+
 # ── 생육조사 ──────────────────────────────────────────────────────────────────
 
 class CropGrowthListView(HomeAssistantView):
@@ -394,7 +474,10 @@ class CropGrowthListView(HomeAssistantView):
             return _err("Invalid JSON")
         if not body.get("date"):
             return _err("date 필수")
-        metrics_json = json.dumps(body.get("metrics") or [], ensure_ascii=False)
+        crop_type = body.get("cropType") or "other"
+        metrics = _normalize_growth_metrics(body.get("metrics") or [], crop_type)
+        legacy = _growth_legacy_payload_from_metrics(metrics, crop_type)
+        metrics_json = json.dumps(metrics, ensure_ascii=False)
         new_id = await execute(hass, """
             INSERT INTO growth_surveys
                 (season_id, survey_date, plant_height, leaf_count,
@@ -402,9 +485,9 @@ class CropGrowthListView(HomeAssistantView):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             int(season_id), body["date"],
-            body.get("height"), body.get("leafCount"),
-            body.get("stemDia"), body.get("truss"),
-            body.get("node"), body.get("cropType") or "other", metrics_json,
+            legacy.get("height"), legacy.get("leafCount"),
+            legacy.get("stemDia"), legacy.get("truss"),
+            legacy.get("node"), crop_type, metrics_json,
             body.get("note") or "",
         ))
         row = await fetchone(hass, """
@@ -447,11 +530,64 @@ def _growth_report_points(rows: list[dict], key: str, fallback_key: str | None =
     return points
 
 
+def _growth_metric_alias_value(row: dict, *keys: str) -> float | None:
+    for key in keys:
+        value = _growth_metric_value(row, key, key)
+        if value is not None:
+            return value
+    return None
+
+
+def _crop_growth_index_type(row_or_season: dict | None) -> str:
+    crop_type = str((row_or_season or {}).get("cropType") or "").strip().lower()
+    return "L-Index" if crop_type == "lettuce" else "G-Index"
+
+
+def _crop_growth_index(row: dict | None) -> dict:
+    row = row or {}
+    index_type = _crop_growth_index_type(row)
+    if index_type == "L-Index":
+        inputs = {
+            "leafLength": _growth_metric_alias_value(row, "leafLength", "height"),
+            "leafWidth": _growth_metric_alias_value(row, "leafWidth", "stemDia"),
+            "leafCount": _growth_metric_alias_value(row, "leafCount"),
+            "freshWeight": _growth_metric_alias_value(row, "freshWeight", "truss"),
+            "plantHeight": _growth_metric_alias_value(row, "plantHeight", "node"),
+        }
+        formula = "leafLength*0.35 + leafWidth*0.25 + leafCount*0.25 + freshWeight*0.10 + plantHeight*0.05"
+        value = round(
+            (float(inputs["leafLength"] or 0) * 0.35)
+            + (float(inputs["leafWidth"] or 0) * 0.25)
+            + (float(inputs["leafCount"] or 0) * 0.25)
+            + (float(inputs["freshWeight"] or 0) * 0.10)
+            + (float(inputs["plantHeight"] or 0) * 0.05),
+            2,
+        )
+    else:
+        inputs = {
+            "plantHeight": _growth_metric_alias_value(row, "plantHeight", "height"),
+            "leafCount": _growth_metric_alias_value(row, "leafCount"),
+            "stemDiameter": _growth_metric_alias_value(row, "stemDiameter", "stemDia"),
+        }
+        formula = "plantHeight*0.08 + leafCount*0.55 + stemDiameter*0.35"
+        value = round(
+            (float(inputs["plantHeight"] or 0) * 0.08)
+            + (float(inputs["leafCount"] or 0) * 0.55)
+            + (float(inputs["stemDiameter"] or 0) * 0.35),
+            2,
+        )
+    return {
+        "formulaVersion": CROP_GROWTH_INDEX_VERSION,
+        "indexType": index_type,
+        "value": value,
+        "formula": formula,
+        "inputs": {key: float(value) for key, value in inputs.items() if value is not None},
+        "missingInputs": [key for key, value in inputs.items() if value is None],
+    }
+
+
 def _growth_g_index(row: dict) -> float:
-    height = _growth_metric_value(row, "height", "height") or 0
-    leaf = _growth_metric_value(row, "leafCount", "leafCount") or 0
-    stem = _growth_metric_value(row, "stemDia", "stemDia") or 0
-    return round((height * 0.08) + (leaf * 0.55) + (stem * 0.35), 2)
+    return float(_crop_growth_index(row).get("value") or 0)
 
 
 def _growth_days_between(a, b) -> int:
@@ -612,17 +748,18 @@ def _growth_weekly_report(season_id: int, growth_rows: list[dict], control_rows:
     return report
 
 
-def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_rows: list[dict], latest_g: float, weekly_growth: float) -> dict:
+def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_rows: list[dict], latest_index: float, weekly_growth: float) -> dict:
     crop_type = str(season.get("cropType") or latest.get("cropType") or "default").lower()
+    index_type = _crop_growth_index_type({"cropType": crop_type})
     model = YIELD_MODEL_BY_CROP.get(crop_type, YIELD_MODEL_BY_CROP["default"])
     total_plants = float(season.get("totalPlants") or 0)
     density = float(season.get("plantDensity") or 0)
-    gIndexFactor = _bounded_factor(float(latest_g or 0), float(model["gIndexOptimal"]))
+    growthIndexFactor = _bounded_factor(float(latest_index or 0), float(model["gIndexOptimal"]))
     growthVelocityCmPerWeek = round(float(weekly_growth or 0), 2)
     velocityFactor = _bounded_factor(growthVelocityCmPerWeek, float(model["velocityOptimal"]), floor=0.45, ceiling=1.35)
     densityFactor = _bounded_factor(density, 3.0 if crop_type == "tomato" else 16.0 if crop_type == "lettuce" else max(density, 1), floor=0.65, ceiling=1.2) if density else 1.0
-    estimatedKgPerPlant = round(float(model["baseKgPerPlant"]) * gIndexFactor * velocityFactor, 3)
-    estimatedKgPerArea = round(float(model["densityKgPerM2"]) * gIndexFactor * velocityFactor * densityFactor, 2)
+    estimatedKgPerPlant = round(float(model["baseKgPerPlant"]) * growthIndexFactor * velocityFactor, 3)
+    estimatedKgPerArea = round(float(model["densityKgPerM2"]) * growthIndexFactor * velocityFactor * densityFactor, 2)
     estimatedKg = round(estimatedKgPerPlant * total_plants, 1) if total_plants else round(estimatedKgPerArea * 100, 1) if density else 0
     confidenceReasons = []
     if len(growth_rows) < 3:
@@ -634,7 +771,8 @@ def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_ro
     confidence = "high" if len(growth_rows) >= 6 and (total_plants or density) else "medium" if len(growth_rows) >= 3 else "low"
     yieldDrivers = {
         "cropType": crop_type,
-        "gIndexFactor": gIndexFactor,
+        "indexType": index_type,
+        "growthIndexFactor": growthIndexFactor,
         "velocityFactor": velocityFactor,
         "densityFactor": densityFactor,
         "growthVelocityCmPerWeek": growthVelocityCmPerWeek,
@@ -649,7 +787,7 @@ def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_ro
         "confidenceReasons": confidenceReasons,
         "modelVersion": model["modelVersion"],
         "cropModelLabel": model["cropModelLabel"],
-        "basis": "crop-specific growth model + growth_surveys + plant_density",
+        "basis": "crop-specific growth index formula + growth_surveys + plant_density",
         "yieldDrivers": yieldDrivers,
     }
 
@@ -1084,6 +1222,136 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
     }
 
 
+def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], pestRisk: dict, cropSafety: dict | None, cropInterlock: dict | None, growthIndex: dict, weekly_growth: float, control_rows: list[dict]) -> dict:
+    latest = growth_rows[0] if growth_rows else {}
+    previous = growth_rows[1] if len(growth_rows) > 1 else {}
+    return {
+        "version": CROP_TRAINABLE_BASELINE_VERSION,
+        "cropType": season.get("cropType") or latest.get("cropType") or "other",
+        "sourceTables": ["growth_surveys", "sensor_readings", "pest_surveys", "control_records", "control_pesticides"],
+        "growthSurvey": {
+            "latest": latest,
+            "previous": previous,
+            "count": len(growth_rows),
+            "weeklyGrowthCm": weekly_growth,
+            "growthIndex": growthIndex,
+        },
+        "environmentSummary7d": {
+            "status": "collecting_baseline",
+            "required": ["temperature", "humidity", "co2", "radiation", "vpd", "adt", "dif"],
+            "source": "sensor_readings summary placeholder for trainable baseline",
+        },
+        "irrigationNutrientSummary7d": {
+            "status": "collecting_baseline",
+            "required": ["feedEc", "drainEc", "feedPh", "drainPh", "irrigationAmount", "drainRate", "dryback"],
+        },
+        "pestRisk": pestRisk or {},
+        "controlHistory": {"recentCount": len(control_rows or []), "latest": (control_rows or [{}])[0] if control_rows else {}},
+        "safetyInterlock": {"cropSafety": cropSafety or {}, "cropInterlock": cropInterlock or {}},
+    }
+
+
+def _crop_stage_prediction_7d(*, stageDiagnosis: dict | None, growthIndex: dict, growth_rows: list[dict]) -> dict:
+    diagnosis = stageDiagnosis or {}
+    current_stage = diagnosis.get("stageId") or "unknown"
+    current_label = diagnosis.get("stageLabel") or "생육단계 미확정"
+    confidence = diagnosis.get("stageConfidence") or "low"
+    band = diagnosis.get("indexBand") or "unknown"
+    survey_count = len(growth_rows or [])
+    progress = 0.35 if band in {"unknown", "hardBlock"} else 0.55 if band == "caution" else 0.72 if band == "target" else 0.45
+    transition_probability = min(0.85, max(0.15, progress + (0.05 if survey_count >= 3 else -0.1)))
+    return {
+        "version": CROP_TRAINABLE_BASELINE_VERSION,
+        "modelFamily": CROP_STAGE_PREDICTION_MODEL_FAMILY,
+        "modelTarget": "growth_stage_prediction_7d",
+        "currentStage": {
+            "stageId": current_stage,
+            "stageLabel": current_label,
+            "confidence": confidence,
+            "progressScore": round(progress, 2),
+        },
+        "predictedStage7d": {
+            "stageId": current_stage if transition_probability < 0.65 else f"{current_stage}_next_candidate",
+            "stageLabel": current_label if transition_probability < 0.65 else f"{current_label} 이후 단계 후보",
+            "probability": round(transition_probability, 2),
+            "confidence": "medium" if survey_count >= 3 else "low",
+        },
+        "transitionWindow": {
+            "earliestDay": 4 if transition_probability >= 0.65 else 0,
+            "latestDay": 6 if transition_probability >= 0.65 else 7,
+            "probability": round(transition_probability, 2),
+            "label": "4~6일 내 전환 가능성" if transition_probability >= 0.65 else "7일 내 전환 가능성 낮음/관찰 필요",
+        },
+        "stageEvidence": {"stageDiagnosis": diagnosis, "growthIndex": growthIndex, "surveyCount": survey_count},
+        "missingInputs": list(diagnosis.get("missingEvidence") or []) + list(growthIndex.get("missingInputs") or []),
+        "nextSurveyNeeded": list(diagnosis.get("missingEvidence") or []) or ["다음 주 생육조사", "G/L-Index 핵심 항목"],
+        "modelReason": "초기 hybrid_rule_score_v1 baseline: 현재 생육단계, G/L-Index band, 조사 건수 기반 7일 전환 후보를 산출합니다.",
+    }
+
+
+def _crop_ml_upgrade_readiness(*, growth_rows: list[dict], validation_pair_count: int = 0) -> dict:
+    survey_count = len(growth_rows or [])
+    ready = survey_count >= 8 and validation_pair_count >= 5
+    reasons = []
+    if survey_count < 8:
+        reasons.append("weekly_growth_surveys_below_8")
+    if validation_pair_count < 5:
+        reasons.append("prediction_actual_pairs_below_5")
+    return {
+        "ready": ready,
+        "candidateModelFamilies": ["lstm", "gru", "temporal_transformer"],
+        "reasons": reasons,
+        "requiredData": {"weeklyGrowthSurveysMin": 8, "weeklyGrowthSurveysPreferred": 12, "validationPairsMin": 5},
+        "currentData": {"weeklyGrowthSurveys": survey_count, "validationPairs": validation_pair_count},
+        "nextAction": "time_series_model_training_available" if ready else "collect_more_weekly_surveys",
+    }
+
+
+async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season: dict, cropModel: dict, validation_status: str = "pending") -> int | None:
+    prediction = cropModel.get("trainableBaseline", {}).get("stagePrediction7d") or {}
+    feature_snapshot = cropModel.get("trainableBaseline", {}).get("featureSnapshot") or {}
+    readiness = cropModel.get("trainableBaseline", {}).get("mlUpgradeReadiness") or {}
+    latest = cropModel.get("latestMetrics") or {}
+    prediction_date = latest.get("date") or date.today().isoformat()
+    try:
+        predicted_for_date = (datetime.fromisoformat(str(prediction_date)).date() + timedelta(days=7)).isoformat()
+    except Exception:
+        predicted_for_date = (date.today() + timedelta(days=7)).isoformat()
+    if not prediction:
+        return None
+    return await execute(
+        hass,
+        """
+        INSERT INTO crop_model_training_snapshots(
+            farm_id, season_id, zone_id, crop_type, model_family, target_horizon_days,
+            source_survey_id, prediction_date, predicted_for_date, feature_snapshot_json,
+            prediction_json, actual_validation_json, readiness_json, actual_survey_id, validation_status
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            1,
+            season_id,
+            season.get("zoneId"),
+            season.get("cropType") or "other",
+            CROP_STAGE_PREDICTION_MODEL_FAMILY,
+            7,
+            latest.get("id"),
+            prediction_date,
+            predicted_for_date,
+            json.dumps(feature_snapshot, ensure_ascii=False, default=str),
+            json.dumps(prediction, ensure_ascii=False, default=str),
+            None,
+            json.dumps(readiness, ensure_ascii=False, default=str),
+            None,
+            validation_status,
+        ),
+    )
+
+
+async def _validate_pending_crop_training_snapshots(hass, *, season_id: int) -> dict:
+    return {"seasonId": season_id, "validationStatus": "pending_validation_loop_ready"}
+
+
 def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict], stageDiagnosis: dict | None = None, approvalAudit: list[dict] | None = None, centerCropPolicy: dict | None = None) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     oldest = growth_rows[-1] if growth_rows else latest
@@ -1091,7 +1359,8 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     height_old = _growth_metric_value(oldest, "height", "height") or height_now
     days = _growth_days_between(oldest.get("date"), latest.get("date")) if growth_rows else 7
     weekly_growth = round((height_now - height_old) / days * 7, 2) if days else 0
-    latest_g = _growth_g_index(latest) if latest else 0
+    growthIndex = _crop_growth_index(latest) if latest else _crop_growth_index({"cropType": season.get("cropType")})
+    latest_g = float(growthIndex.get("value") or 0)
     pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)
     yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
     if stageDiagnosis is None:
@@ -1105,6 +1374,58 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         + list(pestRisk.get("riskFactors") or [])
         + ([] if latest else ["최신 생육조사 없음"])
     ))
+    yield_drivers = yieldPrediction.get("yieldDrivers") or {}
+    yield_potential = {
+        "formulaVersion": CROP_GROWTH_INDEX_VERSION,
+        "value": round(
+            (float(yield_drivers.get("growthIndexFactor") or 0) * 45)
+            + (float(yield_drivers.get("velocityFactor") or 0) * 30)
+            + (float(yield_drivers.get("densityFactor") or 1) * 15)
+            + ({"high": 10, "medium": 6, "low": 2}.get(str(yieldPrediction.get("confidence") or "low"), 2)),
+            2,
+        ),
+        "formula": "growthIndexFactor*45 + velocityFactor*30 + densityFactor*15 + confidenceWeight",
+        "inputs": {
+            "growthIndexFactor": yield_drivers.get("growthIndexFactor"),
+            "velocityFactor": yield_drivers.get("velocityFactor"),
+            "densityFactor": yield_drivers.get("densityFactor"),
+            "confidence": yieldPrediction.get("confidence"),
+        },
+        "meaning": "0~100에 가까운 작물 수확 잠재력 baseline 점수; read-only 참고값",
+    }
+    modelValues = {
+        "growthIndex": growthIndex,
+        "growthVelocityCmPerWeek": {
+            "value": weekly_growth,
+            "formula": "(currentPlantHeight - previousPlantHeight) / daysBetween * 7",
+            "inputs": {"currentPlantHeight": height_now, "previousPlantHeight": height_old, "daysBetween": days},
+        },
+        "yieldPotential": yield_potential,
+        "dataConfidence": {
+            "value": yieldPrediction.get("confidence") or "low",
+            "reasons": confidenceReasons,
+            "formula": "high if growth_surveys>=6 and plant count/density exists; medium if growth_surveys>=3; otherwise low",
+        },
+    }
+    featureSnapshot = _crop_trainable_feature_snapshot(
+        season=season,
+        growth_rows=growth_rows,
+        pestRisk=pestRisk,
+        cropSafety=cropSafety,
+        cropInterlock=cropInterlock,
+        growthIndex=growthIndex,
+        weekly_growth=weekly_growth,
+        control_rows=control_rows,
+    )
+    stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=growthIndex, growth_rows=growth_rows)
+    mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
+    trainableBaseline = {
+        "version": CROP_TRAINABLE_BASELINE_VERSION,
+        "modelFamily": CROP_STAGE_PREDICTION_MODEL_FAMILY,
+        "featureSnapshot": featureSnapshot,
+        "stagePrediction7d": stagePrediction7d,
+        "mlUpgradeReadiness": mlUpgradeReadiness,
+    }
     return {
         "cropModelVersion": CROP_MODEL_VERSION,
         "seasonId": season_id,
@@ -1121,6 +1442,9 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "policyStatus": (centerCropPolicy or {}).get("policyStatus"),
         "applyMode": (centerCropPolicy or {}).get("applyMode") or "recommend_only",
         "gIndex": latest_g,
+        "growthIndex": growthIndex,
+        "modelValues": modelValues,
+        "trainableBaseline": trainableBaseline,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,
         "yieldPrediction": yieldPrediction,
@@ -1537,6 +1861,10 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "growthTrend": growthTrend,
         "gIndexTrend": gIndexTrend,
         "cropModel": cropModel,
+        "trainableBaseline": cropModel["trainableBaseline"],
+        "featureSnapshot": cropModel["trainableBaseline"]["featureSnapshot"],
+        "stagePrediction7d": cropModel["trainableBaseline"]["stagePrediction7d"],
+        "mlUpgradeReadiness": cropModel["trainableBaseline"]["mlUpgradeReadiness"],
         "yieldPrediction": cropModel["yieldPrediction"],
         "pestRisk": cropModel["pestRisk"],
         "weeklyReport": weeklyReport,
@@ -1550,6 +1878,54 @@ class CropGrowthReportView(HomeAssistantView):
 
     async def get(self, request: web.Request, season_id: str) -> web.Response:
         return _json(await _growth_report_response(request.app["hass"], int(season_id)))
+
+
+class CropModelTrainingSnapshotView(HomeAssistantView):
+    """POST/GET trainable crop baseline snapshots."""
+    url = "/api/green_smart/crop/seasons/{season_id}/model-training-snapshots"
+    name = "api:green_smart:crop:model_training_snapshots"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        rows = await fetchall(hass, """
+            SELECT id, crop_type AS cropType, model_family AS modelFamily,
+                   target_horizon_days AS targetHorizonDays, prediction_date AS predictionDate,
+                   predicted_for_date AS predictedForDate, feature_snapshot_json AS featureSnapshot,
+                   prediction_json AS prediction, actual_validation_json AS actualValidation,
+                   readiness_json AS readiness, validation_status AS validationStatus
+            FROM crop_model_training_snapshots
+            WHERE season_id = %s
+            ORDER BY prediction_date DESC, id DESC
+            LIMIT 50
+        """, (int(season_id),))
+        return _json({"ok": True, "seasonId": int(season_id), "snapshots": rows})
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        report = await _growth_report_response(hass, int(season_id))
+        snapshot_id = await _persist_crop_model_training_snapshot(
+            hass,
+            season_id=int(season_id),
+            season=report.get("season") or {"id": int(season_id)},
+            cropModel=report.get("cropModel") or {},
+        )
+        return _json({"ok": True, "seasonId": int(season_id), "snapshotId": snapshot_id, "trainableBaseline": report.get("trainableBaseline")})
+
+
+class CropModelTrainingReadinessView(HomeAssistantView):
+    """GET crop model ML/time-series readiness."""
+    url = "/api/green_smart/crop/seasons/{season_id}/model-training-readiness"
+    name = "api:green_smart:crop:model_training_readiness"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        report = await _growth_report_response(request.app["hass"], int(season_id))
+        validation = await _validate_pending_crop_training_snapshots(request.app["hass"], season_id=int(season_id))
+        return _json({
+            "ok": True,
+            "seasonId": int(season_id),
+            "mlUpgradeReadiness": report.get("mlUpgradeReadiness") or {},
+            "validation": validation,
+        })
 
 def _growth_report_health_signature(report: dict) -> dict:
     pest_rank = {"low": 0, "medium": 1, "high": 2}

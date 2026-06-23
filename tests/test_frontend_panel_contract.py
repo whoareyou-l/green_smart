@@ -103,8 +103,27 @@ def test_growth_add_popup_uses_selected_season_crop_type_for_dynamic_fields():
     assert "data-growth-field" in popup
     for crop in ("tomato", "paprika", "strawberry", "lettuce", "cucumber", "herb"):
         assert crop in panel
-    for field in ("height", "leafCount", "stemDia", "truss", "node"):
-        assert f"body.{field}" in popup
+    for metric in ("plantHeight", "stemDiameter", "flowerClusterNo", "fruitSetNode", "leafLength", "leafWidth", "freshWeight"):
+        assert metric in panel
+    assert "_growthLegacyPayloadFromMetrics(metrics, activeSeason?.cropType)" in popup
+    assert "Contract markers for tests: body.height body.leafCount body.stemDia body.truss body.node" not in popup
+
+
+def test_growth_field_config_separates_tomato_g_index_and_lettuce_l_index_metrics():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    config = panel.split("  _growthFieldConfigForCrop(cropType)", 1)[1].split("  _parseGrowthMetrics", 1)[0]
+
+    assert 'indexType: "G-Index"' in config
+    assert 'indexType: "L-Index"' in config
+    tomato_section = config.split("tomato:", 1)[1].split("paprika:", 1)[0]
+    lettuce_section = config.split("lettuce:", 1)[1].split("cucumber:", 1)[0]
+    for marker in ("plantHeight", "leafCount", "stemDiameter", "flowerClusterNo", "fruitSetNode"):
+        assert marker in tomato_section
+    for marker in ("leafLength", "leafWidth", "leafCount", "freshWeight", "plantHeight"):
+        assert marker in lettuce_section
+    assert "stemDia" not in lettuce_section
+    assert "truss" not in lettuce_section
+    assert "node" not in lettuce_section
 
 
 def test_growth_survey_payload_list_and_export_use_dynamic_crop_metrics():

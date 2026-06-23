@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.56
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.57
 const DOMAIN = "green_smart";
-const VERSION = "1.9.56";
+const VERSION = "1.9.57";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3775,50 +3775,76 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _growthFieldConfigForCrop(cropType) {
     const common = {
-      tomato: { title: "토마토 생육조사", desc: "초장·엽수·줄기경·화방·착과 절위를 기록합니다", fields: [
-        ["height", "초장 (cm)", "예) 120.5", "0", "500", "0.1"],
+      tomato: { indexType: "G-Index", title: "토마토 생육조사", desc: "G-Index용 초장·엽수·줄기경·화방·착과 절위를 기록합니다", fields: [
+        ["plantHeight", "초장 (cm)", "예) 120.5", "0", "500", "0.1"],
         ["leafCount", "엽수 (매)", "예) 12", "0", "100", "1"],
-        ["stemDia", "줄기 경 (mm)", "예) 12.3", "0", "50", "0.1"],
-        ["truss", "화방 위치 (단)", "예) 5", "0", "30", "1"],
-        ["node", "착과 절위 (절)", "예) 8", "0", "80", "1"],
+        ["stemDiameter", "줄기 경 (mm)", "예) 12.3", "0", "50", "0.1"],
+        ["flowerClusterNo", "화방 위치 (단)", "예) 5", "0", "30", "1"],
+        ["fruitSetNode", "착과 절위 (절)", "예) 8", "0", "80", "1"],
       ]},
-      paprika: { title: "파프리카 생육조사", desc: "초장·엽수·줄기경·분지/화방·착과 절위를 기록합니다", fields: [
-        ["height", "초장 (cm)", "예) 95.0", "0", "400", "0.1"],
+      paprika: { indexType: "G-Index", title: "파프리카 생육조사", desc: "초장·엽수·줄기경·분지/화방·착과 절위를 기록합니다", fields: [
+        ["plantHeight", "초장 (cm)", "예) 95.0", "0", "400", "0.1"],
         ["leafCount", "엽수 (매)", "예) 18", "0", "120", "1"],
-        ["stemDia", "줄기 경 (mm)", "예) 10.5", "0", "60", "0.1"],
-        ["truss", "분지/화방 위치", "예) 3", "0", "40", "1"],
-        ["node", "착과 절위 (절)", "예) 6", "0", "80", "1"],
+        ["stemDiameter", "줄기 경 (mm)", "예) 10.5", "0", "60", "0.1"],
+        ["branchOrClusterNo", "분지/화방 위치", "예) 3", "0", "40", "1"],
+        ["fruitSetNode", "착과 절위 (절)", "예) 6", "0", "80", "1"],
       ]},
-      strawberry: { title: "딸기 생육조사", desc: "관부직경·엽수·엽장·화방수·런너/과방 상태를 기록합니다", fields: [
-        ["height", "관부직경 (mm)", "예) 12.0", "0", "80", "0.1"],
+      strawberry: { indexType: "G-Index", title: "딸기 생육조사", desc: "관부직경·엽수·엽장·화방수·런너/과방 상태를 기록합니다", fields: [
+        ["crownDiameter", "관부직경 (mm)", "예) 12.0", "0", "80", "0.1"],
         ["leafCount", "엽수 (매)", "예) 5", "0", "80", "1"],
-        ["stemDia", "엽장 (cm)", "예) 8.5", "0", "80", "0.1"],
-        ["truss", "화방수", "예) 2", "0", "20", "1"],
-        ["node", "런너/과방 수", "예) 1", "0", "30", "1"],
+        ["leafLength", "엽장 (cm)", "예) 8.5", "0", "80", "0.1"],
+        ["flowerClusterCount", "화방수", "예) 2", "0", "20", "1"],
+        ["runnerOrFruitClusterCount", "런너/과방 수", "예) 1", "0", "30", "1"],
       ]},
-      lettuce: { title: "상추 생육조사", desc: "엽장·엽폭·엽수·생체중·초장을 기록합니다", fields: [
-        ["height", "엽장 (cm)", "예) 18.0", "0", "80", "0.1"],
+      lettuce: { indexType: "L-Index", title: "상추 생육조사", desc: "L-Index용 엽장·엽폭·엽수·생체중·초장을 기록합니다", fields: [
+        ["leafLength", "엽장 (cm)", "예) 18.0", "0", "80", "0.1"],
+        ["leafWidth", "엽폭 (cm)", "예) 12.0", "0", "80", "0.1"],
         ["leafCount", "엽수 (매)", "예) 14", "0", "100", "1"],
-        ["stemDia", "엽폭 (cm)", "예) 12.0", "0", "80", "0.1"],
-        ["truss", "생체중 (g)", "예) 120", "0", "2000", "1"],
-        ["node", "초장 (cm)", "예) 20", "0", "100", "0.1"],
+        ["freshWeight", "생체중 (g)", "예) 120", "0", "2000", "1"],
+        ["plantHeight", "초장 (cm)", "예) 20", "0", "100", "0.1"],
       ]},
-      cucumber: { title: "오이 생육조사", desc: "초장·엽수·줄기경·마디수·착과 절위를 기록합니다", fields: [
-        ["height", "초장 (cm)", "예) 160", "0", "600", "0.1"],
+      cucumber: { indexType: "G-Index", title: "오이 생육조사", desc: "초장·엽수·줄기경·마디수·착과 절위를 기록합니다", fields: [
+        ["plantHeight", "초장 (cm)", "예) 160", "0", "600", "0.1"],
         ["leafCount", "엽수 (매)", "예) 16", "0", "120", "1"],
-        ["stemDia", "줄기 경 (mm)", "예) 9.5", "0", "50", "0.1"],
-        ["truss", "마디수", "예) 12", "0", "100", "1"],
-        ["node", "착과 절위 (절)", "예) 8", "0", "100", "1"],
+        ["stemDiameter", "줄기 경 (mm)", "예) 9.5", "0", "50", "0.1"],
+        ["nodeCount", "마디수", "예) 12", "0", "100", "1"],
+        ["fruitSetNode", "착과 절위 (절)", "예) 8", "0", "100", "1"],
       ]},
-      herb: { title: "허브 생육조사", desc: "초장·엽수·줄기경·분지수·수확 가능 줄기수를 기록합니다", fields: [
-        ["height", "초장 (cm)", "예) 25.0", "0", "150", "0.1"],
+      herb: { indexType: "G-Index", title: "허브 생육조사", desc: "초장·엽수·줄기경·분지수·수확 가능 줄기수를 기록합니다", fields: [
+        ["plantHeight", "초장 (cm)", "예) 25.0", "0", "150", "0.1"],
         ["leafCount", "엽수 (매)", "예) 30", "0", "300", "1"],
-        ["stemDia", "줄기 경 (mm)", "예) 4.0", "0", "30", "0.1"],
-        ["truss", "분지수", "예) 6", "0", "80", "1"],
-        ["node", "수확 가능 줄기수", "예) 4", "0", "100", "1"],
+        ["stemDiameter", "줄기 경 (mm)", "예) 4.0", "0", "30", "0.1"],
+        ["branchCount", "분지수", "예) 6", "0", "80", "1"],
+        ["harvestableStemCount", "수확 가능 줄기수", "예) 4", "0", "100", "1"],
       ]},
     };
     return common[cropType] || common.tomato;
+  }
+
+  _growthLegacyPayloadFromMetrics(metrics, cropType) {
+    const valueOf = (...keys) => {
+      const metric = (metrics || []).find(m => keys.includes(m.key));
+      const value = metric?.value;
+      if (value === null || value === undefined || value === "") return null;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
+    if (cropType === "lettuce") {
+      return {
+        height: valueOf("plantHeight"),
+        leafCount: valueOf("leafCount"),
+        stemDia: null,
+        truss: null,
+        node: null,
+      };
+    }
+    return {
+      height: valueOf("plantHeight", "height"),
+      leafCount: valueOf("leafCount"),
+      stemDia: valueOf("stemDiameter", "stemDia"),
+      truss: valueOf("flowerClusterNo", "branchOrClusterNo", "nodeCount", "flowerClusterCount", "branchCount"),
+      node: valueOf("fruitSetNode", "nodeCount", "runnerOrFruitClusterCount", "harvestableStemCount"),
+    };
   }
 
   _parseGrowthMetrics(row) {
@@ -4039,6 +4065,12 @@ button.action:disabled{opacity:.5;cursor:default;}
     const policyAlertActive = CENTER_CROP_POLICY_ALERT_STATUSES.has(policyStatus);
     const policyAlertMessage = CENTER_CROP_POLICY_ALERT_MESSAGES[policyStatus] || "Center 작물 정책 상태를 확인하세요.";
     const cropPolicyNotificationEnabled = this._cropPolicyNotificationEnabled();
+    const trainableBaseline = report.trainableBaseline || cropModel.trainableBaseline || {};
+    const stagePrediction7d = trainableBaseline.stagePrediction7d || report.stagePrediction7d || {};
+    const predictedStage7d = stagePrediction7d.predictedStage7d || {};
+    const transitionWindow = stagePrediction7d.transitionWindow || {};
+    const mlUpgradeReadiness = trainableBaseline.mlUpgradeReadiness || report.mlUpgradeReadiness || {};
+    const mlReady = !!mlUpgradeReadiness.ready;
     /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
@@ -4067,7 +4099,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           총 예측 ${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg · 주당 예측 ${this._esc(String(yieldPrediction.estimatedKgPerPlant ?? 0))}kg · 면적당 예측 ${this._esc(String(yieldPrediction.estimatedKgPerArea ?? 0))}kg/100㎡
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
-          <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">G 계수 ${this._esc(String(yieldDrivers.gIndexFactor ?? "-"))}</span>
+          <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">${this._esc(yieldDrivers.indexType || 'G/L-Index')} 계수 ${this._esc(String(yieldDrivers.growthIndexFactor ?? "-"))}</span>
           <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">생육속도 ${this._esc(String(yieldDrivers.growthVelocityCmPerWeek ?? "-"))}cm/주</span>
           <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">밀도 계수 ${this._esc(String(yieldDrivers.densityFactor ?? "-"))}</span>
         </div>
@@ -4097,6 +4129,21 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#5d7d64;margin-top:8px;line-height:1.55;"><b>다음 조사</b> ${this._esc(stageDiagnosis.nextRequiredSurvey || "최신 생육조사와 단계 전환 증거를 기록하세요.")}</div>
         <div style="font-size:11px;color:#7a9780;margin-top:5px;"><b>부족한 증거</b> ${missingEvidence.length ? missingEvidence.map(e => this._esc(e)).join(" · ") : "없음"}</div>
+      </div>
+      <div data-crop-trainable-baseline-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e4f0ff;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
+          <div>
+            <div style="font-size:12px;font-weight:900;color:#24323F;">학습 데이터 베이스라인</div>
+            <div style="font-size:10px;color:#6d8799;margin-top:3px;">7일 생육단계 예측 · hybrid_rule_score_v1 · read-only training dataset</div>
+          </div>
+          <span data-crop-ml-readiness style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:${mlReady ? '#e8f8ee' : '#f5faf6'};color:${mlReady ? '#1e8e3e' : '#7a9780'};border:1px solid #dbeaf8;">${mlReady ? '시계열 모델 확장 가능' : '시계열 모델 확장 준비중'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">predictedStage7d</div><b style="font-size:14px;color:#24323F;">${this._esc(predictedStage7d.stageLabel || '-')}</b><div style="font-size:10px;color:#9aae9d;">확률 ${this._esc(String(predictedStage7d.probability ?? '-'))}</div></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">transitionWindow</div><b style="font-size:14px;color:#24323F;">${this._esc(transitionWindow.label || '-')}</b><div style="font-size:10px;color:#9aae9d;">day ${this._esc(String(transitionWindow.earliestDay ?? '-'))}~${this._esc(String(transitionWindow.latestDay ?? '-'))}</div></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">mlUpgradeReadiness</div><b style="font-size:14px;color:${mlReady ? '#51AE60' : '#7a9780'};">${mlReady ? 'ready' : 'not ready'}</b><div style="font-size:10px;color:#9aae9d;">${this._esc((mlUpgradeReadiness.reasons || []).join(' · ') || '조건 충족')}</div></div>
+        </div>
+        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">초기 예측은 학습 가능한 데이터셋을 쌓기 위한 baseline입니다. 충분한 주간 sequence와 prediction→actual 검증쌍이 쌓이면 LSTM/GRU/Transformer 확장 후보를 표시합니다.</div>
       </div>
       <div data-center-crop-policy-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dbeaf8;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
@@ -4910,18 +4957,14 @@ button.action:disabled{opacity:.5;cursor:default;}
           value: inner.querySelector(`#g-${key}`)?.value || null,
           unit: this._growthUnitFromLabel(label),
         }));
+        const legacyPayload = this._growthLegacyPayloadFromMetrics(metrics, activeSeason?.cropType);
         const body = {
           date:      inner.querySelector("#g-date")?.value || "",
           cropType: activeSeason?.cropType || "other",
-          height:    parseFloat(inner.querySelector("#g-height")?.value) || null,
-          leafCount: parseInt(inner.querySelector("#g-leafCount")?.value) || null,
-          stemDia:   parseFloat(inner.querySelector("#g-stemDia")?.value) || null,
-          truss:     parseInt(inner.querySelector("#g-truss")?.value) || null,
-          node:      parseInt(inner.querySelector("#g-node")?.value) || null,
+          ...legacyPayload,
           metrics,
           note:      inner.querySelector("#g-note")?.value || "",
         };
-        // Contract markers for tests: body.height body.leafCount body.stemDia body.truss body.node activeSeason.cropType
         try {
           const result = await this._hass.callApi(
             "POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth`, body

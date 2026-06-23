@@ -312,14 +312,35 @@ def test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tab
 
 def test_growth_survey_backend_persists_dynamic_crop_metrics_json():
     source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
-    growth_section = source.split("class CropGrowthListView", 1)[1].split("class CropGrowthDeleteView", 1)[0]
+    growth_section = source.split("class CropGrowthListView", 1)[1].split("def _growth_metric_value", 1)[0]
 
     assert "import json" in source
+    assert "CROP_GROWTH_METRIC_CONFIGS" in source
+    assert '"tomato"' in source
+    assert '"lettuce"' in source
+    assert '"indexType": "G-Index"' in source
+    assert '"indexType": "L-Index"' in source
+    for key in ("plantHeight", "stemDiameter", "flowerClusterNo", "fruitSetNode", "leafLength", "leafWidth", "freshWeight"):
+        assert key in source
     assert "metrics_json AS metricsJson" in growth_section
     assert "crop_type AS cropType" in growth_section
-    assert "json.dumps(body.get(\"metrics\")" in growth_section
+    assert "_normalize_growth_metrics(body.get(\"metrics\")" in growth_section
+    assert "_growth_legacy_payload_from_metrics(metrics, crop_type)" in growth_section
+    assert "json.dumps(metrics" in growth_section
     assert "body.get(\"cropType\")" in growth_section
     assert "metricsJson" in growth_section
+
+
+def test_lettuce_growth_survey_does_not_store_leaf_width_fresh_weight_in_stem_truss_node_contract():
+    source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    helper = source.split("def _growth_legacy_payload_from_metrics", 1)[1].split("def _growth_metric_value", 1)[0]
+
+    assert 'crop_type == "lettuce"' in helper
+    assert '"stemDia": None' in helper
+    assert '"truss": None' in helper
+    assert '"node": None' in helper
+    assert '"height": _metric_value("plantHeight")' in helper
+    assert '"leafCount": _metric_value("leafCount")' in helper
 
 
 def test_product_phase6_growth_report_api_contract():
@@ -363,7 +384,8 @@ def test_product_phase6_crop_specific_yield_model_contract():
         "cropModelLabel",
         "yieldDrivers",
         "growthVelocityCmPerWeek",
-        "gIndexFactor",
+        "growthIndexFactor",
+        "indexType",
         "densityFactor",
         "confidenceReasons",
         "tomato_growth_model_v1",
