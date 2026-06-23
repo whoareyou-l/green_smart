@@ -55,7 +55,7 @@ Domain reference order: Crop → Environment → Irrigation → Device
 
 ---
 
-## Current status after v1.9.37
+## Current status after v1.9.38
 
 Completed:
 
@@ -129,6 +129,12 @@ cropSafetyBlocked
 cropSafetyReasons
 cropSafetyRules
 cropSafetyRuleResults
+pesticide_pls_noncompliant
+pesticide_mix_forbidden
+pesticide_mix_unknown
+crop_metric_anomaly
+minGIndex
+maxMetricDeltaByKey
 ```
 
 **Default thresholds:**
@@ -137,8 +143,11 @@ cropSafetyRuleResults
 |---|---:|---|
 | `growthSurveyStaleDays` | 14 | latest growth survey stale threshold |
 | `controlRecordStaleDays` | 21 | stale control/pesticide record threshold when pest risk is medium/high |
-| `maxGIndex` | 120.0 | G-Index anomaly threshold |
+| `minGIndex` | 0.0 | G-Index lower anomaly threshold |
+| `maxGIndex` | 120.0 | G-Index upper anomaly threshold |
 | `maxWeeklyGrowthCm` | 80.0 | weekly growth anomaly threshold |
+| `metricBoundsByKey` | height/leafCount/stemDia/truss/node | hard min/max bounds for growth survey metrics |
+| `maxMetricDeltaByKey` | height 80, leafCount 30, stemDia 20, truss 10, node 30 | rapid-change threshold vs previous survey |
 | `supportedCropTypes` | `tomato`, `lettuce` | crop-specific safety-supported crops |
 
 **Files likely touched:**

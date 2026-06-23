@@ -62,6 +62,55 @@ def test_db_bootstrap_creates_crop_management_tables_and_default_zone():
     assert "crop_type VARCHAR(50)" in source
     assert "metrics_json" in source
     assert "_ensure_column" in source
+    for pesticide_safety_column in (
+        "mixable TINYINT(1) NULL",
+        "mix_check_status VARCHAR(32) NULL",
+        "mix_check_note TEXT NULL",
+        "pls_warning TEXT NULL",
+    ):
+        assert pesticide_safety_column in source
+    for pesticide_safety_ensure in (
+        '_ensure_column(cur, "control_pesticides", "mixable"',
+        '_ensure_column(cur, "control_pesticides", "mix_check_status"',
+        '_ensure_column(cur, "control_pesticides", "mix_check_note"',
+        '_ensure_column(cur, "control_pesticides", "pls_warning"',
+    ):
+        assert pesticide_safety_ensure in source
+
+
+def test_crop_control_backend_and_panel_persist_pls_and_mix_safety_fields():
+    crop_source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    panel_source = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    control_section = crop_source.split("class CropControlListView", 1)[1].split("class CropControlDeleteView", 1)[0]
+    popup_section = panel_source.split("  _openControlAddPopup()", 1)[1].split("  _refreshCropContent()", 1)[0]
+
+    for marker in (
+        "p.mixable AS mixable",
+        "p.mix_check_status AS mixCheckStatus",
+        "p.mix_check_note AS mixCheckNote",
+        "p.pls_warning AS plsWarning",
+        "mixable, mix_check_status, mix_check_note, pls_warning",
+        "p.get(\"mixable\")",
+        "p.get(\"mixCheckStatus\")",
+        "p.get(\"mixCheckNote\")",
+        "p.get(\"plsWarning\")",
+        '"mixable": bool(row["mixable"]) if row["mixable"] is not None else None',
+        '"mixCheckStatus": row["mixCheckStatus"]',
+        '"mixCheckNote": row["mixCheckNote"]',
+        '"plsWarning": row["plsWarning"]',
+    ):
+        assert marker in control_section
+
+    for marker in (
+        "mixable: e.mixable === true ? true : e.mixable === false ? false : null",
+        "mixCheckStatus: e.mixCheckStatus || null",
+        "mixCheckNote: e.mixCheckNote || e.mixWarning || null",
+        "plsWarning: e.plsWarning || null",
+        "entry.mixable",
+        "entry.mixCheckStatus",
+        "entry.mixCheckNote",
+    ):
+        assert marker in popup_section
 
 
 def test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tables():

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.37
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.38
 const DOMAIN = "green_smart";
-const VERSION = "1.9.37";
+const VERSION = "1.9.38";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5014,16 +5014,22 @@ button.action:disabled{opacity:.5;cursor:default;}
       };
 
       const applyMixWarnings = (pairs = []) => {
-        entries.forEach((entry) => { entry.mixWarning = ""; });
+        entries.forEach((entry) => { entry.mixWarning = ""; entry.mixable = null; entry.mixCheckStatus = ""; entry.mixCheckNote = ""; });
         pairs.forEach((pair) => {
-          if (pair.mixable === true) return;
+          const pairMixable = pair.mixable === true ? true : pair.mixable === false ? false : null;
+          const pairStatus = pairMixable === true ? "allowed" : pairMixable === false ? "forbidden" : "unknown";
           const names = [pair.pest1, pair.pest2, pair.name1, pair.name2].filter(Boolean).map(v => String(v).trim());
           const note = pair.mixable === false
             ? (pair.note || "혼용 불가로 확인되었습니다.")
+            : pair.mixable === true
+            ? (pair.note || "혼용 가능으로 확인되었습니다.")
             : (pair.note || "혼용 정보가 명확하지 않아 주의가 필요합니다.");
           entries.forEach((entry) => {
             if (names.some(n => n && entry.name && n === entry.name)) {
-              entry.mixWarning = entry.mixWarning ? `${entry.mixWarning} / ${note}` : note;
+              entry.mixable = pairMixable;
+              entry.mixCheckStatus = pairStatus;
+              entry.mixCheckNote = entry.mixCheckNote ? `${entry.mixCheckNote} / ${note}` : note;
+              if (pairMixable !== true) entry.mixWarning = entry.mixWarning ? `${entry.mixWarning} / ${note}` : note;
             }
           });
         });
@@ -5222,6 +5228,10 @@ button.action:disabled{opacity:.5;cursor:default;}
             moa: e.moa || null, dil: parseInt(e.dil) || null,
             amount: e.amount || null,
             pls: e.pls === true ? true : e.pls === false ? false : null,
+            mixable: e.mixable === true ? true : e.mixable === false ? false : null,
+            mixCheckStatus: e.mixCheckStatus || null,
+            mixCheckNote: e.mixCheckNote || e.mixWarning || null,
+            plsWarning: e.plsWarning || null,
           })),
         };
         try {

@@ -17,9 +17,24 @@ CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
+    "minGIndex": 0.0,
     "maxGIndex": 120.0,
     "maxWeeklyGrowthCm": 80.0,
     "supportedCropTypes": ["tomato", "lettuce"],
+    "metricBoundsByKey": {
+        "height": {"min": 0.0, "max": 600.0},
+        "leafCount": {"min": 0.0, "max": 120.0},
+        "stemDia": {"min": 0.0, "max": 80.0},
+        "truss": {"min": 0.0, "max": 80.0},
+        "node": {"min": 0.0, "max": 150.0},
+    },
+    "maxMetricDeltaByKey": {
+        "height": 80.0,
+        "leafCount": 30.0,
+        "stemDia": 20.0,
+        "truss": 10.0,
+        "node": 30.0,
+    },
 }
 
 YIELD_MODEL_BY_CROP = {
@@ -592,8 +607,37 @@ def _crop_safety_rule_snapshot(*, season: dict, growth_rows: list[dict], pestRis
     confidence = str((yieldPrediction or {}).get("confidence") or "low").lower()
     growth_stale_days = int(rules.get("growthSurveyStaleDays") or 14)
     control_stale_days = int(rules.get("controlRecordStaleDays") or 21)
+    min_g = float(rules.get("minGIndex", 0.0))
     max_g = float(rules.get("maxGIndex") or 120.0)
     max_weekly_growth = float(rules.get("maxWeeklyGrowthCm") or 80.0)
+
+    metric_anomalies = []
+    metric_bounds = rules.get("metricBoundsByKey") or {}
+    metric_deltas = rules.get("maxMetricDeltaByKey") or {}
+    previous = growth_rows[1] if len(growth_rows) > 1 else {}
+    for key, bounds in metric_bounds.items():
+        value = _growth_metric_value(latest, key, key) if latest else None
+        prev_value = _growth_metric_value(previous, key, key) if previous else None
+        if value is not None:
+            min_value = bounds.get("min")
+            max_value = bounds.get("max")
+            if min_value is not None and float(value) < float(min_value):
+                metric_anomalies.append({"metric": key, "type": "below_min", "value": value, "min": min_value})
+            if max_value is not None and float(value) > float(max_value):
+                metric_anomalies.append({"metric": key, "type": "above_max", "value": value, "max": max_value})
+        if value is not None and prev_value is not None and key in metric_deltas:
+            delta = float(value) - float(prev_value)
+            threshold = float(metric_deltas[key])
+            if abs(delta) > threshold:
+                metric_anomalies.append({"metric": key, "type": "delta", "value": value, "previous": prev_value, "delta": round(delta, 3), "threshold": threshold})
+
+    pesticide_entries = []
+    for control in control_rows or []:
+        for pesticide in control.get("pesticides") or []:
+            pesticide_entries.append({**pesticide, "controlDate": control.get("date")})
+    pls_risks = [p for p in pesticide_entries if p.get("pls") is False or p.get("plsWarning")]
+    mix_forbidden = [p for p in pesticide_entries if p.get("mixable") is False or str(p.get("mixCheckStatus") or "").lower() in {"forbidden", "blocked", "danger"} or "혼용 불가" in str(p.get("mixCheckNote") or p.get("mixWarning") or "")]
+    mix_unknown = [p for p in pesticide_entries if len(pesticide_entries) >= 2 and p.get("mixable") is None and str(p.get("mixCheckStatus") or "").lower() in {"", "unknown", "none"}]
 
     rule_results = [
         _crop_safety_rule_result(
@@ -623,9 +667,34 @@ def _crop_safety_rule_snapshot(*, season: dict, growth_rows: list[dict], pestRis
         ),
         _crop_safety_rule_result(
             "crop_growth_anomaly",
-            abs(float(latest_g or 0)) > max_g or abs(float(weekly_growth or 0)) > max_weekly_growth,
+            float(latest_g or 0) < min_g or float(latest_g or 0) > max_g or abs(float(weekly_growth or 0)) > max_weekly_growth,
             message="G-Index 또는 주간 생장속도 이상치 감지",
-            evidence={"gIndex": latest_g, "maxGIndex": max_g, "weeklyGrowthCm": weekly_growth, "maxWeeklyGrowthCm": max_weekly_growth},
+            evidence={"gIndex": latest_g, "minGIndex": min_g, "maxGIndex": max_g, "weeklyGrowthCm": weekly_growth, "maxWeeklyGrowthCm": max_weekly_growth},
+        ),
+        _crop_safety_rule_result(
+            "crop_metric_anomaly",
+            bool(metric_anomalies),
+            message="초장 외 생육조사 지표의 범위/급변 이상치 감지",
+            evidence={"metricAnomalies": metric_anomalies, "metricBoundsByKey": metric_bounds, "maxMetricDeltaByKey": metric_deltas},
+        ),
+        _crop_safety_rule_result(
+            "pesticide_pls_noncompliant",
+            bool(pls_risks),
+            message="PLS 부적합 또는 PLS 경고가 있는 약제가 방제 기록에 포함됨",
+            evidence={"pesticides": pls_risks},
+        ),
+        _crop_safety_rule_result(
+            "pesticide_mix_forbidden",
+            bool(mix_forbidden),
+            message="혼용 불가 또는 금지 상태의 약제 조합이 방제 기록에 포함됨",
+            evidence={"pesticides": mix_forbidden},
+        ),
+        _crop_safety_rule_result(
+            "pesticide_mix_unknown",
+            bool(mix_unknown),
+            severity="confirm",
+            message="2개 이상 약제 사용 시 혼용 가능 여부가 확인되지 않은 약제가 있음",
+            evidence={"pesticides": mix_unknown},
         ),
         _crop_safety_rule_result(
             "crop_control_record_stale",
@@ -693,6 +762,40 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     }
 
 
+async def _crop_control_rows_with_pesticides(hass, season_id: int, *, limit: int = 10) -> list[dict]:
+    rows = await fetchall(hass, """
+        SELECT
+            r.id, r.control_date AS date, r.notes AS note,
+            p.id AS pId, p.sort_order AS pSort,
+            p.pesticide_name AS name, p.reg_no AS regNo,
+            p.mode_of_action AS moa, p.dilution_ratio AS dil,
+            p.usage_amount AS amount, p.pls_compliant AS pls,
+            p.mixable AS mixable, p.mix_check_status AS mixCheckStatus,
+            p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning
+        FROM control_records r
+        LEFT JOIN control_pesticides p ON p.control_id = r.id
+        WHERE r.season_id = %s AND r.deleted_at IS NULL
+        ORDER BY r.control_date DESC, p.sort_order ASC
+        LIMIT %s
+    """, (season_id, limit * 5))
+    records: dict[int, dict] = {}
+    for row in rows:
+        rid = row["id"]
+        if rid not in records:
+            records[rid] = {"id": rid, "date": row["date"], "note": row["note"], "pesticides": []}
+        if row.get("pId") is not None:
+            records[rid]["pesticides"].append({
+                "name": row["name"], "regNo": row["regNo"],
+                "moa": row["moa"], "dil": row["dil"], "amount": row["amount"],
+                "pls": bool(row["pls"]) if row["pls"] is not None else None,
+                "mixable": bool(row["mixable"]) if row["mixable"] is not None else None,
+                "mixCheckStatus": row["mixCheckStatus"],
+                "mixCheckNote": row["mixCheckNote"],
+                "plsWarning": row["plsWarning"],
+            })
+    return list(records.values())[:limit]
+
+
 async def _crop_model_snapshot(hass, season_id: int) -> dict:
     season = await fetchone(hass, """
         SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
@@ -719,13 +822,7 @@ async def _crop_model_snapshot(hass, season_id: int) -> dict:
         ORDER BY survey_date DESC
         LIMIT 30
     """, (season_id,))
-    control_rows = await fetchall(hass, """
-        SELECT id, control_date AS date, notes AS note
-        FROM control_records
-        WHERE season_id = %s AND deleted_at IS NULL
-        ORDER BY control_date DESC
-        LIMIT 10
-    """, (season_id,))
+    control_rows = await _crop_control_rows_with_pesticides(hass, season_id, limit=10)
     return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows)
 
 
@@ -755,13 +852,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         ORDER BY survey_date DESC
         LIMIT 30
     """, (season_id,))
-    control_rows = await fetchall(hass, """
-        SELECT id, control_date AS date, notes AS note
-        FROM control_records
-        WHERE season_id = %s AND deleted_at IS NULL
-        ORDER BY control_date DESC
-        LIMIT 10
-    """, (season_id,))
+    control_rows = await _crop_control_rows_with_pesticides(hass, season_id, limit=10)
     cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows)
     latest = cropModel["latestMetrics"]
     oldest = growth_rows[-1] if growth_rows else latest
@@ -1029,7 +1120,9 @@ class CropControlListView(HomeAssistantView):
                 p.id AS pId, p.sort_order AS pSort,
                 p.pesticide_name AS name, p.reg_no AS regNo,
                 p.mode_of_action AS moa, p.dilution_ratio AS dil,
-                p.usage_amount AS amount, p.pls_compliant AS pls
+                p.usage_amount AS amount, p.pls_compliant AS pls,
+                p.mixable AS mixable, p.mix_check_status AS mixCheckStatus,
+                p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning
             FROM control_records r
             LEFT JOIN control_pesticides p ON p.control_id = r.id
             WHERE r.season_id = %s AND r.deleted_at IS NULL
@@ -1051,6 +1144,10 @@ class CropControlListView(HomeAssistantView):
                     "name": row["name"], "regNo": row["regNo"],
                     "moa": row["moa"], "dil": row["dil"],
                     "amount": row["amount"], "pls": bool(row["pls"]) if row["pls"] is not None else None,
+                    "mixable": bool(row["mixable"]) if row["mixable"] is not None else None,
+                    "mixCheckStatus": row["mixCheckStatus"],
+                    "mixCheckNote": row["mixCheckNote"],
+                    "plsWarning": row["plsWarning"],
                 })
         return _json(list(records.values()))
 
@@ -1080,8 +1177,9 @@ class CropControlListView(HomeAssistantView):
             await execute(hass, """
                 INSERT INTO control_pesticides
                     (control_id, sort_order, pesticide_name, reg_no,
-                     mode_of_action, dilution_ratio, usage_amount, pls_compliant)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                     mode_of_action, dilution_ratio, usage_amount, pls_compliant,
+                     mixable, mix_check_status, mix_check_note, pls_warning)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 control_id, idx,
                 p.get("name") or "",
@@ -1090,6 +1188,10 @@ class CropControlListView(HomeAssistantView):
                 p.get("dil"),
                 p.get("amount"),
                 1 if p.get("pls") is True else (0 if p.get("pls") is False else None),
+                1 if p.get("mixable") is True else (0 if p.get("mixable") is False else None),
+                p.get("mixCheckStatus"),
+                p.get("mixCheckNote"),
+                p.get("plsWarning"),
             ))
 
         # 생성된 레코드 반환 (재조회)
@@ -1100,7 +1202,9 @@ class CropControlListView(HomeAssistantView):
                 p.id AS pId, p.sort_order AS pSort,
                 p.pesticide_name AS name, p.reg_no AS regNo,
                 p.mode_of_action AS moa, p.dilution_ratio AS dil,
-                p.usage_amount AS amount, p.pls_compliant AS pls
+                p.usage_amount AS amount, p.pls_compliant AS pls,
+                p.mixable AS mixable, p.mix_check_status AS mixCheckStatus,
+                p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning
             FROM control_records r
             LEFT JOIN control_pesticides p ON p.control_id = r.id
             WHERE r.id = %s
@@ -1117,6 +1221,10 @@ class CropControlListView(HomeAssistantView):
                     "moa": row["moa"], "dil": row["dil"],
                     "amount": row["amount"],
                     "pls": bool(row["pls"]) if row["pls"] is not None else None,
+                    "mixable": bool(row["mixable"]) if row["mixable"] is not None else None,
+                    "mixCheckStatus": row["mixCheckStatus"],
+                    "mixCheckNote": row["mixCheckNote"],
+                    "plsWarning": row["plsWarning"],
                 })
         return _json(result)
 

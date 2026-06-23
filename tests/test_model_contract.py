@@ -151,6 +151,12 @@ def test_crop_safety_rules_contract_markers_are_defined_before_more_model_work()
         "crop_growth_anomaly",
         "crop_control_record_stale",
         "crop_confidence_low",
+        "pesticide_pls_noncompliant",
+        "pesticide_mix_forbidden",
+        "pesticide_mix_unknown",
+        "crop_metric_anomaly",
+        "minGIndex",
+        "maxMetricDeltaByKey",
     ):
         assert marker in source
         assert marker in combined_docs
@@ -202,3 +208,38 @@ def test_crop_safety_rule_snapshot_marks_missing_crop_season_as_blocked():
     assert result["cropSafetyBlocked"] is True
     assert "crop_season_missing" in result["cropSafetyReasons"]
     assert "crop_confidence_low" in result["cropSafetyReasons"]
+
+
+def test_crop_safety_rule_snapshot_blocks_pls_mix_low_g_index_and_metric_anomalies():
+    crop_views = _load_crop_views_for_helper_tests()
+
+    result = crop_views._crop_safety_rule_snapshot(
+        season={"id": 12, "cropType": "tomato", "plantDate": "2026-01-01"},
+        growth_rows=[
+            {"date": "2026-06-20", "height": 250, "leafCount": 35, "stemDia": 18, "truss": 8, "node": 25, "metricsJson": "[]"},
+            {"date": "2026-06-13", "height": 20, "leafCount": -1, "stemDia": 2, "truss": 1, "node": 2, "metricsJson": "[]"},
+        ],
+        pestRisk={"level": "low", "score": 0},
+        yieldPrediction={"confidence": "medium"},
+        latest_g=-5,
+        weekly_growth=15,
+        control_rows=[{
+            "date": "2026-06-21",
+            "pesticides": [
+                {"name": "약제A", "pls": False, "plsWarning": "PLS 부적합"},
+                {"name": "약제B", "mixable": False, "mixCheckStatus": "forbidden", "mixCheckNote": "혼용 불가"},
+                {"name": "약제C", "mixable": None, "mixCheckStatus": "unknown", "mixCheckNote": "혼용 정보 없음"},
+            ],
+        }],
+    )
+
+    for reason in (
+        "pesticide_pls_noncompliant",
+        "pesticide_mix_forbidden",
+        "pesticide_mix_unknown",
+        "crop_growth_anomaly",
+        "crop_metric_anomaly",
+    ):
+        assert reason in result["cropSafetyReasons"]
+    metric_result = next(item for item in result["cropSafetyRuleResults"] if item["reasonCode"] == "crop_metric_anomaly")
+    assert metric_result["evidence"]["metricAnomalies"]

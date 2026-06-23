@@ -185,6 +185,10 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             dilution_ratio INT NULL,
             usage_amount VARCHAR(100) NULL,
             pls_compliant TINYINT(1) NULL,
+            mixable TINYINT(1) NULL,
+            mix_check_status VARCHAR(32) NULL,
+            mix_check_note TEXT NULL,
+            pls_warning TEXT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             KEY idx_control_pesticides_control (control_id, sort_order),
             KEY idx_control_pesticides_name (pesticide_name)
@@ -624,6 +628,10 @@ async def ensure_schema(hass: HomeAssistant) -> None:
                 await cur.execute(statement)
             await _ensure_column(cur, "growth_surveys", "crop_type", "crop_type VARCHAR(50) NOT NULL DEFAULT 'other' AFTER node_count")
             await _ensure_column(cur, "growth_surveys", "metrics_json", "metrics_json TEXT NULL AFTER crop_type")
+            await _ensure_column(cur, "control_pesticides", "mixable", "mixable TINYINT(1) NULL AFTER pls_compliant")
+            await _ensure_column(cur, "control_pesticides", "mix_check_status", "mix_check_status VARCHAR(32) NULL AFTER mixable")
+            await _ensure_column(cur, "control_pesticides", "mix_check_note", "mix_check_note TEXT NULL AFTER mix_check_status")
+            await _ensure_column(cur, "control_pesticides", "pls_warning", "pls_warning TEXT NULL AFTER mix_check_note")
     _LOGGER.info("green_smart DB schema ensured")
 
 
