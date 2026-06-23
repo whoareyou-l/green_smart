@@ -71,6 +71,12 @@ async def _run_growth_report_notification_scheduler_tick(hass, now) -> None:
     await _run_growth_report_notification_tick(hass, now)
 
 
+async def _run_crop_policy_notification_scheduler_tick(hass, now) -> None:
+    from .crop_views import _run_crop_policy_notification_tick
+
+    await _run_crop_policy_notification_tick(hass, now)
+
+
 async def _setup_growth_report_notification_scheduler(hass) -> None:
     domain_data = hass.data.setdefault(DOMAIN, {})
     if domain_data.get("unsub_growth_report_notification"):
@@ -89,6 +95,26 @@ def _teardown_growth_report_notification_scheduler(hass) -> None:
     if unsub:
         unsub()
         domain_data["growth_report_notification_scheduler_stopped"] = True
+
+
+async def _setup_crop_policy_notification_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("unsub_crop_policy_notification"):
+        return
+
+    def _tick(now):
+        hass.loop.call_soon_threadsafe(hass.async_create_task, _run_crop_policy_notification_scheduler_tick(hass, now))
+
+    domain_data["unsub_crop_policy_notification"] = async_track_time_interval(hass, _tick, timedelta(minutes=5))
+    domain_data["crop_policy_notification_scheduler_started"] = True
+
+
+def _teardown_crop_policy_notification_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    unsub = domain_data.pop("unsub_crop_policy_notification", None)
+    if unsub:
+        unsub()
+        domain_data["crop_policy_notification_scheduler_stopped"] = True
 
 
 async def _run_center_crop_interlock_snapshot_sync_tick(hass, now) -> None:
@@ -281,7 +307,8 @@ async def async_setup(hass, config):
     from .db import ensure_schema
     from .crop_views import (
         CropSeasonsView, CropSeasonDemolishView, CropSeasonDeleteView,
-        CropGrowthListView, CropGrowthReportView, CropGrowthReportNotifyView, CropGrowthReportNotificationSettingsView, CropGrowthDeleteView,
+        CropGrowthListView, CropGrowthReportView, CropGrowthReportNotifyView, CropGrowthReportNotificationSettingsView,
+        CropPolicyNotificationSettingsView, CropPolicyNotificationDismissView, CropGrowthDeleteView,
         CropStageCalibrationView, CropStageDiagnosisView, CropInterlockApprovalView,
         CropPestListView, CropPestDeleteView,
         CropControlListView, CropControlDeleteView,
@@ -326,6 +353,8 @@ async def async_setup(hass, config):
         hass.http.register_view(CropGrowthReportView())
         hass.http.register_view(CropGrowthReportNotifyView())
         hass.http.register_view(CropGrowthReportNotificationSettingsView())
+        hass.http.register_view(CropPolicyNotificationSettingsView())
+        hass.http.register_view(CropPolicyNotificationDismissView())
         hass.http.register_view(CropGrowthDeleteView())
         hass.http.register_view(CropStageCalibrationView())
         hass.http.register_view(CropStageDiagnosisView())
@@ -371,6 +400,7 @@ async def async_setup(hass, config):
         domain_data["_views_registered"] = True
     await _setup_safety_guard_watchdog_scheduler(hass)
     await _setup_growth_report_notification_scheduler(hass)
+    await _setup_crop_policy_notification_scheduler(hass)
     await _setup_center_crop_interlock_snapshot_sync_scheduler(hass)
     await _setup_edge_environment_telemetry_sync_scheduler(hass)
     await _setup_center_crop_policy_pull_scheduler(hass)
@@ -410,6 +440,7 @@ async def async_unload_entry(hass, entry):
     if unload_ok:
         _teardown_safety_guard_watchdog_scheduler(hass)
         _teardown_growth_report_notification_scheduler(hass)
+        _teardown_crop_policy_notification_scheduler(hass)
         _teardown_center_crop_interlock_snapshot_sync_scheduler(hass)
         _teardown_edge_environment_telemetry_sync_scheduler(hass)
         _teardown_center_crop_policy_pull_scheduler(hass)

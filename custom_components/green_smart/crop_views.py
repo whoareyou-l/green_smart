@@ -12,6 +12,8 @@ _LOGGER = logging.getLogger(__name__)
 WEEKLY_REPORT_INTERVAL_DAYS = 7
 GROWTH_REPORT_NOTIFICATION_SETTINGS_KEY = "growth_report_notification_settings"
 GROWTH_REPORT_NOTIFICATION_STATE_KEY = "growth_report_notification_state"
+CROP_POLICY_NOTIFICATION_SETTINGS_KEY = "crop_policy_notification_settings"
+CROP_POLICY_NOTIFICATION_STATE_KEY = "crop_policy_notification_state"
 CROP_MODEL_VERSION = "crop_season_model_v1"
 CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
 CROP_INTERLOCK_VERSION = "crop_interlock_policy_v1"
@@ -20,7 +22,9 @@ CROP_STAGE_INTERLOCK_VERSION = "crop_stage_interlock_v1"
 CROP_INTERLOCK_APPROVAL_VERSION = "crop_interlock_approval_v1"
 CENTER_CROP_POLICY_INTEGRATION_VERSION = "center_crop_policy_integration_v1"
 CENTER_CROP_POLICY_ALERT_VERSION = "center_crop_policy_alert_v1"
+CENTER_CROP_POLICY_NOTIFICATION_VERSION = "center_crop_policy_notification_v1"
 CENTER_CROP_POLICY_ALERT_STATUSES = {"fallback_safe", "stale_restricted", "rejected"}
+CENTER_CROP_POLICY_NOTIFICATION_DEFAULT_STATUSES = {"fallback_safe", "rejected"}
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
@@ -1199,6 +1203,105 @@ async def _record_center_crop_policy_status_audit(
     return True
 
 
+def _crop_policy_notification_maps(hass) -> tuple[dict, dict]:
+    domain_data = hass.data.setdefault("green_smart", {})
+    settings = domain_data.setdefault(CROP_POLICY_NOTIFICATION_SETTINGS_KEY, {})
+    state = domain_data.setdefault(CROP_POLICY_NOTIFICATION_STATE_KEY, {})
+    return settings, state
+
+
+def _crop_policy_notification_id(*, season_id: int, zone_id: int | None) -> str:
+    return f"green_smart_crop_policy_{season_id}_{zone_id or 0}"
+
+
+def _crop_policy_notification_enabled(settings: dict, season_id: int, policy_status: str) -> bool:
+    season_settings = settings.get(str(season_id)) or {}
+    if not season_settings:
+        return policy_status in CENTER_CROP_POLICY_NOTIFICATION_DEFAULT_STATUSES
+    if season_settings.get("enabled") is False:
+        return False
+    status_settings = season_settings.get("statuses") or {}
+    if policy_status == "stale_restricted":
+        return bool(status_settings.get("stale_restricted", False))
+    return bool(status_settings.get(policy_status, policy_status in CENTER_CROP_POLICY_NOTIFICATION_DEFAULT_STATUSES))
+
+
+def _crop_policy_notification_message(center_policy: dict, season_id: int, zone_id: int | None) -> str:
+    status = center_policy.get("policyStatus") or "fallback_safe"
+    reason_codes = center_policy.get("reasonCodes") or []
+    next_action = (center_policy.get("recommendationHints") or {}).get("nextAction") or "monitor_crop_policy"
+    return (
+        f"작물 정책 알림: season={season_id}, zone={zone_id or 0}, status={status}. "
+        f"reason={', '.join(str(r) for r in reason_codes) or 'none'}. nextAction={next_action}. "
+        "Center 정책은 추천 전용이며 현장 Edge 작물 Safety/Interlock이 최종 판단합니다."
+    )
+
+
+async def _maybe_send_crop_policy_notification(hass, season_id: int, center_policy: dict, *, zone_id: int | None = None) -> dict:
+    settings, state = _crop_policy_notification_maps(hass)
+    status = str(center_policy.get("policyStatus") or "fallback_safe")
+    notification_id = _crop_policy_notification_id(season_id=season_id, zone_id=zone_id)
+    if status not in CENTER_CROP_POLICY_ALERT_STATUSES:
+        await _clear_crop_policy_notification(hass, season_id=season_id, zone_id=zone_id, reason="policy_recovered")
+        return {"sent": False, "dismissed": True, "reason": "policy_recovered", "notificationId": notification_id}
+    if not _crop_policy_notification_enabled(settings, season_id, status):
+        return {"sent": False, "reason": "crop_policy_notification_disabled", "notificationId": notification_id}
+    policy_version = center_policy.get("policyVersion") or "none"
+    key = f"{season_id}:{zone_id or 0}:{status}:{policy_version}"
+    if state.get(key):
+        hass.data.setdefault("green_smart", {})["crop_policy_notification_deduped"] = key
+        return {"sent": False, "deduped": True, "reason": "crop_policy_notification_deduped", "notificationId": notification_id}
+    state[key] = datetime.utcnow().isoformat()
+    await hass.services.async_call(
+        "persistent_notification",
+        "create",
+        {
+            "title": "Green Smart 작물 정책 알림",
+            "message": _crop_policy_notification_message(center_policy, season_id, zone_id),
+            "notification_id": notification_id,
+        },
+        blocking=False,
+    )  # persistent_notification.create
+    hass.data.setdefault("green_smart", {})["crop_policy_notification_sent"] = key
+    return {"sent": True, "reason": "crop_policy_notification_sent", "notificationId": notification_id}
+
+
+async def _clear_crop_policy_notification(hass, *, season_id: int, zone_id: int | None = None, reason: str = "manual_dismiss") -> dict:
+    _settings, state = _crop_policy_notification_maps(hass)
+    notification_id = _crop_policy_notification_id(season_id=season_id, zone_id=zone_id)
+    prefix = f"{season_id}:{zone_id or 0}:"
+    removed = [key for key in list(state) if key.startswith(prefix)]
+    for key in removed:
+        state.pop(key, None)
+    await hass.services.async_call(
+        "persistent_notification",
+        "dismiss",
+        {"notification_id": notification_id},
+        blocking=False,
+    )  # persistent_notification.dismiss
+    hass.data.setdefault("green_smart", {})["crop_policy_notification_dismissed"] = notification_id
+    return {"notificationDismissed": True, "notificationId": notification_id, "dedupeKeysCleared": removed, "reason": reason}
+
+
+async def _run_crop_policy_notification_tick(hass, now=None) -> None:
+    seasons = await fetchall(hass, """
+        SELECT id, zone_id AS zoneId
+        FROM crop_seasons
+        WHERE deleted_at IS NULL AND demolish_date IS NULL
+        ORDER BY id DESC
+        LIMIT 20
+    """)
+    for season in seasons:
+        try:
+            season_id = int(season.get("id"))
+            zone_id = season.get("zoneId")
+            center_policy = await _active_center_crop_policy(hass, season_id, farm_id=1, zone_id=zone_id)
+            await _maybe_send_crop_policy_notification(hass, season_id, center_policy, zone_id=zone_id)
+        except Exception as exc:
+            _LOGGER.warning("Crop policy notification tick failed for season %s: %s", season.get("id"), exc)
+    hass.data.setdefault("green_smart", {})["crop_policy_notification_checked"] = datetime.utcnow().isoformat()
+
+
 async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zone_id: int | None = None) -> dict:
     """Read the latest validated Center crop policy candidate from Edge cache.
 
@@ -1590,6 +1693,52 @@ class CropGrowthReportNotificationSettingsView(HomeAssistantView):
             "worseningAlerts": bool(body.get("worseningAlerts", True)),
         }
         return _json({"ok": True, "seasonId": int(season_id), **settings[str(season_id)]})
+
+
+class CropPolicyNotificationSettingsView(HomeAssistantView):
+    """POST /api/green_smart/crop/seasons/{season_id}/crop-policy/notification-settings."""
+    url  = "/api/green_smart/crop/seasons/{season_id}/crop-policy/notification-settings"
+    name = "api:green_smart:crop:policy_notification_settings"
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        settings, _state = _crop_policy_notification_maps(hass)
+        statuses = body.get("statuses") or {}
+        settings[str(season_id)] = {
+            "enabled": bool(body.get("enabled", True)),
+            "statuses": {
+                "fallback_safe": bool(statuses.get("fallback_safe", True)),
+                "rejected": bool(statuses.get("rejected", True)),
+                "stale_restricted": bool(statuses.get("stale_restricted", False)),
+            },
+            "version": CENTER_CROP_POLICY_NOTIFICATION_VERSION,
+        }
+        return _json({"ok": True, "seasonId": int(season_id), **settings[str(season_id)]})
+
+
+class CropPolicyNotificationDismissView(HomeAssistantView):
+    """POST /api/green_smart/crop/seasons/{season_id}/crop-policy/notification-dismiss."""
+    url  = "/api/green_smart/crop/seasons/{season_id}/crop-policy/notification-dismiss"
+    name = "api:green_smart:crop:policy_notification_dismiss"
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        zone_id = body.get("zoneId") or body.get("zone_id")
+        result = await _clear_crop_policy_notification(
+            hass,
+            season_id=int(season_id),
+            zone_id=int(zone_id) if zone_id not in (None, "") else None,
+            reason="manual_dismiss",
+        )
+        return _json({"ok": True, "seasonId": int(season_id), **result})
 
 
 class CropGrowthDeleteView(HomeAssistantView):

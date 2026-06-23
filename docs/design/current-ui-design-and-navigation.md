@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.55`
+> 기준 버전: `v1.9.56`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.55` |
+| 현재 version | `1.9.56` |
 
 작업 시 우선순위:
 
@@ -985,7 +985,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.55 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.56 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 
@@ -1008,9 +1008,9 @@ _patchZoneControlElementCards(domain)
 
 ---
 
-### 11.6 v1.9.55 생육 AI 전략/제어 페이지 정보 구조 contract
+### 11.6 v1.9.56 생육 AI 전략/제어 페이지 정보 구조 contract
 
-v1.9.55 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
+v1.9.56 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
 
 작물 관리:
 
@@ -1020,7 +1020,8 @@ v1.9.55 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지�
 - Stage Diagnosis / Crop Interlock 카드: `data-stage-diagnosis-card`, `data-crop-interlock-card` marker로 현재 생육단계, 단계 신뢰도, Index band, 다음 조사, 부족한 증거, 작물 인터록 상태, target promotion/자동 실행 차단 여부, 수확 안전 확인 필요 여부를 표시한다.
 - 센터 작물 정책 카드: `data-center-crop-policy-card` marker로 `centerCropPolicy`, `cropPolicyAppliedToModel`, `cropPolicyAppliedToInterlock`, `policyStatus`, `applyMode`, `cropModelVariables`, `cropInterlockVariables`, `recommendationHints`를 read-only로 표시한다. 문구는 `현장 Edge가 최종 판단`을 유지하고, 현재 범위는 Crop이므로 환경/관수/장치 PID 적용은 제외한다.
 - Center policy guidance: `data-center-crop-policy-guidance`, `data-center-crop-policy-reasons`, `data-center-crop-policy-next-action` marker로 정책 상태 이유와 다음 조치를 한국어로 표시한다. `fresh/stale_usable/stale_restricted/fallback_safe/rejected` 상태를 농장 운영 문구로 번역하되 실행 버튼은 추가하지 않는다.
-- v1.9.55 Crop policy alert/audit: `data-center-crop-policy-alert-summary` marker로 `stale_restricted`, `fallback_safe`, `rejected` 상태에 작물 정책 경고를 표시한다. 이 경고는 audit 기록/알림 기준 상태를 알려주는 read-only 요약이며 실행 버튼 없음 원칙을 유지한다.
+- v1.9.56 Crop policy alert/audit: `data-center-crop-policy-alert-summary` marker로 `stale_restricted`, `fallback_safe`, `rejected` 상태에 작물 정책 경고를 표시한다. 이 경고는 audit 기록/알림 기준 상태를 알려주는 read-only 요약이며 실행 버튼 없음 원칙을 유지한다.
+- v1.9.56 Crop policy notification opt-in: `data-center-crop-policy-notification-toggle`, `data-center-crop-policy-notification-dismiss`, `data-center-crop-policy-notification-state` marker로 작물 정책 알림 ON/OFF와 알림 해제를 제공한다. `fallback_safe/rejected`는 기본 알림 대상이고 `stale_restricted`는 설정에 따라 알림한다. 작물 정책 알림은 운영 알림이며 실행 버튼 없음 원칙을 유지한다.
 - Center analytics 카드: `data-center-crop-interlock-analytics-card` marker로 Center reason/approval 집계를 표시하되 실행권은 부여하지 않는다.
 - 주간 리포트 알림: `data-weekly-report-notification-toggle` 버튼으로 제공하며 체크박스를 사용하지 않는다.
 - 알림 상태 색상: ON `#f5a623` + `mdi:bell-ring-outline`, OFF `#9aa6a0` + `mdi:bell-off-outline`
@@ -1056,7 +1057,7 @@ v1.9.55 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지�
 
 ---
 
-### 11.7 v1.9.55 Admin/System 관리 기능 contract
+### 11.7 v1.9.56 Admin/System 관리 기능 contract
 
 Admin/System 페이지는 placeholder가 아니라 다음 탭과 바인딩을 제공한다.
 

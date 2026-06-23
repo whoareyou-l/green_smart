@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.55
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.56
 const DOMAIN = "green_smart";
-const VERSION = "1.9.55";
+const VERSION = "1.9.56";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4038,6 +4038,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const translatedNextAction = CENTER_CROP_POLICY_NEXT_ACTION_LABELS[rawNextAction] || String(rawNextAction || "현재 작물 정책 상태를 관찰하세요.");
     const policyAlertActive = CENTER_CROP_POLICY_ALERT_STATUSES.has(policyStatus);
     const policyAlertMessage = CENTER_CROP_POLICY_ALERT_MESSAGES[policyStatus] || "Center 작물 정책 상태를 확인하세요.";
+    const cropPolicyNotificationEnabled = this._cropPolicyNotificationEnabled();
     /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
@@ -4103,7 +4104,12 @@ button.action:disabled{opacity:.5;cursor:default;}
             <div style="font-size:12px;font-weight:900;color:#24323F;">센터 작물 정책</div>
             <div style="font-size:10px;color:#6d8799;margin-top:3px;">현장 Edge가 최종 판단 · read-only · 환경/관수/장치 PID 적용은 제외</div>
           </div>
-          <span style="font-size:11px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:${policyColor};border:1px solid #dbeaf8;">${this._esc(policyLabel)} · ${this._esc(policyStatus)}</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+            <span data-center-crop-policy-notification-state style="font-size:10px;color:${cropPolicyNotificationEnabled ? '#51AE60' : '#9aa6a0'};font-weight:800;">작물 정책 알림 ${cropPolicyNotificationEnabled ? 'ON' : 'OFF'}</span>
+            <button data-center-crop-policy-notification-toggle title="작물 정책 알림 사용" style="border:1px solid ${cropPolicyNotificationEnabled ? '#f5a623' : '#cfd8d3'};background:${cropPolicyNotificationEnabled ? '#fff7e6' : '#f1f3f2'};color:${cropPolicyNotificationEnabled ? '#f5a623' : '#9aa6a0'};border-radius:9px;padding:5px 7px;font-size:10px;font-weight:900;cursor:pointer;">알림 사용</button>
+            <button data-center-crop-policy-notification-dismiss title="작물 정책 알림 해제" style="border:1px solid #dbeaf8;background:#fff;color:#6d8799;border-radius:9px;padding:5px 7px;font-size:10px;font-weight:900;cursor:pointer;">알림 해제</button>
+            <span style="font-size:11px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:${policyColor};border:1px solid #dbeaf8;">${this._esc(policyLabel)} · ${this._esc(policyStatus)}</span>
+          </div>
         </div>
         ${policyAlertActive ? `<div data-center-crop-policy-alert-summary style="background:#fff8e8;border:1px solid #f6d08b;border-radius:10px;padding:8px;margin-bottom:8px;color:#8a5d00;line-height:1.5;">
           <div style="font-size:11px;font-weight:900;">작물 정책 경고 · 기록/알림 기준 상태</div>
@@ -4426,6 +4432,35 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _weeklyReportNotificationEnabled() {
     try { return localStorage.getItem("green_smart_weekly_report_notifications") !== "off"; } catch (_) { return true; }
+  }
+
+  _cropPolicyNotificationEnabled() {
+    try { return localStorage.getItem("green_smart_crop_policy_notifications") !== "off"; } catch (_) { return true; }
+  }
+
+  async _setCropPolicyNotificationEnabled(enabled) {
+    try { localStorage.setItem("green_smart_crop_policy_notifications", enabled ? "on" : "off"); } catch (_) {}
+    if (!this._hass || !this._activeSeasonId) return;
+    try {
+      await this._hass.callApi("POST", `green_smart/crop/seasons/${this._activeSeasonId}/crop-policy/notification-settings`, {
+        enabled,
+        statuses: { fallback_safe: true, rejected: true, stale_restricted: false },
+      });
+    } catch (err) {
+      console.warn("작물 정책 알림 설정 저장 실패", err);
+    }
+  }
+
+  async _dismissCropPolicyNotification() {
+    if (!this._hass || !this._activeSeasonId) return null;
+    try {
+      return await this._hass.callApi("POST", `green_smart/crop/seasons/${this._activeSeasonId}/crop-policy/notification-dismiss`, {
+        zoneId: this._growthReportData?.season?.zoneId || null,
+      });
+    } catch (err) {
+      console.warn("작물 정책 알림 해제 실패", err);
+      return null;
+    }
   }
 
   async _setWeeklyReportNotificationEnabled(enabled) {
@@ -5534,6 +5569,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("[data-weekly-report-notification-toggle]")?.addEventListener("click", async () => {
       const enabled = !this._weeklyReportNotificationEnabled();
       await this._setWeeklyReportNotificationEnabled(enabled);
+      this._refreshCropContent();
+    });
+    root.querySelector("[data-center-crop-policy-notification-toggle]")?.addEventListener("click", async () => {
+      const enabled = !this._cropPolicyNotificationEnabled();
+      await this._setCropPolicyNotificationEnabled(enabled);
+      this._refreshCropContent();
+    });
+    root.querySelector("[data-center-crop-policy-notification-dismiss]")?.addEventListener("click", async () => {
+      await this._dismissCropPolicyNotification();
       this._refreshCropContent();
     });
     root.querySelectorAll("[data-crop-interlock-approve]").forEach((button) => {

@@ -32,7 +32,7 @@ def test_crop_policy_alert_audit_backend_contract():
     ):
         assert marker in source
     assert "audit_logs" in db
-    alert_section = source.split("async def _record_center_crop_policy_status_audit", 1)[1].split("async def _active_center_crop_policy", 1)[0]
+    alert_section = source.split("async def _record_center_crop_policy_status_audit", 1)[1].split("def _crop_policy_notification_maps", 1)[0]
     assert "persistent_notification.create" not in alert_section
     assert "data-center-crop-policy-execute" not in _source(PANEL)
 
@@ -69,7 +69,7 @@ def test_crop_policy_alert_audit_docs_contract():
     ):
         assert marker in doc
     for marker in (
-        "v1.9.55 Crop policy alert/audit",
+        "v1.9.56 Crop policy alert/audit",
         "data-center-crop-policy-alert-summary",
         "작물 정책 경고",
         "실행 버튼 없음",
