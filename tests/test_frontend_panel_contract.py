@@ -264,6 +264,46 @@ def test_crop_center_policy_panel_readonly_contract():
         assert marker in ui_doc
 
 
+def test_crop_center_policy_guidance_resolution_ux_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCenterCropInterlockAnalyticsCard()", 1)[0]
+    ui_doc = (ROOT / "docs" / "design" / "current-ui-design-and-navigation.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "CENTER_CROP_POLICY_STATUS_GUIDANCE",
+        "CENTER_CROP_POLICY_REASON_LABELS",
+        "CENTER_CROP_POLICY_NEXT_ACTION_LABELS",
+        "policyGuidance",
+        "translatedCenterPolicyReasons",
+        "translatedNextAction",
+        "data-center-crop-policy-guidance",
+        "data-center-crop-policy-reasons",
+        "data-center-crop-policy-next-action",
+        "Center policy guidance",
+        "Center policy resolution UX",
+        "기존 작물 정책을 계속 참고 중입니다",
+        "Center 정책이 오래되어 보수 모드로 전환되었습니다",
+        "Center 정책이 없거나 만료되어 로컬 fallback으로 보호 중입니다",
+        "Center 정책 후보가 폐기되었습니다",
+        "다음 조치",
+        "정책 상태 이유",
+    ):
+        assert marker in report_card or marker in panel
+    assert "data-center-crop-policy-execute" not in panel
+    assert "centerCropPolicyAllowExecution" not in panel
+
+    for marker in (
+        "v1.9.54 Center policy guidance",
+        "data-center-crop-policy-guidance",
+        "data-center-crop-policy-reasons",
+        "data-center-crop-policy-next-action",
+        "정책 상태 이유",
+        "다음 조치",
+        "실행 버튼은 추가하지 않는다",
+    ):
+        assert marker in ui_doc
+
+
 def test_product_phase6_pest_risk_panel_surfaces_environment_weather_control_details_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCropGrowthTab()", 1)[0]

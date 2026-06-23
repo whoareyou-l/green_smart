@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.53
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.54
 const DOMAIN = "green_smart";
-const VERSION = "1.9.53";
+const VERSION = "1.9.54";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -34,6 +34,27 @@ const DEFAULT_FORM = {
   weather_mid_land_reg_id: "11H10000",
   weather_mid_ta_reg_id: "11H10701",
   activation_code: "",
+};
+const CENTER_CROP_POLICY_STATUS_GUIDANCE = {
+  fresh: { title: "Center 작물 정책이 최신입니다", detail: "최신 Center 후보를 작물 모델과 인터록 참고값으로 사용 중입니다." },
+  stale_usable: { title: "기존 작물 정책을 계속 참고 중입니다", detail: "Center 응답이 조금 늦지만, Edge가 마지막으로 검증한 작물 정책을 계속 참고합니다." },
+  stale_restricted: { title: "Center 정책이 오래되어 보수 모드로 전환되었습니다", detail: "작물 추천과 target promotion은 더 조심스럽게 판단하고 운영자 확인을 우선합니다." },
+  fallback_safe: { title: "Center 정책이 없거나 만료되어 로컬 fallback으로 보호 중입니다", detail: "Edge 로컬 crop safety/interlock 기준으로 작물을 보호합니다." },
+  rejected: { title: "Center 정책 후보가 폐기되었습니다", detail: "형식/상태가 맞지 않는 정책 후보는 적용하지 않고 기존 Edge 기준을 유지합니다." },
+};
+const CENTER_CROP_POLICY_REASON_LABELS = {
+  center_policy_recommend_only: "Center 정책은 추천 전용이며 실행 권한이 없습니다.",
+  center_policy_recommendation_hint: "Center가 작물 정책 추천 힌트를 제공했습니다.",
+  center_policy_stale_usable: "Center 응답 지연 중이지만 기존 정책을 사용할 수 있습니다.",
+  center_policy_stale_restricted: "Center 정책 지연이 길어져 보수 모드가 필요합니다.",
+  center_policy_fallback_safe: "Center 정책이 없어 Edge fallback 작물 정책으로 보호 중입니다.",
+  center_policy_rejected: "Center 정책 후보가 검증에서 폐기되었습니다.",
+};
+const CENTER_CROP_POLICY_NEXT_ACTION_LABELS = {
+  wait_for_center_crop_policy: "Center 연결/토큰 상태를 확인하고 다음 5분 동기화를 기다리세요.",
+  monitor_crop_policy: "현재 작물 정책 상태를 관찰하고 생육조사 기록을 유지하세요.",
+  review_crop_interlock_reasons: "작물 인터록 이유를 확인하고 필요한 생육조사/승인 기록을 보강하세요.",
+  review_center_crop_recommendation_hint: "Center 추천 힌트를 검토하되 실행은 Edge 인터록 기준을 따르세요.",
 };
 const EQUIP_KEYS = ["roof_window","side_window","shade_screen","thermal_curtain","irrigation","nutrient_machine","circulation_fan","co2_generator"];
 const EQUIP_LABELS = {
@@ -4001,6 +4022,15 @@ button.action:disabled{opacity:.5;cursor:default;}
     const interlockVarEntries = Object.entries(cropInterlockVariables).slice(0, 4);
     const hintEntries = Object.entries(recommendationHints).slice(0, 4);
     const policyChip = (label, value) => `<span style="font-size:11px;background:#f5faf6;color:#5d7d64;border:1px solid #e4f0e6;border-radius:999px;padding:4px 8px;"><b>${this._esc(label)}</b> ${this._esc(String(value ?? "-"))}</span>`;
+    const policyGuidance = CENTER_CROP_POLICY_STATUS_GUIDANCE[policyStatus] || CENTER_CROP_POLICY_STATUS_GUIDANCE.fallback_safe;
+    const centerPolicyReasonCodes = Array.from(new Set([
+      ...((Array.isArray(centerCropPolicy.reasonCodes) ? centerCropPolicy.reasonCodes : [])),
+      ...interlockReasons.filter((r) => String(r).startsWith("center_policy_")),
+    ]));
+    const translatedCenterPolicyReasons = centerPolicyReasonCodes.map((code) => CENTER_CROP_POLICY_REASON_LABELS[code] || code);
+    const rawNextAction = recommendationHints.nextAction || centerCropPolicy.nextAction || "monitor_crop_policy";
+    const translatedNextAction = CENTER_CROP_POLICY_NEXT_ACTION_LABELS[rawNextAction] || String(rawNextAction || "현재 작물 정책 상태를 관찰하세요.");
+    /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
         <div>
@@ -4079,6 +4109,12 @@ button.action:disabled{opacity:.5;cursor:default;}
           ${interlockVarEntries.length ? interlockVarEntries.map(([k, v]) => policyChip(`인터록 ${k}`, typeof v === 'object' ? JSON.stringify(v) : v)).join("") : policyChip("인터록 변수", "없음")}
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;line-height:1.55;"><b>추천 힌트</b> ${hintEntries.length ? hintEntries.map(([k, v]) => `${this._esc(k)}=${this._esc(typeof v === 'object' ? JSON.stringify(v) : String(v))}`).join(" · ") : "없음"}</div>
+        <div data-center-crop-policy-guidance style="background:#f7fbff;border:1px solid #dbeaf8;border-radius:10px;padding:8px;margin-top:8px;line-height:1.55;">
+          <div style="font-size:11px;font-weight:900;color:#24323F;">${this._esc(policyGuidance.title)}</div>
+          <div style="font-size:10px;color:#6d8799;margin-top:3px;">${this._esc(policyGuidance.detail)}</div>
+        </div>
+        <div data-center-crop-policy-reasons style="font-size:11px;color:#7a9780;margin-top:7px;line-height:1.55;"><b>정책 상태 이유</b> ${translatedCenterPolicyReasons.length ? translatedCenterPolicyReasons.map((r) => this._esc(r)).join(" · ") : "Center 정책 관련 특이 사유 없음"}</div>
+        <div data-center-crop-policy-next-action style="font-size:11px;color:#4a6741;margin-top:5px;line-height:1.55;"><b>다음 조치</b> ${this._esc(translatedNextAction)}</div>
         <div style="font-size:10px;color:#9aae9d;margin-top:5px;">fresh · stale_usable · stale_restricted · fallback_safe · rejected · recommend_only</div>
       </div>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid ${cropInterlock.cropInterlockBlocked ? '#f3c8c8' : '#dbeee0'};" data-crop-interlock-card>
