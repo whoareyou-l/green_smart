@@ -87,6 +87,21 @@ async def _ensure_column(cur, table: str, column: str, ddl: str) -> None:
         await cur.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
 
 
+async def _ensure_index(cur, table: str, index_name: str, ddl: str) -> None:
+    await cur.execute(
+        """
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND INDEX_NAME = %s
+        """,
+        (table, index_name),
+    )
+    row = await cur.fetchone()
+    exists = bool(row and row[0])
+    if not exists:
+        await cur.execute(f"ALTER TABLE {table} ADD INDEX {index_name} {ddl}")
+
+
 async def ensure_schema(hass: HomeAssistant) -> None:
     """Create the crop-management schema used by the Green Smart panel.
 
@@ -703,7 +718,8 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             KEY idx_crop_model_training_lookup (farm_id, season_id, zone_id, crop_type, validation_status, prediction_date),
-            KEY idx_crop_model_training_predicted_for (predicted_for_date, validation_status)
+            KEY idx_crop_model_training_predicted_for (predicted_for_date, validation_status),
+            KEY idx_crop_model_training_validation_due (predicted_for_date, validation_status, season_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
@@ -740,6 +756,7 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             await _ensure_column(cur, "control_pesticides", "mix_check_note", "mix_check_note TEXT NULL AFTER mix_check_status")
             await _ensure_column(cur, "control_pesticides", "pls_warning", "pls_warning TEXT NULL AFTER mix_check_note")
             await _ensure_column(cur, "crop_model_training_snapshots", "feature_snapshot_id", "feature_snapshot_id BIGINT NULL AFTER season_id")
+            await _ensure_index(cur, "crop_model_training_snapshots", "idx_crop_model_training_validation_due", "(predicted_for_date, validation_status, season_id)")
     _LOGGER.info("green_smart DB schema ensured")
 
 

@@ -17,6 +17,7 @@ CROP_POLICY_NOTIFICATION_STATE_KEY = "crop_policy_notification_state"
 CROP_MODEL_VERSION = "crop_season_model_v1"
 CROP_TRAINABLE_BASELINE_VERSION = "crop_trainable_baseline_v1"
 CROP_MODEL_FEATURE_SOURCES_VERSION = "crop_model_feature_sources_v1"
+CROP_PREDICTION_VALIDATION_VERSION = "crop_prediction_validation_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -1548,8 +1549,129 @@ async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season:
     )
 
 
+async def _pending_crop_prediction_snapshots(hass, *, season_id: int, limit: int = 50) -> list[dict]:
+    return await fetchall(hass, """
+        SELECT id, season_id AS seasonId, source_survey_id AS sourceSurveyId,
+               predicted_for_date AS predictedForDate, prediction_json AS predictionJson,
+               feature_snapshot_json AS featureSnapshotJson, validation_status AS validationStatus
+        FROM crop_model_training_snapshots
+        WHERE season_id = %s
+          AND validation_status = 'pending'
+          AND predicted_for_date <= CURDATE()
+        ORDER BY predicted_for_date ASC, id ASC
+        LIMIT %s
+    """, (int(season_id), int(limit)))
+
+
+def _actual_stage_label_from_growth_survey(season: dict, growth_row: dict, growth_rows: list[dict] | None = None, control_rows: list[dict] | None = None) -> dict:
+    rows = growth_rows or ([growth_row] if growth_row else [])
+    diagnosis = _crop_stage_diagnosis_from_parts(int(season.get("id") or season.get("seasonId") or 0), season, rows, control_rows or [])
+    return {
+        "version": CROP_PREDICTION_VALIDATION_VERSION,
+        "actualSurveyId": growth_row.get("id") if growth_row else None,
+        "actualSurveyDate": growth_row.get("date") if growth_row else None,
+        "stageId": diagnosis.get("stageId") or "unknown",
+        "stageLabel": diagnosis.get("stageLabel") or "생육단계 미확정",
+        "confidence": diagnosis.get("stageConfidence") or "low",
+        "stageDiagnosis": diagnosis,
+    }
+
+
+def _prediction_stage_match(prediction: dict, actualStage: dict) -> dict:
+    predicted = prediction.get("predictedStage7d") or {}
+    predicted_stage = str(predicted.get("stageId") or "unknown")
+    actual_stage = str(actualStage.get("stageId") or "unknown")
+    if actual_stage == "unknown" or predicted_stage == "unknown":
+        matched = False
+        status = "validation_needs_review"
+    else:
+        matched = predicted_stage == actual_stage or predicted_stage.startswith(f"{actual_stage}_") or actual_stage.startswith(f"{predicted_stage}_")
+        status = "validated" if matched else "validation_needs_review"
+    return {
+        "stageMatched": matched,
+        "validationStatus": status,
+        "transitionTimingErrorDays": 0 if matched else None,
+    }
+
+
 async def _validate_pending_crop_training_snapshots(hass, *, season_id: int) -> dict:
-    return {"seasonId": season_id, "validationStatus": "pending_validation_loop_ready"}
+    season = await fetchone(hass, """
+        SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
+               demolish_date AS demolishDate, total_plants AS totalPlants,
+               plant_density AS plantDensity, zone_id AS zoneId
+        FROM crop_seasons
+        WHERE id = %s AND deleted_at IS NULL
+    """, (int(season_id),)) or {"id": int(season_id), "seasonId": int(season_id)}
+    growth_rows = await fetchall(hass, """
+        SELECT id, survey_date AS date, plant_height AS height,
+               leaf_count AS leafCount, stem_diameter AS stemDia,
+               truss_count AS truss, node_count AS node,
+               crop_type AS cropType, metrics_json AS metricsJson,
+               notes AS note
+        FROM growth_surveys
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY survey_date DESC
+        LIMIT 20
+    """, (int(season_id),))
+    control_rows = await _crop_control_rows_with_pesticides(hass, int(season_id), limit=10)
+    pending = await _pending_crop_prediction_snapshots(hass, season_id=int(season_id))
+    validationRows = []
+    validatedCount = 0
+    needsReviewCount = 0
+    for row in pending:
+        target_date = row.get("predictedForDate")
+        actual_row = None
+        for growth_row in growth_rows:
+            if str(growth_row.get("date")) >= str(target_date):
+                actual_row = growth_row
+                break
+        if not actual_row and growth_rows:
+            actual_row = growth_rows[0]
+        if not actual_row:
+            continue
+        try:
+            prediction = json.loads(row.get("predictionJson") or "{}") if isinstance(row.get("predictionJson"), str) else (row.get("predictionJson") or {})
+        except Exception:
+            prediction = {}
+        actualStage = _actual_stage_label_from_growth_survey(season, actual_row, growth_rows, control_rows)
+        match = _prediction_stage_match(prediction, actualStage)
+        actualValidation = {
+            "version": CROP_PREDICTION_VALIDATION_VERSION,
+            "snapshotId": row.get("id"),
+            "sourceSurveyId": row.get("sourceSurveyId"),
+            "actualSurveyId": actual_row.get("id"),
+            "predictedForDate": target_date,
+            "predictedStage7d": prediction.get("predictedStage7d") or {},
+            "actualStage": actualStage,
+            "stageMatched": match["stageMatched"],
+            "transitionTimingErrorDays": match["transitionTimingErrorDays"],
+            "validationStatus": match["validationStatus"],
+        }
+        await execute(hass, """
+            UPDATE crop_model_training_snapshots
+            SET actual_validation_json = %s,
+                actual_survey_id = %s,
+                validation_status = %s
+            WHERE id = %s
+        """, (
+            json.dumps(actualValidation, ensure_ascii=False, default=str),
+            actual_row.get("id"),
+            match["validationStatus"],
+            row.get("id"),
+        ))
+        if match["validationStatus"] == "validated":
+            validatedCount += 1
+        else:
+            needsReviewCount += 1
+        validationRows.append(actualValidation)
+    return {
+        "ok": True,
+        "seasonId": int(season_id),
+        "validatedCount": validatedCount,
+        "needsReviewCount": needsReviewCount,
+        "pendingCount": max(0, len(pending) - len(validationRows)),
+        "validationRows": validationRows,
+    }
 
 
 def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict], stageDiagnosis: dict | None = None, approvalAudit: list[dict] | None = None, centerCropPolicy: dict | None = None) -> dict:
@@ -2073,6 +2195,22 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     }
     gIndexTrend = [{"date": row.get("date"), "value": _growth_g_index(row)} for row in reversed(growth_rows)]
     weeklyReport = _growth_weekly_report(season_id, growth_rows, control_rows, weekly_growth, pestRisk, yieldPrediction)
+    prediction_validation_rows = await fetchall(hass, """
+        SELECT id AS snapshotId, actual_survey_id AS actualSurveyId,
+               predicted_for_date AS predictedForDate, actual_validation_json AS actualValidation,
+               validation_status AS validationStatus, updated_at AS updatedAt
+        FROM crop_model_training_snapshots
+        WHERE season_id = %s
+        ORDER BY predicted_for_date DESC, id DESC
+        LIMIT 10
+    """, (season_id,))
+    predictionValidation = {
+        "version": CROP_PREDICTION_VALIDATION_VERSION,
+        "pendingCount": sum(1 for row in prediction_validation_rows if row.get("validationStatus") == "pending"),
+        "validatedCount": sum(1 for row in prediction_validation_rows if row.get("validationStatus") == "validated"),
+        "needsReviewCount": sum(1 for row in prediction_validation_rows if row.get("validationStatus") == "validation_needs_review"),
+        "validationRows": prediction_validation_rows,
+    }
     return {
         "ok": True,
         "seasonId": season_id,
@@ -2092,6 +2230,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "safetyInterlockSummary": featureSources.get("safetyInterlockSummary") or {},
         "featureSnapshot": cropModel["trainableBaseline"]["featureSnapshot"],
         "stagePrediction7d": cropModel["trainableBaseline"]["stagePrediction7d"],
+        "predictionValidation": predictionValidation,
         "mlUpgradeReadiness": cropModel["trainableBaseline"]["mlUpgradeReadiness"],
         "yieldPrediction": cropModel["yieldPrediction"],
         "pestRisk": cropModel["pestRisk"],
@@ -2189,6 +2328,45 @@ class CropModelTrainingReadinessView(HomeAssistantView):
             "mlUpgradeReadiness": report.get("mlUpgradeReadiness") or {},
             "validation": validation,
         })
+
+
+class CropModelPredictionValidationView(HomeAssistantView):
+    """GET/POST prediction-to-actual validation rows for crop model training snapshots."""
+    url = "/api/green_smart/crop/seasons/{season_id}/prediction-validations"
+    name = "api:green_smart:crop:prediction_validations"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        rows = await fetchall(hass, """
+            SELECT id AS snapshotId, source_survey_id AS sourceSurveyId,
+                   actual_survey_id AS actualSurveyId, predicted_for_date AS predictedForDate,
+                   prediction_json AS predictionJson, actual_validation_json AS actualValidation,
+                   validation_status AS validationStatus, updated_at AS updatedAt
+            FROM crop_model_training_snapshots
+            WHERE season_id = %s
+            ORDER BY predicted_for_date DESC, id DESC
+            LIMIT 50
+        """, (int(season_id),))
+        pendingCount = sum(1 for row in rows if row.get("validationStatus") == "pending")
+        validatedCount = sum(1 for row in rows if row.get("validationStatus") == "validated")
+        needsReviewCount = sum(1 for row in rows if row.get("validationStatus") == "validation_needs_review")
+        return _json({
+            "ok": True,
+            "seasonId": int(season_id),
+            "pendingCount": pendingCount,
+            "validatedCount": validatedCount,
+            "needsReviewCount": needsReviewCount,
+            "validationRows": rows,
+        })
+
+
+class CropModelPredictionValidationRunView(HomeAssistantView):
+    """POST /api/green_smart/crop/seasons/{season_id}/prediction-validations/run."""
+    url = "/api/green_smart/crop/seasons/{season_id}/prediction-validations/run"
+    name = "api:green_smart:crop:prediction_validations_run"
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        return _json(await _validate_pending_crop_training_snapshots(request.app["hass"], season_id=int(season_id)))
 
 def _growth_report_health_signature(report: dict) -> dict:
     pest_rank = {"low": 0, "medium": 1, "high": 2}

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.58
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.59
 const DOMAIN = "green_smart";
-const VERSION = "1.9.58";
+const VERSION = "1.9.59";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4076,6 +4076,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     const envStatus = sourceStatus.environment || (featureSources.environmentSummary7d || {}).sourceStatus || "missing";
     const irrStatus = sourceStatus.irrigationNutrient || (featureSources.irrigationNutrientSummary7d || {}).sourceStatus || "missing";
     const pestStatus = sourceStatus.pestControl || (featureSources.pestControlSummary7d || {}).sourceStatus || "missing";
+    const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
+    const validationStatus = predictionValidation.needsReviewCount > 0 ? "validation_needs_review" : predictionValidation.pendingCount > 0 ? "pending" : predictionValidation.validatedCount > 0 ? "validated" : "no_predictions";
+    const validationStatusLabel = { validated: "검증 완료", pending: "검증 대기", validation_needs_review: "검토 필요", no_predictions: "예측 기록 없음" }[validationStatus] || validationStatus;
     const mlReady = !!mlUpgradeReadiness.ready;
     /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
@@ -4150,6 +4153,22 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">mlUpgradeReadiness</div><b style="font-size:14px;color:${mlReady ? '#51AE60' : '#7a9780'};">${mlReady ? 'ready' : 'not ready'}</b><div style="font-size:10px;color:#9aae9d;">${this._esc((mlUpgradeReadiness.reasons || []).join(' · ') || '조건 충족')}</div></div>
         </div>
         <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">초기 예측은 학습 가능한 데이터셋을 쌓기 위한 baseline입니다. 충분한 주간 sequence와 prediction→actual 검증쌍이 쌓이면 LSTM/GRU/Transformer 확장 후보를 표시합니다.</div>
+      </div>
+      <div data-crop-prediction-validation-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
+          <div>
+            <div style="font-size:12px;font-weight:900;color:#24323F;">예측 검증 상태</div>
+            <div style="font-size:10px;color:#7a6d99;margin-top:3px;">7일 예측을 최근 실제 조사와 비교해 학습 label로 저장합니다.</div>
+          </div>
+          <button data-crop-prediction-validation-run title="예측 검증 실행" style="border:1px solid #d8c8f0;background:#faf7ff;color:#6d4aa0;border-radius:9px;padding:5px 7px;font-size:10px;font-weight:900;cursor:pointer;">검증 실행</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">validationStatus</div><b data-crop-prediction-validation-status style="font-size:14px;color:#24323F;">${this._esc(validationStatusLabel)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">pending</div><b style="font-size:14px;color:#24323F;">${this._esc(String(predictionValidation.pendingCount ?? 0))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">validated</div><b style="font-size:14px;color:#51AE60;">${this._esc(String(predictionValidation.validatedCount ?? 0))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">needs review</div><b style="font-size:14px;color:#c0392b;">${this._esc(String(predictionValidation.needsReviewCount ?? 0))}</b></div>
+        </div>
+        <div style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">최근 실제 조사 입력 후 검증 실행을 누르면 pending prediction이 actualValidation으로 갱신됩니다. 이 동작은 데이터 처리만 수행하며 장치/환경/관수 실행 권한은 없습니다.</div>
       </div>
       <div data-crop-model-feature-sources-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e9edf5;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">모델 입력 소스</div>
@@ -5638,6 +5657,18 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("[data-center-crop-policy-notification-dismiss]")?.addEventListener("click", async () => {
       await this._dismissCropPolicyNotification();
       this._refreshCropContent();
+    });
+    root.querySelector("[data-crop-prediction-validation-run]")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      if (!this._activeSeasonId) return;
+      if (button) button.disabled = true;
+      try {
+        await this._hass.callApi("POST", `green_smart/crop/seasons/${this._activeSeasonId}/prediction-validations/run`, {});
+        await this._fetchGrowthReport();
+        this._refreshCropContent();
+      } finally {
+        if (button) button.disabled = false;
+      }
     });
     root.querySelectorAll("[data-crop-interlock-approve]").forEach((button) => {
       button.addEventListener("click", async (event) => this._submitCropInterlockApproval(event.currentTarget));

@@ -1,0 +1,511 @@
+# Crop Model Slice Execution Plan
+
+> **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
+
+**Goal:** Turn the current crop model baseline into a real, auditable model-development track by documenting each implementation slice before coding and then executing only the documented slice.
+
+**Architecture:** Green Smart remains a Home Assistant custom integration. Crop model work is Edge-local and read-only with respect to execution; Environment/Irrigation/Device active control remains out of scope. The model pipeline persists crop-specific growth survey metrics, feature-source snapshots, 7-day predictions, next-survey validation labels, input completeness, and future ML readiness.
+
+**Tech Stack:** Home Assistant `HomeAssistantView`, Python, MariaDB via `aiomysql`, Vanilla JS Web Component panel, pytest contract tests, Docker prod HA/MariaDB verification, GitHub tags/releases.
+
+---
+
+## 0. Non-negotiable workflow
+
+Every future crop-model implementation must follow this order:
+
+```text
+1. Update this plan or a focused design doc.
+2. Define the exact slice acceptance criteria.
+3. Add RED contract tests.
+4. Run targeted tests and confirm expected failure.
+5. Implement backend/API/DB/panel/docs.
+6. Run targeted tests.
+7. Run full verification.
+8. Sync to prod only after local verification.
+9. Commit/tag/release.
+```
+
+Do **not** implement a crop model slice directly from chat context. If the work is not written here or in a linked design doc, write it first.
+
+---
+
+## 1. Current baseline as of v1.9.58
+
+| Area | Current state | Gap |
+|---|---|---|
+| Crop-specific survey metrics | Tomato G-Index metrics and lettuce L-Index metrics are separated; `metrics_json` is source of truth | Need quality/disorder fields, stage label validation, and survey form guidance |
+| Feature source snapshots | `crop_model_feature_snapshots` exists and links to training rows via `feature_snapshot_id` | Need richer environment/irrigation feature calculations and stale-data logic |
+| 7-day prediction baseline | `hybrid_rule_score_v1` predicts `predictedStage7d` and `transitionWindow` | Need actual next-survey validation and error scoring |
+| Input completeness | `inputCompleteness` and `sourceStatus` exist | Need per-feature missing ratios and time-series readiness thresholds based on actual data |
+| Panel | Read-only trainable baseline and model input source cards exist | Need validation status, data collection guidance, and operator next actions |
+| Prod | v1.9.58 deployed and DB schema verified | Future slices must keep prod verification mandatory |
+
+---
+
+## 2. Vertical slice map
+
+A **Slice** is not a layer-by-layer task. Every slice is a vertical, feature-complete increment. A slice is incomplete unless it covers all required layers for that feature:
+
+```text
+DB/schema + backend helper/model logic + HTTP API + Panel UI + contract tests + docs + local verification + prod verification + tag/release
+```
+
+| Slice | Version | Feature capability | DB | Backend/API | Panel UI | Tests/docs | Must not do |
+|---|---:|---|---|---|---|---|---|
+| Slice 1 | v1.9.59 | Prediction → actual validation loop | validation index/fields | validation helper + API | validation status card/run action | RED contract + plan update | Do not train ML yet |
+| Slice 2 | v1.9.60 | Crop quality/disorder survey inputs | metrics_json only | normalization/model feature wiring | crop-specific form fields | contract + docs | Do not overload legacy columns |
+| Slice 3 | v1.9.61 | Rich environment feature engineering | no active-control schema | VPD/DIF/ADT/stale summaries API | read-only source evidence | contract + docs | Do not control environment devices |
+| Slice 4 | v1.9.62 | Rich irrigation/nutrient feature engineering | no execution schema | EC/pH/drain/dryback feature API | read-only source evidence | contract + docs | Do not execute irrigation control |
+| Slice 5 | v1.9.63 | Pest/control/PHI/REI feature depth | PHI/REI if missing | risk/freshness feature API | review guidance | contract + docs | Do not bypass Safety/Interlock |
+| Slice 6 | v1.9.64 | Transparent stage prediction score | score snapshot if needed | score components | score explanation | contract + docs | Do not hide formula in opaque code |
+| Slice 7 | v1.9.65 | Dataset export/readiness | reuse snapshots | training dataset API | export/readiness evidence | contract + docs | Do not auto-replace production model |
+| Slice 8 | v1.9.66 | Panel operator workflow | no unnecessary schema | existing APIs | next-action workflow UI | contract + docs | Do not add execution authority |
+
+Vertical-slice implementation rule:
+
+```text
+Do not mark any slice complete because only DB, only API, or only UI exists. The user-facing feature must be usable end-to-end in the panel and backed by persisted data/API/tests.
+```
+
+---
+
+# Slice 1 — v1.9.59 Prediction Validation Loop
+
+## Objective
+
+When a new weekly growth survey is entered, previous pending 7-day prediction rows should be matched against the actual survey and updated with validation labels.
+
+## Product behavior
+
+```text
+1. Operator records weekly growth survey.
+2. System finds pending crop_model_training_snapshots whose predicted_for_date is due.
+3. System derives actual stage from the new survey/stage diagnosis.
+4. System writes actual_validation_json.
+5. validation_status changes from pending to validated or validation_needs_review.
+6. Panel shows prediction validation status read-only.
+```
+
+## Files
+
+- Modify: `custom_components/green_smart/db.py`
+- Modify: `custom_components/green_smart/crop_views.py`
+- Modify: `custom_components/green_smart/panel/green-smart-panel.js`
+- Modify: `custom_components/green_smart/manifest.json`
+- Modify: `custom_components/green_smart/central_views.py`
+- Create: `tests/test_crop_prediction_validation_contract.py`
+- Modify: `docs/plans/2026-06-23-crop-model-design-decisions.md`
+
+## DB work
+
+`crop_model_training_snapshots` already has:
+
+```text
+actual_validation_json
+actual_survey_id
+validation_status
+predicted_for_date
+```
+
+Slice 1 must add helper/index support if missing:
+
+```text
+idx_crop_model_training_validation_due(predicted_for_date, validation_status, season_id)
+```
+
+If adding index is risky in `_ensure_column`, use table definition marker contract first and explicit prod verification.
+
+## Backend API/helper work
+
+Add/complete:
+
+```python
+_pending_crop_prediction_snapshots(...)
+_actual_stage_label_from_growth_survey(...)
+_validate_pending_crop_training_snapshots(...)
+CropModelPredictionValidationView
+```
+
+API:
+
+```http
+GET  /api/green_smart/crop/seasons/{season_id}/prediction-validations
+POST /api/green_smart/crop/seasons/{season_id}/prediction-validations/run
+```
+
+Response shape:
+
+```json
+{
+  "ok": true,
+  "seasonId": 1,
+  "validatedCount": 0,
+  "needsReviewCount": 0,
+  "pendingCount": 0,
+  "validationRows": [
+    {
+      "snapshotId": 1,
+      "sourceSurveyId": 10,
+      "actualSurveyId": 11,
+      "predictedForDate": "2026-07-01",
+      "predictedStage7d": {},
+      "actualStage": {},
+      "stageMatched": true,
+      "transitionTimingErrorDays": 0,
+      "validationStatus": "validated"
+    }
+  ]
+}
+```
+
+## Panel work
+
+Add read-only section under trainable baseline card:
+
+```text
+예측 검증 상태
+pending / validated / needs review
+최근 실제 조사와 비교 결과
+```
+
+Required markers:
+
+```text
+data-crop-prediction-validation-card
+data-crop-prediction-validation-status
+data-crop-prediction-validation-run
+```
+
+The run button is allowed only as a data-processing action; it must not execute devices or control environment/irrigation/device.
+
+## Contract tests
+
+Create `tests/test_crop_prediction_validation_contract.py` with tests for:
+
+1. DB markers: `actual_validation_json`, `actual_survey_id`, `validation_status`, validation-due index.
+2. Helper markers: `_pending_crop_prediction_snapshots`, `_actual_stage_label_from_growth_survey`, `_validate_pending_crop_training_snapshots`.
+3. API markers: `CropModelPredictionValidationView`, route registration.
+4. Panel markers: validation card/status/run button.
+5. Version markers: `1.9.59`.
+
+## Verification commands
+
+Targeted:
+
+```bash
+pytest -q tests/test_crop_prediction_validation_contract.py -q
+```
+
+Full:
+
+```bash
+pytest -q
+python3 -m py_compile custom_components/green_smart/db.py custom_components/green_smart/crop_views.py custom_components/green_smart/central_views.py custom_components/green_smart/zone_control_views.py
+node --check custom_components/green_smart/panel/green-smart-panel.js
+git diff --check
+```
+
+Prod:
+
+```bash
+docker cp /home/smartfarm/green_smart/custom_components/green_smart/. greenity-prod-homeassistant:/config/custom_components/green_smart/
+docker exec greenity-prod-homeassistant python -m homeassistant --script check_config -c /config
+docker restart greenity-prod-homeassistant
+```
+
+DB verification:
+
+```sql
+SELECT COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA='homeassistant'
+  AND TABLE_NAME='crop_model_training_snapshots'
+  AND COLUMN_NAME IN ('actual_validation_json','actual_survey_id','validation_status');
+```
+
+## Definition of done
+
+- `v1.9.59` version markers updated.
+- Contract tests pass.
+- Full local verification passes.
+- Prod HA config check and restart pass.
+- GitHub tag/release exists.
+
+---
+
+# Slice 2 — v1.9.60 Crop Quality/Disorder Survey Inputs
+
+## Objective
+
+Add crop-specific quality/disorder survey metrics so the crop model can diagnose crop state and risks beyond growth size.
+
+## Tomato metrics
+
+Add canonical `metrics_json` keys:
+
+```text
+fruitSetRate
+fruitCrackingCount
+blossomEndRotCount
+leafCurlScore
+vigorScore
+spadValue
+```
+
+## Lettuce metrics
+
+Add canonical `metrics_json` keys:
+
+```text
+tipburnScore
+boltingRiskScore
+leafColorScore
+spadValue
+marketableWeight
+outerLeafDamageScore
+```
+
+## Files
+
+- Modify: `custom_components/green_smart/crop_views.py`
+- Modify: `custom_components/green_smart/panel/green-smart-panel.js`
+- Modify: `tests/test_model_contract.py`
+- Create: `tests/test_crop_quality_disorder_metrics_contract.py`
+
+## Acceptance criteria
+
+- New quality/disorder fields are rendered only for relevant crop type.
+- Stored in `metrics_json` only.
+- Not mapped into `height`, `leafCount`, `stemDia`, `truss`, or `node`.
+- Included in `featureSnapshot.growthSurvey` and `pestControlSummary7d` or new `qualityDisorderSummary7d` if needed.
+
+---
+
+# Slice 3 — v1.9.61 Rich Environment Feature Engineering
+
+## Objective
+
+Make environment feature sources useful for the crop model, not just count-based summaries.
+
+## Required features
+
+```text
+avg/min/max temperature
+night/day temperature split if timestamps allow
+humidity avg/min/max
+CO2 avg/min/max
+radiation/light sum and average
+VPD avg/min/max where readings exist
+ADT/DIF derived or marked missing
+stale sensor flag
+sample coverage ratio
+```
+
+## Files
+
+- Modify: `custom_components/green_smart/crop_views.py`
+- Create: `tests/test_crop_environment_features_contract.py`
+- Modify docs.
+
+## Acceptance criteria
+
+- `environmentSummary7d` includes derived feature names and missing/stale reasons.
+- No environment device execution.
+- Panel remains read-only.
+
+---
+
+# Slice 4 — v1.9.62 Rich Irrigation/Nutrient Feature Engineering
+
+## Objective
+
+Make irrigation/nutrient feature source usable for crop growth-stage and stress prediction.
+
+## Required features
+
+```text
+feedEcAvg
+feedPhAvg
+drainEcAvg
+drainPhAvg
+ecDeltaFeedDrain
+phDeltaFeedDrain
+irrigationAmountTotal
+irrigationEventCount
+drainRateAvg
+drybackProxy
+errorCount
+staleDrainFeedback
+```
+
+## Files
+
+- Modify: `custom_components/green_smart/crop_views.py`
+- Create: `tests/test_crop_irrigation_nutrient_features_contract.py`
+
+## Acceptance criteria
+
+- Derived features are included in `irrigationNutrientSummary7d`.
+- No active irrigation control or PID execution.
+
+---
+
+# Slice 5 — v1.9.63 Pest/Control/PHI/REI Feature Depth
+
+## Objective
+
+Improve pest/control features so disease/risk prediction can use real safety and freshness signals.
+
+## Required features
+
+```text
+recentPestSeverityTrend
+maxSeverity7d
+controlFreshnessDays
+plsNonCompliantCount
+mixForbiddenCount
+mixUnknownCount
+phiRiskFlag
+reiRiskFlag
+missingControlAfterHighRiskFlag
+```
+
+## Files
+
+- Modify: `custom_components/green_smart/db.py` if PHI/REI columns are missing.
+- Modify: `custom_components/green_smart/crop_views.py`
+- Modify panel if operator guidance is needed.
+- Create: `tests/test_crop_pest_control_features_contract.py`
+
+## Acceptance criteria
+
+- PHI/REI are persisted if used by downstream model/interlock.
+- High pest risk plus missing/stale control records surfaces review guidance.
+- Edge Safety/Interlock remains authority.
+
+---
+
+# Slice 6 — v1.9.64 Transparent Stage Prediction Score
+
+## Objective
+
+Replace vague probability logic with transparent score components.
+
+## Required score components
+
+```text
+growthIndexBandScore
+weeklyDeltaScore
+environmentStressScore
+irrigationNutrientStressScore
+pestControlRiskPenalty
+inputCompletenessPenalty
+stageCalibrationScore
+```
+
+## Output shape
+
+```json
+{
+  "scoreComponents": {},
+  "rawScore": 0.0,
+  "probability": 0.0,
+  "confidence": "low|medium|high",
+  "explanation": []
+}
+```
+
+## Acceptance criteria
+
+- Every probability has visible components.
+- No black-box model hidden behind a single number.
+- Tests assert score component names.
+
+---
+
+# Slice 7 — v1.9.65 Dataset Export and ML Readiness
+
+## Objective
+
+Expose auditable training dataset rows for offline/future ML work.
+
+## API
+
+```http
+GET /api/green_smart/crop/seasons/{season_id}/training-dataset
+```
+
+## Output
+
+```json
+{
+  "rows": [],
+  "featureColumns": [],
+  "labelColumns": [],
+  "readiness": {},
+  "exportWarnings": []
+}
+```
+
+## Acceptance criteria
+
+- Does not train or deploy ML automatically.
+- Exports feature snapshot + prediction + actual validation as rows.
+- Shows readiness reasons.
+
+---
+
+# Slice 8 — v1.9.66 Panel Operator Workflow
+
+## Objective
+
+Make the model development state understandable to a non-technical farm owner/staff user.
+
+## UI sections
+
+```text
+1. 이번 주 입력 완료 여부
+2. 부족한 입력
+3. 다음 생육조사 때 확인할 것
+4. 지난 예측 검증 결과
+5. 시계열 모델 확장 가능 여부
+```
+
+## Acceptance criteria
+
+- Korean labels are operational, not developer jargon.
+- Advanced technical JSON remains hidden or collapsed.
+- Write/execute controls remain role-gated and non-device-executing.
+
+---
+
+## 3. Work execution rule after this document
+
+The next implementation must start with **Slice 1 / v1.9.59 Prediction Validation Loop**.
+
+Do not proceed to Slice 2 until Slice 1 has:
+
+```text
+contract tests
+implementation
+full verification
+prod verification
+commit/tag/release
+```
+
+---
+
+## 4. Current next action
+
+Start Slice 1 now:
+
+```text
+v1.9.59 Prediction Validation Loop
+```
+
+First action:
+
+```text
+Create RED contract test: tests/test_crop_prediction_validation_contract.py
+```
