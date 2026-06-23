@@ -9,7 +9,7 @@ from .central_api import DEFAULT_CENTRAL_BASE_URL, CentralApiError, GreenityCent
 from .central_store import CentralTokenStore
 from .crop_views import _growth_report_response
 
-EDGE_VERSION = "1.9.46"
+EDGE_VERSION = "1.9.47"
 
 
 class _CentralAdapterView(HomeAssistantView):
