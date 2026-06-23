@@ -422,3 +422,31 @@ Implementation implication:
 - Surface EC/pH deltas, drain rate, irrigation amount, dryback proxy, error count, and stale feedback as read-only model evidence.
 - If feedback/logs are absent or stale, return explicit missing/stale reasons instead of treating the source as ready.
 - These features inform crop growth/stress prediction readiness; Edge Safety/Interlock and operator-approved control flows remain the only execution authority.
+
+## Confirmed decision 13 — pest/control PHI/REI feature depth
+
+Pest/control model inputs must expose safety and freshness evidence, not only pest/control record presence.
+
+Required `pestControlSummary7d` features:
+
+```text
+recentPestSeverityTrend
+maxSeverity7d
+controlFreshnessDays
+plsNonCompliantCount
+mixForbiddenCount
+mixUnknownCount
+phiRiskFlag
+reiRiskFlag
+missingControlAfterHighRiskFlag
+reviewGuidance
+sourceStatus ready|partial|missing|stale
+```
+
+Implementation implication:
+
+- Persist PHI/REI on `control_pesticides` as `phi_days` and `rei_hours` so downstream model/interlock evidence is not transient UI-only state.
+- Use existing `pest_surveys`, `control_records`, and `control_pesticides` as the source of truth.
+- Surface high pest severity, stale/missing control, PLS non-compliance, mix forbidden/unknown, PHI risk, and REI risk as read-only model evidence.
+- If high pest risk lacks recent control, return explicit review guidance and missing/stale reasons.
+- These features do not grant pesticide/control execution authority; Edge Safety/Interlock and operator approval remain the authority.

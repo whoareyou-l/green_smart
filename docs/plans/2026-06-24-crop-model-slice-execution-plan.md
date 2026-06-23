@@ -569,6 +569,10 @@ staleDrainFeedback
 
 Improve pest/control features so disease/risk prediction can use real safety and freshness signals.
 
+## Vertical-slice scope
+
+Slice 5 is feature-complete only when pest/control model inputs are enriched end-to-end: `pest_surveys`, `control_records`, and `control_pesticides` persist PHI/REI evidence, summarize disease/control freshness and safety risks, expose those features through feature-source API and growth report, show read-only panel evidence, verify production HA, and release `v1.9.64`.
+
 ## Required features
 
 ```text
@@ -585,16 +589,80 @@ missingControlAfterHighRiskFlag
 
 ## Files
 
-- Modify: `custom_components/green_smart/db.py` if PHI/REI columns are missing.
+- Modify: `custom_components/green_smart/db.py` for PHI/REI columns.
 - Modify: `custom_components/green_smart/crop_views.py`
-- Modify panel if operator guidance is needed.
+- Modify: `custom_components/green_smart/panel/green-smart-panel.js`
+- Modify: `custom_components/green_smart/manifest.json`
+- Modify: `custom_components/green_smart/central_views.py`
 - Create: `tests/test_crop_pest_control_features_contract.py`
+- Modify: `docs/plans/2026-06-23-crop-model-design-decisions.md`
+
+## Backend/API work
+
+Required DB columns:
+
+```sql
+control_pesticides.phi_days INT NULL
+control_pesticides.rei_hours INT NULL
+```
+
+Required backend markers:
+
+```python
+CROP_PEST_CONTROL_FEATURES_VERSION = "crop_pest_control_features_v1"
+_crop_pest_number(...)
+_crop_pest_control_derived_features(...)
+_pest_control_feature_summary(...)
+```
+
+Required `pestControlSummary7d` shape:
+
+```json
+{
+  "version": "crop_pest_control_features_v1",
+  "sourceTables": ["pest_surveys", "control_records", "control_pesticides"],
+  "windowDays": 7,
+  "features": {
+    "recentPestSeverityTrend": 0,
+    "maxSeverity7d": 0,
+    "controlFreshnessDays": 0,
+    "plsNonCompliantCount": 0,
+    "mixForbiddenCount": 0,
+    "mixUnknownCount": 0,
+    "phiRiskFlag": false,
+    "reiRiskFlag": false,
+    "missingControlAfterHighRiskFlag": false
+  },
+  "riskFlags": {},
+  "reviewGuidance": [],
+  "staleReasons": [],
+  "sourceStatus": "ready|partial|missing|stale"
+}
+```
+
+## Panel work
+
+Panel must keep pest/control features read-only model evidence. Required UI markers/text:
+
+```text
+data-crop-pest-control-features-card
+병해/방제 feature
+recentPestSeverityTrend
+controlFreshnessDays
+phiRiskFlag
+reiRiskFlag
+missingControlAfterHighRiskFlag
+reviewGuidance
+```
 
 ## Acceptance criteria
 
-- PHI/REI are persisted if used by downstream model/interlock.
+- PHI/REI are persisted on control pesticide entries and included in list/create responses.
+- Derived features are included in `pestControlSummary7d`.
 - High pest risk plus missing/stale control records surfaces review guidance.
-- Edge Safety/Interlock remains authority.
+- Edge Safety/Interlock remains authority; no pesticide/control execution is added.
+- Panel remains read-only.
+- `v1.9.64` version markers are updated and verified in local/prod.
 
 ---
 

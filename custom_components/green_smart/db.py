@@ -204,6 +204,8 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             mix_check_status VARCHAR(32) NULL,
             mix_check_note TEXT NULL,
             pls_warning TEXT NULL,
+            phi_days INT NULL,
+            rei_hours INT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             KEY idx_control_pesticides_control (control_id, sort_order),
             KEY idx_control_pesticides_name (pesticide_name)
@@ -755,6 +757,8 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             await _ensure_column(cur, "control_pesticides", "mix_check_status", "mix_check_status VARCHAR(32) NULL AFTER mixable")
             await _ensure_column(cur, "control_pesticides", "mix_check_note", "mix_check_note TEXT NULL AFTER mix_check_status")
             await _ensure_column(cur, "control_pesticides", "pls_warning", "pls_warning TEXT NULL AFTER mix_check_note")
+            await _ensure_column(cur, "control_pesticides", "phi_days", "phi_days INT NULL AFTER pls_warning")
+            await _ensure_column(cur, "control_pesticides", "rei_hours", "rei_hours INT NULL AFTER phi_days")
             await _ensure_column(cur, "crop_model_training_snapshots", "feature_snapshot_id", "feature_snapshot_id BIGINT NULL AFTER season_id")
             await _ensure_index(cur, "crop_model_training_snapshots", "idx_crop_model_training_validation_due", "(predicted_for_date, validation_status, season_id)")
     _LOGGER.info("green_smart DB schema ensured")

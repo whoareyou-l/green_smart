@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.63
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.64
 const DOMAIN = "green_smart";
-const VERSION = "1.9.63";
+const VERSION = "1.9.64";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4096,7 +4096,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     const irrigationNutrientFeatures = irrigationNutrientSummary7d.features || irrigationNutrientSummary7d.derivedFeatures || {};
     const irrigationStaleReasons = Array.isArray(irrigationNutrientSummary7d.staleReasons) ? irrigationNutrientSummary7d.staleReasons : [];
     const irrStatus = sourceStatus.irrigationNutrient || irrigationNutrientSummary7d.sourceStatus || "missing";
-    const pestStatus = sourceStatus.pestControl || (featureSources.pestControlSummary7d || {}).sourceStatus || "missing";
+    const pestControlSummary7d = report.pestControlSummary7d || featureSources.pestControlSummary7d || {};
+    const pestControlFeatures = pestControlSummary7d.features || {};
+    const pestReviewGuidance = Array.isArray(pestControlSummary7d.reviewGuidance) ? pestControlSummary7d.reviewGuidance : [];
+    const pestStatus = sourceStatus.pestControl || pestControlSummary7d.sourceStatus || "missing";
     const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
     const qualityDisorderSummary = report.qualityDisorderSummary || trainableBaseline.qualityDisorderSummary || (trainableBaseline.featureSnapshot || {}).qualityDisorderSummary || {};
     const qualityRiskFlags = Array.isArray(qualityDisorderSummary.riskFlags) ? qualityDisorderSummary.riskFlags : [];
@@ -4226,6 +4229,18 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">staleDrainFeedback</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.staleDrainFeedback ?? '-'))}</b></div>
         </div>
         <div style="font-size:11px;color:#5f7f70;margin-top:8px;line-height:1.55;">staleReasons: ${irrigationStaleReasons.length ? irrigationStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 관수/PID/펌프/양액 실행 권한 없음</div>
+      </div>
+      <div data-crop-pest-control-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #ffe6e6;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">병해/방제 feature</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(pestStatus)}</b></div>
+          <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">recentPestSeverityTrend</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.recentPestSeverityTrend ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">controlFreshnessDays</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.controlFreshnessDays ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">phiRiskFlag</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.phiRiskFlag ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">reiRiskFlag</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.reiRiskFlag ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">missingControlAfterHighRiskFlag</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.missingControlAfterHighRiskFlag ?? '-'))}</b></div>
+        </div>
+        <div style="font-size:11px;color:#8a5a5a;margin-top:8px;line-height:1.55;">reviewGuidance: ${pestReviewGuidance.length ? pestReviewGuidance.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 방제/약제 실행 권한 없음</div>
       </div>
       <div data-crop-model-feature-sources-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e9edf5;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">모델 입력 소스</div>

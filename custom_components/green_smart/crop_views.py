@@ -21,6 +21,7 @@ CROP_PREDICTION_VALIDATION_VERSION = "crop_prediction_validation_v1"
 CROP_QUALITY_DISORDER_METRICS_VERSION = "crop_quality_disorder_metrics_v1"
 CROP_ENVIRONMENT_FEATURES_VERSION = "crop_environment_features_v1"
 CROP_IRRIGATION_NUTRIENT_FEATURES_VERSION = "crop_irrigation_nutrient_features_v1"
+CROP_PEST_CONTROL_FEATURES_VERSION = "crop_pest_control_features_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -1506,9 +1507,75 @@ async def _irrigation_nutrient_feature_summary(hass, *, farm_id: int, zone_id: i
     }
 
 
+def _crop_pest_number(value, default=None):
+    try:
+        if value is None:
+            return default
+        return round(float(value), 3)
+    except Exception:
+        return default
+
+
+def _crop_pest_control_derived_features(pest: dict, controls: dict) -> dict:
+    max_severity = _crop_pest_number(pest.get("maxSeverity7d"), 0.0)
+    avg_severity = _crop_pest_number(pest.get("avgSeverity"), 0.0)
+    first_severity = _crop_pest_number(pest.get("firstSeverity"), avg_severity)
+    latest_severity = _crop_pest_number(pest.get("latestSeverity"), avg_severity)
+    trend = None if latest_severity is None or first_severity is None else round(float(latest_severity) - float(first_severity), 3)
+    freshness = controls.get("controlFreshnessDays")
+    freshness = int(freshness) if freshness is not None else None
+    pls_count = int(controls.get("plsNonCompliantCount") or 0)
+    forbidden_count = int(controls.get("mixForbiddenCount") or 0)
+    unknown_count = int(controls.get("mixUnknownCount") or 0)
+    min_phi_days = controls.get("minPhiDays")
+    max_rei_hours = controls.get("maxReiHours")
+    phiRiskFlag = bool(min_phi_days is not None and freshness is not None and freshness < int(min_phi_days))
+    reiRiskFlag = bool(max_rei_hours is not None and freshness is not None and freshness == 0 and int(max_rei_hours) > 0)
+    high_pest = bool(max_severity >= 4)
+    stale_control = freshness is None or freshness > 10
+    missingControlAfterHighRiskFlag = bool(high_pest and stale_control)
+    reviewGuidance = []
+    staleReasons = []
+    if missingControlAfterHighRiskFlag:
+        reviewGuidance.append("high_pest_risk_requires_recent_control_review")
+        staleReasons.append("missing_or_stale_control_after_high_pest_risk")
+    if pls_count:
+        reviewGuidance.append("pls_non_compliant_pesticide_review")
+    if forbidden_count:
+        reviewGuidance.append("forbidden_mix_review")
+    if unknown_count:
+        reviewGuidance.append("unknown_mix_review")
+    if phiRiskFlag:
+        reviewGuidance.append("phi_pre_harvest_interval_review")
+    if reiRiskFlag:
+        reviewGuidance.append("rei_reentry_interval_review")
+    features = {
+        "recentPestSeverityTrend": trend,
+        "maxSeverity7d": max_severity,
+        "controlFreshnessDays": freshness,
+        "plsNonCompliantCount": pls_count,
+        "mixForbiddenCount": forbidden_count,
+        "mixUnknownCount": unknown_count,
+        "phiRiskFlag": phiRiskFlag,
+        "reiRiskFlag": reiRiskFlag,
+        "missingControlAfterHighRiskFlag": missingControlAfterHighRiskFlag,
+    }
+    riskFlags = {
+        "hasRecentPestSurvey": int(pest.get("surveyCount") or 0) > 0,
+        "hasRecentControlRecord": int(controls.get("controlCount") or 0) > 0,
+        "hasPlsRisk": pls_count > 0,
+        "hasMixRisk": forbidden_count > 0 or unknown_count > 0,
+        "phiRiskFlag": phiRiskFlag,
+        "reiRiskFlag": reiRiskFlag,
+        "missingControlAfterHighRiskFlag": missingControlAfterHighRiskFlag,
+    }
+    return {"features": features, "riskFlags": riskFlags, "reviewGuidance": reviewGuidance, "staleReasons": staleReasons}
+
+
 async def _pest_control_feature_summary(hass, *, season_id: int, days: int = 7) -> dict:
     pest = await fetchone(hass, """
-        SELECT COUNT(*) AS surveyCount, MAX(severity) AS maxSeverity, AVG(severity) AS avgSeverity, MAX(survey_date) AS lastSurveyDate
+        SELECT COUNT(*) AS surveyCount, MAX(severity) AS maxSeverity7d, AVG(severity) AS avgSeverity,
+               MIN(severity) AS firstSeverity, MAX(severity) AS latestSeverity, MAX(survey_date) AS lastSurveyDate
         FROM pest_surveys
         WHERE season_id = %s AND deleted_at IS NULL
           AND survey_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
@@ -1516,26 +1583,44 @@ async def _pest_control_feature_summary(hass, *, season_id: int, days: int = 7) 
     controls = await fetchone(hass, """
         SELECT COUNT(DISTINCT r.id) AS controlCount, COUNT(p.id) AS pesticideCount,
                SUM(CASE WHEN p.pls_compliant = 0 THEN 1 ELSE 0 END) AS plsNonCompliantCount,
-               SUM(CASE WHEN p.mix_check_status IN ('forbidden','unknown') THEN 1 ELSE 0 END) AS mixRiskCount,
-               MAX(r.control_date) AS lastControlDate
+               SUM(CASE WHEN p.mix_check_status = 'forbidden' THEN 1 ELSE 0 END) AS mixForbiddenCount,
+               SUM(CASE WHEN p.mix_check_status = 'unknown' THEN 1 ELSE 0 END) AS mixUnknownCount,
+               MIN(p.phi_days) AS minPhiDays,
+               MAX(p.rei_hours) AS maxReiHours,
+               MAX(r.control_date) AS lastControlDate,
+               DATEDIFF(CURDATE(), MAX(r.control_date)) AS controlFreshnessDays
         FROM control_records r
         LEFT JOIN control_pesticides p ON p.control_id = r.id
         WHERE r.season_id = %s AND r.deleted_at IS NULL
           AND r.control_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
     """, (int(season_id), int(days))) or {}
+    derived = _crop_pest_control_derived_features(pest, controls)
+    survey_count = int(pest.get("surveyCount") or 0)
+    control_count = int(controls.get("controlCount") or 0)
+    staleReasons = list(derived.get("staleReasons") or [])
+    if not survey_count:
+        staleReasons.append("pest_surveys_missing")
+    if not control_count:
+        staleReasons.append("control_records_missing")
+    if not survey_count and not control_count:
+        sourceStatus = "missing"
+    elif derived.get("riskFlags", {}).get("missingControlAfterHighRiskFlag"):
+        sourceStatus = "stale"
+    elif survey_count and control_count:
+        sourceStatus = "ready"
+    else:
+        sourceStatus = "partial"
     return {
-        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "version": CROP_PEST_CONTROL_FEATURES_VERSION,
         "sourceTables": ["pest_surveys", "control_records", "control_pesticides"],
         "windowDays": days,
         "pest": pest,
         "control": controls,
-        "riskFlags": {
-            "hasRecentPestSurvey": int(pest.get("surveyCount") or 0) > 0,
-            "hasRecentControlRecord": int(controls.get("controlCount") or 0) > 0,
-            "hasPlsRisk": int(controls.get("plsNonCompliantCount") or 0) > 0,
-            "hasMixRisk": int(controls.get("mixRiskCount") or 0) > 0,
-        },
-        "sourceStatus": "ready" if int(pest.get("surveyCount") or 0) else "partial" if int(controls.get("controlCount") or 0) else "missing",
+        "features": derived.get("features") or {},
+        "riskFlags": derived.get("riskFlags") or {},
+        "reviewGuidance": derived.get("reviewGuidance") or [],
+        "staleReasons": list(dict.fromkeys(staleReasons)),
+        "sourceStatus": sourceStatus,
     }
 
 
@@ -2301,7 +2386,8 @@ async def _crop_control_rows_with_pesticides(hass, season_id: int, *, limit: int
             p.mode_of_action AS moa, p.dilution_ratio AS dil,
             p.usage_amount AS amount, p.pls_compliant AS pls,
             p.mixable AS mixable, p.mix_check_status AS mixCheckStatus,
-            p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning
+            p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning,
+            p.phi_days AS phiDays, p.rei_hours AS reiHours
         FROM control_records r
         LEFT JOIN control_pesticides p ON p.control_id = r.id
         WHERE r.season_id = %s AND r.deleted_at IS NULL
@@ -2322,6 +2408,8 @@ async def _crop_control_rows_with_pesticides(hass, season_id: int, *, limit: int
                 "mixCheckStatus": row["mixCheckStatus"],
                 "mixCheckNote": row["mixCheckNote"],
                 "plsWarning": row["plsWarning"],
+                "phiDays": row["phiDays"],
+                "reiHours": row["reiHours"],
             })
     return list(records.values())[:limit]
 
@@ -3302,7 +3390,8 @@ class CropControlListView(HomeAssistantView):
                 p.mode_of_action AS moa, p.dilution_ratio AS dil,
                 p.usage_amount AS amount, p.pls_compliant AS pls,
                 p.mixable AS mixable, p.mix_check_status AS mixCheckStatus,
-                p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning
+                p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning,
+                p.phi_days AS phiDays, p.rei_hours AS reiHours
             FROM control_records r
             LEFT JOIN control_pesticides p ON p.control_id = r.id
             WHERE r.season_id = %s AND r.deleted_at IS NULL
@@ -3328,6 +3417,8 @@ class CropControlListView(HomeAssistantView):
                     "mixCheckStatus": row["mixCheckStatus"],
                     "mixCheckNote": row["mixCheckNote"],
                     "plsWarning": row["plsWarning"],
+                    "phiDays": row["phiDays"],
+                    "reiHours": row["reiHours"],
                 })
         return _json(list(records.values()))
 
@@ -3358,8 +3449,8 @@ class CropControlListView(HomeAssistantView):
                 INSERT INTO control_pesticides
                     (control_id, sort_order, pesticide_name, reg_no,
                      mode_of_action, dilution_ratio, usage_amount, pls_compliant,
-                     mixable, mix_check_status, mix_check_note, pls_warning)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     mixable, mix_check_status, mix_check_note, pls_warning, phi_days, rei_hours)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 control_id, idx,
                 p.get("name") or "",
@@ -3372,6 +3463,8 @@ class CropControlListView(HomeAssistantView):
                 p.get("mixCheckStatus"),
                 p.get("mixCheckNote"),
                 p.get("plsWarning"),
+                p.get("phiDays"),
+                p.get("reiHours"),
             ))
 
         # 생성된 레코드 반환 (재조회)
@@ -3384,7 +3477,8 @@ class CropControlListView(HomeAssistantView):
                 p.mode_of_action AS moa, p.dilution_ratio AS dil,
                 p.usage_amount AS amount, p.pls_compliant AS pls,
                 p.mixable AS mixable, p.mix_check_status AS mixCheckStatus,
-                p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning
+                p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning,
+                p.phi_days AS phiDays, p.rei_hours AS reiHours
             FROM control_records r
             LEFT JOIN control_pesticides p ON p.control_id = r.id
             WHERE r.id = %s
@@ -3405,6 +3499,8 @@ class CropControlListView(HomeAssistantView):
                     "mixCheckStatus": row["mixCheckStatus"],
                     "mixCheckNote": row["mixCheckNote"],
                     "plsWarning": row["plsWarning"],
+                    "phiDays": row["phiDays"],
+                    "reiHours": row["reiHours"],
                 })
         return _json(result)
 
