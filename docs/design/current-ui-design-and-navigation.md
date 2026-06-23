@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.52`
+> 기준 버전: `v1.9.53`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.52` |
+| 현재 version | `1.9.53` |
 
 작업 시 우선순위:
 
@@ -985,7 +985,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.52 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.53 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 
@@ -1008,9 +1008,9 @@ _patchZoneControlElementCards(domain)
 
 ---
 
-### 11.6 v1.9.52 생육 AI 전략/제어 페이지 정보 구조 contract
+### 11.6 v1.9.53 생육 AI 전략/제어 페이지 정보 구조 contract
 
-v1.9.52 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
+v1.9.53 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
 
 작물 관리:
 
@@ -1018,7 +1018,8 @@ v1.9.52 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지�
 - `생육조사` 탭: 생육조사 기록 목록/등록/수정/삭제/내보내기에 집중한다.
 - `AI 전략` 탭: `_renderGrowthReportCard()`를 렌더링해 생육 리포트, G-Index, 수확량 예측, 병해 위험 분석을 모아 보여준다.
 - Stage Diagnosis / Crop Interlock 카드: `data-stage-diagnosis-card`, `data-crop-interlock-card` marker로 현재 생육단계, 단계 신뢰도, Index band, 다음 조사, 부족한 증거, 작물 인터록 상태, target promotion/자동 실행 차단 여부, 수확 안전 확인 필요 여부를 표시한다.
-- Crop Interlock 승인 gate 표시: `data-crop-interlock-approval-gate` marker로 `approvalGateStatus`, 승인으로 해소된 reason, 미해소 차단 reason을 표시한다.
+- 센터 작물 정책 카드: `data-center-crop-policy-card` marker로 `centerCropPolicy`, `cropPolicyAppliedToModel`, `cropPolicyAppliedToInterlock`, `policyStatus`, `applyMode`, `cropModelVariables`, `cropInterlockVariables`, `recommendationHints`를 read-only로 표시한다. 문구는 `현장 Edge가 최종 판단`을 유지하고, 현재 범위는 Crop이므로 환경/관수/장치 PID 적용은 제외한다.
+- Center analytics 카드: `data-center-crop-interlock-analytics-card` marker로 Center reason/approval 집계를 표시하되 실행권은 부여하지 않는다.
 - 주간 리포트 알림: `data-weekly-report-notification-toggle` 버튼으로 제공하며 체크박스를 사용하지 않는다.
 - 알림 상태 색상: ON `#f5a623` + `mdi:bell-ring-outline`, OFF `#9aa6a0` + `mdi:bell-off-outline`
 - 리포트 새로고침: `data-growth-report-refresh` 클릭 시 `_refreshWeeklyGrowthReportFromButton()`이 `_fetchGrowthReport()`를 호출하고, 작업 중 `is-spinning` / `gs-spin` 회전 모션을 적용한다.
@@ -1053,7 +1054,7 @@ v1.9.52 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지�
 
 ---
 
-### 11.7 v1.9.52 Admin/System 관리 기능 contract
+### 11.7 v1.9.53 Admin/System 관리 기능 contract
 
 Admin/System 페이지는 placeholder가 아니라 다음 탭과 바인딩을 제공한다.
 

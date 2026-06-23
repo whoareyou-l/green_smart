@@ -223,6 +223,47 @@ def test_product_phase6_yield_model_panel_surfaces_model_details_contract():
         assert marker in report_card
 
 
+def test_crop_center_policy_panel_readonly_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCenterCropInterlockAnalyticsCard()", 1)[0]
+    ui_doc = (ROOT / "docs" / "design" / "current-ui-design-and-navigation.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "data-center-crop-policy-card",
+        "centerCropPolicy",
+        "cropPolicyAppliedToModel",
+        "cropPolicyAppliedToInterlock",
+        "cropModelVariables",
+        "cropInterlockVariables",
+        "recommendationHints",
+        "policyStatus",
+        "applyMode",
+        "recommend_only",
+        "센터 작물 정책",
+        "현장 Edge가 최종 판단",
+        "모델 반영",
+        "인터록 반영",
+        "추천 힌트",
+        "fresh",
+        "stale_usable",
+        "stale_restricted",
+        "fallback_safe",
+        "rejected",
+    ):
+        assert marker in report_card
+    assert "data-center-crop-policy-execute" not in panel
+    assert "centerCropPolicyAllowExecution" not in panel
+
+    for marker in (
+        "센터 작물 정책 카드",
+        "data-center-crop-policy-card",
+        "centerCropPolicy",
+        "현장 Edge가 최종 판단",
+        "환경/관수/장치 PID 적용은 제외",
+    ):
+        assert marker in ui_doc
+
+
 def test_product_phase6_pest_risk_panel_surfaces_environment_weather_control_details_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCropGrowthTab()", 1)[0]

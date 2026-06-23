@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.52
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.53
 const DOMAIN = "green_smart";
-const VERSION = "1.9.52";
+const VERSION = "1.9.53";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3967,6 +3967,12 @@ button.action:disabled{opacity:.5;cursor:default;}
     const weeklyReport = report.weeklyReport || {};
     const stageDiagnosis = cropModel.stageDiagnosis || {};
     const cropInterlock = cropModel.cropInterlock || {};
+    const centerCropPolicy = cropModel.centerCropPolicy || {};
+    const cropModelVariables = cropModel.cropModelVariables || centerCropPolicy.cropModelVariables || {};
+    const cropInterlockVariables = cropModel.cropInterlockVariables || centerCropPolicy.cropInterlockVariables || {};
+    const recommendationHints = cropModel.recommendationHints || centerCropPolicy.recommendationHints || {};
+    const policyStatus = cropModel.policyStatus || centerCropPolicy.policyStatus || "fallback_safe";
+    const applyMode = cropModel.applyMode || centerCropPolicy.applyMode || "recommend_only";
     const stageRules = Array.isArray(cropInterlock.stageInterlockRuleResults) ? cropInterlock.stageInterlockRuleResults : [];
     const interlockReasons = Array.isArray(cropInterlock.cropInterlockReasons) ? cropInterlock.cropInterlockReasons : [];
     const interlockActions = Array.isArray(cropInterlock.cropInterlockActions) ? cropInterlock.cropInterlockActions : [];
@@ -3989,6 +3995,12 @@ button.action:disabled{opacity:.5;cursor:default;}
     const controlHistoryDrivers = pestRisk.controlHistoryDrivers || {};
     const riskFactors = Array.isArray(pestRisk.riskFactors) ? pestRisk.riskFactors : [];
     const recommendedActions = Array.isArray(pestRisk.recommendedActions) ? pestRisk.recommendedActions : [];
+    const policyColor = { fresh: "#51AE60", stale_usable: "#7aa55f", stale_restricted: "#f39c12", fallback_safe: "#c0392b", rejected: "#8e44ad" }[policyStatus] || "#7a9780";
+    const policyLabel = { fresh: "정상", stale_usable: "지연 사용", stale_restricted: "제한 모드", fallback_safe: "안전 fallback", rejected: "폐기" }[policyStatus] || policyStatus;
+    const modelVarEntries = Object.entries(cropModelVariables).slice(0, 4);
+    const interlockVarEntries = Object.entries(cropInterlockVariables).slice(0, 4);
+    const hintEntries = Object.entries(recommendationHints).slice(0, 4);
+    const policyChip = (label, value) => `<span style="font-size:11px;background:#f5faf6;color:#5d7d64;border:1px solid #e4f0e6;border-radius:999px;padding:4px 8px;"><b>${this._esc(label)}</b> ${this._esc(String(value ?? "-"))}</span>`;
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
         <div>
@@ -4046,6 +4058,28 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#5d7d64;margin-top:8px;line-height:1.55;"><b>다음 조사</b> ${this._esc(stageDiagnosis.nextRequiredSurvey || "최신 생육조사와 단계 전환 증거를 기록하세요.")}</div>
         <div style="font-size:11px;color:#7a9780;margin-top:5px;"><b>부족한 증거</b> ${missingEvidence.length ? missingEvidence.map(e => this._esc(e)).join(" · ") : "없음"}</div>
+      </div>
+      <div data-center-crop-policy-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dbeaf8;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
+          <div>
+            <div style="font-size:12px;font-weight:900;color:#24323F;">센터 작물 정책</div>
+            <div style="font-size:10px;color:#6d8799;margin-top:3px;">현장 Edge가 최종 판단 · read-only · 환경/관수/장치 PID 적용은 제외</div>
+          </div>
+          <span style="font-size:11px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:${policyColor};border:1px solid #dbeaf8;">${this._esc(policyLabel)} · ${this._esc(policyStatus)}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:8px;">
+          <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">모델 반영</div><b style="font-size:14px;color:${cropModel.cropPolicyAppliedToModel ? '#51AE60' : '#c0392b'};">${cropModel.cropPolicyAppliedToModel ? "반영" : "미반영"}</b></div>
+          <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">인터록 반영</div><b style="font-size:14px;color:${cropModel.cropPolicyAppliedToInterlock ? '#51AE60' : '#c0392b'};">${cropModel.cropPolicyAppliedToInterlock ? "반영" : "미반영"}</b></div>
+          <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">applyMode</div><b style="font-size:14px;color:#24323F;">${this._esc(applyMode || "recommend_only")}</b></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+          ${modelVarEntries.length ? modelVarEntries.map(([k, v]) => policyChip(`모델 ${k}`, typeof v === 'object' ? JSON.stringify(v) : v)).join("") : policyChip("모델 변수", "없음")}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+          ${interlockVarEntries.length ? interlockVarEntries.map(([k, v]) => policyChip(`인터록 ${k}`, typeof v === 'object' ? JSON.stringify(v) : v)).join("") : policyChip("인터록 변수", "없음")}
+        </div>
+        <div style="font-size:11px;color:#7a9780;margin-top:7px;line-height:1.55;"><b>추천 힌트</b> ${hintEntries.length ? hintEntries.map(([k, v]) => `${this._esc(k)}=${this._esc(typeof v === 'object' ? JSON.stringify(v) : String(v))}`).join(" · ") : "없음"}</div>
+        <div style="font-size:10px;color:#9aae9d;margin-top:5px;">fresh · stale_usable · stale_restricted · fallback_safe · rejected · recommend_only</div>
       </div>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid ${cropInterlock.cropInterlockBlocked ? '#f3c8c8' : '#dbeee0'};" data-crop-interlock-card>
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:6px;">
