@@ -19,6 +19,8 @@ CROP_STAGE_DIAGNOSIS_VERSION = "crop_stage_diagnosis_v1"
 CROP_STAGE_INTERLOCK_VERSION = "crop_stage_interlock_v1"
 CROP_INTERLOCK_APPROVAL_VERSION = "crop_interlock_approval_v1"
 CENTER_CROP_POLICY_INTEGRATION_VERSION = "center_crop_policy_integration_v1"
+CENTER_CROP_POLICY_ALERT_VERSION = "center_crop_policy_alert_v1"
+CENTER_CROP_POLICY_ALERT_STATUSES = {"fallback_safe", "stale_restricted", "rejected"}
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
@@ -1130,6 +1132,73 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     }
 
 
+async def _center_crop_policy_audit_key(
+    *, season_id: int, farm_id: int, zone_id: int | None, policy_status: str, policy_version: str | None
+) -> str:
+    return f"{farm_id}:{season_id}:{zone_id or 0}:{policy_status}:{policy_version or 'none'}"
+
+
+async def _record_center_crop_policy_status_audit(
+    hass,
+    *,
+    season_id: int,
+    farm_id: int,
+    zone_id: int | None,
+    policy_status: str,
+    policy_version: str | None,
+    reason_codes: list[str],
+    recommendation_hints: dict | None = None,
+) -> bool:
+    """Record important Center crop policy status changes once per status/version.
+
+    Home Assistant persistent notifications are intentionally not used in this baseline; panel alert + audit only.
+    """
+    if policy_status not in CENTER_CROP_POLICY_ALERT_STATUSES:
+        return False
+    key = await _center_crop_policy_audit_key(
+        season_id=season_id,
+        farm_id=farm_id,
+        zone_id=zone_id,
+        policy_status=policy_status,
+        policy_version=policy_version,
+    )
+    domain_data = hass.data.setdefault("green_smart", {})
+    dedupe = domain_data.setdefault("crop_policy_alert_audit_deduped", {})
+    if dedupe.get(key):
+        return False
+    dedupe[key] = datetime.utcnow().isoformat()
+    alert_severity = "error" if policy_status in {"fallback_safe", "rejected"} else "warning"
+    await execute(
+        hass,
+        """
+        INSERT INTO audit_logs (farm_id, actor, action, before_json, after_json)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (
+            int(farm_id or 1),
+            "edge_crop_policy_monitor",
+            "crop_policy_status_change",
+            json.dumps({"season_id": season_id, "zone_id": zone_id}, ensure_ascii=False, default=str),
+            json.dumps(
+                {
+                    "version": CENTER_CROP_POLICY_ALERT_VERSION,
+                    "season_id": season_id,
+                    "zone_id": zone_id,
+                    "policyStatus": policy_status,
+                    "policyVersion": policy_version,
+                    "reasonCodes": reason_codes,
+                    "recommendationHints": recommendation_hints or {},
+                    "alertSeverity": alert_severity,
+                    "auditLogged": True,
+                },
+                ensure_ascii=False,
+                default=str,
+            ),
+        ),
+    )
+    return True
+
+
 async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zone_id: int | None = None) -> dict:
     """Read the latest validated Center crop policy candidate from Edge cache.
 
@@ -1150,16 +1219,29 @@ async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zon
         (int(farm_id or 1), int(season_id), zone_id, zone_id),
     )
     if not row:
+        reason_codes = ["center_policy_fallback_safe"]
+        audit_logged = await _record_center_crop_policy_status_audit(
+            hass,
+            season_id=season_id,
+            farm_id=farm_id,
+            zone_id=zone_id,
+            policy_status="fallback_safe",
+            policy_version=None,
+            reason_codes=reason_codes,
+            recommendation_hints={"nextAction": "wait_for_center_crop_policy"},
+        )
         return {
             "version": CENTER_CROP_POLICY_INTEGRATION_VERSION,
             "policyStatus": "fallback_safe",
             "applyMode": "recommend_only",
-            "reasonCodes": ["center_policy_fallback_safe"],
+            "reasonCodes": reason_codes,
             "cropModelVariables": {},
             "cropInterlockVariables": {},
             "recommendationHints": {"nextAction": "wait_for_center_crop_policy"},
             "cropPolicyAppliedToModel": False,
             "cropPolicyAppliedToInterlock": True,
+            "auditLogged": audit_logged,
+            "alertSeverity": "error",
             "message": "No cached Center crop policy; using local crop fallback policy.",
         }
     policy = _parse_json_object(row.get("policy_json"))
@@ -1192,9 +1274,21 @@ async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zon
     hints = policy.get("recommendation_hints") or {}
     if hints:
         reason_codes.append("center_policy_recommendation_hint")
+    policy_version = policy.get("policy_version") or row.get("policy_version")
+    audit_logged = await _record_center_crop_policy_status_audit(
+        hass,
+        season_id=season_id,
+        farm_id=farm_id,
+        zone_id=zone_id,
+        policy_status=status,
+        policy_version=policy_version,
+        reason_codes=reason_codes,
+        recommendation_hints=hints,
+    )
+    alert_severity = "error" if status in {"fallback_safe", "rejected"} else ("warning" if status == "stale_restricted" else "info")
     return {
         "version": CENTER_CROP_POLICY_INTEGRATION_VERSION,
-        "policyVersion": policy.get("policy_version") or row.get("policy_version"),
+        "policyVersion": policy_version,
         "policyStatus": status,
         "applyMode": policy.get("apply_mode") or "recommend_only",
         "reasonCodes": reason_codes,
@@ -1208,6 +1302,8 @@ async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zon
         "staleAfterSeconds": stale_after,
         "fallbackAfterSeconds": fallback_after,
         "lastError": row.get("last_error"),
+        "auditLogged": audit_logged,
+        "alertSeverity": alert_severity,
         "cropPolicyAppliedToModel": status in {"fresh", "stale_usable", "stale_restricted"},
         "cropPolicyAppliedToInterlock": True,
         "message": "Center crop policy is recommend_only; Edge crop safety/interlock remains authoritative.",

@@ -293,7 +293,7 @@ def test_crop_center_policy_guidance_resolution_ux_contract():
     assert "centerCropPolicyAllowExecution" not in panel
 
     for marker in (
-        "v1.9.54 Center policy guidance",
+        "Center policy guidance",
         "data-center-crop-policy-guidance",
         "data-center-crop-policy-reasons",
         "data-center-crop-policy-next-action",

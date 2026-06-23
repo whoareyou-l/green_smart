@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.54
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.55
 const DOMAIN = "green_smart";
-const VERSION = "1.9.54";
+const VERSION = "1.9.55";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -55,6 +55,12 @@ const CENTER_CROP_POLICY_NEXT_ACTION_LABELS = {
   monitor_crop_policy: "현재 작물 정책 상태를 관찰하고 생육조사 기록을 유지하세요.",
   review_crop_interlock_reasons: "작물 인터록 이유를 확인하고 필요한 생육조사/승인 기록을 보강하세요.",
   review_center_crop_recommendation_hint: "Center 추천 힌트를 검토하되 실행은 Edge 인터록 기준을 따르세요.",
+};
+const CENTER_CROP_POLICY_ALERT_STATUSES = new Set(["stale_restricted", "fallback_safe", "rejected"]);
+const CENTER_CROP_POLICY_ALERT_MESSAGES = {
+  stale_restricted: "Center 작물 정책이 오래되어 보수 모드입니다. 생육조사/인터록 이유를 확인하세요.",
+  fallback_safe: "Center 작물 정책이 없거나 만료되어 로컬 fallback으로 보호 중입니다.",
+  rejected: "Center 작물 정책 후보가 폐기되었습니다. Center 연결/정책 형식을 확인하세요.",
 };
 const EQUIP_KEYS = ["roof_window","side_window","shade_screen","thermal_curtain","irrigation","nutrient_machine","circulation_fan","co2_generator"];
 const EQUIP_LABELS = {
@@ -4030,6 +4036,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const translatedCenterPolicyReasons = centerPolicyReasonCodes.map((code) => CENTER_CROP_POLICY_REASON_LABELS[code] || code);
     const rawNextAction = recommendationHints.nextAction || centerCropPolicy.nextAction || "monitor_crop_policy";
     const translatedNextAction = CENTER_CROP_POLICY_NEXT_ACTION_LABELS[rawNextAction] || String(rawNextAction || "현재 작물 정책 상태를 관찰하세요.");
+    const policyAlertActive = CENTER_CROP_POLICY_ALERT_STATUSES.has(policyStatus);
+    const policyAlertMessage = CENTER_CROP_POLICY_ALERT_MESSAGES[policyStatus] || "Center 작물 정책 상태를 확인하세요.";
     /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
@@ -4097,6 +4105,10 @@ button.action:disabled{opacity:.5;cursor:default;}
           </div>
           <span style="font-size:11px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:${policyColor};border:1px solid #dbeaf8;">${this._esc(policyLabel)} · ${this._esc(policyStatus)}</span>
         </div>
+        ${policyAlertActive ? `<div data-center-crop-policy-alert-summary style="background:#fff8e8;border:1px solid #f6d08b;border-radius:10px;padding:8px;margin-bottom:8px;color:#8a5d00;line-height:1.5;">
+          <div style="font-size:11px;font-weight:900;">작물 정책 경고 · 기록/알림 기준 상태</div>
+          <div style="font-size:10px;margin-top:3px;">${this._esc(policyAlertMessage)} · 실행 버튼 없음</div>
+        </div>` : ""}
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:8px;">
           <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">모델 반영</div><b style="font-size:14px;color:${cropModel.cropPolicyAppliedToModel ? '#51AE60' : '#c0392b'};">${cropModel.cropPolicyAppliedToModel ? "반영" : "미반영"}</b></div>
           <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">인터록 반영</div><b style="font-size:14px;color:${cropModel.cropPolicyAppliedToInterlock ? '#51AE60' : '#c0392b'};">${cropModel.cropPolicyAppliedToInterlock ? "반영" : "미반영"}</b></div>
