@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from datetime import datetime, timezone
+
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 
@@ -9,10 +12,12 @@ from .central_api import DEFAULT_CENTRAL_BASE_URL, CentralApiError, GreenityCent
 from .central_store import CentralTokenStore
 from .crop_views import _growth_report_response
 
-EDGE_VERSION = "1.9.50"
+EDGE_VERSION = "1.9.51"
 EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
 CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
 EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS = 60
+CENTER_CROP_POLICY_PULL_INTERVAL_SECONDS = 300
+CROP_POLICY_CACHE_STATES = ("fresh", "stale_usable", "stale_restricted", "fallback_safe", "rejected")
 RATE_LIMIT_DELTA_KEYS = ("temperatureDelta1m", "humidityDelta1m", "co2Delta1m", "ecDelta1m", "phDelta1m")
 
 
@@ -160,6 +165,81 @@ async def sync_environment_telemetry_snapshot(
     token = await ensure_access_token(store, client)
     result = await client.sync_environment_telemetry(token, payload)
     return {"ok": True, "center": result, "payload": payload}
+
+
+def _validate_crop_policy_bundle(bundle: dict) -> tuple[str, str | None]:
+    if not isinstance(bundle, dict):
+        return "rejected", "invalid_bundle"
+    if bundle.get("apply_mode") != "recommend_only":
+        return "rejected", "apply_mode_not_recommend_only"
+    required = ("policy_version", "crop_model_variables", "crop_interlock_variables", "recommendation_hints")
+    for key in required:
+        if key not in bundle:
+            return "rejected", f"missing_{key}"
+    valid_until = bundle.get("valid_until")
+    if valid_until:
+        try:
+            parsed = datetime.fromisoformat(str(valid_until).replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            if parsed < now:
+                return "stale_usable", None
+        except ValueError:
+            return "rejected", "invalid_valid_until"
+    return "fresh", None
+
+
+async def pull_and_cache_crop_policy_bundle(
+    hass,
+    season_id: int,
+    farm_id: int = 1,
+    zone_id: int | None = None,
+    recalculate: bool = True,
+) -> dict:
+    """Pull a Center crop policy candidate and cache it locally for Edge validation/fallback."""
+    from .db import execute
+
+    store = CentralTokenStore(hass)
+    base_url = (await store.get_base_url()) or DEFAULT_CENTRAL_BASE_URL
+    client = GreenityCentralClient(hass, base_url)
+    token = await ensure_access_token(store, client)
+    if recalculate:
+        bundle = await client.recalculate_crop_policy_bundle(token, farm_id=farm_id, season_id=season_id, zone_id=zone_id)
+    else:
+        bundle = await client.get_latest_crop_policy_bundle(token, farm_id=farm_id, season_id=season_id, zone_id=zone_id)
+    status, error = _validate_crop_policy_bundle(bundle)
+    policy_version = str(bundle.get("policy_version") or "unknown")
+    await execute(
+        hass,
+        """
+        INSERT INTO edge_crop_policy_cache(
+            farm_id, season_id, zone_id, policy_version, policy_json, status,
+            validated_at, active_from, valid_until, stale_after_seconds, fallback_after_seconds, last_error
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, IF(%s IS NULL, NOW(), NULL), IF(%s = 'fresh', NOW(), NULL), %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            policy_json = VALUES(policy_json), status = VALUES(status), validated_at = VALUES(validated_at),
+            active_from = VALUES(active_from), valid_until = VALUES(valid_until),
+            stale_after_seconds = VALUES(stale_after_seconds), fallback_after_seconds = VALUES(fallback_after_seconds),
+            last_error = VALUES(last_error), received_at = CURRENT_TIMESTAMP
+        """,
+        (
+            int(farm_id or 1),
+            int(season_id),
+            zone_id,
+            policy_version,
+            json.dumps(bundle, ensure_ascii=False, default=str),
+            status,
+            error,
+            status,
+            bundle.get("valid_until") or bundle.get("validUntil"),
+            int(bundle.get("stale_after_seconds") or 600),
+            int(bundle.get("fallback_after_seconds") or 1800),
+            error,
+        ),
+    )
+    return {"ok": status != "rejected", "status": status, "error": error, "policy": bundle}
 
 
 class CentralWeatherCurrentView(_CentralAdapterView):

@@ -659,6 +659,26 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             KEY idx_crop_stage_calibrations_lookup (farm_id, crop_type, cultivation_method, enabled)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+        """
+        CREATE TABLE IF NOT EXISTS edge_crop_policy_cache (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            season_id INT NOT NULL,
+            zone_id INT NULL,
+            policy_version VARCHAR(128) NOT NULL,
+            policy_json JSON NOT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'fresh',
+            received_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            validated_at TIMESTAMP NULL,
+            active_from TIMESTAMP NULL,
+            valid_until TIMESTAMP NULL,
+            stale_after_seconds INT NOT NULL DEFAULT 600,
+            fallback_after_seconds INT NOT NULL DEFAULT 1800,
+            last_error TEXT NULL,
+            UNIQUE KEY uniq_edge_crop_policy_cache (farm_id, season_id, zone_id, policy_version),
+            KEY idx_edge_crop_policy_cache_lookup (farm_id, season_id, zone_id, status, received_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
         "INSERT IGNORE INTO zones (id, name) VALUES (1, '1구역')",
     )
     pool = await get_pool(hass)

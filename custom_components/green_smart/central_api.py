@@ -25,6 +25,8 @@ CROP_INTERLOCK_SNAPSHOT_PATH = "/edge/snapshots/crop-interlock"
 CROP_INTERLOCK_ANALYTICS_SUMMARY_PATH = "/analytics/crop-interlock/summary"
 ENVIRONMENT_TELEMETRY_PATH = "/edge/telemetry/environment"
 ENVIRONMENT_TELEMETRY_SUMMARY_PATH = "/analytics/environment/telemetry/summary"
+CROP_POLICY_RECALCULATE_PATH = "/analytics/crop/policy/recalculate"
+CROP_POLICY_LATEST_PATH = "/edge/policies/crop/latest"
 
 
 @dataclass(slots=True)
@@ -192,6 +194,32 @@ class GreenityCentralClient:
     ) -> dict[str, Any]:
         return await self._get_json(
             ENVIRONMENT_TELEMETRY_SUMMARY_PATH,
+            params={"farm_id": farm_id, "season_id": season_id, "zone_id": zone_id},
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    async def recalculate_crop_policy_bundle(
+        self,
+        access_token: str,
+        farm_id: int = 1,
+        season_id: int | None = None,
+        zone_id: int | None = None,
+    ) -> dict[str, Any]:
+        return await self._post_json(
+            CROP_POLICY_RECALCULATE_PATH,
+            {"farm_id": farm_id, "season_id": season_id, "zone_id": zone_id},
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    async def get_latest_crop_policy_bundle(
+        self,
+        access_token: str,
+        farm_id: int = 1,
+        season_id: int | None = None,
+        zone_id: int | None = None,
+    ) -> dict[str, Any]:
+        return await self._get_json(
+            CROP_POLICY_LATEST_PATH,
             params={"farm_id": farm_id, "season_id": season_id, "zone_id": zone_id},
             headers={"Authorization": f"Bearer {access_token}"},
         )

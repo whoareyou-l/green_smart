@@ -15,6 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
 CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
 EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS = 60
+CENTER_CROP_POLICY_PULL_INTERVAL_SECONDS = 300
 
 REQUIRED_KEYS = (
     "host",
@@ -209,6 +210,65 @@ def _teardown_edge_environment_telemetry_sync_scheduler(hass) -> None:
         domain_data["edge_environment_telemetry_sync_scheduler_stopped"] = True
 
 
+async def _run_center_crop_policy_pull_tick(hass, now) -> None:
+    from .central_views import pull_and_cache_crop_policy_bundle
+    from .db import fetchall
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    try:
+        seasons = await fetchall(
+            hass,
+            """
+            SELECT id, greenhouse_id AS farm_id, zone_id
+            FROM crop_seasons
+            WHERE deleted_at IS NULL AND demolish_date IS NULL
+            ORDER BY updated_at DESC, id DESC
+            LIMIT 20
+            """,
+        )
+    except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+        _LOGGER.warning("Center crop policy pull season lookup failed: %s", exc)
+        return
+    ok_count = 0
+    fail_count = 0
+    for season in seasons:
+        try:
+            await pull_and_cache_crop_policy_bundle(
+                hass,
+                season_id=int(season["id"]),
+                farm_id=int(season.get("farm_id") or 1),
+                zone_id=int(season["zone_id"]) if season.get("zone_id") else None,
+                recalculate=True,
+            )
+            ok_count += 1
+        except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+            fail_count += 1
+            _LOGGER.warning("Center crop policy pull failed for season=%s: %s", season.get("id"), exc)
+    domain_data["last_center_crop_policy_pull"] = now
+    domain_data["last_center_crop_policy_pull_ok_count"] = ok_count
+    domain_data["last_center_crop_policy_pull_fail_count"] = fail_count
+
+
+async def _setup_center_crop_policy_pull_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("unsub_center_crop_policy_pull"):
+        return
+
+    def _tick(now):
+        hass.loop.call_soon_threadsafe(hass.async_create_task, _run_center_crop_policy_pull_tick(hass, now))
+
+    domain_data["unsub_center_crop_policy_pull"] = async_track_time_interval(hass, _tick, timedelta(seconds=CENTER_CROP_POLICY_PULL_INTERVAL_SECONDS))
+    domain_data["center_crop_policy_pull_scheduler_started"] = True
+
+
+def _teardown_center_crop_policy_pull_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    unsub = domain_data.pop("unsub_center_crop_policy_pull", None)
+    if unsub:
+        unsub()
+        domain_data["center_crop_policy_pull_scheduler_stopped"] = True
+
+
 async def async_setup(hass, config):
     """컴포넌트 레벨 설정 — HTTP Views 등록."""
     from .weather_api import WeatherStore
@@ -313,6 +373,7 @@ async def async_setup(hass, config):
     await _setup_growth_report_notification_scheduler(hass)
     await _setup_center_crop_interlock_snapshot_sync_scheduler(hass)
     await _setup_edge_environment_telemetry_sync_scheduler(hass)
+    await _setup_center_crop_policy_pull_scheduler(hass)
     return True
 
 
@@ -351,6 +412,7 @@ async def async_unload_entry(hass, entry):
         _teardown_growth_report_notification_scheduler(hass)
         _teardown_center_crop_interlock_snapshot_sync_scheduler(hass)
         _teardown_edge_environment_telemetry_sync_scheduler(hass)
+        _teardown_center_crop_policy_pull_scheduler(hass)
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
         from .db import close_pool
         await close_pool()

@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.50`
+> 기준 버전: `v1.9.51`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.50"
+  "version": "1.9.51"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.50` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.51` |
 
 ### 4.2 WebSocket commands
 
@@ -244,7 +244,7 @@ aiomysql.create_pool(
 
 ### 6.3 Device/Irrigation/Admin bootstrap closure tables
 
-v1.9.50 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
+v1.9.51 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
 
 장치제어:
 
@@ -500,13 +500,69 @@ Edge payload fields:
 }
 ```
 
-`temperatureDelta1m`, `humidityDelta1m`, `co2Delta1m`, `ecDelta1m`, `phDelta1m`는 1분 변화율 판단의 MVP 입력이다. v1.9.50 기준 threshold는 경고 이벤트만 생성하고, 실행 allow/block 최종 판단은 Edge SafetyGuard/Interlock가 담당한다.
+`temperatureDelta1m`, `humidityDelta1m`, `co2Delta1m`, `ecDelta1m`, `phDelta1m`는 1분 변화율 판단의 MVP 입력이다. v1.9.51 기준 threshold는 경고 이벤트만 생성하고, 실행 allow/block 최종 판단은 Edge SafetyGuard/Interlock가 담당한다.
+
+### 9.6 Crop policy bundle / Edge cache-fallback policy
+
+현재 범위는 Crop이며 환경/관수/장치 PID 적용은 제외한다. v1.9.51의 목적은 Center가 작물 정책 후보를 계산하고, Edge가 이를 검증·캐시한 뒤 작물 모델/작물 인터록 변수로만 사용하는 것이다.
+
+```text
+Crop policy bundle
+Center calculates crop policy candidates; Edge validates/caches/applies
+fresh → stale_usable → stale_restricted → fallback_safe
+apply_mode = recommend_only
+```
+
+Center persistence/API:
+
+```text
+crop_policy_bundles
+POST /analytics/crop/policy/recalculate
+GET /edge/policies/crop/latest
+```
+
+Bundle fields:
+
+```text
+crop_model_variables
+crop_interlock_variables
+recommendation_hints
+confidence
+apply_mode = recommend_only
+valid_until
+stale_after_seconds
+fallback_after_seconds
+```
+
+Edge cache:
+
+```text
+edge_crop_policy_cache
+```
+
+Edge 상태 정책:
+
+| 상태 | 의미 |
+|---|---|
+| `fresh` | Center 최신 작물 정책 후보를 검증해 캐시 |
+| `stale_usable` | Center 지연 시 기존 작물 정책 후보 유지 |
+| `stale_restricted` | 더 오래 지연되면 작물 추천/승인 요구를 보수적으로 강화 |
+| `fallback_safe` | 너무 오래 지연되면 기본 작물 인터록/승인 정책 사용 |
+| `rejected` | Center 후보가 형식/범위/권한 조건에 맞지 않아 폐기 |
+
+원칙:
+
+```text
+Center는 crop_model_variables, crop_interlock_variables, recommendation_hints 후보를 계산한다.
+Edge는 수신 bundle을 검증하고 edge_crop_policy_cache에 저장한다.
+Edge는 작물 모델/작물 인터록 변수로만 사용하며, 실제 실행 권한은 기존 Edge Safety/Interlock 경로에 남긴다.
+```
 
 ---
 
 ## 9A. 통합 모델 contract
 
-v1.9.50 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
+v1.9.51 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
 
 ```text
 Crop Safety Rules
@@ -612,7 +668,7 @@ maxMetricDeltaByKey
 
 ### 9A.1.2 작물 인터록 — C-S2 baseline
 
-작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다. v1.9.50 기준 C-S2는 `_crop_interlock_decision(cropSafety)`로 `crop_interlock_policy_v1` 결정을 만든다.
+작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다. v1.9.51 기준 C-S2는 `_crop_interlock_decision(cropSafety)`로 `crop_interlock_policy_v1` 결정을 만든다.
 
 필수 marker:
 
