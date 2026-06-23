@@ -393,3 +393,32 @@ Implementation implication:
 - Surface derived environment features as read-only model evidence in the crop model feature snapshot and panel.
 - If readings are absent or stale, return explicit missing/stale reasons instead of pretending the feature exists.
 - VPD/ADT/DIF are model evidence for crop prediction readiness; they do not grant environment/irrigation/device execution authority.
+
+## Confirmed decision 12 — rich irrigation/nutrient model features
+
+Irrigation/nutrient model inputs must expose crop-stress features, not only raw feedback/log counts.
+
+Required `irrigationNutrientSummary7d` features:
+
+```text
+feedEcAvg
+feedPhAvg
+drainEcAvg
+drainPhAvg
+ecDeltaFeedDrain
+phDeltaFeedDrain
+irrigationAmountTotal
+irrigationEventCount
+drainRateAvg
+drybackProxy
+errorCount
+staleDrainFeedback
+sourceStatus ready|partial|missing|stale
+```
+
+Implementation implication:
+
+- Use existing `irrigation_drain_feedback`, `irrigation_control_logs`, and `irrigation_settings` only; do not add active irrigation control, PID, or pump/fertigation execution.
+- Surface EC/pH deltas, drain rate, irrigation amount, dryback proxy, error count, and stale feedback as read-only model evidence.
+- If feedback/logs are absent or stale, return explicit missing/stale reasons instead of treating the source as ready.
+- These features inform crop growth/stress prediction readiness; Edge Safety/Interlock and operator-approved control flows remain the only execution authority.

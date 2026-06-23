@@ -20,6 +20,7 @@ CROP_MODEL_FEATURE_SOURCES_VERSION = "crop_model_feature_sources_v1"
 CROP_PREDICTION_VALIDATION_VERSION = "crop_prediction_validation_v1"
 CROP_QUALITY_DISORDER_METRICS_VERSION = "crop_quality_disorder_metrics_v1"
 CROP_ENVIRONMENT_FEATURES_VERSION = "crop_environment_features_v1"
+CROP_IRRIGATION_NUTRIENT_FEATURES_VERSION = "crop_irrigation_nutrient_features_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -1401,6 +1402,58 @@ async def _environment_feature_summary(hass, *, farm_id: int, zone_id: int | Non
     }
 
 
+def _crop_irrigation_number(value, default=None):
+    try:
+        if value is None:
+            return default
+        return round(float(value), 3)
+    except Exception:
+        return default
+
+
+def _crop_irrigation_nutrient_derived_features(drain: dict, logs: dict, settings: dict) -> dict:
+    feed_ec = _crop_irrigation_number(logs.get("avgFeedEc"))
+    feed_ph = _crop_irrigation_number(logs.get("avgFeedPh"))
+    drain_ec = _crop_irrigation_number(drain.get("avgDrainEc"), _crop_irrigation_number(logs.get("avgLoggedDrainEc")))
+    drain_ph = _crop_irrigation_number(drain.get("avgDrainPh"), _crop_irrigation_number(logs.get("avgLoggedDrainPh")))
+    feed_amount_avg = _crop_irrigation_number(drain.get("avgFeedAmountL"), _crop_irrigation_number(logs.get("avgAmountL")))
+    drain_amount_avg = _crop_irrigation_number(drain.get("avgDrainAmountL"), _crop_irrigation_number(logs.get("avgLoggedDrainAmountL")))
+    irrigation_total = _crop_irrigation_number(logs.get("irrigationAmountTotal"), 0.0)
+    irrigation_events = int(logs.get("controlCount") or 0)
+    drain_rate_avg = _crop_irrigation_number(drain.get("avgDrainRate"))
+    dryback_proxy = None
+    if feed_amount_avg not in (None, 0) and drain_amount_avg is not None:
+        dryback_proxy = round(max(0.0, 1 - (float(drain_amount_avg) / float(feed_amount_avg))) * 100, 3)
+    ec_delta = None if feed_ec is None or drain_ec is None else round(float(drain_ec) - float(feed_ec), 3)
+    ph_delta = None if feed_ph is None or drain_ph is None else round(float(drain_ph) - float(feed_ph), 3)
+    stale_reasons = []
+    sample_count = int((drain.get("sampleCount") or 0) + irrigation_events)
+    if not int(drain.get("sampleCount") or 0):
+        stale_reasons.append("irrigation_drain_feedback_missing")
+    if not irrigation_events:
+        stale_reasons.append("irrigation_control_logs_missing")
+    features = {
+        "feedEcAvg": feed_ec,
+        "feedPhAvg": feed_ph,
+        "drainEcAvg": drain_ec,
+        "drainPhAvg": drain_ph,
+        "ecDeltaFeedDrain": ec_delta,
+        "phDeltaFeedDrain": ph_delta,
+        "irrigationAmountTotal": irrigation_total,
+        "irrigationEventCount": irrigation_events,
+        "drainRateAvg": drain_rate_avg,
+        "drybackProxy": dryback_proxy,
+        "errorCount": int(logs.get("errorCount") or 0),
+        "staleDrainFeedback": not bool(drain.get("lastMeasuredAt")),
+    }
+    if features["staleDrainFeedback"]:
+        stale_reasons.append("staleDrainFeedback")
+    if settings:
+        features["hasIrrigationSettings"] = True
+    missing = [key for key, value in features.items() if value is None]
+    return {"features": features, "derivedFeatures": features, "missing": missing, "staleReasons": list(dict.fromkeys(stale_reasons)), "sampleCount": sample_count}
+
+
 async def _irrigation_nutrient_feature_summary(hass, *, farm_id: int, zone_id: int | None, days: int = 7) -> dict:
     drain = await fetchone(hass, """
         SELECT COUNT(*) AS sampleCount, AVG(feed_amount_l) AS avgFeedAmountL,
@@ -1411,7 +1464,7 @@ async def _irrigation_nutrient_feature_summary(hass, *, farm_id: int, zone_id: i
           AND measured_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
     """, (int(farm_id or 1), zone_id, zone_id, int(days))) or {}
     logs = await fetchone(hass, """
-        SELECT COUNT(*) AS controlCount, AVG(amount_l) AS avgAmountL,
+        SELECT COUNT(*) AS controlCount, SUM(amount_l) AS irrigationAmountTotal, AVG(amount_l) AS avgAmountL,
                AVG(feed_ec) AS avgFeedEc, AVG(feed_ph) AS avgFeedPh,
                AVG(drain_amount_l) AS avgLoggedDrainAmountL, AVG(drain_ec) AS avgLoggedDrainEc,
                AVG(drain_ph) AS avgLoggedDrainPh, SUM(has_error) AS errorCount, MAX(executed_at) AS lastExecutedAt
@@ -1419,16 +1472,37 @@ async def _irrigation_nutrient_feature_summary(hass, *, farm_id: int, zone_id: i
         WHERE farm_id = %s AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
           AND executed_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
     """, (int(farm_id or 1), zone_id, zone_id, int(days))) or {}
-    sample_count = int((drain.get("sampleCount") or 0) + (logs.get("controlCount") or 0))
+    settings = await fetchone(hass, """
+        SELECT settings_json AS settingsJson, MAX(updated_at) AS lastUpdatedAt
+        FROM irrigation_settings
+        WHERE farm_id = %s AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
+    """, (int(farm_id or 1), zone_id, zone_id)) or {}
+    derived = _crop_irrigation_nutrient_derived_features(drain, logs, settings)
+    sample_count = int(derived.get("sampleCount") or 0)
+    staleReasons = list(derived.get("staleReasons") or [])
+    stale = bool(staleReasons and sample_count == 0)
+    if not sample_count:
+        sourceStatus = "missing"
+    elif stale:
+        sourceStatus = "stale"
+    elif sample_count >= 5 and not staleReasons:
+        sourceStatus = "ready"
+    else:
+        sourceStatus = "partial"
     return {
-        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "version": CROP_IRRIGATION_NUTRIENT_FEATURES_VERSION,
         "sourceTables": ["irrigation_drain_feedback", "irrigation_control_logs", "irrigation_settings"],
         "windowDays": days,
         "drainFeedback": drain,
         "controlLogs": logs,
+        "settings": settings,
+        "features": derived.get("features") or {},
+        "derivedFeatures": derived.get("derivedFeatures") or {},
         "required": ["feedEc", "drainEc", "feedPh", "drainPh", "irrigationAmount", "drainRate", "dryback"],
-        "missing": [] if sample_count else ["irrigation_drain_feedback", "irrigation_control_logs"],
-        "sourceStatus": "ready" if sample_count >= 5 else "partial" if sample_count else "missing",
+        "missing": derived.get("missing") or [],
+        "stale": stale,
+        "staleReasons": staleReasons,
+        "sourceStatus": sourceStatus,
     }
 
 

@@ -466,6 +466,10 @@ staleReasons
 
 Make irrigation/nutrient feature source usable for crop growth-stage and stress prediction.
 
+## Vertical-slice scope
+
+Slice 4 is feature-complete only when irrigation/nutrient model inputs are enriched end-to-end: `irrigation_drain_feedback`, `irrigation_control_logs`, and `irrigation_settings` are summarized into model-ready EC/pH/drain/dryback features, the feature-source API and growth report expose those features, the panel shows read-only irrigation/nutrient feature evidence, contract tests cover the behavior, production HA is verified, and `v1.9.63` is released.
+
 ## Required features
 
 ```text
@@ -486,12 +490,76 @@ staleDrainFeedback
 ## Files
 
 - Modify: `custom_components/green_smart/crop_views.py`
+- Modify: `custom_components/green_smart/panel/green-smart-panel.js`
+- Modify: `custom_components/green_smart/manifest.json`
+- Modify: `custom_components/green_smart/central_views.py`
 - Create: `tests/test_crop_irrigation_nutrient_features_contract.py`
+- Modify: `docs/plans/2026-06-23-crop-model-design-decisions.md`
+
+## Backend/API work
+
+Required backend markers:
+
+```python
+CROP_IRRIGATION_NUTRIENT_FEATURES_VERSION = "crop_irrigation_nutrient_features_v1"
+_crop_irrigation_number(...)
+_crop_irrigation_nutrient_derived_features(...)
+_irrigation_nutrient_feature_summary(...)
+```
+
+Required `irrigationNutrientSummary7d` shape:
+
+```json
+{
+  "version": "crop_irrigation_nutrient_features_v1",
+  "sourceTables": ["irrigation_drain_feedback", "irrigation_control_logs", "irrigation_settings"],
+  "windowDays": 7,
+  "features": {
+    "feedEcAvg": 0,
+    "feedPhAvg": 0,
+    "drainEcAvg": 0,
+    "drainPhAvg": 0,
+    "ecDeltaFeedDrain": 0,
+    "phDeltaFeedDrain": 0,
+    "irrigationAmountTotal": 0,
+    "irrigationEventCount": 0,
+    "drainRateAvg": 0,
+    "drybackProxy": 0,
+    "errorCount": 0,
+    "staleDrainFeedback": false
+  },
+  "derivedFeatures": {},
+  "staleReasons": [],
+  "missing": [],
+  "sourceStatus": "ready|partial|missing|stale"
+}
+```
+
+No DB schema change is required for Slice 4; it reads existing irrigation feedback/control/settings tables only.
+
+## Panel work
+
+Panel must keep irrigation/nutrient features read-only model evidence. Required UI markers/text:
+
+```text
+data-crop-irrigation-nutrient-features-card
+관수/양액 feature
+feedEcAvg
+drainEcAvg
+ecDeltaFeedDrain
+phDeltaFeedDrain
+drybackProxy
+staleDrainFeedback
+```
 
 ## Acceptance criteria
 
 - Derived features are included in `irrigationNutrientSummary7d`.
+- Feed/drain EC/pH deltas are explicit and null-safe.
+- Irrigation amount, event count, drain rate, dryback proxy, error count, and stale drain feedback are explicit.
 - No active irrigation control or PID execution.
+- Panel remains read-only.
+- `v1.9.63` version markers are updated and verified in local/prod.
 
 ---
 

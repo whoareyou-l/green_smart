@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.62
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.63
 const DOMAIN = "green_smart";
-const VERSION = "1.9.62";
+const VERSION = "1.9.63";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4092,7 +4092,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     const environmentDerivedFeatures = environmentSummary7d.derivedFeatures || {};
     const environmentStaleReasons = Array.isArray(environmentSummary7d.staleReasons) ? environmentSummary7d.staleReasons : [];
     const envStatus = sourceStatus.environment || environmentSummary7d.sourceStatus || "missing";
-    const irrStatus = sourceStatus.irrigationNutrient || (featureSources.irrigationNutrientSummary7d || {}).sourceStatus || "missing";
+    const irrigationNutrientSummary7d = report.irrigationNutrientSummary7d || featureSources.irrigationNutrientSummary7d || {};
+    const irrigationNutrientFeatures = irrigationNutrientSummary7d.features || irrigationNutrientSummary7d.derivedFeatures || {};
+    const irrigationStaleReasons = Array.isArray(irrigationNutrientSummary7d.staleReasons) ? irrigationNutrientSummary7d.staleReasons : [];
+    const irrStatus = sourceStatus.irrigationNutrient || irrigationNutrientSummary7d.sourceStatus || "missing";
     const pestStatus = sourceStatus.pestControl || (featureSources.pestControlSummary7d || {}).sourceStatus || "missing";
     const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
     const qualityDisorderSummary = report.qualityDisorderSummary || trainableBaseline.qualityDisorderSummary || (trainableBaseline.featureSnapshot || {}).qualityDisorderSummary || {};
@@ -4210,6 +4213,19 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">DIF</div><b style="font-size:14px;color:#24323F;">${this._esc(String((environmentFeatures.dif || environmentDerivedFeatures.dif || {}).value ?? '-'))}</b></div>
         </div>
         <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">staleReasons: ${environmentStaleReasons.length ? environmentStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 환경/관수/장치 실행 권한 없음</div>
+      </div>
+      <div data-crop-irrigation-nutrient-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e7f5ed;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">관수/양액 feature</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(irrStatus)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">feedEcAvg</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.feedEcAvg ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">drainEcAvg</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.drainEcAvg ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">ecDeltaFeedDrain</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.ecDeltaFeedDrain ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">phDeltaFeedDrain</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.phDeltaFeedDrain ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">drybackProxy</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.drybackProxy ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">staleDrainFeedback</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.staleDrainFeedback ?? '-'))}</b></div>
+        </div>
+        <div style="font-size:11px;color:#5f7f70;margin-top:8px;line-height:1.55;">staleReasons: ${irrigationStaleReasons.length ? irrigationStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 관수/PID/펌프/양액 실행 권한 없음</div>
       </div>
       <div data-crop-model-feature-sources-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e9edf5;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">모델 입력 소스</div>
