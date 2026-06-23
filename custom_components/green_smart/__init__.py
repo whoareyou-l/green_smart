@@ -99,7 +99,7 @@ async def async_setup(hass, config):
     from .crop_views import (
         CropSeasonsView, CropSeasonDemolishView, CropSeasonDeleteView,
         CropGrowthListView, CropGrowthReportView, CropGrowthReportNotifyView, CropGrowthReportNotificationSettingsView, CropGrowthDeleteView,
-        CropStageCalibrationView,
+        CropStageCalibrationView, CropStageDiagnosisView,
         CropPestListView, CropPestDeleteView,
         CropControlListView, CropControlDeleteView,
     )
@@ -143,6 +143,7 @@ async def async_setup(hass, config):
         hass.http.register_view(CropGrowthReportNotificationSettingsView())
         hass.http.register_view(CropGrowthDeleteView())
         hass.http.register_view(CropStageCalibrationView())
+        hass.http.register_view(CropStageDiagnosisView())
         hass.http.register_view(CropPestListView())
         hass.http.register_view(CropPestDeleteView())
         hass.http.register_view(CropControlListView())

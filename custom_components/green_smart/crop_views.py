@@ -15,6 +15,7 @@ GROWTH_REPORT_NOTIFICATION_STATE_KEY = "growth_report_notification_state"
 CROP_MODEL_VERSION = "crop_season_model_v1"
 CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
 CROP_INTERLOCK_VERSION = "crop_interlock_policy_v1"
+CROP_STAGE_DIAGNOSIS_VERSION = "crop_stage_diagnosis_v1"
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
@@ -1315,6 +1316,189 @@ async def _crop_stage_calibrations_response(hass, *, farm_id: int = 1, crop_type
         "cultivationMethod": cultivation_method,
         "calibrations": calibrations,
     }
+
+
+def _stage_diagnosis_metric(latest: dict, *keys: str) -> float | None:
+    for key in keys:
+        value = _growth_metric_value(latest or {}, key, key)
+        if value is not None:
+            return value
+    return None
+
+
+def _stage_diagnosis_has_metric(latest: dict, *keys: str) -> bool:
+    return _stage_diagnosis_metric(latest, *keys) is not None
+
+
+def _stage_diagnosis_index_band(value: float, threshold: dict) -> str:
+    def _in_range(rng) -> bool:
+        if not isinstance(rng, list) or len(rng) != 2:
+            return False
+        low, high = rng
+        if low is not None and value < float(low):
+            return False
+        if high is not None and value > float(high):
+            return False
+        return True
+
+    for name in ("hardBlockRange", "problemRange", "cautionRange"):
+        ranges = threshold.get(name) or []
+        if any(_in_range(item) for item in ranges if isinstance(item, list)):
+            return name.replace("Range", "")
+    if _in_range(threshold.get("targetRange")):
+        return "target"
+    return "unknown"
+
+
+def _stage_diagnosis_entry_evidence_status(latest: dict, calibration: dict) -> dict:
+    boundary = calibration.get("boundary") or {}
+    required = boundary.get("entryEvidence") or []
+    available = []
+    missing = []
+    aliases = {
+        "transplantDate": [],
+        "plantHeight": ["height", "plantHeight"],
+        "stemDiameter": ["stemDia", "stemDiameter"],
+        "leafCount": ["leafCount"],
+        "nodeCount": ["node", "nodeCount"],
+        "clusterNo": ["clusterNo", "cluster", "truss"],
+        "firstClusterStatus": ["firstClusterFloweringPercent", "firstClusterStatus"],
+        "firstClusterFloweringPercent": ["firstClusterFloweringPercent"],
+        "fruitSetCount": ["fruitSetCount"],
+        "fruitAge": ["fruitAge", "fruitAgeDays"],
+        "fruitDiameter": ["fruitDiameter"],
+        "leafLength": ["leafLength"],
+        "leafWidth": ["leafWidth"],
+        "leafColor": ["leafColor", "spad"],
+        "gIndex": ["gIndex"],
+        "feedEc": ["feedEc"],
+        "feedPh": ["feedPh"],
+        "drainEc": ["drainEc"],
+        "drainPh": ["drainPh"],
+        "waterTemp": ["waterTemp"],
+    }
+    for item in required:
+        keys = aliases.get(item, [item])
+        if not keys or _stage_diagnosis_has_metric(latest, *keys):
+            available.append(item)
+        else:
+            missing.append(item)
+    return {"required": required, "available": available, "missing": missing}
+
+
+def _stage_diagnosis_select_calibration(crop_type: str, calibrations: list[dict], days_after_transplant: int | None, latest: dict, control_rows: list[dict]) -> dict | None:
+    by_id = {item.get("stageId"): item for item in calibrations}
+    dat = days_after_transplant if days_after_transplant is not None else -1
+    crop = (crop_type or "").lower()
+    if crop == "lettuce":
+        leaf_length = _stage_diagnosis_metric(latest, "leafLength")
+        leaf_width = _stage_diagnosis_metric(latest, "leafWidth")
+        harvest_recorded = bool(control_rows and any("수확" in str(row.get("note") or "") for row in control_rows[:5]))
+        if harvest_recorded or dat >= 25 or ((leaf_length or 0) >= 15 and (leaf_width or 0) >= 5):
+            return by_id.get("lettuce_harvest_window")
+        if dat >= 21 or (leaf_length or 0) >= 15 or (leaf_width or 0) >= 5:
+            return by_id.get("lettuce_pre_harvest_quality")
+        if dat >= 14:
+            return by_id.get("lettuce_leaf_expansion_main")
+        if dat >= 3 or latest:
+            return by_id.get("lettuce_leaf_expansion_early")
+        return by_id.get("lettuce_transplant_establishment")
+
+    cluster_no = _stage_diagnosis_metric(latest, "clusterNo", "cluster", "truss")
+    first_flowering = _stage_diagnosis_metric(latest, "firstClusterFloweringPercent")
+    fruit_set = _stage_diagnosis_metric(latest, "fruitSetCount")
+    fruit_age = _stage_diagnosis_metric(latest, "fruitAge", "fruitAgeDays")
+    fruit_diameter = _stage_diagnosis_metric(latest, "fruitDiameter")
+    harvest_recorded = bool(control_rows and any("수확" in str(row.get("note") or "") for row in control_rows[:5]))
+    termination_signal = bool(latest and str(latest.get("note") or "").lower().find("termination") >= 0)
+    if termination_signal:
+        return by_id.get("tomato_late_crop_termination")
+    if harvest_recorded or (fruit_age or 0) >= 35:
+        return by_id.get("tomato_continuous_harvest")
+    if (fruit_diameter or 0) > 0 or (fruit_age or 0) >= 7:
+        return by_id.get("tomato_fruit_expansion_quality")
+    if (cluster_no or 0) >= 2 and (fruit_set or 0) > 0:
+        return by_id.get("tomato_cluster_expansion_balance")
+    if (first_flowering or 0) >= 10 or (fruit_set or 0) > 0:
+        return by_id.get("tomato_first_cluster_flowering_fruit_set")
+    if dat >= 4 or latest:
+        return by_id.get("tomato_vegetative_build_up")
+    return by_id.get("tomato_transplant_establishment") or (calibrations[0] if calibrations else None)
+
+
+async def _crop_stage_diagnosis_response(hass, season_id: int, *, farm_id: int = 1) -> dict:
+    season = await fetchone(hass, """
+        SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
+               demolish_date AS demolishDate, total_plants AS totalPlants,
+               plant_density AS plantDensity, zone_id AS zoneId
+        FROM crop_seasons
+        WHERE id = %s AND deleted_at IS NULL
+    """, (season_id,)) or {"id": season_id}
+    growth_rows = await fetchall(hass, """
+        SELECT id, survey_date AS date, plant_height AS height,
+               leaf_count AS leafCount, stem_diameter AS stemDia,
+               truss_count AS truss, node_count AS node,
+               crop_type AS cropType, metrics_json AS metricsJson,
+               notes AS note
+        FROM growth_surveys
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY survey_date DESC
+        LIMIT 30
+    """, (season_id,))
+    control_rows = await _crop_control_rows_with_pesticides(hass, season_id, limit=10)
+    latest = growth_rows[0] if growth_rows else {}
+    crop_type = str(season.get("cropType") or latest.get("cropType") or "tomato").lower()
+    method = str(season.get("method") or "hydro").lower()
+    calibration_response = await _crop_stage_calibrations_response(hass, farm_id=farm_id, crop_type=crop_type, cultivation_method=method)
+    calibrations = calibration_response.get("calibrations") or []
+    days_after_transplant = _days_since(season.get("plantDate"))
+    selected = _stage_diagnosis_select_calibration(crop_type, calibrations, days_after_transplant, latest, control_rows) or {}
+    latest_index = _growth_g_index(latest) if latest else 0.0
+    threshold = selected.get("threshold") or {}
+    boundary = selected.get("boundary") or {}
+    evidence_status = _stage_diagnosis_entry_evidence_status(latest, selected) if selected else {"required": [], "available": [], "missing": []}
+    missing_evidence = list(dict.fromkeys(list(boundary.get("missingEvidence") or []) + list(evidence_status.get("missing") or [])))
+    stage_confidence = boundary.get("stageConfidence") or "low"
+    if not latest:
+        stage_confidence = "low"
+        missing_evidence = list(dict.fromkeys(missing_evidence + ["latestGrowthSurvey"]))
+    return {
+        "ok": True,
+        "version": CROP_STAGE_DIAGNOSIS_VERSION,
+        "seasonId": season_id,
+        "farmId": farm_id,
+        "season": season,
+        "cropType": crop_type,
+        "cultivationMethod": method,
+        "daysAfterTransplant": days_after_transplant,
+        "latestMetrics": latest,
+        "calibrationVersion": calibration_response.get("version"),
+        "stageDiagnosis": {
+            "stageId": selected.get("stageId") or "unknown",
+            "stageLabel": selected.get("stageLabel") or "생육단계 미확정",
+            "indexType": selected.get("indexType") or ("L-Index" if crop_type == "lettuce" else "G-Index"),
+            "indexValue": latest_index,
+            "indexBand": _stage_diagnosis_index_band(latest_index, threshold),
+            "stageConfidence": stage_confidence,
+            "entryEvidenceStatus": evidence_status,
+            "missingEvidence": missing_evidence,
+            "nextRequiredSurvey": boundary.get("nextRequiredSurvey") or "최신 생육조사와 단계 전환 증거를 기록하세요.",
+            "threshold": threshold,
+            "boundary": boundary,
+            "source": selected.get("source") or {},
+        },
+        "sourceTables": ["crop_seasons", "growth_surveys", "control_records", "control_pesticides", "crop_stage_calibrations"],
+    }
+
+
+class CropStageDiagnosisView(HomeAssistantView):
+    """GET /api/green_smart/crop/seasons/{season_id}/stage-diagnosis."""
+    url  = "/api/green_smart/crop/seasons/{season_id}/stage-diagnosis"
+    name = "api:green_smart:crop:stage_diagnosis"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        farm_id = int(request.query.get("farmId", 1))
+        return _json(await _crop_stage_diagnosis_response(request.app["hass"], int(season_id), farm_id=farm_id))
 
 
 class CropStageCalibrationView(HomeAssistantView):

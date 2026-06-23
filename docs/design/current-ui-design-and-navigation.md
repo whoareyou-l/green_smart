@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.40`
+> 기준 버전: `v1.9.41`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.40` |
+| 현재 version | `1.9.41` |
 
 작업 시 우선순위:
 
@@ -985,7 +985,7 @@ SubHero:
 
 ### 11.5 관수 초기 진입 no-flicker contract
 
-v1.9.40 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
+v1.9.41 기준 관수 페이지는 초기 진입 시 여러 API 응답마다 전체 화면을 재렌더하지 않는다.
 
 관련 구현:
 
@@ -1008,9 +1008,9 @@ _patchZoneControlElementCards(domain)
 
 ---
 
-### 11.6 v1.9.40 생육 AI 전략/제어 페이지 정보 구조 contract
+### 11.6 v1.9.41 생육 AI 전략/제어 페이지 정보 구조 contract
 
-v1.9.40 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
+v1.9.41 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지한다.
 
 작물 관리:
 
@@ -1051,7 +1051,7 @@ v1.9.40 기준 작물 관리와 제어 페이지는 다음 UI 구조를 유지�
 
 ---
 
-### 11.7 v1.9.40 Admin/System 관리 기능 contract
+### 11.7 v1.9.41 Admin/System 관리 기능 contract
 
 Admin/System 페이지는 placeholder가 아니라 다음 탭과 바인딩을 제공한다.
 

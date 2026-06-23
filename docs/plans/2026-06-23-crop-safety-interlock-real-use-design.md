@@ -1,7 +1,7 @@
 # Green Smart Crop Safety/Interlock Real-Use Deepening Design
 
 > **Status:** 질문 기반 설계 진행 중
-> **Baseline reference:** `v1.9.40` C-S1/C-S2는 실사용 완성이 아니라 skeleton/baseline이다.
+> **Baseline reference:** `v1.9.41` adds stage diagnosis API on top of C-S1/C-S2 skeleton; it is still calibration-driven baseline, not final agronomic readiness.
 > **Goal:** C-S1/C-S2를 실제 농장 운영에 사용할 수 있는 수준으로 구체화한다.
 > **Do not implement code from this document until each directly relevant question is answered.**
 
@@ -38,7 +38,8 @@ cropInterlock
 2. 답변이 구현 정책에 영향을 주는 경우, 이 문서에 `Confirmed decision`으로 기록한다.
 3. 애매한 답변은 임의 구현하지 않고 다시 질문한다.
 4. 질문 묶음이 충분히 정리되기 전에는 코드 구현/릴리즈를 하지 않는다.
-5. 기존 `v1.9.40`는 유지하되, 실사용 readiness로 표현하지 않는다.
+5. 기존 `v1.9.41`는 유지하되, 실사용 readiness로 표현하지 않는다.
+6. `v1.9.41` Stage Diagnosis API는 사용자가 구현을 승인한 DB/API baseline이며, 실제 제어 자동화 결합 전에는 추가 검증 질문을 계속 진행한다.
 
 ---
 
@@ -135,7 +136,7 @@ cropInterlock
 |---|---|---|
 | `v1.9.37` | C-S1 baseline complete | 작물 안전 룰 skeleton |
 | `v1.9.38` | C-S1B baseline complete | PLS/혼용/생육 이상치 저장 및 rule skeleton |
-| `v1.9.40` | C-S2 baseline complete | cropInterlock decision skeleton |
+| `v1.9.41` | C-S2 baseline complete | cropInterlock decision skeleton |
 
 이 문서 완료 전에는 위 버전들을 실사용 안전 정책으로 간주하지 않는다.
 
@@ -511,6 +512,43 @@ This section converts the remaining open items into a research-backed initial dr
 - Each crop stage must be calculated with `stageId`, `stageConfidence`, `entryEvidence`, `missingEvidence`, and `nextRequiredSurvey`.
 - G-Index/L-Index thresholds must be stored as calibration data, not hard-coded forever.
 - For 수경재배, all nutrition-management language must use EC/pH/irrigation/drainage/root-zone terms, not 토경 `웃거름` terms.
+
+##### Implemented DB/API baseline — v1.9.41 Stage Diagnosis
+
+`v1.9.41` adds a read-only diagnosis endpoint that combines `crop_seasons`, latest `growth_surveys`, recent `control_records/control_pesticides`, and `crop_stage_calibrations`.
+
+```http
+GET /api/green_smart/crop/seasons/{season_id}/stage-diagnosis?farmId=1
+```
+
+Response contract:
+
+| Field | Meaning |
+|---|---|
+| `version` | `crop_stage_diagnosis_v1` |
+| `seasonId` | diagnosis target crop season |
+| `cropType` / `cultivationMethod` | crop/method used to choose calibration rows |
+| `daysAfterTransplant` | DAT calculated from `crop_seasons.plant_date` |
+| `latestMetrics` | latest growth survey row and dynamic `metrics_json` |
+| `stageDiagnosis.stageId` | selected calibration stage id |
+| `stageDiagnosis.stageLabel` | Korean stage label from calibration table |
+| `stageDiagnosis.indexType` | `G-Index` for tomato, `L-Index` for lettuce calibration |
+| `stageDiagnosis.indexValue` | current index value from latest growth survey baseline formula |
+| `stageDiagnosis.indexBand` | `target`, `caution`, `problem`, `hardBlock`, or `unknown` by stage threshold |
+| `stageDiagnosis.stageConfidence` | calibration boundary confidence text, lowered when survey data is missing |
+| `stageDiagnosis.entryEvidenceStatus` | required/available/missing entry evidence summary |
+| `stageDiagnosis.missingEvidence` | missing evidence list for operator survey guidance |
+| `stageDiagnosis.nextRequiredSurvey` | next record the operator should collect |
+| `sourceTables` | includes `crop_stage_calibrations` as the calibration source |
+
+Initial inference rules:
+
+| Crop | Primary stage drivers |
+|---|---|
+| Tomato | DAT, first-cluster flowering %, fruit-set count, cluster/truss no, fruit age/diameter, harvest/termination evidence |
+| Lettuce | DAT, leaf length/width/count metrics, harvest record, harvest window thresholds |
+
+This remains a DB/API baseline. It does not yet promote final control targets or change SafetyGuard execution.
 
 ---
 

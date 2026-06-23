@@ -171,6 +171,36 @@ def test_crop_stage_calibration_db_and_api_contract():
     assert "hass.http.register_view(CropStageCalibrationView())" in init_source
 
 
+def test_crop_stage_diagnosis_api_contract():
+    crop_source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
+    design_doc = (ROOT / "docs" / "plans" / "2026-06-23-crop-safety-interlock-real-use-design.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "CROP_STAGE_DIAGNOSIS_VERSION",
+        "async def _crop_stage_diagnosis_response",
+        "def _stage_diagnosis_index_band",
+        "def _stage_diagnosis_select_calibration",
+        "class CropStageDiagnosisView(HomeAssistantView)",
+        'url  = "/api/green_smart/crop/seasons/{season_id}/stage-diagnosis"',
+        "stageId",
+        "stageLabel",
+        "stageConfidence",
+        "missingEvidence",
+        "nextRequiredSurvey",
+        "indexBand",
+        "daysAfterTransplant",
+        "entryEvidenceStatus",
+        "stageDiagnosis",
+        "crop_stage_calibrations",
+    ):
+        assert marker in crop_source
+
+    assert "CropStageDiagnosisView" in init_source
+    assert "hass.http.register_view(CropStageDiagnosisView())" in init_source
+    assert "/api/green_smart/crop/seasons/{season_id}/stage-diagnosis" in design_doc
+
+
 def test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tables():
     source = DB.read_text(encoding="utf-8")
     for table in (

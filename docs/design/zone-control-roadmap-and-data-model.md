@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.40` / Product Phase 6 baseline 완료, Crop Safety Rules C-S1B baseline 완료, Crop Interlock C-S2 baseline 완료, Model Phase M1 작기 모델 snapshot baseline 완료, UI Polish Phase P4 완료, Control Phase C19D 완료
+> 기준 버전: `v1.9.41` / Product Phase 6 baseline 완료, Crop Safety Rules C-S1B baseline 완료, Crop Interlock C-S2 baseline 완료, Model Phase M1 작기 모델 snapshot baseline 완료, UI Polish Phase P4 완료, Control Phase C19D 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -55,7 +55,7 @@ farm_id + crop_season_id + zone_id + domain
 
 ## 2.1 작기·환경·관수·장치 모델 관계 기준
 
-v1.9.40 이후 제어 기능은 단순히 domain별 설정을 저장하는 구조가 아니라, **각 domain 내부는 Safety → Interlock → Model(AI)** 순서로 해석한다. domain 간 참조 순서는 `Crop → Environment → Irrigation → Device`다.
+v1.9.41 이후 제어 기능은 단순히 domain별 설정을 저장하는 구조가 아니라, **각 domain 내부는 Safety → Interlock → Model(AI)** 순서로 해석한다. domain 간 참조 순서는 `Crop → Environment → Irrigation → Device`다.
 
 ```text
 작물 안전 룰(Crop Safety Rules)
@@ -737,7 +737,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.40` 기준으로 가능한 것:
+현재 `v1.9.41` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장
