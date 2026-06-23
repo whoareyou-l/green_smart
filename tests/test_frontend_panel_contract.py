@@ -275,6 +275,35 @@ def test_product_phase6_weekly_report_export_notification_panel_contract():
     assert "_maybeNotifyWeeklyGrowthReport" in bind_section
 
 
+def test_crop_ai_strategy_surfaces_stage_diagnosis_and_interlock_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCropGrowthTab()", 1)[0]
+    ui_doc = (ROOT / "docs" / "design" / "current-ui-design-and-navigation.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "cropModel.stageDiagnosis",
+        "cropModel.cropInterlock",
+        "data-stage-diagnosis-card",
+        "data-crop-interlock-card",
+        "현재 생육단계",
+        "단계 신뢰도",
+        "Index band",
+        "다음 조사",
+        "부족한 증거",
+        "작물 인터록",
+        "target promotion",
+        "자동 실행",
+        "stageInterlockRuleResults",
+        "cropInterlockReasons",
+        "cropInterlockActions",
+        "require_harvest_safety_clearance",
+    ):
+        assert marker in report_card
+
+    assert "Stage Diagnosis / Crop Interlock 카드" in ui_doc
+    assert "data-stage-diagnosis-card" in ui_doc
+
+
 def test_ui_polish_v1931_home_kpi_crop_tab_and_master_plan_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     master = (ROOT / "docs" / "PROJECT_MASTER_PLAN.md").read_text(encoding="utf-8")

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.42
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.43
 const DOMAIN = "green_smart";
-const VERSION = "1.9.42";
+const VERSION = "1.9.43";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3960,9 +3960,18 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderGrowthReportCard() {
     const report = this._growthReportData || {};
+    const cropModel = report.cropModel || {};
     const yieldPrediction = report.yieldPrediction || {};
     const pestRisk = report.pestRisk || {};
     const weeklyReport = report.weeklyReport || {};
+    const stageDiagnosis = cropModel.stageDiagnosis || {};
+    const cropInterlock = cropModel.cropInterlock || {};
+    const stageRules = Array.isArray(cropInterlock.stageInterlockRuleResults) ? cropInterlock.stageInterlockRuleResults : [];
+    const interlockReasons = Array.isArray(cropInterlock.cropInterlockReasons) ? cropInterlock.cropInterlockReasons : [];
+    const interlockActions = Array.isArray(cropInterlock.cropInterlockActions) ? cropInterlock.cropInterlockActions : [];
+    const missingEvidence = Array.isArray(stageDiagnosis.missingEvidence) ? stageDiagnosis.missingEvidence : [];
+    const indexBand = stageDiagnosis.indexBand || "unknown";
+    const indexBandColor = { target: "#51AE60", caution: "#f39c12", problem: "#e67e22", hardBlock: "#c0392b", unknown: "#7a9780" }[indexBand] || "#7a9780";
     const gIndexTrend = Array.isArray(report.gIndexTrend) ? report.gIndexTrend : [];
     const growthTrend = report.growthTrend || {};
     const heightTrend = Array.isArray(growthTrend.height) ? growthTrend.height : [];
@@ -4023,6 +4032,30 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">위험 요인: ${riskFactors.length ? riskFactors.map(r => this._esc(r)).join(" · ") : "기록 부족"}</div>
         ${recommendedActions.length ? `<div style="font-size:11px;color:#7a9780;margin-top:5px;">권장 조치: ${recommendedActions.map(a => this._esc(a)).join(" · ")}</div>` : ""}
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e6eef7;" data-stage-diagnosis-card>
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">현재 생육단계</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">단계</div><b style="font-size:15px;color:#24323F;">${this._esc(stageDiagnosis.stageLabel || "생육단계 미확정")}</b><div style="font-size:10px;color:#9aae9d;">${this._esc(stageDiagnosis.stageId || "unknown")}</div></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">단계 신뢰도</div><b style="font-size:15px;color:#24323F;">${this._esc(stageDiagnosis.stageConfidence || "low")}</b><div style="font-size:10px;color:#9aae9d;">DAT ${this._esc(String(stageDiagnosis.daysAfterTransplant ?? "-"))}</div></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">Index band</div><b style="font-size:15px;color:${indexBandColor};">${this._esc(indexBand)}</b><div style="font-size:10px;color:#9aae9d;">${this._esc(stageDiagnosis.indexType || "G/L-Index")} ${this._esc(String(stageDiagnosis.indexValue ?? "-"))}</div></div>
+        </div>
+        <div style="font-size:11px;color:#5d7d64;margin-top:8px;line-height:1.55;"><b>다음 조사</b> ${this._esc(stageDiagnosis.nextRequiredSurvey || "최신 생육조사와 단계 전환 증거를 기록하세요.")}</div>
+        <div style="font-size:11px;color:#7a9780;margin-top:5px;"><b>부족한 증거</b> ${missingEvidence.length ? missingEvidence.map(e => this._esc(e)).join(" · ") : "없음"}</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid ${cropInterlock.cropInterlockBlocked ? '#f3c8c8' : '#dbeee0'};" data-crop-interlock-card>
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:6px;">
+          <div style="font-size:12px;font-weight:900;color:#24323F;">작물 인터록</div>
+          <span style="font-size:11px;font-weight:900;border-radius:999px;padding:3px 8px;background:${cropInterlock.cropInterlockBlocked ? '#fff1f1' : '#effaf1'};color:${cropInterlock.cropInterlockBlocked ? '#c0392b' : '#51AE60'};">${this._esc(cropInterlock.cropInterlockStatus || "clear")}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:8px;">
+          <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">target promotion</div><b style="font-size:14px;color:${cropInterlock.blockTargetPromotion ? '#c0392b' : '#51AE60'};">${cropInterlock.blockTargetPromotion ? "차단" : "허용"}</b></div>
+          <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">자동 실행</div><b style="font-size:14px;color:${cropInterlock.blockAutoExecution ? '#c0392b' : '#51AE60'};">${cropInterlock.blockAutoExecution ? "차단" : "허용"}</b></div>
+          <div style="background:#f8fbf9;border-radius:10px;padding:8px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">수확 안전</div><b style="font-size:14px;color:${interlockActions.includes('require_harvest_safety_clearance') || interlockReasons.includes('stage_harvest_phi_rei_unknown') ? '#c0392b' : '#51AE60'};">${interlockActions.includes('require_harvest_safety_clearance') || interlockReasons.includes('stage_harvest_phi_rei_unknown') ? "확인 필요" : "위험 없음"}</b></div>
+        </div>
+        <div style="font-size:11px;color:#7a9780;line-height:1.55;"><b>이유</b> ${interlockReasons.length ? interlockReasons.map(r => this._esc(r)).join(" · ") : "없음"}</div>
+        <div style="font-size:11px;color:#7a9780;line-height:1.55;margin-top:4px;"><b>조치</b> ${interlockActions.length ? interlockActions.map(a => this._esc(a)).join(" · ") : "없음"}</div>
+        <div style="font-size:10px;color:#9aae9d;margin-top:5px;">stageInterlockRuleResults ${stageRules.filter(r => r && r.matched).length}/${stageRules.length} · require_harvest_safety_clearance</div>
       </div>
       <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
       ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}
