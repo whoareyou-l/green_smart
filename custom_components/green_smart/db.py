@@ -619,6 +619,27 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             KEY idx_admin_backups_lookup (farm_id, backup_type, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+        """
+        CREATE TABLE IF NOT EXISTS crop_stage_calibrations (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            crop_type VARCHAR(50) NOT NULL,
+            cultivation_method VARCHAR(50) NOT NULL DEFAULT 'hydro',
+            stage_id VARCHAR(100) NOT NULL,
+            stage_label VARCHAR(100) NOT NULL,
+            index_type VARCHAR(32) NOT NULL,
+            threshold_json JSON NOT NULL,
+            boundary_json JSON NOT NULL,
+            source_json JSON NULL,
+            enabled TINYINT(1) NOT NULL DEFAULT 1,
+            version VARCHAR(64) NOT NULL DEFAULT 'crop_stage_calibration_v1',
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_crop_stage_calibration (farm_id, crop_type, cultivation_method, stage_id),
+            KEY idx_crop_stage_calibrations_lookup (farm_id, crop_type, cultivation_method, enabled)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
         "INSERT IGNORE INTO zones (id, name) VALUES (1, '1구역')",
     )
     pool = await get_pool(hass)

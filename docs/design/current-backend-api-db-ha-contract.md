@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.39`
+> 기준 버전: `v1.9.40`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.39"
+  "version": "1.9.40"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.39` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.40` |
 
 ### 4.2 WebSocket commands
 
@@ -244,7 +244,7 @@ aiomysql.create_pool(
 
 ### 6.3 Device/Irrigation/Admin bootstrap closure tables
 
-v1.9.39 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
+v1.9.40 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
 
 장치제어:
 
@@ -426,7 +426,7 @@ green_smart_central
 
 ## 9A. 통합 모델 contract
 
-v1.9.39 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
+v1.9.40 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
 
 ```text
 Crop Safety Rules
@@ -532,7 +532,7 @@ maxMetricDeltaByKey
 
 ### 9A.1.2 작물 인터록 — C-S2 baseline
 
-작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다. v1.9.39 기준 C-S2는 `_crop_interlock_decision(cropSafety)`로 `crop_interlock_policy_v1` 결정을 만든다.
+작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다. v1.9.40 기준 C-S2는 `_crop_interlock_decision(cropSafety)`로 `crop_interlock_policy_v1` 결정을 만든다.
 
 필수 marker:
 
@@ -673,8 +673,11 @@ Scope:
 farm_id + crop_season_id + zone_id + domain
 ```
 
-| `GET /api/green_smart/crop/seasons/{season_id}/growth-report` | Phase 6 생육 리포트/G-Index/작물별 수확량 예측/병해 위험도/주간 리포트 |
-| `POST /api/green_smart/crop/seasons/{season_id}/growth-report/notify` | 주간 생육 리포트를 Home Assistant persistent notification으로 전송 |
+| API | Purpose | Contract markers |
+|---|---|---|
+| `GET/PATCH /api/green_smart/crop/stage-calibrations` | C-S1/C-S2 실사용 심화용 crop stage + G-Index/L-Index calibration 조회/수정 | `crop_stage_calibrations`, `CROP_STAGE_CALIBRATION_DEFAULTS`, `stageConfidence`, `entryEvidence`, `missingEvidence`, `nextRequiredSurvey` |
+| `GET /api/green_smart/crop/seasons/{season_id}/growth-report` | Phase 6 생육 리포트/G-Index/작물별 수확량 예측/병해 위험도/주간 리포트 | `cropModel`, `cropSafety`, `cropInterlock` |
+| `POST /api/green_smart/crop/seasons/{season_id}/growth-report/notify` | 주간 생육 리포트를 Home Assistant persistent notification으로 전송 | `weeklyReport`, notification settings |
 
 `yieldPrediction`은 tomato/lettuce/generic 작물별 baseline 모델을 사용하며 다음 필드를 포함한다.
 

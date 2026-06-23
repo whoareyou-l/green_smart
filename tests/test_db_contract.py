@@ -113,6 +113,64 @@ def test_crop_control_backend_and_panel_persist_pls_and_mix_safety_fields():
         assert marker in popup_section
 
 
+def test_crop_stage_calibration_db_and_api_contract():
+    db_source = DB.read_text(encoding="utf-8")
+    crop_source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
+    design_doc = (ROOT / "docs" / "plans" / "2026-06-23-crop-safety-interlock-real-use-design.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "CREATE TABLE IF NOT EXISTS crop_stage_calibrations",
+        "crop_type VARCHAR(50) NOT NULL",
+        "cultivation_method VARCHAR(50) NOT NULL DEFAULT 'hydro'",
+        "stage_id VARCHAR(100) NOT NULL",
+        "index_type VARCHAR(32) NOT NULL",
+        "threshold_json JSON NOT NULL",
+        "boundary_json JSON NOT NULL",
+        "source_json JSON NULL",
+        "UNIQUE KEY uniq_crop_stage_calibration",
+        "idx_crop_stage_calibrations_lookup",
+    ):
+        assert marker in db_source
+
+    for seed_marker in (
+        "tomato_transplant_establishment",
+        "tomato_cluster_expansion_balance",
+        "lettuce_leaf_expansion_main",
+        "lettuce_harvest_window",
+        '"indexType": "G-Index"',
+        '"indexType": "L-Index"',
+        '"targetRange"',
+        '"cautionRange"',
+        '"problemRange"',
+        '"hardBlockRange"',
+        "tomato.establishmentDays",
+        "lettuce.harvestWindowEntry",
+    ):
+        assert seed_marker in crop_source + "\n" + design_doc
+
+    for api_marker in (
+        "CROP_STAGE_CALIBRATION_VERSION",
+        "CROP_STAGE_CALIBRATION_DEFAULTS",
+        "class CropStageCalibrationView(HomeAssistantView)",
+        'url  = "/api/green_smart/crop/stage-calibrations"',
+        "async def _ensure_crop_stage_calibration_defaults",
+        "async def _crop_stage_calibrations_response",
+        "async def patch(self, request: web.Request) -> web.Response",
+        "crop_stage_calibrations",
+        "threshold_json",
+        "boundary_json",
+        "stageConfidence",
+        "entryEvidence",
+        "missingEvidence",
+        "nextRequiredSurvey",
+    ):
+        assert api_marker in crop_source
+
+    assert "CropStageCalibrationView" in init_source
+    assert "hass.http.register_view(CropStageCalibrationView())" in init_source
+
+
 def test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tables():
     source = DB.read_text(encoding="utf-8")
     for table in (

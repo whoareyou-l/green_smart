@@ -38,6 +38,115 @@ CROP_SAFETY_RULE_DEFAULTS = {
     },
 }
 
+CROP_STAGE_CALIBRATION_VERSION = "crop_stage_calibration_v1"
+CROP_STAGE_CALIBRATION_DEFAULTS = [
+    {
+        "cropType": "tomato",
+        "cultivationMethod": "hydro",
+        "stageId": "tomato_transplant_establishment",
+        "stageLabel": "정식·활착기",
+        "indexType": "G-Index",
+        "threshold": {
+            "targetRange": [-1.5, 1.5],
+            "cautionRange": [[-2.5, -1.5], [1.5, 2.5]],
+            "problemRange": [[-4.0, -2.5], [2.5, 4.0]],
+            "hardBlockRange": [[None, -4.0], [4.0, None]],
+        },
+        "boundary": {
+            "entryCondition": "transplant_date exists",
+            "exitCondition": "DAT >= 4 and establishment/rooting confirmed",
+            "stageConfidence": "low until establishment evidence exists",
+            "entryEvidence": ["transplantDate", "wiltingStatus", "feedEc", "feedPh", "drainEc", "drainPh"],
+            "missingEvidence": ["establishmentStatus", "rootZoneStatus"],
+            "nextRequiredSurvey": "confirm rooting/wilting recovery by DAT 4; require review after DAT 7",
+            "thresholdKeys": {"tomato.establishmentDays": 4, "tomato.establishmentMaxDaysWithoutReview": 7},
+        },
+        "source": {"basis": "RDA/Nongsaro transplant and establishment guidance; hydroponic terms converted to EC/pH/drain/root-zone controls"},
+    },
+    {
+        "cropType": "tomato",
+        "cultivationMethod": "hydro",
+        "stageId": "tomato_vegetative_build_up",
+        "stageLabel": "영양생장 형성기",
+        "indexType": "G-Index",
+        "threshold": {"targetRange": [0.5, 2.5], "cautionRange": [[-1.0, 0.5], [2.5, 3.5]], "problemRange": [[None, -1.0], [3.5, 5.0]], "hardBlockRange": [[None, -3.0], [5.0, None]]},
+        "boundary": {"entryCondition": "establishment confirmed", "exitCondition": "first cluster flowering >= 10%", "stageConfidence": "medium when cluster observation exists", "entryEvidence": ["plantHeight", "stemDiameter", "leafCount", "nodeCount", "firstClusterStatus"], "missingEvidence": ["firstClusterStatus"], "nextRequiredSurvey": "record first cluster flowering percent", "thresholdKeys": {"tomato.firstClusterFloweringEntryPercent": 10}},
+        "source": {"basis": "RDA/Nongsaro first cluster 10% flowering transplant/stage marker"},
+    },
+    {
+        "cropType": "tomato",
+        "cultivationMethod": "hydro",
+        "stageId": "tomato_first_cluster_flowering_fruit_set",
+        "stageLabel": "제1화방 개화·착과기",
+        "indexType": "G-Index",
+        "threshold": {"targetRange": [-0.5, 1.5], "cautionRange": [[-2.0, -0.5], [1.5, 3.0]], "problemRange": [[None, -2.0], [3.0, 4.5]], "hardBlockRange": [[None, -4.0], [4.5, None]]},
+        "boundary": {"entryCondition": "first cluster flowering >= 10%", "exitCondition": "fruit set confirmed or 3-5 days after flowering with set record", "stageConfidence": "high only with fruit-set evidence", "entryEvidence": ["firstClusterFloweringPercent", "fruitSetCount", "flowerStatus", "stemDiameter", "gIndex"], "missingEvidence": ["fruitSetCount"], "nextRequiredSurvey": "confirm fruit set 3-5 days after flowering", "thresholdKeys": {"tomato.firstClusterFruitSetConfirm": "fruit_set_seen OR 3~5 days after flowering with set record"}},
+        "source": {"basis": "Nongsaro: fruit set begins 3-5 days after fertilization"},
+    },
+    {
+        "cropType": "tomato",
+        "cultivationMethod": "hydro",
+        "stageId": "tomato_cluster_expansion_balance",
+        "stageLabel": "화방 전개·생육균형 조정기",
+        "indexType": "G-Index",
+        "threshold": {"targetRange": [-1.0, 1.0], "cautionRange": [[-2.5, -1.0], [1.0, 2.5]], "problemRange": [[None, -2.5], [2.5, None]], "hardBlockRange": [[None, -4.0], [4.0, None]]},
+        "boundary": {"entryCondition": "first cluster fruit set confirmed AND cluster_no >= 2", "exitCondition": "fruit expansion confirmed", "stageConfidence": "high when cluster_no and flowering/fruit-set observations exist", "entryEvidence": ["clusterNo", "floweringProgress", "fruitSetProgress", "plantHeight", "stemDiameter", "leafCount", "nodeCount", "gIndex"], "missingEvidence": ["clusterNo"], "nextRequiredSurvey": "record current cluster number and fruit expansion signal", "thresholdKeys": {"tomato.clusterExpansionEntry": "first_cluster_fruit_set_confirmed AND cluster_no >= 2", "tomato.thirdClusterManagementPoint": "cluster_no >= 3 OR 25~30 DAT"}},
+        "source": {"basis": "Nongsaro cluster management transition; tomato growth diagnosis MI/PI"},
+    },
+    {
+        "cropType": "tomato",
+        "cultivationMethod": "hydro",
+        "stageId": "tomato_fruit_expansion_quality",
+        "stageLabel": "과실비대·품질관리기",
+        "indexType": "G-Index",
+        "threshold": {"targetRange": [-1.5, 0.5], "cautionRange": [[-3.0, -1.5], [0.5, 2.0]], "problemRange": [[None, -3.0], [2.0, 3.5]], "hardBlockRange": [[None, -4.5], [3.5, None]]},
+        "boundary": {"entryCondition": "fruit diameter growth seen OR fruit_age >= 7 days after set", "exitCondition": "first harvest recorded OR fruit_age >= 35~50 days after set", "stageConfidence": "medium unless fruit size/quality metrics exist", "entryEvidence": ["fruitAge", "fruitDiameter", "cracking", "blossomEndRot", "drainRate", "drainEc", "drainPh", "gIndex"], "missingEvidence": ["fruitDiameter"], "nextRequiredSurvey": "record fruit size and quality disorders", "thresholdKeys": {"tomato.fruitExpansionEntry": "fruit_diameter_growth_seen OR fruit_age >= 7 days after set", "tomato.harvestWindowEntry": "first_harvest_recorded OR fruit_age >= 35~50 days after set"}},
+        "source": {"basis": "Nongsaro: fruit expansion near 30 days; harvest 35-50 days by temperature"},
+    },
+    {
+        "cropType": "tomato", "cultivationMethod": "hydro", "stageId": "tomato_continuous_harvest", "stageLabel": "연속 수확기", "indexType": "G-Index",
+        "threshold": {"targetRange": [-1.0, 1.0], "cautionRange": [[-2.5, -1.0], [1.0, 2.5]], "problemRange": [[None, -2.5], [2.5, None]], "hardBlockRange": [[None, -4.0], [4.0, None]]},
+        "boundary": {"entryCondition": "first harvest recorded OR harvestable fruit confirmed", "exitCondition": "crop termination decision confirmed", "stageConfidence": "requires harvest and PHI/REI evidence", "entryEvidence": ["harvestDate", "harvestKg", "pesticideDate", "PHI", "REI", "qualityDisorders", "gIndex"], "missingEvidence": ["PHI", "REI"], "nextRequiredSurvey": "confirm food-safety clearance before harvest promotion"},
+        "source": {"basis": "Nongsaro harvest timing and food-safety-first interlock policy"},
+    },
+    {
+        "cropType": "tomato", "cultivationMethod": "hydro", "stageId": "tomato_late_crop_termination", "stageLabel": "후기·작기 종료기", "indexType": "G-Index",
+        "threshold": {"targetRange": [-2.0, 1.0], "cautionRange": [[-3.5, -2.0], [1.0, 2.5]], "problemRange": [[None, -3.5], [2.5, None]], "hardBlockRange": [[None, -5.0], [4.0, None]]},
+        "boundary": {"entryCondition": "termination planned OR vigor decline + disease accumulation + low yield signal", "exitCondition": "crop ended", "stageConfidence": "manual/manager decision preferred", "entryEvidence": ["vigorStatus", "diseaseAccumulation", "yieldTrend", "terminationPlan"], "missingEvidence": ["terminationPlan"], "nextRequiredSurvey": "manager/owner termination decision"},
+        "source": {"basis": "operational termination decision; G-Index correction secondary"},
+    },
+    {
+        "cropType": "lettuce", "cultivationMethod": "hydro", "stageId": "lettuce_transplant_establishment", "stageLabel": "정식·활착기", "indexType": "L-Index",
+        "threshold": {"targetRange": [-1.0, 1.5], "cautionRange": [[-2.5, -1.0], [1.5, 2.5]], "problemRange": [[None, -2.5], [2.5, 4.0]], "hardBlockRange": [[None, -4.0], [4.0, None]]},
+        "boundary": {"entryCondition": "transplant_date exists", "exitCondition": "DAT >= 3 and establishment/wilting recovery confirmed", "stageConfidence": "low until leaf/root recovery evidence exists", "entryEvidence": ["transplantDate", "leafCount", "wiltingStatus", "feedEc", "feedPh", "waterTemp"], "missingEvidence": ["establishmentStatus"], "nextRequiredSurvey": "confirm rooting/wilting recovery by DAT 3; review after DAT 7", "thresholdKeys": {"lettuce.establishmentDays": 3, "lettuce.establishmentMaxDaysWithoutReview": 7}},
+        "source": {"basis": "lettuce studies use DAT 3 initial survey; RDA transplant leaf count 3-5 leaves"},
+    },
+    {
+        "cropType": "lettuce", "cultivationMethod": "hydro", "stageId": "lettuce_leaf_expansion_early", "stageLabel": "초기 엽생장기", "indexType": "L-Index",
+        "threshold": {"targetRange": [0.5, 2.5], "cautionRange": [[-1.0, 0.5], [2.5, 3.5]], "problemRange": [[None, -1.0], [3.5, 4.5]], "hardBlockRange": [[None, -3.5], [4.5, None]]},
+        "boundary": {"entryCondition": "DAT >= 3 AND leaf metrics available", "exitCondition": "DAT >= 14 OR leaf length/width/count increase stable", "stageConfidence": "medium when leaf metrics exist", "entryEvidence": ["leafCount", "leafLength", "leafWidth", "plantHeight", "leafColor"], "missingEvidence": ["leafLength", "leafWidth"], "nextRequiredSurvey": "record leaf metrics before DAT 14", "thresholdKeys": {"lettuce.earlyLeafExpansionEntry": "DAT >= 3 AND leaf_count >= transplant_leaf_count"}},
+        "source": {"basis": "lettuce DAT 3 and DAT 14 survey timing"},
+    },
+    {
+        "cropType": "lettuce", "cultivationMethod": "hydro", "stageId": "lettuce_leaf_expansion_main", "stageLabel": "본격 엽생장기", "indexType": "L-Index",
+        "threshold": {"targetRange": [0.0, 2.0], "cautionRange": [[-2.0, 0.0], [2.0, 3.5]], "problemRange": [[None, -2.0], [3.5, 4.5]], "hardBlockRange": [[None, -4.0], [4.5, None]]},
+        "boundary": {"entryCondition": "DAT >= 14 OR clear leaf expansion", "exitCondition": "DAT >= 21 OR harvest-size approaching", "stageConfidence": "high with leaf growth trend", "entryEvidence": ["leafCount", "leafLength", "leafWidth", "plantHeight", "freshWeightProxy", "feedEc", "feedPh"], "missingEvidence": ["leafGrowthTrend"], "nextRequiredSurvey": "record leaf size trend and quality risk", "thresholdKeys": {"lettuce.mainLeafExpansionEntry": "DAT >= 14 OR clear leaf_size increase"}},
+        "source": {"basis": "lettuce study: DAT 14 differences; DAT 21 late growth survey"},
+    },
+    {
+        "cropType": "lettuce", "cultivationMethod": "hydro", "stageId": "lettuce_pre_harvest_quality", "stageLabel": "수확 전 품질관리기", "indexType": "L-Index",
+        "threshold": {"targetRange": [-0.5, 1.0], "cautionRange": [[-2.0, -0.5], [1.0, 2.5]], "problemRange": [[None, -2.0], [2.5, 4.0]], "hardBlockRange": [[None, -4.0], [4.0, None]]},
+        "boundary": {"entryCondition": "DAT >= 21 OR leaf_length >= 15cm OR leaf_width >= 5cm", "exitCondition": "DAT >= 25 OR harvest spec reached", "stageConfidence": "requires quality and food-safety evidence", "entryEvidence": ["leafLength", "leafWidth", "leafColor", "tipburn", "boltingSigns", "pesticideDate", "PHI", "REI"], "missingEvidence": ["PHI", "REI"], "nextRequiredSurvey": "confirm harvest safety and quality", "thresholdKeys": {"lettuce.preHarvestEntry": "DAT >= 21 OR leaf_length >= 15cm OR leaf_width >= 5cm"}},
+        "source": {"basis": "RDA harvest leaf size 15-18cm x 5-6cm; DAT 21 late growth survey"},
+    },
+    {
+        "cropType": "lettuce", "cultivationMethod": "hydro", "stageId": "lettuce_harvest_window", "stageLabel": "수확기", "indexType": "L-Index",
+        "threshold": {"targetRange": [-1.0, 1.0], "cautionRange": [[-2.5, -1.0], [1.0, 2.5]], "problemRange": [[None, -2.5], [2.5, 3.5]], "hardBlockRange": [[None, -4.0], [3.5, None]]},
+        "boundary": {"entryCondition": "DAT 25~30 OR leaf 15~18cm x 5~6cm AND food-safety clear", "exitCondition": "crop ended OR next harvest/cut cycle starts", "stageConfidence": "requires PHI/REI/quality clearance", "entryEvidence": ["harvestable", "harvestDate", "leafLength", "leafWidth", "quality", "PHI", "REI"], "missingEvidence": ["PHI", "REI", "quality"], "nextRequiredSurvey": "block harvest promotion until food-safety clear", "thresholdKeys": {"lettuce.harvestWindowEntry": "DAT >= 25 OR leaf_length 15~18cm AND leaf_width 5~6cm", "lettuce.harvestWindowMaxDays": 30, "lettuce.boltingRiskHeat": "temp > 25°C sustained OR accumulated_temp approaching 1,400~1,700°C"}},
+        "source": {"basis": "RDA: harvest after DAT 25-30; bolting at high temperature / accumulated temp 1,400-1,700°C"},
+    },
+]
+
 YIELD_MODEL_BY_CROP = {
     "tomato": {
         "modelVersion": "tomato_growth_model_v1",
@@ -1121,6 +1230,138 @@ class CropGrowthDeleteView(HomeAssistantView):
             (int(record_id),),
         )
         return _json({"ok": True})
+
+
+# ── 작물 stage/index calibration ──────────────────────────────────────────────
+
+async def _ensure_crop_stage_calibration_defaults(hass, *, farm_id: int = 1) -> None:
+    for item in CROP_STAGE_CALIBRATION_DEFAULTS:
+        await execute(hass, """
+            INSERT INTO crop_stage_calibrations
+                (farm_id, crop_type, cultivation_method, stage_id, stage_label,
+                 index_type, threshold_json, boundary_json, source_json, enabled, version)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s)
+            ON DUPLICATE KEY UPDATE
+                stage_label = VALUES(stage_label),
+                index_type = VALUES(index_type),
+                source_json = VALUES(source_json),
+                version = VALUES(version)
+        """, (
+            farm_id,
+            item["cropType"],
+            item.get("cultivationMethod") or "hydro",
+            item["stageId"],
+            item["stageLabel"],
+            item["indexType"],
+            json.dumps(item["threshold"], ensure_ascii=False),
+            json.dumps(item["boundary"], ensure_ascii=False),
+            json.dumps(item.get("source") or {}, ensure_ascii=False),
+            CROP_STAGE_CALIBRATION_VERSION,
+        ))
+
+
+def _parse_json_field(value, fallback):
+    if value is None:
+        return fallback
+    if isinstance(value, (dict, list)):
+        return value
+    try:
+        return json.loads(value)
+    except Exception:
+        return fallback
+
+
+def _parse_json_object(value) -> dict:
+    parsed = _parse_json_field(value, {})
+    return parsed if isinstance(parsed, dict) else {}
+
+
+async def _crop_stage_calibrations_response(hass, *, farm_id: int = 1, crop_type: str | None = None, cultivation_method: str = "hydro") -> dict:
+    await _ensure_crop_stage_calibration_defaults(hass, farm_id=farm_id)
+    args: list = [farm_id, cultivation_method]
+    where = "farm_id = %s AND cultivation_method = %s AND enabled = 1"
+    if crop_type:
+        where += " AND crop_type = %s"
+        args.append(crop_type)
+    rows = await fetchall(hass, f"""
+        SELECT id, farm_id AS farmId, crop_type AS cropType,
+               cultivation_method AS cultivationMethod,
+               stage_id AS stageId, stage_label AS stageLabel,
+               index_type AS indexType, threshold_json AS thresholdJson,
+               boundary_json AS boundaryJson, source_json AS sourceJson,
+               enabled, version, updated_at AS updatedAt
+        FROM crop_stage_calibrations
+        WHERE {where}
+        ORDER BY crop_type ASC, id ASC
+    """, tuple(args))
+    calibrations = []
+    for row in rows:
+        threshold = _parse_json_object(row.pop("thresholdJson", None))
+        stage_boundary = _parse_json_object(row.pop("boundaryJson", None))
+        source = _parse_json_object(row.pop("sourceJson", None))
+        row["threshold"] = threshold
+        row["boundary"] = stage_boundary
+        row["source"] = source
+        # Explicit API shape required by real-use stage inference consumers.
+        row["stageConfidence"] = stage_boundary.get("stageConfidence")
+        row["entryEvidence"] = stage_boundary.get("entryEvidence") or []
+        row["missingEvidence"] = stage_boundary.get("missingEvidence") or []
+        row["nextRequiredSurvey"] = stage_boundary.get("nextRequiredSurvey")
+        calibrations.append(row)
+    return {
+        "version": CROP_STAGE_CALIBRATION_VERSION,
+        "farmId": farm_id,
+        "cropType": crop_type,
+        "cultivationMethod": cultivation_method,
+        "calibrations": calibrations,
+    }
+
+
+class CropStageCalibrationView(HomeAssistantView):
+    """GET/PATCH crop stage G-Index/L-Index calibration thresholds."""
+    url  = "/api/green_smart/crop/stage-calibrations"
+    name = "api:green_smart:crop:stage_calibrations"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        farm_id = int(request.query.get("farmId", 1))
+        crop_type = request.query.get("cropType")
+        cultivation_method = request.query.get("cultivationMethod") or "hydro"
+        return _json(await _crop_stage_calibrations_response(hass, farm_id=farm_id, crop_type=crop_type, cultivation_method=cultivation_method))
+
+    async def patch(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            return _err("Invalid JSON")
+        farm_id = int(body.get("farmId") or 1)
+        crop_type = body.get("cropType")
+        stage_id = body.get("stageId")
+        cultivation_method = body.get("cultivationMethod") or "hydro"
+        if not crop_type or not stage_id:
+            return _err("cropType, stageId 필수")
+        await _ensure_crop_stage_calibration_defaults(hass, farm_id=farm_id)
+        current = await fetchone(hass, """
+            SELECT threshold_json AS thresholdJson, boundary_json AS boundaryJson
+            FROM crop_stage_calibrations
+            WHERE farm_id = %s AND crop_type = %s AND cultivation_method = %s AND stage_id = %s
+        """, (farm_id, crop_type, cultivation_method, stage_id))
+        threshold = body.get("threshold") if body.get("threshold") is not None else _parse_json_field((current or {}).get("thresholdJson"), {})
+        boundary = body.get("boundary") if body.get("boundary") is not None else _parse_json_field((current or {}).get("boundaryJson"), {})
+        await execute(hass, """
+            UPDATE crop_stage_calibrations
+            SET threshold_json = %s, boundary_json = %s, updated_by = %s,
+                version = %s, updated_at = NOW()
+            WHERE farm_id = %s AND crop_type = %s AND cultivation_method = %s AND stage_id = %s
+        """, (
+            json.dumps(threshold, ensure_ascii=False),
+            json.dumps(boundary, ensure_ascii=False),
+            body.get("updatedBy"),
+            CROP_STAGE_CALIBRATION_VERSION,
+            farm_id, crop_type, cultivation_method, stage_id,
+        ))
+        return _json(await _crop_stage_calibrations_response(hass, farm_id=farm_id, crop_type=crop_type, cultivation_method=cultivation_method))
 
 
 # ── 병해충 예찰 ───────────────────────────────────────────────────────────────
