@@ -14,6 +14,7 @@ GROWTH_REPORT_NOTIFICATION_SETTINGS_KEY = "growth_report_notification_settings"
 GROWTH_REPORT_NOTIFICATION_STATE_KEY = "growth_report_notification_state"
 CROP_MODEL_VERSION = "crop_season_model_v1"
 CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
+CROP_INTERLOCK_VERSION = "crop_interlock_policy_v1"
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
@@ -596,6 +597,77 @@ def _crop_safety_rule_result(reason_code: str, matched: bool, *, severity: str =
     }
 
 
+def _crop_interlock_decision(cropSafety: dict | None) -> dict:
+    safety = cropSafety or {}
+    reasons = set(safety.get("cropSafetyReasons") or [])
+    matched_results = [item for item in safety.get("cropSafetyRuleResults") or [] if item.get("matched")]
+    confirm_reasons = {item.get("reasonCode") for item in matched_results if item.get("severity") == "confirm"}
+
+    hard_block_reasons = {
+        "crop_season_missing",
+        "pesticide_pls_noncompliant",
+        "pesticide_mix_forbidden",
+        "crop_pest_risk_high",
+        "crop_growth_anomaly",
+        "crop_metric_anomaly",
+    }
+    uncertain_reasons = {
+        "crop_type_unknown",
+        "growth_survey_stale",
+        "pesticide_mix_unknown",
+        "crop_control_record_stale",
+        "crop_confidence_low",
+    }
+
+    actions = []
+    if reasons:
+        actions.append("allow_read_only_preview")
+    if reasons & hard_block_reasons:
+        actions.extend(["block_target_promotion", "block_auto_execution"])
+    if reasons & uncertain_reasons or confirm_reasons:
+        actions.extend(["block_target_promotion", "block_auto_execution", "require_operator_confirmation"])
+    if "crop_season_missing" in reasons:
+        actions.append("block_downstream_model_targets")
+    if "crop_type_unknown" in reasons:
+        actions.append("use_generic_safe_ranges_only")
+    if "growth_survey_stale" in reasons:
+        actions.append("require_fresh_growth_survey")
+    if "crop_pest_risk_high" in reasons:
+        actions.append("block_aggressive_climate_and_irrigation_changes")
+    if "pesticide_pls_noncompliant" in reasons:
+        actions.append("block_pesticide_noncompliant_targets")
+    if "pesticide_mix_forbidden" in reasons:
+        actions.append("block_pesticide_mix_targets")
+    if "pesticide_mix_unknown" in reasons:
+        actions.append("require_pesticide_mix_confirmation")
+    if reasons & {"crop_confidence_low", "crop_control_record_stale", "crop_growth_anomaly", "crop_metric_anomaly"}:
+        actions.append("fallback_conservative_crop_baseline")
+    if reasons & hard_block_reasons:
+        actions.append("fallback_conservative_crop_baseline")
+
+    actions = list(dict.fromkeys(actions))
+    hard_block = bool(reasons & hard_block_reasons)
+    needs_confirm = bool(reasons & uncertain_reasons or confirm_reasons or hard_block)
+    blocked = bool(reasons)
+    status = "blocked" if hard_block else ("confirm_required" if blocked else "clear")
+
+    return {
+        "cropInterlockVersion": CROP_INTERLOCK_VERSION,
+        "cropInterlockStatus": status,
+        "cropInterlockBlocked": blocked,
+        "cropInterlockReasons": sorted(reasons),
+        "cropInterlockActions": actions,
+        "fallbackToConservativeBaseline": "fallback_conservative_crop_baseline" in actions,
+        "operatorConfirmationRequired": needs_confirm,
+        "managerApprovalRequired": bool(reasons & {"crop_pest_risk_high", "pesticide_pls_noncompliant", "pesticide_mix_forbidden"}),
+        "adminApprovalRequired": bool(reasons & {"pesticide_pls_noncompliant", "pesticide_mix_forbidden", "crop_growth_anomaly", "crop_metric_anomaly"}),
+        "blockTargetPromotion": blocked,
+        "blockAutoExecution": blocked,
+        "useGenericSafeRangesOnly": "use_generic_safe_ranges_only" in actions,
+        "blockAggressiveClimateAndIrrigationChanges": "block_aggressive_climate_and_irrigation_changes" in actions,
+    }
+
+
 def _crop_safety_rule_snapshot(*, season: dict, growth_rows: list[dict], pestRisk: dict, yieldPrediction: dict, latest_g: float, weekly_growth: float, control_rows: list[dict], settings: dict | None = None) -> dict:
     rules = {**CROP_SAFETY_RULE_DEFAULTS, **(settings or {})}
     latest = growth_rows[0] if growth_rows else {}
@@ -737,6 +809,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)
     yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
     cropSafety = _crop_safety_rule_snapshot(season=season, growth_rows=growth_rows, pestRisk=pestRisk, yieldPrediction=yieldPrediction, latest_g=latest_g, weekly_growth=weekly_growth, control_rows=control_rows)
+    cropInterlock = _crop_interlock_decision(cropSafety)
     growthStage = _crop_growth_stage(season, latest, growth_rows)
     cropProfile = _crop_profile_for_season(season, latest)
     confidenceReasons = list(dict.fromkeys(
@@ -756,6 +829,10 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "yieldPrediction": yieldPrediction,
         "pestRisk": pestRisk,
         "cropSafety": cropSafety,
+        "cropInterlock": cropInterlock,
+        "modelAllowed": not (cropSafety.get("cropSafetyBlocked") or cropInterlock.get("cropInterlockBlocked")),
+        "modelBlockedBySafety": bool(cropSafety.get("cropSafetyBlocked")),
+        "modelBlockedByInterlock": bool(cropInterlock.get("cropInterlockBlocked")),
         "confidence": yieldPrediction.get("confidence") or "low",
         "confidenceReasons": confidenceReasons,
         "sourceTables": ["crop_seasons", "growth_surveys", "pest_surveys", "control_records"],

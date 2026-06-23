@@ -55,12 +55,14 @@ Domain reference order: Crop → Environment → Irrigation → Device
 
 ---
 
-## Current status after v1.9.38
+## Current status after v1.9.39
 
 Completed:
 
 - M0: user-facing MVP terminology cleaned up.
 - M1: `_crop_model_snapshot(hass, season_id)` baseline exists.
+- C-S1/C-S1B: crop safety rules include crop season, crop type, growth freshness, pest risk, PLS/mix risk, G-Index lower/upper bounds, and growth metric anomalies.
+- C-S2: `_crop_interlock_decision(cropSafety)` maps crop safety reasons to block/fallback/confirmation actions and exposes `cropInterlock` in crop model snapshots.
 
 Paused:
 
@@ -68,8 +70,8 @@ Paused:
 
 Problem found:
 
-- Existing docs mention SafetyGuard/Interlock but do not define enough crop-first deterministic rules.
-- Current crop model snapshot contains pest/yield/growth confidence, but there is no dedicated crop safety rule layer or crop interlock/fallback layer.
+- M2~M8 model expansion must stay paused until each domain has explicit safety/interlock contracts.
+- Next work is C-S3: reinforce model snapshots/consumers so downstream strategy targets cannot bypass `cropSafety`/`cropInterlock`.
 
 ---
 
@@ -188,6 +190,13 @@ cropInterlockBlocked
 cropInterlockActions
 fallbackToConservativeBaseline
 operatorConfirmationRequired
+managerApprovalRequired
+adminApprovalRequired
+blockTargetPromotion
+blockAutoExecution
+useGenericSafeRangesOnly
+blockAggressiveClimateAndIrrigationChanges
+crop_interlock_policy_v1
 ```
 
 **Verification:**

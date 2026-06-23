@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.38`, Crop Safety Rules C-S1B PLS/mix/growth anomaly baseline, Model Phase M1 crop model snapshot baseline, UI Polish Phase P4 crop-season-style control zone selector and DB bootstrap closure baseline, Control Phase C19D virtual rehearsal evidence baseline
+> 기준 버전: product code `v1.9.39`, Crop Interlock C-S2 baseline, Crop Safety Rules C-S1B PLS/mix/growth anomaly baseline, Model Phase M1 crop model snapshot baseline, UI Polish Phase P4 crop-season-style control zone selector and DB bootstrap closure baseline, Control Phase C19D virtual rehearsal evidence baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -310,7 +310,7 @@ G-Index 추이 baseline
 
 ## 7. 통합 모델 트랙: 작기·환경·관수·장치 모델 관계
 
-v1.9.38 이후 작업은 `MVP`라는 개발 단계명을 사용자-facing UI/문서의 중심 용어로 쓰지 않는다. 내부 DB/API 호환을 위해 `environment_strategy_mvp`, `irrigation_strategy_mvp` 같은 legacy identifier는 유지할 수 있지만, 제품/문서/화면의 기준 용어는 다음 4개 모델로 정렬한다.
+v1.9.39 이후 작업은 `MVP`라는 개발 단계명을 사용자-facing UI/문서의 중심 용어로 쓰지 않는다. 내부 DB/API 호환을 위해 `environment_strategy_mvp`, `irrigation_strategy_mvp` 같은 legacy identifier는 유지할 수 있지만, 제품/문서/화면의 기준 용어는 다음 4개 모델로 정렬한다.
 
 ```text
 작물 안전 룰(Crop Safety Rules)
@@ -377,7 +377,7 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 |---:|---|---|---|
 | S0 | Roadmap correction | 모델 우선 문서를 Safety→Interlock→Model 순서로 보정 | 문서/test contract가 M2~M8 보류와 안전 우선 순서를 강제 |
 | C-S1 | 작물 안전 룰 | 작물/작기 기준 deterministic safety rule 정의 | `cropSafetyStatus`, `cropSafetyBlocked`, `cropSafetyReasons`, reasonCode contract |
-| C-S2 | 작물 인터록 | 작물 safety 결과별 fallback/block/confirmation 정책 정의 | `cropInterlockStatus`, `fallbackToConservativeBaseline`, `operatorConfirmationRequired` contract |
+| C-S2 | 작물 인터록 | 작물 safety 결과별 fallback/block/confirmation 정책 정의 — **완료** | `cropInterlockStatus`, `fallbackToConservativeBaseline`, `operatorConfirmationRequired` contract |
 | C-S3 | 작기/작물 모델 보강 | M1 cropModel에 cropSafety/cropInterlock summary를 포함 | 모델이 safety/interlock block을 우회하지 못함 |
 | E-S1 | 환경 안전 룰 | 온도/습도/VPD/CO₂/날씨 위험 deterministic rule 정의 | 환경 model target 전 안전 contract |
 | E-S2 | 환경 인터록 | 환경 안전 결과별 환기/스크린/난방 fallback 정의 | 환경 전략 모델보다 먼저 실행되는 interlock contract |

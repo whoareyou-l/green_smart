@@ -243,3 +243,115 @@ def test_crop_safety_rule_snapshot_blocks_pls_mix_low_g_index_and_metric_anomali
         assert reason in result["cropSafetyReasons"]
     metric_result = next(item for item in result["cropSafetyRuleResults"] if item["reasonCode"] == "crop_metric_anomaly")
     assert metric_result["evidence"]["metricAnomalies"]
+
+
+def test_crop_interlock_contract_markers_are_defined_before_resuming_model_work():
+    source = CROP_VIEWS.read_text(encoding="utf-8")
+    backend_doc = BACKEND_DOC.read_text(encoding="utf-8")
+    safety_plan = SAFETY_PLAN.read_text(encoding="utf-8")
+    combined_docs = backend_doc + "\n" + safety_plan
+
+    for marker in (
+        "CROP_INTERLOCK_VERSION",
+        "_crop_interlock_decision(",
+        "cropInterlockStatus",
+        "cropInterlockBlocked",
+        "cropInterlockActions",
+        "fallbackToConservativeBaseline",
+        "operatorConfirmationRequired",
+        "managerApprovalRequired",
+        "adminApprovalRequired",
+        "blockTargetPromotion",
+        "blockAutoExecution",
+        "useGenericSafeRangesOnly",
+        "blockAggressiveClimateAndIrrigationChanges",
+        "crop_interlock_policy_v1",
+    ):
+        assert marker in source
+        assert marker in combined_docs
+
+
+def test_crop_interlock_decision_blocks_hard_safety_risks_and_requires_admin_approval():
+    crop_views = _load_crop_views_for_helper_tests()
+
+    safety = {
+        "cropSafetyStatus": "blocked",
+        "cropSafetyBlocked": True,
+        "cropSafetyReasons": [
+            "pesticide_pls_noncompliant",
+            "pesticide_mix_forbidden",
+            "crop_pest_risk_high",
+            "crop_growth_anomaly",
+        ],
+        "cropSafetyRuleResults": [
+            {"reasonCode": "pesticide_pls_noncompliant", "matched": True, "severity": "block"},
+            {"reasonCode": "pesticide_mix_forbidden", "matched": True, "severity": "block"},
+            {"reasonCode": "crop_pest_risk_high", "matched": True, "severity": "block"},
+            {"reasonCode": "crop_growth_anomaly", "matched": True, "severity": "block"},
+        ],
+    }
+
+    result = crop_views._crop_interlock_decision(safety)
+
+    assert result["cropInterlockVersion"] == crop_views.CROP_INTERLOCK_VERSION
+    assert result["cropInterlockStatus"] == "blocked"
+    assert result["cropInterlockBlocked"] is True
+    assert result["fallbackToConservativeBaseline"] is True
+    assert result["operatorConfirmationRequired"] is True
+    assert result["managerApprovalRequired"] is True
+    assert result["adminApprovalRequired"] is True
+    assert result["blockTargetPromotion"] is True
+    assert result["blockAutoExecution"] is True
+    assert "block_pesticide_noncompliant_targets" in result["cropInterlockActions"]
+    assert "block_pesticide_mix_targets" in result["cropInterlockActions"]
+    assert "block_aggressive_climate_and_irrigation_changes" in result["cropInterlockActions"]
+    assert "fallback_conservative_crop_baseline" in result["cropInterlockActions"]
+
+
+def test_crop_interlock_decision_handles_uncertain_safety_as_confirm_and_generic_safe_ranges():
+    crop_views = _load_crop_views_for_helper_tests()
+
+    safety = {
+        "cropSafetyStatus": "blocked",
+        "cropSafetyBlocked": True,
+        "cropSafetyReasons": ["crop_type_unknown", "growth_survey_stale", "pesticide_mix_unknown", "crop_confidence_low"],
+        "cropSafetyRuleResults": [
+            {"reasonCode": "crop_type_unknown", "matched": True, "severity": "block"},
+            {"reasonCode": "growth_survey_stale", "matched": True, "severity": "confirm"},
+            {"reasonCode": "pesticide_mix_unknown", "matched": True, "severity": "confirm"},
+            {"reasonCode": "crop_confidence_low", "matched": True, "severity": "confirm"},
+        ],
+    }
+
+    result = crop_views._crop_interlock_decision(safety)
+
+    assert result["cropInterlockStatus"] == "confirm_required"
+    assert result["cropInterlockBlocked"] is True
+    assert result["operatorConfirmationRequired"] is True
+    assert result["fallbackToConservativeBaseline"] is True
+    assert result["useGenericSafeRangesOnly"] is True
+    assert result["blockTargetPromotion"] is True
+    assert result["blockAutoExecution"] is True
+    assert "allow_read_only_preview" in result["cropInterlockActions"]
+    assert "require_operator_confirmation" in result["cropInterlockActions"]
+    assert "use_generic_safe_ranges_only" in result["cropInterlockActions"]
+
+
+def test_crop_model_snapshot_includes_crop_interlock_summary():
+    crop_views = _load_crop_views_for_helper_tests()
+
+    result = crop_views._crop_model_snapshot_from_report_parts(
+        None,
+        12,
+        {"id": 12, "cropType": "tomato", "plantDate": "2026-01-01"},
+        [{"date": "2026-06-20", "height": 20, "leafCount": 5, "stemDia": 8, "truss": 1, "node": 3, "cropType": "tomato"}],
+        [],
+        [],
+    )
+
+    assert "cropSafety" in result
+    assert "cropInterlock" in result
+    assert result["cropInterlock"]["cropInterlockVersion"] == crop_views.CROP_INTERLOCK_VERSION
+    assert "modelAllowed" in result
+    assert "modelBlockedBySafety" in result
+    assert "modelBlockedByInterlock" in result

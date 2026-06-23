@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.38`
+> 기준 버전: `v1.9.39`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.38"
+  "version": "1.9.39"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.38` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.39` |
 
 ### 4.2 WebSocket commands
 
@@ -244,7 +244,7 @@ aiomysql.create_pool(
 
 ### 6.3 Device/Irrigation/Admin bootstrap closure tables
 
-v1.9.38 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
+v1.9.39 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
 
 장치제어:
 
@@ -426,7 +426,7 @@ green_smart_central
 
 ## 9A. 통합 모델 contract
 
-v1.9.38 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
+v1.9.39 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
 
 ```text
 Crop Safety Rules
@@ -530,9 +530,9 @@ maxMetricDeltaByKey
 | `maxMetricDeltaByKey` | height 80, leafCount 30, stemDia 20, truss 10, node 30 | 직전 조사 대비 급변 이상치 기준 |
 | `supportedCropTypes` | `tomato`, `lettuce` | crop-specific 안전 기준을 적용하는 작물 |
 
-### 9A.1.2 작물 인터록 — next required layer
+### 9A.1.2 작물 인터록 — C-S2 baseline
 
-작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다.
+작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다. v1.9.39 기준 C-S2는 `_crop_interlock_decision(cropSafety)`로 `crop_interlock_policy_v1` 결정을 만든다.
 
 필수 marker:
 
@@ -544,7 +544,34 @@ cropInterlockBlocked
 cropInterlockActions
 fallbackToConservativeBaseline
 operatorConfirmationRequired
+managerApprovalRequired
+adminApprovalRequired
+blockTargetPromotion
+blockAutoExecution
+useGenericSafeRangesOnly
+blockAggressiveClimateAndIrrigationChanges
+crop_interlock_policy_v1
 ```
+
+기본 결정:
+
+| Safety reason | Interlock action |
+|---|---|
+| `crop_season_missing` | downstream model target block |
+| `crop_type_unknown` | generic safe range only + operator confirmation |
+| `growth_survey_stale` | read-only preview + block auto execution + require fresh survey |
+| `crop_pest_risk_high` | block aggressive climate/irrigation changes + manager approval |
+| `pesticide_pls_noncompliant` | block pesticide noncompliant targets + admin approval |
+| `pesticide_mix_forbidden` | block pesticide mix targets + admin approval |
+| `pesticide_mix_unknown` | require pesticide mix confirmation |
+| `crop_confidence_low` / stale control / growth anomaly | conservative crop baseline fallback |
+
+| Output flag | Meaning |
+|---|---|
+| `blockTargetPromotion` | model target cannot be promoted downstream |
+| `blockAutoExecution` | no automatic execution from crop-derived model output |
+| `fallbackToConservativeBaseline` | use conservative/default crop baseline until operator resolves risk |
+| `operatorConfirmationRequired` | operator must explicitly confirm before continuing |
 
 M2 환경 전략 모델로 진행하려면 먼저 9A.1.1과 9A.1.2가 contract/test/code로 통과해야 한다.
 
