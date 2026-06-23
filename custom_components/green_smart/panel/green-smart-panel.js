@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.59
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.60
 const DOMAIN = "green_smart";
-const VERSION = "1.9.59";
+const VERSION = "1.9.60";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3775,12 +3775,19 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _growthFieldConfigForCrop(cropType) {
     const common = {
-      tomato: { indexType: "G-Index", title: "토마토 생육조사", desc: "G-Index용 초장·엽수·줄기경·화방·착과 절위를 기록합니다", fields: [
+      tomato: { indexType: "G-Index", title: "토마토 생육조사", desc: "G-Index용 초장·엽수·줄기경·화방·착과 절위와 품질/생리장해를 기록합니다", fields: [
         ["plantHeight", "초장 (cm)", "예) 120.5", "0", "500", "0.1"],
         ["leafCount", "엽수 (매)", "예) 12", "0", "100", "1"],
         ["stemDiameter", "줄기 경 (mm)", "예) 12.3", "0", "50", "0.1"],
         ["flowerClusterNo", "화방 위치 (단)", "예) 5", "0", "30", "1"],
         ["fruitSetNode", "착과 절위 (절)", "예) 8", "0", "80", "1"],
+      ], qualityDisorderFields: [
+        ["fruitSetRate", "착과율 (%)", "예) 85", "0", "100", "1"],
+        ["fruitCrackingCount", "열과 수 (개)", "예) 0", "0", "999", "1"],
+        ["blossomEndRotCount", "배꼽썩음 수 (개)", "예) 0", "0", "999", "1"],
+        ["leafCurlScore", "잎말림 점수 (점)", "0~5", "0", "5", "1"],
+        ["vigorScore", "초세 점수 (점)", "0~5", "0", "5", "1"],
+        ["spadValue", "SPAD", "예) 42", "0", "100", "0.1"],
       ]},
       paprika: { indexType: "G-Index", title: "파프리카 생육조사", desc: "초장·엽수·줄기경·분지/화방·착과 절위를 기록합니다", fields: [
         ["plantHeight", "초장 (cm)", "예) 95.0", "0", "400", "0.1"],
@@ -3796,12 +3803,19 @@ button.action:disabled{opacity:.5;cursor:default;}
         ["flowerClusterCount", "화방수", "예) 2", "0", "20", "1"],
         ["runnerOrFruitClusterCount", "런너/과방 수", "예) 1", "0", "30", "1"],
       ]},
-      lettuce: { indexType: "L-Index", title: "상추 생육조사", desc: "L-Index용 엽장·엽폭·엽수·생체중·초장을 기록합니다", fields: [
+      lettuce: { indexType: "L-Index", title: "상추 생육조사", desc: "L-Index용 엽장·엽폭·엽수·생체중·초장과 품질/생리장해를 기록합니다", fields: [
         ["leafLength", "엽장 (cm)", "예) 18.0", "0", "80", "0.1"],
         ["leafWidth", "엽폭 (cm)", "예) 12.0", "0", "80", "0.1"],
         ["leafCount", "엽수 (매)", "예) 14", "0", "100", "1"],
         ["freshWeight", "생체중 (g)", "예) 120", "0", "2000", "1"],
         ["plantHeight", "초장 (cm)", "예) 20", "0", "100", "0.1"],
+      ], qualityDisorderFields: [
+        ["tipburnScore", "팁번 점수 (점)", "0~5", "0", "5", "1"],
+        ["boltingRiskScore", "추대 위험 점수 (점)", "0~5", "0", "5", "1"],
+        ["leafColorScore", "엽색 점수 (점)", "0~5", "0", "5", "1"],
+        ["spadValue", "SPAD", "예) 35", "0", "100", "0.1"],
+        ["marketableWeight", "상품중 (g)", "예) 100", "0", "2000", "1"],
+        ["outerLeafDamageScore", "외엽 손상 점수 (점)", "0~5", "0", "5", "1"],
       ]},
       cucumber: { indexType: "G-Index", title: "오이 생육조사", desc: "초장·엽수·줄기경·마디수·착과 절위를 기록합니다", fields: [
         ["plantHeight", "초장 (cm)", "예) 160", "0", "600", "0.1"],
@@ -4077,6 +4091,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const irrStatus = sourceStatus.irrigationNutrient || (featureSources.irrigationNutrientSummary7d || {}).sourceStatus || "missing";
     const pestStatus = sourceStatus.pestControl || (featureSources.pestControlSummary7d || {}).sourceStatus || "missing";
     const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
+    const qualityDisorderSummary = report.qualityDisorderSummary || trainableBaseline.qualityDisorderSummary || (trainableBaseline.featureSnapshot || {}).qualityDisorderSummary || {};
     const validationStatus = predictionValidation.needsReviewCount > 0 ? "validation_needs_review" : predictionValidation.pendingCount > 0 ? "pending" : predictionValidation.validatedCount > 0 ? "validated" : "no_predictions";
     const validationStatusLabel = { validated: "검증 완료", pending: "검증 대기", validation_needs_review: "검토 필요", no_predictions: "예측 기록 없음" }[validationStatus] || validationStatus;
     const mlReady = !!mlUpgradeReadiness.ready;
@@ -4960,6 +4975,20 @@ button.action:disabled{opacity:.5;cursor:default;}
       if (idx % 2 === 0) return html + `<div class="pop-field-row">${field}${arr[idx + 1] || ""}</div>`;
       return html;
     }, "");
+    const qualityDisorderFields = config.qualityDisorderFields || [];
+    const qualityDisorderHtml = qualityDisorderFields.length ? `
+      <div data-growth-quality-disorder-section style="border:1px solid #efe7ff;background:#faf7ff;border-radius:12px;padding:10px;margin:4px 0 2px;">
+        <div style="font-size:12px;font-weight:900;color:#4a356d;margin-bottom:7px;">품질/생리장해</div>
+        ${qualityDisorderFields.map(([key, label, placeholder, min, max, step], idx) => `
+          <div class="pop-field" data-growth-quality-disorder-field="${key}">
+            <label>${label}</label>
+            <input type="number" id="g-${key}" placeholder="${placeholder}" min="${min}" max="${max}" step="${step}">
+          </div>${idx % 2 === 1 ? "" : ""}
+        `).reduce((html, field, idx, arr) => {
+          if (idx % 2 === 0) return html + `<div class="pop-field-row">${field}${arr[idx + 1] || ""}</div>`;
+          return html;
+        }, "")}
+      </div>` : "";
     this._openCropPopup(`
       <div class="popup-card">
         <div class="pop-header">
@@ -4975,6 +5004,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             <input type="date" id="g-date" value="${today}">
           </div>
           ${fieldHtml}
+          ${qualityDisorderHtml}
           <div class="pop-field">
             <label>비고</label>
             <textarea id="g-note" rows="2" placeholder="특이사항"></textarea>
@@ -4987,7 +5017,8 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>`, (inner) => {
       inner.querySelector("#g-save")?.addEventListener("click", async () => {
         // Dynamic DB payload marker: metrics: config.fields.map
-        const metrics = config.fields.map(([key, label]) => ({
+        const allGrowthMetricFields = [...config.fields, ...qualityDisorderFields];
+        const metrics = allGrowthMetricFields.map(([key, label]) => ({
           key, label,
           value: inner.querySelector(`#g-${key}`)?.value || null,
           unit: this._growthUnitFromLabel(label),

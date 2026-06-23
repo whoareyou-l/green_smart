@@ -333,3 +333,37 @@ GET/POST /api/green_smart/crop/seasons/{season_id}/model-feature-sources
 Training implication:
 
 `crop_model_training_snapshots.feature_snapshot_id` links each 7-day prediction candidate to the exact feature-source snapshot used to generate it. This prevents the model dataset from becoming a growth-survey-only dataset and makes prediction → actual validation auditable.
+
+## Confirmed decision 10 — crop quality/disorder survey metrics
+
+Crop model inputs must include crop-specific quality and physiological disorder metrics, not only growth-size metrics.
+
+Tomato quality/disorder metrics stored in `metrics_json only`:
+
+```text
+fruitSetRate
+fruitCrackingCount
+blossomEndRotCount
+leafCurlScore
+vigorScore
+spadValue
+```
+
+Lettuce quality/disorder metrics stored in `metrics_json only`:
+
+```text
+tipburnScore
+boltingRiskScore
+leafColorScore
+spadValue
+marketableWeight
+outerLeafDamageScore
+```
+
+Implementation implication:
+
+- Do not map these metrics into legacy columns (`height`, `leafCount`, `stemDia`, `truss`, `node`).
+- Persist them only inside `growth_surveys.metrics_json`.
+- Surface them as `qualityDisorderSummary` in the trainable feature snapshot.
+- Use risk flags such as tomato blossom-end rot/cracking and lettuce tipburn/bolting as transparent model evidence, not as device execution authority.
+- The panel must render the inputs only for crop types that define the corresponding quality/disorder metrics.

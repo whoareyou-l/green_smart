@@ -18,6 +18,7 @@ CROP_MODEL_VERSION = "crop_season_model_v1"
 CROP_TRAINABLE_BASELINE_VERSION = "crop_trainable_baseline_v1"
 CROP_MODEL_FEATURE_SOURCES_VERSION = "crop_model_feature_sources_v1"
 CROP_PREDICTION_VALIDATION_VERSION = "crop_prediction_validation_v1"
+CROP_QUALITY_DISORDER_METRICS_VERSION = "crop_quality_disorder_metrics_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -40,6 +41,24 @@ CROP_GROWTH_METRIC_CONFIGS = {
             {"key": "freshWeight", "label": "생체중", "unit": "g"},
             {"key": "plantHeight", "label": "초장", "unit": "cm"},
         ],
+    },
+}
+CROP_QUALITY_DISORDER_METRIC_KEYS = {
+    "tomato": {
+        "fruitSetRate": {"label": "착과율", "unit": "%"},
+        "fruitCrackingCount": {"label": "열과 수", "unit": "개"},
+        "blossomEndRotCount": {"label": "배꼽썩음 수", "unit": "개"},
+        "leafCurlScore": {"label": "잎말림 점수", "unit": "점"},
+        "vigorScore": {"label": "초세 점수", "unit": "점"},
+        "spadValue": {"label": "SPAD", "unit": ""},
+    },
+    "lettuce": {
+        "tipburnScore": {"label": "팁번 점수", "unit": "점"},
+        "boltingRiskScore": {"label": "추대 위험 점수", "unit": "점"},
+        "leafColorScore": {"label": "엽색 점수", "unit": "점"},
+        "spadValue": {"label": "SPAD", "unit": ""},
+        "marketableWeight": {"label": "상품중", "unit": "g"},
+        "outerLeafDamageScore": {"label": "외엽 손상 점수", "unit": "점"},
     },
 }
 CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
@@ -444,6 +463,42 @@ def _growth_legacy_payload_from_metrics(metrics: list[dict], crop_type: str) -> 
         "stemDia": _metric_value("stemDiameter"),
         "truss": _metric_value("flowerClusterNo"),
         "node": _metric_value("fruitSetNode"),
+    }
+
+
+def _crop_quality_disorder_metrics_from_growth(crop_type: str, latest: dict | None) -> dict:
+    crop_type = str(crop_type or (latest or {}).get("cropType") or "other").lower()
+    metric_defs = CROP_QUALITY_DISORDER_METRIC_KEYS.get(crop_type, {})
+    metrics = {}
+    missingMetrics = []
+    for key, meta in metric_defs.items():
+        value = _growth_metric_value(latest or {}, key, key)
+        if value is None:
+            missingMetrics.append(key)
+        else:
+            metrics[key] = {"value": value, "label": meta.get("label") or key, "unit": meta.get("unit") or ""}
+    riskFlags = []
+    if crop_type == "tomato":
+        if (metrics.get("blossomEndRotCount") or {}).get("value", 0) > 0:
+            riskFlags.append("tomato_blossom_end_rot_observed")
+        if (metrics.get("fruitCrackingCount") or {}).get("value", 0) > 0:
+            riskFlags.append("tomato_fruit_cracking_observed")
+        if (metrics.get("leafCurlScore") or {}).get("value", 0) >= 3:
+            riskFlags.append("tomato_leaf_curl_risk_observed")
+    if crop_type == "lettuce":
+        if (metrics.get("tipburnScore") or {}).get("value", 0) >= 2:
+            riskFlags.append("lettuce_tipburn_risk_observed")
+        if (metrics.get("boltingRiskScore") or {}).get("value", 0) >= 2:
+            riskFlags.append("lettuce_bolting_risk_observed")
+        if (metrics.get("outerLeafDamageScore") or {}).get("value", 0) >= 3:
+            riskFlags.append("lettuce_outer_leaf_damage_observed")
+    return {
+        "version": CROP_QUALITY_DISORDER_METRICS_VERSION,
+        "cropType": crop_type,
+        "metrics": metrics,
+        "riskFlags": riskFlags,
+        "missingMetrics": missingMetrics,
+        "storagePolicy": "metrics_json only",
     }
 
 
@@ -1429,6 +1484,7 @@ async def _persist_crop_model_feature_snapshot(hass, *, season_id: int, season: 
 def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], pestRisk: dict, cropSafety: dict | None, cropInterlock: dict | None, growthIndex: dict, weekly_growth: float, control_rows: list[dict], featureSources: dict | None = None) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     previous = growth_rows[1] if len(growth_rows) > 1 else {}
+    qualityDisorderSummary = _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
     return {
         "version": CROP_TRAINABLE_BASELINE_VERSION,
         "cropType": season.get("cropType") or latest.get("cropType") or "other",
@@ -1440,7 +1496,9 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
             "count": len(growth_rows),
             "weeklyGrowthCm": weekly_growth,
             "growthIndex": growthIndex,
+            "qualityDisorderSummary": qualityDisorderSummary,
         },
+        "qualityDisorderSummary": qualityDisorderSummary,
         "environmentSummary7d": (featureSources or {}).get("environmentSummary7d") or {},
         "irrigationNutrientSummary7d": (featureSources or {}).get("irrigationNutrientSummary7d") or {},
         "pestControlSummary7d": (featureSources or {}).get("pestControlSummary7d") or {},
@@ -1739,12 +1797,14 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         weekly_growth=weekly_growth,
         control_rows=control_rows,
     )
+    qualityDisorderSummary = featureSnapshot.get("qualityDisorderSummary") or _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
     stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=growthIndex, growth_rows=growth_rows)
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
     trainableBaseline = {
         "version": CROP_TRAINABLE_BASELINE_VERSION,
         "modelFamily": CROP_STAGE_PREDICTION_MODEL_FAMILY,
         "featureSnapshot": featureSnapshot,
+        "qualityDisorderSummary": qualityDisorderSummary,
         "stagePrediction7d": stagePrediction7d,
         "mlUpgradeReadiness": mlUpgradeReadiness,
     }
@@ -1767,6 +1827,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "growthIndex": growthIndex,
         "modelValues": modelValues,
         "trainableBaseline": trainableBaseline,
+        "qualityDisorderSummary": qualityDisorderSummary,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,
         "yieldPrediction": yieldPrediction,

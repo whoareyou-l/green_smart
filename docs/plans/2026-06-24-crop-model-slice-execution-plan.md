@@ -266,19 +266,99 @@ marketableWeight
 outerLeafDamageScore
 ```
 
+## Vertical-slice scope
+
+Slice 2 is feature-complete only when the operator can enter crop-specific quality/disorder metrics in the panel, the backend normalizes and stores those values in `growth_surveys.metrics_json`, the model feature snapshot exposes them as first-class quality/disorder evidence, contract tests cover the behavior, production HA is verified, and `v1.9.60` is released.
+
 ## Files
 
 - Modify: `custom_components/green_smart/crop_views.py`
 - Modify: `custom_components/green_smart/panel/green-smart-panel.js`
-- Modify: `tests/test_model_contract.py`
+- Modify: `custom_components/green_smart/manifest.json`
+- Modify: `custom_components/green_smart/central_views.py`
 - Create: `tests/test_crop_quality_disorder_metrics_contract.py`
+- Modify: `docs/plans/2026-06-23-crop-model-design-decisions.md`
+
+## DB/API/backend work
+
+DB schema remains unchanged: quality/disorder metrics are stored only in `growth_surveys.metrics_json`.
+
+Required backend markers:
+
+```python
+CROP_QUALITY_DISORDER_METRICS_VERSION = "crop_quality_disorder_metrics_v1"
+CROP_QUALITY_DISORDER_METRIC_KEYS = {...}
+_crop_quality_disorder_metrics_from_growth(...)
+```
+
+Required model feature shape:
+
+```json
+{
+  "qualityDisorderSummary": {
+    "version": "crop_quality_disorder_metrics_v1",
+    "cropType": "tomato|lettuce",
+    "metrics": {},
+    "riskFlags": [],
+    "missingMetrics": []
+  }
+}
+```
+
+This object must be included in:
+
+```text
+featureSnapshot.growthSurvey.qualityDisorderSummary
+featureSnapshot.qualityDisorderSummary
+trainableBaseline.qualityDisorderSummary
+```
+
+## Panel work
+
+Panel must render crop-specific quality/disorder inputs only for supported crops.
+
+Required UI markers:
+
+```text
+data-growth-quality-disorder-section
+qualityDisorderSummary
+fruitSetRate
+blossomEndRotCount
+tipburnScore
+boltingRiskScore
+marketableWeight
+```
+
+Tomato quality/disorder fields:
+
+```text
+fruitSetRate
+fruitCrackingCount
+blossomEndRotCount
+leafCurlScore
+vigorScore
+spadValue
+```
+
+Lettuce quality/disorder fields:
+
+```text
+tipburnScore
+boltingRiskScore
+leafColorScore
+spadValue
+marketableWeight
+outerLeafDamageScore
+```
 
 ## Acceptance criteria
 
 - New quality/disorder fields are rendered only for relevant crop type.
 - Stored in `metrics_json` only.
-- Not mapped into `height`, `leafCount`, `stemDia`, `truss`, or `node`.
-- Included in `featureSnapshot.growthSurvey` and `pestControlSummary7d` or new `qualityDisorderSummary7d` if needed.
+- Not mapped into legacy columns: `height`, `leafCount`, `stemDia`, `truss`, or `node`.
+- Included in `featureSnapshot.growthSurvey.qualityDisorderSummary`, `featureSnapshot.qualityDisorderSummary`, and `trainableBaseline.qualityDisorderSummary`.
+- Risk flags are derived transparently from recorded metrics, e.g. tomato blossom-end rot/cracking and lettuce tipburn/bolting.
+- `v1.9.60` version markers are updated and verified in local/prod.
 
 ---
 
