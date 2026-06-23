@@ -560,6 +560,25 @@ async def ensure_schema(hass: HomeAssistant) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
+        CREATE TABLE IF NOT EXISTS crop_interlock_approvals (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            season_id INT NOT NULL,
+            approval_type VARCHAR(32) NOT NULL,
+            actor VARCHAR(128) NULL,
+            note TEXT NULL,
+            reason_codes_json JSON NOT NULL,
+            actions_json JSON NOT NULL,
+            stage_diagnosis_json JSON NULL,
+            interlock_json JSON NULL,
+            expires_at TIMESTAMP NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_crop_interlock_approval (farm_id, season_id, approval_type),
+            KEY idx_crop_interlock_approvals_lookup (farm_id, season_id, approval_type, expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
         CREATE TABLE IF NOT EXISTS audit_logs (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             farm_id BIGINT NOT NULL DEFAULT 1,

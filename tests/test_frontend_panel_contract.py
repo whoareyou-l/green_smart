@@ -304,6 +304,27 @@ def test_crop_ai_strategy_surfaces_stage_diagnosis_and_interlock_contract():
     assert "data-stage-diagnosis-card" in ui_doc
 
 
+def test_crop_interlock_approval_panel_contract():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    report_card = panel.split("  _renderGrowthReportCard()", 1)[1].split("  _renderCropGrowthTab()", 1)[0]
+    bind_section = panel.split("  _bindCropContent(root)", 1)[1].split("  _bindSeasonButtons", 1)[0]
+
+    for marker in (
+        "data-crop-interlock-approve",
+        "data-approval-type=\"operator_confirm\"",
+        "data-approval-type=\"manager_approve\"",
+        "data-approval-type=\"admin_approve\"",
+        "_submitCropInterlockApproval",
+        "green_smart/crop/seasons/${this._activeSeasonId}/interlock-approval",
+        "승인 메모",
+        "승인 만료",
+        "approvalAudit",
+    ):
+        assert marker in panel
+    assert "_submitCropInterlockApproval(event.currentTarget)" in bind_section
+    assert "data-crop-interlock-approve" in report_card
+
+
 def test_ui_polish_v1931_home_kpi_crop_tab_and_master_plan_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     master = (ROOT / "docs" / "PROJECT_MASTER_PLAN.md").read_text(encoding="utf-8")

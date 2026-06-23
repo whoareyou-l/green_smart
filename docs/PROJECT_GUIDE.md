@@ -2,7 +2,7 @@
 
 > **Audience:** Green Smart를 처음 보는 개발자, 운영자, AI coding agent
 > **Repository:** `whoareyou-l/green_smart`
-> **Current baseline:** `v1.9.43` / `green_smart` Home Assistant custom integration
+> **Current baseline:** `v1.9.44` / `green_smart` Home Assistant custom integration
 > **Last verified locally:** pytest contract suite + JS syntax check + Home Assistant config check
 > **Related focused design doc:** [`docs/design/zone-control-roadmap-and-data-model.md`](design/zone-control-roadmap-and-data-model.md)
 
@@ -239,7 +239,7 @@ Domain wrapper views
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.43"
+  "version": "1.9.44"
 }
 ```
 
@@ -485,7 +485,7 @@ Domain wrapper route:
 
 ```js
 const DOMAIN = "green_smart";
-const VERSION = "1.9.43"
+const VERSION = "1.9.44"
 ```
 
 중요 UI 페이지:
@@ -1391,7 +1391,7 @@ _replaceZoneControlCard(selector, html)
 
 ## 14.1 작기·환경·관수·장치 Safety/Interlock/Model 기준
 
-v1.9.43 이후 Green Smart의 전략/AI 작업은 4개 모델을 바로 잇는 방식이 아니라, 다음 순서를 따른다.
+v1.9.44 이후 Green Smart의 전략/AI 작업은 4개 모델을 바로 잇는 방식이 아니라, 다음 순서를 따른다.
 
 ```text
 각 domain 내부 순서: Safety → Interlock → Model(AI)
@@ -1527,7 +1527,7 @@ GitHub release vX.Y.Z
 최근 기준:
 
 ```text
-v1.9.43
+v1.9.44
 ```
 
 ---

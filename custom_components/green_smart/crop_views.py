@@ -17,6 +17,7 @@ CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
 CROP_INTERLOCK_VERSION = "crop_interlock_policy_v1"
 CROP_STAGE_DIAGNOSIS_VERSION = "crop_stage_diagnosis_v1"
 CROP_STAGE_INTERLOCK_VERSION = "crop_stage_interlock_v1"
+CROP_INTERLOCK_APPROVAL_VERSION = "crop_interlock_approval_v1"
 CROP_SAFETY_RULE_DEFAULTS = {
     "growthSurveyStaleDays": 14,
     "controlRecordStaleDays": 21,
@@ -1618,6 +1619,111 @@ class CropStageDiagnosisView(HomeAssistantView):
     async def get(self, request: web.Request, season_id: str) -> web.Response:
         farm_id = int(request.query.get("farmId", 1))
         return _json(await _crop_stage_diagnosis_response(request.app["hass"], int(season_id), farm_id=farm_id))
+
+
+class CropInterlockApprovalView(HomeAssistantView):
+    """GET/POST /api/green_smart/crop/seasons/{season_id}/interlock-approval."""
+    url  = "/api/green_smart/crop/seasons/{season_id}/interlock-approval"
+    name = "api:green_smart:crop:interlock_approval"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        farm_id = int(request.query.get("farmId", 1))
+        return _json(await _crop_interlock_approval_response(request.app["hass"], int(season_id), farm_id=farm_id))
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            return _err("Invalid JSON")
+        farm_id = int(body.get("farmId") or 1)
+        approval_type = str(body.get("approvalType") or "operator_confirm")
+        if approval_type not in {"operator_confirm", "manager_approve", "admin_approve"}:
+            return _err("approvalType must be operator_confirm, manager_approve, or admin_approve")
+        actor = str(body.get("actor") or "operator")[:128]
+        note = str(body.get("note") or "")
+        reason_codes = body.get("reasonCodes") if isinstance(body.get("reasonCodes"), list) else []
+        actions = body.get("actions") if isinstance(body.get("actions"), list) else []
+        stage_diagnosis = body.get("stageDiagnosis") if isinstance(body.get("stageDiagnosis"), dict) else {}
+        interlock = body.get("cropInterlock") if isinstance(body.get("cropInterlock"), dict) else {}
+        expires_at = body.get("approvalExpiresAt") or body.get("expiresAt")
+        await execute(hass, """
+            INSERT INTO crop_interlock_approvals
+                (farm_id, season_id, approval_type, actor, note, reason_codes_json,
+                 actions_json, stage_diagnosis_json, interlock_json, expires_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                actor = VALUES(actor), note = VALUES(note), reason_codes_json = VALUES(reason_codes_json),
+                actions_json = VALUES(actions_json), stage_diagnosis_json = VALUES(stage_diagnosis_json),
+                interlock_json = VALUES(interlock_json), expires_at = VALUES(expires_at), updated_at = NOW()
+        """, (
+            farm_id, int(season_id), approval_type, actor, note,
+            json.dumps(reason_codes, ensure_ascii=False),
+            json.dumps(actions, ensure_ascii=False),
+            json.dumps(stage_diagnosis, ensure_ascii=False),
+            json.dumps(interlock, ensure_ascii=False),
+            expires_at,
+        ))
+        await _record_crop_interlock_approval_audit(
+            hass,
+            farm_id=farm_id,
+            season_id=int(season_id),
+            actor=actor,
+            approval_type=approval_type,
+            before=None,
+            after={
+                "version": CROP_INTERLOCK_APPROVAL_VERSION,
+                "approvalType": approval_type,
+                "actor": actor,
+                "note": note,
+                "reasonCodes": reason_codes,
+                "actions": actions,
+                "approvalExpiresAt": expires_at,
+                "stageDiagnosis": stage_diagnosis,
+                "cropInterlock": interlock,
+            },
+        )
+        return _json(await _crop_interlock_approval_response(hass, int(season_id), farm_id=farm_id))
+
+
+async def _crop_interlock_approval_response(hass, season_id: int, *, farm_id: int = 1) -> dict:
+    rows = await fetchall(hass, """
+        SELECT id, farm_id AS farmId, season_id AS seasonId, approval_type AS approvalType,
+               actor, note, reason_codes_json AS reasonCodesJson, actions_json AS actionsJson,
+               stage_diagnosis_json AS stageDiagnosisJson, interlock_json AS interlockJson,
+               expires_at AS approvalExpiresAt, created_at AS createdAt, updated_at AS updatedAt
+        FROM crop_interlock_approvals
+        WHERE farm_id = %s AND season_id = %s AND (expires_at IS NULL OR expires_at > NOW())
+        ORDER BY updated_at DESC
+    """, (farm_id, season_id))
+    approvals = []
+    for row in rows:
+        row["reasonCodes"] = _parse_json_field(row.pop("reasonCodesJson", None), [])
+        row["actions"] = _parse_json_field(row.pop("actionsJson", None), [])
+        row["stageDiagnosis"] = _parse_json_object(row.pop("stageDiagnosisJson", None))
+        row["cropInterlock"] = _parse_json_object(row.pop("interlockJson", None))
+        approvals.append(row)
+    return {
+        "ok": True,
+        "version": CROP_INTERLOCK_APPROVAL_VERSION,
+        "farmId": farm_id,
+        "seasonId": season_id,
+        "approvalAudit": approvals,
+        "approvals": approvals,
+    }
+
+
+async def _record_crop_interlock_approval_audit(hass, *, farm_id: int, season_id: int, actor: str, approval_type: str, before: dict | None, after: dict) -> None:
+    await execute(hass, """
+        INSERT INTO audit_logs (farm_id, actor, action, before_json, after_json)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (
+        farm_id,
+        actor,
+        f"crop_interlock_{approval_type}",
+        json.dumps(before or {}, ensure_ascii=False),
+        json.dumps({"seasonId": season_id, **after}, ensure_ascii=False),
+    ))
 
 
 class CropStageCalibrationView(HomeAssistantView):

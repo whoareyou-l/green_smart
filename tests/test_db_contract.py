@@ -227,6 +227,43 @@ def test_crop_stage_diagnosis_interlock_integration_contract():
     assert "stage_harvest_phi_rei_unknown" in design_doc
 
 
+def test_crop_interlock_approval_db_api_and_center_role_contract():
+    db_source = DB.read_text(encoding="utf-8")
+    crop_source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
+    init_source = (ROOT / "custom_components" / "green_smart" / "__init__.py").read_text(encoding="utf-8")
+    design_doc = (ROOT / "docs" / "plans" / "2026-06-23-crop-safety-interlock-real-use-design.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "CREATE TABLE IF NOT EXISTS crop_interlock_approvals",
+        "approval_type VARCHAR(32) NOT NULL",
+        "reason_codes_json JSON NOT NULL",
+        "expires_at TIMESTAMP NULL",
+        "UNIQUE KEY uniq_crop_interlock_approval",
+        "idx_crop_interlock_approvals_lookup",
+    ):
+        assert marker in db_source
+
+    for marker in (
+        "CROP_INTERLOCK_APPROVAL_VERSION",
+        "class CropInterlockApprovalView(HomeAssistantView)",
+        'url  = "/api/green_smart/crop/seasons/{season_id}/interlock-approval"',
+        "async def _crop_interlock_approval_response",
+        "async def _record_crop_interlock_approval_audit",
+        "crop_interlock_approvals",
+        "audit_logs",
+        "operator_confirm",
+        "manager_approve",
+        "admin_approve",
+        "approvalExpiresAt",
+        "approvalAudit",
+    ):
+        assert marker in crop_source
+
+    assert "CropInterlockApprovalView" in init_source
+    assert "hass.http.register_view(CropInterlockApprovalView())" in init_source
+    assert "센터 API는 실시간 계산 주체가 아니라 edge 계산 snapshot/audit 수집 주체" in design_doc
+
+
 def test_db_bootstrap_creates_doc_planned_device_irrigation_and_admin_system_tables():
     source = DB.read_text(encoding="utf-8")
     for table in (

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.43
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.44
 const DOMAIN = "green_smart";
-const VERSION = "1.9.43";
+const VERSION = "1.9.44";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4055,7 +4055,12 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#7a9780;line-height:1.55;"><b>이유</b> ${interlockReasons.length ? interlockReasons.map(r => this._esc(r)).join(" · ") : "없음"}</div>
         <div style="font-size:11px;color:#7a9780;line-height:1.55;margin-top:4px;"><b>조치</b> ${interlockActions.length ? interlockActions.map(a => this._esc(a)).join(" · ") : "없음"}</div>
-        <div style="font-size:10px;color:#9aae9d;margin-top:5px;">stageInterlockRuleResults ${stageRules.filter(r => r && r.matched).length}/${stageRules.length} · require_harvest_safety_clearance</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button data-crop-interlock-approve data-approval-type="operator_confirm" style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:900;cursor:pointer;">운영자 확인</button>
+          <button data-crop-interlock-approve data-approval-type="manager_approve" style="border:1px solid #f6d08b;background:#fff8e8;color:#c47f00;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:900;cursor:pointer;">농장주 승인</button>
+          <button data-crop-interlock-approve data-approval-type="admin_approve" style="border:1px solid #d7c2f0;background:#f8f2ff;color:#7f52b8;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:900;cursor:pointer;">관리자 승인</button>
+        </div>
+        <div style="font-size:10px;color:#9aae9d;margin-top:5px;">승인 메모 · 승인 만료 · approvalAudit · stageInterlockRuleResults ${stageRules.filter(r => r && r.matched).length}/${stageRules.length} · require_harvest_safety_clearance</div>
       </div>
       <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
       ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}
@@ -4302,6 +4307,48 @@ button.action:disabled{opacity:.5;cursor:default;}
     } finally {
       button.classList.remove("is-spinning");
       button.dataset.weeklyReportRefreshing = "false";
+      button.disabled = false;
+    }
+  }
+
+  async _submitCropInterlockApproval(button) {
+    if (!this._hass || !this._activeSeasonId || !button) return null;
+    const approvalType = button.dataset.approvalType || "operator_confirm";
+    const report = this._growthReportData || await this._fetchGrowthReport();
+    const cropModel = report?.cropModel || {};
+    const cropInterlock = cropModel.cropInterlock || {};
+    const stageDiagnosis = cropModel.stageDiagnosis || {};
+    const note = prompt("승인 메모", "현장 확인 후 승인") || "";
+    const approvalExpiresAt = prompt("승인 만료", "") || null;
+    const payload = {
+      approvalType,
+      actor: this._currentUserRole ? this._currentUserRole() : "operator",
+      note,
+      approvalExpiresAt,
+      reasonCodes: cropInterlock.cropInterlockReasons || [],
+      actions: cropInterlock.cropInterlockActions || [],
+      stageDiagnosis,
+      cropInterlock,
+    };
+    button.disabled = true;
+    try {
+      const result = await this._hass.callApi("POST", `green_smart/crop/seasons/${this._activeSeasonId}/interlock-approval`, payload);
+      this._growthReportData = {
+        ...(this._growthReportData || {}),
+        cropModel: {
+          ...(cropModel || {}),
+          cropInterlock: {
+            ...(cropInterlock || {}),
+            approvalAudit: result?.approvalAudit || [],
+          },
+        },
+      };
+      this._refreshCropContent();
+      return result;
+    } catch (err) {
+      alert("작물 인터록 승인 저장 실패: " + (err?.message || "unknown"));
+      return null;
+    } finally {
       button.disabled = false;
     }
   }
@@ -5314,6 +5361,9 @@ button.action:disabled{opacity:.5;cursor:default;}
       const enabled = !this._weeklyReportNotificationEnabled();
       await this._setWeeklyReportNotificationEnabled(enabled);
       this._refreshCropContent();
+    });
+    root.querySelectorAll("[data-crop-interlock-approve]").forEach((button) => {
+      button.addEventListener("click", async (event) => this._submitCropInterlockApproval(event.currentTarget));
     });
 
     root.querySelectorAll("[data-crop-page]").forEach((btn) => {
