@@ -55,7 +55,7 @@ Domain reference order: Crop → Environment → Irrigation → Device
 
 ---
 
-## Current status after v1.9.36
+## Current status after v1.9.37
 
 Completed:
 
@@ -122,6 +122,7 @@ pytest tests/test_integrated_model_docs_contract.py -q
 
 ```text
 CROP_SAFETY_RULE_VERSION
+CROP_SAFETY_RULE_DEFAULTS
 _crop_safety_rule_snapshot(...)
 cropSafetyStatus
 cropSafetyBlocked
@@ -129,6 +130,16 @@ cropSafetyReasons
 cropSafetyRules
 cropSafetyRuleResults
 ```
+
+**Default thresholds:**
+
+| Key | Default | Meaning |
+|---|---:|---|
+| `growthSurveyStaleDays` | 14 | latest growth survey stale threshold |
+| `controlRecordStaleDays` | 21 | stale control/pesticide record threshold when pest risk is medium/high |
+| `maxGIndex` | 120.0 | G-Index anomaly threshold |
+| `maxWeeklyGrowthCm` | 80.0 | weekly growth anomaly threshold |
+| `supportedCropTypes` | `tomato`, `lettuce` | crop-specific safety-supported crops |
 
 **Files likely touched:**
 - `custom_components/green_smart/crop_views.py`

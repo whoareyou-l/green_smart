@@ -13,6 +13,14 @@ WEEKLY_REPORT_INTERVAL_DAYS = 7
 GROWTH_REPORT_NOTIFICATION_SETTINGS_KEY = "growth_report_notification_settings"
 GROWTH_REPORT_NOTIFICATION_STATE_KEY = "growth_report_notification_state"
 CROP_MODEL_VERSION = "crop_season_model_v1"
+CROP_SAFETY_RULE_VERSION = "crop_safety_rules_v1"
+CROP_SAFETY_RULE_DEFAULTS = {
+    "growthSurveyStaleDays": 14,
+    "controlRecordStaleDays": 21,
+    "maxGIndex": 120.0,
+    "maxWeeklyGrowthCm": 80.0,
+    "supportedCropTypes": ["tomato", "lettuce"],
+}
 
 YIELD_MODEL_BY_CROP = {
     "tomato": {
@@ -563,6 +571,92 @@ def _crop_profile_for_season(season: dict, latest: dict) -> dict:
     }
 
 
+def _crop_safety_rule_result(reason_code: str, matched: bool, *, severity: str = "block", message: str = "", evidence: dict | None = None) -> dict:
+    return {
+        "reasonCode": reason_code,
+        "matched": bool(matched),
+        "severity": severity,
+        "message": message or reason_code,
+        "evidence": evidence or {},
+    }
+
+
+def _crop_safety_rule_snapshot(*, season: dict, growth_rows: list[dict], pestRisk: dict, yieldPrediction: dict, latest_g: float, weekly_growth: float, control_rows: list[dict], settings: dict | None = None) -> dict:
+    rules = {**CROP_SAFETY_RULE_DEFAULTS, **(settings or {})}
+    latest = growth_rows[0] if growth_rows else {}
+    crop_type = str(season.get("cropType") or latest.get("cropType") or "").strip().lower()
+    supported = set(rules.get("supportedCropTypes") or [])
+    latest_growth_age = _days_since(latest.get("date")) if latest else None
+    latest_control_age = _days_since(control_rows[0].get("date")) if control_rows else None
+    pest_level = str((pestRisk or {}).get("level") or "low").lower()
+    confidence = str((yieldPrediction or {}).get("confidence") or "low").lower()
+    growth_stale_days = int(rules.get("growthSurveyStaleDays") or 14)
+    control_stale_days = int(rules.get("controlRecordStaleDays") or 21)
+    max_g = float(rules.get("maxGIndex") or 120.0)
+    max_weekly_growth = float(rules.get("maxWeeklyGrowthCm") or 80.0)
+
+    rule_results = [
+        _crop_safety_rule_result(
+            "crop_season_missing",
+            not bool(crop_type and season.get("plantDate")),
+            message="활성 작기 또는 정식일이 없어 모델 기반 자동화 차단",
+            evidence={"cropType": crop_type, "plantDate": season.get("plantDate")},
+        ),
+        _crop_safety_rule_result(
+            "crop_type_unknown",
+            (not crop_type) or crop_type not in supported,
+            message="지원 작물 종류를 확인할 수 없어 crop-specific 최적화 차단",
+            evidence={"cropType": crop_type, "supportedCropTypes": sorted(supported)},
+        ),
+        _crop_safety_rule_result(
+            "growth_survey_stale",
+            latest_growth_age is None or latest_growth_age > growth_stale_days,
+            severity="confirm",
+            message="최신 생육조사가 오래되어 자동 목표 승격 차단",
+            evidence={"latestGrowthSurveyAgeDays": latest_growth_age, "thresholdDays": growth_stale_days},
+        ),
+        _crop_safety_rule_result(
+            "crop_pest_risk_high",
+            pest_level == "high",
+            message="병해 위험도가 높아 공격적 환경/관수 변경 차단",
+            evidence={"pestRiskLevel": pest_level, "pestRiskScore": (pestRisk or {}).get("score")},
+        ),
+        _crop_safety_rule_result(
+            "crop_growth_anomaly",
+            abs(float(latest_g or 0)) > max_g or abs(float(weekly_growth or 0)) > max_weekly_growth,
+            message="G-Index 또는 주간 생장속도 이상치 감지",
+            evidence={"gIndex": latest_g, "maxGIndex": max_g, "weeklyGrowthCm": weekly_growth, "maxWeeklyGrowthCm": max_weekly_growth},
+        ),
+        _crop_safety_rule_result(
+            "crop_control_record_stale",
+            pest_level in {"medium", "high"} and (latest_control_age is None or latest_control_age > control_stale_days),
+            severity="confirm",
+            message="병해 위험 대비 최근 방제/관리 기록이 부족함",
+            evidence={"latestControlAgeDays": latest_control_age, "thresholdDays": control_stale_days, "pestRiskLevel": pest_level},
+        ),
+        _crop_safety_rule_result(
+            "crop_confidence_low",
+            confidence == "low",
+            severity="confirm",
+            message="작물 모델 confidence가 낮아 자동화 차단 또는 운영자 확인 필요",
+            evidence={"confidence": confidence, "confidenceReasons": (yieldPrediction or {}).get("confidenceReasons") or []},
+        ),
+    ]
+    matched = [item for item in rule_results if item["matched"]]
+    reasons = [item["reasonCode"] for item in matched]
+    blocked = bool(matched)
+    return {
+        "cropSafetyRuleVersion": CROP_SAFETY_RULE_VERSION,
+        "cropSafetyStatus": "blocked" if blocked else "clear",
+        "cropSafetyBlocked": blocked,
+        "cropSafetyReasons": reasons,
+        "cropSafetyRules": rules,
+        "cropSafetyRuleResults": rule_results,
+        "automationAllowed": not blocked,
+        "targetPromotionAllowed": not blocked,
+    }
+
+
 def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict]) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     oldest = growth_rows[-1] if growth_rows else latest
@@ -573,6 +667,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     latest_g = _growth_g_index(latest) if latest else 0
     pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)
     yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
+    cropSafety = _crop_safety_rule_snapshot(season=season, growth_rows=growth_rows, pestRisk=pestRisk, yieldPrediction=yieldPrediction, latest_g=latest_g, weekly_growth=weekly_growth, control_rows=control_rows)
     growthStage = _crop_growth_stage(season, latest, growth_rows)
     cropProfile = _crop_profile_for_season(season, latest)
     confidenceReasons = list(dict.fromkeys(
@@ -591,6 +686,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "latestMetrics": latest,
         "yieldPrediction": yieldPrediction,
         "pestRisk": pestRisk,
+        "cropSafety": cropSafety,
         "confidence": yieldPrediction.get("confidence") or "low",
         "confidenceReasons": confidenceReasons,
         "sourceTables": ["crop_seasons", "growth_surveys", "pest_surveys", "control_records"],

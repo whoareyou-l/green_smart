@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.36`
+> 기준 버전: `v1.9.37`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.36"
+  "version": "1.9.37"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.36` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.37` |
 
 ### 4.2 WebSocket commands
 
@@ -244,7 +244,7 @@ aiomysql.create_pool(
 
 ### 6.3 Device/Irrigation/Admin bootstrap closure tables
 
-v1.9.36 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
+v1.9.37 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
 
 장치제어:
 
@@ -426,7 +426,7 @@ green_smart_central
 
 ## 9A. 통합 모델 contract
 
-v1.9.36 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
+v1.9.37 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
 
 ```text
 Crop Safety Rules
@@ -486,6 +486,7 @@ No new DB table is required for M1. The reusable helper is `_crop_model_snapshot
 
 ```text
 CROP_SAFETY_RULE_VERSION
+CROP_SAFETY_RULE_DEFAULTS
 _crop_safety_rule_snapshot(...)
 cropSafetyStatus
 cropSafetyBlocked
@@ -505,6 +506,16 @@ cropSafetyRuleResults
 | impossible G-Index/growth velocity | `crop_growth_anomaly` |
 | stale control/pesticide record with medium/high pest risk | `crop_control_record_stale` |
 | low crop model confidence | `crop_confidence_low` |
+
+기본 임계값(`CROP_SAFETY_RULE_DEFAULTS`):
+
+| Key | Default | Meaning |
+|---|---:|---|
+| `growthSurveyStaleDays` | 14 | 최신 생육조사가 14일 초과면 stale |
+| `controlRecordStaleDays` | 21 | 병해 medium/high에서 최근 방제/관리 기록이 21일 초과면 stale |
+| `maxGIndex` | 120.0 | 이 값을 초과하는 G-Index는 이상치 |
+| `maxWeeklyGrowthCm` | 80.0 | 주간 생장속도 80cm 초과는 이상치 |
+| `supportedCropTypes` | `tomato`, `lettuce` | crop-specific 안전 기준을 적용하는 작물 |
 
 ### 9A.1.2 작물 인터록 — next required layer
 
