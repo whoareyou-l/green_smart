@@ -21,6 +21,7 @@ ACTIVATION_EXCHANGE_PATH = "/activation/exchange"
 TOKEN_REFRESH_PATH = "/tokens/refresh"
 TOKEN_REVOKE_PATH = "/tokens/revoke"
 DEMO_STATUS_PATH = "/vendor/adapters/demo/status"
+CROP_INTERLOCK_SNAPSHOT_PATH = "/edge/snapshots/crop-interlock"
 
 
 @dataclass(slots=True)
@@ -106,6 +107,22 @@ class GreenityCentralClient:
         return await self._post_json(
             "/vendor/adapters/pesticide/search",
             params,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    async def sync_crop_interlock_snapshot(self, access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._post_json(
+            CROP_INTERLOCK_SNAPSHOT_PATH,
+            {
+                "farm_id": payload.get("farm_id", 1),
+                "season_id": payload.get("season_id") or payload.get("seasonId"),
+                "zone_id": payload.get("zone_id") or payload.get("zoneId"),
+                "stageDiagnosis": payload.get("stageDiagnosis") or {},
+                "cropInterlock": payload.get("cropInterlock") or {},
+                "approvalAudit": payload.get("approvalAudit") or [],
+                "auditSummary": payload.get("auditSummary") or {},
+                "edgeVersions": payload.get("edgeVersions") or {},
+            },
             headers={"Authorization": f"Bearer {access_token}"},
         )
 

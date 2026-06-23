@@ -103,7 +103,7 @@ async def async_setup(hass, config):
         CropPestListView, CropPestDeleteView,
         CropControlListView, CropControlDeleteView,
     )
-    from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView
+    from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView, CentralCropInterlockSnapshotSyncView
     from .rbac import GreenSmartAuthMeView
     from .zone_control_views import (
         ZoneControlSettingsView, ZoneControlCopySettingsView, ZoneInterlockSettingsView, ZoneControlModeView,
@@ -133,6 +133,7 @@ async def async_setup(hass, config):
         hass.http.register_view(CentralWeatherForecastView())
         hass.http.register_view(CentralWeatherMidView())
         hass.http.register_view(CentralPesticideSearchView())
+        hass.http.register_view(CentralCropInterlockSnapshotSyncView())
         hass.http.register_view(GreenSmartAuthMeView())
         hass.http.register_view(CropSeasonsView())
         hass.http.register_view(CropSeasonDemolishView())
