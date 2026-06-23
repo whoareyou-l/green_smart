@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.61
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.62
 const DOMAIN = "green_smart";
-const VERSION = "1.9.61";
+const VERSION = "1.9.62";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4087,7 +4087,11 @@ button.action:disabled{opacity:.5;cursor:default;}
     const inputCompleteness = trainableBaseline.inputCompleteness || report.inputCompleteness || {};
     const sourceStatus = trainableBaseline.sourceStatus || report.sourceStatus || inputCompleteness.sourceStatus || {};
     const featureSources = trainableBaseline.featureSources || report.featureSources || {};
-    const envStatus = sourceStatus.environment || (featureSources.environmentSummary7d || {}).sourceStatus || "missing";
+    const environmentSummary7d = report.environmentSummary7d || featureSources.environmentSummary7d || {};
+    const environmentFeatures = environmentSummary7d.features || environmentSummary7d.metrics || {};
+    const environmentDerivedFeatures = environmentSummary7d.derivedFeatures || {};
+    const environmentStaleReasons = Array.isArray(environmentSummary7d.staleReasons) ? environmentSummary7d.staleReasons : [];
+    const envStatus = sourceStatus.environment || environmentSummary7d.sourceStatus || "missing";
     const irrStatus = sourceStatus.irrigationNutrient || (featureSources.irrigationNutrientSummary7d || {}).sourceStatus || "missing";
     const pestStatus = sourceStatus.pestControl || (featureSources.pestControlSummary7d || {}).sourceStatus || "missing";
     const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
@@ -4195,6 +4199,17 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">needs review</div><b style="font-size:14px;color:#c0392b;">${this._esc(String(predictionValidation.needsReviewCount ?? 0))}</b></div>
         </div>
         <div style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">최근 실제 조사 입력 후 검증 실행을 누르면 pending prediction이 actualValidation으로 갱신됩니다. 이 동작은 데이터 처리만 수행하며 장치/환경/관수 실행 권한은 없습니다.</div>
+      </div>
+      <div data-crop-environment-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e5f0ff;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">환경 feature</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(envStatus)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">sampleCoverageRatio</div><b style="font-size:14px;color:#24323F;">${this._esc(String(environmentSummary7d.sampleCoverageRatio ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">VPD</div><b style="font-size:14px;color:#24323F;">${this._esc(String((environmentFeatures.vpd || environmentDerivedFeatures.vpd || {}).avg ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">ADT</div><b style="font-size:14px;color:#24323F;">${this._esc(String((environmentFeatures.adt || environmentDerivedFeatures.adt || {}).value ?? '-'))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">DIF</div><b style="font-size:14px;color:#24323F;">${this._esc(String((environmentFeatures.dif || environmentDerivedFeatures.dif || {}).value ?? '-'))}</b></div>
+        </div>
+        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">staleReasons: ${environmentStaleReasons.length ? environmentStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 환경/관수/장치 실행 권한 없음</div>
       </div>
       <div data-crop-model-feature-sources-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e9edf5;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">모델 입력 소스</div>

@@ -367,3 +367,29 @@ Implementation implication:
 - Surface them as `qualityDisorderSummary` in the trainable feature snapshot.
 - Use risk flags such as tomato blossom-end rot/cracking and lettuce tipburn/bolting as transparent model evidence, not as device execution authority.
 - The panel must render the inputs only for crop types that define the corresponding quality/disorder metrics.
+
+## Confirmed decision 11 — rich environment model features
+
+Environment model inputs must be crop-model-ready derived features, not only raw sample counts.
+
+Required `environmentSummary7d` features:
+
+```text
+temperature avg/min/max
+humidity avg/min/max
+CO2 avg/min/max
+radiation/light avg/min/max/sum
+VPD avg/min/max, read from sensor readings or derived from temperature/humidity
+ADT derived from average temperature
+DIF derived from day/night temperature split when timestamps allow
+sampleCoverageRatio
+stale/staleReasons
+sourceStatus ready|partial|missing|stale
+```
+
+Implementation implication:
+
+- Use existing `sensor_readings` only; do not add active environment control or device execution.
+- Surface derived environment features as read-only model evidence in the crop model feature snapshot and panel.
+- If readings are absent or stale, return explicit missing/stale reasons instead of pretending the feature exists.
+- VPD/ADT/DIF are model evidence for crop prediction readiness; they do not grant environment/irrigation/device execution authority.

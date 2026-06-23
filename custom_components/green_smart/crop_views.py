@@ -19,6 +19,7 @@ CROP_TRAINABLE_BASELINE_VERSION = "crop_trainable_baseline_v1"
 CROP_MODEL_FEATURE_SOURCES_VERSION = "crop_model_feature_sources_v1"
 CROP_PREDICTION_VALIDATION_VERSION = "crop_prediction_validation_v1"
 CROP_QUALITY_DISORDER_METRICS_VERSION = "crop_quality_disorder_metrics_v1"
+CROP_ENVIRONMENT_FEATURES_VERSION = "crop_environment_features_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -1280,28 +1281,123 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
     }
 
 
+def _crop_environment_number(value, default=None):
+    try:
+        if value is None:
+            return default
+        return round(float(value), 3)
+    except Exception:
+        return default
+
+
+def _crop_environment_stats_by_type(rows: list[dict]) -> dict:
+    features = {}
+    for row in rows or []:
+        key = str(row.get("readingType") or "").lower()
+        if not key:
+            continue
+        features[key] = {
+            "avg": _crop_environment_number(row.get("avgValue")),
+            "min": _crop_environment_number(row.get("minValue")),
+            "max": _crop_environment_number(row.get("maxValue")),
+            "sum": _crop_environment_number(row.get("sumValue")),
+            "sampleCount": int(row.get("sampleCount") or 0),
+            "dayAvg": _crop_environment_number(row.get("dayAvg")),
+            "nightAvg": _crop_environment_number(row.get("nightAvg")),
+            "lastCapturedAt": row.get("lastCapturedAt"),
+        }
+    return features
+
+
+def _crop_environment_vpd_from_temp_humidity(temperature_c, humidity_percent):
+    temp = _crop_environment_number(temperature_c)
+    humidity = _crop_environment_number(humidity_percent)
+    if temp is None or humidity is None:
+        return None
+    humidity = max(0.0, min(100.0, humidity))
+    saturation_kpa = 0.6108 * (2.718281828 ** ((17.27 * temp) / (temp + 237.3)))
+    return round(saturation_kpa * (1 - humidity / 100.0), 3)
+
+
+def _crop_environment_derived_features(features: dict, *, days: int = 7) -> dict:
+    temperature = features.get("temperature") or {}
+    humidity = features.get("humidity") or {}
+    vpd = features.get("vpd") or {}
+    derivedFeatures = {}
+    staleReasons = []
+    if not vpd and temperature.get("avg") is not None and humidity.get("avg") is not None:
+        vpd_value = _crop_environment_vpd_from_temp_humidity(temperature.get("avg"), humidity.get("avg"))
+        if vpd_value is not None:
+            vpd = {"avg": vpd_value, "min": vpd_value, "max": vpd_value, "sampleCount": 0, "derived": True}
+            features["vpd"] = vpd
+            derivedFeatures["vpd"] = vpd
+    if temperature.get("avg") is not None:
+        derivedFeatures["adt"] = {"value": temperature.get("avg"), "derived": True, "basis": "temperature.avg"}
+        features["adt"] = derivedFeatures["adt"]
+    if temperature.get("dayAvg") is not None and temperature.get("nightAvg") is not None:
+        day_avg = _crop_environment_number(temperature.get("dayAvg"), 0.0)
+        night_avg = _crop_environment_number(temperature.get("nightAvg"), 0.0)
+        dif_value = round(day_avg - night_avg, 3)
+        derivedFeatures["dif"] = {"value": dif_value, "derived": True, "basis": "temperature.dayAvg - temperature.nightAvg"}
+        features["dif"] = derivedFeatures["dif"]
+    else:
+        staleReasons.append("dif_missing_day_night_temperature_split")
+    return {"features": features, "derivedFeatures": derivedFeatures, "staleReasons": staleReasons}
+
+
 async def _environment_feature_summary(hass, *, farm_id: int, zone_id: int | None, days: int = 7) -> dict:
     rows = await fetchall(hass, """
         SELECT reading_type AS readingType, COUNT(*) AS sampleCount,
                AVG(value) AS avgValue, MIN(value) AS minValue, MAX(value) AS maxValue,
+               SUM(value) AS sumValue,
+               AVG(CASE WHEN HOUR(captured_at) BETWEEN 6 AND 17 THEN value ELSE NULL END) AS dayAvg,
+               AVG(CASE WHEN HOUR(captured_at) < 6 OR HOUR(captured_at) >= 18 THEN value ELSE NULL END) AS nightAvg,
                MAX(captured_at) AS lastCapturedAt
         FROM sensor_readings
         WHERE farm_id = %s AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
           AND captured_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
         GROUP BY reading_type
     """, (int(farm_id or 1), zone_id, zone_id, int(days)))
-    by_type = {row.get("readingType"): row for row in rows}
+    features = _crop_environment_stats_by_type(rows)
     required = ["temperature", "humidity", "co2", "radiation", "vpd", "adt", "dif"]
-    present = [key for key in required if by_type.get(key)]
+    derived = _crop_environment_derived_features(features, days=days)
+    features = derived["features"]
+    present = [key for key in required if features.get(key)]
+    missing = [key for key in required if key not in present]
+    total_samples = sum(int((features.get(key) or {}).get("sampleCount") or 0) for key in ["temperature", "humidity", "co2", "radiation"])
+    expected_min_samples = max(1, days * 4)
+    sampleCoverageRatio = round(min(1.0, total_samples / expected_min_samples), 3)
+    last_values = [value.get("lastCapturedAt") for value in features.values() if isinstance(value, dict) and value.get("lastCapturedAt")]
+    staleReasons = list(derived.get("staleReasons") or [])
+    stale = False
+    if not last_values:
+        staleReasons.append("environment_sensor_readings_missing")
+    if sampleCoverageRatio < 0.25:
+        staleReasons.append("environment_sample_coverage_low")
+    stale = bool(staleReasons and not present)
+    if not present:
+        sourceStatus = "missing"
+    elif stale:
+        sourceStatus = "stale"
+    elif sampleCoverageRatio >= 0.75 and len(present) >= 5:
+        sourceStatus = "ready"
+    else:
+        sourceStatus = "partial"
     return {
-        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "version": CROP_ENVIRONMENT_FEATURES_VERSION,
         "sourceTables": ["sensor_readings"],
         "windowDays": days,
         "required": required,
         "present": present,
-        "missing": [key for key in required if key not in present],
-        "metrics": by_type,
-        "sourceStatus": "ready" if len(present) >= 4 else "partial" if present else "missing",
+        "missing": missing,
+        "features": features,
+        "derivedFeatures": derived.get("derivedFeatures") or {},
+        "metrics": features,
+        "lastCapturedAt": max(last_values) if last_values else None,
+        "stale": stale,
+        "staleReasons": staleReasons,
+        "sampleCoverageRatio": sampleCoverageRatio,
+        "sourceStatus": sourceStatus,
     }
 
 

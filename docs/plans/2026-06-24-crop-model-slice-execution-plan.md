@@ -368,6 +368,10 @@ outerLeafDamageScore
 
 Make environment feature sources useful for the crop model, not just count-based summaries.
 
+## Vertical-slice scope
+
+Slice 3 is feature-complete only when environment model inputs are enriched end-to-end: `sensor_readings` are summarized into crop-model-ready derived features, the feature-source API and growth report expose those features, the panel shows read-only environment feature evidence, contract tests cover the behavior, production HA is verified, and `v1.9.62` is released.
+
 ## Required features
 
 ```text
@@ -385,14 +389,74 @@ sample coverage ratio
 ## Files
 
 - Modify: `custom_components/green_smart/crop_views.py`
+- Modify: `custom_components/green_smart/panel/green-smart-panel.js`
+- Modify: `custom_components/green_smart/manifest.json`
+- Modify: `custom_components/green_smart/central_views.py`
 - Create: `tests/test_crop_environment_features_contract.py`
-- Modify docs.
+- Modify: `docs/plans/2026-06-23-crop-model-design-decisions.md`
+
+## Backend/API work
+
+Required backend markers:
+
+```python
+CROP_ENVIRONMENT_FEATURES_VERSION = "crop_environment_features_v1"
+_crop_environment_stats_by_type(...)
+_crop_environment_vpd_from_temp_humidity(...)
+_crop_environment_derived_features(...)
+_environment_feature_summary(...)
+```
+
+Required `environmentSummary7d` shape:
+
+```json
+{
+  "version": "crop_environment_features_v1",
+  "sourceTables": ["sensor_readings"],
+  "windowDays": 7,
+  "features": {
+    "temperature": {"avg": 0, "min": 0, "max": 0, "sampleCount": 0},
+    "humidity": {"avg": 0, "min": 0, "max": 0, "sampleCount": 0},
+    "co2": {"avg": 0, "min": 0, "max": 0, "sampleCount": 0},
+    "radiation": {"avg": 0, "min": 0, "max": 0, "sum": 0, "sampleCount": 0},
+    "vpd": {"avg": 0, "min": 0, "max": 0, "derived": true},
+    "adt": {"value": 0, "derived": true},
+    "dif": {"value": 0, "derived": true}
+  },
+  "derivedFeatures": {},
+  "stale": false,
+  "staleReasons": [],
+  "sampleCoverageRatio": 0.0,
+  "missing": [],
+  "sourceStatus": "ready|partial|missing|stale"
+}
+```
+
+No DB schema change is required for Slice 3; it reads existing `sensor_readings` only.
+
+## Panel work
+
+Panel must keep environment features read-only model evidence. Required UI markers/text:
+
+```text
+data-crop-environment-features-card
+환경 feature
+VPD
+ADT
+DIF
+sampleCoverageRatio
+staleReasons
+```
 
 ## Acceptance criteria
 
 - `environmentSummary7d` includes derived feature names and missing/stale reasons.
+- VPD is read from `sensor_readings` when available or derived from temperature/humidity when possible.
+- ADT uses average temperature; DIF uses day/night temperature split where timestamps allow, otherwise records a missing/stale reason.
+- Sample coverage ratio is explicit and drives `ready|partial|missing|stale` source status.
 - No environment device execution.
 - Panel remains read-only.
+- `v1.9.62` version markers are updated and verified in local/prod.
 
 ---
 
