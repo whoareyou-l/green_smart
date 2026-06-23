@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.34
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.35
 const DOMAIN = "green_smart";
-const VERSION = "1.9.34";
+const VERSION = "1.9.35";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5757,7 +5757,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       if (!patchOnly) { this._pageRendered = null; this._update(); }
       return res;
     } catch (err) {
-      console.warn("환경 전략 MVP 조회 실패 시 fallback", err);
+      console.warn("환경 전략 모델 조회 실패 시 fallback", err);
       return this._zoneEnvironmentStrategyPreviewCache[cacheKey] || null;
     }
   }
@@ -5769,12 +5769,12 @@ button.action:disabled{opacity:.5;cursor:default;}
       const res = await this._hass.callApi("POST", "green_smart/environment/strategy-preview", { ...this._environmentStrategyPreviewPayload(domain), save_final_targets: true, calculated_by: "environment_strategy_mvp" });
       this._zoneEnvironmentStrategyPreviewCache[this._scopedControlCacheKey(domain)] = res;
       await this._fetchZoneFinalTargets(domain);
-      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 환경 전략 MVP 최종값 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 환경 전략 모델 최종값 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
       this._pageRendered = null;
       this._update();
       return !!res?.ok;
     } catch (err) {
-      console.warn("환경 전략 MVP 저장 실패 시 fallback", err);
+      console.warn("환경 전략 모델 저장 실패 시 fallback", err);
       return false;
     }
   }
@@ -5881,7 +5881,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       if (!patchOnly) { this._pageRendered = null; this._update(); }
       return res;
     } catch (err) {
-      console.warn("관수 전략 MVP 조회 실패 시 fallback", err);
+      console.warn("관수 전략 모델 조회 실패 시 fallback", err);
       return this._zoneIrrigationStrategyPreviewCache[cacheKey] || null;
     }
   }
@@ -5893,12 +5893,12 @@ button.action:disabled{opacity:.5;cursor:default;}
       const res = await this._hass.callApi("POST", "green_smart/irrigation/strategy-preview", { ...this._irrigationStrategyPreviewPayload(domain), save_final_targets: true, calculated_by: "irrigation_strategy_mvp" });
       this._zoneIrrigationStrategyPreviewCache[this._scopedControlCacheKey(domain)] = res;
       await this._fetchZoneFinalTargets(domain);
-      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 관수 전략 MVP 최종값 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      this._controlSaveNotice = { domain, label: `${this._currentControlScopeLabel(domain)} · 관수 전략 모델 최종값 저장 완료`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
       this._pageRendered = null;
       this._update();
       return !!res?.ok;
     } catch (err) {
-      console.warn("관수 전략 MVP 저장 실패 시 fallback", err);
+      console.warn("관수 전략 모델 저장 실패 시 fallback", err);
       return false;
     }
   }
@@ -6469,7 +6469,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const diffRows = (data?.targetDiff || []).map((d) => `<div class="strategy-status-row"><span>${this._esc(d.key)}</span><b>${this._esc(d.previous ?? "-")} → ${this._esc(d.next ?? "-")} (${this._esc(d.delta ?? "new")})</b></div>`).join("");
     return `<div class="gs-card" data-irrigation-strategy-preview-card data-irrigation-strategy-domain="${domain}" style="padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
-        <div><b>관수 전략 MVP</b><div class="strategy-muted">IRR EC/pH/VWC/드라이백 · 일사 누적 관수 · SafetyGuard 우선 적용 · irrigation_strategy_mvp · diffCount ${this._esc(data?.diffCount ?? 0)}</div></div>
+        <div><b>관수 전략 모델</b><div class="strategy-muted">IRR EC/pH/VWC/드라이백 · 일사 누적 관수 · SafetyGuard 우선 적용 · legacy id: irrigation_strategy_mvp · diffCount ${this._esc(data?.diffCount ?? 0)}</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="mini-btn" data-irrigation-strategy-preview-refresh data-irrigation-strategy-preview-domain="${domain}">관수 전략 새로고침</button>
           <button class="mini-btn" data-irrigation-strategy-save-final data-irrigation-strategy-preview-domain="${domain}">관수 전략 최종값 저장</button>
@@ -6502,7 +6502,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const diffRows = (data?.targetDiff || []).map((d) => `<div class="strategy-status-row"><span>${this._esc(d.key)}</span><b>${this._esc(d.previous ?? "-")} → ${this._esc(d.next ?? "-")} (${this._esc(d.delta ?? "new")})</b></div>`).join("");
     return `<div class="gs-card" data-env-strategy-preview-card data-env-strategy-domain="${domain}" style="padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
-        <div><b>환경 전략 MVP</b><div class="strategy-muted">CORP/TEMHUM/VENT/SCRN · SafetyGuard 우선 적용 · environment_strategy_mvp · diffCount ${this._esc(data?.diffCount ?? 0)}</div></div>
+        <div><b>환경 전략 모델</b><div class="strategy-muted">CORP/TEMHUM/VENT/SCRN · SafetyGuard 우선 적용 · legacy id: environment_strategy_mvp · diffCount ${this._esc(data?.diffCount ?? 0)}</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="mini-btn" data-env-strategy-preview-refresh data-env-strategy-preview-domain="${domain}">전략 새로고침</button>
           <button class="mini-btn" data-env-strategy-save-final data-env-strategy-preview-domain="${domain}">전략 최종값 저장</button>
@@ -7644,9 +7644,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelectorAll("[data-irrigation-strategy-save-final]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const domain = btn.dataset.irrigationStrategyPreviewDomain || "irrigation";
-        if (!confirm("관수 전략 MVP 결과를 최종 적용값으로 저장할까요? SafetyGuard 우선 적용은 실행 단계에서 유지됩니다.")) return;
+        if (!confirm("관수 전략 모델 결과를 최종 적용값으로 저장할까요? SafetyGuard 우선 적용은 실행 단계에서 유지됩니다.")) return;
         const ok = await this._saveIrrigationStrategyFinalTargets(domain);
-        if (!ok) alert("관수 전략 MVP 최종값 저장 실패: API/로그를 확인해 주세요.");
+        if (!ok) alert("관수 전략 모델 최종값 저장 실패: API/로그를 확인해 주세요.");
       });
     });
   }
@@ -7658,9 +7658,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelectorAll("[data-env-strategy-save-final]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const domain = btn.dataset.envStrategyPreviewDomain || "environment";
-        if (!confirm("환경 전략 MVP 결과를 최종 적용값으로 저장할까요? SafetyGuard 우선 적용은 실행 단계에서 유지됩니다.")) return;
+        if (!confirm("환경 전략 모델 결과를 최종 적용값으로 저장할까요? SafetyGuard 우선 적용은 실행 단계에서 유지됩니다.")) return;
         const ok = await this._saveEnvironmentStrategyFinalTargets(domain);
-        if (!ok) alert("환경 전략 MVP 최종값 저장 실패: API/로그를 확인해 주세요.");
+        if (!ok) alert("환경 전략 모델 최종값 저장 실패: API/로그를 확인해 주세요.");
       });
     });
   }

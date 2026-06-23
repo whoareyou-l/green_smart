@@ -432,6 +432,26 @@ def test_ui_polish_v1934_control_zone_cards_match_crop_season_selector_with_pres
     assert "_copyScopedControlSettingsViaApi" in modal_binder
 
 
+def test_model_phase_m0_control_strategy_cards_use_model_labels_not_user_facing_mvp():
+    panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+
+    for required in (
+        "환경 전략 모델",
+        "관수 전략 모델",
+        "legacy id: environment_strategy_mvp",
+        "legacy id: irrigation_strategy_mvp",
+        "환경 전략 모델 결과를 최종 적용값으로 저장할까요?",
+        "관수 전략 모델 결과를 최종 적용값으로 저장할까요?",
+    ):
+        assert required in panel
+
+    for forbidden in (
+        "환경 전략 MVP",
+        "관수 전략 MVP",
+    ):
+        assert forbidden not in panel
+
+
 def test_admin_system_page_has_real_management_tabs_and_bindings_contract():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
     admin_page = panel.split("  _renderAdminSystemPage()", 1)[1].split("  _renderHomePage", 1)[0]

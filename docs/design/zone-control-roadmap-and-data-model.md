@@ -1,7 +1,7 @@
 # Green Smart Zone Control Roadmap and Data Model
 
 > 작성일: 2026-06-20
-> 기준 버전: `v1.9.34` / Product Phase 6 baseline 완료, Model Phase M0 기준 수립, UI Polish Phase P4 완료, Control Phase C19D 완료
+> 기준 버전: `v1.9.35` / Product Phase 6 baseline 완료, Model Phase M0 기준 수립, UI Polish Phase P4 완료, Control Phase C19D 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`
 
 ## 1. 이 문서의 목적
@@ -54,7 +54,7 @@ farm_id + crop_season_id + zone_id + domain
 
 ## 2.1 작기·환경·관수·장치 모델 관계 기준
 
-v1.9.34 이후 제어 기능은 단순히 domain별 설정을 저장하는 구조가 아니라, 아래 4개 모델의 연결 흐름으로 해석한다.
+v1.9.35 이후 제어 기능은 단순히 domain별 설정을 저장하는 구조가 아니라, 아래 4개 모델의 연결 흐름으로 해석한다.
 
 ```text
 작기 모델(Crop Season Model)
@@ -727,7 +727,7 @@ domain별 상세 설정 탭
 
 ### 10.1 지금 가능한 것
 
-현재 `v1.9.34` 기준으로 가능한 것:
+현재 `v1.9.35` 기준으로 가능한 것:
 
 ```text
 - domain별 작기/구역 설정 저장
