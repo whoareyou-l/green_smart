@@ -9,7 +9,7 @@ from .central_api import DEFAULT_CENTRAL_BASE_URL, CentralApiError, GreenityCent
 from .central_store import CentralTokenStore
 from .crop_views import _growth_report_response
 
-EDGE_VERSION = "1.9.47"
+EDGE_VERSION = "1.9.48"
 
 
 class _CentralAdapterView(HomeAssistantView):
@@ -157,6 +157,32 @@ class CentralCropInterlockSnapshotSyncView(_CentralAdapterView):
             client, token = await self._client_and_token(request)
             result = await client.sync_crop_interlock_snapshot(token, payload)
             return self.json({"ok": True, "center": result, "payload": payload})
+        except CentralApiError as err:
+            return self._error_response(err)
+
+
+class CentralCropInterlockAnalyticsSummaryView(_CentralAdapterView):
+    """GET /api/green_smart/central/crop/interlock-analytics/summary — analytics/reporting only; not real-time safety decision."""
+
+    url = "/api/green_smart/central/crop/interlock-analytics/summary"
+    name = "api:green_smart:central:crop:interlock_analytics:summary"
+
+    async def get(self, request: web.Request) -> web.Response:
+        farm_id_raw = request.query.get("farm_id", "1")
+        season_id_raw = request.query.get("season_id")
+        try:
+            farm_id = int(farm_id_raw or 1)
+            season_id = int(season_id_raw) if season_id_raw else None
+        except (TypeError, ValueError):
+            return self.json({"error": "invalid_query"}, status_code=400)
+        try:
+            client, token = await self._client_and_token(request)
+            payload = await client.get_crop_interlock_analytics_summary(token, farm_id=farm_id, season_id=season_id)
+            return self.json({
+                **payload,
+                "message": payload.get("message") or "analytics/reporting only; not real-time safety decision",
+                "readonly": True,
+            })
         except CentralApiError as err:
             return self._error_response(err)
 

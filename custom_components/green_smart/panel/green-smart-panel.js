@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.47
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.48
 const DOMAIN = "green_smart";
-const VERSION = "1.9.47";
+const VERSION = "1.9.48";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -243,6 +243,7 @@ class GreenSmartPanel extends HTMLElement {
     this._cropSeasons = [];
     this._growthData = [];
     this._growthReportData = null;
+    this._centerCropInterlockAnalyticsData = null;
     this._pestData = [];
     this._pesticideSearchData = null;
     this._controlData = [];
@@ -4072,7 +4073,41 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>
       <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
       ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}
+      ${this._renderCenterCropInterlockAnalyticsCard()}
     </section>`;
+  }
+
+  _renderCenterCropInterlockAnalyticsCard() {
+    const data = this._centerCropInterlockAnalyticsData || {};
+    const reason_counts = data.reason_counts || {};
+    const approval_gate_counts = data.approval_gate_counts || {};
+    const approval_type_counts = data.approval_type_counts || {};
+    const topReasons = Object.entries(reason_counts).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 4);
+    const topGates = Object.entries(approval_gate_counts).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 3);
+    const topApprovals = Object.entries(approval_type_counts).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 3);
+    const unavailable = data.error || !this._activeSeasonId;
+    const chip = (label, value, color = "#4a6741") => `<span style="display:inline-flex;gap:5px;align-items:center;background:#f5faf6;color:${color};border:1px solid #e2efe4;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;"><b>${this._esc(label)}</b>${this._esc(String(value ?? 0))}</span>`;
+    const list = (items, empty) => items.length ? items.map(([k, v]) => chip(k, v)).join(" ") : `<span style="font-size:11px;color:#9aae9d;">${empty}</span>`;
+    return `<div data-center-crop-interlock-analytics-card style="background:#f7fbff;border:1px solid #dbeaf8;border-radius:12px;padding:10px;margin-top:10px;">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;">
+        <div>
+          <div style="font-size:12px;font-weight:900;color:#24323F;">센터 분석 참고</div>
+          <div style="font-size:10px;color:#6d8799;margin-top:3px;">실시간 제어 판단은 현장 Edge가 수행합니다 · 읽기 전용 카드 · analytics/reporting only</div>
+        </div>
+        <button data-center-crop-interlock-analytics-refresh title="센터 분석 새로고침" style="border:1px solid #cfe3f6;background:#fff;color:#3f7fb2;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:900;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:refresh" style="--mdi-icon-size:16px;"></ha-icon></button>
+      </div>
+      ${unavailable ? `<div style="font-size:11px;color:#7a9780;line-height:1.5;">센터 분석 데이터를 아직 불러오지 못했습니다. Center activation/token 또는 snapshot sync 상태를 확인하세요.</div>` : `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px;margin-bottom:8px;">
+        <div style="background:#fff;border-radius:10px;padding:8px;"><div style="font-size:10px;color:#7a9780;font-weight:800;">snapshot</div><b style="font-size:18px;color:#24323F;">${this._esc(String(data.snapshot_count ?? 0))}</b></div>
+        <div style="background:#fff;border-radius:10px;padding:8px;"><div style="font-size:10px;color:#7a9780;font-weight:800;">수확 안전 미확인</div><b style="font-size:18px;color:${Number(data.harvest_safety_unknown_count || 0) ? '#c0392b' : '#51AE60'};">${this._esc(String(data.harvest_safety_unknown_count ?? 0))}</b></div>
+        <div style="background:#fff;border-radius:10px;padding:8px;"><div style="font-size:10px;color:#7a9780;font-weight:800;">stage index 문제</div><b style="font-size:18px;color:${Number(data.stage_index_problem_count || 0) ? '#e67e22' : '#51AE60'};">${this._esc(String(data.stage_index_problem_count ?? 0))}</b></div>
+        <div style="background:#fff;border-radius:10px;padding:8px;"><div style="font-size:10px;color:#7a9780;font-weight:800;">hard block</div><b style="font-size:18px;color:${Number(data.stage_index_hard_block_count || 0) ? '#c0392b' : '#51AE60'};">${this._esc(String(data.stage_index_hard_block_count ?? 0))}</b></div>
+      </div>
+      <div style="font-size:11px;color:#5d7d64;line-height:1.65;"><b>reason_counts</b> ${list(topReasons, "집계 없음")}</div>
+      <div style="font-size:11px;color:#5d7d64;line-height:1.65;margin-top:4px;"><b>approval_gate_counts</b> ${list(topGates, "집계 없음")}</div>
+      <div style="font-size:11px;color:#5d7d64;line-height:1.65;margin-top:4px;"><b>approval_type_counts</b> ${list(topApprovals, "승인 기록 없음")}</div>
+      <div style="font-size:10px;color:#8aa0ad;margin-top:6px;">Center 분석은 반복 패턴/정책 추천 후보 확인용입니다. 자동 실행 허용/차단은 이 카드가 결정하지 않습니다.</div>`}
+    </div>`;
   }
 
   _renderCropGrowthTab() {
@@ -4247,16 +4282,18 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   async _loadSeasonDetail(seasonId) {
-    const [growth, pest, control, report] = await Promise.all([
+    const [growth, pest, control, report, centerAnalytics] = await Promise.all([
       this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/growth`).catch(() => []),
       this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/pest`).catch(()  => []),
       this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/control`).catch(() => []),
       this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/growth-report`).catch(() => null),
+      this._fetchCenterCropInterlockAnalytics(seasonId, false).catch(() => null),
     ]);
     this._growthData  = growth  || [];
     this._pestData    = pest    || [];
     this._controlData = control || [];
     this._growthReportData = report || null;
+    this._centerCropInterlockAnalyticsData = centerAnalytics || this._centerCropInterlockAnalyticsData || null;
   }
 
   async _fetchGrowthReport() {
@@ -4269,6 +4306,22 @@ button.action:disabled{opacity:.5;cursor:default;}
     } catch (err) {
       console.warn("생육 리포트 조회 실패", err);
       return this._growthReportData;
+    }
+  }
+
+  async _fetchCenterCropInterlockAnalytics(seasonId = this._activeSeasonId, refresh = true) {
+    if (!this._hass || !seasonId) return null;
+    try {
+      const query = new URLSearchParams({ farm_id: "1", season_id: String(seasonId) }).toString();
+      const data = await this._hass.callApi("GET", `green_smart/central/crop/interlock-analytics/summary?${query}`);
+      this._centerCropInterlockAnalyticsData = data || null;
+      if (refresh) this._refreshCropContent();
+      return data;
+    } catch (err) {
+      console.warn("센터 작물 인터록 분석 조회 실패", err);
+      this._centerCropInterlockAnalyticsData = this._centerCropInterlockAnalyticsData || { error: err?.message || "center_analytics_unavailable" };
+      if (refresh) this._refreshCropContent();
+      return this._centerCropInterlockAnalyticsData;
     }
   }
 
@@ -5364,6 +5417,12 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelector("#pest-export-btn")?.addEventListener("click",    () => this._exportCropData("pest"));
     root.querySelector("#control-export-btn")?.addEventListener("click", () => this._exportCropData("control"));
     root.querySelector("[data-growth-report-refresh]")?.addEventListener("click", async (event) => { await this._refreshWeeklyGrowthReportFromButton(event.currentTarget); await this._maybeNotifyWeeklyGrowthReport("manual_refresh"); });
+    root.querySelector("[data-center-crop-interlock-analytics-refresh]")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      if (button) button.disabled = true;
+      try { await this._fetchCenterCropInterlockAnalytics(this._activeSeasonId, true); }
+      finally { if (button) button.disabled = false; }
+    });
     root.querySelector("[data-weekly-report-export]")?.addEventListener("click", () => this._exportWeeklyGrowthReport());
     root.querySelector("[data-weekly-report-notification-toggle]")?.addEventListener("click", async () => {
       const enabled = !this._weeklyReportNotificationEnabled();

@@ -22,6 +22,7 @@ TOKEN_REFRESH_PATH = "/tokens/refresh"
 TOKEN_REVOKE_PATH = "/tokens/revoke"
 DEMO_STATUS_PATH = "/vendor/adapters/demo/status"
 CROP_INTERLOCK_SNAPSHOT_PATH = "/edge/snapshots/crop-interlock"
+CROP_INTERLOCK_ANALYTICS_SUMMARY_PATH = "/analytics/crop-interlock/summary"
 
 
 @dataclass(slots=True)
@@ -58,6 +59,32 @@ class GreenityCentralClient:
             async with self._session.post(
                 self._url(endpoint),
                 json=payload,
+                headers=headers,
+                timeout=self._timeout,
+            ) as response:
+                body = await response.json(content_type=None)
+                if response.status >= 400:
+                    detail = body.get("detail", "central_api_error") if isinstance(body, dict) else "central_api_error"
+                    raise CentralApiError(str(detail), response.status)
+                if not isinstance(body, dict):
+                    raise CentralApiError("central_api_invalid_json", response.status)
+                return body
+        except CentralApiError:
+            raise
+        except (ClientError, TimeoutError, OSError) as err:
+            raise CentralApiError("cannot_connect") from err
+
+    async def _get_json(
+        self,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        try:
+            clean_params = {key: value for key, value in (params or {}).items() if value is not None}
+            async with self._session.get(
+                self._url(endpoint),
+                params=clean_params,
                 headers=headers,
                 timeout=self._timeout,
             ) as response:
@@ -123,6 +150,18 @@ class GreenityCentralClient:
                 "auditSummary": payload.get("auditSummary") or {},
                 "edgeVersions": payload.get("edgeVersions") or {},
             },
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    async def get_crop_interlock_analytics_summary(
+        self,
+        access_token: str,
+        farm_id: int = 1,
+        season_id: int | None = None,
+    ) -> dict[str, Any]:
+        return await self._get_json(
+            CROP_INTERLOCK_ANALYTICS_SUMMARY_PATH,
+            params={"farm_id": farm_id, "season_id": season_id},
             headers={"Authorization": f"Bearer {access_token}"},
         )
 

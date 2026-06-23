@@ -2,7 +2,7 @@
 
 > 기준일: 2026-06-20
 > 기준 repo: `/home/smartfarm/green_smart`
-> 기준 버전: product code `v1.9.47`, Crop Stage Diagnosis DB/API baseline, Crop Interlock C-S2 baseline, Crop Safety Rules C-S1B PLS/mix/growth anomaly baseline, Model Phase M1 crop model snapshot baseline, UI Polish Phase P4 crop-season-style control zone selector and DB bootstrap closure baseline, Control Phase C19D virtual rehearsal evidence baseline
+> 기준 버전: product code `v1.9.48`, Crop Stage Diagnosis DB/API baseline, Crop Interlock C-S2 baseline, Crop Safety Rules C-S1B PLS/mix/growth anomaly baseline, Model Phase M1 crop model snapshot baseline, UI Polish Phase P4 crop-season-style control zone selector and DB bootstrap closure baseline, Control Phase C19D virtual rehearsal evidence baseline
 > 신규 기준 문서: `.omc/plans/green-smart-master-plan.md`
 > 기존 기준 문서: `docs/PROJECT_GUIDE.md`, `docs/design/zone-control-roadmap-and-data-model.md`
 
@@ -310,7 +310,7 @@ G-Index 추이 baseline
 
 ## 7. 통합 모델 트랙: 작기·환경·관수·장치 모델 관계
 
-v1.9.47 이후 작업은 `MVP`라는 개발 단계명을 사용자-facing UI/문서의 중심 용어로 쓰지 않는다. 내부 DB/API 호환을 위해 `environment_strategy_mvp`, `irrigation_strategy_mvp` 같은 legacy identifier는 유지할 수 있지만, 제품/문서/화면의 기준 용어는 다음 4개 모델로 정렬한다.
+v1.9.48 이후 작업은 `MVP`라는 개발 단계명을 사용자-facing UI/문서의 중심 용어로 쓰지 않는다. 내부 DB/API 호환을 위해 `environment_strategy_mvp`, `irrigation_strategy_mvp` 같은 legacy identifier는 유지할 수 있지만, 제품/문서/화면의 기준 용어는 다음 4개 모델로 정렬한다.
 
 ```text
 작물 안전 룰(Crop Safety Rules)

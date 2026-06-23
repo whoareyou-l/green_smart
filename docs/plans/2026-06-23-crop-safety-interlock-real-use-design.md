@@ -1,7 +1,7 @@
 # Green Smart Crop Safety/Interlock Real-Use Deepening Design
 
 > **Status:** 질문 기반 설계 진행 중
-> **Baseline reference:** `v1.9.47` adds stage diagnosis API on top of C-S1/C-S2 skeleton; it is still calibration-driven baseline, not final agronomic readiness.
+> **Baseline reference:** `v1.9.48` adds stage diagnosis API on top of C-S1/C-S2 skeleton; it is still calibration-driven baseline, not final agronomic readiness.
 > **Goal:** C-S1/C-S2를 실제 농장 운영에 사용할 수 있는 수준으로 구체화한다.
 > **Do not implement code from this document until each directly relevant question is answered.**
 
@@ -38,8 +38,8 @@ cropInterlock
 2. 답변이 구현 정책에 영향을 주는 경우, 이 문서에 `Confirmed decision`으로 기록한다.
 3. 애매한 답변은 임의 구현하지 않고 다시 질문한다.
 4. 질문 묶음이 충분히 정리되기 전에는 코드 구현/릴리즈를 하지 않는다.
-5. 기존 `v1.9.47`는 유지하되, 실사용 readiness로 표현하지 않는다.
-6. `v1.9.47` Stage Diagnosis API는 사용자가 구현을 승인한 DB/API baseline이며, 실제 제어 자동화 결합 전에는 추가 검증 질문을 계속 진행한다.
+5. 기존 `v1.9.48`는 유지하되, 실사용 readiness로 표현하지 않는다.
+6. `v1.9.48` Stage Diagnosis API는 사용자가 구현을 승인한 DB/API baseline이며, 실제 제어 자동화 결합 전에는 추가 검증 질문을 계속 진행한다.
 
 ---
 
@@ -136,7 +136,7 @@ cropInterlock
 |---|---|---|
 | `v1.9.37` | C-S1 baseline complete | 작물 안전 룰 skeleton |
 | `v1.9.38` | C-S1B baseline complete | PLS/혼용/생육 이상치 저장 및 rule skeleton |
-| `v1.9.47` | C-S2 baseline complete | cropInterlock decision skeleton |
+| `v1.9.48` | C-S2 baseline complete | cropInterlock decision skeleton |
 
 이 문서 완료 전에는 위 버전들을 실사용 안전 정책으로 간주하지 않는다.
 
@@ -513,9 +513,9 @@ This section converts the remaining open items into a research-backed initial dr
 - G-Index/L-Index thresholds must be stored as calibration data, not hard-coded forever.
 - For 수경재배, all nutrition-management language must use EC/pH/irrigation/drainage/root-zone terms, not 토경 `웃거름` terms.
 
-##### Implemented DB/API baseline — v1.9.47 Stage Diagnosis
+##### Implemented DB/API baseline — v1.9.48 Stage Diagnosis
 
-`v1.9.47` adds a read-only diagnosis endpoint that combines `crop_seasons`, latest `growth_surveys`, recent `control_records/control_pesticides`, and `crop_stage_calibrations`.
+`v1.9.48` adds a read-only diagnosis endpoint that combines `crop_seasons`, latest `growth_surveys`, recent `control_records/control_pesticides`, and `crop_stage_calibrations`.
 
 ```http
 GET /api/green_smart/crop/seasons/{season_id}/stage-diagnosis?farmId=1
@@ -550,9 +550,9 @@ Initial inference rules:
 
 This remains a DB/API baseline. It does not yet promote final control targets or change SafetyGuard execution.
 
-##### Implemented model/interlock baseline — v1.9.47 Stage diagnosis → cropInterlock integration
+##### Implemented model/interlock baseline — v1.9.48 Stage diagnosis → cropInterlock integration
 
-`v1.9.47` connects the stage diagnosis result to the crop model snapshot and crop interlock decision. The integration keeps the existing `Safety → Interlock → Model(AI)` order: stage diagnosis does not directly execute devices, but it can block target promotion and auto execution before downstream model targets are used.
+`v1.9.48` connects the stage diagnosis result to the crop model snapshot and crop interlock decision. The integration keeps the existing `Safety → Interlock → Model(AI)` order: stage diagnosis does not directly execute devices, but it can block target promotion and auto execution before downstream model targets are used.
 
 New crop interlock reasons:
 
@@ -575,9 +575,9 @@ Crop model response additions:
 
 This is still a baseline interlock integration. It blocks/limits model promotion, but does not yet add a dedicated panel card or override/audit approval workflow for every stage reason.
 
-##### Implemented approval/audit baseline — v1.9.47 Crop Interlock approval
+##### Implemented approval/audit baseline — v1.9.48 Crop Interlock approval
 
-`v1.9.47` adds edge-local crop interlock approval and audit persistence.
+`v1.9.48` adds edge-local crop interlock approval and audit persistence.
 
 ```http
 GET  /api/green_smart/crop/seasons/{season_id}/interlock-approval?farmId=1
@@ -605,9 +605,9 @@ Center API role decision:
 
 Therefore stage diagnosis, cropInterlock, approval gating, and automatic execution blocking remain inside edge HA/Green Smart. A future center API extension may collect `stageDiagnosis`, `cropInterlock`, `crop_interlock_approvals`, and `audit_logs` snapshots for fleet reporting and policy distribution, but it must not become the final real-time safety decision maker.
 
-##### Implemented approval gate integration — v1.9.47
+##### Implemented approval gate integration — v1.9.48
 
-`v1.9.47` connects active approvals to cropInterlock target promotion gating.
+`v1.9.48` connects active approvals to cropInterlock target promotion gating.
 
 Runtime policy:
 
@@ -640,9 +640,9 @@ Panel marker:
 data-crop-interlock-approval-gate
 ```
 
-##### Implemented center snapshot collection — v1.9.47
+##### Implemented center snapshot collection — v1.9.48
 
-`v1.9.47` adds edge-to-center crop interlock snapshot sync. 센터 API는 snapshot 수집/분석 주체이며 실시간 safety/interlock 최종 판단자가 아니다.
+`v1.9.48` adds edge-to-center crop interlock snapshot sync. 센터 API는 snapshot 수집/분석 주체이며 실시간 safety/interlock 최종 판단자가 아니다.
 
 Center API:
 
@@ -686,9 +686,9 @@ Center may analyze snapshots for reports, calibration/policy recommendations, an
 Center must not become the real-time safety/interlock execution authority.
 ```
 
-##### Implemented center analytics summary — v1.9.47
+##### Implemented center analytics summary — v1.9.48
 
-`v1.9.47` adds a center-side crop interlock analytics summary endpoint. 센터 분석 API는 analytics/reporting only이며 실시간 safety/interlock 최종 판단자가 아니다.
+`v1.9.48` adds a center-side crop interlock analytics summary endpoint. 센터 분석 API는 analytics/reporting only이며 실시간 safety/interlock 최종 판단자가 아니다.
 
 ```http
 GET /analytics/crop-interlock/summary?farm_id=1&season_id={season_id}
@@ -721,6 +721,45 @@ Non-goal:
 ```text
 The analytics summary must not be used as the edge live execution allow/block authority.
 ```
+
+##### Implemented edge/panel analytics read-only card — v1.9.48
+
+`v1.9.48` adds an Edge HA proxy and Panel read-only card for center crop interlock analytics.
+
+Edge HA API:
+
+```http
+GET /api/green_smart/central/crop/interlock-analytics/summary?farm_id=1&season_id={season_id}
+```
+
+Panel placement:
+
+```text
+작물 관리 → AI 전략 → 생육 리포트 → 센터 분석 참고
+```
+
+Panel marker:
+
+```html
+data-center-crop-interlock-analytics-card
+```
+
+UI rule:
+
+```text
+센터 분석 참고 — 실시간 제어 판단은 현장 Edge가 수행합니다.
+읽기 전용 카드이며 실행/승인/차단 권한을 제공하지 않는다.
+```
+
+Displayed fields:
+
+- `snapshot_count`
+- `reason_counts`
+- `approval_gate_counts`
+- `approval_type_counts`
+- `harvest_safety_unknown_count`
+- `stage_index_problem_count`
+- `stage_index_hard_block_count`
 
 ---
 
