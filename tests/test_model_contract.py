@@ -337,6 +337,66 @@ def test_crop_interlock_decision_handles_uncertain_safety_as_confirm_and_generic
     assert "use_generic_safe_ranges_only" in result["cropInterlockActions"]
 
 
+def test_crop_interlock_approval_gate_relaxes_target_promotion_not_auto_execution():
+    crop_views = _load_crop_views_for_helper_tests()
+
+    safety = {
+        "cropSafetyStatus": "blocked",
+        "cropSafetyBlocked": True,
+        "cropSafetyReasons": [],
+        "cropSafetyRuleResults": [],
+    }
+    stage = {
+        "stageId": "harvest",
+        "stageLabel": "수확기",
+        "indexBand": "caution",
+        "missingEvidence": ["latest_growth_survey"],
+    }
+    control_rows = [{"pesticides": [{"name": "약제A", "phiChecked": False, "reiChecked": False}]}]
+
+    without_approval = crop_views._crop_interlock_decision(safety, stageDiagnosis=stage, control_rows=control_rows)
+    assert "stage_missing_evidence" in without_approval["cropInterlockReasons"]
+    assert "stage_harvest_phi_rei_unknown" in without_approval["cropInterlockReasons"]
+    assert without_approval["blockTargetPromotion"] is True
+    assert without_approval["blockAutoExecution"] is True
+    assert without_approval["approvalGateStatus"] == "approval_required"
+
+    with_approval = crop_views._crop_interlock_decision(
+        safety,
+        stageDiagnosis=stage,
+        control_rows=control_rows,
+        approvalAudit=[
+            {"approvalType": "operator_confirm", "reasonCodes": ["stage_missing_evidence", "stage_index_caution"], "approvalExpiresAt": None},
+            {"approvalType": "manager_approve", "reasonCodes": ["stage_harvest_phi_rei_unknown"], "approvalExpiresAt": None},
+        ],
+    )
+    assert with_approval["approvalGateStatus"] == "target_promotion_approved"
+    assert with_approval["approvalResolvedReasons"] == ["stage_harvest_phi_rei_unknown", "stage_index_caution", "stage_missing_evidence"]
+    assert with_approval["blockTargetPromotion"] is False
+    assert with_approval["blockAutoExecution"] is True
+    assert "approval_allows_target_promotion" in with_approval["cropInterlockActions"]
+    assert "approval_keeps_auto_execution_blocked" in with_approval["cropInterlockActions"]
+
+
+def test_crop_interlock_admin_approval_cannot_enable_auto_execution_for_hard_stage_block():
+    crop_views = _load_crop_views_for_helper_tests()
+    safety = {"cropSafetyStatus": "clear", "cropSafetyBlocked": False, "cropSafetyReasons": [], "cropSafetyRuleResults": []}
+    stage = {"stageId": "flowering", "stageLabel": "개화기", "indexBand": "hardBlock", "missingEvidence": []}
+
+    result = crop_views._crop_interlock_decision(
+        safety,
+        stageDiagnosis=stage,
+        approvalAudit=[{"approvalType": "admin_approve", "reasonCodes": ["stage_index_hard_block"], "approvalExpiresAt": None}],
+    )
+
+    assert "stage_index_hard_block" in result["cropInterlockReasons"]
+    assert result["approvalGateStatus"] == "target_promotion_approved"
+    assert result["blockTargetPromotion"] is False
+    assert result["blockAutoExecution"] is True
+    assert "stage_index_hard_block" in result["approvalResolvedReasons"]
+    assert "approval_keeps_auto_execution_blocked" in result["cropInterlockActions"]
+
+
 def test_crop_model_snapshot_includes_crop_interlock_summary():
     crop_views = _load_crop_views_for_helper_tests()
 

@@ -219,7 +219,7 @@ def test_crop_stage_diagnosis_interlock_integration_contract():
         "require_harvest_safety_clearance",
         "stageInterlockRuleResults",
         "stageDiagnosis",
-        "_crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows)",
+        "_crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows, approvalAudit=approvalAudit)",
     ):
         assert marker in crop_source
 

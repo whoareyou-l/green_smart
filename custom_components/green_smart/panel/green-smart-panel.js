@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.44
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.45
 const DOMAIN = "green_smart";
-const VERSION = "1.9.44";
+const VERSION = "1.9.45";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3969,6 +3969,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     const stageRules = Array.isArray(cropInterlock.stageInterlockRuleResults) ? cropInterlock.stageInterlockRuleResults : [];
     const interlockReasons = Array.isArray(cropInterlock.cropInterlockReasons) ? cropInterlock.cropInterlockReasons : [];
     const interlockActions = Array.isArray(cropInterlock.cropInterlockActions) ? cropInterlock.cropInterlockActions : [];
+    const approvalResolvedReasons = Array.isArray(cropInterlock.approvalResolvedReasons) ? cropInterlock.approvalResolvedReasons : [];
+    const approvalUnresolvedReasons = Array.isArray(cropInterlock.approvalUnresolvedReasons) ? cropInterlock.approvalUnresolvedReasons : [];
+    const approvalGateStatus = cropInterlock.approvalGateStatus || "clear";
     const missingEvidence = Array.isArray(stageDiagnosis.missingEvidence) ? stageDiagnosis.missingEvidence : [];
     const indexBand = stageDiagnosis.indexBand || "unknown";
     const indexBandColor = { target: "#51AE60", caution: "#f39c12", problem: "#e67e22", hardBlock: "#c0392b", unknown: "#7a9780" }[indexBand] || "#7a9780";
@@ -4055,6 +4058,11 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#7a9780;line-height:1.55;"><b>이유</b> ${interlockReasons.length ? interlockReasons.map(r => this._esc(r)).join(" · ") : "없음"}</div>
         <div style="font-size:11px;color:#7a9780;line-height:1.55;margin-top:4px;"><b>조치</b> ${interlockActions.length ? interlockActions.map(a => this._esc(a)).join(" · ") : "없음"}</div>
+        <div data-crop-interlock-approval-gate style="background:#f8fbf9;border-radius:10px;padding:8px;margin-top:8px;border:1px solid #e1eee4;">
+          <div style="font-size:11px;color:#5d7d64;font-weight:900;">승인 gate: ${this._esc(approvalGateStatus)}</div>
+          <div style="font-size:10px;color:#7a9780;margin-top:4px;"><b>승인으로 해소</b> ${approvalResolvedReasons.length ? approvalResolvedReasons.map(r => this._esc(r)).join(" · ") : "없음"}</div>
+          <div style="font-size:10px;color:#7a9780;margin-top:3px;"><b>미해소 차단</b> ${approvalUnresolvedReasons.length ? approvalUnresolvedReasons.map(r => this._esc(r)).join(" · ") : "없음"}</div>
+        </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
           <button data-crop-interlock-approve data-approval-type="operator_confirm" style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:900;cursor:pointer;">운영자 확인</button>
           <button data-crop-interlock-approve data-approval-type="manager_approve" style="border:1px solid #f6d08b;background:#fff8e8;color:#c47f00;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:900;cursor:pointer;">농장주 승인</button>

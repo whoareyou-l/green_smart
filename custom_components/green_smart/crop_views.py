@@ -763,7 +763,21 @@ def _crop_stage_interlock_rule_results(stageDiagnosis: dict | None, control_rows
     ]
 
 
-def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | None = None, control_rows: list[dict] | None = None) -> dict:
+def _crop_interlock_approval_resolved_reasons(reasons: set[str], approvalAudit: list[dict] | None = None) -> set[str]:
+    resolved: set[str] = set()
+    for approval in approvalAudit or []:
+        approval_type = str(approval.get("approvalType") or "")
+        approved_reasons = set(approval.get("reasonCodes") or [])
+        if approval_type == "operator_confirm":
+            resolved.update(approved_reasons & {"stage_missing_evidence", "stage_index_caution", "growth_survey_stale", "crop_confidence_low"})
+        elif approval_type == "manager_approve":
+            resolved.update(approved_reasons & {"stage_harvest_phi_rei_unknown", "crop_pest_risk_high", "pesticide_mix_unknown"})
+        elif approval_type == "admin_approve":
+            resolved.update(approved_reasons & {"stage_index_hard_block", "stage_index_problem", "pesticide_pls_noncompliant", "pesticide_mix_forbidden", "crop_growth_anomaly", "crop_metric_anomaly", "stage_harvest_phi_rei_unknown"})
+    return resolved & reasons
+
+
+def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | None = None, control_rows: list[dict] | None = None, approvalAudit: list[dict] | None = None) -> dict:
     safety = cropSafety or {}
     stage_rule_results = _crop_stage_interlock_rule_results(stageDiagnosis, control_rows)
     reasons = set(safety.get("cropSafetyReasons") or [])
@@ -830,6 +844,21 @@ def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | 
     hard_block = bool(reasons & hard_block_reasons)
     needs_confirm = bool(reasons & uncertain_reasons or confirm_reasons or hard_block)
     blocked = bool(reasons)
+    approval_resolved_reasons = _crop_interlock_approval_resolved_reasons(reasons, approvalAudit)
+    unresolved_for_target = reasons - approval_resolved_reasons
+    target_promotion_blocked = bool(unresolved_for_target)
+    auto_execution_blocked = blocked
+    if approval_resolved_reasons and not target_promotion_blocked:
+        actions.append("approval_allows_target_promotion")
+    if approval_resolved_reasons and auto_execution_blocked:
+        actions.append("approval_keeps_auto_execution_blocked")
+    actions = list(dict.fromkeys(actions))
+    if not blocked:
+        approval_gate_status = "clear"
+    elif target_promotion_blocked:
+        approval_gate_status = "approval_required"
+    else:
+        approval_gate_status = "target_promotion_approved"
     status = "blocked" if hard_block else ("confirm_required" if blocked else "clear")
 
     return {
@@ -839,14 +868,18 @@ def _crop_interlock_decision(cropSafety: dict | None, *, stageDiagnosis: dict | 
         "cropInterlockBlocked": blocked,
         "cropInterlockReasons": sorted(reasons),
         "cropInterlockActions": actions,
+        "approvalGateStatus": approval_gate_status,
+        "approvalResolvedReasons": sorted(approval_resolved_reasons),
+        "approvalUnresolvedReasons": sorted(unresolved_for_target),
+        "approvalAudit": approvalAudit or [],
         "stageDiagnosis": stageDiagnosis or {},
         "stageInterlockRuleResults": stage_rule_results,
         "fallbackToConservativeBaseline": "fallback_conservative_crop_baseline" in actions,
         "operatorConfirmationRequired": needs_confirm,
         "managerApprovalRequired": bool(reasons & {"crop_pest_risk_high", "pesticide_pls_noncompliant", "pesticide_mix_forbidden", "stage_harvest_phi_rei_unknown", "stage_index_hard_block"}),
         "adminApprovalRequired": bool(reasons & {"pesticide_pls_noncompliant", "pesticide_mix_forbidden", "crop_growth_anomaly", "crop_metric_anomaly", "stage_harvest_phi_rei_unknown"}),
-        "blockTargetPromotion": blocked,
-        "blockAutoExecution": blocked,
+        "blockTargetPromotion": target_promotion_blocked,
+        "blockAutoExecution": auto_execution_blocked,
         "useGenericSafeRangesOnly": "use_generic_safe_ranges_only" in actions,
         "blockAggressiveClimateAndIrrigationChanges": "block_aggressive_climate_and_irrigation_changes" in actions,
     }
@@ -1017,7 +1050,7 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
     }
 
 
-def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict], stageDiagnosis: dict | None = None) -> dict:
+def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict], stageDiagnosis: dict | None = None, approvalAudit: list[dict] | None = None) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     oldest = growth_rows[-1] if growth_rows else latest
     height_now = _growth_metric_value(latest, "height", "height") or 0
@@ -1030,7 +1063,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     if stageDiagnosis is None:
         stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows)
     cropSafety = _crop_safety_rule_snapshot(season=season, growth_rows=growth_rows, pestRisk=pestRisk, yieldPrediction=yieldPrediction, latest_g=latest_g, weekly_growth=weekly_growth, control_rows=control_rows)
-    cropInterlock = _crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows)
+    cropInterlock = _crop_interlock_decision(cropSafety, stageDiagnosis=stageDiagnosis, control_rows=control_rows, approvalAudit=approvalAudit)
     growthStage = _crop_growth_stage(season, latest, growth_rows)
     cropProfile = _crop_profile_for_season(season, latest)
     confidenceReasons = list(dict.fromkeys(
@@ -1126,7 +1159,8 @@ async def _crop_model_snapshot(hass, season_id: int) -> dict:
     method = str(season.get("method") or "hydro").lower()
     calibration_response = await _crop_stage_calibrations_response(hass, farm_id=1, crop_type=crop_type, cultivation_method=method)
     stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows, calibration_response)
-    return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis)
+    approvalAudit = (await _crop_interlock_approval_response(hass, season_id, farm_id=1)).get("approvalAudit") or []
+    return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis, approvalAudit)
 
 
 async def _growth_report_response(hass, season_id: int) -> dict:
@@ -1160,7 +1194,8 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     method = str(season.get("method") or "hydro").lower()
     calibration_response = await _crop_stage_calibrations_response(hass, farm_id=1, crop_type=crop_type, cultivation_method=method)
     stageDiagnosis = _crop_stage_diagnosis_from_parts(season_id, season, growth_rows, control_rows, calibration_response)
-    cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis)
+    approvalAudit = (await _crop_interlock_approval_response(hass, season_id, farm_id=1)).get("approvalAudit") or []
+    cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis, approvalAudit)
     latest = cropModel["latestMetrics"]
     oldest = growth_rows[-1] if growth_rows else latest
     weekly_growth = cropModel["weeklyGrowthCm"]

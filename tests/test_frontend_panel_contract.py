@@ -319,6 +319,12 @@ def test_crop_interlock_approval_panel_contract():
         "승인 메모",
         "승인 만료",
         "approvalAudit",
+        "data-crop-interlock-approval-gate",
+        "approvalGateStatus",
+        "approvalResolvedReasons",
+        "approvalUnresolvedReasons",
+        "승인으로 해소",
+        "미해소 차단",
     ):
         assert marker in panel
     assert "_submitCropInterlockApproval(event.currentTarget)" in bind_section
