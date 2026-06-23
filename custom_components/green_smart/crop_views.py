@@ -12,6 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 WEEKLY_REPORT_INTERVAL_DAYS = 7
 GROWTH_REPORT_NOTIFICATION_SETTINGS_KEY = "growth_report_notification_settings"
 GROWTH_REPORT_NOTIFICATION_STATE_KEY = "growth_report_notification_state"
+CROP_MODEL_VERSION = "crop_season_model_v1"
 
 YIELD_MODEL_BY_CROP = {
     "tomato": {
@@ -510,6 +511,128 @@ def _growth_yield_prediction(season: dict, latest: dict, oldest: dict, growth_ro
     }
 
 
+def _crop_growth_stage(season: dict, latest: dict, growth_rows: list[dict]) -> dict:
+    plant_date = season.get("plantDate")
+    days_after_planting = _days_since(plant_date)
+    latest_g = _growth_g_index(latest) if latest else 0
+    crop_type = str(season.get("cropType") or latest.get("cropType") or "default").lower()
+    if days_after_planting is None:
+        stage = "unknown"
+        label = "생육단계 미확정"
+    elif crop_type == "lettuce":
+        if days_after_planting < 14:
+            stage, label = "establishment", "활착기"
+        elif days_after_planting < 35:
+            stage, label = "vegetative", "엽채 생장기"
+        else:
+            stage, label = "harvest_window", "수확 가능기"
+    else:
+        if days_after_planting < 21:
+            stage, label = "establishment", "활착기"
+        elif latest_g >= 18:
+            stage, label = "fruiting", "착과/수확기"
+        elif days_after_planting >= 45:
+            stage, label = "reproductive", "개화/착과 전환기"
+        else:
+            stage, label = "vegetative", "영양생장기"
+    return {
+        "stage": stage,
+        "label": label,
+        "daysAfterPlanting": days_after_planting,
+        "evidence": {
+            "cropType": crop_type,
+            "gIndex": latest_g,
+            "growthSurveyCount": len(growth_rows),
+        },
+    }
+
+
+def _crop_profile_for_season(season: dict, latest: dict) -> dict:
+    crop_type = str(season.get("cropType") or latest.get("cropType") or "default").lower()
+    model = YIELD_MODEL_BY_CROP.get(crop_type, YIELD_MODEL_BY_CROP["default"])
+    return {
+        "cropType": crop_type,
+        "variety": season.get("variety") or "",
+        "method": season.get("method") or "",
+        "plantDate": season.get("plantDate"),
+        "zoneId": season.get("zoneId"),
+        "plantDensity": season.get("plantDensity") or 0,
+        "totalPlants": season.get("totalPlants") or 0,
+        "yieldModelVersion": model["modelVersion"],
+        "yieldModelLabel": model["cropModelLabel"],
+    }
+
+
+def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, growth_rows: list[dict], pest_rows: list[dict], control_rows: list[dict]) -> dict:
+    latest = growth_rows[0] if growth_rows else {}
+    oldest = growth_rows[-1] if growth_rows else latest
+    height_now = _growth_metric_value(latest, "height", "height") or 0
+    height_old = _growth_metric_value(oldest, "height", "height") or height_now
+    days = _growth_days_between(oldest.get("date"), latest.get("date")) if growth_rows else 7
+    weekly_growth = round((height_now - height_old) / days * 7, 2) if days else 0
+    latest_g = _growth_g_index(latest) if latest else 0
+    pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)
+    yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
+    growthStage = _crop_growth_stage(season, latest, growth_rows)
+    cropProfile = _crop_profile_for_season(season, latest)
+    confidenceReasons = list(dict.fromkeys(
+        list(yieldPrediction.get("confidenceReasons") or [])
+        + list(pestRisk.get("riskFactors") or [])
+        + ([] if latest else ["최신 생육조사 없음"])
+    ))
+    return {
+        "cropModelVersion": CROP_MODEL_VERSION,
+        "seasonId": season_id,
+        "season": season,
+        "cropProfile": cropProfile,
+        "growthStage": growthStage,
+        "gIndex": latest_g,
+        "weeklyGrowthCm": weekly_growth,
+        "latestMetrics": latest,
+        "yieldPrediction": yieldPrediction,
+        "pestRisk": pestRisk,
+        "confidence": yieldPrediction.get("confidence") or "low",
+        "confidenceReasons": confidenceReasons,
+        "sourceTables": ["crop_seasons", "growth_surveys", "pest_surveys", "control_records"],
+    }
+
+
+async def _crop_model_snapshot(hass, season_id: int) -> dict:
+    season = await fetchone(hass, """
+        SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
+               demolish_date AS demolishDate, total_plants AS totalPlants,
+               plant_density AS plantDensity, zone_id AS zoneId
+        FROM crop_seasons
+        WHERE id = %s AND deleted_at IS NULL
+    """, (season_id,)) or {"id": season_id}
+    growth_rows = await fetchall(hass, """
+        SELECT id, survey_date AS date, plant_height AS height,
+               leaf_count AS leafCount, stem_diameter AS stemDia,
+               truss_count AS truss, node_count AS node,
+               crop_type AS cropType, metrics_json AS metricsJson,
+               notes AS note
+        FROM growth_surveys
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY survey_date DESC
+        LIMIT 60
+    """, (season_id,))
+    pest_rows = await fetchall(hass, """
+        SELECT id, survey_date AS date, pest_type AS type, severity, notes AS note
+        FROM pest_surveys
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY survey_date DESC
+        LIMIT 30
+    """, (season_id,))
+    control_rows = await fetchall(hass, """
+        SELECT id, control_date AS date, notes AS note
+        FROM control_records
+        WHERE season_id = %s AND deleted_at IS NULL
+        ORDER BY control_date DESC
+        LIMIT 10
+    """, (season_id,))
+    return _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows)
+
+
 async def _growth_report_response(hass, season_id: int) -> dict:
     season = await fetchone(hass, """
         SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
@@ -543,15 +666,12 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         ORDER BY control_date DESC
         LIMIT 10
     """, (season_id,))
-    latest = growth_rows[0] if growth_rows else {}
+    cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows)
+    latest = cropModel["latestMetrics"]
     oldest = growth_rows[-1] if growth_rows else latest
-    height_now = _growth_metric_value(latest, "height", "height") or 0
-    height_old = _growth_metric_value(oldest, "height", "height") or height_now
-    days = _growth_days_between(oldest.get("date"), latest.get("date")) if growth_rows else 7
-    weekly_growth = round((height_now - height_old) / days * 7, 2) if days else 0
-    latest_g = _growth_g_index(latest) if latest else 0
-    pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)
-    yieldPrediction = _growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)
+    weekly_growth = cropModel["weeklyGrowthCm"]
+    pestRisk = cropModel["pestRisk"]
+    yieldPrediction = cropModel["yieldPrediction"]
     growthTrend = {
         "height": _growth_report_points(growth_rows, "height", "height"),
         "leafCount": _growth_report_points(growth_rows, "leafCount", "leafCount"),
@@ -566,8 +686,9 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "latestMetrics": latest,
         "growthTrend": growthTrend,
         "gIndexTrend": gIndexTrend,
-        "yieldPrediction": yieldPrediction,
-        "pestRisk": pestRisk,
+        "cropModel": cropModel,
+        "yieldPrediction": cropModel["yieldPrediction"],
+        "pestRisk": cropModel["pestRisk"],
         "weeklyReport": weeklyReport,
     }
 

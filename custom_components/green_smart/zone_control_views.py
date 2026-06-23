@@ -8,6 +8,7 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.util import dt as dt_util
 
 from .db import execute, fetchall, fetchone
+from .crop_views import _crop_model_snapshot
 
 VALID_DOMAINS = {"environment", "irrigation", "device"}
 VALID_CONTROL_MODES = {"manual", "auto", "assist", "disabled"}

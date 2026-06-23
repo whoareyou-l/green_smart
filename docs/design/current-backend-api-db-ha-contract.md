@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.35`
+> 기준 버전: `v1.9.36`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.35"
+  "version": "1.9.36"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.35` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.36` |
 
 ### 4.2 WebSocket commands
 
@@ -244,7 +244,7 @@ aiomysql.create_pool(
 
 ### 6.3 Device/Irrigation/Admin bootstrap closure tables
 
-v1.9.35 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
+v1.9.36 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
 
 장치제어:
 
@@ -426,7 +426,7 @@ green_smart_central
 
 ## 9A. 통합 모델 contract
 
-v1.9.35 이후 제품 설계 기준은 `작기 모델 → 환경 전략 모델 → 관수 전략 모델 → 장치 운영 모델`의 관계를 따른다.
+v1.9.36 이후 제품 설계 기준은 `작기 모델 → 환경 전략 모델 → 관수 전략 모델 → 장치 운영 모델`의 관계를 따른다.
 
 ```text
 Crop Season Model
@@ -452,12 +452,21 @@ Crop Season Model
 
 출력:
 
+- `cropModelVersion`
+- `cropProfile`
+- `growthStage`
+- `gIndex`
+- `yieldPrediction`
+- `pestRisk`
+- `confidenceReasons`
 - crop profile label/version
 - growth stage baseline
 - G-Index and trend
 - yield prediction and confidence
 - pest risk and recommended actions
 - model drivers usable by environment/irrigation strategy models
+
+No new DB table is required for M1. The reusable helper is `_crop_model_snapshot(hass, season_id)` and it reads the existing `crop_seasons`, `growth_surveys`, `pest_surveys`, and `control_records` tables. The growth-report API includes this snapshot as `cropModel` while preserving the existing top-level `yieldPrediction` and `pestRisk` keys for compatibility.
 
 ### 9A.2 환경 전략 모델
 

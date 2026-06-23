@@ -95,7 +95,7 @@
    pytest tests/test_model_contract.py tests/test_db_contract.py -q
    ```
 
-**Expected:** 작기 모델 snapshot can be called without creating new tables.
+**Expected:** 작기 모델 snapshot can be called without creating new tables. No new DB table is required for M1; the helper reads `crop_seasons`, `growth_surveys`, `pest_surveys`, and `control_records`, then returns `cropModelVersion`, `cropProfile`, `growthStage`, `gIndex`, `yieldPrediction`, `pestRisk`, and `confidenceReasons`.
 
 ---
 

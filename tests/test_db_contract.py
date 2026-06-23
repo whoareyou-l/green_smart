@@ -170,8 +170,9 @@ def test_product_phase6_crop_specific_yield_model_contract():
         "lettuce_growth_model_v1",
     ):
         assert marker in source
-    assert "_growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)" in report_section
-    assert '"yieldPrediction": yieldPrediction' in report_section
+    assert "_growth_yield_prediction(season, latest, oldest, growth_rows, latest_g, weekly_growth)" in source
+    assert '"yieldPrediction": cropModel["yieldPrediction"]' in report_section
+    assert "cropModel = _crop_model_snapshot_from_report_parts" in report_section
 
 
 def test_product_phase6_environment_weather_control_pest_risk_contract():
@@ -195,8 +196,9 @@ def test_product_phase6_environment_weather_control_pest_risk_contract():
         "weather_environment_control_model_v1",
     ):
         assert marker in source
-    assert "pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)" in report_section
-    assert '"pestRisk": pestRisk' in report_section
+    assert "pestRisk = _growth_pest_risk(hass, pest_rows, control_rows)" in source
+    assert '"pestRisk": cropModel["pestRisk"]' in report_section
+    assert "cropModel = _crop_model_snapshot_from_report_parts" in report_section
 
 
 def test_product_phase6_weekly_report_export_notification_contract():
