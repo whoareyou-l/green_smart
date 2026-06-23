@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.48
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.49
 const DOMAIN = "green_smart";
-const VERSION = "1.9.48";
+const VERSION = "1.9.49";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4094,6 +4094,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div style="font-size:12px;font-weight:900;color:#24323F;">센터 분석 참고</div>
           <div style="font-size:10px;color:#6d8799;margin-top:3px;">실시간 제어 판단은 현장 Edge가 수행합니다 · 읽기 전용 카드 · analytics/reporting only</div>
         </div>
+        <button data-center-crop-interlock-snapshot-sync title="센터 snapshot 동기화" style="border:1px solid #cfe3f6;background:#fff;color:#3f7fb2;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:900;cursor:pointer;display:flex;align-items:center;gap:4px;"><ha-icon icon="mdi:cloud-upload-outline" style="--mdi-icon-size:16px;"></ha-icon><span>센터 snapshot 동기화</span></button>
         <button data-center-crop-interlock-analytics-refresh title="센터 분석 새로고침" style="border:1px solid #cfe3f6;background:#fff;color:#3f7fb2;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:900;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:refresh" style="--mdi-icon-size:16px;"></ha-icon></button>
       </div>
       ${unavailable ? `<div style="font-size:11px;color:#7a9780;line-height:1.5;">센터 분석 데이터를 아직 불러오지 못했습니다. Center activation/token 또는 snapshot sync 상태를 확인하세요.</div>` : `
@@ -4325,6 +4326,22 @@ button.action:disabled{opacity:.5;cursor:default;}
     }
   }
 
+  async _syncCenterCropInterlockSnapshot(trigger = "manual_panel", refreshAnalytics = true) {
+    if (!this._hass || !this._activeSeasonId) return null;
+    try {
+      const result = await this._hass.callApi("POST", "green_smart/central/crop/interlock-snapshot/sync", {
+        farm_id: 1,
+        season_id: this._activeSeasonId,
+        trigger,
+      });
+      if (refreshAnalytics) await this._fetchCenterCropInterlockAnalytics(this._activeSeasonId, true);
+      return result;
+    } catch (err) {
+      console.warn("센터 crop interlock snapshot sync 실패", err);
+      return null;
+    }
+  }
+
   _weeklyReportNotificationEnabled() {
     try { return localStorage.getItem("green_smart_weekly_report_notifications") !== "off"; } catch (_) { return true; }
   }
@@ -4364,6 +4381,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     button.disabled = true;
     try {
       await this._fetchGrowthReport();
+      await this._syncCenterCropInterlockSnapshot("growth_report_refresh", true);
       this._refreshCropContent();
     } finally {
       button.classList.remove("is-spinning");
@@ -4404,6 +4422,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           },
         },
       };
+      await this._syncCenterCropInterlockSnapshot("approval_saved", true);
       this._refreshCropContent();
       return result;
     } catch (err) {
@@ -5421,6 +5440,12 @@ button.action:disabled{opacity:.5;cursor:default;}
       const button = event.currentTarget;
       if (button) button.disabled = true;
       try { await this._fetchCenterCropInterlockAnalytics(this._activeSeasonId, true); }
+      finally { if (button) button.disabled = false; }
+    });
+    root.querySelector("[data-center-crop-interlock-snapshot-sync]")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      if (button) button.disabled = true;
+      try { await this._syncCenterCropInterlockSnapshot("manual_panel", true); }
       finally { if (button) button.disabled = false; }
     });
     root.querySelector("[data-weekly-report-export]")?.addEventListener("click", () => this._exportWeeklyGrowthReport());

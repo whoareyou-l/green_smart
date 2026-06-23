@@ -9,7 +9,9 @@ from .central_api import DEFAULT_CENTRAL_BASE_URL, CentralApiError, GreenityCent
 from .central_store import CentralTokenStore
 from .crop_views import _growth_report_response
 
-EDGE_VERSION = "1.9.48"
+EDGE_VERSION = "1.9.49"
+EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
+CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
 
 
 class _CentralAdapterView(HomeAssistantView):
@@ -28,6 +30,50 @@ class _CentralAdapterView(HomeAssistantView):
     def _error_response(self, err: CentralApiError) -> web.Response:
         status = err.status if err.status and 400 <= err.status < 600 else 502
         return self.json({"error": err.detail}, status_code=status)
+
+
+async def sync_crop_interlock_snapshot_for_season(
+    hass,
+    season_id: int,
+    farm_id: int = 1,
+    zone_id: int | None = None,
+    trigger: str = "scheduled_5m",
+) -> dict:
+    """Push one crop interlock snapshot to Center without changing local execution authority."""
+    report = await _growth_report_response(hass, int(season_id))
+    crop_model = report.get("cropModel") or {}
+    crop_interlock = crop_model.get("cropInterlock") or {}
+    season = crop_model.get("season") or {}
+    payload = {
+        "farm_id": int(farm_id or 1),
+        "season_id": int(season_id),
+        "zone_id": zone_id or season.get("zoneId"),
+        "stageDiagnosis": crop_model.get("stageDiagnosis") or crop_interlock.get("stageDiagnosis") or {},
+        "cropInterlock": crop_interlock,
+        "approvalAudit": crop_interlock.get("approvalAudit") or [],
+        "auditSummary": {
+            "trigger": trigger,
+            "approvalGateStatus": crop_interlock.get("approvalGateStatus"),
+            "approvalResolvedReasons": crop_interlock.get("approvalResolvedReasons") or [],
+            "approvalUnresolvedReasons": crop_interlock.get("approvalUnresolvedReasons") or [],
+            "edgeRealtimeIntervalSeconds": EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS,
+            "centerSnapshotSyncIntervalSeconds": CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS,
+        },
+        "edgeVersions": {
+            "green_smart": EDGE_VERSION,
+            "cropModelVersion": crop_model.get("cropModelVersion"),
+            "cropInterlockVersion": crop_interlock.get("cropInterlockVersion"),
+            "cropStageInterlockVersion": crop_interlock.get("cropStageInterlockVersion"),
+            "edgeRealtimeIntervalSeconds": EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS,
+            "centerSnapshotSyncIntervalSeconds": CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS,
+        },
+    }
+    store = CentralTokenStore(hass)
+    base_url = (await store.get_base_url()) or DEFAULT_CENTRAL_BASE_URL
+    client = GreenityCentralClient(hass, base_url)
+    token = await ensure_access_token(store, client)
+    result = await client.sync_crop_interlock_snapshot(token, payload)
+    return {"ok": True, "center": result, "payload": payload}
 
 
 class CentralWeatherCurrentView(_CentralAdapterView):
@@ -131,32 +177,14 @@ class CentralCropInterlockSnapshotSyncView(_CentralAdapterView):
             return self.json({"error": "invalid_season_id"}, status_code=400)
         hass = request.app["hass"]
         try:
-            report = await _growth_report_response(hass, season_id_int)
-            crop_model = report.get("cropModel") or {}
-            crop_interlock = crop_model.get("cropInterlock") or {}
-            season = crop_model.get("season") or {}
-            payload = {
-                "farm_id": int(body.get("farm_id") or body.get("farmId") or 1),
-                "season_id": season_id_int,
-                "zone_id": body.get("zone_id") or body.get("zoneId") or season.get("zoneId"),
-                "stageDiagnosis": crop_model.get("stageDiagnosis") or crop_interlock.get("stageDiagnosis") or {},
-                "cropInterlock": crop_interlock,
-                "approvalAudit": crop_interlock.get("approvalAudit") or [],
-                "auditSummary": {
-                    "approvalGateStatus": crop_interlock.get("approvalGateStatus"),
-                    "approvalResolvedReasons": crop_interlock.get("approvalResolvedReasons") or [],
-                    "approvalUnresolvedReasons": crop_interlock.get("approvalUnresolvedReasons") or [],
-                },
-                "edgeVersions": {
-                    "green_smart": EDGE_VERSION,
-                    "cropModelVersion": crop_model.get("cropModelVersion"),
-                    "cropInterlockVersion": crop_interlock.get("cropInterlockVersion"),
-                    "cropStageInterlockVersion": crop_interlock.get("cropStageInterlockVersion"),
-                },
-            }
-            client, token = await self._client_and_token(request)
-            result = await client.sync_crop_interlock_snapshot(token, payload)
-            return self.json({"ok": True, "center": result, "payload": payload})
+            result = await sync_crop_interlock_snapshot_for_season(
+                hass,
+                season_id=season_id_int,
+                farm_id=int(body.get("farm_id") or body.get("farmId") or 1),
+                zone_id=body.get("zone_id") or body.get("zoneId"),
+                trigger=str(body.get("trigger") or "manual_api"),
+            )
+            return self.json(result)
         except CentralApiError as err:
             return self._error_response(err)
 

@@ -12,6 +12,9 @@ from .frontend_panel import async_setup_panel
 
 _LOGGER = logging.getLogger(__name__)
 
+EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
+CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
+
 REQUIRED_KEYS = (
     "host",
     "port",
@@ -84,6 +87,65 @@ def _teardown_growth_report_notification_scheduler(hass) -> None:
     if unsub:
         unsub()
         domain_data["growth_report_notification_scheduler_stopped"] = True
+
+
+async def _run_center_crop_interlock_snapshot_sync_tick(hass, now) -> None:
+    from .central_views import sync_crop_interlock_snapshot_for_season
+    from .db import fetchall
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    try:
+        seasons = await fetchall(
+            hass,
+            """
+            SELECT id, greenhouse_id AS farm_id, zone_id
+            FROM crop_seasons
+            WHERE deleted_at IS NULL AND demolish_date IS NULL
+            ORDER BY updated_at DESC, id DESC
+            LIMIT 20
+            """,
+        )
+    except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+        _LOGGER.warning("Center crop interlock snapshot sync season lookup failed: %s", exc)
+        return
+    ok_count = 0
+    fail_count = 0
+    for season in seasons:
+        try:
+            await sync_crop_interlock_snapshot_for_season(
+                hass,
+                season_id=int(season["id"]),
+                farm_id=int(season.get("farm_id") or 1),
+                zone_id=int(season["zone_id"]) if season.get("zone_id") else None,
+                trigger="scheduled_5m",
+            )
+            ok_count += 1
+        except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+            fail_count += 1
+            _LOGGER.warning("Center crop interlock snapshot sync failed for season=%s: %s", season.get("id"), exc)
+    domain_data["last_center_crop_interlock_snapshot_sync"] = now
+    domain_data["last_center_crop_interlock_snapshot_sync_ok_count"] = ok_count
+    domain_data["last_center_crop_interlock_snapshot_sync_fail_count"] = fail_count
+
+
+async def _setup_center_crop_interlock_snapshot_sync_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("unsub_center_crop_interlock_snapshot_sync"):
+        return
+
+    def _tick(now):
+        hass.loop.call_soon_threadsafe(hass.async_create_task, _run_center_crop_interlock_snapshot_sync_tick(hass, now))
+
+    domain_data["unsub_center_crop_interlock_snapshot_sync"] = async_track_time_interval(hass, _tick, timedelta(seconds=CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS))
+    domain_data["center_crop_interlock_snapshot_sync_scheduler_started"] = True
+
+
+def _teardown_center_crop_interlock_snapshot_sync_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    unsub = domain_data.pop("unsub_center_crop_interlock_snapshot_sync", None)
+    if unsub:
+        unsub()
+        domain_data["center_crop_interlock_snapshot_sync_scheduler_stopped"] = True
 
 
 async def async_setup(hass, config):
@@ -188,6 +250,7 @@ async def async_setup(hass, config):
         domain_data["_views_registered"] = True
     await _setup_safety_guard_watchdog_scheduler(hass)
     await _setup_growth_report_notification_scheduler(hass)
+    await _setup_center_crop_interlock_snapshot_sync_scheduler(hass)
     return True
 
 
@@ -224,6 +287,7 @@ async def async_unload_entry(hass, entry):
     if unload_ok:
         _teardown_safety_guard_watchdog_scheduler(hass)
         _teardown_growth_report_notification_scheduler(hass)
+        _teardown_center_crop_interlock_snapshot_sync_scheduler(hass)
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
         from .db import close_pool
         await close_pool()

@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.48`
+> 기준 버전: `v1.9.49`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -76,7 +76,7 @@ docs/design/ui-information-architecture-and-rbac.md
   "config_flow": true,
   "iot_class": "local_push",
   "requirements": ["aiomysql==0.2.0"],
-  "version": "1.9.48"
+  "version": "1.9.49"
 }
 ```
 
@@ -124,7 +124,7 @@ docs/design/ui-information-architecture-and-rbac.md
 | require_admin | `False` |
 | static path | `custom_components/green_smart/panel` |
 | static URL | `/green_smart_panel` |
-| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.48` |
+| module URL | `/green_smart_panel/green-smart-panel.js?v=1.9.49` |
 
 ### 4.2 WebSocket commands
 
@@ -244,7 +244,7 @@ aiomysql.create_pool(
 
 ### 6.3 Device/Irrigation/Admin bootstrap closure tables
 
-v1.9.48 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
+v1.9.49 기준 `ensure_schema()`는 과거 설계 문서에 SQL로만 남아 있던 장치/관수/Admin-System 테이블도 모두 생성한다.
 
 장치제어:
 
@@ -425,11 +425,44 @@ green_smart_central
 | `GET /api/green_smart/central/crop/interlock-analytics/summary` | `/analytics/crop-interlock/summary` | 센터 분석 참고용 읽기 전용 카드 데이터. 실시간 제어 판단은 현장 Edge가 수행합니다 |
 | n/a | `GET /analytics/crop-interlock/summary` | Center-side analytics/reporting only: `reason_counts`, `approval_gate_counts`, `approval_type_counts`, `harvest_safety_unknown_count`. 실시간 safety/interlock 최종 판단자가 아니다 |
 
+### 9.4 Snapshot sync policy
+
+```text
+Edge 실시간 판단/감시 기준: 1분
+Center snapshot/analytics sync 기준: 5분
+이벤트 발생 시 즉시 sync
+```
+
+Code constants:
+
+```python
+EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
+CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
+```
+
+전송 구조:
+
+```text
+Center는 push 수신
+Edge가 주기/이벤트 기반 전송
+```
+
+Triggers:
+
+| Trigger | 기준 |
+|---|---|
+| `scheduled_5m` | active crop season snapshot을 5분마다 중앙 sync |
+| `growth_report_refresh` | AI 전략/생육 리포트 새로고침 직후 즉시 sync |
+| `approval_saved` | crop interlock approval 저장 직후 즉시 sync |
+| `manual_panel` | 운영자가 Center 분석 카드에서 수동 sync |
+
+실패 정책: Center sync 실패는 로컬 제어 판단을 차단하지 않고 다음 tick/event에서 재시도한다.
+
 ---
 
 ## 9A. 통합 모델 contract
 
-v1.9.48 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
+v1.9.49 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
 
 ```text
 Crop Safety Rules
@@ -535,7 +568,7 @@ maxMetricDeltaByKey
 
 ### 9A.1.2 작물 인터록 — C-S2 baseline
 
-작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다. v1.9.48 기준 C-S2는 `_crop_interlock_decision(cropSafety)`로 `crop_interlock_policy_v1` 결정을 만든다.
+작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다. v1.9.49 기준 C-S2는 `_crop_interlock_decision(cropSafety)`로 `crop_interlock_policy_v1` 결정을 만든다.
 
 필수 marker:
 
