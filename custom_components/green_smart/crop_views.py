@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from .db import fetchall, fetchone, execute
+from .weather_api import WeatherStore, fetch_weekly_forecast
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,6 +23,9 @@ CROP_QUALITY_DISORDER_METRICS_VERSION = "crop_quality_disorder_metrics_v1"
 CROP_ENVIRONMENT_FEATURES_VERSION = "crop_environment_features_v1"
 CROP_IRRIGATION_NUTRIENT_FEATURES_VERSION = "crop_irrigation_nutrient_features_v1"
 CROP_PEST_CONTROL_FEATURES_VERSION = "crop_pest_control_features_v1"
+CROP_STAGE_PREDICTION_SCORE_VERSION = "crop_stage_prediction_score_v1"
+CROP_KMA_WEATHER_STRESS_FEATURES_VERSION = "crop_kma_weather_stress_features_v1"
+CROP_TRAINING_DATASET_EXPORT_VERSION = "crop_training_dataset_export_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -1659,10 +1663,96 @@ async def _safety_interlock_feature_summary(hass, *, season_id: int, cropSafety:
     }
 
 
-def _crop_model_input_completeness(*, growth_rows: list[dict], environment: dict, irrigation: dict, pest_control: dict, operation: dict, safety_interlock: dict) -> dict:
+def _kma_weather_number(value, default=None):
+    try:
+        if value in (None, "", "--"):
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _kma_weather_stress_features_from_weekly(weekly: list[dict], *, days: int = 7) -> dict:
+    rows = list(weekly or [])[: int(days or 7)]
+    swings = []
+    highTemperatureDays = lowTemperatureDays = highHumidityDays = lowHumidityDays = rapidTemperatureChangeDays = 0
+    weatherStressReasons = []
+    previous_avg = None
+    for row in rows:
+        tmin = _kma_weather_number(row.get("temp_min") or row.get("tmn") or row.get("minTemp"))
+        tmax = _kma_weather_number(row.get("temp_max") or row.get("tmx") or row.get("maxTemp"))
+        humidity = _kma_weather_number(row.get("humidity") or row.get("avgHumidity"))
+        if tmax is not None and tmax >= 30:
+            highTemperatureDays += 1
+            weatherStressReasons.append("high_temperature_forecast")
+        if tmin is not None and tmin <= 10:
+            lowTemperatureDays += 1
+            weatherStressReasons.append("low_temperature_forecast")
+        if humidity is not None and humidity >= 85:
+            highHumidityDays += 1
+            weatherStressReasons.append("high_humidity_forecast")
+        if humidity is not None and humidity <= 40:
+            lowHumidityDays += 1
+            weatherStressReasons.append("low_humidity_forecast")
+        if tmin is not None and tmax is not None:
+            swing = round(tmax - tmin, 3)
+            swings.append(swing)
+            if swing >= 10:
+                rapidTemperatureChangeDays += 1
+                weatherStressReasons.append("large_daily_temperature_swing")
+            avg = (tmin + tmax) / 2
+            if previous_avg is not None and abs(avg - previous_avg) >= 6:
+                rapidTemperatureChangeDays += 1
+                weatherStressReasons.append("rapid_temperature_change_between_days")
+            previous_avg = avg
+    coverage = round(len(rows) / max(1, int(days or 7)), 2)
+    features = {
+        "highTemperatureDays": highTemperatureDays,
+        "lowTemperatureDays": lowTemperatureDays,
+        "highHumidityDays": highHumidityDays,
+        "lowHumidityDays": lowHumidityDays,
+        "rapidTemperatureChangeDays": rapidTemperatureChangeDays,
+        "maxDailyTemperatureSwing": round(max(swings), 3) if swings else 0.0,
+        "avgDailyTemperatureSwing": round(sum(swings) / len(swings), 3) if swings else 0.0,
+        "kmaForecastCoverageRatio": coverage,
+    }
+    missing = [] if rows else ["kma_weekly_forecast_missing"]
+    return {"features": features, "weatherStressReasons": list(dict.fromkeys(weatherStressReasons)), "missing": missing}
+
+
+async def _kma_weather_stress_feature_summary(hass, *, days: int = 7) -> dict:
+    weekly = []
+    sourceStatus = "missing"
+    staleReasons = []
+    try:
+        store = WeatherStore(hass)
+        weekly = await fetch_weekly_forecast(hass, store)
+        sourceStatus = "ready" if len(weekly or []) >= int(days or 7) else "partial"
+    except Exception as exc:
+        _LOGGER.debug("KMA weekly forecast unavailable for crop model weather stress: %s", exc)
+        staleReasons.append("kma_weekly_forecast_unavailable")
+    derived = _kma_weather_stress_features_from_weekly(weekly, days=days)
+    if derived.get("missing"):
+        sourceStatus = "missing"
+    return {
+        "version": CROP_KMA_WEATHER_STRESS_FEATURES_VERSION,
+        "source": "kma_short_mid_forecast",
+        "sourceEndpoints": ["GET /api/green_smart/weather/weekly", "POST /api/green_smart/central/weather/forecast", "POST /api/green_smart/central/weather/mid"],
+        "windowDays": days,
+        "forecast": list(weekly or [])[: int(days or 7)],
+        "features": derived.get("features") or {},
+        "weatherStressReasons": list(dict.fromkeys((derived.get("weatherStressReasons") or []) + staleReasons)),
+        "missing": derived.get("missing") or [],
+        "staleReasons": staleReasons,
+        "sourceStatus": sourceStatus,
+    }
+
+
+def _crop_model_input_completeness(*, growth_rows: list[dict], environment: dict, irrigation: dict, pest_control: dict, operation: dict, safety_interlock: dict, kma_weather_stress: dict | None = None) -> dict:
     source_status = {
         "growthSurvey": "ready" if growth_rows else "missing",
         "environment": environment.get("sourceStatus") or "missing",
+        "kmaWeatherStress": (kma_weather_stress or {}).get("sourceStatus") or "missing",
         "irrigationNutrient": irrigation.get("sourceStatus") or "missing",
         "pestControl": pest_control.get("sourceStatus") or "missing",
         "operationHistory": operation.get("sourceStatus") or "missing",
@@ -1683,6 +1773,7 @@ async def _crop_model_feature_sources_snapshot(hass, *, season_id: int, season: 
     zone_id = season.get("zoneId")
     crop_type = season.get("cropType") or "other"
     environment = await _environment_feature_summary(hass, farm_id=1, zone_id=zone_id, days=days)
+    kma_weather_stress = await _kma_weather_stress_feature_summary(hass, days=days)
     irrigation = await _irrigation_nutrient_feature_summary(hass, farm_id=1, zone_id=zone_id, days=days)
     pest_control = await _pest_control_feature_summary(hass, season_id=season_id, days=days)
     operation = await _operation_history_feature_summary(hass, farm_id=1, zone_id=zone_id, days=days)
@@ -1690,6 +1781,7 @@ async def _crop_model_feature_sources_snapshot(hass, *, season_id: int, season: 
     input_completeness = _crop_model_input_completeness(
         growth_rows=growth_rows,
         environment=environment,
+        kma_weather_stress=kma_weather_stress,
         irrigation=irrigation,
         pest_control=pest_control,
         operation=operation,
@@ -1702,6 +1794,7 @@ async def _crop_model_feature_sources_snapshot(hass, *, season_id: int, season: 
         "cropType": crop_type,
         "windowDays": days,
         "environmentSummary7d": environment,
+        "kmaWeatherStress7d": kma_weather_stress,
         "irrigationNutrientSummary7d": irrigation,
         "pestControlSummary7d": pest_control,
         "operationHistorySummary7d": operation,
@@ -1714,6 +1807,7 @@ async def _crop_model_feature_sources_snapshot(hass, *, season_id: int, season: 
 async def _persist_crop_model_feature_snapshot(hass, *, season_id: int, season: dict, featureSources: dict) -> int | None:
     if not featureSources:
         return None
+    kma_weather_stress_snapshot_json = json.dumps(featureSources.get("kmaWeatherStress7d") or {}, ensure_ascii=False, default=str)
     return await execute(hass, """
         INSERT INTO crop_model_feature_snapshots(
             farm_id, season_id, zone_id, crop_type, feature_version, snapshot_date, horizon_days,
@@ -1756,6 +1850,7 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
         },
         "qualityDisorderSummary": qualityDisorderSummary,
         "environmentSummary7d": (featureSources or {}).get("environmentSummary7d") or {},
+        "kmaWeatherStress7d": (featureSources or {}).get("kmaWeatherStress7d") or {},
         "irrigationNutrientSummary7d": (featureSources or {}).get("irrigationNutrientSummary7d") or {},
         "pestControlSummary7d": (featureSources or {}).get("pestControlSummary7d") or {},
         "operationHistorySummary7d": (featureSources or {}).get("operationHistorySummary7d") or {},
@@ -1765,41 +1860,92 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
     }
 
 
-def _crop_stage_prediction_7d(*, stageDiagnosis: dict | None, growthIndex: dict, growth_rows: list[dict]) -> dict:
+def _crop_stage_confidence_score(stage_confidence) -> float:
+    mapping = {"high": 0.9, "medium": 0.65, "low": 0.35}
+    if isinstance(stage_confidence, (int, float)):
+        return round(max(0.0, min(1.0, float(stage_confidence))), 2)
+    return mapping.get(str(stage_confidence or "").lower(), 0.35)
+
+
+def _crop_stage_prediction_score_components(*, stageDiagnosis: dict | None, growthIndex: dict, growth_rows: list[dict], featureSources: dict | None = None) -> dict:
+    diagnosis = stageDiagnosis or {}
+    featureSources = featureSources or {}
+    band = diagnosis.get("indexBand") or "unknown"
+    survey_count = len(growth_rows or [])
+    weekly_delta = 0.1 if survey_count >= 3 else -0.1
+    growthIndexBandScore = 0.35 if band in {"unknown", "hardBlock"} else 0.55 if band == "caution" else 0.72 if band == "target" else 0.45
+    environment = featureSources.get("environmentSummary7d") or {}
+    kmaWeatherStress = featureSources.get("kmaWeatherStress7d") or {}
+    irrigation = featureSources.get("irrigationNutrientSummary7d") or {}
+    pest_control = featureSources.get("pestControlSummary7d") or {}
+    input_completeness = featureSources.get("inputCompleteness") or {}
+    kma_features = kmaWeatherStress.get("features") or {}
+    kmaWeatherStressScore = -min(0.2, 0.03 * float(kma_features.get("highTemperatureDays") or 0) + 0.03 * float(kma_features.get("lowTemperatureDays") or 0) + 0.02 * float(kma_features.get("rapidTemperatureChangeDays") or 0))
+    if (kmaWeatherStress.get("sourceStatus") or "missing") in {"missing", "stale"}:
+        kmaWeatherStressScore -= 0.08
+    environmentStressScore = -0.05 if (environment.get("sourceStatus") or "missing") in {"missing", "stale"} else 0.03
+    irrigationNutrientStressScore = -0.04 if (irrigation.get("sourceStatus") or "missing") in {"missing", "stale"} else 0.02
+    pestControlRiskPenalty = -0.08 if (pest_control.get("riskFlags") or {}).get("missingControlAfterHighRiskFlag") else 0.0
+    inputCompletenessPenalty = -round(0.2 * (1 - float(input_completeness.get("score") or 0.0)), 3)
+    stageCalibrationScore = _crop_stage_confidence_score(diagnosis.get("stageConfidence")) * 0.15
+    return {
+        "growthIndexBandScore": round(growthIndexBandScore, 3),
+        "weeklyDeltaScore": round(weekly_delta, 3),
+        "environmentStressScore": round(environmentStressScore, 3),
+        "kmaWeatherStressScore": round(kmaWeatherStressScore, 3),
+        "irrigationNutrientStressScore": round(irrigationNutrientStressScore, 3),
+        "pestControlRiskPenalty": round(pestControlRiskPenalty, 3),
+        "inputCompletenessPenalty": round(inputCompletenessPenalty, 3),
+        "stageCalibrationScore": round(stageCalibrationScore, 3),
+    }
+
+
+def _crop_stage_prediction_7d(*, stageDiagnosis: dict | None, growthIndex: dict, growth_rows: list[dict], featureSources: dict | None = None) -> dict:
     diagnosis = stageDiagnosis or {}
     current_stage = diagnosis.get("stageId") or "unknown"
     current_label = diagnosis.get("stageLabel") or "생육단계 미확정"
-    confidence = diagnosis.get("stageConfidence") or "low"
-    band = diagnosis.get("indexBand") or "unknown"
     survey_count = len(growth_rows or [])
-    progress = 0.35 if band in {"unknown", "hardBlock"} else 0.55 if band == "caution" else 0.72 if band == "target" else 0.45
-    transition_probability = min(0.85, max(0.15, progress + (0.05 if survey_count >= 3 else -0.1)))
+    scoreComponents = _crop_stage_prediction_score_components(stageDiagnosis=diagnosis, growthIndex=growthIndex, growth_rows=growth_rows, featureSources=featureSources)
+    rawScore = round(sum(float(v or 0) for v in scoreComponents.values()), 3)
+    probability = round(min(0.9, max(0.1, rawScore)), 2)
+    missingInputs = list(diagnosis.get("missingEvidence") or []) + list(growthIndex.get("missingInputs") or [])
+    kmaWeatherStress = (featureSources or {}).get("kmaWeatherStress7d") or {}
+    if (kmaWeatherStress.get("sourceStatus") or "missing") in {"missing", "stale"}:
+        missingInputs.append("kmaWeatherStress7d")
+    confidenceScore = round(max(0.0, min(1.0, 0.35 + 0.4 * min(1.0, survey_count / 6) + 0.25 * float(((featureSources or {}).get("inputCompleteness") or {}).get("score") or 0.0))), 2)
+    if missingInputs:
+        confidenceScore = round(max(0.0, confidenceScore - min(0.25, len(set(missingInputs)) * 0.03)), 2)
+    explanation = [f"{key}={value}" for key, value in scoreComponents.items()]
+    explanation.extend(kmaWeatherStress.get("weatherStressReasons") or [])
     return {
-        "version": CROP_TRAINABLE_BASELINE_VERSION,
+        "version": CROP_STAGE_PREDICTION_SCORE_VERSION,
         "modelFamily": CROP_STAGE_PREDICTION_MODEL_FAMILY,
         "modelTarget": "growth_stage_prediction_7d",
+        "score": {"scoreComponents": scoreComponents, "rawScore": rawScore, "probability": probability, "confidenceScore": confidenceScore, "confidencePercent": int(round(confidenceScore * 100)), "explanation": explanation},
         "currentStage": {
             "stageId": current_stage,
             "stageLabel": current_label,
-            "confidence": confidence,
-            "progressScore": round(progress, 2),
+            "confidenceScore": _crop_stage_confidence_score(diagnosis.get("stageConfidence")),
+            "confidencePercent": int(round(_crop_stage_confidence_score(diagnosis.get("stageConfidence")) * 100)),
+            "progressScore": scoreComponents.get("growthIndexBandScore"),
         },
         "predictedStage7d": {
-            "stageId": current_stage if transition_probability < 0.65 else f"{current_stage}_next_candidate",
-            "stageLabel": current_label if transition_probability < 0.65 else f"{current_label} 이후 단계 후보",
-            "probability": round(transition_probability, 2),
-            "confidence": "medium" if survey_count >= 3 else "low",
+            "stageId": current_stage if probability < 0.65 else f"{current_stage}_next_candidate",
+            "stageLabel": current_label if probability < 0.65 else f"{current_label} 이후 단계 후보",
+            "probability": probability,
+            "confidenceScore": confidenceScore,
+            "confidencePercent": int(round(confidenceScore * 100)),
         },
         "transitionWindow": {
-            "earliestDay": 4 if transition_probability >= 0.65 else 0,
-            "latestDay": 6 if transition_probability >= 0.65 else 7,
-            "probability": round(transition_probability, 2),
-            "label": "4~6일 내 전환 가능성" if transition_probability >= 0.65 else "7일 내 전환 가능성 낮음/관찰 필요",
+            "earliestDay": 4 if probability >= 0.65 else 0,
+            "latestDay": 6 if probability >= 0.65 else 7,
+            "probability": probability,
+            "label": "4~6일 내 전환 가능성" if probability >= 0.65 else "7일 내 전환 가능성 낮음/관찰 필요",
         },
-        "stageEvidence": {"stageDiagnosis": diagnosis, "growthIndex": growthIndex, "surveyCount": survey_count},
-        "missingInputs": list(diagnosis.get("missingEvidence") or []) + list(growthIndex.get("missingInputs") or []),
+        "stageEvidence": {"stageDiagnosis": diagnosis, "growthIndex": growthIndex, "surveyCount": survey_count, "kmaWeatherStress": kmaWeatherStress, "stagePredictionScore": {"scoreComponents": scoreComponents, "rawScore": rawScore}},
+        "missingInputs": list(dict.fromkeys(missingInputs)),
         "nextSurveyNeeded": list(diagnosis.get("missingEvidence") or []) or ["다음 주 생육조사", "G/L-Index 핵심 항목"],
-        "modelReason": "초기 hybrid_rule_score_v1 baseline: 현재 생육단계, G/L-Index band, 조사 건수 기반 7일 전환 후보를 산출합니다.",
+        "modelReason": "hybrid_rule_score_v1 transparent baseline: score components, numeric confidence, and KMA 7-day weather-stress inputs drive the 7-day stage candidate.",
     }
 
 
@@ -2487,16 +2633,21 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     featureSources = await _crop_model_feature_sources_snapshot(hass, season_id=season_id, season=season, growth_rows=growth_rows, cropSafety=cropModel.get("cropSafety"), cropInterlock=cropModel.get("cropInterlock"), days=7)
     trainableBaseline = cropModel.get("trainableBaseline") or {}
     featureSnapshot = trainableBaseline.get("featureSnapshot") or {}
+    stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=cropModel.get("growthIndex") or {}, growth_rows=growth_rows, featureSources=featureSources)
     featureSnapshot.update({
         "featureSources": featureSources,
         "environmentSummary7d": featureSources.get("environmentSummary7d") or {},
+        "kmaWeatherStress7d": featureSources.get("kmaWeatherStress7d") or {},
         "irrigationNutrientSummary7d": featureSources.get("irrigationNutrientSummary7d") or {},
         "pestControlSummary7d": featureSources.get("pestControlSummary7d") or {},
         "operationHistorySummary7d": featureSources.get("operationHistorySummary7d") or {},
         "safetyInterlockSummary": featureSources.get("safetyInterlockSummary") or {},
         "inputCompleteness": featureSources.get("inputCompleteness") or {},
         "sourceStatus": featureSources.get("sourceStatus") or {},
+        "kmaWeatherStress": featureSources.get("kmaWeatherStress7d") or {},
+        "stagePredictionScore": stagePrediction7d.get("score"),
     })
+    trainableBaseline["stagePrediction7d"] = stagePrediction7d
     trainableBaseline["featureSnapshot"] = featureSnapshot
     trainableBaseline["featureSources"] = featureSources
     trainableBaseline["inputCompleteness"] = featureSources.get("inputCompleteness") or {}
@@ -2532,6 +2683,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "needsReviewCount": sum(1 for row in prediction_validation_rows if row.get("validationStatus") == "validation_needs_review"),
         "validationRows": prediction_validation_rows,
     }
+    trainingDataset = await _crop_training_dataset_response(hass, season_id)
     return {
         "ok": True,
         "seasonId": season_id,
@@ -2552,11 +2704,139 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "featureSnapshot": cropModel["trainableBaseline"]["featureSnapshot"],
         "qualityDisorderSummary": cropModel["trainableBaseline"].get("qualityDisorderSummary"),
         "stagePrediction7d": cropModel["trainableBaseline"]["stagePrediction7d"],
+        "trainingDataset": trainingDataset,
         "predictionValidation": predictionValidation,
         "mlUpgradeReadiness": cropModel["trainableBaseline"]["mlUpgradeReadiness"],
         "yieldPrediction": cropModel["yieldPrediction"],
         "pestRisk": cropModel["pestRisk"],
         "weeklyReport": weeklyReport,
+    }
+
+
+def _crop_training_dataset_feature_columns() -> list[str]:
+    return [
+        "feature_snapshot_id",
+        "growthIndex",
+        "stageDiagnosis",
+        "environmentSummary7d",
+        "kmaWeatherStress7d",
+        "irrigationNutrientSummary7d",
+        "pestControlSummary7d",
+        "qualityDisorderSummary",
+        "inputCompleteness",
+        "sourceStatus",
+    ]
+
+
+def _crop_training_dataset_label_columns() -> list[str]:
+    return [
+        "predictedStage7d",
+        "transitionWindow",
+        "stagePredictionScore",
+        "actual_validation_json",
+        "validationStatus",
+    ]
+
+
+def _as_json_obj(value):
+    if isinstance(value, str):
+        try:
+            return json.loads(value or "{}")
+        except json.JSONDecodeError:
+            return {"raw": value}
+    return value or {}
+
+
+def _crop_training_dataset_readiness(rows: list[dict]) -> dict:
+    validated_rows = [row for row in rows if row.get("validationStatus") == "validated"]
+    feature_columns = _crop_training_dataset_feature_columns()
+    filled = 0
+    possible = max(1, len(rows) * len(feature_columns))
+    for row in rows:
+        features = row.get("features") or {}
+        filled += sum(1 for key in feature_columns if features.get(key) not in (None, {}, [], ""))
+    feature_coverage = round(filled / possible, 3) if rows else 0.0
+    minimum_validated = 30
+    reasons = []
+    if len(validated_rows) < minimum_validated:
+        reasons.append("readiness.reasons: validated rows below offline ML threshold")
+    if feature_coverage < 0.75:
+        reasons.append("readiness.reasons: feature coverage below 75%")
+    if not rows:
+        reasons.append("readiness.reasons: no exported training rows yet")
+    ready = len(validated_rows) >= minimum_validated and feature_coverage >= 0.75
+    if ready:
+        reasons.append("readiness.reasons: offline experiment dataset ready; no automatic ML deployment")
+    return {
+        "ready": ready,
+        "validatedRows": len(validated_rows),
+        "minimumValidatedRows": minimum_validated,
+        "totalRows": len(rows),
+        "featureCoverageRatio": feature_coverage,
+        "reasons": reasons,
+        "nextAction": "offline_model_experiment_review" if ready else "collect_more_validated_training_rows",
+    }
+
+
+async def _crop_training_dataset_rows(hass, *, season_id: int, limit: int = 200) -> list[dict]:
+    raw_rows = await fetchall(hass, """
+        SELECT id AS snapshotId, feature_snapshot_id AS featureSnapshotId,
+               source_survey_id AS sourceSurveyId, actual_survey_id AS actualSurveyId,
+               crop_type AS cropType, model_family AS modelFamily,
+               target_horizon_days AS targetHorizonDays, prediction_date AS predictionDate,
+               predicted_for_date AS predictedForDate, feature_snapshot_json AS featureSnapshot,
+               prediction_json AS prediction, actual_validation_json AS actualValidation,
+               readiness_json AS readiness, validation_status AS validationStatus,
+               created_at AS createdAt, updated_at AS updatedAt
+        FROM crop_model_training_snapshots
+        WHERE season_id = %s
+        ORDER BY prediction_date DESC, id DESC
+        LIMIT %s
+    """, (season_id, int(limit)))
+    rows = []
+    for row in raw_rows:
+        feature_snapshot = _as_json_obj(row.get("featureSnapshot"))
+        prediction = _as_json_obj(row.get("prediction"))
+        actual_validation = _as_json_obj(row.get("actualValidation"))
+        readiness = _as_json_obj(row.get("readiness"))
+        features = {
+            "feature_snapshot_id": row.get("featureSnapshotId"),
+            "growthIndex": feature_snapshot.get("growthIndex"),
+            "stageDiagnosis": feature_snapshot.get("stageDiagnosis"),
+            "environmentSummary7d": feature_snapshot.get("environmentSummary7d"),
+            "kmaWeatherStress7d": feature_snapshot.get("kmaWeatherStress7d"),
+            "irrigationNutrientSummary7d": feature_snapshot.get("irrigationNutrientSummary7d"),
+            "pestControlSummary7d": feature_snapshot.get("pestControlSummary7d"),
+            "qualityDisorderSummary": feature_snapshot.get("qualityDisorderSummary"),
+            "inputCompleteness": feature_snapshot.get("inputCompleteness"),
+            "sourceStatus": feature_snapshot.get("sourceStatus"),
+        }
+        labels = {
+            "predictedStage7d": prediction.get("predictedStage7d"),
+            "transitionWindow": prediction.get("transitionWindow"),
+            "stagePredictionScore": prediction.get("score"),
+            "actual_validation_json": actual_validation,
+            "validationStatus": row.get("validationStatus"),
+        }
+        rows.append({**row, "featureSnapshot": feature_snapshot, "prediction": prediction, "actualValidation": actual_validation, "readiness": readiness, "features": features, "labels": labels})
+    return rows
+
+
+async def _crop_training_dataset_response(hass, season_id: int) -> dict:
+    rows = await _crop_training_dataset_rows(hass, season_id=season_id)
+    readiness = _crop_training_dataset_readiness(rows)
+    return {
+        "ok": True,
+        "seasonId": season_id,
+        "trainingDatasetVersion": CROP_TRAINING_DATASET_EXPORT_VERSION,
+        "rows": rows,
+        "featureColumns": _crop_training_dataset_feature_columns(),
+        "labelColumns": _crop_training_dataset_label_columns(),
+        "readiness": readiness,
+        "exportWarnings": [
+            "no automatic ML deployment",
+            "offline/export-only dataset; production hybrid model is unchanged",
+        ],
     }
 
 
@@ -2634,6 +2914,15 @@ class CropModelTrainingSnapshotView(HomeAssistantView):
             featureSnapshotId=feature_snapshot_id,
         )
         return _json({"ok": True, "seasonId": int(season_id), "featureSnapshotId": feature_snapshot_id, "snapshotId": snapshot_id, "trainableBaseline": report.get("trainableBaseline")})
+
+
+class CropModelTrainingDatasetView(HomeAssistantView):
+    """GET read-only crop model training dataset export; no automatic ML deployment."""
+    url = "/api/green_smart/crop/seasons/{season_id}/training-dataset"
+    name = "api:green_smart:crop:training_dataset"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        return _json(await _crop_training_dataset_response(request.app["hass"], int(season_id)))
 
 
 class CropModelTrainingReadinessView(HomeAssistantView):

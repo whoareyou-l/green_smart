@@ -12,7 +12,7 @@ from .central_api import DEFAULT_CENTRAL_BASE_URL, CentralApiError, GreenityCent
 from .central_store import CentralTokenStore
 from .crop_views import _growth_report_response
 
-EDGE_VERSION = "1.9.64"
+EDGE_VERSION = "1.9.66"
 EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
 CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
 EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS = 60

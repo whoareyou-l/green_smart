@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.64
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.66
 const DOMAIN = "green_smart";
-const VERSION = "1.9.64";
+const VERSION = "1.9.66";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4081,12 +4081,16 @@ button.action:disabled{opacity:.5;cursor:default;}
     const cropPolicyNotificationEnabled = this._cropPolicyNotificationEnabled();
     const trainableBaseline = report.trainableBaseline || cropModel.trainableBaseline || {};
     const stagePrediction7d = trainableBaseline.stagePrediction7d || report.stagePrediction7d || {};
+    const stagePredictionScore = stagePrediction7d.score || report.stagePredictionScore || {};
+    const scoreComponents = stagePredictionScore.scoreComponents || {};
     const predictedStage7d = stagePrediction7d.predictedStage7d || {};
     const transitionWindow = stagePrediction7d.transitionWindow || {};
     const mlUpgradeReadiness = trainableBaseline.mlUpgradeReadiness || report.mlUpgradeReadiness || {};
     const inputCompleteness = trainableBaseline.inputCompleteness || report.inputCompleteness || {};
     const sourceStatus = trainableBaseline.sourceStatus || report.sourceStatus || inputCompleteness.sourceStatus || {};
     const featureSources = trainableBaseline.featureSources || report.featureSources || {};
+    const kmaWeatherStress7d = report.kmaWeatherStress7d || featureSources.kmaWeatherStress7d || {};
+    const kmaWeatherFeatures = kmaWeatherStress7d.features || {};
     const environmentSummary7d = report.environmentSummary7d || featureSources.environmentSummary7d || {};
     const environmentFeatures = environmentSummary7d.features || environmentSummary7d.metrics || {};
     const environmentDerivedFeatures = environmentSummary7d.derivedFeatures || {};
@@ -4101,6 +4105,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     const pestReviewGuidance = Array.isArray(pestControlSummary7d.reviewGuidance) ? pestControlSummary7d.reviewGuidance : [];
     const pestStatus = sourceStatus.pestControl || pestControlSummary7d.sourceStatus || "missing";
     const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
+    const trainingDataset = report.trainingDataset || trainableBaseline.trainingDataset || {};
+    const trainingDatasetReadiness = trainingDataset.readiness || {};
+    const trainingDatasetWarnings = Array.isArray(trainingDataset.exportWarnings) ? trainingDataset.exportWarnings : [];
     const qualityDisorderSummary = report.qualityDisorderSummary || trainableBaseline.qualityDisorderSummary || (trainableBaseline.featureSnapshot || {}).qualityDisorderSummary || {};
     const qualityRiskFlags = Array.isArray(qualityDisorderSummary.riskFlags) ? qualityDisorderSummary.riskFlags : [];
     const qualityMissingMetrics = Array.isArray(qualityDisorderSummary.missingMetrics) ? qualityDisorderSummary.missingMetrics : [];
@@ -4181,6 +4188,24 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">초기 예측은 학습 가능한 데이터셋을 쌓기 위한 baseline입니다. 충분한 주간 sequence와 prediction→actual 검증쌍이 쌓이면 LSTM/GRU/Transformer 확장 후보를 표시합니다.</div>
       </div>
+      <div data-crop-stage-prediction-score-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">투명 생육단계 예측 점수</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">confidenceScore</div><b style="font-size:14px;color:#24323F;">${this._esc(String(stagePredictionScore.confidenceScore ?? '-'))}</b><div style="font-size:10px;color:#9aae9d;">confidencePercent ${this._esc(String(stagePredictionScore.confidencePercent ?? '-'))}%</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">rawScore</div><b style="font-size:14px;color:#24323F;">${this._esc(String(stagePredictionScore.rawScore ?? '-'))}</b><div style="font-size:10px;color:#9aae9d;">probability ${this._esc(String(stagePredictionScore.probability ?? predictedStage7d.probability ?? '-'))}</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">kmaWeatherStressScore</div><b style="font-size:14px;color:#24323F;">${this._esc(String(scoreComponents.kmaWeatherStressScore ?? '-'))}</b><div style="font-size:10px;color:#9aae9d;">environmentStressScore ${this._esc(String(scoreComponents.environmentStressScore ?? '-'))}</div></div>
+        </div>
+        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">scoreComponents: ${Object.entries(scoreComponents).length ? Object.entries(scoreComponents).map(([k, v]) => `${this._esc(k)}=${this._esc(String(v))}`).join(' · ') : '예측 점수 근거 없음'} · read-only model evidence</div>
+      </div>
+      <div data-crop-kma-weather-stress-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e5f0ff;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">KMA 7일 weather-stress</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(kmaWeatherStress7d.sourceStatus || '-')}</b><div style="font-size:10px;color:#9aae9d;">coverage ${this._esc(String(kmaWeatherFeatures.kmaForecastCoverageRatio ?? '-'))}</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">highTemperatureDays</div><b style="font-size:14px;color:#24323F;">${this._esc(String(kmaWeatherFeatures.highTemperatureDays ?? '-'))}</b><div style="font-size:10px;color:#9aae9d;">lowTemperatureDays ${this._esc(String(kmaWeatherFeatures.lowTemperatureDays ?? '-'))}</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">rapidTemperatureChangeDays</div><b style="font-size:14px;color:#24323F;">${this._esc(String(kmaWeatherFeatures.rapidTemperatureChangeDays ?? '-'))}</b><div style="font-size:10px;color:#9aae9d;">max swing ${this._esc(String(kmaWeatherFeatures.maxDailyTemperatureSwing ?? '-'))}</div></div>
+        </div>
+        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">kmaWeatherStress7d: ${(kmaWeatherStress7d.weatherStressReasons || []).length ? kmaWeatherStress7d.weatherStressReasons.map(r => this._esc(r)).join(' · ') : '특이 weather-stress 없음'} · read-only forecast/model input · 환경/관수/장치 실행 권한 없음</div>
+      </div>
       <div data-crop-quality-disorder-summary-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">품질/장해 요약</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
@@ -4205,6 +4230,15 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">needs review</div><b style="font-size:14px;color:#c0392b;">${this._esc(String(predictionValidation.needsReviewCount ?? 0))}</b></div>
         </div>
         <div style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">최근 실제 조사 입력 후 검증 실행을 누르면 pending prediction이 actualValidation으로 갱신됩니다. 이 동작은 데이터 처리만 수행하며 장치/환경/관수 실행 권한은 없습니다.</div>
+      </div>
+      <div data-crop-training-dataset-export-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">학습 데이터셋 내보내기 준비도</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">trainingDatasetVersion</div><b style="font-size:14px;color:#24323F;">${this._esc(trainingDataset.trainingDatasetVersion || '-')}</b><div style="font-size:10px;color:#9aae9d;">no automatic ML deployment</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">featureColumns</div><b style="font-size:14px;color:#24323F;">${this._esc(String((trainingDataset.featureColumns || []).length || 0))}</b><div style="font-size:10px;color:#9aae9d;">labelColumns ${this._esc(String((trainingDataset.labelColumns || []).length || 0))}</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">validatedRows</div><b style="font-size:14px;color:${trainingDatasetReadiness.ready ? '#51AE60' : '#7a9780'};">${this._esc(String(trainingDatasetReadiness.validatedRows ?? 0))}</b><div style="font-size:10px;color:#9aae9d;">coverage ${this._esc(String(trainingDatasetReadiness.featureCoverageRatio ?? 0))}</div></div>
+        </div>
+        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">exportWarnings: ${trainingDatasetWarnings.length ? trainingDatasetWarnings.map(w => this._esc(w)).join(' · ') : 'no automatic ML deployment'} · 자동 학습/배포 없음 · read-only dataset export</div>
       </div>
       <div data-crop-environment-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e5f0ff;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">환경 feature</div>

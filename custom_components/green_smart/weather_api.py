@@ -8,9 +8,19 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import aiohttp
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.storage import Store
+try:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
+    from homeassistant.helpers.storage import Store
+except ModuleNotFoundError:  # Allow isolated helper-contract tests without a full HA package.
+    HomeAssistant = Any
+
+    def async_get_clientsession(hass):
+        raise RuntimeError("Home Assistant aiohttp client session is unavailable outside HA runtime")
+
+    class Store:  # type: ignore[no-redef]
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("Home Assistant storage is unavailable outside HA runtime")
 
 _LOGGER = logging.getLogger(__name__)
 

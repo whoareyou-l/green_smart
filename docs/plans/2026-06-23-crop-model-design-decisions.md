@@ -102,14 +102,16 @@ Required output fields:
   "currentStage": {
     "stageId": "...",
     "stageLabel": "...",
-    "confidence": "high|medium|low",
+    "confidenceScore": 0.0,
+    "confidencePercent": 0,
     "progressScore": 0.0
   },
   "predictedStage7d": {
     "stageId": "...",
     "stageLabel": "...",
     "probability": 0.0,
-    "confidence": "high|medium|low"
+    "confidenceScore": 0.0,
+    "confidencePercent": 0
   },
   "transitionWindow": {
     "earliestDay": 0,
@@ -283,7 +285,7 @@ The initial baseline must persist:
    - predicted stage after 7 days
    - transition probability
    - transition window
-   - confidence
+   - numeric confidence score/percent
    - model reason/evidence
 
 3. **Actual validation label**
@@ -450,3 +452,77 @@ Implementation implication:
 - Surface high pest severity, stale/missing control, PLS non-compliance, mix forbidden/unknown, PHI risk, and REI risk as read-only model evidence.
 - If high pest risk lacks recent control, return explicit review guidance and missing/stale reasons.
 - These features do not grant pesticide/control execution authority; Edge Safety/Interlock and operator approval remain the authority.
+
+## Confirmed decision 14 — numeric confidence and KMA 7-day weather-stress inputs
+
+Crop model confidence must be numeric and auditable, not a string label.
+
+Required confidence fields:
+
+```text
+confidenceScore        # float 0.0..1.0
+confidencePercent      # integer 0..100 for UI display
+confidenceReasons      # explicit evidence/missing/stale reasons
+```
+
+Rejected output:
+
+```text
+confidence = "low|medium|high"
+```
+
+KMA/기상청 7-day forecast stress must be a first-class crop model input, not only weather-card UI data.
+
+Required `kmaWeatherStress7d` features:
+
+```text
+highTemperatureDays
+lowTemperatureDays
+highHumidityDays
+lowHumidityDays
+rapidTemperatureChangeDays
+maxDailyTemperatureSwing
+avgDailyTemperatureSwing
+kmaForecastCoverageRatio
+weatherStressReasons
+sourceStatus ready|partial|missing|stale
+```
+
+Source integration:
+
+```text
+weather_api.py / weather_views.py
+GET /api/green_smart/weather/weekly
+POST /api/green_smart/central/weather/forecast
+POST /api/green_smart/central/weather/mid
+```
+
+Implementation implication:
+
+- Add `kmaWeatherStress7d` to the crop model feature snapshot and transparent score inputs.
+- Add `kmaWeatherStressScore` to transparent stage prediction score components.
+- Missing/stale/partial KMA forecast data must reduce `confidenceScore` and add explicit reasons, rather than silently becoming normal weather.
+- This is read-only crop model evidence only; it does not authorize environment, irrigation, device, PID, or physical execution.
+
+## Confirmed decision 15 — training dataset export remains offline/read-only
+
+The crop training dataset export is an auditable offline data product, not an automatic model-training or production replacement mechanism.
+
+Required export fields:
+
+```text
+trainingDatasetVersion
+feature_snapshot_id
+featureColumns
+labelColumns
+actual_validation_json
+readiness.reasons
+exportWarnings
+```
+
+Implementation implication:
+
+- Export rows must join persisted feature snapshot evidence, prediction JSON, validation labels, and readiness metadata.
+- The API may expose `GET /api/green_smart/crop/seasons/{season_id}/training-dataset` for offline analysis and future ML preparation.
+- The panel may show export/readiness evidence, but must say `no automatic ML deployment` / `자동 학습/배포 없음`.
+- This slice must not train a model, auto-deploy a model, or replace the production hybrid rule model from exported rows.

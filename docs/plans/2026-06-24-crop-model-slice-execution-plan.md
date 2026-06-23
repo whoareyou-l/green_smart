@@ -666,11 +666,30 @@ reviewGuidance
 
 ---
 
-# Slice 6 — v1.9.65 Transparent Stage Prediction Score
+# Slice 6 — v1.9.65 Transparent Stage Prediction Score + KMA Weather Stress Inputs
 
 ## Objective
 
-Replace vague probability logic with transparent score components.
+Replace vague probability logic with transparent numeric score components, and include KMA 7-day weather stress inputs that were missing from crop model scoring.
+
+## User-corrected requirements
+
+- Do **not** output confidence as `low|medium|high`.
+- Confidence must be numeric, e.g. `confidenceScore` in the `0.0..1.0` range and optionally `confidencePercent` for UI.
+- KMA/기상청 7-day weather forecast stress must be first-class model input, not only weather-card UI data.
+- Required weather-stress inputs:
+
+```text
+highTemperatureDays
+lowTemperatureDays
+highHumidityDays
+lowHumidityDays
+rapidTemperatureChangeDays
+maxDailyTemperatureSwing
+avgDailyTemperatureSwing
+kmaForecastCoverageRatio
+weatherStressReasons
+```
 
 ## Required score components
 
@@ -678,10 +697,45 @@ Replace vague probability logic with transparent score components.
 growthIndexBandScore
 weeklyDeltaScore
 environmentStressScore
+kmaWeatherStressScore
 irrigationNutrientStressScore
 pestControlRiskPenalty
 inputCompletenessPenalty
 stageCalibrationScore
+```
+
+## Required KMA source integration
+
+Use the existing KMA weather stack as input source where available:
+
+```text
+weather_api.py / weather_views.py
+GET /api/green_smart/weather/weekly
+POST /api/green_smart/central/weather/forecast
+POST /api/green_smart/central/weather/mid
+```
+
+The crop model feature snapshot must expose a read-only weather stress payload, for example:
+
+```json
+{
+  "kmaWeatherStress7d": {
+    "source": "kma_short_mid_forecast",
+    "windowDays": 7,
+    "features": {
+      "highTemperatureDays": 0,
+      "lowTemperatureDays": 0,
+      "highHumidityDays": 0,
+      "lowHumidityDays": 0,
+      "rapidTemperatureChangeDays": 0,
+      "maxDailyTemperatureSwing": 0.0,
+      "avgDailyTemperatureSwing": 0.0,
+      "kmaForecastCoverageRatio": 0.0
+    },
+    "weatherStressReasons": [],
+    "sourceStatus": "ready|partial|missing|stale"
+  }
+}
 ```
 
 ## Output shape
@@ -691,7 +745,8 @@ stageCalibrationScore
   "scoreComponents": {},
   "rawScore": 0.0,
   "probability": 0.0,
-  "confidence": "low|medium|high",
+  "confidenceScore": 0.0,
+  "confidencePercent": 0,
   "explanation": []
 }
 ```
@@ -700,7 +755,10 @@ stageCalibrationScore
 
 - Every probability has visible components.
 - No black-box model hidden behind a single number.
-- Tests assert score component names.
+- Confidence is numeric only; no `low|medium|high` confidence output.
+- KMA 7-day high/low temperature, high/low humidity, and rapid temperature-change signals are included in the score inputs.
+- Missing KMA data lowers `confidenceScore` and adds explicit missing/stale reasons.
+- Tests assert score component names and KMA weather stress feature names.
 
 ---
 
@@ -708,7 +766,17 @@ stageCalibrationScore
 
 ## Objective
 
-Expose auditable training dataset rows for offline/future ML work.
+Expose auditable training dataset rows for offline/future ML work while keeping the production model unchanged.
+
+## Product behavior
+
+```text
+1. Operator opens the crop growth report.
+2. Panel shows training dataset export/readiness evidence read-only.
+3. API exposes rows built from persisted feature_snapshot_id, feature snapshot JSON, prediction JSON, and actual_validation_json.
+4. Readiness summarizes whether enough validated rows and feature coverage exist for offline model experimentation.
+5. The system never trains, auto-deploys, or replaces the production hybrid model from this export.
+```
 
 ## API
 
@@ -720,19 +788,76 @@ GET /api/green_smart/crop/seasons/{season_id}/training-dataset
 
 ```json
 {
+  "ok": true,
+  "seasonId": 1,
+  "trainingDatasetVersion": "crop_training_dataset_export_v1",
   "rows": [],
   "featureColumns": [],
   "labelColumns": [],
-  "readiness": {},
-  "exportWarnings": []
+  "readiness": {
+    "ready": false,
+    "validatedRows": 0,
+    "minimumValidatedRows": 30,
+    "featureCoverageRatio": 0.0,
+    "reasons": ["readiness.reasons"]
+  },
+  "exportWarnings": ["no automatic ML deployment"]
 }
+```
+
+## Backend/API work
+
+Add/complete:
+
+```python
+CROP_TRAINING_DATASET_EXPORT_VERSION = "crop_training_dataset_export_v1"
+_crop_training_dataset_feature_columns(...)
+_crop_training_dataset_label_columns(...)
+_crop_training_dataset_readiness(...)
+_crop_training_dataset_rows(...)
+_crop_training_dataset_response(...)
+CropModelTrainingDatasetView
+```
+
+The SQL must include persisted links/evidence:
+
+```sql
+feature_snapshot_id AS featureSnapshotId
+feature_snapshot_json AS featureSnapshot
+prediction_json AS prediction
+actual_validation_json AS actualValidation
+validation_status AS validationStatus
+```
+
+## Panel work
+
+Add read-only evidence under model development cards:
+
+```text
+data-crop-training-dataset-export-card
+학습 데이터셋 내보내기 준비도
+trainingDatasetVersion
+featureColumns
+labelColumns
+exportWarnings
+자동 학습/배포 없음
+```
+
+Forbidden markers / behavior:
+
+```text
+data-crop-training-dataset-train
+autoDeployCropMlModel
+replaceProductionModelFromDataset
 ```
 
 ## Acceptance criteria
 
 - Does not train or deploy ML automatically.
 - Exports feature snapshot + prediction + actual validation as rows.
-- Shows readiness reasons.
+- Shows readiness reasons (`readiness.reasons`).
+- Rows are auditable back to `feature_snapshot_id` and validation labels.
+- Tests assert API registration, backend export shape, panel read-only evidence, docs, and version markers.
 
 ---
 
