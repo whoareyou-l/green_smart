@@ -54,13 +54,13 @@ DB/schema + backend helper/model logic + HTTP API + Panel UI + contract tests + 
 | Slice | Version | Feature capability | DB | Backend/API | Panel UI | Tests/docs | Must not do |
 |---|---:|---|---|---|---|---|---|
 | Slice 1 | v1.9.59 | Prediction → actual validation loop | validation index/fields | validation helper + API | validation status card/run action | RED contract + plan update | Do not train ML yet |
-| Slice 2 | v1.9.60 | Crop quality/disorder survey inputs | metrics_json only | normalization/model feature wiring | crop-specific form fields | contract + docs | Do not overload legacy columns |
-| Slice 3 | v1.9.61 | Rich environment feature engineering | no active-control schema | VPD/DIF/ADT/stale summaries API | read-only source evidence | contract + docs | Do not control environment devices |
-| Slice 4 | v1.9.62 | Rich irrigation/nutrient feature engineering | no execution schema | EC/pH/drain/dryback feature API | read-only source evidence | contract + docs | Do not execute irrigation control |
-| Slice 5 | v1.9.63 | Pest/control/PHI/REI feature depth | PHI/REI if missing | risk/freshness feature API | review guidance | contract + docs | Do not bypass Safety/Interlock |
-| Slice 6 | v1.9.64 | Transparent stage prediction score | score snapshot if needed | score components | score explanation | contract + docs | Do not hide formula in opaque code |
-| Slice 7 | v1.9.65 | Dataset export/readiness | reuse snapshots | training dataset API | export/readiness evidence | contract + docs | Do not auto-replace production model |
-| Slice 8 | v1.9.66 | Panel operator workflow | no unnecessary schema | existing APIs | next-action workflow UI | contract + docs | Do not add execution authority |
+| Slice 2 | v1.9.61 | Crop quality/disorder survey inputs | metrics_json only | normalization/model feature wiring | crop-specific form fields | contract + docs | Do not overload legacy columns |
+| Slice 3 | v1.9.62 | Rich environment feature engineering | no active-control schema | VPD/DIF/ADT/stale summaries API | read-only source evidence | contract + docs | Do not control environment devices |
+| Slice 4 | v1.9.63 | Rich irrigation/nutrient feature engineering | no execution schema | EC/pH/drain/dryback feature API | read-only source evidence | contract + docs | Do not execute irrigation control |
+| Slice 5 | v1.9.64 | Pest/control/PHI/REI feature depth | PHI/REI if missing | risk/freshness feature API | review guidance | contract + docs | Do not bypass Safety/Interlock |
+| Slice 6 | v1.9.65 | Transparent stage prediction score | score snapshot if needed | score components | score explanation | contract + docs | Do not hide formula in opaque code |
+| Slice 7 | v1.9.66 | Dataset export/readiness | reuse snapshots | training dataset API | export/readiness evidence | contract + docs | Do not auto-replace production model |
+| Slice 8 | v1.9.67 | Panel operator workflow | no unnecessary schema | existing APIs | next-action workflow UI | contract + docs | Do not add execution authority |
 
 Vertical-slice implementation rule:
 
@@ -234,7 +234,7 @@ WHERE TABLE_SCHEMA='homeassistant'
 
 ---
 
-# Slice 2 — v1.9.60 Crop Quality/Disorder Survey Inputs
+# Slice 2 — v1.9.61 Crop Quality/Disorder Survey Inputs
 
 ## Objective
 
@@ -358,11 +358,11 @@ outerLeafDamageScore
 - Not mapped into legacy columns: `height`, `leafCount`, `stemDia`, `truss`, or `node`.
 - Included in `featureSnapshot.growthSurvey.qualityDisorderSummary`, `featureSnapshot.qualityDisorderSummary`, and `trainableBaseline.qualityDisorderSummary`.
 - Risk flags are derived transparently from recorded metrics, e.g. tomato blossom-end rot/cracking and lettuce tipburn/bolting.
-- `v1.9.60` version markers are updated and verified in local/prod.
+- `v1.9.61` version markers are updated and verified in local/prod.
 
 ---
 
-# Slice 3 — v1.9.61 Rich Environment Feature Engineering
+# Slice 3 — v1.9.62 Rich Environment Feature Engineering
 
 ## Objective
 
@@ -396,7 +396,7 @@ sample coverage ratio
 
 ---
 
-# Slice 4 — v1.9.62 Rich Irrigation/Nutrient Feature Engineering
+# Slice 4 — v1.9.63 Rich Irrigation/Nutrient Feature Engineering
 
 ## Objective
 
@@ -431,7 +431,7 @@ staleDrainFeedback
 
 ---
 
-# Slice 5 — v1.9.63 Pest/Control/PHI/REI Feature Depth
+# Slice 5 — v1.9.64 Pest/Control/PHI/REI Feature Depth
 
 ## Objective
 
@@ -466,7 +466,7 @@ missingControlAfterHighRiskFlag
 
 ---
 
-# Slice 6 — v1.9.64 Transparent Stage Prediction Score
+# Slice 6 — v1.9.65 Transparent Stage Prediction Score
 
 ## Objective
 
@@ -504,7 +504,7 @@ stageCalibrationScore
 
 ---
 
-# Slice 7 — v1.9.65 Dataset Export and ML Readiness
+# Slice 7 — v1.9.66 Dataset Export and ML Readiness
 
 ## Objective
 
@@ -536,7 +536,7 @@ GET /api/green_smart/crop/seasons/{season_id}/training-dataset
 
 ---
 
-# Slice 8 — v1.9.66 Panel Operator Workflow
+# Slice 8 — v1.9.67 Panel Operator Workflow
 
 ## Objective
 

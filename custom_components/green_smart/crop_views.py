@@ -498,6 +498,7 @@ def _crop_quality_disorder_metrics_from_growth(crop_type: str, latest: dict | No
         "metrics": metrics,
         "riskFlags": riskFlags,
         "missingMetrics": missingMetrics,
+        "source": "growth_surveys.metrics_json",
         "storagePolicy": "metrics_json only",
     }
 
@@ -1808,6 +1809,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "stagePrediction7d": stagePrediction7d,
         "mlUpgradeReadiness": mlUpgradeReadiness,
     }
+    trainableBaseline["qualityDisorderSummary"] = qualityDisorderSummary
     return {
         "cropModelVersion": CROP_MODEL_VERSION,
         "seasonId": season_id,
@@ -2290,6 +2292,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "operationHistorySummary7d": featureSources.get("operationHistorySummary7d") or {},
         "safetyInterlockSummary": featureSources.get("safetyInterlockSummary") or {},
         "featureSnapshot": cropModel["trainableBaseline"]["featureSnapshot"],
+        "qualityDisorderSummary": cropModel["trainableBaseline"].get("qualityDisorderSummary"),
         "stagePrediction7d": cropModel["trainableBaseline"]["stagePrediction7d"],
         "predictionValidation": predictionValidation,
         "mlUpgradeReadiness": cropModel["trainableBaseline"]["mlUpgradeReadiness"],

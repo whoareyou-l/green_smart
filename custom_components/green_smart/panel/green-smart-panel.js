@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.60
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.61
 const DOMAIN = "green_smart";
-const VERSION = "1.9.60";
+const VERSION = "1.9.61";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4092,6 +4092,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const pestStatus = sourceStatus.pestControl || (featureSources.pestControlSummary7d || {}).sourceStatus || "missing";
     const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
     const qualityDisorderSummary = report.qualityDisorderSummary || trainableBaseline.qualityDisorderSummary || (trainableBaseline.featureSnapshot || {}).qualityDisorderSummary || {};
+    const qualityRiskFlags = Array.isArray(qualityDisorderSummary.riskFlags) ? qualityDisorderSummary.riskFlags : [];
+    const qualityMissingMetrics = Array.isArray(qualityDisorderSummary.missingMetrics) ? qualityDisorderSummary.missingMetrics : [];
     const validationStatus = predictionValidation.needsReviewCount > 0 ? "validation_needs_review" : predictionValidation.pendingCount > 0 ? "pending" : predictionValidation.validatedCount > 0 ? "validated" : "no_predictions";
     const validationStatusLabel = { validated: "검증 완료", pending: "검증 대기", validation_needs_review: "검토 필요", no_predictions: "예측 기록 없음" }[validationStatus] || validationStatus;
     const mlReady = !!mlUpgradeReadiness.ready;
@@ -4168,6 +4170,15 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">mlUpgradeReadiness</div><b style="font-size:14px;color:${mlReady ? '#51AE60' : '#7a9780'};">${mlReady ? 'ready' : 'not ready'}</b><div style="font-size:10px;color:#9aae9d;">${this._esc((mlUpgradeReadiness.reasons || []).join(' · ') || '조건 충족')}</div></div>
         </div>
         <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">초기 예측은 학습 가능한 데이터셋을 쌓기 위한 baseline입니다. 충분한 주간 sequence와 prediction→actual 검증쌍이 쌓이면 LSTM/GRU/Transformer 확장 후보를 표시합니다.</div>
+      </div>
+      <div data-crop-quality-disorder-summary-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">품질/장해 요약</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">cropType</div><b style="font-size:14px;color:#24323F;">${this._esc(qualityDisorderSummary.cropType || '-')}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">riskFlags</div><b style="font-size:14px;color:${qualityRiskFlags.length ? '#c0392b' : '#51AE60'};">${this._esc(String(qualityRiskFlags.length))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">missingMetrics</div><b style="font-size:14px;color:#7a9780;">${this._esc(String(qualityMissingMetrics.length))}</b></div>
+        </div>
+        <div style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">${qualityRiskFlags.length ? qualityRiskFlags.map(r => this._esc(r)).join(' · ') : '기록된 품질/생리장해 위험 신호 없음'}${qualityMissingMetrics.length ? ` · 미입력: ${qualityMissingMetrics.map(r => this._esc(r)).join(' · ')}` : ''}</div>
       </div>
       <div data-crop-prediction-validation-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
@@ -4978,7 +4989,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const qualityDisorderFields = config.qualityDisorderFields || [];
     const qualityDisorderHtml = qualityDisorderFields.length ? `
       <div data-growth-quality-disorder-section style="border:1px solid #efe7ff;background:#faf7ff;border-radius:12px;padding:10px;margin:4px 0 2px;">
-        <div style="font-size:12px;font-weight:900;color:#4a356d;margin-bottom:7px;">품질/생리장해</div>
+        <div style="font-size:12px;font-weight:900;color:#4a356d;margin-bottom:7px;">품질/생리장해 입력</div>
         ${qualityDisorderFields.map(([key, label, placeholder, min, max, step], idx) => `
           <div class="pop-field" data-growth-quality-disorder-field="${key}">
             <label>${label}</label>
