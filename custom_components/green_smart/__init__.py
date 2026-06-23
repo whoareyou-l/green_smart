@@ -307,7 +307,7 @@ async def async_setup(hass, config):
     from .db import ensure_schema
     from .crop_views import (
         CropSeasonsView, CropSeasonDemolishView, CropSeasonDeleteView,
-        CropGrowthListView, CropGrowthReportView, CropModelTrainingSnapshotView, CropModelTrainingReadinessView,
+        CropGrowthListView, CropGrowthReportView, CropModelFeatureSourcesView, CropModelTrainingSnapshotView, CropModelTrainingReadinessView,
         CropGrowthReportNotifyView, CropGrowthReportNotificationSettingsView,
         CropPolicyNotificationSettingsView, CropPolicyNotificationDismissView, CropGrowthDeleteView,
         CropStageCalibrationView, CropStageDiagnosisView, CropInterlockApprovalView,
@@ -352,6 +352,7 @@ async def async_setup(hass, config):
         hass.http.register_view(CropSeasonDeleteView())
         hass.http.register_view(CropGrowthListView())
         hass.http.register_view(CropGrowthReportView())
+        hass.http.register_view(CropModelFeatureSourcesView())
         hass.http.register_view(CropModelTrainingSnapshotView())
         hass.http.register_view(CropModelTrainingReadinessView())
         hass.http.register_view(CropGrowthReportNotifyView())

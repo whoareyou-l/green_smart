@@ -309,3 +309,27 @@ Implementation implication:
 
 - Center vs Edge computation boundary.
 - Fallback when inputs are missing/stale.
+
+## Confirmed decision 9 — crop model feature sources must be first-class inputs
+
+The crop model must not treat growth survey metrics as the only model input. Growth survey metrics are the primary weekly label/observation source, but the 1-week crop model also needs first-class feature sources from environment, irrigation/nutrient, pest/control, operation history, and Safety/Interlock/Approval state.
+
+Implementation implication:
+
+- Add `crop_model_feature_snapshots` as a dedicated model input snapshot table.
+- Persist `environment_summary_json` from `sensor_readings`.
+- Persist `irrigation_nutrient_summary_json` from `irrigation_drain_feedback`, `irrigation_control_logs`, and `irrigation_settings`.
+- Persist `pest_control_summary_json` from `pest_surveys`, `control_records`, and `control_pesticides`.
+- Persist `operation_history_summary_json` from `audit_logs` and operator/control history where available.
+- Persist `safety_interlock_summary_json` from crop safety/interlock/approval state.
+- Persist `input_completeness_json` so hybrid baseline and future time-series training know whether the feature set is usable.
+
+API implication:
+
+```text
+GET/POST /api/green_smart/crop/seasons/{season_id}/model-feature-sources
+```
+
+Training implication:
+
+`crop_model_training_snapshots.feature_snapshot_id` links each 7-day prediction candidate to the exact feature-source snapshot used to generate it. This prevents the model dataset from becoming a growth-survey-only dataset and makes prediction → actual validation auditable.

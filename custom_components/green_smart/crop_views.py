@@ -16,6 +16,7 @@ CROP_POLICY_NOTIFICATION_SETTINGS_KEY = "crop_policy_notification_settings"
 CROP_POLICY_NOTIFICATION_STATE_KEY = "crop_policy_notification_state"
 CROP_MODEL_VERSION = "crop_season_model_v1"
 CROP_TRAINABLE_BASELINE_VERSION = "crop_trainable_baseline_v1"
+CROP_MODEL_FEATURE_SOURCES_VERSION = "crop_model_feature_sources_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -1222,13 +1223,216 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
     }
 
 
-def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], pestRisk: dict, cropSafety: dict | None, cropInterlock: dict | None, growthIndex: dict, weekly_growth: float, control_rows: list[dict]) -> dict:
+async def _environment_feature_summary(hass, *, farm_id: int, zone_id: int | None, days: int = 7) -> dict:
+    rows = await fetchall(hass, """
+        SELECT reading_type AS readingType, COUNT(*) AS sampleCount,
+               AVG(value) AS avgValue, MIN(value) AS minValue, MAX(value) AS maxValue,
+               MAX(captured_at) AS lastCapturedAt
+        FROM sensor_readings
+        WHERE farm_id = %s AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
+          AND captured_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+        GROUP BY reading_type
+    """, (int(farm_id or 1), zone_id, zone_id, int(days)))
+    by_type = {row.get("readingType"): row for row in rows}
+    required = ["temperature", "humidity", "co2", "radiation", "vpd", "adt", "dif"]
+    present = [key for key in required if by_type.get(key)]
+    return {
+        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "sourceTables": ["sensor_readings"],
+        "windowDays": days,
+        "required": required,
+        "present": present,
+        "missing": [key for key in required if key not in present],
+        "metrics": by_type,
+        "sourceStatus": "ready" if len(present) >= 4 else "partial" if present else "missing",
+    }
+
+
+async def _irrigation_nutrient_feature_summary(hass, *, farm_id: int, zone_id: int | None, days: int = 7) -> dict:
+    drain = await fetchone(hass, """
+        SELECT COUNT(*) AS sampleCount, AVG(feed_amount_l) AS avgFeedAmountL,
+               AVG(drain_amount_l) AS avgDrainAmountL, AVG(drain_rate) AS avgDrainRate,
+               AVG(drain_ec) AS avgDrainEc, AVG(drain_ph) AS avgDrainPh, MAX(measured_at) AS lastMeasuredAt
+        FROM irrigation_drain_feedback
+        WHERE farm_id = %s AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
+          AND measured_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+    """, (int(farm_id or 1), zone_id, zone_id, int(days))) or {}
+    logs = await fetchone(hass, """
+        SELECT COUNT(*) AS controlCount, AVG(amount_l) AS avgAmountL,
+               AVG(feed_ec) AS avgFeedEc, AVG(feed_ph) AS avgFeedPh,
+               AVG(drain_amount_l) AS avgLoggedDrainAmountL, AVG(drain_ec) AS avgLoggedDrainEc,
+               AVG(drain_ph) AS avgLoggedDrainPh, SUM(has_error) AS errorCount, MAX(executed_at) AS lastExecutedAt
+        FROM irrigation_control_logs
+        WHERE farm_id = %s AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
+          AND executed_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+    """, (int(farm_id or 1), zone_id, zone_id, int(days))) or {}
+    sample_count = int((drain.get("sampleCount") or 0) + (logs.get("controlCount") or 0))
+    return {
+        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "sourceTables": ["irrigation_drain_feedback", "irrigation_control_logs", "irrigation_settings"],
+        "windowDays": days,
+        "drainFeedback": drain,
+        "controlLogs": logs,
+        "required": ["feedEc", "drainEc", "feedPh", "drainPh", "irrigationAmount", "drainRate", "dryback"],
+        "missing": [] if sample_count else ["irrigation_drain_feedback", "irrigation_control_logs"],
+        "sourceStatus": "ready" if sample_count >= 5 else "partial" if sample_count else "missing",
+    }
+
+
+async def _pest_control_feature_summary(hass, *, season_id: int, days: int = 7) -> dict:
+    pest = await fetchone(hass, """
+        SELECT COUNT(*) AS surveyCount, MAX(severity) AS maxSeverity, AVG(severity) AS avgSeverity, MAX(survey_date) AS lastSurveyDate
+        FROM pest_surveys
+        WHERE season_id = %s AND deleted_at IS NULL
+          AND survey_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+    """, (int(season_id), int(days))) or {}
+    controls = await fetchone(hass, """
+        SELECT COUNT(DISTINCT r.id) AS controlCount, COUNT(p.id) AS pesticideCount,
+               SUM(CASE WHEN p.pls_compliant = 0 THEN 1 ELSE 0 END) AS plsNonCompliantCount,
+               SUM(CASE WHEN p.mix_check_status IN ('forbidden','unknown') THEN 1 ELSE 0 END) AS mixRiskCount,
+               MAX(r.control_date) AS lastControlDate
+        FROM control_records r
+        LEFT JOIN control_pesticides p ON p.control_id = r.id
+        WHERE r.season_id = %s AND r.deleted_at IS NULL
+          AND r.control_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+    """, (int(season_id), int(days))) or {}
+    return {
+        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "sourceTables": ["pest_surveys", "control_records", "control_pesticides"],
+        "windowDays": days,
+        "pest": pest,
+        "control": controls,
+        "riskFlags": {
+            "hasRecentPestSurvey": int(pest.get("surveyCount") or 0) > 0,
+            "hasRecentControlRecord": int(controls.get("controlCount") or 0) > 0,
+            "hasPlsRisk": int(controls.get("plsNonCompliantCount") or 0) > 0,
+            "hasMixRisk": int(controls.get("mixRiskCount") or 0) > 0,
+        },
+        "sourceStatus": "ready" if int(pest.get("surveyCount") or 0) else "partial" if int(controls.get("controlCount") or 0) else "missing",
+    }
+
+
+async def _operation_history_feature_summary(hass, *, farm_id: int, zone_id: int | None, days: int = 7) -> dict:
+    audits = await fetchone(hass, """
+        SELECT COUNT(*) AS auditCount, MAX(created_at) AS lastAuditAt
+        FROM audit_logs
+        WHERE farm_id = %s AND created_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+    """, (int(farm_id or 1), int(days))) or {}
+    return {
+        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "sourceTables": ["audit_logs"],
+        "windowDays": days,
+        "zoneId": zone_id,
+        "audit": audits,
+        "sourceStatus": "ready" if int(audits.get("auditCount") or 0) else "partial",
+    }
+
+
+async def _safety_interlock_feature_summary(hass, *, season_id: int, cropSafety: dict | None, cropInterlock: dict | None) -> dict:
+    approvals = await fetchall(hass, """
+        SELECT approval_type AS approvalType, reason_codes_json AS reasonCodesJson,
+               actions_json AS actionsJson, expires_at AS expiresAt, updated_at AS updatedAt
+        FROM crop_interlock_approvals
+        WHERE farm_id = 1 AND season_id = %s
+        ORDER BY updated_at DESC
+        LIMIT 20
+    """, (int(season_id),))
+    return {
+        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "sourceTables": ["crop_interlock_approvals", "audit_logs"],
+        "cropSafety": cropSafety or {},
+        "cropInterlock": cropInterlock or {},
+        "approvalSnapshot": approvals,
+        "sourceStatus": "ready" if cropSafety or cropInterlock else "partial",
+    }
+
+
+def _crop_model_input_completeness(*, growth_rows: list[dict], environment: dict, irrigation: dict, pest_control: dict, operation: dict, safety_interlock: dict) -> dict:
+    source_status = {
+        "growthSurvey": "ready" if growth_rows else "missing",
+        "environment": environment.get("sourceStatus") or "missing",
+        "irrigationNutrient": irrigation.get("sourceStatus") or "missing",
+        "pestControl": pest_control.get("sourceStatus") or "missing",
+        "operationHistory": operation.get("sourceStatus") or "missing",
+        "safetyInterlock": safety_interlock.get("sourceStatus") or "missing",
+    }
+    weights = {"ready": 1.0, "partial": 0.5, "missing": 0.0}
+    score = sum(weights.get(v, 0.0) for v in source_status.values()) / max(1, len(source_status))
+    return {
+        "score": round(score, 2),
+        "sourceStatus": source_status,
+        "readyForHybridBaseline": bool(growth_rows) and score >= 0.45,
+        "readyForTimeSeriesCandidate": bool(growth_rows) and score >= 0.8,
+        "missingSources": [k for k, v in source_status.items() if v == "missing"],
+    }
+
+
+async def _crop_model_feature_sources_snapshot(hass, *, season_id: int, season: dict, growth_rows: list[dict], cropSafety: dict | None, cropInterlock: dict | None, days: int = 7) -> dict:
+    zone_id = season.get("zoneId")
+    crop_type = season.get("cropType") or "other"
+    environment = await _environment_feature_summary(hass, farm_id=1, zone_id=zone_id, days=days)
+    irrigation = await _irrigation_nutrient_feature_summary(hass, farm_id=1, zone_id=zone_id, days=days)
+    pest_control = await _pest_control_feature_summary(hass, season_id=season_id, days=days)
+    operation = await _operation_history_feature_summary(hass, farm_id=1, zone_id=zone_id, days=days)
+    safety_interlock = await _safety_interlock_feature_summary(hass, season_id=season_id, cropSafety=cropSafety, cropInterlock=cropInterlock)
+    input_completeness = _crop_model_input_completeness(
+        growth_rows=growth_rows,
+        environment=environment,
+        irrigation=irrigation,
+        pest_control=pest_control,
+        operation=operation,
+        safety_interlock=safety_interlock,
+    )
+    return {
+        "version": CROP_MODEL_FEATURE_SOURCES_VERSION,
+        "seasonId": season_id,
+        "zoneId": zone_id,
+        "cropType": crop_type,
+        "windowDays": days,
+        "environmentSummary7d": environment,
+        "irrigationNutrientSummary7d": irrigation,
+        "pestControlSummary7d": pest_control,
+        "operationHistorySummary7d": operation,
+        "safetyInterlockSummary": safety_interlock,
+        "inputCompleteness": input_completeness,
+        "sourceStatus": input_completeness.get("sourceStatus") or {},
+    }
+
+
+async def _persist_crop_model_feature_snapshot(hass, *, season_id: int, season: dict, featureSources: dict) -> int | None:
+    if not featureSources:
+        return None
+    return await execute(hass, """
+        INSERT INTO crop_model_feature_snapshots(
+            farm_id, season_id, zone_id, crop_type, feature_version, snapshot_date, horizon_days,
+            environment_summary_json, irrigation_nutrient_summary_json, pest_control_summary_json,
+            operation_history_summary_json, safety_interlock_summary_json, input_completeness_json, source_status_json
+        ) VALUES (%s, %s, %s, %s, %s, CURDATE(), %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        1,
+        int(season_id),
+        season.get("zoneId"),
+        season.get("cropType") or featureSources.get("cropType") or "other",
+        CROP_MODEL_FEATURE_SOURCES_VERSION,
+        int(featureSources.get("windowDays") or 7),
+        json.dumps(featureSources.get("environmentSummary7d") or {}, ensure_ascii=False, default=str),
+        json.dumps(featureSources.get("irrigationNutrientSummary7d") or {}, ensure_ascii=False, default=str),
+        json.dumps(featureSources.get("pestControlSummary7d") or {}, ensure_ascii=False, default=str),
+        json.dumps(featureSources.get("operationHistorySummary7d") or {}, ensure_ascii=False, default=str),
+        json.dumps(featureSources.get("safetyInterlockSummary") or {}, ensure_ascii=False, default=str),
+        json.dumps(featureSources.get("inputCompleteness") or {}, ensure_ascii=False, default=str),
+        json.dumps(featureSources.get("sourceStatus") or {}, ensure_ascii=False, default=str),
+    ))
+
+
+def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], pestRisk: dict, cropSafety: dict | None, cropInterlock: dict | None, growthIndex: dict, weekly_growth: float, control_rows: list[dict], featureSources: dict | None = None) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     previous = growth_rows[1] if len(growth_rows) > 1 else {}
     return {
         "version": CROP_TRAINABLE_BASELINE_VERSION,
         "cropType": season.get("cropType") or latest.get("cropType") or "other",
-        "sourceTables": ["growth_surveys", "sensor_readings", "pest_surveys", "control_records", "control_pesticides"],
+        "sourceTables": ["growth_surveys", "sensor_readings", "pest_surveys", "control_records", "control_pesticides", "irrigation_drain_feedback", "irrigation_control_logs", "crop_interlock_approvals", "audit_logs"],
+        "featureSources": featureSources or {},
         "growthSurvey": {
             "latest": latest,
             "previous": previous,
@@ -1236,18 +1440,13 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
             "weeklyGrowthCm": weekly_growth,
             "growthIndex": growthIndex,
         },
-        "environmentSummary7d": {
-            "status": "collecting_baseline",
-            "required": ["temperature", "humidity", "co2", "radiation", "vpd", "adt", "dif"],
-            "source": "sensor_readings summary placeholder for trainable baseline",
-        },
-        "irrigationNutrientSummary7d": {
-            "status": "collecting_baseline",
-            "required": ["feedEc", "drainEc", "feedPh", "drainPh", "irrigationAmount", "drainRate", "dryback"],
-        },
-        "pestRisk": pestRisk or {},
-        "controlHistory": {"recentCount": len(control_rows or []), "latest": (control_rows or [{}])[0] if control_rows else {}},
-        "safetyInterlock": {"cropSafety": cropSafety or {}, "cropInterlock": cropInterlock or {}},
+        "environmentSummary7d": (featureSources or {}).get("environmentSummary7d") or {},
+        "irrigationNutrientSummary7d": (featureSources or {}).get("irrigationNutrientSummary7d") or {},
+        "pestControlSummary7d": (featureSources or {}).get("pestControlSummary7d") or {},
+        "operationHistorySummary7d": (featureSources or {}).get("operationHistorySummary7d") or {},
+        "safetyInterlockSummary": (featureSources or {}).get("safetyInterlockSummary") or {"cropSafety": cropSafety or {}, "cropInterlock": cropInterlock or {}},
+        "inputCompleteness": (featureSources or {}).get("inputCompleteness") or {},
+        "sourceStatus": (featureSources or {}).get("sourceStatus") or {},
     }
 
 
@@ -1307,7 +1506,7 @@ def _crop_ml_upgrade_readiness(*, growth_rows: list[dict], validation_pair_count
     }
 
 
-async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season: dict, cropModel: dict, validation_status: str = "pending") -> int | None:
+async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season: dict, cropModel: dict, featureSnapshotId: int | None = None, validation_status: str = "pending") -> int | None:
     prediction = cropModel.get("trainableBaseline", {}).get("stagePrediction7d") or {}
     feature_snapshot = cropModel.get("trainableBaseline", {}).get("featureSnapshot") or {}
     readiness = cropModel.get("trainableBaseline", {}).get("mlUpgradeReadiness") or {}
@@ -1323,14 +1522,15 @@ async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season:
         hass,
         """
         INSERT INTO crop_model_training_snapshots(
-            farm_id, season_id, zone_id, crop_type, model_family, target_horizon_days,
+            farm_id, season_id, feature_snapshot_id, zone_id, crop_type, model_family, target_horizon_days,
             source_survey_id, prediction_date, predicted_for_date, feature_snapshot_json,
             prediction_json, actual_validation_json, readiness_json, actual_survey_id, validation_status
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             1,
             season_id,
+            featureSnapshotId,
             season.get("zoneId"),
             season.get("cropType") or "other",
             CROP_STAGE_PREDICTION_MODEL_FAMILY,
@@ -1841,6 +2041,26 @@ async def _growth_report_response(hass, season_id: int) -> dict:
     approvalAudit = (await _crop_interlock_approval_response(hass, season_id, farm_id=1)).get("approvalAudit") or []
     centerCropPolicy = await _active_center_crop_policy(hass, season_id, farm_id=1, zone_id=season.get("zoneId"))
     cropModel = _crop_model_snapshot_from_report_parts(hass, season_id, season, growth_rows, pest_rows, control_rows, stageDiagnosis, approvalAudit, centerCropPolicy)
+    featureSources = await _crop_model_feature_sources_snapshot(hass, season_id=season_id, season=season, growth_rows=growth_rows, cropSafety=cropModel.get("cropSafety"), cropInterlock=cropModel.get("cropInterlock"), days=7)
+    trainableBaseline = cropModel.get("trainableBaseline") or {}
+    featureSnapshot = trainableBaseline.get("featureSnapshot") or {}
+    featureSnapshot.update({
+        "featureSources": featureSources,
+        "environmentSummary7d": featureSources.get("environmentSummary7d") or {},
+        "irrigationNutrientSummary7d": featureSources.get("irrigationNutrientSummary7d") or {},
+        "pestControlSummary7d": featureSources.get("pestControlSummary7d") or {},
+        "operationHistorySummary7d": featureSources.get("operationHistorySummary7d") or {},
+        "safetyInterlockSummary": featureSources.get("safetyInterlockSummary") or {},
+        "inputCompleteness": featureSources.get("inputCompleteness") or {},
+        "sourceStatus": featureSources.get("sourceStatus") or {},
+    })
+    trainableBaseline["featureSnapshot"] = featureSnapshot
+    trainableBaseline["featureSources"] = featureSources
+    trainableBaseline["inputCompleteness"] = featureSources.get("inputCompleteness") or {}
+    trainableBaseline["sourceStatus"] = featureSources.get("sourceStatus") or {}
+    cropModel["trainableBaseline"] = trainableBaseline
+    cropModel["featureSources"] = featureSources
+    cropModel["inputCompleteness"] = featureSources.get("inputCompleteness") or {}
     latest = cropModel["latestMetrics"]
     oldest = growth_rows[-1] if growth_rows else latest
     weekly_growth = cropModel["weeklyGrowthCm"]
@@ -1862,6 +2082,14 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "gIndexTrend": gIndexTrend,
         "cropModel": cropModel,
         "trainableBaseline": cropModel["trainableBaseline"],
+        "featureSources": featureSources,
+        "inputCompleteness": featureSources.get("inputCompleteness") or {},
+        "sourceStatus": featureSources.get("sourceStatus") or {},
+        "environmentSummary7d": featureSources.get("environmentSummary7d") or {},
+        "irrigationNutrientSummary7d": featureSources.get("irrigationNutrientSummary7d") or {},
+        "pestControlSummary7d": featureSources.get("pestControlSummary7d") or {},
+        "operationHistorySummary7d": featureSources.get("operationHistorySummary7d") or {},
+        "safetyInterlockSummary": featureSources.get("safetyInterlockSummary") or {},
         "featureSnapshot": cropModel["trainableBaseline"]["featureSnapshot"],
         "stagePrediction7d": cropModel["trainableBaseline"]["stagePrediction7d"],
         "mlUpgradeReadiness": cropModel["trainableBaseline"]["mlUpgradeReadiness"],
@@ -1878,6 +2106,34 @@ class CropGrowthReportView(HomeAssistantView):
 
     async def get(self, request: web.Request, season_id: str) -> web.Response:
         return _json(await _growth_report_response(request.app["hass"], int(season_id)))
+
+
+class CropModelFeatureSourcesView(HomeAssistantView):
+    """GET/POST crop model feature source snapshot."""
+    url = "/api/green_smart/crop/seasons/{season_id}/model-feature-sources"
+    name = "api:green_smart:crop:model_feature_sources"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        report = await _growth_report_response(request.app["hass"], int(season_id))
+        return _json({
+            "ok": True,
+            "seasonId": int(season_id),
+            "featureSources": report.get("featureSources") or {},
+            "inputCompleteness": report.get("inputCompleteness") or {},
+            "sourceStatus": report.get("sourceStatus") or {},
+        })
+
+    async def post(self, request: web.Request, season_id: str) -> web.Response:
+        hass = request.app["hass"]
+        report = await _growth_report_response(hass, int(season_id))
+        feature_sources = report.get("featureSources") or {}
+        snapshot_id = await _persist_crop_model_feature_snapshot(
+            hass,
+            season_id=int(season_id),
+            season=report.get("season") or {"id": int(season_id)},
+            featureSources=feature_sources,
+        )
+        return _json({"ok": True, "seasonId": int(season_id), "featureSnapshotId": snapshot_id, "featureSources": feature_sources})
 
 
 class CropModelTrainingSnapshotView(HomeAssistantView):
@@ -1903,13 +2159,20 @@ class CropModelTrainingSnapshotView(HomeAssistantView):
     async def post(self, request: web.Request, season_id: str) -> web.Response:
         hass = request.app["hass"]
         report = await _growth_report_response(hass, int(season_id))
+        feature_snapshot_id = await _persist_crop_model_feature_snapshot(
+            hass,
+            season_id=int(season_id),
+            season=report.get("season") or {"id": int(season_id)},
+            featureSources=report.get("featureSources") or {},
+        )
         snapshot_id = await _persist_crop_model_training_snapshot(
             hass,
             season_id=int(season_id),
             season=report.get("season") or {"id": int(season_id)},
             cropModel=report.get("cropModel") or {},
+            featureSnapshotId=feature_snapshot_id,
         )
-        return _json({"ok": True, "seasonId": int(season_id), "snapshotId": snapshot_id, "trainableBaseline": report.get("trainableBaseline")})
+        return _json({"ok": True, "seasonId": int(season_id), "featureSnapshotId": feature_snapshot_id, "snapshotId": snapshot_id, "trainableBaseline": report.get("trainableBaseline")})
 
 
 class CropModelTrainingReadinessView(HomeAssistantView):

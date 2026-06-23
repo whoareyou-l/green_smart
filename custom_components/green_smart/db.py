@@ -660,10 +660,33 @@ async def ensure_schema(hass: HomeAssistant) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
+        CREATE TABLE IF NOT EXISTS crop_model_feature_snapshots (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            season_id INT NOT NULL,
+            zone_id INT NULL,
+            crop_type VARCHAR(50) NOT NULL DEFAULT 'other',
+            feature_version VARCHAR(64) NOT NULL DEFAULT 'crop_model_feature_sources_v1',
+            snapshot_date DATE NOT NULL,
+            horizon_days INT NOT NULL DEFAULT 7,
+            environment_summary_json JSON NOT NULL,
+            irrigation_nutrient_summary_json JSON NOT NULL,
+            pest_control_summary_json JSON NOT NULL,
+            operation_history_summary_json JSON NOT NULL,
+            safety_interlock_summary_json JSON NOT NULL,
+            input_completeness_json JSON NOT NULL,
+            source_status_json JSON NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_crop_model_feature_snapshots_lookup (farm_id, season_id, zone_id, crop_type, snapshot_date),
+            KEY idx_crop_model_feature_snapshots_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
         CREATE TABLE IF NOT EXISTS crop_model_training_snapshots (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             farm_id BIGINT NOT NULL DEFAULT 1,
             season_id INT NOT NULL,
+            feature_snapshot_id BIGINT NULL,
             zone_id INT NULL,
             crop_type VARCHAR(50) NOT NULL DEFAULT 'other',
             model_family VARCHAR(64) NOT NULL DEFAULT 'hybrid_rule_score_v1',
@@ -716,6 +739,7 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             await _ensure_column(cur, "control_pesticides", "mix_check_status", "mix_check_status VARCHAR(32) NULL AFTER mixable")
             await _ensure_column(cur, "control_pesticides", "mix_check_note", "mix_check_note TEXT NULL AFTER mix_check_status")
             await _ensure_column(cur, "control_pesticides", "pls_warning", "pls_warning TEXT NULL AFTER mix_check_note")
+            await _ensure_column(cur, "crop_model_training_snapshots", "feature_snapshot_id", "feature_snapshot_id BIGINT NULL AFTER season_id")
     _LOGGER.info("green_smart DB schema ensured")
 
 

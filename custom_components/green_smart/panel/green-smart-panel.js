@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.57
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.58
 const DOMAIN = "green_smart";
-const VERSION = "1.9.57";
+const VERSION = "1.9.58";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4070,6 +4070,12 @@ button.action:disabled{opacity:.5;cursor:default;}
     const predictedStage7d = stagePrediction7d.predictedStage7d || {};
     const transitionWindow = stagePrediction7d.transitionWindow || {};
     const mlUpgradeReadiness = trainableBaseline.mlUpgradeReadiness || report.mlUpgradeReadiness || {};
+    const inputCompleteness = trainableBaseline.inputCompleteness || report.inputCompleteness || {};
+    const sourceStatus = trainableBaseline.sourceStatus || report.sourceStatus || inputCompleteness.sourceStatus || {};
+    const featureSources = trainableBaseline.featureSources || report.featureSources || {};
+    const envStatus = sourceStatus.environment || (featureSources.environmentSummary7d || {}).sourceStatus || "missing";
+    const irrStatus = sourceStatus.irrigationNutrient || (featureSources.irrigationNutrientSummary7d || {}).sourceStatus || "missing";
+    const pestStatus = sourceStatus.pestControl || (featureSources.pestControlSummary7d || {}).sourceStatus || "missing";
     const mlReady = !!mlUpgradeReadiness.ready;
     /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
@@ -4144,6 +4150,16 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">mlUpgradeReadiness</div><b style="font-size:14px;color:${mlReady ? '#51AE60' : '#7a9780'};">${mlReady ? 'ready' : 'not ready'}</b><div style="font-size:10px;color:#9aae9d;">${this._esc((mlUpgradeReadiness.reasons || []).join(' · ') || '조건 충족')}</div></div>
         </div>
         <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">초기 예측은 학습 가능한 데이터셋을 쌓기 위한 baseline입니다. 충분한 주간 sequence와 prediction→actual 검증쌍이 쌓이면 LSTM/GRU/Transformer 확장 후보를 표시합니다.</div>
+      </div>
+      <div data-crop-model-feature-sources-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e9edf5;">
+        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">모델 입력 소스</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">환경 7일</div><b style="font-size:14px;color:#24323F;">${this._esc(envStatus)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">관수/양액 7일</div><b style="font-size:14px;color:#24323F;">${this._esc(irrStatus)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">병해/방제</div><b style="font-size:14px;color:#24323F;">${this._esc(pestStatus)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">입력 완성도</div><b style="font-size:14px;color:#24323F;">${this._esc(String(inputCompleteness.score ?? '-'))}</b></div>
+        </div>
+        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">sourceStatus · inputCompleteness 기준으로 생육조사 외 환경/관수/병해/작업/인터록 입력이 실제 모델 feature에 포함됩니다.</div>
       </div>
       <div data-center-crop-policy-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dbeaf8;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
