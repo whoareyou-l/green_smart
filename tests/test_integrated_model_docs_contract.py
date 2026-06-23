@@ -7,27 +7,37 @@ UI = ROOT / "docs" / "design" / "current-ui-design-and-navigation.md"
 ROADMAP = ROOT / "docs" / "design" / "zone-control-roadmap-and-data-model.md"
 GUIDE = ROOT / "docs" / "PROJECT_GUIDE.md"
 PLAN = ROOT / "docs" / "plans" / "2026-06-23-integrated-crop-environment-irrigation-device-models.md"
+SAFETY_PLAN = ROOT / "docs" / "plans" / "2026-06-23-safety-interlock-model-order.md"
 
 
 def test_integrated_model_docs_define_four_model_relationships_and_next_phases():
     master = MASTER.read_text(encoding="utf-8")
     plan = PLAN.read_text(encoding="utf-8")
-    combined = master + "\n" + plan
+    safety_plan = SAFETY_PLAN.read_text(encoding="utf-8")
+    combined = master + "\n" + plan + "\n" + safety_plan
 
     for marker in (
         "통합 모델 트랙: 작기·환경·관수·장치 모델 관계",
+        "Safety → Interlock → Model(AI)",
+        "Domain reference order: Crop → Environment → Irrigation → Device",
+        "작물 안전 룰(Crop Safety Rules)",
+        "작물 인터록(Crop Interlock/Fallback Rules)",
         "작기 모델(Crop Season Model)",
+        "환경 안전 룰(Environment Safety Rules)",
+        "환경 인터록(Environment Interlock)",
         "환경 전략 모델(Environment Strategy Model)",
+        "관수 안전 룰(Irrigation Safety Rules)",
+        "관수 인터록(Irrigation Interlock)",
         "관수 전략 모델(Irrigation Strategy Model)",
+        "장치 안전 룰(Device Safety Rules / Fail Safe)",
+        "장치 인터록(Device Interlock)",
         "장치 운영 모델(Device Operation Model)",
-        "SafetyGuard/Interlock/Control Mode",
-        "Model Phase M0~M8",
+        "M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류",
         "Task M0: User-facing terminology contract",
         "Task M1: Crop Season Model contract",
-        "Task M2: Environment Strategy Model consumes Crop Model",
-        "Task M3: Irrigation Strategy Model consumes Crop + Environment Models",
-        "Task M4: Device Operation Model baseline",
-        "Task M8: Virtual rehearsal evidence for model chain",
+        "Phase C-S1: Crop Safety Rules contract",
+        "Phase C-S2: Crop Interlock/Fallback contract",
+        "No vague SafetyGuard 우선 marker is enough",
     ):
         assert marker in combined
 

@@ -313,14 +313,31 @@ G-Index 추이 baseline
 v1.9.36 이후 작업은 `MVP`라는 개발 단계명을 사용자-facing UI/문서의 중심 용어로 쓰지 않는다. 내부 DB/API 호환을 위해 `environment_strategy_mvp`, `irrigation_strategy_mvp` 같은 legacy identifier는 유지할 수 있지만, 제품/문서/화면의 기준 용어는 다음 4개 모델로 정렬한다.
 
 ```text
-작기 모델(Crop Season Model)
+작물 안전 룰(Crop Safety Rules)
+→ 작물 인터록(Crop Interlock/Fallback Rules)
+→ 작기 모델(Crop Season Model)
+→ 환경 안전 룰(Environment Safety Rules)
+→ 환경 인터록(Environment Interlock)
 → 환경 전략 모델(Environment Strategy Model)
+→ 관수 안전 룰(Irrigation Safety Rules)
+→ 관수 인터록(Irrigation Interlock)
 → 관수 전략 모델(Irrigation Strategy Model)
+→ 장치 안전 룰(Device Safety Rules / Fail Safe)
+→ 장치 인터록(Device Interlock)
 → 장치 운영 모델(Device Operation Model)
-→ SafetyGuard/Interlock/Control Mode
+→ Control Mode / Limited Auto / Operator Confirmation
 → HA service call / log / feedback
 → 다시 작기·환경·관수 모델 보정
 ```
+
+짧은 원칙은 다음과 같다.
+
+```text
+각 domain 내부 순서: Safety → Interlock → Model(AI)
+domain 참조 순서: Crop → Environment → Irrigation → Device
+```
+
+M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다. 특히 다음 구현 단위는 M2가 아니라 `작물 안전 룰 → 작물 인터록 → 작기/작물 모델 보강`이다. 단순히 `SafetyGuard 우선`이라고 표시하는 것만으로는 완료가 아니며, 각 domain은 정확한 block/fallback rule, threshold, reasonCode, log field를 가져야 한다.
 
 ### 7.1 모델별 책임
 
@@ -352,7 +369,24 @@ v1.9.36 이후 작업은 `MVP`라는 개발 단계명을 사용자-facing UI/문
 | 모델 관계 API | 작기 모델 snapshot을 환경/관수/장치 모델이 공통으로 읽는 helper/API | 중복 계산 금지, scope key 통일 |
 | 모델 스냅샷/감사 | model input/output/version/confidence/safety policy 저장 | 필요 시 `zone_strategy_snapshots` 또는 기존 JSON field 확장으로 migration 분리 |
 
-### 7.4 다음 구현 순서 — Model Phase
+### 7.4 다음 구현 순서 — Safety/Interlock first
+
+M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases를 완료한다.
+
+| Phase | 이름 | 목표 | 완료 기준 |
+|---:|---|---|---|
+| S0 | Roadmap correction | 모델 우선 문서를 Safety→Interlock→Model 순서로 보정 | 문서/test contract가 M2~M8 보류와 안전 우선 순서를 강제 |
+| C-S1 | 작물 안전 룰 | 작물/작기 기준 deterministic safety rule 정의 | `cropSafetyStatus`, `cropSafetyBlocked`, `cropSafetyReasons`, reasonCode contract |
+| C-S2 | 작물 인터록 | 작물 safety 결과별 fallback/block/confirmation 정책 정의 | `cropInterlockStatus`, `fallbackToConservativeBaseline`, `operatorConfirmationRequired` contract |
+| C-S3 | 작기/작물 모델 보강 | M1 cropModel에 cropSafety/cropInterlock summary를 포함 | 모델이 safety/interlock block을 우회하지 못함 |
+| E-S1 | 환경 안전 룰 | 온도/습도/VPD/CO₂/날씨 위험 deterministic rule 정의 | 환경 model target 전 안전 contract |
+| E-S2 | 환경 인터록 | 환경 안전 결과별 환기/스크린/난방 fallback 정의 | 환경 전략 모델보다 먼저 실행되는 interlock contract |
+| I-S1 | 관수 안전 룰 | VWC/EC/pH/drain/양액 위험 deterministic rule 정의 | 관수 model target 전 안전 contract |
+| I-S2 | 관수 인터록 | 관수 안전 결과별 급액 차단/감속/fallback 정의 | 관수 전략 모델보다 먼저 실행되는 interlock contract |
+| D-S1 | 장치 안전 룰 | 장치 상태, stale/unavailable, safe_state, Fail Safe rule 정의 | 장치 운영 모델 전 safety/failsafe contract |
+| D-S2 | 장치 인터록 | 장치 service-call 전 block/fallback/confirmation 정의 | HA service call 전 interlock contract |
+
+### 7.5 보류된 모델 구현 순서 — Model Phase
 
 | Phase | 이름 | 목표 | 완료 기준 |
 |---:|---|---|---|

@@ -23,8 +23,9 @@ Green Smart 제어 기능의 방향은 단순 설정 저장이 아니라 아래 
 
 ```text
 작기/구역 선택
-→ domain별 제어 설정 저장
-→ 작기·환경·관수·장치 모델이 전략/운영 target 생성
+→ domain별 안전 룰 평가
+→ domain별 인터록/fallback 결정
+→ 안전/인터록을 통과한 경우에만 모델(AI)이 전략/운영 candidate target 생성
 → AI output 저장
 → 운영자가 검토 후 final target으로 적용
 → HA entity mapping 기준으로 service call 변환
@@ -54,25 +55,32 @@ farm_id + crop_season_id + zone_id + domain
 
 ## 2.1 작기·환경·관수·장치 모델 관계 기준
 
-v1.9.36 이후 제어 기능은 단순히 domain별 설정을 저장하는 구조가 아니라, 아래 4개 모델의 연결 흐름으로 해석한다.
+v1.9.36 이후 제어 기능은 단순히 domain별 설정을 저장하는 구조가 아니라, **각 domain 내부는 Safety → Interlock → Model(AI)** 순서로 해석한다. domain 간 참조 순서는 `Crop → Environment → Irrigation → Device`다.
 
 ```text
+작물 안전 룰(Crop Safety Rules)
+  - 활성 작기 존재, 작물 종류 신뢰도, 생육조사 freshness, 병해 위험, 생육 이상치
+  - block/fallback reasonCode를 deterministic하게 산출
+
+작물 인터록(Crop Interlock/Fallback Rules)
+  - crop safety 결과에 따라 model target promotion 차단, operator confirmation, conservative baseline fallback 결정
+
 작기 모델(Crop Season Model)
   - crop_season_id + zone_id 기준
   - 작물 종류/품종/정식일/재식밀도/생육조사/병해충/방제 기록
   - 생육단계, G-Index, 수확량 예측, 병해 위험도 산출
 
-환경 전략 모델(Environment Strategy Model)
+환경 안전 룰 → 환경 인터록 → 환경 전략 모델(Environment Strategy Model)
   - crop_season_id + zone_id + domain=environment 기준
-  - 작기 모델 + 날씨 + HA sensor + 운영자 보정을 입력으로 사용
+  - 작기 safety/interlock/model + 날씨 + HA sensor + 운영자 보정을 입력으로 사용
   - ADT/DIF/VPD/CO₂/환기/스크린/난방 target 산출
 
-관수 전략 모델(Irrigation Strategy Model)
+관수 안전 룰 → 관수 인터록 → 관수 전략 모델(Irrigation Strategy Model)
   - crop_season_id + zone_id + domain=irrigation 기준
-  - 작기 모델 + 환경 모델 출력 + 일사/VWC/EC/pH/배액 feedback을 입력으로 사용
+  - 작기 + 환경 결과 + 일사/VWC/EC/pH/배액 feedback을 입력으로 사용
   - 급액량/간격/EC/pH/드라이백/배액률 target 산출
 
-장치 운영 모델(Device Operation Model)
+장치 안전 룰/Fail Safe → 장치 인터록 → 장치 운영 모델(Device Operation Model)
   - crop_season_id + zone_id + domain=device 또는 실행 대상 domain 기준
   - 환경/관수 final target + entity mapping + 장치 capability + HA state를 입력으로 사용
   - dry-run/service call plan/safe_state/post-state verification/장치 이상 판단 산출
@@ -80,12 +88,14 @@ v1.9.36 이후 제어 기능은 단순히 domain별 설정을 저장하는 구�
 
 관계 원칙:
 
-1. 작기 모델은 모든 전략 모델의 공통 기준 입력이다.
-2. 환경 전략 모델의 VPD/온도/습도/일사 판단은 관수 전략 모델의 급액량·간격·드라이백 판단에 들어간다.
-3. 관수 실행/배액 feedback은 작기 모델의 생육 리포트·병해 위험·수확량 confidence 보정 근거가 된다.
-4. 장치 운영 모델은 final target을 실제 HA service call plan으로 변환하는 실행 계층이다.
-5. 모든 모델 출력은 SafetyGuard/Interlock/Control Mode보다 우선할 수 없다.
-6. 사용자-facing UI에서는 `MVP`가 아니라 `환경 전략 모델`, `관수 전략 모델`, `장치 운영 모델`로 표시한다. 내부 `calculated_by` legacy 값은 호환을 위해 유지할 수 있다.
+1. 각 domain은 반드시 Safety → Interlock → Model(AI) 순서로 구현한다.
+2. 작물 안전 룰과 작물 인터록은 모든 전략 모델의 선행 조건이다.
+3. 작기 모델은 안전/인터록을 통과한 뒤 환경·관수·장치 판단의 공통 기준 입력이 된다.
+4. 환경 전략 모델의 VPD/온도/습도/일사 판단은 관수 전략 모델의 급액량·간격·드라이백 판단에 들어간다.
+5. 관수 실행/배액 feedback은 작기 모델의 생육 리포트·병해 위험·수확량 confidence 보정 근거가 된다.
+6. 장치 운영 모델은 final target을 실제 HA service call plan으로 변환하는 실행 계층이다.
+7. 모든 모델 출력은 Control Mode / Limited Auto / Operator Confirmation / SafetyGuard / Interlock보다 우선할 수 없다.
+8. 사용자-facing UI에서는 `MVP`가 아니라 `환경 전략 모델`, `관수 전략 모델`, `장치 운영 모델`로 표시한다. 내부 `calculated_by` legacy 값은 호환을 위해 유지할 수 있다.
 
 ---
 

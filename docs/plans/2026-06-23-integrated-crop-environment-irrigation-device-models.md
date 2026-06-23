@@ -10,14 +10,39 @@
 
 ---
 
-## Model relationship baseline
+## Status update — paused after M1
+
+This plan is paused after M1. Do not continue Task M2~M8 until the safety-first plan is implemented:
+
+```text
+docs/plans/2026-06-23-safety-interlock-model-order.md
+```
+
+Corrected ordering:
+
+```text
+For each domain: Safety → Interlock → Model(AI)
+Domain reference order: Crop → Environment → Irrigation → Device
+```
+
+The next implementation slice is not M2. The next slice is:
+
+```text
+작물 안전 룰 → 작물 인터록 → 작기/작물 모델 보강
+```
+
+---
+
+## Paused model relationship baseline
+
+The following model-only chain is retained only as the paused M0/M1 historical baseline. It must not be used as the next execution order until safety/interlock phases from `2026-06-23-safety-interlock-model-order.md` are complete.
 
 ```text
 작기 모델(Crop Season Model)
 → 환경 전략 모델(Environment Strategy Model)
 → 관수 전략 모델(Irrigation Strategy Model)
 → 장치 운영 모델(Device Operation Model)
-→ SafetyGuard/Interlock/Control Mode
+→ Control Mode / Limited Auto / Operator Confirmation / SafetyGuard / Interlock
 → HA service call / post-state verification / logs
 → feedback back to crop/environment/irrigation models
 ```

@@ -426,17 +426,27 @@ green_smart_central
 
 ## 9A. 통합 모델 contract
 
-v1.9.36 이후 제품 설계 기준은 `작기 모델 → 환경 전략 모델 → 관수 전략 모델 → 장치 운영 모델`의 관계를 따른다.
+v1.9.36 이후 제품 설계 기준은 `Safety → Interlock → Model(AI)`를 각 domain 내부 순서로 삼고, domain 참조 순서는 `Crop → Environment → Irrigation → Device`를 따른다. M2~M8 모델 확장은 안전/인터록 contract가 명시될 때까지 보류한다.
 
 ```text
-Crop Season Model
+Crop Safety Rules
+→ Crop Interlock/Fallback Rules
+→ Crop Season Model
+→ Environment Safety Rules
+→ Environment Interlock
 → Environment Strategy Model
+→ Irrigation Safety Rules
+→ Irrigation Interlock
 → Irrigation Strategy Model
+→ Device Safety Rules / Fail Safe
+→ Device Interlock
 → Device Operation Model
-→ Control Mode / Limited Auto / Operator Confirmation / SafetyGuard / Interlock
+→ Control Mode / Limited Auto / Operator Confirmation
 → HA service call / post-state verification / logs
 → feedback back to Crop/Environment/Irrigation models
 ```
+
+단순히 `SafetyGuard 우선` marker를 응답에 넣는 것만으로는 충분하지 않다. 각 domain은 deterministic rule, threshold, reasonCode, fallback/interlock action, log field를 가져야 한다.
 
 ### 9A.1 작기 모델
 
@@ -467,6 +477,52 @@ Crop Season Model
 - model drivers usable by environment/irrigation strategy models
 
 No new DB table is required for M1. The reusable helper is `_crop_model_snapshot(hass, season_id)` and it reads the existing `crop_seasons`, `growth_surveys`, `pest_surveys`, and `control_records` tables. The growth-report API includes this snapshot as `cropModel` while preserving the existing top-level `yieldPrediction` and `pestRisk` keys for compatibility.
+
+### 9A.1.1 작물 안전 룰 — next required layer
+
+작물 안전 룰은 작기/작물 모델보다 먼저 정의되는 deterministic layer다.
+
+필수 marker:
+
+```text
+CROP_SAFETY_RULE_VERSION
+_crop_safety_rule_snapshot(...)
+cropSafetyStatus
+cropSafetyBlocked
+cropSafetyReasons
+cropSafetyRules
+cropSafetyRuleResults
+```
+
+최소 rule category:
+
+| Category | Block/fallback reasonCode |
+|---|---|
+| active crop season missing | `crop_season_missing` |
+| unknown/unsupported crop type | `crop_type_unknown` |
+| stale growth survey | `growth_survey_stale` |
+| high/rising pest risk | `crop_pest_risk_high` |
+| impossible G-Index/growth velocity | `crop_growth_anomaly` |
+| stale control/pesticide record with medium/high pest risk | `crop_control_record_stale` |
+| low crop model confidence | `crop_confidence_low` |
+
+### 9A.1.2 작물 인터록 — next required layer
+
+작물 인터록은 crop safety 결과가 blocked/uncertain일 때 downstream environment/irrigation/device model target promotion을 막거나 보수 baseline으로 돌리는 fallback layer다.
+
+필수 marker:
+
+```text
+CROP_INTERLOCK_VERSION
+_crop_interlock_decision(...)
+cropInterlockStatus
+cropInterlockBlocked
+cropInterlockActions
+fallbackToConservativeBaseline
+operatorConfirmationRequired
+```
+
+M2 환경 전략 모델로 진행하려면 먼저 9A.1.1과 9A.1.2가 contract/test/code로 통과해야 한다.
 
 ### 9A.2 환경 전략 모델
 

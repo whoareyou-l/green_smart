@@ -1389,16 +1389,31 @@ _replaceZoneControlCard(selector, html)
 
 ---
 
-## 14.1 작기·환경·관수·장치 통합 모델 기준
+## 14.1 작기·환경·관수·장치 Safety/Interlock/Model 기준
 
-v1.9.36 이후 Green Smart의 전략/AI 작업은 다음 4개 모델 관계를 따른다.
+v1.9.36 이후 Green Smart의 전략/AI 작업은 4개 모델을 바로 잇는 방식이 아니라, 다음 순서를 따른다.
 
 ```text
-작기 모델(Crop Season Model)
+각 domain 내부 순서: Safety → Interlock → Model(AI)
+domain 참조 순서: Crop → Environment → Irrigation → Device
+```
+
+전체 운영 체인은 다음과 같다.
+
+```text
+작물 안전 룰
+→ 작물 인터록
+→ 작기 모델(Crop Season Model)
+→ 환경 안전 룰
+→ 환경 인터록
 → 환경 전략 모델(Environment Strategy Model)
+→ 관수 안전 룰
+→ 관수 인터록
 → 관수 전략 모델(Irrigation Strategy Model)
+→ 장치 안전 룰 / Fail Safe
+→ 장치 인터록
 → 장치 운영 모델(Device Operation Model)
-→ SafetyGuard/Interlock/Control Mode
+→ Control Mode / Limited Auto / Operator Confirmation
 → HA service call / log / feedback
 ```
 
@@ -1406,13 +1421,10 @@ v1.9.36 이후 Green Smart의 전략/AI 작업은 다음 4개 모델 관계를 �
 
 - 사용자-facing UI/문서에서는 `MVP` 대신 `모델`, `전략 모델`, `운영 모델`을 사용한다.
 - 내부 `calculated_by` 값인 `environment_strategy_mvp`, `irrigation_strategy_mvp`는 기존 DB/API 호환을 위해 유지할 수 있다.
-- 작기 모델은 crop profile, 생육단계, G-Index, 수확량 예측, 병해 위험도를 제공한다.
-- 환경 전략 모델은 작기 모델과 날씨/센서/운영자 보정을 입력으로 ADT/DIF/VPD/CO₂/환기/스크린 target을 만든다.
-- 관수 전략 모델은 작기 모델과 환경 전략 모델 출력, VWC/EC/pH/배액 feedback을 입력으로 급액량/간격/EC/pH/드라이백/배액률 target을 만든다.
-- 장치 운영 모델은 final target을 entity mapping, 장치 capability, dry-run, service call plan, safe_state, post-state verification으로 변환한다.
-- 모든 모델 출력은 SafetyGuard/Interlock/Control Mode보다 우선하지 않는다.
-
-다음 구현은 `docs/PROJECT_MASTER_PLAN.md`의 `Model Phase M0~M8` 순서를 따른다.
+- 단순히 `SafetyGuard 우선`이라고 표시하는 것은 완료가 아니다. 각 domain은 deterministic rule, threshold, reasonCode, fallback/interlock action, log field를 가져야 한다.
+- 다음 구현은 M2 환경 모델이 아니라 `docs/plans/2026-06-23-safety-interlock-model-order.md`의 `작물 안전 룰 → 작물 인터록 → 작기/작물 모델 보강` 순서를 따른다.
+- 작기 모델은 safety/interlock을 통과한 뒤 crop profile, 생육단계, G-Index, 수확량 예측, 병해 위험도를 downstream 입력으로 제공한다.
+- 환경/관수/장치 모델은 각각 자신의 safety/interlock contract가 먼저 있어야 target promotion 또는 실행 chain에 연결될 수 있다.
 
 
 
