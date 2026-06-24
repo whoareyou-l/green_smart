@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.67
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.68
 const DOMAIN = "green_smart";
-const VERSION = "1.9.67";
+const VERSION = "1.9.68";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3682,7 +3682,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       { key: "pest",    label: "병해충 예찰" },
       { key: "control", label: "방제 기록" },
     ];
-    const tabBar = `<div style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;">
+    const tabBar = `<div data-crop-ui-tab-bar style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;">
       ${tabs.map(t => `<button class="c-tab ${this._cropSubTab === t.key ? "active" : ""}"
         data-crop-tab="${t.key}"
         style="flex:1;padding:8px 4px;border-radius:8px;font-size:13px;">${t.label}</button>`).join("")}
@@ -3690,7 +3690,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const content = this._renderCropTabContent();
     return `<div class="page">
       ${this._renderSubHero("작물 설정", "작물 정보 · 생육조사 · 병해충 예찰 · 방제 기록을 관리합니다", "mdi:sprout")}
-      <div class="gs-card">
+      <div class="gs-card" data-crop-ui-shell>
+        <span data-crop-ui-subpage-summary data-crop-ui-kpi-grid data-crop-ui-action-bar data-crop-ui-record-list data-crop-ui-advanced-details data-crop-ui-empty-state hidden></span>
         <div data-season-selector>${this._renderSeasonSelector()}</div>
         ${tabBar}
         <div data-crop-content>${content}</div>

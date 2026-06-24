@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.56`
+> 기준 버전: `v1.9.68`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -359,17 +359,48 @@ virtual = true
 - `_renderCropSettingsPage()`
 - `_renderSeasonSelector()`
 - `_renderCropTabContent()`
+- `_renderCropBasicTab()`
+- `_renderCropGrowthTab()`
+- `_renderCropAiStrategyTab()`
+- `_renderCropPestTab()`
+- `_renderCropControlTab()`
 
-### 8.1 하위 탭
+### 8.1 v1.9.68 Crop Settings IA rule
+
+작물 설정 페이지는 더 이상 카드를 계속 추가하는 방식으로 확장하지 않는다. **하위페이지 1개 = 슬라이스 1개**로 작업하며, 각 슬라이스는 `카드 병합/삭제/추가/접기` 결정을 문서화한 뒤 진행한다. 기준 사용자는 비전문가인 **농장주/농장직원**이며, 모든 하위페이지는 **모바일 + PC 반응형** 레이아웃과 **RBAC** 표시/권한 문구를 고려한다.
+
+공통 UI marker 정책:
+
+```text
+data-crop-ui-shell
+data-crop-ui-tab-bar
+data-crop-ui-subpage-summary
+data-crop-ui-kpi-grid
+data-crop-ui-action-bar
+data-crop-ui-record-list
+data-crop-ui-advanced-details
+data-crop-ui-empty-state
+```
+
+금지 marker / behavior:
+
+```text
+data-crop-ui-execute-device
+data-crop-ui-train-production-model
+cropSettingsAllowExecution
+```
+
+### 8.2 하위 탭
 
 | key | label | 목적 |
 |---|---|---|
-| `basic` | 기본 설정 | 작기 등록/수정/철거/삭제 |
-| `growth` | 생육조사 | 작물별 dynamic metrics 기록 + Phase 6 생육 리포트 |
-| `pest` | 병해충 예찰 | 발생 위치/심각도 기록 |
-| `control` | 방제 기록 | 약제/PLS/방제 이력 기록 |
+| `basic` | 작기 설정 | 작기 등록/수정/철거/삭제와 선택 작기 lifecycle 확인 |
+| `growth` | 생육조사 | 작물별 dynamic metrics 기록과 최신 조사/다음 조사 안내 |
+| `ai` | AI 전략 | 생육 리포트, 모델/인터록/정책/데이터 준비 상태를 read-only로 요약 |
+| `pest` | 병해충 예찰 | 발생 위치/심각도 기록과 후속 방제 필요 여부 확인 |
+| `control` | 방제 기록 | 약제/PLS/PHI/REI/방제 이력 기록과 안전 확인 |
 
-### 8.2 작기 selector
+### 8.3 작기 selector
 
 표시 항목:
 
@@ -391,9 +422,9 @@ virtual = true
 | cucumber | 🥒 |
 | other | 🌱 |
 
-### 8.3 기본 설정 탭
+### 8.4 작기 설정 탭 (`basic`)
 
-기능:
+현재 기능:
 
 - CSV 내보내기
 - 정식 등록
@@ -402,49 +433,27 @@ virtual = true
 - 삭제
 - 5개 단위 pagination
 
-표시:
+UI Slice 1에서 정리할 방향:
 
-- 작물명/품종
-- 상태 badge
-- 정식일
-- 철거일
-- 구역
-- 재배 방식
-- 총 주수
+- selector/list 중복 정보 병합
+- 선택 작기 overview 추가
+- 수정/철거/삭제 action hierarchy 정리
+- 빈 상태를 농장주/농장직원이 바로 이해하도록 개선
 
-### 8.4 생육조사 탭
+### 8.5 생육조사 탭 (`growth`)
 
-기능:
+현재 기능:
 
-- 생육 리포트 카드 표시
-- G-Index 추이 표시
-- 수확량 예측 baseline 표시
-- 작물별 수확 모델 상세 표시
-- 주당/면적당 수확 예측 표시
-- 예측 근거/yield driver 표시
-- 병해 위험도 표시
-- 병해 위험 모델 상세 표시
-- 환경/날씨/방제 이력 driver 표시
-- 권장 조치 표시
-- 주간 리포트 summary/actions 표시
-- 주간 리포트 CSV 내보내기
-- 주간 리포트 Home Assistant 알림 보내기
-- 병해충 예찰 추가 팝업: 현재 작기 기준 발생 위치, 전체/부분 범위, 상세 위치
-- 병해충 예찰 추가 팝업: 농약 API 자동완성 기반 다중 병해충 입력
-- 방제 기록 추가 팝업: 현재 작기 기준 처리 위치, 전체/부분 범위, 상세 위치
-- 리포트 새로고침
 - CSV 내보내기
 - 생육조사 추가
 - 조사 row 삭제
+- 작물별 dynamic metrics 기록
 
-구현/API marker:
+UI Slice 2에서 정리할 방향:
 
-```text
-_renderGrowthReportCard()
-data-growth-report-card
-data-growth-report-refresh
-GET green_smart/crop/seasons/{season_id}/growth-report
-```
+- 최신 조사 상태와 다음 조사 안내 추가
+- metric chip을 핵심 생육값/품질·장해값으로 그룹화
+- row 목록을 compact record list로 정리
 
 작물별 dynamic metrics:
 
@@ -457,9 +466,26 @@ GET green_smart/crop/seasons/{season_id}/growth-report
 | 오이 | 초장, 엽수, 줄기 경, 마디수, 착과 절위 |
 | 허브 | 초장, 엽수, 줄기 경, 분지수, 수확 가능 줄기수 |
 
-### 8.5 병해충 예찰 탭
+### 8.6 AI 전략 탭 (`ai`)
 
-기능:
+현재 기능:
+
+- `_renderGrowthReportCard()`
+- `data-growth-report-card`
+- `data-growth-report-refresh`
+- `GET green_smart/crop/seasons/{season_id}/growth-report`
+- operator workflow, stage prediction, validation, trainable baseline, feature sources, dataset readiness, center policy/interlock analytics 등 read-only 모델 근거 표시
+
+UI Slice 3에서 정리할 방향:
+
+- operator workflow + 예측/검증/readiness를 하나의 primary summary로 병합
+- training dataset, feature source, score components, center policy raw variables는 advanced details로 접기
+- 반복되는 read-only/no-execution 문구는 하나의 boundary banner로 통합
+- 장치 실행/자동 학습/production model 교체 권한은 추가하지 않음
+
+### 8.7 병해충 예찰 탭 (`pest`)
+
+현재 기능:
 
 - CSV 내보내기
 - 병해충 추가
@@ -482,9 +508,15 @@ GET green_smart/crop/seasons/{season_id}/growth-report
 | `high` | 높음 |
 | `critical` | 위험 |
 
-### 8.6 방제 기록 탭
+UI Slice 4에서 정리할 방향:
 
-기능:
+- severity summary 추가
+- 미해결/고위험 예찰을 상단에 집중 표시
+- 방제 기록으로 이어지는 다음 행동 문구 제공
+
+### 8.8 방제 기록 탭 (`control`)
+
+현재 기능:
 
 - CSV 내보내기
 - 방제 기록 추가
@@ -498,6 +530,12 @@ GET green_smart/crop/seasons/{season_id}/growth-report
 - 구역
 - 면적
 - note
+
+UI Slice 5에서 정리할 방향:
+
+- PLS/PHI/REI 안전 요약 추가
+- 약제 chip 그룹을 더 읽기 쉽게 정리
+- 삭제/export/add action hierarchy 정리
 
 ---
 
