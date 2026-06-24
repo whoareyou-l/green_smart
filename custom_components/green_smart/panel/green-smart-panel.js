@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.83
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.84
 const DOMAIN = "green_smart";
-const VERSION = "1.9.83";
+const VERSION = "1.9.84";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1797,62 +1797,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     ].map((item) => ({ ...item, level: this._levelForMetric(item.key, item.raw) }));
   }
 
-  _daysSinceDate(value) {
-    if (!value) return null;
-    const dt = new Date(value);
-    if (Number.isNaN(dt.getTime())) return null;
-    return Math.floor((Date.now() - dt.getTime()) / 86400000);
-  }
-
-  _homeSafetyActiveEventCount() {
-    const caches = Object.values(this._zoneSafetyGuardEventCache || {});
-    return caches.reduce((sum, cache) => sum + (Array.isArray(cache?.activeEvents) ? cache.activeEvents.length : 0), 0);
-  }
-
-  _latestDateFromRows(rows = []) {
-    const dates = rows.map((r) => r?.date || r?.controlDate || r?.createdAt).filter(Boolean).sort();
-    return dates.length ? dates[dates.length - 1] : null;
-  }
-
-  _homeTodayTaskItems() {
-    const latestGrowthAge = this._daysSinceDate(this._latestDateFromRows(this._growthData));
-    const latestControlAge = this._daysSinceDate(this._latestDateFromRows(this._controlData));
-    const highPestCount = (this._pestData || []).filter((p) => Number(p?.severity || 0) >= 3).length;
-    const tasks = [];
-    if (!this._activeSeasonId) tasks.push({ source: "growth", text: "작기 설정에서 현재 작기를 먼저 선택하세요." });
-    else if (latestGrowthAge === null) tasks.push({ source: "growth", text: "선택 작기 기준 첫 생육조사를 입력하세요." });
-    else if (latestGrowthAge >= 7) tasks.push({ source: "growth", text: `생육조사 ${latestGrowthAge}일 경과 · 오늘 조사 권장` });
-    else tasks.push({ source: "growth", text: `생육조사 최신 ${latestGrowthAge}일 전 · 기록 흐름 정상` });
-    if (highPestCount) tasks.push({ source: "pest", text: `고위험 병해충 예찰 ${highPestCount}건 후속 확인` });
-    else tasks.push({ source: "pest", text: "병해충 예찰 고위험 기록 없음" });
-    if (latestControlAge === null) tasks.push({ source: "control", text: "방제 기록 없음 · 예찰 후 필요 시 기록" });
-    else tasks.push({ source: "control", text: `최근 방제 ${latestControlAge}일 전 · 효과/재발 확인` });
-    return tasks;
-  }
-
-  _homeRequiredActionItems() {
-    const safetyCount = this._homeSafetyActiveEventCount();
-    const highPestCount = (this._pestData || []).filter((p) => Number(p?.severity || 0) >= 3).length;
-    const controlCount = (this._controlData || []).length;
-    const actions = [];
-    if (safetyCount) actions.push({ source: "safety", text: `SafetyGuard 활성 이벤트 ${safetyCount}건 확인/조치` });
-    if (highPestCount) actions.push({ source: "pest", text: `고위험 예찰 ${highPestCount}건 · 방제 기록/효과 확인 필요` });
-    if (highPestCount && !controlCount) actions.push({ source: "control", text: "고위험 예찰 대비 방제 기록이 없습니다." });
-    if (!actions.length) actions.push({ source: "control", text: "즉시 조치 필요한 항목 없음" });
-    return actions;
-  }
-
-  _renderHomeInlineItems(items, attrName) {
-    return `<div style="display:grid;gap:6px;margin-top:6px;">${items.map((item) => `
-      <div ${attrName}="${this._esc(item.source)}" style="font-size:14px;font-weight:800;color:#24323F;line-height:1.35;">${this._esc(item.text)}</div>
-    `).join("")}</div>`;
-  }
-
   _renderHomeActionSummaryCard(kpi = {}) {
-    const riskCount = this._alerts.filter((a) => !a.isUpdate).length + this._homeSafetyActiveEventCount();
+    const riskCount = this._alerts.filter((a) => !a.isUpdate).length;
     const role = this._currentUserRole();
-    const todayTasks = this._homeTodayTaskItems();
-    const requiredActions = this._homeRequiredActionItems();
     return `<section class="gs-card home-action-summary" data-home-action-summary data-ui-section="view" style="padding:18px;margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;">
         <div>
@@ -1861,18 +1808,17 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <span style="font-size:11px;font-weight:800;color:#7a9780;background:#f5faf6;border-radius:999px;padding:6px 10px;">${this._esc(role)}</span>
       </div>
-      <span hidden data-home-task-source="growth"></span><span hidden data-home-task-source="pest"></span><span hidden data-home-task-source="control"></span><span hidden data-home-action-source="safety"></span><span hidden data-home-action-source="pest"></span><span hidden data-home-action-source="control"></span>
       <div data-home-risk-alerts style="padding:12px;border-radius:14px;background:${riskCount ? '#fff0ee' : '#edf8ef'};margin-bottom:10px;">
         <div style="font-size:12px;font-weight:800;color:#7a9780;">위험 알림</div>
         <div style="font-size:15px;font-weight:900;color:#24323F;margin-top:3px;">${riskCount ? `${riskCount}건 확인 필요` : '현재 위험 알림 없음'}</div>
       </div>
       <div data-home-today-tasks style="padding:12px;border-radius:14px;background:#f8fbf8;margin-bottom:10px;">
         <div style="font-size:12px;font-weight:800;color:#7a9780;">오늘 할 일</div>
-        <div data-home-today-task-list>${this._renderHomeInlineItems(todayTasks, "data-home-task-source")}</div>
+        <div style="font-size:14px;font-weight:800;color:#24323F;margin-top:3px;">작물 상태 확인 · 관수 상태 확인 · 장치 이상 여부 확인</div>
       </div>
       <div data-home-required-actions style="padding:12px;border-radius:14px;background:#fffaf0;">
         <div style="font-size:12px;font-weight:800;color:#7a9780;">조치 필요</div>
-        <div data-home-required-action-list>${this._renderHomeInlineItems(requiredActions, "data-home-action-source")}</div>
+        <div style="font-size:14px;font-weight:800;color:#24323F;margin-top:3px;">알림 확인, 조치 완료 기록, 권한 내 장치 정지를 여기서 시작합니다.</div>
       </div>
     </section>`;
   }
