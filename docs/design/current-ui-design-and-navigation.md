@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.75`
+> 기준 버전: `v1.9.76`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.75` |
+| 현재 version | `1.9.76` |
 
 작업 시 우선순위:
 
@@ -679,7 +679,25 @@ UI Slice 4에서 정리한 내용:
 - 면적
 - note
 
-UI Slice 5에서 정리할 방향:
+UI Slice 5 v1.9.76 구현 기준:
+
+- `data-crop-control-safety-summary`: 방제 건수보다 안전 판단을 먼저 보이게 하는 `방제 안전 요약` 카드.
+- `data-crop-control-pls-overview`: PLS 확인 상태를 적합/미확인/경고로 표시한다.
+- `data-crop-control-phi-rei-overview`: PHI/REI 확인 누락 여부를 `PHI/REI 확인`으로 표시한다.
+- `data-crop-control-next-check`: `다음 점검` 문구로 PLS 경고, PHI/REI 누락, 효과/재발 점검을 안내한다.
+- `data-crop-control-treatment-list`: compact treatment list. 각 row는 `data-crop-control-treatment-row`, `data-crop-control-treatment-summary`, `data-crop-control-treatment-meta`, `data-crop-control-pesticide-chip-group`, `data-crop-control-delete-action`, 기존 삭제 바인딩용 `data-control-del`을 가진다.
+- export/add/delete는 유지하되 action hierarchy를 명확히 한다.
+
+금지 marker / behavior:
+
+```text
+data-crop-control-execute-spray
+data-crop-control-auto-apply
+controlAllowPesticideExecution
+autoSchedulePesticideApplication
+```
+
+UI Slice 5에서 정리한 내용:
 
 - PLS/PHI/REI 안전 요약 추가
 - 약제 chip 그룹을 더 읽기 쉽게 정리

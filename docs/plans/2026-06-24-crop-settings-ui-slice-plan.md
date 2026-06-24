@@ -107,7 +107,7 @@ Each row below is a complete patch release, not a partial UI change.
 | UI Slice 3 | v1.9.74 | AI 전략 | Reduce card sprawl drastically | Merge operator workflow + key model status into primary summary; collapse technical details; remove duplicate standalone evidence where redundant |
 | UI Slice 4 | v1.9.75 | 병해충 예찰 | Make scouting/risk workflow clear | Add severity summary; group unresolved observations; link next action to 방제 기록 without duplicating 방제 UI |
 | UI Slice 5 | v1.9.76 | 방제 기록 | Make PLS/PHI/REI safety readable | Add safety summary; group pesticide chips; make delete/export/add hierarchy clean |
-| UI Slice 6 | v1.9.77 | Cross-subpage polish | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
+| UI Slice 6 | v1.9.77 | Cross-subpage consistency pass | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
 
 ---
 
@@ -454,11 +454,29 @@ Make pesticide/treatment history readable and safety-oriented: latest treatment,
 
 ### Required markers
 
+UI must include visible Korean labels `방제 안전 요약`, `PLS 확인`, `PHI/REI 확인`, and `다음 점검`.
+
 ```text
 data-crop-control-safety-summary
+data-crop-control-pls-overview
+data-crop-control-phi-rei-overview
 data-crop-control-treatment-list
+data-crop-control-treatment-row
+data-crop-control-treatment-summary
+data-crop-control-treatment-meta
 data-crop-control-pesticide-chip-group
+data-crop-control-delete-action
+data-control-del
 data-crop-control-next-check
+```
+
+### Forbidden markers/behavior
+
+```text
+data-crop-control-execute-spray
+data-crop-control-auto-apply
+controlAllowPesticideExecution
+autoSchedulePesticideApplication
 ```
 
 ---

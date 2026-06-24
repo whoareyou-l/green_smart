@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.75
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.76
 const DOMAIN = "green_smart";
-const VERSION = "1.9.75";
+const VERSION = "1.9.76";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4702,6 +4702,25 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _renderCropControlTab() {
+    const allControlPesticides = (this._controlData || []).flatMap((record) => {
+      const pesticides = Array.isArray(record.pesticides) ? record.pesticides : (record.pesticide ? [{ name: record.pesticide, dil: record.dilution, pls: record.pls }] : []);
+      return pesticides.map((p) => ({ ...p, controlDate: record.date }));
+    });
+    const latestControl = (this._controlData || [])[0] || null;
+    const controlPlsCounts = allControlPesticides.reduce((acc, p) => {
+      if (p.pls === true) acc.ok += 1;
+      else if (p.pls === false || p.plsWarning) acc.warning += 1;
+      else acc.unknown += 1;
+      return acc;
+    }, { ok: 0, warning: 0, unknown: 0 });
+    const missingPhiRei = allControlPesticides.filter((p) => (p.phi ?? p.PHI ?? p.phiDays ?? p.phi_days) == null || (p.rei ?? p.REI ?? p.reiHours ?? p.rei_hours) == null);
+    const controlNextCheck = controlPlsCounts.warning
+      ? "PLS 경고 약제가 있습니다. 수확/출하 전 관리자 확인과 대체 약제 검토가 필요합니다."
+      : missingPhiRei.length
+      ? "PHI/REI 확인값이 비어 있습니다. 수확 전 안전 확인값을 보강하세요."
+      : this._controlData.length
+      ? "최근 방제의 PLS/PHI/REI 상태를 확인했습니다. 다음 예찰 때 효과와 재발 여부를 점검하세요."
+      : "방제 기록이 없습니다. 병해충 예찰 후 실제 처리 내역을 기록하세요.";
     const pageRows = this._paginatedCropRows("control", this._controlData);
     const rows = pageRows.length
       ? pageRows.map((r) => {
@@ -4714,25 +4733,27 @@ button.action:disabled{opacity:.5;cursor:default;}
               ? `<span style="background:#f8d7da;color:#721c24;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;">PLS ✗</span>`
               : "";
             return `<span style="display:inline-flex;align-items:center;gap:4px;background:#e8f4fd;
-              border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700;color:#2980b9;">
+              border-radius:8px;padding:3px 8px;font-size:12px;font-weight:700;color:#2980b9;">
               ${this._esc(p.name)} ${pls}
               ${p.dil ? `<span style="font-weight:400;color:#5d8aa8;">${p.dil}배</span>` : ""}
+              ${(p.phi ?? p.PHI ?? p.phiDays ?? p.phi_days) != null ? `<span style="font-weight:400;color:#7a9780;">PHI ${this._esc(String(p.phi ?? p.PHI ?? p.phiDays ?? p.phi_days))}일</span>` : ""}
+              ${(p.rei ?? p.REI ?? p.reiHours ?? p.rei_hours) != null ? `<span style="font-weight:400;color:#7a9780;">REI ${this._esc(String(p.rei ?? p.REI ?? p.reiHours ?? p.rei_hours))}h</span>` : ""}
             </span>`;
           }).join(" ");
           return `
-          <div style="padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;">
+          <div data-crop-control-treatment-row style="padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;border:1px solid #e3f1e5;">
             <div style="display:flex;align-items:flex-start;gap:8px;">
               <div style="flex:0 0 72px;font-size:12px;font-weight:700;color:#51AE60;padding-top:2px;">${r.date}</div>
-              <div style="flex:1;">
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">${pestHtml}</div>
-                <div style="display:flex;flex-wrap:wrap;gap:6px 14px;">
+              <div data-crop-control-treatment-summary style="flex:1;">
+                <div data-crop-control-pesticide-chip-group style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">${pestHtml}</div>
+                <div data-crop-control-treatment-meta style="display:flex;flex-wrap:wrap;gap:6px 14px;">
                   ${r.zone  ? `<span style="font-size:11px;color:#4a6741;">구역: ${this._esc(r.zone)}</span>` : ""}
                   ${r.area  ? `<span style="font-size:11px;color:#4a6741;">면적: ${r.area}㎡</span>` : ""}
                   ${r.note  ? `<span style="font-size:11px;color:#7a9780;">${this._esc(r.note)}</span>` : ""}
                 </div>
               </div>
-              <button data-control-del="${i}" title="삭제"
-                style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;padding:2px 6px;flex-shrink:0;">✕</button>
+              <button data-control-del="${i}" data-crop-control-delete-action title="삭제"
+                style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;flex-shrink:0;">✕</button>
             </div>
           </div>`;
         }).join("")
@@ -4753,7 +4774,16 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 방제 기록 추가</button>
         </div>
       </div>
-      <div id="control-list">${rows}</div>
+      <div data-crop-control-safety-summary style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">방제 안전 요약</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:9px;">
+          <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">최근 방제</div><b style="font-size:18px;color:#24323F;">${this._esc(latestControl?.date || '없음')}</b><div style="font-size:10px;color:#9aae9d;">${this._esc(String(allControlPesticides.length))}개 약제 기록</div></div>
+          <div data-crop-control-pls-overview style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">PLS 확인</div><b style="font-size:18px;color:${controlPlsCounts.warning ? '#c0392b' : '#51AE60'};">${controlPlsCounts.warning ? '경고' : '확인'}</b><div style="font-size:10px;color:#9aae9d;">적합 ${this._esc(String(controlPlsCounts.ok))} · 미확인 ${this._esc(String(controlPlsCounts.unknown))} · 경고 ${this._esc(String(controlPlsCounts.warning))}</div></div>
+          <div data-crop-control-phi-rei-overview style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">PHI/REI 확인</div><b style="font-size:18px;color:${missingPhiRei.length ? '#e67e22' : '#51AE60'};">${missingPhiRei.length ? '보강 필요' : '확인'}</b><div style="font-size:10px;color:#9aae9d;">누락 ${this._esc(String(missingPhiRei.length))}건</div></div>
+        </div>
+        <div data-crop-control-next-check style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 점검</b> ${this._esc(controlNextCheck)}</div>
+      </div>
+      <div id="control-list" data-crop-control-treatment-list>${rows}</div>
       ${this._renderCropPager("control", this._controlData.length)}`;
   }
 
