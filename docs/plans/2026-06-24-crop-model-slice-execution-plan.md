@@ -865,9 +865,53 @@ replaceProductionModelFromDataset
 
 ## Objective
 
-Make the model development state understandable to a non-technical farm owner/staff user.
+Make the model development state understandable to a non-technical farm owner/staff user without adding execution authority.
 
-## UI sections
+## Product behavior
+
+```text
+1. Operator opens the growth report.
+2. A single read-only workflow card summarizes what is complete, what is missing, what to check next survey, what the previous validation says, and whether time-series expansion is possible.
+3. The card uses Korean operational labels for farm owners/staff who are not crop-model or software specialists.
+4. The workflow must not become one more disconnected technical card. It should be the primary operator summary and should reuse/summarize existing prediction, KMA, validation, dataset, and readiness cards as detailed evidence.
+5. Existing technical cards may remain only as `상세 근거`/audit evidence, or may be removed if their content is fully absorbed into the operator workflow.
+6. The UI must remain mobile and PC responsive: mobile should stack the operator steps vertically with large touch targets, while PC can use a compact multi-column summary grid.
+7. The card does not provide environment/irrigation/device execution, model training, or production model replacement controls.
+```
+
+## Backend/API work
+
+Add/complete:
+
+```python
+CROP_OPERATOR_WORKFLOW_VERSION = "crop_operator_workflow_v1"
+_crop_operator_workflow_response(...)
+CropModelOperatorWorkflowView
+```
+
+API:
+
+```http
+GET /api/green_smart/crop/seasons/{season_id}/operator-workflow
+```
+
+Response shape:
+
+```json
+{
+  "ok": true,
+  "seasonId": 1,
+  "operatorWorkflowVersion": "crop_operator_workflow_v1",
+  "weeklyInputStatus": {},
+  "missingInputs": [],
+  "nextSurveyChecklist": [],
+  "lastValidationSummary": {},
+  "timeSeriesReadiness": {},
+  "operatorWarnings": ["read-only workflow; no device execution"]
+}
+```
+
+## Panel UI sections
 
 ```text
 1. 이번 주 입력 완료 여부
@@ -877,11 +921,35 @@ Make the model development state understandable to a non-technical farm owner/st
 5. 시계열 모델 확장 가능 여부
 ```
 
+Required markers:
+
+```text
+data-crop-operator-workflow-card
+data-crop-operator-weekly-input-status
+data-crop-operator-missing-inputs
+data-crop-operator-next-survey-checklist
+data-crop-operator-last-validation-summary
+data-crop-operator-time-series-readiness
+operatorWorkflowVersion
+```
+
+Forbidden markers / behavior:
+
+```text
+data-crop-operator-execute-device
+data-crop-operator-train-model
+data-crop-operator-replace-production-model
+```
+
 ## Acceptance criteria
 
 - Korean labels are operational, not developer jargon.
 - Advanced technical JSON remains hidden or collapsed.
 - Write/execute controls remain role-gated and non-device-executing.
+- Operator workflow is exposed in the growth report response and via the read-only API.
+- UI uses the existing mobile and PC responsive pattern (`display:grid; grid-template-columns:repeat(auto-fit,minmax(...))`) and avoids desktop-only layouts.
+- Existing technical cards are not duplicated as another disconnected card; the operator workflow is the primary summary and technical cards remain only as detailed evidence.
+- Tests assert docs, backend helper/API registration, panel markers, responsive UI markers, forbidden controls, and v1.9.67 version markers.
 
 ---
 

@@ -26,6 +26,7 @@ CROP_PEST_CONTROL_FEATURES_VERSION = "crop_pest_control_features_v1"
 CROP_STAGE_PREDICTION_SCORE_VERSION = "crop_stage_prediction_score_v1"
 CROP_KMA_WEATHER_STRESS_FEATURES_VERSION = "crop_kma_weather_stress_features_v1"
 CROP_TRAINING_DATASET_EXPORT_VERSION = "crop_training_dataset_export_v1"
+CROP_OPERATOR_WORKFLOW_VERSION = "crop_operator_workflow_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
@@ -2684,6 +2685,15 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "validationRows": prediction_validation_rows,
     }
     trainingDataset = await _crop_training_dataset_response(hass, season_id)
+    operatorWorkflow = _crop_operator_workflow_response(
+        season_id=season_id,
+        latest=latest,
+        inputCompleteness=featureSources.get("inputCompleteness") or {},
+        sourceStatus=featureSources.get("sourceStatus") or {},
+        predictionValidation=predictionValidation,
+        trainingDataset=trainingDataset,
+        mlUpgradeReadiness=cropModel["trainableBaseline"].get("mlUpgradeReadiness") or {},
+    )
     return {
         "ok": True,
         "seasonId": season_id,
@@ -2705,6 +2715,7 @@ async def _growth_report_response(hass, season_id: int) -> dict:
         "qualityDisorderSummary": cropModel["trainableBaseline"].get("qualityDisorderSummary"),
         "stagePrediction7d": cropModel["trainableBaseline"]["stagePrediction7d"],
         "trainingDataset": trainingDataset,
+        "operatorWorkflow": operatorWorkflow,
         "predictionValidation": predictionValidation,
         "mlUpgradeReadiness": cropModel["trainableBaseline"]["mlUpgradeReadiness"],
         "yieldPrediction": cropModel["yieldPrediction"],
@@ -2838,6 +2849,78 @@ async def _crop_training_dataset_response(hass, season_id: int) -> dict:
             "offline/export-only dataset; production hybrid model is unchanged",
         ],
     }
+
+
+def _crop_operator_workflow_response(*, season_id: int, latest: dict, inputCompleteness: dict, sourceStatus: dict, predictionValidation: dict, trainingDataset: dict, mlUpgradeReadiness: dict) -> dict:
+    today = date.today()
+    latest_date = latest.get("date") if isinstance(latest, dict) else None
+    days_since_latest = None
+    try:
+        if latest_date:
+            days_since_latest = (today - date.fromisoformat(str(latest_date)[:10])).days
+    except ValueError:
+        days_since_latest = None
+    weekly_complete = days_since_latest is not None and days_since_latest <= WEEKLY_REPORT_INTERVAL_DAYS
+    missing_inputs = []
+    for key, label in (
+        ("growthSurvey", "최근 생육조사"),
+        ("environment", "환경 7일 요약"),
+        ("kmaWeatherStress", "기상청 7일 weather-stress"),
+        ("irrigationNutrient", "관수/양액 7일 요약"),
+        ("pestControl", "병해/방제 이력"),
+    ):
+        status = (sourceStatus or {}).get(key)
+        if status in (None, "missing", "stale", "partial"):
+            missing_inputs.append({"key": key, "label": label, "status": status or "missing"})
+    completeness_score = float((inputCompleteness or {}).get("score") or 0.0)
+    if completeness_score < 0.75:
+        missing_inputs.append({"key": "inputCompleteness", "label": "모델 입력 완성도", "status": f"{completeness_score:.2f}"})
+    validation_rows = (predictionValidation or {}).get("validationRows") or []
+    latest_validation = validation_rows[0] if validation_rows else {}
+    next_survey_checklist = [
+        "초장/엽수/줄기경 등 기본 생육값을 같은 기준으로 입력",
+        "품질·생리장해 항목과 병해충/방제 이력을 함께 확인",
+        "기상청 7일 고온·저온·과습·저습·급격한 온도변화 사유 확인",
+        "지난 7일 예측과 실제 생육단계가 맞았는지 검증",
+    ]
+    if missing_inputs:
+        next_survey_checklist.insert(0, "부족한 입력을 먼저 보완")
+    return {
+        "ok": True,
+        "seasonId": season_id,
+        "operatorWorkflowVersion": CROP_OPERATOR_WORKFLOW_VERSION,
+        "weeklyInputStatus": {
+            "complete": weekly_complete,
+            "latestSurveyDate": latest_date,
+            "daysSinceLatestSurvey": days_since_latest,
+            "label": "이번 주 입력 완료" if weekly_complete else "이번 주 입력 필요",
+        },
+        "missingInputs": missing_inputs,
+        "nextSurveyChecklist": next_survey_checklist,
+        "lastValidationSummary": {
+            "status": (predictionValidation or {}).get("needsReviewCount", 0) and "검토 필요" or ((predictionValidation or {}).get("validatedCount", 0) and "검증 완료" or "검증 대기"),
+            "pendingCount": (predictionValidation or {}).get("pendingCount", 0),
+            "validatedCount": (predictionValidation or {}).get("validatedCount", 0),
+            "needsReviewCount": (predictionValidation or {}).get("needsReviewCount", 0),
+            "latestSnapshotId": latest_validation.get("snapshotId"),
+        },
+        "timeSeriesReadiness": {
+            "ready": bool((mlUpgradeReadiness or {}).get("ready") or ((trainingDataset or {}).get("readiness") or {}).get("ready")),
+            "label": "시계열 모델 확장 가능" if bool((mlUpgradeReadiness or {}).get("ready") or ((trainingDataset or {}).get("readiness") or {}).get("ready")) else "시계열 모델 확장 준비중",
+            "reasons": (mlUpgradeReadiness or {}).get("reasons") or ((trainingDataset or {}).get("readiness") or {}).get("reasons") or [],
+        },
+        "operatorWarnings": ["read-only workflow; no device execution", "자동 학습/배포 없음", "실행 권한 없음"],
+    }
+
+
+class CropModelOperatorWorkflowView(HomeAssistantView):
+    """GET read-only operator workflow summary for non-specialist farm users."""
+    url = "/api/green_smart/crop/seasons/{season_id}/operator-workflow"
+    name = "api:green_smart:crop:operator_workflow"
+
+    async def get(self, request: web.Request, season_id: str) -> web.Response:
+        report = await _growth_report_response(request.app["hass"], int(season_id))
+        return _json(report.get("operatorWorkflow") or {})
 
 
 class CropGrowthReportView(HomeAssistantView):

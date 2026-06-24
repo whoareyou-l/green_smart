@@ -526,3 +526,26 @@ Implementation implication:
 - The API may expose `GET /api/green_smart/crop/seasons/{season_id}/training-dataset` for offline analysis and future ML preparation.
 - The panel may show export/readiness evidence, but must say `no automatic ML deployment` / `자동 학습/배포 없음`.
 - This slice must not train a model, auto-deploy a model, or replace the production hybrid rule model from exported rows.
+
+## Confirmed decision 16 — operator workflow summarizes model development state in Korean
+
+The crop model panel must give farm owners/staff a single operational workflow summary instead of requiring them to inspect feature snapshots, raw JSON, or developer terms.
+
+Required operator workflow fields:
+
+```text
+operatorWorkflowVersion
+weeklyInputStatus
+missingInputs
+nextSurveyChecklist
+lastValidationSummary
+timeSeriesReadiness
+operatorWarnings
+```
+
+Implementation implication:
+
+- The workflow card labels must be Korean and action-oriented: `이번 주 입력 완료 여부`, `부족한 입력`, `다음 생육조사 때 확인할 것`, `지난 예측 검증 결과`, `시계열 모델 확장 가능 여부`.
+- The workflow must respect the current responsive mobile+PC panel design and use the existing auto-fit grid/card style instead of desktop-only layouts.
+- The workflow may reference existing prediction validation, training dataset, source completeness, and ML readiness evidence.
+- It must remain read-only and must not expose device execution, automatic model training, or production model replacement controls.

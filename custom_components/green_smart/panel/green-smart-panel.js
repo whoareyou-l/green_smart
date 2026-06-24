@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.66
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.67
 const DOMAIN = "green_smart";
-const VERSION = "1.9.66";
+const VERSION = "1.9.67";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4106,6 +4106,13 @@ button.action:disabled{opacity:.5;cursor:default;}
     const pestStatus = sourceStatus.pestControl || pestControlSummary7d.sourceStatus || "missing";
     const predictionValidation = report.predictionValidation || trainableBaseline.predictionValidation || {};
     const trainingDataset = report.trainingDataset || trainableBaseline.trainingDataset || {};
+    const operatorWorkflow = report.operatorWorkflow || trainableBaseline.operatorWorkflow || {};
+    const weeklyInputStatus = operatorWorkflow.weeklyInputStatus || {};
+    const operatorMissingInputs = Array.isArray(operatorWorkflow.missingInputs) ? operatorWorkflow.missingInputs : [];
+    const operatorChecklist = Array.isArray(operatorWorkflow.nextSurveyChecklist) ? operatorWorkflow.nextSurveyChecklist : [];
+    const operatorValidationSummary = operatorWorkflow.lastValidationSummary || {};
+    const operatorTimeSeriesReadiness = operatorWorkflow.timeSeriesReadiness || {};
+    const operatorWarnings = Array.isArray(operatorWorkflow.operatorWarnings) ? operatorWorkflow.operatorWarnings : [];
     const trainingDatasetReadiness = trainingDataset.readiness || {};
     const trainingDatasetWarnings = Array.isArray(trainingDataset.exportWarnings) ? trainingDataset.exportWarnings : [];
     const qualityDisorderSummary = report.qualityDisorderSummary || trainableBaseline.qualityDisorderSummary || (trainableBaseline.featureSnapshot || {}).qualityDisorderSummary || {};
@@ -4172,6 +4179,26 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#5d7d64;margin-top:8px;line-height:1.55;"><b>다음 조사</b> ${this._esc(stageDiagnosis.nextRequiredSurvey || "최신 생육조사와 단계 전환 증거를 기록하세요.")}</div>
         <div style="font-size:11px;color:#7a9780;margin-top:5px;"><b>부족한 증거</b> ${missingEvidence.length ? missingEvidence.map(e => this._esc(e)).join(" · ") : "없음"}</div>
+      </div>
+      <div data-crop-operator-workflow-card style="background:linear-gradient(135deg,#f7fff9 0%,#f7fbff 100%);border-radius:16px;padding:14px;margin-bottom:12px;border:1px solid #cfe8d8;box-shadow:0 6px 18px rgba(64,117,78,0.08);">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;">
+          <div>
+            <div style="font-size:14px;font-weight:900;color:#24323F;">이번 주 작물 모델 작업 안내</div>
+            <div style="font-size:11px;color:#5f7f70;margin-top:4px;line-height:1.5;">농장주/직원용 요약입니다. 아래 상세 근거 카드는 감사/진단용으로 유지합니다.</div>
+          </div>
+          <span style="font-size:10px;font-weight:900;border-radius:999px;padding:4px 9px;background:#fff;color:#4a6741;border:1px solid #dbeee0;">operatorWorkflowVersion ${this._esc(operatorWorkflow.operatorWorkflowVersion || '-')}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;">
+          <div data-crop-operator-weekly-input-status style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">이번 주 입력 완료 여부</div><b style="font-size:16px;color:${weeklyInputStatus.complete ? '#51AE60' : '#c97a00'};">${this._esc(weeklyInputStatus.label || (weeklyInputStatus.complete ? '완료' : '입력 필요'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">최근 조사 ${this._esc(String(weeklyInputStatus.latestSurveyDate || '-'))}</div></div>
+          <div data-crop-operator-missing-inputs style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">부족한 입력</div><b style="font-size:16px;color:${operatorMissingInputs.length ? '#c0392b' : '#51AE60'};">${operatorMissingInputs.length ? `${operatorMissingInputs.length}개 보완` : '없음'}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;line-height:1.45;">${operatorMissingInputs.length ? operatorMissingInputs.slice(0,3).map(i => this._esc(i.label || i.key || String(i))).join(' · ') : '현재 입력 흐름 양호'}</div></div>
+          <div data-crop-operator-last-validation-summary style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">지난 예측 검증 결과</div><b style="font-size:16px;color:#24323F;">${this._esc(operatorValidationSummary.status || validationStatusLabel)}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">검증 ${this._esc(String(operatorValidationSummary.validatedCount ?? predictionValidation.validatedCount ?? 0))} · 대기 ${this._esc(String(operatorValidationSummary.pendingCount ?? predictionValidation.pendingCount ?? 0))}</div></div>
+          <div data-crop-operator-time-series-readiness style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">시계열 모델 확장 가능 여부</div><b style="font-size:16px;color:${operatorTimeSeriesReadiness.ready ? '#51AE60' : '#7a9780'};">${this._esc(operatorTimeSeriesReadiness.label || (mlReady ? '시계열 모델 확장 가능' : '시계열 모델 확장 준비중'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;line-height:1.45;">${this._esc((operatorTimeSeriesReadiness.reasons || mlUpgradeReadiness.reasons || []).slice(0,2).join(' · ') || '조건 충족')}</div></div>
+        </div>
+        <div data-crop-operator-next-survey-checklist style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;margin-top:9px;">
+          <div style="font-size:11px;color:#5f7f70;font-weight:900;margin-bottom:5px;">다음 생육조사 때 확인할 것</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;">${operatorChecklist.length ? operatorChecklist.slice(0,4).map((item, idx) => `<div style="font-size:11px;color:#24323F;line-height:1.45;background:#f8fbf9;border-radius:9px;padding:7px;"><b>${idx + 1}.</b> ${this._esc(item)}</div>`).join('') : '<div style="font-size:11px;color:#7a9780;">다음 조사 체크리스트 없음</div>'}</div>
+        </div>
+        <div style="font-size:10px;color:#7a9780;margin-top:8px;line-height:1.5;">${operatorWarnings.length ? operatorWarnings.map(w => this._esc(w)).join(' · ') : '실행 권한 없음'} · 모바일/PC 반응형 요약 · 상세 근거는 아래 카드에서 확인</div>
       </div>
       <div data-crop-trainable-baseline-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e4f0ff;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
