@@ -135,7 +135,8 @@ def test_growth_survey_payload_list_and_export_use_dynamic_crop_metrics():
     assert "metrics: config.fields.map" in popup
     assert "cropType: activeSeason?.cropType" in popup
     assert "metricsJson" in growth_list
-    assert "this._renderGrowthMetricChips" in growth_list
+    assert "this._growthMetricGroups" in growth_list
+    assert "this._growthMetricPill" in growth_list
     assert "_growthMetricRowsForExport" in panel
     assert "metricsJson" in export_section
 

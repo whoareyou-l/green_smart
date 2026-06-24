@@ -272,9 +272,31 @@ Make weekly growth survey entry understandable at a glance: latest survey status
 ```text
 data-crop-growth-summary-card
 data-crop-growth-latest-survey
-data-crop-growth-record-list
+data-crop-growth-next-action
+data-crop-growth-kpi-grid
+data-crop-ui-kpi-grid
 data-crop-ui-action-bar
+data-crop-growth-primary-action
+data-crop-growth-secondary-actions
+data-crop-growth-record-list
+data-crop-ui-record-list
+data-crop-growth-record-row
+data-crop-growth-core-metrics
+data-crop-growth-quality-metrics
+data-crop-growth-note
+data-crop-growth-delete-action
+data-crop-ui-empty-state
 ```
+
+### v1.9.71 implementation contract
+
+- `data-crop-growth-summary-card` explains the latest survey and next survey action in owner/staff Korean wording.
+- `data-crop-growth-kpi-grid` keeps latest survey, core metric count, and quality/disorder count in responsive `repeat(auto-fit,minmax(...))` tiles.
+- `data-crop-ui-action-bar` separates primary add action from secondary CSV export.
+- `data-crop-growth-record-list` becomes a compact date-first list.
+- Each row groups `핵심 생육값` and `품질·장해값` instead of giving every metric equal visual weight.
+- Empty state tells staff to start the first weekly survey.
+- No execution/device/model-training authority is added.
 
 ---
 

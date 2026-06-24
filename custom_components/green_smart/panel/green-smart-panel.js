@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.70
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.71
 const DOMAIN = "green_smart";
-const VERSION = "1.9.70";
+const VERSION = "1.9.71";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4492,40 +4492,102 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _renderCropGrowthTab() {
+    const total = this._growthData.length;
+    const latest = total ? this._growthData[total - 1] : null;
+    const latestMetrics = latest ? this._growthMetricGroups(latest) : { core: [], quality: [] };
+    const latestLabel = latest ? `${this._esc(latest.date)} · ${this._esc(latest.cropType || this._selectedSeason()?.cropType || "선택 작기")}` : "기록 없음";
+    const nextAction = latest
+      ? "다음 조사 안내: 같은 작기 기준으로 다음 주 생육값을 기록하고 품질·장해 변화가 있으면 메모를 남기세요."
+      : "다음 조사 안내: 생육조사 추가로 첫 주간 기록을 입력하세요.";
     const pageRows = this._paginatedCropRows("growth", this._growthData);
     const rows = pageRows.length
       ? pageRows.map((r) => {
         const i = r.__cropIndex;
+        const groups = this._growthMetricGroups(r);
         return `
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;" data-growth-metrics-json="${this._esc(r.metricsJson || "")}">
-          <div style="flex:0 0 72px;font-size:12px;font-weight:700;color:#51AE60;">${r.date}</div>
-          <div style="flex:1;display:flex;flex-wrap:wrap;gap:6px 14px;">
-            ${this._renderGrowthMetricChips(r)}
-            ${r.note ? `<span style="font-size:11px;color:#7a9780;">${this._esc(r.note)}</span>` : ""}
+        <div data-crop-growth-record-row data-growth-metrics-json="${this._esc(r.metricsJson || "")}" style="display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:#f8fcf9;border:1px solid #e6f1e8;margin-bottom:8px;">
+          <div style="font-size:12px;font-weight:900;color:#51AE60;white-space:nowrap;">${this._esc(r.date)}</div>
+          <div style="min-width:0;">
+            <div data-crop-growth-core-metrics style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px;">
+              <span style="font-size:10px;font-weight:900;color:#5d7d64;background:#edf8ef;border-radius:999px;padding:4px 7px;">핵심 생육값</span>
+              ${groups.core.length ? groups.core.map(m => this._growthMetricPill(m, "#edf8ef", "#3e6f48")).join("") : `<span style="font-size:11px;color:#9aae9d;">핵심값 기록 없음</span>`}
+            </div>
+            <div data-crop-growth-quality-metrics style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${r.note ? "7px" : "0"};">
+              <span style="font-size:10px;font-weight:900;color:#7b628f;background:#faf7ff;border-radius:999px;padding:4px 7px;">품질·장해값</span>
+              ${groups.quality.length ? groups.quality.map(m => this._growthMetricPill(m, "#faf7ff", "#6f4f87")).join("") : `<span style="font-size:11px;color:#9aae9d;">특이 품질/장해 기록 없음</span>`}
+            </div>
+            ${r.note ? `<div data-crop-growth-note style="font-size:11px;color:#7a9780;line-height:1.45;">메모: ${this._esc(r.note)}</div>` : `<span data-crop-growth-note hidden></span>`}
           </div>
-          <button data-growth-del="${i}" title="삭제"
-            style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;padding:2px 6px;">✕</button>
+          <button data-growth-del="${i}" data-crop-growth-delete-action title="삭제"
+            style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>
         </div>`;
       }).join("")
-      : `<div style="text-align:center;padding:32px 0;color:#b0c4b1;font-size:13px;">
-          <ha-icon icon="mdi:sprout-outline" style="--mdi-icon-size:32px;display:block;margin:0 auto 8px;"></ha-icon>
-          생육조사 기록이 없습니다
+      : `<div data-crop-ui-empty-state style="text-align:center;padding:34px 12px;color:#7a9780;font-size:13px;border:1px dashed #d7e8da;border-radius:16px;background:#fbfefb;">
+          <ha-icon icon="mdi:sprout-outline" style="--mdi-icon-size:34px;display:block;margin:0 auto 8px;color:#9bcaa3;"></ha-icon>
+          생육조사 기록이 없습니다. 생육조사 추가로 첫 주간 기록을 입력하세요.
         </div>`;
+    const latestPreview = latest
+      ? `${latestMetrics.core.slice(0, 3).map(m => `${this._esc(m.label || m.key)} ${this._esc(String(m.value ?? "-"))}${m.unit ? this._esc(m.unit) : ""}`).join(" · ") || "핵심값 기록 없음"}`
+      : "아직 최신 조사가 없습니다.";
     return `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <span style="font-size:13px;font-weight:700;color:#24323F;">생육조사 기록 <span style="color:#7a9780;font-weight:400;">(${this._growthData.length}건)</span></span>
-        <div style="display:flex;gap:6px;">
-          <button id="growth-export-btn" title="CSV 내보내기"
-            style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
-                   padding:6px 10px;cursor:pointer;display:flex;align-items:center;">
-            <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
-          <button id="growth-add-btn"
-            style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
+      <section data-crop-growth-summary-card data-crop-ui-subpage-summary style="background:linear-gradient(135deg,#f7fff9 0%,#f8fbff 100%);border:1px solid #dcefe2;border-radius:16px;padding:14px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;">
+          <div>
+            <div style="font-size:15px;font-weight:900;color:#24323F;">최근 생육조사</div>
+            <div style="font-size:12px;color:#5f7f70;margin-top:4px;line-height:1.5;">농장주와 직원이 같은 작기 기준으로 주간 생육 상태를 확인합니다.</div>
+          </div>
+          <span style="font-size:11px;font-weight:900;color:#51AE60;background:#fff;border:1px solid #dcefe2;border-radius:999px;padding:5px 9px;">${total}건</span>
+        </div>
+        <div data-crop-growth-kpi-grid data-crop-ui-kpi-grid style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:9px;">
+          <div data-crop-growth-latest-survey style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e6f1e8;"><div style="font-size:11px;color:#7a9780;font-weight:800;">최신 조사</div><b style="font-size:15px;color:#24323F;">${latestLabel}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">${latestPreview}</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e6f1e8;"><div style="font-size:11px;color:#7a9780;font-weight:800;">핵심값 수</div><b style="font-size:15px;color:#24323F;">${latestMetrics.core.length}개</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">초장·엽수·줄기경 등</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e6f1e8;"><div style="font-size:11px;color:#7a9780;font-weight:800;">품질/장해 기록</div><b style="font-size:15px;color:${latestMetrics.quality.length ? '#8e44ad' : '#51AE60'};">${latestMetrics.quality.length}개</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">품질·생리장해·메모 확인</div></div>
+        </div>
+        <div data-crop-growth-next-action style="font-size:12px;color:#4f6f58;line-height:1.55;"><b>다음 조사 안내</b> ${nextAction}</div>
+      </section>
+      <div data-crop-ui-action-bar style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <span style="font-size:13px;font-weight:800;color:#24323F;">생육조사 기록 <span style="color:#7a9780;font-weight:500;">(${total}건)</span></span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <div data-crop-growth-secondary-actions style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button id="growth-export-btn" title="CSV 내보내기"
+              style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
+                     padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;">
+              <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon><span>CSV 내보내기</span></button>
+          </div>
+          <button id="growth-add-btn" data-crop-growth-primary-action
+            style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;">
             + 생육조사 추가</button>
         </div>
       </div>
-      <div id="growth-list">${rows}</div>
-      ${this._renderCropPager("growth", this._growthData.length)}`;
+      <div id="growth-list" data-crop-growth-record-list data-crop-ui-record-list>
+        <div style="font-size:11px;color:#7a9780;margin-bottom:8px;">기록이 많아도 날짜별 핵심값을 먼저 보고, 품질/장해와 메모는 아래에서 확인합니다.</div>
+        ${rows}
+      </div>
+      ${this._renderCropPager("growth", total)}`;
+  }
+
+  _growthMetricGroups(row) {
+    const metrics = this._parseGrowthMetrics(row);
+    const fallback = metrics.length ? [] : [
+      { key: "height", label: "초장", value: row.height, unit: "cm" },
+      { key: "leafCount", label: "엽수", value: row.leafCount, unit: "매" },
+      { key: "stemDia", label: "줄기경", value: row.stemDia, unit: "mm" },
+      { key: "truss", label: "화방", value: row.truss, unit: "단" },
+      { key: "node", label: "절위", value: row.node, unit: "절" },
+    ];
+    const source = (metrics.length ? metrics : fallback).filter(m => m && m.value !== null && m.value !== undefined && m.value !== "");
+    const qualityPattern = /(품질|장해|장애|병|충|기형|열과|착색|경도|당도|무게|생체중|엽색|tipburn|disorder|quality|brix|weight)/i;
+    const core = [];
+    const quality = [];
+    source.forEach((m) => {
+      const label = `${m.label || ""} ${m.key || ""}`;
+      (qualityPattern.test(label) ? quality : core).push(m);
+    });
+    return { core, quality };
+  }
+
+  _growthMetricPill(metric, bg, color) {
+    return `<span style="font-size:11px;color:${color};background:${bg};border-radius:999px;padding:4px 7px;white-space:nowrap;">${this._esc(metric.label || metric.key)} <b>${this._esc(String(metric.value ?? "-"))}${metric.unit ? this._esc(metric.unit) : ""}</b></span>`;
   }
 
   _renderCropAiStrategyTab() {

@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.70`
+> 기준 버전: `v1.9.71`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.70` |
+| 현재 version | `1.9.71` |
 
 작업 시 우선순위:
 
@@ -516,11 +516,32 @@ v1.9.69 UI Slice 1 기준:
 - 조사 row 삭제
 - 작물별 dynamic metrics 기록
 
-UI Slice 2에서 정리할 방향:
+v1.9.71 UI Slice 2 기준:
 
-- 최신 조사 상태와 다음 조사 안내 추가
-- metric chip을 핵심 생육값/품질·장해값으로 그룹화
-- row 목록을 compact record list로 정리
+- `data-crop-growth-summary-card`: 최근 생육조사 요약. 농장주와 직원이 같은 작기 기준으로 주간 생육 상태를 확인합니다.
+- `data-crop-growth-latest-survey`: 최신 조사일/작기/핵심값 preview.
+- `data-crop-growth-next-action`: 다음 조사 안내. 기록이 없으면 첫 주간 기록 입력, 기록이 있으면 다음 주 생육값과 품질·장해 변화 메모를 안내한다.
+- `data-crop-growth-kpi-grid` + `data-crop-ui-kpi-grid`: 최신 조사 / 핵심값 수 / 품질·장해 기록 KPI를 `repeat(auto-fit,minmax(...))` 반응형으로 표시한다.
+- `data-crop-ui-action-bar`: CSV 내보내기와 생육조사 추가를 action hierarchy로 분리한다.
+- `data-crop-growth-primary-action`: 생육조사 추가.
+- `data-crop-growth-secondary-actions`: CSV 내보내기.
+- `data-crop-growth-record-list` + `data-crop-ui-record-list`: compact record list.
+- `data-crop-growth-record-row`: 날짜별 compact row.
+- `data-crop-growth-core-metrics`: 핵심 생육값 그룹.
+- `data-crop-growth-quality-metrics`: 품질·장해값 그룹.
+- `data-crop-growth-note`: 메모 표시.
+- `data-crop-growth-delete-action`: row 삭제 action.
+- `data-crop-ui-empty-state`: 기록 없음 안내.
+
+UX 문구:
+
+```text
+최근 생육조사
+다음 조사 안내
+핵심 생육값
+품질·장해값
+기록이 많아도 날짜별 핵심값을 먼저 보고, 품질/장해와 메모는 아래에서 확인합니다.
+```
 
 작물별 dynamic metrics:
 
