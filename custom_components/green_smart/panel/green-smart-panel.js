@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.69
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.70
 const DOMAIN = "green_smart";
-const VERSION = "1.9.69";
+const VERSION = "1.9.70";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -2049,9 +2049,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderAdminSystemPage() {
     const role = this._currentUserRole();
-    return `<div class="page admin-system-page" data-ui-section="admin" data-required-permission="system_settings" data-role-visibility="admin">
-      ${this._renderSubHero("Admin/System", "HA 사용자 권한, Entity 매핑, 외부 API, 진단을 admin 전용으로 관리합니다.", "mdi:shield-account")}
-      <div class="gs-card" data-ui-section="view" data-required-permission="system_settings" data-role-visibility="admin" style="padding:16px;margin-bottom:14px;">
+    const body = `<div class="gs-card" data-ui-section="view" data-required-permission="system_settings" data-role-visibility="admin" style="padding:16px;margin-bottom:14px;">
         <div style="font-size:13px;color:#7a9780;margin-bottom:4px;">현재 역할</div>
         <div style="font-size:18px;font-weight:800;color:#24323F;">${this._esc(role)}</div>
         <div style="font-size:12px;color:#7a9780;margin-top:6px;">Admin/System은 사용자/권한, HA/DB/API 연동 상태, 시스템 설정, 진단/백업, 감사 로그를 관리합니다.</div>
@@ -2064,8 +2062,15 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div hidden data-ui-section="safety" data-required-permission="edit_interlock_rules" data-role-visibility="admin"></div>
         ${this._renderAdminSystemTabBar()}
         <div data-admin-system-content>${this._renderAdminSystemTabContent()}</div>
-      </div>
-    </div>`;
+      </div>`;
+    return this._renderCommonMainPageShell(
+      "admin-system",
+      "Admin/System",
+      "HA 사용자 권한, Entity 매핑, 외부 API, 진단을 admin 전용으로 관리합니다.",
+      "mdi:shield-account",
+      body,
+      { pageClass: "admin-system-page", extraAttrs: 'data-ui-section="admin" data-required-permission="system_settings" data-role-visibility="admin"' }
+    );
   }
 
   _renderHomePage(sim) {
@@ -3548,13 +3553,24 @@ button.action:disabled{opacity:.5;cursor:default;}
   // ── Sub pages ─────────────────────────────────────────────────────────────────
 
   _renderSubHero(title, sub, icon) {
-    return `<div class="sub-hero">
+    return `<div class="sub-hero" data-common-main-hero>
       <div style="display:flex;align-items:center;gap:14px;">
         <div style="width:52px;height:52px;border-radius:14px;background:#DFF3E2;display:flex;align-items:center;justify-content:center;color:#51AE60;">
           <ha-icon icon="${icon}"></ha-icon>
         </div>
         <div><div class="sub-hero-title">${title}</div><div class="sub-hero-sub">${sub}</div></div>
       </div>
+    </div>`;
+  }
+
+  _renderCommonMainPageShell(pageKey, title, subtitle, icon, body, options = {}) {
+    // Common main-page contract targets: data-common-main-page="crop" data-common-main-page="environment" data-common-main-page="irrigation" data-common-main-page="device" data-common-main-page="admin-system"
+    const extraAttrs = options.extraAttrs || "";
+    const pageClass = options.pageClass ? ` ${options.pageClass}` : "";
+    const bodyAttrs = options.bodyAttrs || "";
+    return `<div class="page${pageClass}" data-common-main-page="${pageKey}" ${extraAttrs}>
+      ${this._renderSubHero(title, subtitle, icon)}
+      <div data-common-main-body ${bodyAttrs}>${body}</div>
     </div>`;
   }
 
@@ -3676,27 +3692,32 @@ button.action:disabled{opacity:.5;cursor:default;}
       this._loadCropData();  // 비동기; 완료 시 _refreshCropContent() 자동 호출
     }
     const tabs = [
-      { key: "basic",   label: "작기 설정" },
-      { key: "growth",  label: "생육조사" },
-      { key: "ai",       label: "AI 전략" },
-      { key: "pest",    label: "병해충 예찰" },
-      { key: "control", label: "방제 기록" },
+      { key: "basic",   label: "작기 설정", icon: "mdi:calendar-leaf" },
+      { key: "growth",  label: "생육조사", icon: "mdi:clipboard-pulse-outline" },
+      { key: "ai",      label: "AI 전략", icon: "mdi:brain" },
+      { key: "pest",    label: "병해충 예찰", icon: "mdi:bug-outline" },
+      { key: "control", label: "방제 기록", icon: "mdi:spray" },
     ];
-    const tabBar = `<div data-crop-ui-tab-bar style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;">
+    const tabBar = `<div data-crop-ui-tab-bar style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">
       ${tabs.map(t => `<button class="c-tab ${this._cropSubTab === t.key ? "active" : ""}"
-        data-crop-tab="${t.key}"
-        style="flex:1;padding:8px 4px;border-radius:8px;font-size:13px;">${t.label}</button>`).join("")}
+        data-crop-tab="${t.key}" data-crop-ui-icon-tab
+        style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;white-space:nowrap;">
+          <ha-icon icon="${t.icon}" data-crop-tab-icon style="width:15px;height:15px;"></ha-icon><span data-crop-tab-label>${t.label}</span>
+        </button>`).join("")}
     </div>`;
     const content = this._renderCropTabContent();
-    return `<div class="page">
-      ${this._renderSubHero("작물 설정", "작물 정보 · 생육조사 · 병해충 예찰 · 방제 기록을 관리합니다", "mdi:sprout")}
-      <div class="gs-card" data-crop-ui-shell>
+    return this._renderCommonMainPageShell(
+      "crop",
+      "작물 설정",
+      "작물 정보 · 생육조사 · 병해충 예찰 · 방제 기록을 관리합니다",
+      "mdi:sprout",
+      `<div class="gs-card" data-crop-ui-shell>
         <span data-crop-ui-subpage-summary data-crop-ui-kpi-grid data-crop-ui-action-bar data-crop-ui-record-list data-crop-ui-advanced-details data-crop-ui-empty-state hidden></span>
         <div data-season-selector>${this._renderSeasonSelector()}</div>
         ${tabBar}
         <div data-crop-content>${content}</div>
-      </div>
-    </div>`;
+      </div>`
+    );
   }
 
   _renderSeasonSelector() {
@@ -7703,9 +7724,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const statusText = s.systemStatus.aiStatus === "ok" ? "AI 연결 정상" : s.systemStatus.aiStatus === "error" ? "AI 오류" : s.systemStatus.interlockActive ? "인터록 단독 작동중" : "AI 대기";
     const modeOptions = [["interlock", "인터록 모드"], ["ai_assist", "AI 보조 모드"], ["manual", "수동 모드"], ["emergency_stop", "비상 정지 모드"]];
     const aiStatusOptions = [["ok", "AI 연결 정상"], ["standby", "AI 대기"], ["error", "AI 오류"]];
-    return `<div class="page control-strategy-page">
-      ${this._renderSubHero("환경 제어", "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.", "mdi:thermometer-lines")}
-      ${this._renderControlScopeBar("environment")}
+    const body = `${this._renderControlScopeBar("environment")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
@@ -7718,8 +7737,15 @@ button.action:disabled{opacity:.5;cursor:default;}
           _renderZoneEntityStateSummaryCard("environment") _renderZoneEntityMappingCard("environment") _renderZoneEntityMappingValidationCard("environment")
         </span>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="control-strategy-save" class="btn btn-primary">전략 저장</button></div>
-    </div>`;
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="control-strategy-save" class="btn btn-primary">전략 저장</button></div>`;
+    return this._renderCommonMainPageShell(
+      "environment",
+      "환경 제어",
+      "AI가 꺼져도 기본 인터록 제어로 온실을 안전하게 유지하고, AI 활성화 시 생육전략 보정값을 적용합니다.",
+      "mdi:thermometer-lines",
+      body,
+      { pageClass: "control-strategy-page" }
+    );
   }
 
   _cloneIrrigationDefaults() {
@@ -7872,9 +7898,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderIrrigSettingsPage() {
     this._irrigationControl = this._calculateFinalIrrigationTargets(this._getScopedControlState("irrigation"));
-    return `<div class="page irrigation-control-page">
-      ${this._renderSubHero("관수 제어", "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.", "mdi:water")}
-      ${this._renderControlScopeBar("irrigation")}
+    const body = `${this._renderControlScopeBar("irrigation")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-irrigation-control-contract>irrigationControlMode baseIrrigationSettings saturationStrategy solarIrrigationStrategy drybackStrategy drainFeedback nutrientStrategy aiIrrigationCorrection irrigationSafetyLimits fertigationDeviceSettings finalIrrigationTargets irrigationLogs AI는 기본 관수 인터록 위에 적용되는 보정 레이어</span>
         ${this._renderIrrigationControlTabBar()}
@@ -7885,8 +7909,15 @@ button.action:disabled{opacity:.5;cursor:default;}
           _renderZoneEntityStateSummaryCard("irrigation") _renderZoneEntityMappingCard("irrigation") _renderZoneEntityMappingValidationCard("irrigation")
         </span>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="irrigation-control-save" class="btn btn-primary">관수 제어 저장</button></div>
-    </div>`;
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="irrigation-control-save" class="btn btn-primary">관수 제어 저장</button></div>`;
+    return this._renderCommonMainPageShell(
+      "irrigation",
+      "관수 제어",
+      "기본 관수 인터록으로 안전하게 작동하고, AI 활성화 시 생육 상태와 일사량에 따라 EC, pH, 관수량, 드라이백을 보정합니다.",
+      "mdi:water",
+      body,
+      { pageClass: "irrigation-control-page" }
+    );
   }
 
   _cloneDeviceDefaults() { return JSON.parse(JSON.stringify(DEFAULT_DEVICE_CONTROL_STATE)); }
@@ -7962,9 +7993,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderDeviceControlPage() {
     this._deviceControl = this._getScopedControlState("device");
-    return `<div class="page device-control-page">
-      ${this._renderSubHero("장치제어", "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.", "mdi:cog-box")}
-      ${this._renderControlScopeBar("device")}
+    const body = `${this._renderControlScopeBar("device")}
       <div class="gs-card" style="padding:16px;">
         <span hidden data-device-control-contract>devices deviceGroups deviceStatus deviceControlLogs deviceInterlocks deviceFailsafeRules deviceAlarms ventilationDeviceSettings screenDeviceSettings</span>
         ${this._renderDeviceControlTabBar()}
@@ -7975,8 +8004,15 @@ button.action:disabled{opacity:.5;cursor:default;}
           _renderZoneEntityStateSummaryCard("device") _renderZoneEntityMappingCard("device") _renderZoneEntityMappingValidationCard("device")
         </span>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="device-control-save" class="btn btn-primary">장치제어 저장</button></div>
-    </div>`;
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="device-control-save" class="btn btn-primary">장치제어 저장</button></div>`;
+    return this._renderCommonMainPageShell(
+      "device",
+      "장치제어",
+      "Home Assistant와 실제 설비를 연결해 장치 운영, 수동 제어, 인터록, Fail Safe를 관리합니다.",
+      "mdi:cog-box",
+      body,
+      { pageClass: "device-control-page" }
+    );
   }
 
   _renderVentSettingsPage() {

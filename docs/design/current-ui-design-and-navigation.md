@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.69`
+> 기준 버전: `v1.9.70`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.56` |
+| 현재 version | `1.9.70` |
 
 작업 시 우선순위:
 
@@ -79,7 +79,47 @@ AI보다 안전/인터록/운영자 확인을 우선하는 현장 친화 UI
 - 모바일 WebView에서도 사용할 수 있는 compact topbar와 가로 스크롤 탭
 - 입력 중 화면이 깜박이거나 reset되지 않는 no-flicker/dirty-state 보존
 
-### 2.3 색상 기준
+### 2.3 공통 메인 포맷
+
+v1.9.70부터 작물 설정 / 환경 제어 / 관수 제어 / 장치 제어 / Admin/System 페이지는 `_renderCommonMainPageShell(...)`을 공통 진입 포맷으로 사용한다.
+
+공통 메인 포맷은 다음 구조를 기본으로 한다.
+
+```text
+hero + scope/status summary + content card
+```
+
+계약 marker:
+
+```text
+data-common-main-page
+data-common-main-hero
+data-common-main-body
+data-common-main-page="crop"
+data-common-main-page="environment"
+data-common-main-page="irrigation"
+data-common-main-page="device"
+data-common-main-page="admin-system"
+```
+
+적용 대상:
+
+| page key | page |
+|---|---|
+| `crop` | 작물 설정 |
+| `environment` | 환경 제어 |
+| `irrigation` | 관수 제어 |
+| `device` | 장치 제어 |
+| `admin-system` | Admin/System |
+
+원칙:
+
+- 페이지마다 hero 위치와 본문 카드 시작 위치를 통일한다.
+- 제어 페이지는 scope/status summary를 hero 아래, content card 위에 둔다.
+- Admin/System은 RBAC/role summary를 content body의 첫 카드로 둔다.
+- 공통 포맷은 실행 권한을 부여하지 않으며, 권한/안전 판단은 기존 RBAC/SafetyGuard 계약을 따른다.
+
+### 2.4 색상 기준
 
 | 목적 | 색상 |
 |---|---|
@@ -392,13 +432,23 @@ cropSettingsAllowExecution
 
 ### 8.2 하위 탭
 
-| key | label | 목적 |
-|---|---|---|
-| `basic` | 작기 설정 | 작기 등록/수정/철거/삭제와 선택 작기 lifecycle 확인 |
-| `growth` | 생육조사 | 작물별 dynamic metrics 기록과 최신 조사/다음 조사 안내 |
-| `ai` | AI 전략 | 생육 리포트, 모델/인터록/정책/데이터 준비 상태를 read-only로 요약 |
-| `pest` | 병해충 예찰 | 발생 위치/심각도 기록과 후속 방제 필요 여부 확인 |
-| `control` | 방제 기록 | 약제/PLS/PHI/REI/방제 이력 기록과 안전 확인 |
+v1.9.70부터 작물 설정 하위 탭은 환경 제어 하위 탭과 같은 **아이콘 + 텍스트** 탭 패턴을 사용한다.
+
+계약 marker:
+
+```text
+data-crop-ui-icon-tab
+data-crop-tab-icon
+data-crop-tab-label
+```
+
+| key | label | icon | 목적 |
+|---|---|---|---|
+| `basic` | 작기 설정 | `mdi:calendar-leaf` | 작기 등록/수정/철거/삭제와 선택 작기 lifecycle 확인 |
+| `growth` | 생육조사 | `mdi:clipboard-pulse-outline` | 작물별 dynamic metrics 기록과 최신 조사/다음 조사 안내 |
+| `ai` | AI 전략 | `mdi:brain` | 생육 리포트, 모델/인터록/정책/데이터 준비 상태를 read-only로 요약 |
+| `pest` | 병해충 예찰 | `mdi:bug-outline` | 발생 위치/심각도 기록과 후속 방제 필요 여부 확인 |
+| `control` | 방제 기록 | `mdi:spray` | 약제/PLS/PHI/REI/방제 이력 기록과 안전 확인 |
 
 ### 8.3 작기 selector
 

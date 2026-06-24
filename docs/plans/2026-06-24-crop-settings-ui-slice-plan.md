@@ -100,11 +100,12 @@ Each row below is a complete patch release, not a partial UI change.
 |---:|---:|---|---|---|
 | UI Slice 0 | v1.9.68 | Crop Settings IA shell | Update plan/docs and page shell contract | Add shared IA contract; do not change behavior heavily |
 | UI Slice 1 | v1.9.69 | 작기 설정 | Make selected season overview and lifecycle actions clear | Merge selector/list duplication; separate edit/철거/delete hierarchy; add clean empty state |
-| UI Slice 2 | v1.9.70 | 생육조사 | Make weekly survey workflow clean | Add latest survey summary; merge metric chips; improve add/export/delete layout |
-| UI Slice 3 | v1.9.71 | AI 전략 | Reduce card sprawl drastically | Merge operator workflow + key model status into primary summary; collapse technical details; remove duplicate standalone evidence where redundant |
-| UI Slice 4 | v1.9.72 | 병해충 예찰 | Make scouting/risk workflow clear | Add severity summary; group unresolved observations; link next action to 방제 기록 without duplicating 방제 UI |
-| UI Slice 5 | v1.9.73 | 방제 기록 | Make PLS/PHI/REI safety readable | Add safety summary; group pesticide chips; make delete/export/add hierarchy clean |
-| UI Slice 6 | v1.9.74 | Cross-subpage polish | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
+| UI Foundation | v1.9.70 | 공통 메인 포맷 + 작물 아이콘 탭 | Apply common main page format and align Crop tab style with Environment tabs | Add shared page shell helper; add icon+text Crop tabs; shift later slice versions |
+| UI Slice 2 | v1.9.71 | 생육조사 | Make weekly survey workflow clean | Add latest survey summary; merge metric chips; improve add/export/delete layout |
+| UI Slice 3 | v1.9.72 | AI 전략 | Reduce card sprawl drastically | Merge operator workflow + key model status into primary summary; collapse technical details; remove duplicate standalone evidence where redundant |
+| UI Slice 4 | v1.9.73 | 병해충 예찰 | Make scouting/risk workflow clear | Add severity summary; group unresolved observations; link next action to 방제 기록 without duplicating 방제 UI |
+| UI Slice 5 | v1.9.74 | 방제 기록 | Make PLS/PHI/REI safety readable | Add safety summary; group pesticide chips; make delete/export/add hierarchy clean |
+| UI Slice 6 | v1.9.75 | Cross-subpage polish | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
 
 ---
 
@@ -192,7 +193,66 @@ data-crop-ui-empty-state
 
 ---
 
-## UI Slice 2 — v1.9.70 생육조사 Subpage Polish
+## UI Foundation — v1.9.70 공통 메인 포맷 + 작물 아이콘 탭
+
+### Objective
+
+Before continuing per-subpage Crop Settings cleanup, align the page-level frame used by 작물 설정 / 환경 제어 / 관수 제어 / 장치 제어 / Admin/System and make Crop sub-tabs visually consistent with Environment/Control tabs.
+
+### Scope
+
+- Add `_renderCommonMainPageShell(...)` as the common page entry wrapper.
+- Apply `data-common-main-page`, `data-common-main-hero`, and `data-common-main-body` to the five main pages.
+- Keep existing page-specific content and behavior unchanged.
+- Change Crop Settings tab bar from text-only to Environment-style icon + text tabs.
+- Shift later Crop Settings slice versions by one patch.
+
+### Common main format contract
+
+```text
+hero + scope/status summary + content card
+```
+
+```text
+data-common-main-page
+data-common-main-hero
+data-common-main-body
+data-common-main-page="crop"
+data-common-main-page="environment"
+data-common-main-page="irrigation"
+data-common-main-page="device"
+data-common-main-page="admin-system"
+```
+
+Target pages:
+
+| page key | page |
+|---|---|
+| `crop` | 작물 설정 |
+| `environment` | 환경 제어 |
+| `irrigation` | 관수 제어 |
+| `device` | 장치 제어 |
+| `admin-system` | Admin/System |
+
+### Crop icon tab contract
+
+```text
+data-crop-ui-icon-tab
+data-crop-tab-icon
+data-crop-tab-label
+```
+
+| tab | icon |
+|---|---|
+| 작기 설정 | `mdi:calendar-leaf` |
+| 생육조사 | `mdi:clipboard-pulse-outline` |
+| AI 전략 | `mdi:brain` |
+| 병해충 예찰 | `mdi:bug-outline` |
+| 방제 기록 | `mdi:spray` |
+
+---
+
+## UI Slice 2 — v1.9.71 생육조사 Subpage Polish
 
 ### Objective
 
@@ -218,7 +278,7 @@ data-crop-ui-action-bar
 
 ---
 
-## UI Slice 3 — v1.9.71 AI 전략 Subpage Polish
+## UI Slice 3 — v1.9.72 AI 전략 Subpage Polish
 
 ### Objective
 
@@ -252,7 +312,7 @@ centerPolicyAllowExecution
 
 ---
 
-## UI Slice 4 — v1.9.72 병해충 예찰 Subpage Polish
+## UI Slice 4 — v1.9.73 병해충 예찰 Subpage Polish
 
 ### Objective
 
@@ -278,7 +338,7 @@ data-crop-pest-next-action
 
 ---
 
-## UI Slice 5 — v1.9.73 방제 기록 Subpage Polish
+## UI Slice 5 — v1.9.74 방제 기록 Subpage Polish
 
 ### Objective
 
@@ -304,7 +364,7 @@ data-crop-control-next-check
 
 ---
 
-## UI Slice 6 — v1.9.74 Cross-subpage consistency pass
+## UI Slice 6 — v1.9.75 Cross-subpage consistency pass
 
 ### Objective
 
