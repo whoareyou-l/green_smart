@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.79`
+> 기준 버전: `v1.9.80`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.79` |
+| 현재 version | `1.9.80` |
 
 작업 시 우선순위:
 
@@ -624,19 +624,30 @@ UI Slice 3에서 정리한 내용:
 필드:
 
 - 조사일
-- 병해충 type
-- 위치
-- 발생도
+- 현재 작기 + 발생 범위 compact row
+- 병해충 type + 발생도 row 단위 입력
 - note
 
 발생도:
 
 | key | 표시 |
 |---|---|
-| `low` | 낮음 |
-| `mid` | 보통 |
-| `high` | 높음 |
-| `critical` | 위험 |
+| `1` | 낮음 |
+| `2` | 보통 |
+| `3` | 높음 |
+| `4` | 위험 |
+
+UI Polish Phase P1 v1.9.80 병해충 예찰 모달 compact 기준:
+
+- `data-pest-compact-modal`: 병해충 예찰 추가 모달은 compact popup card로 렌더한다.
+- `data-pest-scope-row`: 현재 작기와 발생 범위를 같은 줄에 배치한다.
+- `data-pest-active-season-pill`: 선택 작기를 읽기 전용 pill로 표시한다.
+- `data-pest-location-scope-select`: 발생 범위는 `전체/부분` 드롭다운만 제공한다.
+- `data-pest-type-severity-list`: 병해충 종류와 발생 정도를 행 단위로 묶는다.
+- `data-pest-type-severity-row`: 각 행은 병해충명 autocomplete input과 발생 정도 select를 함께 가진다.
+- `data-pest-type-add-row`: 병해충/발생 정도 행을 추가한다.
+- `data-pest-note-compact`: 비고는 마지막 compact 입력으로 둔다.
+- 자유 입력 상세 위치 field는 제공하지 않는다. 저장 시 위치는 `${현재 작기} · ${전체/부분}`으로 정규화한다.
 
 UI Slice 4 v1.9.75 구현 기준:
 
@@ -1423,7 +1434,7 @@ autoSchedulePesticideApplication
 
 ---
 
-## Crop Settings requested UI corrections — v1.9.79
+## Crop Settings requested UI corrections — v1.9.80
 
 User-requested correction slice after the v1.9.77 final pass.
 
@@ -1501,7 +1512,7 @@ Behavior:
 
 ---
 
-## Rendered UI QA hotfix — v1.9.79
+## Rendered UI QA hotfix — v1.9.80
 
 Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
 

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.79
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.80
 const DOMAIN = "green_smart";
-const VERSION = "1.9.79";
+const VERSION = "1.9.80";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5456,7 +5456,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const pestTypes = [{ name: "", source: "", severity: "1" }];
     const debounceTimers = {};
     this._openCropPopup(`
-      <div class="popup-card">
+      <div class="popup-card" data-pest-compact-modal>
         <div class="pop-header">
           <div class="pop-icon-box" style="background:#fff3e0;color:#e67e22;">
             <ha-icon icon="mdi:bug" style="--mdi-icon-size:22px;"></ha-icon>
@@ -5471,25 +5471,25 @@ button.action:disabled{opacity:.5;cursor:default;}
             <label>조사일</label>
             <input type="date" id="p-date" value="${today}">
           </div>
-          <div class="pop-field-row">
-            <div class="pop-field">
+          <div class="pop-field-row" data-pest-scope-row>
+            <div class="pop-field" data-pest-active-season-pill>
               <label>현재 작기</label>
               <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
             </div>
             <div class="pop-field">
               <label>발생 범위</label>
-              <select id="p-location-scope">
+              <select id="p-location-scope" data-pest-location-scope-select>
                 <option value="전체">전체</option>
                 <option value="부분">부분</option>
               </select>
             </div>
           </div>
-          <div class="pop-field">
+          <div class="pop-field" data-pest-type-severity-list>
             <label>병해충 종류 / 발생 정도 <span style="font-weight:400;color:#7a9780;font-size:11px;">(농약 API 자동완성, 행 단위 추가)</span></label>
             <div id="p-type-list"></div>
-            <button id="p-add-type" type="button" style="background:#fff8f5;color:#e67e22;border:1.5px dashed #f3c79d;border-radius:10px;padding:8px;width:100%;font-size:12px;font-weight:800;cursor:pointer;">+ 병해충/발생 정도 추가 (최대 ${MAX_PEST_TYPES}개)</button>
+            <button id="p-add-type" data-pest-type-add-row type="button" style="background:#fff8f5;color:#e67e22;border:1.5px dashed #f3c79d;border-radius:10px;padding:8px;width:100%;font-size:12px;font-weight:800;cursor:pointer;">+ 병해충/발생 정도 추가 (최대 ${MAX_PEST_TYPES}개)</button>
           </div>
-          <div class="pop-field">
+          <div class="pop-field" data-pest-note-compact>
             <label>비고</label>
             <input type="text" id="p-note" placeholder="추가 메모">
           </div>
@@ -5503,7 +5503,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       const addBtn = inner.querySelector("#p-add-type");
       const renderTypes = () => {
         listEl.innerHTML = pestTypes.map((item, idx) => `
-          <div data-pest-type-entry="${idx}" style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:6px;align-items:start;margin-bottom:7px;">
+          <div data-pest-type-entry="${idx}" data-pest-type-severity-row style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:6px;align-items:start;margin-bottom:7px;">
             <div style="position:relative;">
               <input type="text" data-pest-type-input="${idx}" value="${this._esc(item.name)}" placeholder="예) 잿빛곰팡이, 응애, 총채벌레" autocomplete="off">
               <div data-pest-type-suggestions="${idx}" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1.5px solid #e8f0e9;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:320;max-height:180px;overflow-y:auto;margin-top:2px;"></div>
