@@ -1277,7 +1277,7 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
     latest = growth_rows[0] if growth_rows else {}
     crop_type = str(season.get("cropType") or latest.get("cropType") or "tomato").lower()
     method = str(season.get("method") or "hydro").lower()
-    calibration_response = calibration_response or {"version": CROP_STAGE_CALIBRATION_VERSION, "calibrations": []}
+    calibration_response = calibration_response or {"version": CROP_STAGE_CALIBRATION_VERSION, "calibrations": CROP_STAGE_CALIBRATION_DEFAULTS}
     calibrations = calibration_response.get("calibrations") or []
     days_after_transplant = _days_since(season.get("plantDate"))
     selected = _stage_diagnosis_select_calibration(crop_type, calibrations, days_after_transplant, latest, control_rows) or {}
@@ -1856,6 +1856,7 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
     latest = growth_rows[0] if growth_rows else {}
     previous = growth_rows[1] if len(growth_rows) > 1 else {}
     qualityDisorderSummary = _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
+    safety_interlock = (featureSources or {}).get("safetyInterlockSummary") or {"cropSafety": cropSafety or {}, "cropInterlock": cropInterlock or {}}
     return {
         "version": CROP_TRAINABLE_BASELINE_VERSION,
         "cropType": season.get("cropType") or latest.get("cropType") or "other",
@@ -1875,7 +1876,9 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
         "irrigationNutrientSummary7d": (featureSources or {}).get("irrigationNutrientSummary7d") or {},
         "pestControlSummary7d": (featureSources or {}).get("pestControlSummary7d") or {},
         "operationHistorySummary7d": (featureSources or {}).get("operationHistorySummary7d") or {},
-        "safetyInterlockSummary": (featureSources or {}).get("safetyInterlockSummary") or {"cropSafety": cropSafety or {}, "cropInterlock": cropInterlock or {}},
+        "safetyInterlockSummary": safety_interlock,
+        "cropSafety": safety_interlock.get("cropSafety") or {},
+        "cropInterlock": safety_interlock.get("cropInterlock") or {},
         "inputCompleteness": (featureSources or {}).get("inputCompleteness") or {},
         "sourceStatus": (featureSources or {}).get("sourceStatus") or {},
     }
@@ -1986,6 +1989,62 @@ def _crop_ml_upgrade_readiness(*, growth_rows: list[dict], validation_pair_count
         "currentData": {"weeklyGrowthSurveys": survey_count, "validationPairs": validation_pair_count},
         "nextAction": "time_series_model_training_available" if ready else "collect_more_weekly_surveys",
     }
+
+
+def _crop_stage_model_pipeline_steps(*, stageDiagnosis: dict, growthIndex: dict, featureSnapshot: dict, stagePrediction7d: dict, mlUpgradeReadiness: dict) -> list[dict]:
+    """Ordered 1→5 Crop Stage Model evidence chain for release/contract verification."""
+    return [
+        {
+            "step": 1,
+            "key": "stage_prediction_model",
+            "label": "1단계 생육단계 예측 모델",
+            "status": "ready" if stagePrediction7d.get("modelTarget") == "growth_stage_prediction_7d" else "review",
+            "modelTarget": stagePrediction7d.get("modelTarget"),
+            "modelFamily": stagePrediction7d.get("modelFamily"),
+            "outputKeys": ["currentStage", "predictedStage7d", "transitionWindow", "score", "stageEvidence"],
+        },
+        {
+            "step": 2,
+            "key": "crop_specific_stage_rules",
+            "label": "2단계 작물별 stage rule",
+            "status": "ready" if (stageDiagnosis.get("stageId") and stageDiagnosis.get("stageId") != "unknown") else "review",
+            "stageId": stageDiagnosis.get("stageId"),
+            "stageLabel": stageDiagnosis.get("stageLabel"),
+            "indexType": stageDiagnosis.get("indexType") or growthIndex.get("indexType"),
+            "calibrationVersion": stageDiagnosis.get("calibrationVersion"),
+        },
+        {
+            "step": 3,
+            "key": "feature_snapshot",
+            "label": "3단계 feature snapshot",
+            "status": "ready" if featureSnapshot.get("growthSurvey") and featureSnapshot.get("cropSafety") and featureSnapshot.get("cropInterlock") else "review",
+            "sourceGroups": [key for key in ("growthSurvey", "environmentSummary7d", "irrigationNutrientSummary7d", "pestControlSummary", "cropSafety", "cropInterlock", "approvalGate") if key in featureSnapshot],
+            "kmaWeatherStressStatus": (featureSnapshot.get("kmaWeatherStress7d") or {}).get("sourceStatus") or "missing",
+        },
+        {
+            "step": 4,
+            "key": "prediction_row_persistence",
+            "label": "4단계 prediction row 저장",
+            "status": "ready" if stagePrediction7d.get("predictedStage7d") and featureSnapshot else "review",
+            "outputTable": "crop_model_training_snapshots",
+            "targetHorizonDays": 7,
+            "requiredFields": ["feature_snapshot_json", "prediction_json", "readiness_json", "predicted_for_date", "validation_status"],
+            "initialValidationStatus": "pending",
+            "readiness": mlUpgradeReadiness,
+        },
+        {
+            "step": 5,
+            "key": "exact_7_day_validation_loop",
+            "label": "5단계 정확히 7일 차 validation loop",
+            "status": "ready",
+            "dependsOnStep": 4,
+            "cadence": "weekly_exact_7_day_survey",
+            "nearestSurveyFallback": False,
+            "missingExactSurveyStatus": "validation_needs_review",
+            "reviewReason": "exact_7_day_survey_missing",
+            "outputFields": ["actual_validation_json", "actual_survey_id", "validation_status"],
+        },
+    ]
 
 
 async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season: dict, cropModel: dict, featureSnapshotId: int | None = None, validation_status: str = "pending") -> int | None:
@@ -2252,9 +2311,17 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     qualityDisorderSummary = featureSnapshot.get("qualityDisorderSummary") or _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
     stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=growthIndex, growth_rows=growth_rows, featureSources=featureSnapshot)
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
+    pipelineSteps = _crop_stage_model_pipeline_steps(
+        stageDiagnosis=stageDiagnosis,
+        growthIndex=growthIndex,
+        featureSnapshot=featureSnapshot,
+        stagePrediction7d=stagePrediction7d,
+        mlUpgradeReadiness=mlUpgradeReadiness,
+    )
     trainableBaseline = {
         "version": CROP_TRAINABLE_BASELINE_VERSION,
         "modelFamily": CROP_STAGE_PREDICTION_MODEL_FAMILY,
+        "pipelineSteps": pipelineSteps,
         "featureSnapshot": featureSnapshot,
         "qualityDisorderSummary": qualityDisorderSummary,
         "stagePrediction7d": stagePrediction7d,

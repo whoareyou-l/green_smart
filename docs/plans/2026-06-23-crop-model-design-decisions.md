@@ -94,7 +94,21 @@ The growth stage prediction output uses:
 
 The model does **not** start with daily day1~day7 stage labels. It predicts the most likely stage after 7 days and provides the expected transition window.
 
-### Confirmed decision 4A — prediction validation survey cadence
+### v1.10.14 ordered execution correction
+
+The implementation/release order is fixed as:
+
+```text
+1단계 생육단계 예측 모델
+2단계 작물별 stage rule
+3단계 feature snapshot
+4단계 prediction row 저장
+5단계 정확히 7일 차 validation loop
+```
+
+`trainableBaseline.pipelineSteps` must expose this order exactly. Step 5 keeps nearest survey fallback 금지 and uses `validation_needs_review` + `exact_7_day_survey_missing` when the exact 7-day survey is absent.
+
+## Confirmed decision 4A — prediction validation survey cadence
 
 The validation loop is based on the intended operational cadence:
 

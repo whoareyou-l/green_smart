@@ -72,6 +72,28 @@ Do not mark any slice complete because only DB, only API, or only UI exists. The
 
 # Slice 1 — v1.9.59 Prediction Validation Loop
 
+## v1.10.14 Ordered Crop Stage Model steps correction
+
+This correction release follows the user-requested order instead of treating steps 1~5 as one bundle:
+
+```text
+1단계 생육단계 예측 모델
+2단계 작물별 stage rule
+3단계 feature snapshot
+4단계 prediction row 저장
+5단계 정확히 7일 차 validation loop
+```
+
+Required implementation evidence:
+
+- `trainableBaseline.pipelineSteps` exposes steps `[1, 2, 3, 4, 5]` in that exact order.
+- Step 1 output is the real `stagePrediction7d` payload.
+- Step 2 uses crop-specific stage defaults when no DB calibration override exists.
+- Step 3 confirms feature snapshot groups are connected to the prediction evidence.
+- Step 4 declares `crop_model_training_snapshots` persistence fields before validation.
+- Step 5 keeps exact 7-day survey validation, nearest survey fallback 금지, and `exact_7_day_survey_missing` review status.
+- 생육상태 진단, 리스크 예측, 수확량 예측 본체는 this correction release 범위가 아니다.
+
 ## Objective
 
 When a new weekly growth survey is entered, previous pending 7-day prediction rows should be matched against the actual survey and updated with validation labels.
