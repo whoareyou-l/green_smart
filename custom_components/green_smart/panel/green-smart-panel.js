@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.90
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.91
 const DOMAIN = "green_smart";
-const VERSION = "1.9.90";
+const VERSION = "1.9.91";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4365,27 +4365,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div style="font-size:11px;color:#5d7d64;margin-top:8px;line-height:1.55;"><b>다음 조사</b> ${this._esc(stageDiagnosis.nextRequiredSurvey || "최신 생육조사와 단계 전환 증거를 기록하세요.")}</div>
         <div style="font-size:11px;color:#7a9780;margin-top:5px;"><b>부족한 증거</b> ${missingEvidence.length ? missingEvidence.map(e => this._esc(e)).join(" · ") : "없음"}</div>
       </div>
-      <div data-crop-operator-workflow-card style="background:linear-gradient(135deg,#f7fff9 0%,#f7fbff 100%);border-radius:16px;padding:14px;margin-bottom:12px;border:1px solid #cfe8d8;box-shadow:0 6px 18px rgba(64,117,78,0.08);">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;">
-          <div>
-            <div style="font-size:14px;font-weight:900;color:#24323F;">이번 주 작물 모델 작업 안내</div>
-            <div style="font-size:11px;color:#5f7f70;margin-top:4px;line-height:1.5;">농장주/직원용 요약입니다. 아래 상세 근거 카드는 감사/진단용으로 유지합니다.</div>
-          </div>
-          <span style="font-size:10px;font-weight:900;border-radius:999px;padding:4px 9px;background:#fff;color:#4a6741;border:1px solid #dbeee0;">operatorWorkflowVersion ${this._esc(operatorWorkflow.operatorWorkflowVersion || '-')}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;">
-          <div data-crop-operator-weekly-input-status style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">이번 주 입력 완료 여부</div><b style="font-size:16px;color:${weeklyInputStatus.complete ? '#51AE60' : '#c97a00'};">${this._esc(weeklyInputStatus.label || (weeklyInputStatus.complete ? '완료' : '입력 필요'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">최근 조사 ${this._esc(String(weeklyInputStatus.latestSurveyDate || '-'))}</div></div>
-          <div data-crop-operator-missing-inputs style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">부족한 입력</div><b style="font-size:16px;color:${operatorMissingInputs.length ? '#c0392b' : '#51AE60'};">${operatorMissingInputs.length ? `${operatorMissingInputs.length}개 보완` : '없음'}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;line-height:1.45;">${operatorMissingInputs.length ? operatorMissingInputs.slice(0,3).map(i => this._esc(i.label || i.key || String(i))).join(' · ') : '현재 입력 흐름 양호'}</div></div>
-          <div data-crop-operator-last-validation-summary style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">지난 예측 검증 결과</div><b style="font-size:16px;color:#24323F;">${this._esc(operatorValidationSummary.status || validationStatusLabel)}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">검증 ${this._esc(String(operatorValidationSummary.validatedCount ?? predictionValidation.validatedCount ?? 0))} · 대기 ${this._esc(String(operatorValidationSummary.pendingCount ?? predictionValidation.pendingCount ?? 0))}</div></div>
-          <div data-crop-operator-time-series-readiness style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">시계열 모델 확장 가능 여부</div><b style="font-size:16px;color:${operatorTimeSeriesReadiness.ready ? '#51AE60' : '#7a9780'};">${this._esc(operatorTimeSeriesReadiness.label || (mlReady ? '시계열 모델 확장 가능' : '시계열 모델 확장 준비중'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;line-height:1.45;">${this._esc((operatorTimeSeriesReadiness.reasons || mlUpgradeReadiness.reasons || []).slice(0,2).join(' · ') || '조건 충족')}</div></div>
-        </div>
-        <div data-crop-operator-next-survey-checklist style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;margin-top:9px;">
-          <div style="font-size:11px;color:#5f7f70;font-weight:900;margin-bottom:5px;">다음 생육조사 때 확인할 것</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;">${operatorChecklist.length ? operatorChecklist.slice(0,4).map((item, idx) => `<div style="font-size:11px;color:#24323F;line-height:1.45;background:#f8fbf9;border-radius:9px;padding:7px;"><b>${idx + 1}.</b> ${this._esc(item)}</div>`).join('') : '<div style="font-size:11px;color:#7a9780;">다음 조사 체크리스트 없음</div>'}</div>
-        </div>
-        <div style="font-size:10px;color:#7a9780;margin-top:8px;line-height:1.5;">${operatorWarnings.length ? operatorWarnings.map(w => this._esc(w)).join(' · ') : '실행 권한 없음'} · 모바일/PC 반응형 요약 · 상세 근거는 아래 카드에서 확인</div>
-      </div>
-      <div data-crop-trainable-baseline-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e4f0ff;">
+            <div data-crop-trainable-baseline-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e4f0ff;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
           <div>
             <div style="font-size:12px;font-weight:900;color:#24323F;">학습 데이터 베이스라인</div>
@@ -4421,40 +4401,6 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">kmaWeatherStress7d: ${(kmaWeatherStress7d.weatherStressReasons || []).length ? kmaWeatherStress7d.weatherStressReasons.map(r => this._esc(r)).join(' · ') : '특이 weather-stress 없음'} · read-only forecast/model input · 환경/관수/장치 실행 권한 없음</div>
       </article>
-      <div data-crop-quality-disorder-summary-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">품질/장해 요약</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">cropType</div><b style="font-size:14px;color:#24323F;">${this._esc(qualityDisorderSummary.cropType || '-')}</b></div>
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">riskFlags</div><b style="font-size:14px;color:${qualityRiskFlags.length ? '#c0392b' : '#51AE60'};">${this._esc(String(qualityRiskFlags.length))}</b></div>
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">missingMetrics</div><b style="font-size:14px;color:#7a9780;">${this._esc(String(qualityMissingMetrics.length))}</b></div>
-        </div>
-        <div style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">${qualityRiskFlags.length ? qualityRiskFlags.map(r => this._esc(r)).join(' · ') : '기록된 품질/생리장해 위험 신호 없음'}${qualityMissingMetrics.length ? ` · 미입력: ${qualityMissingMetrics.map(r => this._esc(r)).join(' · ')}` : ''}</div>
-      </div>
-      <div data-crop-prediction-validation-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
-        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
-          <div>
-            <div style="font-size:12px;font-weight:900;color:#24323F;">예측 검증 상태</div>
-            <div style="font-size:10px;color:#7a6d99;margin-top:3px;">7일 예측을 최근 실제 조사와 비교해 학습 label로 저장합니다.</div>
-          </div>
-          <button data-crop-prediction-validation-run title="예측 검증 실행" style="border:1px solid #d8c8f0;background:#faf7ff;color:#6d4aa0;border-radius:9px;padding:5px 7px;font-size:10px;font-weight:900;cursor:pointer;">검증 실행</button>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">validationStatus</div><b data-crop-prediction-validation-status style="font-size:14px;color:#24323F;">${this._esc(validationStatusLabel)}</b></div>
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">pending</div><b style="font-size:14px;color:#24323F;">${this._esc(String(predictionValidation.pendingCount ?? 0))}</b></div>
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">validated</div><b style="font-size:14px;color:#51AE60;">${this._esc(String(predictionValidation.validatedCount ?? 0))}</b></div>
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">needs review</div><b style="font-size:14px;color:#c0392b;">${this._esc(String(predictionValidation.needsReviewCount ?? 0))}</b></div>
-        </div>
-        <div style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">최근 실제 조사 입력 후 검증 실행을 누르면 pending prediction이 actualValidation으로 갱신됩니다. 이 동작은 데이터 처리만 수행하며 장치/환경/관수 실행 권한은 없습니다.</div>
-      </div>
-      <div data-crop-training-dataset-export-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">학습 데이터셋 내보내기 준비도</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
-          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">trainingDatasetVersion</div><b style="font-size:14px;color:#24323F;">${this._esc(trainingDataset.trainingDatasetVersion || '-')}</b><div style="font-size:10px;color:#9aae9d;">no automatic ML deployment</div></div>
-          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">featureColumns</div><b style="font-size:14px;color:#24323F;">${this._esc(String((trainingDataset.featureColumns || []).length || 0))}</b><div style="font-size:10px;color:#9aae9d;">labelColumns ${this._esc(String((trainingDataset.labelColumns || []).length || 0))}</div></div>
-          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">validatedRows</div><b style="font-size:14px;color:${trainingDatasetReadiness.ready ? '#51AE60' : '#7a9780'};">${this._esc(String(trainingDatasetReadiness.validatedRows ?? 0))}</b><div style="font-size:10px;color:#9aae9d;">coverage ${this._esc(String(trainingDatasetReadiness.featureCoverageRatio ?? 0))}</div></div>
-        </div>
-        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">exportWarnings: ${trainingDatasetWarnings.length ? trainingDatasetWarnings.map(w => this._esc(w)).join(' · ') : 'no automatic ML deployment'} · 자동 학습/배포 없음 · read-only dataset export</div>
-      </div>
       <article data-crop-ai-evidence-card="environment-features" data-crop-environment-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e5f0ff;">
         <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">환경 feature</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">환경/VPD/ADT/DIF 등 생육 모델 입력입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
         <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
@@ -4502,8 +4448,66 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">sourceStatus · inputCompleteness 기준으로 생육조사 외 환경/관수/병해/작업/인터록 입력이 실제 모델 feature에 포함됩니다.</div>
       </article>
       </section>
+      <section data-crop-ai-model-operations data-crop-ai-evidence-section="model-operations" style="display:block;background:#f8fbf9;border:1px solid #e2f1e7;border-radius:14px;padding:10px;margin-bottom:12px;">
+        <div data-crop-ai-section-heading style="margin-bottom:10px;"><div style="font-size:14px;font-weight:900;color:#24323F;">모델 운영/검증 참고</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">상위/하위 모델은 아니지만 운영·검증·학습 준비도 확인에 필요한 보조 카드입니다.</div></div>
+<article data-crop-ai-evidence-card="operator-workflow" data-crop-operator-workflow-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;">
+          <div>
+            <div style="font-size:14px;font-weight:900;color:#24323F;">이번 주 작물 모델 작업 안내</div>
+            <div style="font-size:11px;color:#5f7f70;margin-top:4px;line-height:1.5;">농장주/직원용 요약입니다. 아래 상세 근거 카드는 감사/진단용으로 유지합니다.</div>
+          </div>
+          <span style="font-size:10px;font-weight:900;border-radius:999px;padding:4px 9px;background:#fff;color:#4a6741;border:1px solid #dbeee0;">operatorWorkflowVersion ${this._esc(operatorWorkflow.operatorWorkflowVersion || '-')}</span>
+        </div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;">
+          <div data-crop-operator-weekly-input-status style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">이번 주 입력 완료 여부</div><b style="font-size:16px;color:${weeklyInputStatus.complete ? '#51AE60' : '#c97a00'};">${this._esc(weeklyInputStatus.label || (weeklyInputStatus.complete ? '완료' : '입력 필요'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">최근 조사 ${this._esc(String(weeklyInputStatus.latestSurveyDate || '-'))}</div></div>
+          <div data-crop-operator-missing-inputs style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">부족한 입력</div><b style="font-size:16px;color:${operatorMissingInputs.length ? '#c0392b' : '#51AE60'};">${operatorMissingInputs.length ? `${operatorMissingInputs.length}개 보완` : '없음'}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;line-height:1.45;">${operatorMissingInputs.length ? operatorMissingInputs.slice(0,3).map(i => this._esc(i.label || i.key || String(i))).join(' · ') : '현재 입력 흐름 양호'}</div></div>
+          <div data-crop-operator-last-validation-summary style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">지난 예측 검증 결과</div><b style="font-size:16px;color:#24323F;">${this._esc(operatorValidationSummary.status || validationStatusLabel)}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">검증 ${this._esc(String(operatorValidationSummary.validatedCount ?? predictionValidation.validatedCount ?? 0))} · 대기 ${this._esc(String(operatorValidationSummary.pendingCount ?? predictionValidation.pendingCount ?? 0))}</div></div>
+          <div data-crop-operator-time-series-readiness style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">시계열 모델 확장 가능 여부</div><b style="font-size:16px;color:${operatorTimeSeriesReadiness.ready ? '#51AE60' : '#7a9780'};">${this._esc(operatorTimeSeriesReadiness.label || (mlReady ? '시계열 모델 확장 가능' : '시계열 모델 확장 준비중'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;line-height:1.45;">${this._esc((operatorTimeSeriesReadiness.reasons || mlUpgradeReadiness.reasons || []).slice(0,2).join(' · ') || '조건 충족')}</div></div>
+        </div>
+        <div data-crop-operator-next-survey-checklist style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;margin-top:9px;">
+          <div style="font-size:11px;color:#5f7f70;font-weight:900;margin-bottom:5px;">다음 생육조사 때 확인할 것</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;">${operatorChecklist.length ? operatorChecklist.slice(0,4).map((item, idx) => `<div style="font-size:11px;color:#24323F;line-height:1.45;background:#f8fbf9;border-radius:9px;padding:7px;"><b>${idx + 1}.</b> ${this._esc(item)}</div>`).join('') : '<div style="font-size:11px;color:#7a9780;">다음 조사 체크리스트 없음</div>'}</div>
+        </div>
+        <div data-crop-ai-evidence-chip-group style="font-size:10px;color:#7a9780;margin-top:8px;line-height:1.5;">${operatorWarnings.length ? operatorWarnings.map(w => this._esc(w)).join(' · ') : '실행 권한 없음'} · 모바일/PC 반응형 요약 · 상세 근거는 아래 카드에서 확인</div>
+      </article>
+      <article data-crop-ai-evidence-card="quality-disorder" data-crop-quality-disorder-summary-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">품질/장해 요약</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">품질/생리장해 위험 신호와 누락 metric을 모델 운영 참고로 분리합니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">operation</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">cropType</div><b style="font-size:14px;color:#24323F;">${this._esc(qualityDisorderSummary.cropType || '-')}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">riskFlags</div><b style="font-size:14px;color:${qualityRiskFlags.length ? '#c0392b' : '#51AE60'};">${this._esc(String(qualityRiskFlags.length))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">missingMetrics</div><b style="font-size:14px;color:#7a9780;">${this._esc(String(qualityMissingMetrics.length))}</b></div>
+        </div>
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">${qualityRiskFlags.length ? qualityRiskFlags.map(r => this._esc(r)).join(' · ') : '기록된 품질/생리장해 위험 신호 없음'}${qualityMissingMetrics.length ? ` · 미입력: ${qualityMissingMetrics.map(r => this._esc(r)).join(' · ')}` : ''}</div>
+      </article>
+      <article data-crop-ai-evidence-card="prediction-validation" data-crop-prediction-validation-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;"><div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">예측 검증 상태</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">예측과 실제 조사 비교 상태를 모델 검증 참고로 분리합니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">operation</span></div>
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
+          <div>
+            <div style="font-size:12px;font-weight:900;color:#24323F;">예측 검증 상태</div>
+            <div style="font-size:10px;color:#7a6d99;margin-top:3px;">7일 예측을 최근 실제 조사와 비교해 학습 label로 저장합니다.</div>
+          </div>
+          <button data-crop-prediction-validation-run title="예측 검증 실행" style="border:1px solid #d8c8f0;background:#faf7ff;color:#6d4aa0;border-radius:9px;padding:5px 7px;font-size:10px;font-weight:900;cursor:pointer;">검증 실행</button>
+        </div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">validationStatus</div><b data-crop-prediction-validation-status style="font-size:14px;color:#24323F;">${this._esc(validationStatusLabel)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">pending</div><b style="font-size:14px;color:#24323F;">${this._esc(String(predictionValidation.pendingCount ?? 0))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">validated</div><b style="font-size:14px;color:#51AE60;">${this._esc(String(predictionValidation.validatedCount ?? 0))}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">needs review</div><b style="font-size:14px;color:#c0392b;">${this._esc(String(predictionValidation.needsReviewCount ?? 0))}</b></div>
+        </div>
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#7a6d99;margin-top:8px;line-height:1.55;">최근 실제 조사 입력 후 검증 실행을 누르면 pending prediction이 actualValidation으로 갱신됩니다. 이 동작은 데이터 처리만 수행하며 장치/환경/관수 실행 권한은 없습니다.</div>
+      </article>
+      <article data-crop-ai-evidence-card="training-dataset-export" data-crop-training-dataset-export-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">학습 데이터셋 내보내기 준비도</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">학습/내보내기 준비도는 운영 참고이며 자동 학습/배포 권한이 없습니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">operation</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">trainingDatasetVersion</div><b style="font-size:14px;color:#24323F;">${this._esc(trainingDataset.trainingDatasetVersion || '-')}</b><div style="font-size:10px;color:#9aae9d;">no automatic ML deployment</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">featureColumns</div><b style="font-size:14px;color:#24323F;">${this._esc(String((trainingDataset.featureColumns || []).length || 0))}</b><div style="font-size:10px;color:#9aae9d;">labelColumns ${this._esc(String((trainingDataset.labelColumns || []).length || 0))}</div></div>
+          <div><div style="font-size:11px;color:#6d8799;font-weight:800;">validatedRows</div><b style="font-size:14px;color:${trainingDatasetReadiness.ready ? '#51AE60' : '#7a9780'};">${this._esc(String(trainingDatasetReadiness.validatedRows ?? 0))}</b><div style="font-size:10px;color:#9aae9d;">coverage ${this._esc(String(trainingDatasetReadiness.featureCoverageRatio ?? 0))}</div></div>
+        </div>
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">exportWarnings: ${trainingDatasetWarnings.length ? trainingDatasetWarnings.map(w => this._esc(w)).join(' · ') : 'no automatic ML deployment'} · 자동 학습/배포 없음 · read-only dataset export</div>
+      </article>
+      </section>
       <section data-crop-ai-center-reference-summary data-crop-ai-evidence-section="center-reference" style="display:block;background:#f8fbf9;border:1px solid #e2f1e7;border-radius:14px;padding:10px;margin-bottom:12px;">
         <div data-crop-ai-section-heading style="margin-bottom:8px;"><div style="font-size:14px;font-weight:900;color:#24323F;">센터 분석 참고</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">센터 분석은 반복 패턴과 정책 추천 후보 확인용입니다.</div></div>
+      ${this._renderCenterCropInterlockAnalyticsCard()}
       <div data-center-crop-policy-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dbeaf8;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
           <div>
@@ -4543,7 +4547,6 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>
       <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
       ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}
-      ${this._renderCenterCropInterlockAnalyticsCard()}
       </section>
         </div>
       </details>
