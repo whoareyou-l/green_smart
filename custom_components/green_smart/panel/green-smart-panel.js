@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.86
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.87
 const DOMAIN = "green_smart";
-const VERSION = "1.9.86";
+const VERSION = "1.9.87";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4247,11 +4247,11 @@ button.action:disabled{opacity:.5;cursor:default;}
       ? "예측 검증 결과를 검토하고 실제 조사값과 다른 항목을 확인하세요."
       : "이번 주 생육조사와 예측 검증 상태를 유지하고 상세 근거는 필요할 때만 펼쳐 확인하세요.";
     /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
-    return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
+    return `<section class="gs-card" data-growth-report-card data-crop-ai-evidence-panel style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
+      <div data-crop-ai-strategy-header style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
         <div>
-          <div style="font-size:15px;font-weight:900;color:#24323F;">생육 리포트</div>
-          <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 추세 · G-Index 추이 · 수확량 예측 · 병해 위험도 · 주간 리포트</div>
+          <div style="font-size:15px;font-weight:900;color:#24323F;">AI 전략</div>
+          <div style="font-size:12px;color:#7a9780;margin-top:3px;">운영 판단 요약을 먼저 보고, 모델·데이터 근거는 접힌 상세 패널에서 확인합니다.</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
           <button data-weekly-report-notification-toggle data-weekly-report-notification-icon title="주간 리포트 자동 알림" style="border:1px solid ${this._weeklyReportNotificationEnabled() ? '#f5a623' : '#cfd8d3'};background:${this._weeklyReportNotificationEnabled() ? '#fff7e6' : '#f1f3f2'};color:${this._weeklyReportNotificationEnabled() ? '#f5a623' : '#9aa6a0'};border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;">
@@ -4274,12 +4274,15 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div data-crop-ai-next-action style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;margin-top:9px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 행동</b> ${this._esc(aiNextAction)}</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
+      <details data-crop-ai-advanced-details data-crop-ai-evidence-details style="background:#fff;border:1px solid #dbeee0;border-radius:16px;padding:10px;margin-bottom:12px;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:900;color:#24323F;display:flex;align-items:center;gap:6px;"><ha-icon icon="mdi:database-search-outline" style="--mdi-icon-size:17px;"></ha-icon>상세 모델 근거 · 모델/데이터/인터록 카드</summary>
+        <div data-crop-ai-technical-evidence-grid style="margin-top:10px;">
+      <div data-crop-ai-metric-overview style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">G-Index 추이</div><b style="font-size:20px;color:#24323F;">${this._esc(String(latestG))}</b><div style="font-size:11px;color:#7a9780;">${gIndexTrend.length}개 point · 초장 ${heightTrend.length}개</div></div>
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">수확량 예측</div><b style="font-size:20px;color:#24323F;">${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg</b><div style="font-size:11px;color:#7a9780;">신뢰도 ${this._esc(yieldPrediction.confidence || "low")}</div></div>
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">병해 위험도</div><b style="font-size:20px;color:${pestRisk.level === 'high' ? '#c0392b' : pestRisk.level === 'medium' ? '#f39c12' : '#51AE60'};">${riskLabel}</b><div style="font-size:11px;color:#7a9780;">score ${this._esc(String(pestRisk.score ?? 0))}</div></div>
       </div>
-      <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #eef6ef;">
+      <div data-crop-ai-yield-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #eef6ef;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">작물별 수확 모델</div>
         <div style="font-size:12px;color:#5d7d64;line-height:1.6;">
           <b>${this._esc(yieldPrediction.cropModelLabel || "일반 생육 기반 수확 모델")}</b>
@@ -4293,7 +4296,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">예측 근거: ${this._esc(yieldPrediction.basis || "crop-specific growth model")}${confidenceReasons.length ? ` · ${confidenceReasons.map(r => this._esc(r)).join(" · ")}` : ""}</div>
       </div>
-      <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #f4ece8;">
+      <div data-crop-ai-pest-risk-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #f4ece8;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">병해 위험 모델</div>
         <div style="font-size:12px;color:#6b5b4d;line-height:1.6;">
           <b>${riskLabel}</b><span style="color:#9aae9d;"> · ${this._esc(pestRisk.modelVersion || "weather_environment_control_model_v1")}</span><br>
@@ -4338,9 +4341,6 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:10px;color:#7a9780;margin-top:8px;line-height:1.5;">${operatorWarnings.length ? operatorWarnings.map(w => this._esc(w)).join(' · ') : '실행 권한 없음'} · 모바일/PC 반응형 요약 · 상세 근거는 아래 카드에서 확인</div>
       </div>
-      <details data-crop-ai-advanced-details data-crop-ai-evidence-details style="background:#fff;border:1px solid #dbeee0;border-radius:16px;padding:10px;margin-bottom:12px;">
-        <summary style="cursor:pointer;font-size:13px;font-weight:900;color:#24323F;display:flex;align-items:center;gap:6px;"><ha-icon icon="mdi:database-search-outline" style="--mdi-icon-size:17px;"></ha-icon>상세 모델 근거</summary>
-        <div data-crop-ai-technical-evidence-grid style="margin-top:10px;">
       <div data-crop-trainable-baseline-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e4f0ff;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
           <div>
@@ -4491,8 +4491,6 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div data-center-crop-policy-next-action style="font-size:11px;color:#4a6741;margin-top:5px;line-height:1.55;"><b>다음 조치</b> ${this._esc(translatedNextAction)}</div>
         <div style="font-size:10px;color:#9aae9d;margin-top:5px;">fresh · stale_usable · stale_restricted · fallback_safe · rejected · recommend_only</div>
       </div>
-        </div>
-      </details>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid ${cropInterlock.cropInterlockBlocked ? '#f3c8c8' : '#dbeee0'};" data-crop-interlock-card>
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:6px;">
           <div style="font-size:12px;font-weight:900;color:#24323F;">작물 인터록</div>
@@ -4520,6 +4518,8 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div style="font-size:12px;color:#4a6741;line-height:1.55;"><b>주간 리포트</b> ${this._esc(weeklyReport.summary || "생육조사 기록을 추가하면 주간 리포트가 생성됩니다.")}</div>
       ${actions.length ? `<ul style="margin:8px 0 0 18px;padding:0;color:#5d7d64;font-size:12px;">${actions.map(a => `<li>${this._esc(a)}</li>`).join("")}</ul>` : ""}
       ${this._renderCenterCropInterlockAnalyticsCard()}
+        </div>
+      </details>
     </section>`;
   }
 
@@ -4666,22 +4666,9 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropAiStrategyTab() {
     return `
-      <div data-crop-subtab-main-format data-crop-ai-summary-card data-crop-subtab-summary-card data-crop-ai-consolidated-layout data-crop-ai-duplicate-card-guard data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;">
-        <div>
-          <div style="font-size:15px;font-weight:900;color:#24323F;">AI 전략 요약</div>
-          <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 리포트 · G-Index · 수확량 예측 · 병해 위험 분석을 한 곳에서 확인합니다.</div>
-        </div>
-        <span style="font-size:11px;font-weight:900;color:#51AE60;background:#fff;border:1px solid #dcefe2;border-radius:999px;padding:5px 9px;">read-only</span>
-      </div>
-      <div data-crop-ai-list-header data-crop-subtab-list-header data-crop-consistency-action-row style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-        <div>
-          <div data-crop-list-title style="font-size:13px;font-weight:800;color:#24323F;">AI 전략 근거 목록</div>
-          <div data-crop-list-description style="font-size:11px;color:#7a9780;margin-top:2px;">요약을 먼저 보고 상세 모델 근거는 접힌 영역에서 확인합니다.</div>
-          <span data-crop-list-count hidden>1건</span>
-        </div>
-        <div data-crop-list-actions style="display:flex;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#7a9780;">자동 실행 없음</span></div>
-      </div>
-      <div data-crop-ai-evidence-list data-crop-subtab-record-list data-crop-ui-record-list>${this._renderGrowthReportCard()}</div>`;
+      <div data-crop-subtab-main-format data-crop-ai-strategy-panel data-crop-ai-summary-card data-crop-ai-consolidated-layout data-crop-ai-duplicate-card-guard data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="margin-bottom:12px;">
+        ${this._renderGrowthReportCard()}
+      </div>`;
   }
 
   _renderCropPestTab() {
