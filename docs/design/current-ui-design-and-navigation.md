@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.81`
+> 기준 버전: `v1.9.82`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.81` |
+| 현재 version | `1.9.82` |
 
 작업 시 우선순위:
 
@@ -698,7 +698,7 @@ UI Slice 5 v1.9.76 구현 기준:
 - `data-crop-control-treatment-list`: compact treatment list. 각 row는 `data-crop-control-treatment-row`, `data-crop-control-treatment-summary`, `data-crop-control-treatment-meta`, `data-crop-control-pesticide-chip-group`, `data-crop-control-delete-action`, 기존 삭제 바인딩용 `data-control-del`을 가진다.
 - export/add/delete는 유지하되 action hierarchy를 명확히 한다.
 
-UI Polish Phase P1 v1.9.81 방제 기록 모달 compact 기준:
+UI Polish Phase P1 v1.9.82 방제 기록 모달 compact 기준:
 
 - `data-control-compact-modal`: 방제 기록 추가 모달은 compact popup card로 렌더한다.
 - `data-control-date-field`: 방제일은 모달 첫 입력으로 둔다.
@@ -727,6 +727,19 @@ UI Slice 5에서 정리한 내용:
 - PLS/PHI/REI 안전 요약 추가
 - 약제 chip 그룹을 더 읽기 쉽게 정리
 - 삭제/export/add action hierarchy 정리
+
+---
+
+### 8.9 P1 rendered-flow QA v1.9.82
+
+Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
+
+- Home 첫 카드는 `data-home-action-summary`로 위험 알림/오늘 할 일/조치 필요를 담당하고, 온도/습도/CO₂/VPD 숫자는 `_renderKPIStrip(kpi)`에서 확인한다.
+- 병해충 예찰은 `data-crop-pest-summary-card` → `data-crop-pest-action-row` → `data-crop-pest-record-list` 순서를 유지한다.
+- 병해충 추가 모달은 `data-pest-compact-modal`, `data-pest-scope-row`, `data-pest-type-severity-row`를 렌더하고 상세 위치 자유입력 필드를 제공하지 않는다.
+- 방제 기록은 `data-crop-control-safety-summary` → `data-crop-control-action-row` → `data-crop-control-treatment-list` 순서를 유지한다.
+- 방제 기록 추가 모달은 `data-control-compact-modal`, `data-control-date-field`, `data-control-scope-row`, `data-control-pesticide-list`, `data-control-pesticide-add-row`, `data-control-note-compact`, `data-control-dose-grid`를 렌더하고 상세 위치 자유입력 필드를 제공하지 않는다.
+- 금지 실행 marker(`data-crop-pest-control-form`, `data-crop-pest-execute-control`, `data-crop-control-execute-spray`, `data-crop-control-auto-apply`)는 렌더하지 않는다.
 
 ---
 
@@ -1449,7 +1462,7 @@ autoSchedulePesticideApplication
 
 ---
 
-## Crop Settings requested UI corrections — v1.9.81
+## Crop Settings requested UI corrections — v1.9.82
 
 User-requested correction slice after the v1.9.77 final pass.
 
@@ -1527,7 +1540,7 @@ Behavior:
 
 ---
 
-## Rendered UI QA hotfix — v1.9.81
+## Rendered UI QA hotfix — v1.9.82
 
 Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
 
