@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.5
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.6
 const DOMAIN = "green_smart";
-const VERSION = "1.10.5";
+const VERSION = "1.10.6";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -8019,16 +8019,16 @@ button.action:disabled{opacity:.5;cursor:default;}
     const scopeClass = domain === "environment" ? "control-scope-bar" : "gs-card control-scope-bar";
     const scopeStyle = domain === "environment" ? "padding:0;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;" : "padding:14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;";
     const envInlineMarker = domain === "environment" ? "data-env-scope-inline" : "";
+    const storageSummary = domain === "environment"
+      ? `<span hidden data-env-storage-scope-doc-only="green_smart_zone_control_settings crop_season_id + zone_id + domain"></span>`
+      : `<div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;flex:1 1 100%;"><b>저장 대상</b> · ${this._esc(this._currentControlScopeLabel(domain))}<span data-control-scope-storage-key style="margin-left:8px;">구역 + 현재 작기 + 제어영역 → green_smart_zone_control_settings</span></div>`;
     return `<div class="${scopeClass}" data-control-scope-bar ${envInlineMarker} data-control-scope-domain="${domain}" style="${scopeStyle}">
       <div data-control-scope-header style="display:${domain === "environment" ? "none" : "flex"};align-items:flex-start;justify-content:space-between;gap:10px;flex:1 1 100%;margin-bottom:${domain === "environment" ? "-4px" : "0"};">
         <div><div data-control-scope-title style="display:${domain === "environment" ? "none" : "block"};" class="sec-title">${domain === "environment" ? "" : scopeTitle}</div><div style="display:${domain === "environment" ? "none" : "block"};font-size:12px;color:#7a9780;margin-top:3px;">${scopeDesc}</div></div>
         ${domain === "environment" ? "" : `<button class="btn btn-ghost" data-control-preset-open data-control-preset-compact style="${compactPresetStyle}">프리셋 설정</button>`}
       </div>
       ${domain === "environment" ? this._renderEnvironmentZoneSeasonCards(domain) : this._renderControlZoneTabs(domain)}
-      <div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;flex:1 1 100%;">
-        <b>저장 대상</b> · ${this._esc(this._currentControlScopeLabel(domain))}
-        <span data-control-scope-storage-key style="margin-left:8px;">구역 + 현재 작기 + 제어영역 → green_smart_zone_control_settings</span>
-      </div>
+      ${storageSummary}
     </div>`;
   }
 

@@ -18,11 +18,11 @@ def _env_content() -> str:
 
 def test_v1996_environment_setvalue_polish_version_and_docs():
     panel = _read(PANEL)
-    assert '"version": "1.10.5"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.5"' in panel
+    assert '"version": "1.10.6"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.6"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in _read(CENTRAL)
     plan = _read(PLAN)
-    assert "Status: implemented in `v1.10.5`" in plan
+    assert "Status: implemented in `v1.10.6`" in plan
     assert "setValue 하위탭 세부 polish" in plan
 
 

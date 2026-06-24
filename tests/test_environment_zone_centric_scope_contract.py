@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 def test_v1101_zone_centric_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.5"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.5"' in panel
-    assert 'v1.10.5' in panel[:200]
-    assert "v1.10.5 Environment zone card UI/UX alignment" in docs
+    assert '"version": "1.10.6"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.6"' in panel
+    assert 'v1.10.6' in panel[:200]
+    assert "v1.10.6 Environment zone card UI/UX alignment" in docs
     assert "구역이 부모, 작기는 구역에 연결되는 현재 재배 상태" in docs
 
 

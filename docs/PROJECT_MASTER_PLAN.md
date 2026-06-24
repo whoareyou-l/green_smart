@@ -520,3 +520,12 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.10.5 AI-first control tab alignment: current v1.10.5 compatibility marker retained after unified environment scope/tab card polish.
 - v1.10.5 Environment zone card header cleanup: current v1.10.5 compatibility marker retained after unified environment scope/tab card polish.
 - v1.10.5 Environment zone card UI/UX alignment: current v1.10.5 compatibility marker retained after unified environment scope/tab card polish.
+
+- v1.10.6 Environment storage target moved to docs: 환경 제어 화면의 `저장 대상 · 1구역 / 작물 / 환경 제어 구역 + 현재 작기 + 제어영역 → green_smart_zone_control_settings` 문구는 UI에서 제거한다. 저장 scope는 문서 기준으로 `crop_season_id + zone_id + domain`이며 저장 테이블/키는 `green_smart_zone_control_settings`를 사용한다.
+- P1 rendered-flow QA v1.10.6: current v1.10.6 compatibility marker retained after storage target summary removal.
+- v1.10.6 AI-first control tab alignment: current v1.10.6 compatibility marker retained after storage target summary removal.
+- v1.10.6 Environment zone card header cleanup: current v1.10.6 compatibility marker retained after storage target summary removal.
+- v1.10.6 Environment zone card UI/UX alignment: current v1.10.6 compatibility marker retained after storage target summary removal.
+- v1.10.6 Environment Control final QA: current v1.10.6 compatibility marker retained after storage target summary removal.
+- v1.10.6 Environment interlock/safety tab split: current v1.10.6 compatibility marker retained after storage target summary removal.
+- v1.10.6 Environment unified scope/tab card: current v1.10.6 compatibility marker retained after storage target summary removal.
