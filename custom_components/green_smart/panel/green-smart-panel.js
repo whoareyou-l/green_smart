@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.11
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.12
 const DOMAIN = "green_smart";
-const VERSION = "1.10.11";
+const VERSION = "1.10.12";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -6515,7 +6515,6 @@ button.action:disabled{opacity:.5;cursor:default;}
       { key: "safety", label: "안전 설정", icon: "mdi:shield-alert-outline" },
       { key: "ai-settings", label: "AI 보정 설정", icon: "mdi:tune" },
       { key: "operations", label: "운영·리허설", icon: "mdi:shield-check" },
-      { key: "devices", label: "장치 매핑·상태", icon: "mdi:connection" },
       { key: "logs", label: "작동 로그", icon: "mdi:clipboard-text-clock" },
     ];
   }
@@ -8158,7 +8157,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const aiStatusOptions = [["ok", "AI 연결 정상"], ["standby", "AI 대기"], ["error", "AI 오류"]];
     const body = `<div class="gs-card" data-env-ui-shell data-env-unified-scope-tab-card>
         ${this._renderControlScopeBar("environment")}
-        <span hidden data-env-legacy-tab="mode"></span> <span hidden data-env-legacy-tab="overview"></span> <span hidden data-env-legacy-tab="temperature"></span> <span hidden data-env-legacy-tab="humidity"></span> <span hidden data-env-legacy-tab="co2"></span> <span hidden data-env-legacy-tab="setpoints"></span> <span hidden data-env-legacy-tab="rules"></span> <span hidden data-env-legacy-tab="aiOps"></span> <span hidden data-env-legacy-tab="safety"></span> <span hidden data-env-legacy-tab="safetyOps"></span> <span hidden data-env-legacy-tab="deviceMap"></span>
+        <span hidden data-env-legacy-tab="mode"></span> <span hidden data-env-legacy-tab="overview"></span> <span hidden data-env-legacy-tab="temperature"></span> <span hidden data-env-legacy-tab="humidity"></span> <span hidden data-env-legacy-tab="co2"></span> <span hidden data-env-legacy-tab="setpoints"></span> <span hidden data-env-legacy-tab="rules"></span> <span hidden data-env-legacy-tab="aiOps"></span> <span hidden data-env-legacy-tab="safety"></span> <span hidden data-env-legacy-tab="safetyOps"></span> <span hidden data-env-legacy-tab="deviceMap"></span> <span hidden data-env-legacy-tab="devices"></span>
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
         </span>
@@ -9315,6 +9314,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       { key: "connection", label: "연결 설정", icon: "mdi:lan-connect" },
       { key: "zones", label: "구역 설정", icon: "mdi:greenhouse" },
       { key: "weather", label: "날씨 설정", icon: "mdi:weather-partly-cloudy" },
+      { key: "device-mapping", label: "장치 매핑·상태", icon: "mdi:connection" },
       { key: "central", label: "중앙 연동", icon: "mdi:server-network" },
     ];
   }
@@ -9332,6 +9332,24 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><ha-icon icon="${icon}" style="color:#51AE60;"></ha-icon>${title}</div>
       <div style="font-size:12px;color:#7a9780;margin-bottom:14px;line-height:1.5;">${subtitle}</div>
       <div class="form" data-settings-existing-fields style="display:grid;gap:12px;">${body}</div>
+    </section>`;
+  }
+
+  _renderSettingsDeviceMappingTabContent() {
+    this._controlStrategy = this._calculateFinalAppliedTargets(this._getScopedControlState("environment"));
+    const statusSummary = `<div data-env-status-operator-summary style="background:#f8fbf9;border:1px solid #dfeee1;border-radius:14px;padding:10px;margin-bottom:10px;"><div data-env-status-metric-grid style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;"><div data-env-status-metric style="background:#fff;border:1px solid #edf4ee;border-radius:12px;padding:8px;"><span style="display:block;font-size:10px;color:#7a9780;">관리 위치</span><b style="display:block;color:#24323F;">환경 설정</b><small style="display:block;color:#8ca594;">전체 장치 연결 관리</small></div><div data-env-status-metric style="background:#fff;border:1px solid #edf4ee;border-radius:12px;padding:8px;"><span style="display:block;font-size:10px;color:#7a9780;">범위</span><b style="display:block;color:#24323F;">구역별 매핑</b><small style="display:block;color:#8ca594;">환경 제어 domain</small></div><div data-env-status-metric style="background:#fff;border:1px solid #edf4ee;border-radius:12px;padding:8px;"><span style="display:block;font-size:10px;color:#7a9780;">권한</span><b style="display:block;color:#24323F;">연결/검증 전용</b><small style="display:block;color:#8ca594;">수동 실행 없음</small></div></div></div>`;
+    const statusBoundary = `<div data-env-status-safety-boundary style="background:#f7fbff;border:1px solid #dbeaf8;border-radius:12px;padding:10px;margin:8px 0;color:#4f6f83;font-size:11px;font-weight:800;">장치 매핑은 Home Assistant entity 연결만 변경합니다. 이 환경 설정 탭은 수동 장치 실행 권한을 추가하지 않습니다.</div>`;
+    const statusCardShell = (body) => `<div data-env-status-card-shell style="background:#fbfefb;border:1px solid #edf4ee;border-radius:12px;padding:8px;">${body}</div>`;
+    const statusGroup = (key, title, subtitle, body, footer = "") => `<div data-env-status-group="${key}" style="border:1px solid #e1efe5;border-radius:14px;padding:10px;margin:10px 0;background:#fff;"><div data-env-status-group-header style="margin-bottom:8px;"><div data-env-status-group-title style="font-size:13px;font-weight:900;color:#24323F;">${title}</div><div data-env-status-group-subtitle style="font-size:10px;color:#7a9780;margin-top:2px;">${subtitle}</div></div><div data-env-status-card-grid style="display:grid;gap:10px;">${body}</div>${footer ? `<div data-env-status-card-footer style="border-top:1px solid #edf4ee;margin-top:10px;padding-top:8px;font-size:10px;color:#7a9780;">${footer}</div>` : ""}</div>`;
+    return `<section data-settings-device-mapping-tab data-env-devices-polish data-env-status-subtab="devices" data-env-subtab-main-format data-env-subtab-summary-card>
+      ${this._renderControlScopeBar("environment")}
+      ${statusSummary}
+      ${statusBoundary}
+      <div data-env-device-rbac-note style="font-size:11px;color:#7a9780;margin:8px 0;">권한 문구: 농장주/직원은 상태와 검증 결과를 먼저 확인하고, 매핑 변경은 허용된 역할만 수행합니다.</div>
+      ${statusGroup("entity-state", "장치 상태", "현재 HA entity 상태 요약입니다.", statusCardShell(this._renderZoneEntityStateSummaryCard("environment")))}
+      ${statusGroup("entity-mapping", "Entity 매핑", "환경 제어 장치와 HA entity를 연결합니다.", statusCardShell(this._renderZoneEntityMappingCard("environment")), "저장 후 crop_season_id + zone_id + environment scope로 관리됩니다.")}
+      <div data-env-device-mapping-save-boundary hidden>mapping save uses existing zone control settings path; no direct execution</div>
+      ${statusGroup("mapping-validation", "매핑 검증", "실행 전 누락/불일치 entity를 확인합니다.", statusCardShell(this._renderZoneEntityMappingValidationCard("environment")))}
     </section>`;
   }
 
@@ -9384,6 +9402,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div id="weather-mid-key-validate-result" style="font-size:12px;color:#7a9780;"></div>
       </div>
     `);
+    if (tab === "device-mapping") return this._renderSettingsDeviceMappingTabContent();
     if (tab === "central") return this._settingsSection("mdi:server-network", "중앙 연동", "기존 중앙 API URL과 활성화 코드 입력만 제공합니다. 활성화 코드는 저장하지 않습니다.", `
       <label>중앙 API URL
         <input id="central_base_url" value="${this._esc(f.central_base_url || "http://127.0.0.1:18000")}" autocomplete="off" placeholder="http://127.0.0.1:18000">
@@ -9493,6 +9512,10 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _bindSettings(root) {
     this._bindInputs(root);
+    this._bindControlScopeInputs(root);
+    this._bindZoneEntityStateSummaryInputs(root);
+    this._bindZoneEntityMappingInputs(root);
+    this._bindZoneEntityMappingValidationInputs(root);
     root.querySelectorAll("[data-settings-tab]").forEach((btn) => btn.addEventListener("click", () => {
       this._settingsSubTab = btn.dataset.settingsTab;
       this._error = "";

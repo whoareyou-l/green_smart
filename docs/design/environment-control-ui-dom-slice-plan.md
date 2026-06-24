@@ -656,4 +656,11 @@ Slice 2+ 계약:
 - When the operator opens `환경 설정` and then clicks a Green Smart sidebar page without pressing `취소`, `_bindSidebar()` must set `_state = "dashboard"` before re-rendering.
 - The selected `_page` is then rendered normally (`홈`, `작물 설정`, `환경 제어`, `관수 제어`, `장치제어`, or `Admin/System`).
 - This navigation path does not save settings and does not add control/manual execution features; explicit `저장` and `취소` remain unchanged.
+
+### Move — v1.10.12 Device mapping/status to Settings
+
+- `장치 매핑·상태` is no longer a visible Environment Control subtab.
+- Environment Control keeps `data-env-legacy-tab="devices"` as a hidden compatibility marker.
+- Settings adds the visible `장치 매핑·상태` subtab and renders the existing environment device status/mapping/validation cards under the Environment scope selector.
+- Existing entity refresh/add/delete/validation bindings are reused through Settings; no manual device execution or SafetyGuard bypass is added.
 - No control execution/manual device/strategy execution features are added to Settings.

@@ -19,9 +19,9 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1108_versions_and_docs_for_overview_tab_removed():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.10.11"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.11"' in panel
-    assert 'v1.10.11' in panel[:200]
+    assert '"version": "1.10.12"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.12"' in panel
+    assert 'v1.10.12' in panel[:200]
     assert "v1.10.9 Environment overview tab removed" in docs
 
 
@@ -36,7 +36,6 @@ def test_environment_tab_order_no_overview_and_interlock_follows_ai():
         '{ key: "safety", label: "안전 설정"',
         '{ key: "ai-settings", label: "AI 보정 설정"',
         '{ key: "operations", label: "운영·리허설"',
-        '{ key: "devices", label: "장치 매핑·상태"',
         '{ key: "logs", label: "작동 로그"',
     ]
     positions = [tabs.index(marker) for marker in expected]

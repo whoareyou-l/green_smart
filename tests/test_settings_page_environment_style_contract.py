@@ -16,13 +16,13 @@ def _section(text: str, start: str, end: str) -> str:
     return text.split(start, 1)[1].split(end, 1)[0]
 
 
-def test_v11011_versions_and_docs_for_settings_sidebar_navigation_hotfix():
+def test_v11012_versions_and_docs_for_settings_device_mapping_move():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.10.11"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.11"' in panel
-    assert 'v1.10.11' in panel[:200]
-    assert "v1.10.11 Settings sidebar navigation hotfix" in docs
+    assert '"version": "1.10.12"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.12"' in panel
+    assert 'v1.10.12' in panel[:200]
+    assert "v1.10.12 Device mapping moved to Settings" in docs
 
 
 def test_settings_state_keeps_green_smart_sidebar_and_main_layout():
@@ -54,6 +54,7 @@ def test_settings_page_has_environment_control_style_single_card_and_tabs():
         '{ key: "connection", label: "연결 설정"',
         '{ key: "zones", label: "구역 설정"',
         '{ key: "weather", label: "날씨 설정"',
+        '{ key: "device-mapping", label: "장치 매핑·상태"',
         '{ key: "central", label: "중앙 연동"',
     ]
     positions = [tabs.index(marker) for marker in expected]
@@ -81,6 +82,24 @@ def test_settings_page_preserves_existing_only_fields_and_actions():
         'execute_final_targets',
     ):
         assert forbidden not in settings
+
+
+def test_device_mapping_status_lives_in_settings_not_environment_control_tabs():
+    panel = _read(PANEL)
+    env_tabs = _section(panel, '  _envStrategyTabs() {', '  _renderEnvStrategyTabBar() {')
+    settings = _section(panel, '  _settingsTabs() {', '  // ── Shared renderers')
+    bind_settings = _section(panel, '  _bindSettings(root) {', '  _bindLogin(root) {')
+
+    assert '{ key: "devices", label: "장치 매핑·상태"' not in env_tabs
+    assert 'data-env-legacy-tab="devices"' in panel
+    assert '{ key: "device-mapping", label: "장치 매핑·상태"' in settings
+    assert 'data-settings-device-mapping-tab' in settings
+    assert 'data-env-devices-polish' in settings
+    assert '_renderSettingsDeviceMappingTabContent()' in settings
+    assert '_renderControlScopeBar("environment")' in settings
+    assert '_renderSettingsDeviceMappingTabContent()' in settings
+    assert '_bindZoneEntityMappingInputs(root)' in bind_settings
+    assert '_bindControlScopeInputs(root)' in bind_settings
 
 
 def test_settings_sidebar_page_click_leaves_settings_state_without_cancel():

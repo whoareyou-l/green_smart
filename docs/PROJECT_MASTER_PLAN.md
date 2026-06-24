@@ -554,6 +554,7 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.10.9 Settings page environment-control style shell: 톱니바퀴 `환경 설정` 화면을 환경 제어 페이지와 같은 단일 `gs-card` + 하위탭 구조로 맞춘다. 하위탭은 `연결 설정`, `구역 설정`, `날씨 설정`, `중앙 연동`이며 기존 설정 저장/날씨 위치 매칭/기상청 API 키/중앙 URL·활성화 코드 입력만 제공한다. 제어 실행, 수동 장치 제어, 신규 기능은 추가하지 않는다.
 - v1.10.10 Settings page inside Green Smart shell hotfix: `환경 설정`은 독립 전체화면이 아니라 Green Smart 앱 shell 내부 페이지다. `_update()`는 `settings` 상태에서도 Green Smart sidebar를 렌더하고 `#main-area.has-sidebar`를 유지하며, 설정 톱니바퀴 버튼을 active로 표시한다. 설정 내용 카드는 v1.10.9의 하위탭/기존 기능 제한을 유지하되 기존 `page-head` 우회 헤더는 제거하고 공통 main-page hero를 사용한다.
 - v1.10.11 Settings sidebar navigation hotfix: `환경 설정` 상태에서 취소 버튼을 누르지 않고 Green Smart sidebar의 `홈/작물 설정/환경 제어/관수 제어/장치제어/Admin/System`을 눌러도 `_state`가 `dashboard`로 복귀하고 선택한 `_page`가 정상 렌더된다. 설정 입력 저장/취소 기능은 그대로 유지하며, sidebar page click은 저장 실행이나 새 제어 기능을 만들지 않는다.
+- v1.10.12 Device mapping moved to Settings: 환경 제어 visible 하위탭에서 `장치 매핑·상태`를 제거하고, 환경 설정 하위탭으로 `장치 매핑·상태`를 이동한다. 기존 entity 상태 요약, entity 매핑 추가/삭제/새로고침, 매핑 검증은 그대로 유지하되 환경 설정 화면의 구역 선택 scope 안에서 관리한다. 환경 제어에는 `data-env-legacy-tab="devices"` hidden marker만 남겨 호환성을 유지한다.
 - P1 rendered-flow QA v1.10.9: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 AI-first control tab alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 Environment zone card header cleanup: current v1.10.9 compatibility marker retained after settings page shell alignment.

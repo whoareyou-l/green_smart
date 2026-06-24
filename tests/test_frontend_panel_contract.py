@@ -750,8 +750,12 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     assert 'key: "interlock"' in tabs
     assert 'key: "final"' not in tabs
     assert 'key: "permissions"' not in tabs
-    for key in ("ai", "interlock", "safety", "ai-settings", "operations", "devices", "logs"):
+    for key in ("ai", "interlock", "safety", "ai-settings", "operations", "logs"):
         assert f'key: "{key}"' in tabs
+    assert 'key: "devices"' not in tabs
+    assert 'data-env-legacy-tab="devices"' in env_page
+    settings = panel.split("  _settingsTabs()", 1)[1].split("  // ── Shared renderers", 1)[0]
+    assert 'key: "device-mapping"' in settings
     for old_key in ("mode", "overview", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
         assert f'key: "{old_key}"' not in tabs
 

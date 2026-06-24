@@ -14,24 +14,29 @@ def _read(path: Path) -> str:
 
 def test_v1998_environment_final_qa_versions_and_docs():
     panel = _read(PANEL)
-    assert '"version": "1.10.11"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.11"' in panel
-    assert 'v1.10.11' in panel[:200]
+    assert '"version": "1.10.12"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.12"' in panel
+    assert 'v1.10.12' in panel[:200]
     plan = _read(PLAN)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
     assert "Status: implemented in `v1.10.9`" in plan
     assert "v1.10.9 Environment Control final QA" in docs
 
 
-def test_environment_final_qa_covers_all_seven_tabs():
+def test_environment_final_qa_covers_six_visible_tabs_and_settings_device_mapping():
     panel = _read(PANEL)
-    for key in ["ai", "interlock", "safety", "ai-settings", "operations", "devices", "logs"]:
-        assert f'key: "{key}"' in panel
+    env_tabs = panel.split('  _envStrategyTabs() {', 1)[1].split('  _renderEnvStrategyTabBar() {', 1)[0]
+    settings = panel.split('  _settingsTabs() {', 1)[1].split('  // ── Shared renderers', 1)[0]
+    for key in ["ai", "interlock", "safety", "ai-settings", "operations", "logs"]:
+        assert f'key: "{key}"' in env_tabs
+    assert 'key: "devices"' not in env_tabs
+    assert 'key: "device-mapping"' in settings
+    assert 'data-settings-device-mapping-tab' in settings
     assert 'if (tab === "interlock")' in panel
     assert 'if (tab === "safety")' in panel
     assert 'if (tab === "ai-settings")' in panel
     assert 'if (tab === "operations")' in panel
-    assert 'if (tab === "devices")' in panel
+    assert 'if (tab === "device-mapping")' in panel
     assert 'if (tab === "logs")' in panel
 
 

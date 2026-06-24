@@ -28,7 +28,7 @@ def _env_content_section() -> str:
 
 def test_v1995_environment_tabs_are_restructured_to_vertical_slice_targets():
     tabs = _env_tabs_section()
-    expected = ["ai", "interlock", "safety", "ai-settings", "operations", "devices", "logs"]
+    expected = ["ai", "interlock", "safety", "ai-settings", "operations", "logs"]
     for key in expected:
         assert f'key: "{key}"' in tabs or f'key:"{key}"' in tabs
     for old_key in ("mode", "overview", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
@@ -104,8 +104,8 @@ def test_v1995_environment_versions_docs_and_forbidden_markers():
     docs = _read(PLAN) + "\n" + _read(CURRENT_UI)
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
-    assert '"version": "1.10.11"' in manifest
-    assert 'const VERSION = "1.10.11"' in panel
+    assert '"version": "1.10.12"' in manifest
+    assert 'const VERSION = "1.10.12"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.10.9" in docs
     for forbidden in (
