@@ -714,14 +714,12 @@ def test_environment_control_strategy_distinguishes_base_ai_final_and_permission
     for role in ["Admin", "Farm Owner", "Farm Worker"]:
         assert role not in env_page
         assert role in doc
-    temperature_block = content.split('if (tab === "temperature")', 1)[1].split('if (tab === "humidity")', 1)[0]
-    for field in ["주간 목표온도", "야간 목표온도", "기본 ADT", "기본 DIF", "난방 시작 온도", "난방 정지 온도", "환기 시작 온도", "환기 최대 온도", "고온 경보 온도", "저온 경보 온도"]:
-        assert field in temperature_block
-    humidity_block = content.split('if (tab === "humidity")', 1)[1].split('if (tab === "co2")', 1)[0]
-    assert "목표 습도" in humidity_block
-    assert "목표 VPD" in humidity_block
-    co2_block = content.split('if (tab === "co2")', 1)[1].split('if (tab === "ai")', 1)[0]
-    assert "목표 CO₂" in co2_block
+    setpoints_block = content.split('if (tab === "setpoints")', 1)[1].split('if (tab === "rules")', 1)[0]
+    for field in ["주간 목표온도", "야간 목표온도", "기본 ADT", "기본 DIF", "목표 습도", "목표 VPD", "목표 CO₂"]:
+        assert field in setpoints_block
+    rules_block = content.split('if (tab === "rules")', 1)[1].split('if (tab === "ai")', 1)[0]
+    for field in ["난방 시작 온도", "난방 정지 온도", "환기 시작 온도", "환기 최대 온도", "최대 습도", "최소 VPD", "CO₂ 공급 시작값", "CO₂ 공급 정지값", "절대 최고온도", "절대 최저온도"]:
+        assert field in rules_block
     assert "_calculateFinalAppliedTargets" in panel
     assert "_bindControlStrategyInputs" in panel
     assert "_saveControlStrategy" in panel
@@ -735,7 +733,8 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     tabs = panel.split("  _envStrategyTabs()", 1)[1].split("  _renderEnvStrategyTabBar", 1)[0]
 
     assert 'navBtn("environment", "mdi:thermometer-lines",  "환경 제어"' in sidebar
-    assert 'this._envStrategyTab = "mode"' in panel
+    assert 'this._envStrategyTab = "overview"' in panel
+    assert "data-env-legacy-tab=\"mode\"" in env_page
     assert "data-env-strategy-tab" in env_page
     assert "data-env-strategy-content" in env_page
     assert "_renderEnvStrategyTabBar" in panel
@@ -748,6 +747,10 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     assert 'key: "interlock"' not in tabs
     assert 'key: "final"' not in tabs
     assert 'key: "permissions"' not in tabs
+    for key in ("overview", "setpoints", "rules", "ai", "operations", "devices", "logs"):
+        assert f'key: "{key}"' in tabs
+    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safety", "safetyOps", "deviceMap"):
+        assert f'key: "{old_key}"' not in tabs
 
 
 def test_irrigation_control_page_tabs_state_and_ai_interlock_contract():

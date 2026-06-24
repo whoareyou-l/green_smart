@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.9.94
+> 기준 버전: v1.9.95
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -17,14 +17,18 @@
 
 ### Slice 2 — 환경 제어 메인 shell + 하위탭 재구성
 
+Status: implemented in `v1.9.95`.
+
 - 환경 제어 page shell을 작물 설정 공통 UI/DOM 원칙과 맞춤
-- 하위탭 개수와 이름 정리
-- 기존 marker 호환 유지
+- 하위탭을 `overview / setpoints / rules / ai / operations / devices / logs` 7개로 정리
+- 기존 `mode / temperature / humidity / co2 / aiOps / safety / safetyOps / deviceMap` key는 hidden compatibility marker로 보존
+- 설정형 하위탭에는 `data-env-setvalue-*` marker와 기존 `data-control-field/group/key` 저장 marker를 함께 적용
+- inline `data-env-setvalue-save` 버튼은 기존 `_saveControlStrategy()` 저장 flow에 연결
 
-### Slice 3 — setValue 하위탭 적용
+### Slice 3 — setValue 하위탭 세부 polish
 
-- 온도/습도·VPD/CO₂/안전 한계/제어 모드/AI 보정 등 설정형 하위탭에 setValue card 적용
-- 저장 버튼/안전 문구/감사 marker 통일
+- 온도/습도·VPD/CO₂/안전 한계/제어 모드/AI 보정 등 설정형 하위탭의 시각적 밀도와 모바일 레이아웃을 세부 보정
+- 필요 시 devices 매핑 입력도 `setValue` row 문법으로 승격
 
 ### Slice 4 — 운영/상태 하위탭 적용
 

@@ -1,6 +1,6 @@
 # Crop AI Strategy 하위탭 UI/DOM 표준 패턴
 
-> 기준 버전: `v1.9.94`
+> 기준 버전: `v1.9.95`
 > 기준 구현: `custom_components/green_smart/panel/green-smart-panel.js` `_renderGrowthReportCard()`
 > 목적: 앞으로 AI 전략 또는 유사한 패널형 하위탭을 수정할 때, 카드 구조와 DOM marker를 같은 방식으로 유지해 UI 통일성을 확보한다.
 
@@ -503,7 +503,7 @@ AI 전략 UI 수정 시 다음 항목을 테스트한다.
 
 ---
 
-## 10. 현재 v1.9.94 기준 최종 구조 요약
+## 10. 현재 v1.9.95 기준 최종 구조 요약
 
 ```text
 AI 전략

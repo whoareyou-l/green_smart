@@ -117,10 +117,10 @@ def test_v1989_versions_and_docs_record_decision_dom():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.94"' in manifest
-    assert 'const VERSION = "1.9.94"' in panel
-    assert 'EDGE_VERSION = "1.9.94"' in central
-    assert "v1.9.94 AI Strategy decision-oriented DOM" in docs
+    assert '"version": "1.9.95"' in manifest
+    assert 'const VERSION = "1.9.95"' in panel
+    assert 'EDGE_VERSION = "1.9.95"' in central
+    assert "v1.9.95 AI Strategy decision-oriented DOM" in docs
     for marker in (
         "data-crop-ai-decision-summary",
         "data-crop-ai-primary-metric-grid",
