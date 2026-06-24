@@ -84,10 +84,10 @@ def test_v1981_control_popup_docs_and_version_contract():
     ui_doc = _read(UI_DOC)
     master = _read(MASTER)
 
-    assert '"version": "1.9.82"' in manifest
-    assert 'const VERSION = "1.9.82"' in panel
-    assert "v1.9.82" in panel[:200]
-    assert 'EDGE_VERSION = "1.9.82"' in central
+    assert '"version": "1.9.83"' in manifest
+    assert 'const VERSION = "1.9.83"' in panel
+    assert "v1.9.83" in panel[:200]
+    assert 'EDGE_VERSION = "1.9.83"' in central
     assert "방제 기록 모달 compact layout" in master
 
     for marker in (

@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.82`
+> 기준 버전: `v1.9.83`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.82` |
+| 현재 version | `1.9.83` |
 
 작업 시 우선순위:
 
@@ -255,6 +255,44 @@ data-home-action-result
 ```
 
 Home에서 실제 장비 실행은 아직 연결하지 않는다. 실제 실행은 각 제어 페이지의 운영자 확인/권한/Control Mode/SafetyGuard/Interlock/fail-safe 경로를 통과해야 한다.
+
+### 5.1.2 Home real-state tasks v1.9.83
+
+Home 첫 카드의 `오늘 할 일`과 `조치 필요`는 고정 문구가 아니라 실제 상태에서 산출한다.
+
+구현 helper/marker:
+
+```text
+_homeTodayTaskItems()
+_homeRequiredActionItems()
+_homeSafetyActiveEventCount()
+data-home-today-task-list
+data-home-required-action-list
+data-home-task-source="growth"
+data-home-task-source="pest"
+data-home-task-source="control"
+data-home-action-source="safety"
+data-home-action-source="pest"
+data-home-action-source="control"
+```
+
+입력 소스:
+
+- `this._zoneSafetyGuardEventCache`: 활성 SafetyGuard 이벤트 수
+- `this._growthData`: 최신 생육조사일과 7일 경과 여부
+- `this._pestData`: severity 3 이상 고위험 병해충 예찰 여부
+- `this._controlData`: 최근 방제 기록과 고위험 예찰 대비 방제 기록 존재 여부
+
+금지 boundary:
+
+```text
+data-home-execute-device
+homeAllowDeviceExecution
+data-home-auto-apply-control
+homeAutoSchedulePesticideApplication
+```
+
+이 카드는 작업/조치 안내만 제공하며 자동 방제, 장치 실행, 스케줄링 권한을 만들지 않는다.
 
 ### 5.2 환경 KPI series
 
@@ -698,7 +736,7 @@ UI Slice 5 v1.9.76 구현 기준:
 - `data-crop-control-treatment-list`: compact treatment list. 각 row는 `data-crop-control-treatment-row`, `data-crop-control-treatment-summary`, `data-crop-control-treatment-meta`, `data-crop-control-pesticide-chip-group`, `data-crop-control-delete-action`, 기존 삭제 바인딩용 `data-control-del`을 가진다.
 - export/add/delete는 유지하되 action hierarchy를 명확히 한다.
 
-UI Polish Phase P1 v1.9.82 방제 기록 모달 compact 기준:
+UI Polish Phase P1 v1.9.83 방제 기록 모달 compact 기준:
 
 - `data-control-compact-modal`: 방제 기록 추가 모달은 compact popup card로 렌더한다.
 - `data-control-date-field`: 방제일은 모달 첫 입력으로 둔다.
@@ -730,7 +768,7 @@ UI Slice 5에서 정리한 내용:
 
 ---
 
-### 8.9 P1 rendered-flow QA v1.9.82
+### 8.9 P1 rendered-flow QA v1.9.83
 
 Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
 
@@ -1462,7 +1500,7 @@ autoSchedulePesticideApplication
 
 ---
 
-## Crop Settings requested UI corrections — v1.9.82
+## Crop Settings requested UI corrections — v1.9.83
 
 User-requested correction slice after the v1.9.77 final pass.
 
@@ -1540,7 +1578,7 @@ Behavior:
 
 ---
 
-## Rendered UI QA hotfix — v1.9.82
+## Rendered UI QA hotfix — v1.9.83
 
 Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
 

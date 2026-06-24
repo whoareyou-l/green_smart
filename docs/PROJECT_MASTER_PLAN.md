@@ -428,7 +428,8 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - 주간 리포트 내보내기/새로고침은 텍스트 버튼이 아니라 icon-only UI로 제공한다. 수동 “알림 보내기” 버튼은 제거한다.
 - 병해충 예찰 모달 compact layout: 현재 작기와 발생 범위를 같은 줄에 배치하고 상세 위치 입력을 제거한다. 병해충 종류와 발생 정도는 한 행 단위로 함께 추가/삭제한다.
 - 방제 기록 모달 compact layout: 방제일 아래 현재 작기와 처리 범위를 같은 줄에 배치하고 처리 위치 상세를 제거한다. 그 아래에 약제명/추가 버튼/비고 순서로 배치한다.
-- P1 rendered-flow QA v1.9.82: Home → 작물 설정 → 병해충 예찰 → 방제 기록 실제 렌더 흐름에서 Home KPI 분리, pest/control 요약→액션→목록 순서, 병해충/방제 compact 모달, 금지 실행 marker 부재, console error 부재를 확인한다.
+- P1 rendered-flow QA v1.9.83: Home → 작물 설정 → 병해충 예찰 → 방제 기록 실제 렌더 흐름에서 Home KPI 분리, pest/control 요약→액션→목록 순서, 병해충/방제 compact 모달, 금지 실행 marker 부재, console error 부재를 확인한다.
+- Home real-state tasks v1.9.83: Home 오늘 할 일/조치 필요는 고정 문구가 아니라 SafetyGuard 활성 이벤트, 생육조사 최신일, 고위험 병해충 예찰, 방제 기록 상태에서 산출한다.
 
 후속 고도화 후보:
 
