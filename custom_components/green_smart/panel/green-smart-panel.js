@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.9
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.10
 const DOMAIN = "green_smart";
-const VERSION = "1.10.9";
+const VERSION = "1.10.10";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1573,12 +1573,13 @@ button.action:disabled{opacity:.5;cursor:default;}
     if (!content) return;
 
     const isDash = this._state === "dashboard";
+    const usesAppShell = this._state === "dashboard" || this._state === "settings";
     if (sidebar) {
-      sidebar.style.display = isDash ? "" : "none";
-      if (isDash) { sidebar.innerHTML = this._renderSidebar(); this._bindSidebar(); }
+      sidebar.style.display = usesAppShell ? "" : "none";
+      if (usesAppShell) { sidebar.innerHTML = this._renderSidebar(); this._bindSidebar(); }
     }
     if (content.parentElement) {
-      content.parentElement.classList.toggle("has-sidebar", isDash);
+      content.parentElement.classList.toggle("has-sidebar", usesAppShell);
     }
 
     if (this._loading || this._saving) {
@@ -1704,7 +1705,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div class="sb-items">${navItems}</div>
       <div class="sb-spacer"></div>
       <div class="sb-bottom">
-        <button class="nav-btn sb-settings-btn" title="설정"><ha-icon icon="mdi:cog"></ha-icon></button>
+        <button class="nav-btn sb-settings-btn ${this._state === "settings" ? "active" : ""}" data-settings-sidebar-active="${this._state === "settings" ? "true" : "false"}" title="설정"><ha-icon icon="mdi:cog"></ha-icon></button>
         <button class="nav-btn sb-logout-btn" title="로그아웃"><ha-icon icon="mdi:logout"></ha-icon></button>
       </div>
     </div>
@@ -1712,7 +1713,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div class="sb-mob-row1">
         <div class="sb-brand"><ha-icon icon="mdi:leaf"></ha-icon></div>
         <button class="sb-alert-pill" id="sb-alert-pill" data-sb-alert-pill>${this._alertPillHtml()}</button>
-        <button class="nav-btn sb-settings-btn" title="설정"><ha-icon icon="mdi:cog"></ha-icon></button>
+        <button class="nav-btn sb-settings-btn ${this._state === "settings" ? "active" : ""}" data-settings-sidebar-active="${this._state === "settings" ? "true" : "false"}" title="설정"><ha-icon icon="mdi:cog"></ha-icon></button>
         <button class="nav-btn sb-logout-btn" title="로그아웃"><ha-icon icon="mdi:logout"></ha-icon></button>
       </div>
       <div class="sb-mob-row2">${navItems}</div>
@@ -9398,12 +9399,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderSettingsPage() {
     const f = this._form;
-    return `<div class="page settings-page" data-settings-env-like-shell>
-      <div class="page-head">
-        <div class="page-icon"><ha-icon icon="mdi:cog"></ha-icon></div>
-        <div><h2>환경 설정</h2><p>Green Smart 중앙 시스템 연결 및 설치 구역 정보를 관리합니다.</p></div>
-      </div>
-      <div class="gs-card" data-settings-unified-tab-card>
+    const body = `<div class="gs-card" data-settings-unified-tab-card>
         <span hidden data-settings-existing-only-contract>기존 설정 저장, 날씨 위치/API 키, 중앙 연동 입력만 제공; 제어 실행 기능 없음</span>
         ${this._renderSettingsTabBar()}
         <div data-settings-content>${this._renderSettingsTabContent(f)}</div>
@@ -9412,8 +9408,15 @@ button.action:disabled{opacity:.5;cursor:default;}
           <button class="action primary" id="save">저장</button>
         </div>
         ${this._renderError()}
-      </div>
-    </div>`;
+      </div>`;
+    return this._renderCommonMainPageShell(
+      "settings",
+      "환경 설정",
+      "Green Smart 중앙 시스템 연결 및 설치 구역 정보를 관리합니다.",
+      "mdi:cog",
+      body,
+      { pageClass: "settings-page", extraAttrs: "data-settings-env-like-shell data-settings-inside-green-smart-shell" }
+    );
   }
 
   // ── Shared renderers ──────────────────────────────────────────────────────────

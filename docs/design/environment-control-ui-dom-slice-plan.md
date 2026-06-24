@@ -643,4 +643,11 @@ Slice 2+ 계약:
 - The gear `환경 설정` page now uses the Environment Control shell pattern: one card + subtab bar + tab content.
 - Visible tabs: `연결 설정`, `구역 설정`, `날씨 설정`, `중앙 연동`.
 - Existing functions only: config save/cancel, PLC/zone/weather/central inputs, weather location match, weather API key save/validate/delete.
+
+### Hotfix — v1.10.10 Settings page inside Green Smart shell
+
+- `환경 설정` must render inside the Green Smart app shell, not as an independent full-screen settings view.
+- `_update()` keeps Green Smart sidebar visible for both `dashboard` and `settings` states.
+- The settings gear button is active while settings is open, and `#main-area.has-sidebar` remains applied.
+- The settings content keeps the v1.10.9 one-card/subtab structure and existing-only function boundary, but removes the old `page-head` bypass header and uses the common main-page hero.
 - No control execution/manual device/strategy execution features are added to Settings.

@@ -16,13 +16,29 @@ def _section(text: str, start: str, end: str) -> str:
     return text.split(start, 1)[1].split(end, 1)[0]
 
 
-def test_v1109_versions_and_docs_for_settings_env_like_shell():
+def test_v11010_versions_and_docs_for_settings_inside_green_smart_shell():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.10.9"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.9"' in panel
-    assert 'v1.10.9' in panel[:200]
-    assert "v1.10.9 Settings page environment-control style shell" in docs
+    assert '"version": "1.10.10"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.10"' in panel
+    assert 'v1.10.10' in panel[:200]
+    assert "v1.10.10 Settings page inside Green Smart shell hotfix" in docs
+
+
+def test_settings_state_keeps_green_smart_sidebar_and_main_layout():
+    panel = _read(PANEL)
+    update = _section(panel, '  _update() {', '  // ── No-flicker partial data refresh')
+    sidebar = _section(panel, '  _renderSidebar() {', '  _bindSidebar() {')
+    settings = _section(panel, '  _settingsTabs() {', '  // ── Shared renderers')
+
+    assert 'const usesAppShell = this._state === "dashboard" || this._state === "settings";' in update
+    assert 'sidebar.style.display = usesAppShell ? "" : "none";' in update
+    assert 'if (usesAppShell) { sidebar.innerHTML = this._renderSidebar(); this._bindSidebar(); }' in update
+    assert 'content.parentElement.classList.toggle("has-sidebar", usesAppShell);' in update
+    assert 'data-settings-sidebar-active' in sidebar
+    assert 'sb-settings-btn ${this._state === "settings" ? "active" : ""}' in sidebar
+    assert 'data-settings-inside-green-smart-shell' in settings
+    assert '<div class="page-head">' not in settings
 
 
 def test_settings_page_has_environment_control_style_single_card_and_tabs():
