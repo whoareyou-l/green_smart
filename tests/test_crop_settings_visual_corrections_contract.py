@@ -24,22 +24,23 @@ def _bind_crop_content(panel: str) -> str:
     return panel.split("  _bindCropContent(root)", 1)[1].split("  _bindSeasonButtons", 1)[0]
 
 
-def test_v1973_crop_tabs_have_visible_basic_emoji_fallback():
+def test_v1973_crop_tabs_have_visible_basic_icon_without_duplicate_emoji():
     panel = _read(PANEL)
     crop = _crop_settings(panel)
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
+    assert 'icon: "mdi:sprout"' in crop
+    assert 'data-crop-tab-icon' in crop
+    assert 'data-crop-tab-label' in crop
     for marker in (
-        'icon: "mdi:sprout"',
         'emoji: "🌱"',
         'data-crop-tab-emoji',
         '${t.emoji}',
     ):
-        assert marker in crop
-        assert marker in docs
-        assert marker in plan
-
+        assert marker not in crop
+    assert '이모티콘 + 하위탭명만 표시' in docs
+    assert '이모티콘 + 하위탭명만 표시' in plan
     assert 'mdi:calendar-leaf' not in crop
 
 
@@ -96,10 +97,10 @@ def test_v1973_crop_visual_corrections_version_and_plan_shift():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.9.77"' in manifest
-    assert 'const VERSION = "1.9.77"' in panel
-    assert 'v1.9.77' in panel[:200]
-    assert 'EDGE_VERSION = "1.9.77"' in central
-    assert '기준 버전: `v1.9.77`' in docs
+    assert '"version": "1.9.78"' in manifest
+    assert 'const VERSION = "1.9.78"' in panel
+    assert 'v1.9.78' in panel[:200]
+    assert 'EDGE_VERSION = "1.9.78"' in central
+    assert '기준 버전: `v1.9.78`' in docs
     assert 'UI Hotfix | v1.9.73 | 작물 설정 시각/표기/수정 UX 보정' in plan
     assert 'UI Slice 3 | v1.9.74 | AI 전략' in plan

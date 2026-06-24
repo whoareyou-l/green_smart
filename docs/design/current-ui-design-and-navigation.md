@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.77`
+> 기준 버전: `v1.9.78`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.77` |
+| 현재 version | `1.9.78` |
 
 작업 시 우선순위:
 
@@ -1421,3 +1421,81 @@ pestAllowPesticideExecution
 controlAllowPesticideExecution
 autoSchedulePesticideApplication
 ```
+
+---
+
+## Crop Settings requested UI corrections — v1.9.78
+
+User-requested correction slice after the v1.9.77 final pass.
+
+### Subtab labels
+
+- Crop Settings 하위탭은 이모티콘 + 하위탭명만 표시한다.
+- HA icon marker `data-crop-tab-icon`은 유지하되, duplicate emoji text marker `data-crop-tab-emoji` / `${t.emoji}`는 panel render에서 제거한다.
+
+### Shared record row action format
+
+The default record-list action format is shared through:
+
+```text
+_cropRecordActionGroup
+data-crop-record-action-group
+data-crop-record-secondary-actions
+data-crop-record-danger-actions
+data-crop-growth-record-actions
+data-crop-pest-record-actions
+data-crop-control-record-actions
+```
+
+Rules:
+
+- 생육조사 기록, 병해충 예찰 기록, 방제 기록은 작기 목록과 같은 edit/delete danger hierarchy를 사용한다.
+- `철거` / `data-season-demolish` is allowed only in the 작기 설정 작기 목록.
+- 병해충 예찰/방제 기록은 요약 카드 다음에 액션 줄과 기록 목록 순서로 렌더한다.
+
+### AI strategy cleanup
+
+AI 전략 is guarded by:
+
+```text
+data-crop-ai-consolidated-layout
+data-crop-ai-summary-stack
+data-crop-ai-evidence-details
+data-crop-ai-duplicate-card-guard
+```
+
+Rules:
+
+- one primary operator summary first;
+- technical/model evidence under collapsed details;
+- duplicate standalone AI cards must not be reintroduced.
+
+### Control modal dose calculation
+
+방제 기록 추가 modal exposes structured dose inputs:
+
+```text
+data-control-dose-grid
+data-chemical-amount-input
+data-water-amount-input
+data-dil-input
+data-treatment-area-input
+data-pyeong-amount-output
+_calculateControlDilution
+_calculateTreatmentAreaFromSeason
+_calculatePyeongUsage
+_syncControlDoseCalculations
+chemicalAmount
+waterAmount
+treatmentAreaM2
+perPyeongUsage
+cropModelNutritionHint
+```
+
+Behavior:
+
+- 약제 사용량 and 물 사용량 are shown side-by-side.
+- If both values are present, 희석 배수 자동 계산 fills the dilution field with `waterAmount / chemicalAmount`.
+- The active crop season + treatment scope estimates used area when possible. Operators may override area manually.
+- 평당 사용량 자동 계산 uses `waterAmount / (areaM2 / 3.305785)`.
+- The calculated summary is preserved in `amount`, and structured fields are carried in payload as crop model/nutrition evidence candidates only; this does not grant execution authority.

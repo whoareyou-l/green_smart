@@ -91,9 +91,9 @@ def test_v1968_version_markers_for_crop_settings_ui_slice_zero():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.9.77"' in manifest
-    assert 'const VERSION = "1.9.77"' in panel
-    assert 'v1.9.77' in panel[:200]
-    assert 'EDGE_VERSION = "1.9.77"' in central
+    assert '"version": "1.9.78"' in manifest
+    assert 'const VERSION = "1.9.78"' in panel
+    assert 'v1.9.78' in panel[:200]
+    assert 'EDGE_VERSION = "1.9.78"' in central
     assert 'v1.9.72' in docs
     assert 'UI Slice 0 | v1.9.68' in plan

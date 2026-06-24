@@ -583,3 +583,50 @@ First concrete task:
 ```text
 Create tests/test_crop_settings_ui_ia_contract.py to lock the 5-subpage structure and shared marker policy.
 ```
+
+---
+
+## Requested UI correction slice — v1.9.78
+
+User-requested follow-up correction after cross-subpage final pass.
+
+- 하위탭은 이모티콘 + 하위탭명만 표시한다. `data-crop-tab-icon`/label은 유지하고 `data-crop-tab-emoji`/`${t.emoji}`는 제거한다.
+- 생육조사 기록, 병해충 예찰 기록, 방제 기록은 `_cropRecordActionGroup` 기반 기본 목록 action format을 공유한다.
+- `data-season-demolish` / 철거 버튼은 작기 설정 작기 목록에만 존재한다.
+- AI 전략은 `data-crop-ai-consolidated-layout`, `data-crop-ai-summary-stack`, `data-crop-ai-evidence-details`, `data-crop-ai-duplicate-card-guard` 기준으로 요약 1개 + 접힘 evidence로 정리한다.
+- 병해충 예찰/방제 기록은 요약 카드 다음에 액션 줄과 기록 목록 순서를 따른다.
+- 방제 기록 추가 modal은 `data-control-dose-grid`, `data-chemical-amount-input`, `data-water-amount-input`, `data-treatment-area-input`, `data-pyeong-amount-output`로 약제/물 사용량, 희석 배수, 사용 면적, 평당 사용량을 자동 계산한다.
+- 계산 payload에는 `chemicalAmount`, `waterAmount`, `treatmentAreaM2`, `perPyeongUsage`, `cropModelNutritionHint`를 포함하되 실행 권한은 부여하지 않는다.
+
+Required marker bundle:
+
+```text
+v1.9.78
+이모티콘 + 하위탭명만 표시
+_cropRecordActionGroup
+data-crop-record-action-group
+data-crop-record-secondary-actions
+data-crop-record-danger-actions
+data-crop-growth-record-actions
+data-crop-pest-record-actions
+data-crop-control-record-actions
+data-crop-ai-consolidated-layout
+data-crop-ai-summary-stack
+data-crop-ai-evidence-details
+data-crop-ai-duplicate-card-guard
+data-control-dose-grid
+data-chemical-amount-input
+data-water-amount-input
+data-dil-input
+data-treatment-area-input
+data-pyeong-amount-output
+_calculateControlDilution
+_calculateTreatmentAreaFromSeason
+_calculatePyeongUsage
+_syncControlDoseCalculations
+chemicalAmount
+waterAmount
+treatmentAreaM2
+perPyeongUsage
+cropModelNutritionHint
+```

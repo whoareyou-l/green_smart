@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.77
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.78
 const DOMAIN = "green_smart";
-const VERSION = "1.9.77";
+const VERSION = "1.9.78";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3692,17 +3692,17 @@ button.action:disabled{opacity:.5;cursor:default;}
       this._loadCropData();  // 비동기; 완료 시 _refreshCropContent() 자동 호출
     }
     const tabs = [
-      { key: "basic",   label: "작기 설정", icon: "mdi:sprout", emoji: "🌱" },
-      { key: "growth",  label: "생육조사", icon: "mdi:clipboard-pulse-outline", emoji: "📋" },
-      { key: "ai",      label: "AI 전략", icon: "mdi:brain", emoji: "🧠" },
-      { key: "pest",    label: "병해충 예찰", icon: "mdi:bug-outline", emoji: "🐛" },
-      { key: "control", label: "방제 기록", icon: "mdi:spray", emoji: "💧" },
+      { key: "basic",   label: "작기 설정", icon: "mdi:sprout" },
+      { key: "growth",  label: "생육조사", icon: "mdi:clipboard-pulse-outline" },
+      { key: "ai",      label: "AI 전략", icon: "mdi:brain" },
+      { key: "pest",    label: "병해충 예찰", icon: "mdi:bug-outline" },
+      { key: "control", label: "방제 기록", icon: "mdi:spray" },
     ];
     const tabBar = `<div data-crop-ui-tab-bar style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">
       ${tabs.map(t => `<button class="c-tab ${this._cropSubTab === t.key ? "active" : ""}"
         data-crop-tab="${t.key}" data-crop-ui-icon-tab
         style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;white-space:nowrap;">
-          <ha-icon icon="${t.icon}" data-crop-tab-icon style="width:15px;height:15px;"></ha-icon><span data-crop-tab-emoji style="font-size:13px;line-height:1;">${t.emoji}</span><span data-crop-tab-label>${t.label}</span>
+          <ha-icon icon="${t.icon}" data-crop-tab-icon style="width:15px;height:15px;"></ha-icon><span data-crop-tab-label>${t.label}</span>
         </button>`).join("")}
     </div>`;
     const content = this._renderCropTabContent();
@@ -3712,6 +3712,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       "작물 정보 · 생육조사 · 병해충 예찰 · 방제 기록을 관리합니다",
       "mdi:sprout",
       `<div class="gs-card" data-crop-ui-shell>
+        <span hidden data-crop-tab-contract>이모티콘 + 하위탭명만 표시</span>
         <span data-crop-ui-subpage-summary data-crop-ui-kpi-grid data-crop-ui-action-bar data-crop-ui-record-list data-crop-ui-advanced-details data-crop-ui-empty-state hidden></span>
         <div data-season-selector>${this._renderSeasonSelector()}</div>
         ${tabBar}
@@ -3959,6 +3960,39 @@ button.action:disabled{opacity:.5;cursor:default;}
     return CROP_LABELS[cropType] || cropType || "작물";
   }
 
+  _cropRecordActionGroup(marker, secondaryHtml = "", dangerHtml = "") {
+    return `<div ${marker ? marker : ""} data-crop-record-action-group style="display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0;">
+      ${secondaryHtml ? `<div data-crop-record-secondary-actions style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${secondaryHtml}</div>` : ""}
+      ${dangerHtml ? `<div data-crop-record-danger-actions style="border-left:${secondaryHtml ? "1px solid #f4d5d9" : "0"};padding-left:${secondaryHtml ? "6px" : "0"};display:flex;gap:6px;align-items:center;">${dangerHtml}</div>` : ""}
+    </div>`;
+  }
+
+  _calculateControlDilution(chemicalAmount, waterAmount) {
+    const chemical = Number(chemicalAmount);
+    const water = Number(waterAmount);
+    if (!Number.isFinite(chemical) || !Number.isFinite(water) || chemical <= 0 || water <= 0) return "";
+    return String(Math.round(water / chemical));
+  }
+
+  _calculateTreatmentAreaFromSeason(scope = "전체", manualArea = "") {
+    const manual = Number(manualArea);
+    if (Number.isFinite(manual) && manual > 0) return manual;
+    const s = this._activeSeason();
+    const plants = Number(s?.totalPlants || s?.total_plants || 0);
+    const density = Number(s?.plantDensity || s?.plant_density || 0);
+    if (scope === "부분") return "";
+    if (plants > 0 && density > 0) return Math.round((plants / density) * 100) / 100;
+    return "";
+  }
+
+  _calculatePyeongUsage(totalAmount, areaM2) {
+    const total = Number(totalAmount);
+    const area = Number(areaM2);
+    if (!Number.isFinite(total) || !Number.isFinite(area) || total <= 0 || area <= 0) return "";
+    const pyeong = area / 3.305785;
+    return String(Math.round((total / pyeong) * 100) / 100);
+  }
+
   _renderCropBasicOverviewCard() {
     const CROP_LABELS = { tomato:"토마토", paprika:"파프리카", strawberry:"딸기", lettuce:"상추", herb:"허브", cucumber:"오이", other:"기타" };
     const METHOD_LABELS = { hydro:"수경", soil:"토경", nft:"NFT", dwc:"DWC" };
@@ -4063,8 +4097,8 @@ button.action:disabled{opacity:.5;cursor:default;}
         style="min-width:32px;height:32px;border-radius:9px;border:1.5px solid #f1b8bf;background:#fff7f8;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon>
       </button>`;
-      const activeActions = `<div data-crop-basic-record-actions style="display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0;">
-        <div data-crop-basic-secondary-actions style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      const activeActions = `<div data-crop-basic-record-actions data-crop-record-action-group style="display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0;">
+        <div data-crop-basic-secondary-actions data-crop-record-secondary-actions style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <button data-season-edit="${i}" title="수정"
             style="height:32px;border-radius:9px;border:1.5px solid #b7dfbd;background:#f5faf6;color:#51AE60;cursor:pointer;display:flex;align-items:center;gap:4px;justify-content:center;padding:0 10px;font-size:11px;font-weight:800;">
             <ha-icon icon="mdi:pencil" style="--mdi-icon-size:16px;"></ha-icon>수정
@@ -4075,7 +4109,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             철거
           </button>
         </div>
-        <div data-crop-basic-danger-actions style="border-left:1px solid #f4d5d9;padding-left:6px;display:flex;">${deleteAction}</div>
+        <div data-crop-basic-danger-actions data-crop-record-danger-actions style="border-left:1px solid #f4d5d9;padding-left:6px;display:flex;">${deleteAction}</div>
       </div>`;
       const seasonActions = demolished ? `<div data-crop-basic-record-actions>${deleteAction}</div>` : activeActions; // compatibility: demolished ? deleteAction : activeActions
       return `
@@ -4229,7 +4263,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div data-crop-ai-readonly-boundary style="background:#f7fbff;border:1px solid #dbeaf8;border-radius:14px;padding:10px;margin-bottom:10px;color:#4f6f83;font-size:11px;line-height:1.55;font-weight:800;">
         현장 Edge가 최종 판단 · read-only · 자동 실행 없음 · 자동 학습/배포 없음 · 환경/관수/장치 PID 적용은 제외
       </div>
-      <div data-crop-ai-primary-summary style="background:linear-gradient(135deg,#f7fff9 0%,#f7fbff 100%);border:1px solid #cfe8d8;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(64,117,78,0.08);">
+      <div data-crop-ai-primary-summary data-crop-ai-summary-stack style="background:linear-gradient(135deg,#f7fff9 0%,#f7fbff 100%);border:1px solid #cfe8d8;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(64,117,78,0.08);">
         <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">이번 주 작물 판단 요약</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;">
           <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">입력 상태</div><b style="font-size:16px;color:${weeklyInputStatus.complete ? '#51AE60' : '#c97a00'};">${this._esc(weeklyInputStatus.label || (weeklyInputStatus.complete ? '완료' : '입력 필요'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">부족 ${this._esc(String(operatorMissingInputs.length))}개</div></div>
@@ -4303,7 +4337,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:10px;color:#7a9780;margin-top:8px;line-height:1.5;">${operatorWarnings.length ? operatorWarnings.map(w => this._esc(w)).join(' · ') : '실행 권한 없음'} · 모바일/PC 반응형 요약 · 상세 근거는 아래 카드에서 확인</div>
       </div>
-      <details data-crop-ai-advanced-details style="background:#fff;border:1px solid #dbeee0;border-radius:16px;padding:10px;margin-bottom:12px;">
+      <details data-crop-ai-advanced-details data-crop-ai-evidence-details style="background:#fff;border:1px solid #dbeee0;border-radius:16px;padding:10px;margin-bottom:12px;">
         <summary style="cursor:pointer;font-size:13px;font-weight:900;color:#24323F;display:flex;align-items:center;gap:6px;"><ha-icon icon="mdi:database-search-outline" style="--mdi-icon-size:17px;"></ha-icon>상세 모델 근거</summary>
         <div data-crop-ai-technical-evidence-grid style="margin-top:10px;">
       <div data-crop-trainable-baseline-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e4f0ff;">
@@ -4551,12 +4585,11 @@ button.action:disabled{opacity:.5;cursor:default;}
             </div>
             ${r.note ? `<div data-crop-growth-note style="font-size:11px;color:#7a9780;line-height:1.45;">메모: ${this._esc(r.note)}</div>` : `<span data-crop-growth-note hidden></span>`}
           </div>
-          <div data-crop-growth-record-actions style="display:flex;gap:6px;align-items:flex-start;justify-content:flex-end;flex-wrap:wrap;">
+          ${this._cropRecordActionGroup('data-crop-growth-record-actions', `
             <button data-growth-edit="${i}" data-crop-growth-edit-action title="수정"
-              style="background:#fff;border:1px solid #b7dfbd;border-radius:9px;cursor:pointer;color:#51AE60;font-size:12px;font-weight:800;padding:6px 9px;display:flex;align-items:center;gap:4px;"><ha-icon icon="mdi:pencil" style="--mdi-icon-size:15px;"></ha-icon>수정</button>
+              style="background:#fff;border:1px solid #b7dfbd;border-radius:9px;cursor:pointer;color:#51AE60;font-size:12px;font-weight:800;padding:6px 9px;display:flex;align-items:center;gap:4px;"><ha-icon icon="mdi:pencil" style="--mdi-icon-size:15px;"></ha-icon>수정</button>`, `
             <button data-growth-del="${i}" data-crop-growth-delete-action title="삭제"
-              style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>
-          </div>
+              style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>`)}
         </div>`;
       }).join("")
       : `<div data-crop-ui-empty-state style="text-align:center;padding:34px 12px;color:#7a9780;font-size:13px;border:1px dashed #d7e8da;border-radius:16px;background:#fbfefb;">
@@ -4629,7 +4662,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropAiStrategyTab() {
     return `
-      <div data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-action-row data-crop-consistency-card-radius data-crop-consistency-final-pass style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <div data-crop-ai-consolidated-layout data-crop-ai-duplicate-card-guard data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-action-row data-crop-consistency-card-radius data-crop-consistency-final-pass style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
         <div>
           <div style="font-size:15px;font-weight:900;color:#24323F;">AI 전략</div>
           <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 리포트 · G-Index · 수확량 예측 · 병해 위험 분석을 한 곳에서 확인합니다.</div>
@@ -4667,8 +4700,8 @@ button.action:disabled{opacity:.5;cursor:default;}
               발생도: ${SEVERITY[r.severity]||r.severity}</span>
             ${r.note ? `<span style="font-size:11px;color:#7a9780;width:100%;">${this._esc(r.note)}</span>` : ""}
           </div>
-          <button data-pest-del="${i}" data-crop-pest-delete-action title="삭제"
-            style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>
+          ${this._cropRecordActionGroup('data-crop-pest-record-actions', '', `<button data-pest-del="${i}" data-crop-pest-delete-action title="삭제"
+            style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>`)}
         </div>`;
       }).join("")
       : `<div style="text-align:center;padding:32px 0;color:#b0c4b1;font-size:13px;">
@@ -4676,17 +4709,8 @@ button.action:disabled{opacity:.5;cursor:default;}
           병해충 예찰 기록이 없습니다
         </div>`;
     return `
-      <div data-crop-consistency-action-row style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <div data-crop-pest-top-heading style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
         <span style="font-size:13px;font-weight:700;color:#24323F;">병해충 예찰 기록 <span style="color:#7a9780;font-weight:400;">(${this._pestData.length}건)</span></span>
-        <div style="display:flex;gap:6px;">
-          <button id="pest-export-btn" title="CSV 내보내기"
-            style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
-                   padding:6px 10px;cursor:pointer;display:flex;align-items:center;">
-            <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
-          <button id="pest-add-btn"
-            style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
-            + 병해충 추가</button>
-        </div>
       </div>
       <div data-crop-pest-summary-card data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
         <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">병해충 예찰 요약</div>
@@ -4696,6 +4720,16 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">최근 예찰</div><b style="font-size:18px;color:#24323F;">${this._esc(latestPest?.type || '없음')}</b><div style="font-size:10px;color:#9aae9d;">${this._esc(SEVERITY[latestPest?.severity] || latestPest?.severity || '-')}</div></div>
         </div>
         <div data-crop-pest-next-action style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 행동</b> ${this._esc(pestNextAction)} <button data-crop-pest-go-control type="button" style="margin-left:6px;background:#fff8f5;color:#e67e22;border:1px solid #f3c79d;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:900;cursor:pointer;">방제 기록으로 이동</button></div>
+      </div>
+      <div data-crop-pest-action-row data-crop-consistency-action-row style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:12px;color:#7a9780;margin-right:auto;">요약 카드 다음에 액션 줄과 기록 목록</span>
+        <button id="pest-export-btn" title="CSV 내보내기"
+          style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
+                 padding:6px 10px;cursor:pointer;display:flex;align-items:center;">
+          <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
+        <button id="pest-add-btn"
+          style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
+          + 병해충 추가</button>
       </div>
       <div id="pest-list" data-crop-pest-record-list>${rows}</div>
       ${this._renderCropPager("pest", this._pestData.length)}`;
@@ -4752,8 +4786,8 @@ button.action:disabled{opacity:.5;cursor:default;}
                   ${r.note  ? `<span style="font-size:11px;color:#7a9780;">${this._esc(r.note)}</span>` : ""}
                 </div>
               </div>
-              <button data-control-del="${i}" data-crop-control-delete-action title="삭제"
-                style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;flex-shrink:0;">✕</button>
+              ${this._cropRecordActionGroup('data-crop-control-record-actions', '', `<button data-control-del="${i}" data-crop-control-delete-action title="삭제"
+                style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;flex-shrink:0;">✕</button>`)}
             </div>
           </div>`;
         }).join("")
@@ -4762,17 +4796,8 @@ button.action:disabled{opacity:.5;cursor:default;}
           방제 기록이 없습니다
         </div>`;
     return `
-      <div data-crop-consistency-action-row style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <div data-crop-control-top-heading style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
         <span style="font-size:13px;font-weight:700;color:#24323F;">방제 기록 <span style="color:#7a9780;font-weight:400;">(${this._controlData.length}건)</span></span>
-        <div style="display:flex;gap:6px;">
-          <button id="control-export-btn" title="CSV 내보내기"
-            style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
-                   padding:6px 10px;cursor:pointer;display:flex;align-items:center;">
-            <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
-          <button id="control-add-btn"
-            style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
-            + 방제 기록 추가</button>
-        </div>
       </div>
       <div data-crop-control-safety-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
         <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">방제 안전 요약</div>
@@ -4782,6 +4807,16 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div data-crop-control-phi-rei-overview style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">PHI/REI 확인</div><b style="font-size:18px;color:${missingPhiRei.length ? '#e67e22' : '#51AE60'};">${missingPhiRei.length ? '보강 필요' : '확인'}</b><div style="font-size:10px;color:#9aae9d;">누락 ${this._esc(String(missingPhiRei.length))}건</div></div>
         </div>
         <div data-crop-control-next-check style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 점검</b> ${this._esc(controlNextCheck)}</div>
+      </div>
+      <div data-crop-control-action-row data-crop-consistency-action-row style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:12px;color:#7a9780;margin-right:auto;">요약 카드 다음에 액션 줄과 기록 목록</span>
+        <button id="control-export-btn" title="CSV 내보내기"
+          style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
+                 padding:6px 10px;cursor:pointer;display:flex;align-items:center;">
+          <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
+        <button id="control-add-btn"
+          style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
+          + 방제 기록 추가</button>
       </div>
       <div id="control-list" data-crop-control-treatment-list>${rows}</div>
       ${this._renderCropPager("control", this._controlData.length)}`;
@@ -5591,7 +5626,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const currentSeasonLabel = this._activeSeasonLabel();
 
     // ── 로컬 상태 ───────────────────────────────────────────────────────────────
-    const entries = [{ name: "", regNo: "", moa: "", dil: "", amount: "", pls: null, mixWarning: "", plsWarning: "" }];
+    const entries = [{ name: "", regNo: "", moa: "", dil: "", amount: "", chemicalAmount: "", waterAmount: "", treatmentAreaM2: "", perPyeongUsage: "", pls: null, mixWarning: "", plsWarning: "" }];
     const debounceTimers = {};
 
     // ── 이전 기록에서 약제별 자동완성 데이터 추출 ───────────────────────────────
@@ -5716,11 +5751,31 @@ button.action:disabled{opacity:.5;cursor:default;}
                   value="${e.dil}" placeholder="예) 1000" min="10" max="10000" step="10">
               </div>
             </div>
-            <!-- 사용량 -->
+            <!-- 사용량 / 희석 / 면적 자동 계산 -->
+            <div data-control-dose-grid class="pop-field-row" style="margin-bottom:10px;">
+              <div class="pop-field">
+                <label>약제 사용량</label>
+                <input type="number" data-chemical-amount-input="${idx}" value="${this._esc(e.chemicalAmount)}" placeholder="예) 0.5" min="0" step="0.01">
+              </div>
+              <div class="pop-field">
+                <label>물 사용량</label>
+                <input type="number" data-water-amount-input="${idx}" value="${this._esc(e.waterAmount)}" placeholder="예) 500" min="0" step="0.1">
+              </div>
+            </div>
+            <div class="pop-field-row">
+              <div class="pop-field">
+                <label>사용 면적(㎡)</label>
+                <input type="number" data-treatment-area-input="${idx}" value="${this._esc(e.treatmentAreaM2)}" placeholder="작기+처리범위로 자동" min="0" step="0.1">
+              </div>
+              <div class="pop-field">
+                <label>평당 사용량</label>
+                <input type="text" data-pyeong-amount-output="${idx}" value="${this._esc(e.perPyeongUsage)}" placeholder="평당 사용량 자동 계산" readonly>
+              </div>
+            </div>
             <div class="pop-field">
               <label>사용량</label>
-              <input type="text" data-amount-input="${idx}"
-                value="${this._esc(e.amount)}" placeholder="예) 10L/300평">
+              <input type="text" data-amount-input="${idx}" value="${this._esc(e.amount)}" placeholder="약제/물/면적 입력 시 자동 요약">
+              <div style="font-size:11px;color:#7a9780;margin-top:5px;">희석 배수 자동 계산 · 평당 사용량 자동 계산 · cropModelNutritionHint 근거로 보존</div>
             </div>
           </div>`;
       };
@@ -5828,6 +5883,31 @@ button.action:disabled{opacity:.5;cursor:default;}
         }, 250);
       };
 
+      const _syncControlDoseCalculations = (idx) => {
+        const entry = entries[idx];
+        if (!entry) return;
+        const scope = inner.querySelector("#c-location-scope")?.value || "전체";
+        const areaInput = listEl.querySelector(`[data-treatment-area-input="${idx}"]`);
+        const dilInput = listEl.querySelector(`[data-dil-input="${idx}"]`);
+        const amountInput = listEl.querySelector(`[data-amount-input="${idx}"]`);
+        const pyeongOutput = listEl.querySelector(`[data-pyeong-amount-output="${idx}"]`);
+        const area = this._calculateTreatmentAreaFromSeason(scope, entry.treatmentAreaM2 || areaInput?.value || "");
+        if (area && areaInput && !areaInput.value) areaInput.value = String(area);
+        entry.treatmentAreaM2 = areaInput?.value || (area ? String(area) : "");
+        const dilution = this._calculateControlDilution(entry.chemicalAmount, entry.waterAmount);
+        if (dilution) { entry.dil = dilution; if (dilInput) dilInput.value = dilution; }
+        const per = this._calculatePyeongUsage(entry.waterAmount || entry.amount, entry.treatmentAreaM2);
+        entry.perPyeongUsage = per;
+        if (pyeongOutput) pyeongOutput.value = per ? `${per}L/평` : "";
+        const summary = [];
+        if (entry.chemicalAmount) summary.push(`약제 ${entry.chemicalAmount}`);
+        if (entry.waterAmount) summary.push(`물 ${entry.waterAmount}L`);
+        if (entry.treatmentAreaM2) summary.push(`면적 ${entry.treatmentAreaM2}㎡`);
+        if (entry.perPyeongUsage) summary.push(`평당 ${entry.perPyeongUsage}L`);
+        if (amountInput) amountInput.value = summary.join(" · ");
+        entry.amount = amountInput?.value || entry.amount || "";
+      };
+
       // ── 각 항목 이벤트 바인딩 ─────────────────────────────────────────────────
       const bindEntries = () => {
         // 삭제 버튼
@@ -5844,12 +5924,19 @@ button.action:disabled{opacity:.5;cursor:default;}
           const moaInput    = listEl.querySelector(`[data-moa-input="${idx}"]`);
           const dilInput    = listEl.querySelector(`[data-dil-input="${idx}"]`);
           const amountInput = listEl.querySelector(`[data-amount-input="${idx}"]`);
+          const chemicalInput = listEl.querySelector(`[data-chemical-amount-input="${idx}"]`);
+          const waterInput = listEl.querySelector(`[data-water-amount-input="${idx}"]`);
+          const areaInput = listEl.querySelector(`[data-treatment-area-input="${idx}"]`);
           const sugBox      = listEl.querySelector(`[data-pesticide-suggestions="${idx}"]`);
 
           // 필드 변경 → entries 동기화
           moaInput?.addEventListener("input",    () => { entries[idx].moa    = moaInput.value; scheduleRiskChecks(); });
           dilInput?.addEventListener("input",    () => { entries[idx].dil    = dilInput.value; });
           amountInput?.addEventListener("input", () => { entries[idx].amount = amountInput.value; });
+          chemicalInput?.addEventListener("input", () => { entries[idx].chemicalAmount = chemicalInput.value; _syncControlDoseCalculations(idx); });
+          waterInput?.addEventListener("input", () => { entries[idx].waterAmount = waterInput.value; _syncControlDoseCalculations(idx); });
+          areaInput?.addEventListener("input", () => { entries[idx].treatmentAreaM2 = areaInput.value; _syncControlDoseCalculations(idx); });
+          _syncControlDoseCalculations(idx);
 
           // 약제명 입력 → 디바운스 자동완성
           nameInput?.addEventListener("input", () => {
@@ -5947,10 +6034,14 @@ button.action:disabled{opacity:.5;cursor:default;}
         }
       };
 
+      inner.querySelector("#c-location-scope")?.addEventListener("change", () => {
+        entries.forEach((_, idx) => _syncControlDoseCalculations(idx));
+      });
+
       // ── 약제 추가 버튼 ────────────────────────────────────────────────────────
       addBtn.addEventListener("click", () => {
         if (entries.length >= MAX_PESTS) return;
-        entries.push({ name: "", regNo: "", moa: "", dil: "", amount: "", pls: null, mixWarning: "", plsWarning: "" });
+        entries.push({ name: "", regNo: "", moa: "", dil: "", amount: "", chemicalAmount: "", waterAmount: "", treatmentAreaM2: "", perPyeongUsage: "", pls: null, mixWarning: "", plsWarning: "" });
         renderAll();
         scheduleRiskChecks();
       });
@@ -5962,6 +6053,10 @@ button.action:disabled{opacity:.5;cursor:default;}
           e.name   = (listEl.querySelector(`[data-name-input="${idx}"]`)?.value   || "").trim();
           e.moa    = listEl.querySelector(`[data-moa-input="${idx}"]`)?.value    || "";
           e.dil    = listEl.querySelector(`[data-dil-input="${idx}"]`)?.value    || "";
+          e.chemicalAmount = listEl.querySelector(`[data-chemical-amount-input="${idx}"]`)?.value || "";
+          e.waterAmount = listEl.querySelector(`[data-water-amount-input="${idx}"]`)?.value || "";
+          e.treatmentAreaM2 = listEl.querySelector(`[data-treatment-area-input="${idx}"]`)?.value || "";
+          e.perPyeongUsage = String(listEl.querySelector(`[data-pyeong-amount-output="${idx}"]`)?.value || "").replace(/L\/평$/, "");
           e.amount = listEl.querySelector(`[data-amount-input="${idx}"]`)?.value || "";
         });
         const validEntries = entries.filter(e => e.name);
@@ -5980,6 +6075,11 @@ button.action:disabled{opacity:.5;cursor:default;}
             name: e.name, regNo: e.regNo || null,
             moa: e.moa || null, dil: parseInt(e.dil) || null,
             amount: e.amount || null,
+            chemicalAmount: e.chemicalAmount ? Number(e.chemicalAmount) : null,
+            waterAmount: e.waterAmount ? Number(e.waterAmount) : null,
+            treatmentAreaM2: e.treatmentAreaM2 ? Number(e.treatmentAreaM2) : null,
+            perPyeongUsage: e.perPyeongUsage ? Number(e.perPyeongUsage) : null,
+            cropModelNutritionHint: e.perPyeongUsage ? { source: "control_record_modal", perPyeongUsage: Number(e.perPyeongUsage), unit: "L/평", caution: "방제/영양 모델 입력 후보, 실행 권한 없음" } : null,
             pls: e.pls === true ? true : e.pls === false ? false : null,
             mixable: e.mixable === true ? true : e.mixable === false ? false : null,
             mixCheckStatus: e.mixCheckStatus || null,

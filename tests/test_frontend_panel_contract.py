@@ -476,7 +476,10 @@ def test_ui_polish_v1932_crop_ai_tab_refresh_spinner_and_icon_toggle_contract():
     refresh_helper = panel.split("  async _refreshWeeklyGrowthReportFromButton(button)", 1)[1].split("  async _exportWeeklyGrowthReport", 1)[0]
     styles = panel.split("/* Animations */", 1)[1].split("/* ── Wizard", 1)[0]
 
-    assert '{ key: "ai",      label: "AI 전략", icon: "mdi:brain", emoji: "🧠" }' in crop_page
+    assert '{ key: "ai",      label: "AI 전략", icon: "mdi:brain" }' in crop_page
+    assert 'emoji: "🧠"' not in crop_page
+    assert 'data-crop-tab-emoji' not in crop_page
+    assert '${t.emoji}' not in crop_page
     assert 'data-crop-ui-icon-tab' in crop_page
     assert 'data-crop-tab-icon' in crop_page
     assert 'data-crop-tab-label' in crop_page
