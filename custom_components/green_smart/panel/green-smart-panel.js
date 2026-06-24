@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.80
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.81
 const DOMAIN = "green_smart";
-const VERSION = "1.9.80";
+const VERSION = "1.9.81";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -5647,7 +5647,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
     // ── 팝업 열기 ───────────────────────────────────────────────────────────────
     this._openCropPopup(`
-      <div class="popup-card" style="width:min(560px,94vw);">
+      <div class="popup-card" data-control-compact-modal style="width:min(560px,94vw);">
         <div class="pop-header">
           <div class="pop-icon-box" style="background:#e8f4fd;color:#2980b9;">
             <ha-icon icon="mdi:spray" style="--mdi-icon-size:22px;"></ha-icon>
@@ -5659,28 +5659,28 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div class="pop-fields">
           <!-- 방제일 -->
-          <div class="pop-field">
+          <div class="pop-field" data-control-date-field>
             <label>방제일</label>
             <input type="date" id="c-date" value="${today}">
           </div>
           <!-- 처리 범위 -->
-          <div class="pop-field-row">
-            <div class="pop-field">
+          <div class="pop-field-row" data-control-scope-row>
+            <div class="pop-field" data-control-active-season-pill>
               <label>현재 작기</label>
               <div style="background:#f5faf6;border:1px solid #dbeee0;border-radius:10px;padding:9px 11px;font-size:13px;color:#4a6741;font-weight:800;">${this._esc(currentSeasonLabel)}</div>
             </div>
             <div class="pop-field">
               <label>처리 범위</label>
-              <select id="c-location-scope">
+              <select id="c-location-scope" data-control-location-scope-select>
                 <option value="전체">전체</option>
                 <option value="부분">부분</option>
               </select>
             </div>
           </div>
           <!-- 약제 목록 -->
-          <div id="c-pest-list"></div>
+          <div id="c-pest-list" data-control-pesticide-list></div>
           <!-- 약제 추가 버튼 -->
-          <button id="c-add-pest"
+          <button id="c-add-pest" data-control-pesticide-add-row
             style="background:#f5faf6;color:#51AE60;border:1.5px dashed #b2d8b5;border-radius:10px;
                    padding:9px;width:100%;font-size:13px;font-weight:700;cursor:pointer;margin-top:2px;">
             + 약제 추가 (최대 ${MAX_PESTS}개)
@@ -5688,7 +5688,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           <!-- 혼용 경고는 약제명 아래에 자동 표시된다 -->
           <div id="c-mix-summary" style="display:none;margin-top:2px;font-size:11px;color:#856404;"></div>
           <!-- 비고 -->
-          <div class="pop-field">
+          <div class="pop-field" data-control-note-compact>
             <label>비고</label>
             <input type="text" id="c-note" placeholder="추가 메모">
           </div>
@@ -5710,7 +5710,7 @@ button.action:disabled{opacity:.5;cursor:default;}
                padding:2px 7px;border-radius:20px;flex-shrink:0;">PLS ✗</span>`
           : "";
         return `
-          <div data-entry="${idx}"
+          <div data-entry="${idx}" data-control-pesticide-entry
             style="background:#f9fcf9;border:1.5px solid #e8f0e9;border-radius:12px;
                    padding:12px 14px;margin-bottom:10px;position:relative;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -5722,7 +5722,7 @@ button.action:disabled{opacity:.5;cursor:default;}
                 : ""}
             </div>
             <!-- 약제명 + 자동완성 -->
-            <div class="pop-field" style="position:relative;margin-bottom:10px;">
+            <div class="pop-field" data-control-pesticide-name-field style="position:relative;margin-bottom:10px;">
               <label style="display:flex;align-items:center;gap:6px;">
                 약제명 <span style="font-weight:400;color:#7a9780;font-size:11px;">(PSIS 검색)</span>
                 ${plsBadge}

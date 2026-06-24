@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.80`
+> 기준 버전: `v1.9.81`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.80` |
+| 현재 version | `1.9.81` |
 
 작업 시 우선순위:
 
@@ -697,6 +697,21 @@ UI Slice 5 v1.9.76 구현 기준:
 - `data-crop-control-next-check`: `다음 점검` 문구로 PLS 경고, PHI/REI 누락, 효과/재발 점검을 안내한다.
 - `data-crop-control-treatment-list`: compact treatment list. 각 row는 `data-crop-control-treatment-row`, `data-crop-control-treatment-summary`, `data-crop-control-treatment-meta`, `data-crop-control-pesticide-chip-group`, `data-crop-control-delete-action`, 기존 삭제 바인딩용 `data-control-del`을 가진다.
 - export/add/delete는 유지하되 action hierarchy를 명확히 한다.
+
+UI Polish Phase P1 v1.9.81 방제 기록 모달 compact 기준:
+
+- `data-control-compact-modal`: 방제 기록 추가 모달은 compact popup card로 렌더한다.
+- `data-control-date-field`: 방제일은 모달 첫 입력으로 둔다.
+- `data-control-scope-row`: 방제일 아래 현재 작기와 처리 범위를 같은 줄에 배치한다.
+- `data-control-active-season-pill`: 선택 작기를 읽기 전용 pill로 표시한다.
+- `data-control-location-scope-select`: 처리 범위는 `전체/부분` 드롭다운만 제공한다.
+- `data-control-pesticide-list`: 약제 입력 목록은 scope row 다음에 배치한다.
+- `data-control-pesticide-entry`: 약제 1개 입력 단위를 명확히 표시한다.
+- `data-control-pesticide-name-field`: 약제명/PSIS 검색 field는 각 약제 entry의 첫 입력으로 둔다.
+- `data-control-pesticide-add-row`: 약제 추가 버튼은 약제 목록 다음, 비고 이전에 둔다.
+- `data-control-note-compact`: 비고는 마지막 compact 입력으로 둔다.
+- `data-control-dose-grid`, `data-chemical-amount-input`, `data-water-amount-input`, `data-treatment-area-input`, `data-pyeong-amount-output` 계산 필드는 유지한다.
+- 자유 입력 세부 위치 field는 제공하지 않는다. 저장 시 zone은 `${현재 작기} · ${전체/부분}`으로 정규화한다.
 
 금지 marker / behavior:
 
@@ -1434,7 +1449,7 @@ autoSchedulePesticideApplication
 
 ---
 
-## Crop Settings requested UI corrections — v1.9.80
+## Crop Settings requested UI corrections — v1.9.81
 
 User-requested correction slice after the v1.9.77 final pass.
 
@@ -1512,7 +1527,7 @@ Behavior:
 
 ---
 
-## Rendered UI QA hotfix — v1.9.80
+## Rendered UI QA hotfix — v1.9.81
 
 Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
 
