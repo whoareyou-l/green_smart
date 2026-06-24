@@ -103,10 +103,11 @@ Each row below is a complete patch release, not a partial UI change.
 | UI Foundation | v1.9.70 | 공통 메인 포맷 + 작물 아이콘 탭 | Apply common main page format and align Crop tab style with Environment tabs | Add shared page shell helper; add icon+text Crop tabs; shift later slice versions |
 | UI Slice 2 | v1.9.71 | 생육조사 | Make weekly survey workflow clean | Add latest survey summary; merge metric chips; improve add/export/delete layout |
 | UI Correction | v1.9.72 | 작기 설정 공통 포맷 재적용 | Re-apply the post-foundation common subpage workflow to the earlier Basic slice | Add summary alias, latest-season marker, compact record row markers, full CSV label, and shift AI/pest/control versions |
-| UI Slice 3 | v1.9.73 | AI 전략 | Reduce card sprawl drastically | Merge operator workflow + key model status into primary summary; collapse technical details; remove duplicate standalone evidence where redundant |
-| UI Slice 4 | v1.9.74 | 병해충 예찰 | Make scouting/risk workflow clear | Add severity summary; group unresolved observations; link next action to 방제 기록 without duplicating 방제 UI |
-| UI Slice 5 | v1.9.75 | 방제 기록 | Make PLS/PHI/REI safety readable | Add safety summary; group pesticide chips; make delete/export/add hierarchy clean |
-| UI Slice 6 | v1.9.76 | Cross-subpage polish | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
+| UI Hotfix | v1.9.73 | 작물 설정 시각/표기/수정 UX 보정 | Fix issues found in the actual rendered screen before continuing AI strategy | Add Basic tab emoji fallback, Korean crop labels in latest growth survey, and growth row edit action |
+| UI Slice 3 | v1.9.74 | AI 전략 | Reduce card sprawl drastically | Merge operator workflow + key model status into primary summary; collapse technical details; remove duplicate standalone evidence where redundant |
+| UI Slice 4 | v1.9.75 | 병해충 예찰 | Make scouting/risk workflow clear | Add severity summary; group unresolved observations; link next action to 방제 기록 without duplicating 방제 UI |
+| UI Slice 5 | v1.9.76 | 방제 기록 | Make PLS/PHI/REI safety readable | Add safety summary; group pesticide chips; make delete/export/add hierarchy clean |
+| UI Slice 6 | v1.9.77 | Cross-subpage polish | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
 
 ---
 
@@ -240,16 +241,17 @@ Target pages:
 ```text
 data-crop-ui-icon-tab
 data-crop-tab-icon
+data-crop-tab-emoji
 data-crop-tab-label
 ```
 
-| tab | icon |
-|---|---|
-| 작기 설정 | `mdi:calendar-leaf` |
-| 생육조사 | `mdi:clipboard-pulse-outline` |
-| AI 전략 | `mdi:brain` |
-| 병해충 예찰 | `mdi:bug-outline` |
-| 방제 기록 | `mdi:spray` |
+| tab | icon | emoji fallback |
+|---|---|---|
+| 작기 설정 | `mdi:sprout` | `🌱` |
+| 생육조사 | `mdi:clipboard-pulse-outline` | `📋` |
+| AI 전략 | `mdi:brain` | `🧠` |
+| 병해충 예찰 | `mdi:bug-outline` | `🐛` |
+| 방제 기록 | `mdi:spray` | `💧` |
 
 ---
 
@@ -330,7 +332,30 @@ data-crop-basic-record-actions
 
 ---
 
-## UI Slice 3 — v1.9.73 AI 전략 Subpage Polish
+## UI Hotfix — v1.9.73 작물 설정 시각/표기/수정 UX 보정
+
+### Objective
+
+Fix issues found on the actual rendered Crop Settings screen before continuing AI Strategy work.
+
+### Fixes
+
+- Basic tab icon: use `icon: "mdi:sprout"` and explicit `emoji: "🌱"` fallback rendered through `data-crop-tab-emoji` / `${t.emoji}` so the tab never appears blank.
+- Latest growth survey crop name: translate raw crop keys with `_cropLabelForDisplay(` and `const latestCropLabel = this._cropLabelForDisplay(` so `lettuce` renders as `상추`, with `토마토`, `파프리카`, `오이`, `허브` labels preserved.
+- Growth record row actions: add `data-growth-edit`, `data-growth-edit="${i}"` / `data-crop-growth-edit-action`, open `_openGrowthEditPopup(`, prefill the existing record, and save through `PUT", `green_smart/crop/growth/${id}``.
+
+### Required markers
+
+```text
+data-crop-tab-emoji
+data-growth-edit
+data-crop-growth-edit-action
+_cropLabelForDisplay(
+```
+
+---
+
+## UI Slice 3 — v1.9.74 AI 전략 Subpage Polish
 
 ### Objective
 
@@ -364,7 +389,7 @@ centerPolicyAllowExecution
 
 ---
 
-## UI Slice 4 — v1.9.74 병해충 예찰 Subpage Polish
+## UI Slice 4 — v1.9.75 병해충 예찰 Subpage Polish
 
 ### Objective
 
@@ -390,7 +415,7 @@ data-crop-pest-next-action
 
 ---
 
-## UI Slice 5 — v1.9.75 방제 기록 Subpage Polish
+## UI Slice 5 — v1.9.76 방제 기록 Subpage Polish
 
 ### Objective
 
@@ -416,7 +441,7 @@ data-crop-control-next-check
 
 ---
 
-## UI Slice 6 — v1.9.76 Cross-subpage consistency pass
+## UI Slice 6 — v1.9.77 Cross-subpage consistency pass
 
 ### Objective
 

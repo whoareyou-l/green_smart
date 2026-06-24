@@ -56,7 +56,7 @@ def test_v1970_crop_tabs_use_environment_style_icon_and_text_tabs():
         assert marker in plan
 
     for icon in (
-        'mdi:calendar-leaf',
+        'mdi:sprout',
         'mdi:clipboard-pulse-outline',
         'mdi:brain',
         'mdi:bug-outline',
@@ -74,10 +74,10 @@ def test_v1970_common_format_is_planned_before_growth_slice_and_versions_shifted
 
     assert 'UI Foundation | v1.9.70 | 공통 메인 포맷 + 작물 아이콘 탭' in plan
     assert 'UI Slice 2 | v1.9.71 | 생육조사' in plan
-    assert 'UI Slice 3 | v1.9.73 | AI 전략' in plan
-    assert 'UI Slice 4 | v1.9.74 | 병해충 예찰' in plan
-    assert 'UI Slice 5 | v1.9.75 | 방제 기록' in plan
-    assert 'UI Slice 6 | v1.9.76 | Cross-subpage polish' in plan
+    assert 'UI Slice 3 | v1.9.74 | AI 전략' in plan
+    assert 'UI Slice 4 | v1.9.75 | 병해충 예찰' in plan
+    assert 'UI Slice 5 | v1.9.76 | 방제 기록' in plan
+    assert 'UI Slice 6 | v1.9.77 | Cross-subpage polish' in plan
 
 
 def test_v1970_common_format_version_markers():
@@ -87,9 +87,9 @@ def test_v1970_common_format_version_markers():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.9.72"' in manifest
-    assert 'const VERSION = "1.9.72"' in panel
-    assert 'v1.9.72' in panel[:200]
-    assert 'EDGE_VERSION = "1.9.72"' in central
+    assert '"version": "1.9.73"' in manifest
+    assert 'const VERSION = "1.9.73"' in panel
+    assert 'v1.9.73' in panel[:200]
+    assert 'EDGE_VERSION = "1.9.73"' in central
     assert 'v1.9.72' in docs
     assert 'UI Foundation | v1.9.70' in plan

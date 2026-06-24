@@ -3253,9 +3253,52 @@ class CropPolicyNotificationDismissView(HomeAssistantView):
 
 
 class CropGrowthDeleteView(HomeAssistantView):
-    """DELETE /api/green_smart/crop/growth/{record_id}"""
+    """PUT/DELETE /api/green_smart/crop/growth/{record_id}"""
     url  = "/api/green_smart/crop/growth/{record_id}"
-    name = "api:green_smart:crop:growth:delete"
+    name = "api:green_smart:crop:growth:record"
+
+    async def put(self, request: web.Request, record_id: str) -> web.Response:
+        hass = request.app["hass"]
+        try:
+            body = await request.json()
+        except Exception:
+            return _err("Invalid JSON")
+        if not body.get("date"):
+            return _err("date 필수")
+        crop_type = body.get("cropType") or "other"
+        metrics = _normalize_growth_metrics(body.get("metrics") or [], crop_type)
+        legacy = _growth_legacy_payload_from_metrics(metrics, crop_type)
+        metrics_json = json.dumps(metrics, ensure_ascii=False)
+        await execute(hass, """
+            UPDATE growth_surveys
+            SET survey_date = %s,
+                plant_height = %s,
+                leaf_count = %s,
+                stem_diameter = %s,
+                truss_count = %s,
+                node_count = %s,
+                crop_type = %s,
+                metrics_json = %s,
+                notes = %s,
+                updated_at = NOW()
+            WHERE id = %s AND deleted_at IS NULL
+        """, (
+            body["date"],
+            legacy.get("height"), legacy.get("leafCount"),
+            legacy.get("stemDia"), legacy.get("truss"),
+            legacy.get("node"), crop_type, metrics_json,
+            body.get("note") or "",
+            int(record_id),
+        ))
+        row = await fetchone(hass, """
+            SELECT id, survey_date AS date, plant_height AS height,
+                   leaf_count AS leafCount, stem_diameter AS stemDia,
+                   truss_count AS truss, node_count AS node,
+                   crop_type AS cropType, metrics_json AS metricsJson,
+                   notes AS note
+            FROM growth_surveys WHERE id = %s
+        """, (int(record_id),))
+        return _json(row)
 
     async def delete(self, request: web.Request, record_id: str) -> web.Response:
         hass = request.app["hass"]

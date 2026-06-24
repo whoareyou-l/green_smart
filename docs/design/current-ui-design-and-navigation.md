@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.72`
+> 기준 버전: `v1.9.73`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.72` |
+| 현재 version | `1.9.73` |
 
 작업 시 우선순위:
 
@@ -434,21 +434,24 @@ cropSettingsAllowExecution
 
 v1.9.70부터 작물 설정 하위 탭은 환경 제어 하위 탭과 같은 **아이콘 + 텍스트** 탭 패턴을 사용한다.
 
+v1.9.73부터 HA icon 렌더링 실패 시에도 빈 탭으로 보이지 않도록 `icon: "mdi:sprout"`, `emoji: "🌱"`, `data-crop-tab-emoji`, `${t.emoji}` fallback을 함께 렌더한다.
+
 계약 marker:
 
 ```text
 data-crop-ui-icon-tab
 data-crop-tab-icon
+data-crop-tab-emoji
 data-crop-tab-label
 ```
 
-| key | label | icon | 목적 |
-|---|---|---|---|
-| `basic` | 작기 설정 | `mdi:calendar-leaf` | 작기 등록/수정/철거/삭제와 선택 작기 lifecycle 확인 |
-| `growth` | 생육조사 | `mdi:clipboard-pulse-outline` | 작물별 dynamic metrics 기록과 최신 조사/다음 조사 안내 |
-| `ai` | AI 전략 | `mdi:brain` | 생육 리포트, 모델/인터록/정책/데이터 준비 상태를 read-only로 요약 |
-| `pest` | 병해충 예찰 | `mdi:bug-outline` | 발생 위치/심각도 기록과 후속 방제 필요 여부 확인 |
-| `control` | 방제 기록 | `mdi:spray` | 약제/PLS/PHI/REI/방제 이력 기록과 안전 확인 |
+| key | label | icon | emoji fallback | 목적 |
+|---|---|---|---|---|
+| `basic` | 작기 설정 | `mdi:sprout` | `🌱` | 작기 등록/수정/철거/삭제와 선택 작기 lifecycle 확인 |
+| `growth` | 생육조사 | `mdi:clipboard-pulse-outline` | `📋` | 작물별 dynamic metrics 기록과 최신 조사/다음 조사 안내 |
+| `ai` | AI 전략 | `mdi:brain` | `🧠` | 생육 리포트, 모델/인터록/정책/데이터 준비 상태를 read-only로 요약 |
+| `pest` | 병해충 예찰 | `mdi:bug-outline` | `🐛` | 발생 위치/심각도 기록과 후속 방제 필요 여부 확인 |
+| `control` | 방제 기록 | `mdi:spray` | `💧` | 약제/PLS/PHI/REI/방제 이력 기록과 안전 확인 |
 
 ### 8.3 작기 selector
 
@@ -533,13 +536,14 @@ UX 문구:
 
 - CSV 내보내기
 - 생육조사 추가
+- 조사 row 수정
 - 조사 row 삭제
 - 작물별 dynamic metrics 기록
 
 v1.9.71 UI Slice 2 기준:
 
 - `data-crop-growth-summary-card`: 최근 생육조사 요약. 농장주와 직원이 같은 작기 기준으로 주간 생육 상태를 확인합니다.
-- `data-crop-growth-latest-survey`: 최신 조사일/작기/핵심값 preview.
+- `data-crop-growth-latest-survey`: 최신 조사일/작기/핵심값 preview. crop key는 `_cropLabelForDisplay(`와 `const latestCropLabel = this._cropLabelForDisplay(`를 거쳐 `토마토`, `상추`, `파프리카`, `오이`, `허브` 같은 한국어로 표시한다.
 - `data-crop-growth-next-action`: 다음 조사 안내. 기록이 없으면 첫 주간 기록 입력, 기록이 있으면 다음 주 생육값과 품질·장해 변화 메모를 안내한다.
 - `data-crop-growth-kpi-grid` + `data-crop-ui-kpi-grid`: 최신 조사 / 핵심값 수 / 품질·장해 기록 KPI를 `repeat(auto-fit,minmax(...))` 반응형으로 표시한다.
 - `data-crop-ui-action-bar`: CSV 내보내기와 생육조사 추가를 action hierarchy로 분리한다.
@@ -550,6 +554,7 @@ v1.9.71 UI Slice 2 기준:
 - `data-crop-growth-core-metrics`: 핵심 생육값 그룹.
 - `data-crop-growth-quality-metrics`: 품질·장해값 그룹.
 - `data-crop-growth-note`: 메모 표시.
+- `data-crop-growth-edit-action` + `data-growth-edit` + `data-growth-edit="${i}"`: row 수정 action. 기존 생육조사 입력 팝업을 수정 모드로 열고 `_openGrowthEditPopup(` / `PUT", `green_smart/crop/growth/${id}``로 저장한다.
 - `data-crop-growth-delete-action`: row 삭제 action.
 - `data-crop-ui-empty-state`: 기록 없음 안내.
 

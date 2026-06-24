@@ -95,7 +95,7 @@ def test_crop_basic_demolished_seasons_still_show_delete_button_without_edit_or_
 
 def test_growth_add_popup_uses_selected_season_crop_type_for_dynamic_fields():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
-    popup = panel.split("_openGrowthAddPopup()", 1)[1].split("_openPestAddPopup()", 1)[0]
+    popup = panel.split("_openGrowthAddPopup(editIndex = null)", 1)[1].split("_openPestAddPopup()", 1)[0]
 
     assert "_activeSeason()" in panel
     assert "_growthFieldConfigForCrop" in panel
@@ -128,7 +128,7 @@ def test_growth_field_config_separates_tomato_g_index_and_lettuce_l_index_metric
 
 def test_growth_survey_payload_list_and_export_use_dynamic_crop_metrics():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
-    popup = panel.split("_openGrowthAddPopup()", 1)[1].split("_openPestAddPopup()", 1)[0]
+    popup = panel.split("_openGrowthAddPopup(editIndex = null)", 1)[1].split("_openPestAddPopup()", 1)[0]
     growth_list = panel.split("  _renderCropGrowthTab()", 1)[1].split("  _renderCropPestTab()", 1)[0]
     export_section = panel.split('} else if (type === "growth") {', 1)[1].split('} else if (type === "pest") {', 1)[0]
 
@@ -476,7 +476,7 @@ def test_ui_polish_v1932_crop_ai_tab_refresh_spinner_and_icon_toggle_contract():
     refresh_helper = panel.split("  async _refreshWeeklyGrowthReportFromButton(button)", 1)[1].split("  async _exportWeeklyGrowthReport", 1)[0]
     styles = panel.split("/* Animations */", 1)[1].split("/* ── Wizard", 1)[0]
 
-    assert '{ key: "ai",      label: "AI 전략", icon: "mdi:brain" }' in crop_page
+    assert '{ key: "ai",      label: "AI 전략", icon: "mdi:brain", emoji: "🧠" }' in crop_page
     assert 'data-crop-ui-icon-tab' in crop_page
     assert 'data-crop-tab-icon' in crop_page
     assert 'data-crop-tab-label' in crop_page

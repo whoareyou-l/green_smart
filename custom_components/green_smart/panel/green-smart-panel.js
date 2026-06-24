@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.72
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.73
 const DOMAIN = "green_smart";
-const VERSION = "1.9.72";
+const VERSION = "1.9.73";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3692,17 +3692,17 @@ button.action:disabled{opacity:.5;cursor:default;}
       this._loadCropData();  // 비동기; 완료 시 _refreshCropContent() 자동 호출
     }
     const tabs = [
-      { key: "basic",   label: "작기 설정", icon: "mdi:calendar-leaf" },
-      { key: "growth",  label: "생육조사", icon: "mdi:clipboard-pulse-outline" },
-      { key: "ai",      label: "AI 전략", icon: "mdi:brain" },
-      { key: "pest",    label: "병해충 예찰", icon: "mdi:bug-outline" },
-      { key: "control", label: "방제 기록", icon: "mdi:spray" },
+      { key: "basic",   label: "작기 설정", icon: "mdi:sprout", emoji: "🌱" },
+      { key: "growth",  label: "생육조사", icon: "mdi:clipboard-pulse-outline", emoji: "📋" },
+      { key: "ai",      label: "AI 전략", icon: "mdi:brain", emoji: "🧠" },
+      { key: "pest",    label: "병해충 예찰", icon: "mdi:bug-outline", emoji: "🐛" },
+      { key: "control", label: "방제 기록", icon: "mdi:spray", emoji: "💧" },
     ];
     const tabBar = `<div data-crop-ui-tab-bar style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">
       ${tabs.map(t => `<button class="c-tab ${this._cropSubTab === t.key ? "active" : ""}"
         data-crop-tab="${t.key}" data-crop-ui-icon-tab
         style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;white-space:nowrap;">
-          <ha-icon icon="${t.icon}" data-crop-tab-icon style="width:15px;height:15px;"></ha-icon><span data-crop-tab-label>${t.label}</span>
+          <ha-icon icon="${t.icon}" data-crop-tab-icon style="width:15px;height:15px;"></ha-icon><span data-crop-tab-emoji style="font-size:13px;line-height:1;">${t.emoji}</span><span data-crop-tab-label>${t.label}</span>
         </button>`).join("")}
     </div>`;
     const content = this._renderCropTabContent();
@@ -3952,6 +3952,11 @@ button.action:disabled{opacity:.5;cursor:default;}
       return `<button data-crop-page="${key}:${page}" style="min-width:30px;padding:5px 8px;border-radius:8px;border:1px solid ${active ? "#51AE60" : "#dfeee1"};background:${active ? "#51AE60" : "#fff"};color:${active ? "#fff" : "#4a6741"};font-size:12px;font-weight:700;cursor:pointer;">${page}</button>`;
     }).join("");
     return `<div style="display:flex;justify-content:center;gap:5px;margin-top:10px;">${buttons}</div>`;
+  }
+
+  _cropLabelForDisplay(cropType) {
+    const CROP_LABELS = { tomato:"토마토", paprika:"파프리카", strawberry:"딸기", lettuce:"상추", herb:"허브", cucumber:"오이", other:"기타" };
+    return CROP_LABELS[cropType] || cropType || "작물";
   }
 
   _renderCropBasicOverviewCard() {
@@ -4496,7 +4501,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     const total = this._growthData.length;
     const latest = total ? this._growthData[total - 1] : null;
     const latestMetrics = latest ? this._growthMetricGroups(latest) : { core: [], quality: [] };
-    const latestLabel = latest ? `${this._esc(latest.date)} · ${this._esc(latest.cropType || this._selectedSeason()?.cropType || "선택 작기")}` : "기록 없음";
+    const latestCropLabel = this._cropLabelForDisplay(latest?.cropType || this._selectedSeason()?.cropType);
+    // contract marker: latest survey displays ${latestCropLabel}, not raw cropType such as lettuce
+    const latestLabel = latest ? `${this._esc(latest.date)} · ${this._esc(latestCropLabel)}` : "기록 없음";
     const nextAction = latest
       ? "다음 조사 안내: 같은 작기 기준으로 다음 주 생육값을 기록하고 품질·장해 변화가 있으면 메모를 남기세요."
       : "다음 조사 안내: 생육조사 추가로 첫 주간 기록을 입력하세요.";
@@ -4519,8 +4526,12 @@ button.action:disabled{opacity:.5;cursor:default;}
             </div>
             ${r.note ? `<div data-crop-growth-note style="font-size:11px;color:#7a9780;line-height:1.45;">메모: ${this._esc(r.note)}</div>` : `<span data-crop-growth-note hidden></span>`}
           </div>
-          <button data-growth-del="${i}" data-crop-growth-delete-action title="삭제"
-            style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>
+          <div style="display:flex;gap:6px;align-items:flex-start;justify-content:flex-end;">
+            <button data-growth-edit="${i}" data-crop-growth-edit-action title="수정"
+              style="background:#fff;border:1px solid #b7dfbd;border-radius:9px;cursor:pointer;color:#51AE60;font-size:12px;font-weight:800;padding:6px 9px;display:flex;align-items:center;gap:4px;"><ha-icon icon="mdi:pencil" style="--mdi-icon-size:15px;"></ha-icon>수정</button>
+            <button data-growth-del="${i}" data-crop-growth-delete-action title="삭제"
+              style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>
+          </div>
         </div>`;
       }).join("")
       : `<div data-crop-ui-empty-state style="text-align:center;padding:34px 12px;color:#7a9780;font-size:13px;border:1px dashed #d7e8da;border-radius:16px;background:#fbfefb;">
@@ -5218,16 +5229,25 @@ button.action:disabled{opacity:.5;cursor:default;}
     bindFn(inner);
   }
 
-  _openGrowthAddPopup() {
+  _openGrowthAddPopup(editIndex = null) {
     if (!this._activeSeasonId) { alert("작기를 먼저 등록하거나 선택해주세요."); return; }
+    const isEdit = Number.isInteger(editIndex);
+    const editRecord = isEdit ? (this._growthData[editIndex] || null) : null;
     const today = new Date().toISOString().slice(0, 10);
     const activeSeason = this._activeSeason();
-    const config = this._growthFieldConfigForCrop(activeSeason?.cropType);
+    const config = this._growthFieldConfigForCrop(activeSeason?.cropType || editRecord?.cropType);
     const cropName = activeSeason?.variety ? `${config.title} · ${this._esc(activeSeason.variety)}` : config.title;
+    const editMetrics = editRecord ? this._parseGrowthMetrics(editRecord) : [];
+    const editMetricValue = (key) => {
+      const found = editMetrics.find((m) => m && m.key === key);
+      if (found && found.value !== null && found.value !== undefined) return this._esc(String(found.value));
+      const legacy = this._growthLegacyPayloadFromMetrics([], editRecord?.cropType || activeSeason?.cropType);
+      return this._esc(String((editRecord && editRecord[key] !== undefined ? editRecord[key] : legacy[key]) || ""));
+    };
     const fieldHtml = config.fields.map(([key, label, placeholder, min, max, step], idx) => `
       <div class="pop-field" data-growth-field="${key}">
         <label>${label}</label>
-        <input type="number" id="g-${key}" placeholder="${placeholder}" min="${min}" max="${max}" step="${step}">
+        <input type="number" id="g-${key}" value="${editMetricValue(key)}" placeholder="${placeholder}" min="${min}" max="${max}" step="${step}">
       </div>${idx % 2 === 1 ? "" : ""}
     `).reduce((html, field, idx, arr) => {
       if (idx % 2 === 0) return html + `<div class="pop-field-row">${field}${arr[idx + 1] || ""}</div>`;
@@ -5240,7 +5260,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         ${qualityDisorderFields.map(([key, label, placeholder, min, max, step], idx) => `
           <div class="pop-field" data-growth-quality-disorder-field="${key}">
             <label>${label}</label>
-            <input type="number" id="g-${key}" placeholder="${placeholder}" min="${min}" max="${max}" step="${step}">
+            <input type="number" id="g-${key}" value="${editMetricValue(key)}" placeholder="${placeholder}" min="${min}" max="${max}" step="${step}">
           </div>${idx % 2 === 1 ? "" : ""}
         `).reduce((html, field, idx, arr) => {
           if (idx % 2 === 0) return html + `<div class="pop-field-row">${field}${arr[idx + 1] || ""}</div>`;
@@ -5252,20 +5272,20 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div class="pop-header">
           <div class="pop-icon-box"><ha-icon icon="mdi:chart-line" style="--mdi-icon-size:22px;"></ha-icon></div>
           <div>
-            <div class="pop-title-main">${cropName}</div>
+            <div class="pop-title-main">${isEdit ? "생육조사 수정" : cropName}</div>
             <div class="pop-title-sub">${this._esc(config.desc)}</div>
           </div>
         </div>
         <div class="pop-fields">
           <div class="pop-field">
             <label>조사일</label>
-            <input type="date" id="g-date" value="${today}">
+            <input type="date" id="g-date" value="${this._esc(editRecord?.date || today)}">
           </div>
           ${fieldHtml}
           ${qualityDisorderHtml}
           <div class="pop-field">
             <label>비고</label>
-            <textarea id="g-note" rows="2" placeholder="특이사항"></textarea>
+            <textarea id="g-note" rows="2" placeholder="특이사항">${this._esc(editRecord?.note || "")}</textarea>
           </div>
         </div>
         <div class="pop-foot">
@@ -5290,11 +5310,20 @@ button.action:disabled{opacity:.5;cursor:default;}
           note:      inner.querySelector("#g-note")?.value || "",
         };
         try {
-          const result = await this._hass.callApi(
-            "POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth`, body
-          );
-          this._growthData.unshift(result);
-          this._cropPage.growth = 1;
+          let result;
+          const id = editRecord?.id;
+          if (isEdit && id) {
+            result = await this._hass.callApi(
+              "PUT", `green_smart/crop/growth/${id}`, body
+            );
+            this._growthData[editIndex] = result;
+          } else {
+            result = await this._hass.callApi(
+              "POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth`, body
+            );
+            this._growthData.unshift(result);
+            this._cropPage.growth = 1;
+          }
           await this._fetchGrowthReport();
           this._closePopup();
           this._refreshCropContent();
@@ -5303,6 +5332,10 @@ button.action:disabled{opacity:.5;cursor:default;}
         }
       });
     });
+  }
+
+  _openGrowthEditPopup(idx) {
+    this._openGrowthAddPopup(idx);
   }
 
   _openPestAddPopup() {
@@ -5983,6 +6016,13 @@ button.action:disabled{opacity:.5;cursor:default;}
         this._refreshCropContent();
       });
     });
+
+    root.querySelectorAll("[data-growth-edit]").forEach(b =>
+      b.addEventListener("click", () => {
+        const idx = +b.dataset.growthEdit;
+        this._openGrowthEditPopup(idx);
+      })
+    );
 
     // 삭제 버튼
     root.querySelectorAll("[data-growth-del]").forEach(b =>
