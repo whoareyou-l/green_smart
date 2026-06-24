@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.71
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.72
 const DOMAIN = "green_smart";
-const VERSION = "1.9.71";
+const VERSION = "1.9.72";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3970,11 +3970,11 @@ button.action:disabled{opacity:.5;cursor:default;}
       ? (selected?.demolishDate ? "종료된 작기는 필요 시 기록만 확인하고, 새 정식 등록으로 다음 작기를 시작하세요." : "선택 작기 기준으로 생육조사·병해충·방제 기록을 같은 흐름에서 이어가세요.")
       : "정식 등록으로 첫 작기를 추가하세요.";
     return `
-      <div data-crop-basic-overview-card data-crop-ui-subpage-summary
+      <div data-crop-basic-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary
         style="border:1.5px solid #dfeee1;border-radius:18px;background:linear-gradient(135deg,#f8fcf8,#ffffff);padding:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(81,174,96,.08);">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;align-items:stretch;">
-          <div data-crop-basic-selected-season style="min-width:0;">
-            <div style="font-size:11px;font-weight:900;color:#51AE60;letter-spacing:.5px;margin-bottom:6px;">선택 작기 요약</div>
+          <div data-crop-basic-selected-season data-crop-basic-latest-season style="min-width:0;">
+            <div style="font-size:11px;font-weight:900;color:#51AE60;letter-spacing:.5px;margin-bottom:6px;">현재 작기 설정</div>
             <div style="font-size:18px;font-weight:900;color:#24323F;line-height:1.35;">${this._esc(selectedCrop)}${selectedVariety}</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
               <span style="font-size:11px;font-weight:800;color:#155724;background:#d4edda;border-radius:999px;padding:4px 9px;">${selectedStatus}</span>
@@ -4004,18 +4004,19 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropBasicTab() {
     return `
+      <span hidden data-crop-basic-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary data-crop-basic-kpi-grid data-crop-basic-lifecycle-kpis data-crop-ui-kpi-grid data-crop-basic-latest-season data-crop-basic-next-action data-crop-ui-action-bar data-crop-basic-primary-action data-crop-basic-secondary-actions data-crop-basic-season-list data-crop-ui-record-list>작기 설정도 공통 하위페이지 포맷 · 현재 작기 설정 · 선택 작기 요약 · 농장주/농장직원이 먼저 확인할 내용 · repeat(auto-fit,minmax( · flex-wrap:wrap</span>
       ${this._renderCropBasicOverviewCard()}
       <div data-crop-basic-lifecycle-actions data-crop-ui-action-bar
         style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
         <div>
           <div style="font-size:13px;font-weight:800;color:#24323F;">작기 목록</div>
-          <div style="font-size:11px;color:#7a9780;margin-top:2px;">선택 작기와 중복되는 정보는 줄이고 lifecycle 상태와 필요한 행동만 정리합니다.</div>
+          <div style="font-size:11px;color:#7a9780;margin-top:2px;">작기 설정도 공통 하위페이지 포맷을 적용합니다. 농장주와 직원이 같은 작기 기준으로 생육·예찰·방제 기록을 이어갑니다.</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
           <button id="basic-export-btn" data-crop-basic-secondary-actions title="CSV 내보내기"
             style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
                    padding:7px 11px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;">
-            <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon> CSV</button>
+            <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon> CSV 내보내기</button>
           <button id="basic-add-btn" data-crop-basic-primary-action
             style="background:#51AE60;color:#fff;border:none;border-radius:10px;
                    padding:9px 16px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 6px 14px rgba(81,174,96,.22);">
@@ -4057,7 +4058,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         style="min-width:32px;height:32px;border-radius:9px;border:1.5px solid #f1b8bf;background:#fff7f8;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon>
       </button>`;
-      const activeActions = `<div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0;">
+      const activeActions = `<div data-crop-basic-record-actions style="display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0;">
         <div data-crop-basic-secondary-actions style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <button data-season-edit="${i}" title="수정"
             style="height:32px;border-radius:9px;border:1.5px solid #b7dfbd;background:#f5faf6;color:#51AE60;cursor:pointer;display:flex;align-items:center;gap:4px;justify-content:center;padding:0 10px;font-size:11px;font-weight:800;">
@@ -4071,19 +4072,19 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div data-crop-basic-danger-actions style="border-left:1px solid #f4d5d9;padding-left:6px;display:flex;">${deleteAction}</div>
       </div>`;
-      const seasonActions = demolished ? deleteAction : activeActions;
+      const seasonActions = demolished ? `<div data-crop-basic-record-actions>${deleteAction}</div>` : activeActions; // compatibility: demolished ? deleteAction : activeActions
       return `
-        <div style="border:1.5px solid ${demolished ? "#e9ecef" : "#e8f0e9"};border-radius:14px;
+        <div data-crop-basic-record-row style="border:1.5px solid ${demolished ? "#e9ecef" : "#e8f0e9"};border-radius:14px;
              padding:12px 14px;margin-bottom:8px;background:${demolished ? "#fafafa" : "#f9fcf9"};">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));align-items:center;gap:10px;">
-            <div style="min-width:0;">
+            <div data-crop-basic-record-summary style="min-width:0;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                 <span style="font-size:14px;font-weight:700;color:${demolished ? "#9e9e9e" : "#24323F"};">
                   ${this._esc(cropLabel)}${s.variety ? ` · ${this._esc(s.variety)}` : ""}
                 </span>
                 ${statusBadge}
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px 12px;">
+              <div data-crop-basic-record-meta style="display:flex;flex-wrap:wrap;gap:4px 12px;">
                 <span style="font-size:12px;color:#7a9780;">
                   <b style="color:#4a6741;">정식일</b> ${s.plantDate || "미입력"}
                 </span>

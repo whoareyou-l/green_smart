@@ -102,10 +102,11 @@ Each row below is a complete patch release, not a partial UI change.
 | UI Slice 1 | v1.9.69 | 작기 설정 | Make selected season overview and lifecycle actions clear | Merge selector/list duplication; separate edit/철거/delete hierarchy; add clean empty state |
 | UI Foundation | v1.9.70 | 공통 메인 포맷 + 작물 아이콘 탭 | Apply common main page format and align Crop tab style with Environment tabs | Add shared page shell helper; add icon+text Crop tabs; shift later slice versions |
 | UI Slice 2 | v1.9.71 | 생육조사 | Make weekly survey workflow clean | Add latest survey summary; merge metric chips; improve add/export/delete layout |
-| UI Slice 3 | v1.9.72 | AI 전략 | Reduce card sprawl drastically | Merge operator workflow + key model status into primary summary; collapse technical details; remove duplicate standalone evidence where redundant |
-| UI Slice 4 | v1.9.73 | 병해충 예찰 | Make scouting/risk workflow clear | Add severity summary; group unresolved observations; link next action to 방제 기록 without duplicating 방제 UI |
-| UI Slice 5 | v1.9.74 | 방제 기록 | Make PLS/PHI/REI safety readable | Add safety summary; group pesticide chips; make delete/export/add hierarchy clean |
-| UI Slice 6 | v1.9.75 | Cross-subpage polish | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
+| UI Correction | v1.9.72 | 작기 설정 공통 포맷 재적용 | Re-apply the post-foundation common subpage workflow to the earlier Basic slice | Add summary alias, latest-season marker, compact record row markers, full CSV label, and shift AI/pest/control versions |
+| UI Slice 3 | v1.9.73 | AI 전략 | Reduce card sprawl drastically | Merge operator workflow + key model status into primary summary; collapse technical details; remove duplicate standalone evidence where redundant |
+| UI Slice 4 | v1.9.74 | 병해충 예찰 | Make scouting/risk workflow clear | Add severity summary; group unresolved observations; link next action to 방제 기록 without duplicating 방제 UI |
+| UI Slice 5 | v1.9.75 | 방제 기록 | Make PLS/PHI/REI safety readable | Add safety summary; group pesticide chips; make delete/export/add hierarchy clean |
+| UI Slice 6 | v1.9.76 | Cross-subpage polish | Final consistency pass | Normalize spacing, buttons, mobile, RBAC text, docs/screenshots if needed |
 
 ---
 
@@ -300,7 +301,36 @@ data-crop-ui-empty-state
 
 ---
 
-## UI Slice 3 — v1.9.72 AI 전략 Subpage Polish
+## UI Correction — v1.9.72 작기 설정 공통 포맷 재적용
+
+### Objective
+
+`작기 설정` was completed before the v1.9.70 common main/subpage format foundation and therefore needs a compatibility pass so the Basic tab uses the same summary/action/list workflow language as later Crop Settings slices.
+
+### Scope
+
+- Keep the v1.9.69 Basic tab behavior and bindings.
+- Add `data-crop-basic-summary-card` and `data-crop-basic-latest-season` aliases so the top card matches the post-foundation summary contract.
+- Keep `data-crop-basic-overview-card` for backward compatibility.
+- Make the action bar wording match the common pattern: full `CSV 내보내기` label and primary `+ 정식 등록`.
+- Mark each season row as a compact record row with summary/meta/actions sections.
+- Preserve destructive delete separation under `data-crop-basic-danger-actions`.
+
+### Required markers
+
+```text
+data-crop-basic-summary-card
+data-crop-basic-latest-season
+data-crop-basic-kpi-grid
+data-crop-basic-record-row
+data-crop-basic-record-summary
+data-crop-basic-record-meta
+data-crop-basic-record-actions
+```
+
+---
+
+## UI Slice 3 — v1.9.73 AI 전략 Subpage Polish
 
 ### Objective
 
@@ -334,7 +364,7 @@ centerPolicyAllowExecution
 
 ---
 
-## UI Slice 4 — v1.9.73 병해충 예찰 Subpage Polish
+## UI Slice 4 — v1.9.74 병해충 예찰 Subpage Polish
 
 ### Objective
 
@@ -360,7 +390,7 @@ data-crop-pest-next-action
 
 ---
 
-## UI Slice 5 — v1.9.74 방제 기록 Subpage Polish
+## UI Slice 5 — v1.9.75 방제 기록 Subpage Polish
 
 ### Objective
 
@@ -386,7 +416,7 @@ data-crop-control-next-check
 
 ---
 
-## UI Slice 6 — v1.9.75 Cross-subpage consistency pass
+## UI Slice 6 — v1.9.76 Cross-subpage consistency pass
 
 ### Objective
 

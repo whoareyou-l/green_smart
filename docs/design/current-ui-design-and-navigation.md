@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.71`
+> 기준 버전: `v1.9.72`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.71` |
+| 현재 version | `1.9.72` |
 
 작업 시 우선순위:
 
@@ -501,6 +501,26 @@ v1.9.69 UI Slice 1 기준:
 | Delete/Reduce | 목록 row의 중복 강조를 줄이고 lifecycle 상태/action만 남김 |
 | Add | 선택 작기 요약, lifecycle KPI, owner-friendly empty state 추가 |
 | Split | 수정/철거 보조 action과 destructive delete action을 분리 |
+
+v1.9.72 공통 포맷 재적용 기준:
+
+- `data-crop-basic-summary-card`: v1.9.70 이후 공통 하위페이지 summary alias. 기존 `data-crop-basic-overview-card`는 호환용으로 유지한다.
+- `data-crop-basic-latest-season`: 현재 선택/최신 작기 영역. `현재 작기 설정` 제목을 사용한다.
+- `data-crop-basic-kpi-grid` + `data-crop-basic-lifecycle-kpis` + `data-crop-ui-kpi-grid`: 작기 KPI grid를 공통 KPI marker와 함께 유지한다.
+- `data-crop-basic-record-row`: 작기 목록 row를 compact record row로 표시한다.
+- `data-crop-basic-record-summary`: 작물/품종/status summary.
+- `data-crop-basic-record-meta`: 정식일/철거일/구역/재배방식/주수 meta.
+- `data-crop-basic-record-actions`: row-level 수정/철거/삭제 action group.
+- `data-crop-ui-action-bar`: `+ 정식 등록` primary와 `CSV 내보내기` secondary를 분리한다.
+
+UX 문구:
+
+```text
+현재 작기 설정
+작기 설정도 공통 하위페이지 포맷
+농장주와 직원이 같은 작기 기준으로 생육·예찰·방제 기록을 이어갑니다.
+작기 목록은 compact record list로 유지하고, 삭제는 danger action으로 분리합니다.
+```
 
 향후 유지 방향:
 
