@@ -494,4 +494,9 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 
 - v1.10.1 Environment Control final QA: 환경 제어 구역 선택 카드 UI/UX 보정 후 전체 렌더/계약 기준을 유지한다.
 
-- P1 rendered-flow QA v1.10.1: 환경 제어 구역 선택 카드 UI/UX 보정 후 P1 렌더 흐름 QA 기준을 유지한다.
+- P1 rendered-flow QA v1.10.2: 환경 제어 구역 선택 카드 UI/UX 보정 후 P1 렌더 흐름 QA 기준을 유지한다.
+
+- v1.10.2 Environment zone card header cleanup: 환경 제어 구역 선택 카드에서 위쪽 큰 `구역 선택` 텍스트를 숨기고 녹색 소제목만 남겼으며, 프리셋 설정 버튼을 compact pill UI로 조정했다.
+
+- v1.10.2 Environment zone card UI/UX alignment: 구역 선택 카드 UI/UX 정렬 기준은 v1.10.2에서도 유지된다.
+- v1.10.2 Environment Control final QA: 환경 제어 구역 선택 카드 header cleanup 후 전체 렌더/계약 기준을 유지한다.

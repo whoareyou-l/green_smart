@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.10.1
+> 기준 버전: v1.10.2
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -49,7 +49,7 @@ Status: implemented in `v1.9.97`.
 
 ### Slice 5 — 렌더 QA + Prod release
 
-Status: implemented in `v1.10.1`.
+Status: implemented in `v1.10.2`.
 
 - 환경 제어 전체 하위탭 렌더 순회: `overview / setpoints / rules / ai / operations / devices / logs`.
 - 금지 marker 검사: setValue/status 탭 모두 direct execution marker 부재.
@@ -583,3 +583,10 @@ Slice 2+ 계약:
 - 1줄: `구역 · 현재 작기`, 2줄: `정식일`, 3줄: `재배 중/철거완료/작기 미연결`.
 - `구역 중심`, `현재 작기:` 같은 설명형 접두어와 카드 내부 마지막 저장 줄은 제거한다.
 - 저장 scope는 `구역 + 현재 작기 + 제어영역`으로 유지한다.
+
+
+### Follow-up — v1.10.2 Environment zone card header cleanup
+
+- 환경 제어 scope header의 큰 `구역 선택` 제목/설명은 숨긴다.
+- 카드 목록 내부 녹색 소제목 `구역 선택`만 유지한다.
+- `프리셋 설정`은 compact pill 버튼으로 조정한다: 11px, 6px 10px, 999px radius.

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.1
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.2
 const DOMAIN = "green_smart";
-const VERSION = "1.10.1";
+const VERSION = "1.10.2";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -7890,7 +7890,10 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>`;
     }).join("");
     return `<div data-env-zone-season-selector data-env-zone-season-model="zone-parent-season-child" style="margin-bottom:2px;flex:1 1 100%;">
-      <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:8px;">구역 선택</div>
+      <div data-env-zone-season-selector-header style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div data-env-zone-season-selector-title style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;">구역 선택</div>
+        <button class="btn btn-ghost" data-control-preset-open data-control-preset-compact style="font-size:11px;padding:6px 10px;border-radius:999px;line-height:1.1;min-height:28px;">프리셋 설정</button>
+      </div>
       <div style="font-size:11px;color:#7a9780;margin:-3px 0 8px;">작기 선택 카드와 동일한 3줄 카드 문법으로 구역과 현재 작기를 함께 표시합니다.</div>
       <div id="env-zone-season-selector" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">${cards}</div>
     </div>`;
@@ -7977,12 +7980,15 @@ button.action:disabled{opacity:.5;cursor:default;}
   _renderControlScopeBar(domain) {
     const scopeTitle = "구역 선택";
     const scopeDesc = domain === "environment"
-      ? "작기 선택 카드와 동일한 UI로 구역을 선택합니다. 카드 안에는 해당 구역의 현재 작기가 함께 표시됩니다."
+      ? ""
       : `구역 카드를 탭처럼 선택하면 해당 구역의 ${this._esc(this._controlDomainLabel(domain))} 설정값이 바로 연동됩니다.`;
+    const compactPresetStyle = domain === "environment"
+      ? "display:none;"
+      : "";
     return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1 1 100%;">
-        <div><div class="sec-title">${scopeTitle}</div><div style="font-size:12px;color:#7a9780;margin-top:3px;">${scopeDesc}</div></div>
-        <button class="btn btn-ghost" data-control-preset-open>프리셋 설정</button>
+      <div data-control-scope-header style="display:${domain === "environment" ? "none" : "flex"};align-items:flex-start;justify-content:space-between;gap:10px;flex:1 1 100%;margin-bottom:${domain === "environment" ? "-4px" : "0"};">
+        <div><div data-control-scope-title style="display:${domain === "environment" ? "none" : "block"};" class="sec-title">${domain === "environment" ? "" : scopeTitle}</div><div style="display:${domain === "environment" ? "none" : "block"};font-size:12px;color:#7a9780;margin-top:3px;">${scopeDesc}</div></div>
+        ${domain === "environment" ? "" : `<button class="btn btn-ghost" data-control-preset-open data-control-preset-compact style="${compactPresetStyle}">프리셋 설정</button>`}
       </div>
       ${domain === "environment" ? this._renderEnvironmentZoneSeasonCards(domain) : this._renderControlZoneTabs(domain)}
       <div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;flex:1 1 100%;">
@@ -8997,7 +9003,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       const domain = bar.dataset.controlScopeDomain || "environment";
       bar.querySelectorAll("[data-control-zone-tab]").forEach((btn) => btn.addEventListener("click", () => this._selectControlZoneFromCard(domain, btn.dataset.controlZoneId)));
       bar.querySelectorAll("[data-env-zone-season-card]").forEach((card) => card.addEventListener("click", () => this._selectControlZoneSeasonFromCard(domain, card.dataset.envZoneSeasonZoneId, card.dataset.envZoneSeasonSeasonId)));
-      bar.querySelector("[data-control-preset-open]")?.addEventListener("click", () => this._openControlPresetModal(domain));
+      bar.querySelectorAll("[data-control-preset-open]").forEach((btn) => btn.addEventListener("click", () => this._openControlPresetModal(domain)));
     });
   }
 
