@@ -87,10 +87,10 @@ def test_v1990_versions_and_docs_record_unified_detail_ui():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.95"' in manifest
-    assert 'const VERSION = "1.9.95"' in panel
-    assert 'EDGE_VERSION = "1.9.95"' in central
-    assert "v1.9.95 AI detail unified evidence UI" in docs
+    assert '"version": "1.9.96"' in manifest
+    assert 'const VERSION = "1.9.96"' in panel
+    assert 'EDGE_VERSION = "1.9.96"' in central
+    assert "v1.9.96 AI detail unified evidence UI" in docs
     for marker in (
         "data-crop-ai-evidence-section",
         "data-crop-ai-evidence-card",

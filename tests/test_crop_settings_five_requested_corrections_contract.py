@@ -106,7 +106,7 @@ def test_v1985_versions_and_docs_record_five_corrections():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.95"' in manifest
-    assert 'const VERSION = "1.9.95"' in panel
-    assert 'EDGE_VERSION = "1.9.95"' in central
-    assert "v1.9.95 five requested Crop Settings UI corrections" in docs
+    assert '"version": "1.9.96"' in manifest
+    assert 'const VERSION = "1.9.96"' in panel
+    assert 'EDGE_VERSION = "1.9.96"' in central
+    assert "v1.9.96 five requested Crop Settings UI corrections" in docs

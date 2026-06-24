@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.95`
+> 기준 버전: `v1.9.96`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.95` |
+| 현재 version | `1.9.96` |
 
 작업 시 우선순위:
 
@@ -700,7 +700,7 @@ UI Slice 5 v1.9.76 구현 기준:
 - `data-crop-control-treatment-list`: compact treatment list. 각 row는 `data-crop-control-treatment-row`, `data-crop-control-treatment-summary`, `data-crop-control-treatment-meta`, `data-crop-control-pesticide-chip-group`, `data-crop-control-delete-action`, 기존 삭제 바인딩용 `data-control-del`을 가진다.
 - export/add/delete는 유지하되 action hierarchy를 명확히 한다.
 
-UI Polish Phase P1 v1.9.95 방제 기록 모달 compact 기준:
+UI Polish Phase P1 v1.9.96 방제 기록 모달 compact 기준:
 
 - `data-control-compact-modal`: 방제 기록 추가 모달은 compact popup card로 렌더한다.
 - `data-control-date-field`: 방제일은 모달 첫 입력으로 둔다.
@@ -732,7 +732,7 @@ UI Slice 5에서 정리한 내용:
 
 ---
 
-### 8.9 P1 rendered-flow QA v1.9.95
+### 8.9 P1 rendered-flow QA v1.9.96
 
 Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
 
@@ -740,7 +740,7 @@ v1.9.84에서는 사용자 확인 없이 진행됐던 v1.9.83 Home real-state ta
 
 v1.9.85 five requested Crop Settings UI corrections:
 
-Compatibility note: v1.9.95 five requested Crop Settings UI corrections 문구는 기존 current-version 계약 호환을 위해 유지하되, 실제 5개 요청사항 완료 릴리스는 v1.9.85이고 v1.9.86은 그 위의 공통 하위탭 목록 레이아웃 보정, v1.9.95은 AI 전략 패널 타입 보정이다.
+Compatibility note: v1.9.96 five requested Crop Settings UI corrections 문구는 기존 current-version 계약 호환을 위해 유지하되, 실제 5개 요청사항 완료 릴리스는 v1.9.85이고 v1.9.86은 그 위의 공통 하위탭 목록 레이아웃 보정, v1.9.96은 AI 전략 패널 타입 보정이다.
 
 - 하위탭은 `data-crop-tab-icon` + `data-crop-tab-label`만 사용하고 중복 emoji marker를 렌더하지 않는다.
 - 작기/생육조사/병해충 예찰/방제 기록 row는 공통 수정+삭제 action group을 사용한다. 철거 버튼은 작기 목록의 `data-season-demolish`에만 존재한다.
@@ -760,40 +760,40 @@ v1.9.87 AI Strategy panel-type layout:
 - AI 전략에는 `data-crop-ai-list-header`, `data-crop-ai-evidence-list`, `data-crop-subtab-record-list`, `data-crop-list-count`, `data-crop-list-actions`를 사용하지 않는다.
 - 첫 화면에는 `data-crop-ai-primary-summary`의 `이번 주 작물 판단 요약` 1개와 `data-crop-ai-next-action`만 노출하고, 모델/데이터/인터록 카드들은 `data-crop-ai-advanced-details` 접힘 영역으로 정리한다.
 
-v1.9.95 AI Strategy panel-type layout compatibility: v1.9.87에서 도입한 panel-type layout은 현재 버전에서도 유지한다.
+v1.9.96 AI Strategy panel-type layout compatibility: v1.9.87에서 도입한 panel-type layout은 현재 버전에서도 유지한다.
 
-v1.9.95 AI Strategy model hierarchy restructure:
+v1.9.96 AI Strategy model hierarchy restructure:
 
 - AI 메인 영역은 `data-crop-ai-primary-summary` 작물 상태 요약 → `data-crop-ai-interlock-summary` 인터록 상태 요약 → `data-crop-ai-model-status-summary` 모델 상태 요약 → `data-crop-ai-advanced-details` 상세 모델 근거 버튼 순서로 노출한다.
 - 작물 상태 요약은 `data-crop-ai-primary-gl-index`, `data-crop-ai-primary-yield-prediction`, `data-crop-ai-primary-pest-risk`를 우선 노출한다.
 - 기존 `입력 상태`, `생육단계/예측`, `리스크`, `ML 준비도`는 메인 영역의 `data-crop-ai-model-status-summary`로 이동한다.
 - 상세 모델 근거는 `data-crop-ai-stage-prediction-model` → `data-crop-ai-reproductive-vegetative-model` → `data-crop-ai-pest-prediction-model` 상위 모델 뒤에 `data-crop-ai-submodel-evidence-section` 이하 하위 모델/입력 근거 순서로 정리한다.
 
-v1.9.95 AI Strategy decision-oriented DOM:
+v1.9.96 AI Strategy decision-oriented DOM:
 
 - `data-crop-ai-decision-summary`는 operator-facing 작물 상태 요약이며 `data-crop-ai-primary-metric-grid` 안에 G/L-Index, 수확량 예측, 병해 위험도만 우선 노출한다.
-- v1.9.95부터 `data-crop-ai-decision-flow`, `data-crop-ai-decision-flow-steps`, `data-crop-ai-flow-step` 판단 흐름 카드는 제거한다.
+- v1.9.96부터 `data-crop-ai-decision-flow`, `data-crop-ai-decision-flow-steps`, `data-crop-ai-flow-step` 판단 흐름 카드는 제거한다.
 - 메인 영역 순서는 `data-crop-ai-strategy-header` → `data-crop-ai-readonly-boundary` → `data-crop-ai-decision-summary` → `data-crop-ai-interlock-summary` → `data-crop-ai-model-status-summary` → `data-crop-ai-advanced-details`이다.
 - `data-crop-ai-decision-summary`, `data-crop-ai-interlock-summary`, `data-crop-ai-model-status-summary`는 `data-crop-ai-main-card`, `data-crop-ai-main-card-header`, `data-crop-ai-main-card-body`, `data-crop-ai-main-card-chip-group` 공통 shell을 사용한다.
 - 상세 근거는 `data-crop-ai-technical-evidence-stack` 내부에서 `data-crop-ai-top-models` → `data-crop-ai-submodels` → `data-crop-ai-center-reference-summary` 순서로 정리한다.
 
-v1.9.95 AI main card unification:
+v1.9.96 AI main card unification:
 
 - AI 판단 흐름 카드는 제거한다: `data-crop-ai-decision-flow`, `data-crop-ai-decision-flow-steps`, `data-crop-ai-flow-step`를 사용하지 않는다.
 - AI 메인 3카드(`data-crop-ai-decision-summary`, `data-crop-ai-interlock-summary`, `data-crop-ai-model-status-summary`)는 `data-crop-ai-main-card`, `data-crop-ai-main-card-header`, `data-crop-ai-main-card-body`, `data-crop-ai-main-card-chip-group` 공통 shell을 사용한다.
 
-v1.9.95 AI main card inner consistency:
+v1.9.96 AI main card inner consistency:
 
 - 메인 3카드 내부는 `data-crop-ai-main-metric-grid` → `data-crop-ai-main-metric` → `data-crop-ai-main-metric-label`/`data-crop-ai-main-metric-value`/`data-crop-ai-main-metric-help` 구조를 공유한다.
 - 각 메인 카드는 `data-crop-ai-main-note`와 `data-crop-ai-main-action-row`를 가진다. 인터록 승인 버튼은 제거하지 않고 같은 action row 안에 둔다.
 
-v1.9.95 AI detail unified evidence UI:
+v1.9.96 AI detail unified evidence UI:
 
 - 접히는 상세 모델 근거 영역은 `data-crop-ai-evidence-section` section shell과 `data-crop-ai-evidence-card` card shell을 사용해 상위 모델/하위 모델 UI 포맷을 통일한다.
 - 각 상세 카드는 `data-crop-ai-evidence-card-header`, `data-crop-ai-evidence-card-body`, `data-crop-ai-evidence-chip-group`을 가진다.
 - 상위 모델은 `data-crop-ai-evidence-section="top-models"`, 하위 모델은 `data-crop-ai-evidence-section="submodels"`, 센터 참고는 `data-crop-ai-evidence-section="center-reference"`로 구분한다.
 
-v1.9.95 AI detail cleanup:
+v1.9.96 AI detail cleanup:
 
 - `이번 주 작물 모델 작업 안내`(`data-crop-operator-workflow-card`)는 상위 모델이 아니므로 `data-crop-ai-evidence-section="model-operations"` 아래 `data-crop-ai-evidence-card="operator-workflow"`로 분리한다.
 - 이전 히스토리에서 추가된 지원 카드인 `data-crop-quality-disorder-summary-card`, `data-crop-prediction-validation-card`, `data-crop-training-dataset-export-card`는 하위 모델이 아니므로 `model-operations` section으로 분리한다. 각 카드는 `data-crop-ai-evidence-card="quality-disorder"`, `data-crop-ai-evidence-card="prediction-validation"`, `data-crop-ai-evidence-card="training-dataset-export"`로 구분한다.
@@ -1529,7 +1529,7 @@ autoSchedulePesticideApplication
 
 ---
 
-## Crop Settings requested UI corrections — v1.9.95
+## Crop Settings requested UI corrections — v1.9.96
 
 User-requested correction slice after the v1.9.77 final pass.
 
@@ -1607,7 +1607,7 @@ Behavior:
 
 ---
 
-## Rendered UI QA hotfix — v1.9.95
+## Rendered UI QA hotfix — v1.9.96
 
 Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
 

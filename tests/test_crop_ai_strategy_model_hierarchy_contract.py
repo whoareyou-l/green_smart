@@ -72,10 +72,10 @@ def test_v1988_ai_versions_and_docs_record_model_hierarchy():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.95"' in manifest
-    assert 'const VERSION = "1.9.95"' in panel
-    assert 'EDGE_VERSION = "1.9.95"' in central
-    assert "v1.9.95 AI Strategy model hierarchy restructure" in docs
+    assert '"version": "1.9.96"' in manifest
+    assert 'const VERSION = "1.9.96"' in panel
+    assert 'EDGE_VERSION = "1.9.96"' in central
+    assert "v1.9.96 AI Strategy model hierarchy restructure" in docs
     for marker in (
         "data-crop-ai-primary-gl-index",
         "data-crop-ai-primary-yield-prediction",

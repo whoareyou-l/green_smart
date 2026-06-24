@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.9.95
+> 기준 버전: v1.9.96
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -17,7 +17,7 @@
 
 ### Slice 2 — 환경 제어 메인 shell + 하위탭 재구성
 
-Status: implemented in `v1.9.95`.
+Status: implemented in `v1.9.96`.
 
 - 환경 제어 page shell을 작물 설정 공통 UI/DOM 원칙과 맞춤
 - 하위탭을 `overview / setpoints / rules / ai / operations / devices / logs` 7개로 정리
@@ -27,8 +27,14 @@ Status: implemented in `v1.9.95`.
 
 ### Slice 3 — setValue 하위탭 세부 polish
 
+Status: implemented in `v1.9.96`.
+
 - 온도/습도·VPD/CO₂/안전 한계/제어 모드/AI 보정 등 설정형 하위탭의 시각적 밀도와 모바일 레이아웃을 세부 보정
-- 필요 시 devices 매핑 입력도 `setValue` row 문법으로 승격
+- `setpoints / rules / ai` 탭에 `data-env-setvalue-polish` grammar를 적용한다.
+- 각 설정형 탭은 operator summary → safety boundary → setValue group cards → footer action row 순서를 따른다.
+- row 내부는 `data-env-setvalue-row-main` + `data-env-setvalue-row-meta`로 통일한다.
+- `ai` 탭은 입력 보정값과 `data-env-setvalue-preview-card` 최종 적용값 preview를 분리한다.
+- devices 매핑 입력의 setValue row 승격은 Slice 4에서 operations/devices 정리와 함께 판단한다.
 
 ### Slice 4 — 운영/상태 하위탭 적용
 
