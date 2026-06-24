@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.89
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.90
 const DOMAIN = "green_smart";
-const VERSION = "1.9.89";
+const VERSION = "1.9.90";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4314,42 +4314,47 @@ button.action:disabled{opacity:.5;cursor:default;}
       <details data-crop-ai-advanced-details data-crop-ai-evidence-details style="background:#fff;border:1px solid #dbeee0;border-radius:16px;padding:10px;margin-bottom:12px;">
         <summary style="cursor:pointer;font-size:13px;font-weight:900;color:#24323F;display:flex;align-items:center;gap:6px;"><ha-icon icon="mdi:database-search-outline" style="--mdi-icon-size:17px;"></ha-icon>상세 모델 근거 보기</summary>
         <div data-crop-ai-technical-evidence-stack data-crop-ai-technical-evidence-grid style="margin-top:10px;">
-      <section data-crop-ai-top-models style="display:block;">
-        <div data-crop-ai-section-heading style="margin-bottom:8px;"><div style="font-size:14px;font-weight:900;color:#24323F;">상위 모델</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">AI 전략 판단에 직접 사용되는 주요 예측 모델입니다.</div></div>
-      <div data-crop-ai-stage-prediction-model data-crop-ai-metric-overview style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
+      <section data-crop-ai-top-models data-crop-ai-evidence-section="top-models" style="display:block;background:#f8fbf9;border:1px solid #e2f1e7;border-radius:14px;padding:10px;margin-bottom:12px;">
+        <div data-crop-ai-section-heading style="margin-bottom:10px;"><div style="font-size:14px;font-weight:900;color:#24323F;">상위 모델</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">주요 예측 모델 3개를 같은 카드 포맷으로 정리합니다.</div></div>
+      <article data-crop-ai-evidence-card="stage-prediction" data-crop-ai-stage-prediction-model data-crop-ai-metric-overview style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">작물 단계 예측</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">G/L-Index와 최근 생육 추세로 단계 전환 가능성을 확인합니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">top model</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;">
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">G-Index 추이</div><b style="font-size:20px;color:#24323F;">${this._esc(String(latestG))}</b><div style="font-size:11px;color:#7a9780;">${gIndexTrend.length}개 point · 초장 ${heightTrend.length}개</div></div>
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">수확량 예측</div><b style="font-size:20px;color:#24323F;">${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg</b><div style="font-size:11px;color:#7a9780;">신뢰도 ${this._esc(yieldPrediction.confidence || "low")}</div></div>
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">병해 위험도</div><b style="font-size:20px;color:${pestRisk.level === 'high' ? '#c0392b' : pestRisk.level === 'medium' ? '#f39c12' : '#51AE60'};">${riskLabel}</b><div style="font-size:11px;color:#7a9780;">score ${this._esc(String(pestRisk.score ?? 0))}</div></div>
-      </div>
-      <div data-crop-ai-reproductive-vegetative-model data-crop-ai-yield-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #eef6ef;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">작물별 수확 모델</div>
+        </div>
+        <div data-crop-ai-evidence-chip-group style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"><span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">현재 단계 ${this._esc(stageDiagnosis.stageLabel || "미확정")}</span><span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">Index band ${this._esc(indexBand)}</span><span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">검증 ${this._esc(validationStatusLabel)}</span></div>
+      </article>
+      <article data-crop-ai-evidence-card="reproductive-vegetative" data-crop-ai-reproductive-vegetative-model data-crop-ai-yield-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">생식/영양 상태 예측</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">작물별 수확 모델 · 수확량·생육속도·밀도 계수로 생육 균형을 해석합니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">top model</span></div>
+        <div data-crop-ai-evidence-card-body style="font-size:12px;color:#5d7d64;line-height:1.6;">
         <div style="font-size:12px;color:#5d7d64;line-height:1.6;">
           <b>${this._esc(yieldPrediction.cropModelLabel || "일반 생육 기반 수확 모델")}</b>
           <span style="color:#9aae9d;"> · ${this._esc(yieldPrediction.modelVersion || "generic_growth_model_v1")}</span><br>
           총 예측 ${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg · 주당 예측 ${this._esc(String(yieldPrediction.estimatedKgPerPlant ?? 0))}kg · 면적당 예측 ${this._esc(String(yieldPrediction.estimatedKgPerArea ?? 0))}kg/100㎡
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+        <div data-crop-ai-evidence-chip-group style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
           <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">${this._esc(yieldDrivers.indexType || 'G/L-Index')} 계수 ${this._esc(String(yieldDrivers.growthIndexFactor ?? "-"))}</span>
           <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">생육속도 ${this._esc(String(yieldDrivers.growthVelocityCmPerWeek ?? "-"))}cm/주</span>
           <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">밀도 계수 ${this._esc(String(yieldDrivers.densityFactor ?? "-"))}</span>
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">예측 근거: ${this._esc(yieldPrediction.basis || "crop-specific growth model")}${confidenceReasons.length ? ` · ${confidenceReasons.map(r => this._esc(r)).join(" · ")}` : ""}</div>
-      </div>
-      <div data-crop-ai-pest-prediction-model data-crop-ai-pest-risk-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #f4ece8;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">병해 위험 모델</div>
-        <div style="font-size:12px;color:#6b5b4d;line-height:1.6;">
+      </article>
+      <article data-crop-ai-evidence-card="pest-prediction" data-crop-ai-pest-prediction-model data-crop-ai-pest-risk-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">병충해 예측</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">병해 위험 모델 · 날씨·환경·방제 이력을 함께 보는 병해 위험 상위 모델입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">top model</span></div>
+        <div data-crop-ai-evidence-card-body style="font-size:12px;color:#6b5b4d;line-height:1.6;">
           <b>${riskLabel}</b><span style="color:#9aae9d;"> · ${this._esc(pestRisk.modelVersion || "weather_environment_control_model_v1")}</span><br>
           환경 위험 ${this._esc(String(environmentDrivers.combinedHumidityTemperatureRisk ?? 0))} · 날씨 위험 ${this._esc(String((weatherDrivers.humidityRisk ?? 0) + (weatherDrivers.rainRisk ?? 0) + (weatherDrivers.temperatureRisk ?? 0)))} · 방제 이력 ${this._esc(String(controlHistoryDrivers.controlHistoryScore ?? 0))}
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
-          <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">습도 ${this._esc(String(weatherDrivers.avgHumidity ?? "-"))}%</span>
+        <div data-crop-ai-evidence-chip-group style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          <span style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">습도 ${this._esc(String(weatherDrivers.avgHumidity ?? "-"))}%</span>
           <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">온도 ${this._esc(String(weatherDrivers.avgTemperature ?? "-"))}℃</span>
           <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">강우 신호 ${this._esc(String(weatherDrivers.rainSignalCount ?? 0))}</span>
           <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">최근 방제 ${this._esc(String(controlHistoryDrivers.daysSinceLastControl ?? "없음"))}일</span>
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">위험 요인: ${riskFactors.length ? riskFactors.map(r => this._esc(r)).join(" · ") : "기록 부족"}</div>
         ${recommendedActions.length ? `<div style="font-size:11px;color:#7a9780;margin-top:5px;">권장 조치: ${recommendedActions.map(a => this._esc(a)).join(" · ")}</div>` : ""}
-      </div>
+      </article>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e6eef7;" data-stage-diagnosis-card>
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">현재 생육단계</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px;">
@@ -4405,17 +4410,17 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">scoreComponents: ${Object.entries(scoreComponents).length ? Object.entries(scoreComponents).map(([k, v]) => `${this._esc(k)}=${this._esc(String(v))}`).join(' · ') : '예측 점수 근거 없음'} · read-only model evidence</div>
       </div>
       </section>
-      <section data-crop-ai-submodels style="display:block;">
-        <div data-crop-ai-section-heading style="margin-bottom:8px;"><div style="font-size:14px;font-weight:900;color:#24323F;">하위 모델 / 입력 근거</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">상위 모델이 참고한 날씨, 환경, 관수, 병해/방제 입력입니다.</div></div>
-      <div data-crop-ai-submodel-evidence-section data-crop-kma-weather-stress-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e5f0ff;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">KMA 7일 weather-stress</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+      <section data-crop-ai-submodels data-crop-ai-evidence-section="submodels" style="display:block;background:#f8fbf9;border:1px solid #e2f1e7;border-radius:14px;padding:10px;margin-bottom:12px;">
+        <div data-crop-ai-section-heading style="margin-bottom:10px;"><div style="font-size:14px;font-weight:900;color:#24323F;">하위 모델 / 입력 근거</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">상위 모델이 참고한 입력 근거를 같은 카드 포맷으로 정리합니다.</div></div>
+      <article data-crop-ai-evidence-card="kma-weather-stress" data-crop-ai-submodel-evidence-section data-crop-kma-weather-stress-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">KMA 7일 weather-stress</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">단기 기상 스트레스가 상위 모델에 주는 입력 신호입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
           <div><div style="font-size:11px;color:#6d8799;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(kmaWeatherStress7d.sourceStatus || '-')}</b><div style="font-size:10px;color:#9aae9d;">coverage ${this._esc(String(kmaWeatherFeatures.kmaForecastCoverageRatio ?? '-'))}</div></div>
           <div><div style="font-size:11px;color:#6d8799;font-weight:800;">highTemperatureDays</div><b style="font-size:14px;color:#24323F;">${this._esc(String(kmaWeatherFeatures.highTemperatureDays ?? '-'))}</b><div style="font-size:10px;color:#9aae9d;">lowTemperatureDays ${this._esc(String(kmaWeatherFeatures.lowTemperatureDays ?? '-'))}</div></div>
           <div><div style="font-size:11px;color:#6d8799;font-weight:800;">rapidTemperatureChangeDays</div><b style="font-size:14px;color:#24323F;">${this._esc(String(kmaWeatherFeatures.rapidTemperatureChangeDays ?? '-'))}</b><div style="font-size:10px;color:#9aae9d;">max swing ${this._esc(String(kmaWeatherFeatures.maxDailyTemperatureSwing ?? '-'))}</div></div>
         </div>
-        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">kmaWeatherStress7d: ${(kmaWeatherStress7d.weatherStressReasons || []).length ? kmaWeatherStress7d.weatherStressReasons.map(r => this._esc(r)).join(' · ') : '특이 weather-stress 없음'} · read-only forecast/model input · 환경/관수/장치 실행 권한 없음</div>
-      </div>
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">kmaWeatherStress7d: ${(kmaWeatherStress7d.weatherStressReasons || []).length ? kmaWeatherStress7d.weatherStressReasons.map(r => this._esc(r)).join(' · ') : '특이 weather-stress 없음'} · read-only forecast/model input · 환경/관수/장치 실행 권한 없음</div>
+      </article>
       <div data-crop-quality-disorder-summary-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #efe7ff;">
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">품질/장해 요약</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
@@ -4450,20 +4455,20 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">exportWarnings: ${trainingDatasetWarnings.length ? trainingDatasetWarnings.map(w => this._esc(w)).join(' · ') : 'no automatic ML deployment'} · 자동 학습/배포 없음 · read-only dataset export</div>
       </div>
-      <div data-crop-environment-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e5f0ff;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">환경 feature</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+      <article data-crop-ai-evidence-card="environment-features" data-crop-environment-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e5f0ff;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">환경 feature</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">환경/VPD/ADT/DIF 등 생육 모델 입력입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(envStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">sampleCoverageRatio</div><b style="font-size:14px;color:#24323F;">${this._esc(String(environmentSummary7d.sampleCoverageRatio ?? '-'))}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">VPD</div><b style="font-size:14px;color:#24323F;">${this._esc(String((environmentFeatures.vpd || environmentDerivedFeatures.vpd || {}).avg ?? '-'))}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">ADT</div><b style="font-size:14px;color:#24323F;">${this._esc(String((environmentFeatures.adt || environmentDerivedFeatures.adt || {}).value ?? '-'))}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">DIF</div><b style="font-size:14px;color:#24323F;">${this._esc(String((environmentFeatures.dif || environmentDerivedFeatures.dif || {}).value ?? '-'))}</b></div>
         </div>
-        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">staleReasons: ${environmentStaleReasons.length ? environmentStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 환경/관수/장치 실행 권한 없음</div>
-      </div>
-      <div data-crop-irrigation-nutrient-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e7f5ed;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">관수/양액 feature</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">staleReasons: ${environmentStaleReasons.length ? environmentStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 환경/관수/장치 실행 권한 없음</div>
+      </article>
+      <article data-crop-ai-evidence-card="irrigation-nutrient-features" data-crop-irrigation-nutrient-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e7f5ed;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">관수/양액 feature</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">EC/pH/dryback 등 생육 균형 보조 입력입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(irrStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">feedEcAvg</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.feedEcAvg ?? '-'))}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">drainEcAvg</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.drainEcAvg ?? '-'))}</b></div>
@@ -4472,11 +4477,11 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">drybackProxy</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.drybackProxy ?? '-'))}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">staleDrainFeedback</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.staleDrainFeedback ?? '-'))}</b></div>
         </div>
-        <div style="font-size:11px;color:#5f7f70;margin-top:8px;line-height:1.55;">staleReasons: ${irrigationStaleReasons.length ? irrigationStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 관수/PID/펌프/양액 실행 권한 없음</div>
-      </div>
-      <div data-crop-pest-control-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #ffe6e6;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">병해/방제 feature</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#5f7f70;margin-top:8px;line-height:1.55;">staleReasons: ${irrigationStaleReasons.length ? irrigationStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 관수/PID/펌프/양액 실행 권한 없음</div>
+      </article>
+      <article data-crop-ai-evidence-card="pest-control-features" data-crop-pest-control-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #ffe6e6;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">병해/방제 feature</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">예찰·방제 이력 기반 병해 위험 보조 입력입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
           <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(pestStatus)}</b></div>
           <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">recentPestSeverityTrend</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.recentPestSeverityTrend ?? '-'))}</b></div>
           <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">controlFreshnessDays</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.controlFreshnessDays ?? '-'))}</b></div>
@@ -4484,20 +4489,20 @@ button.action:disabled{opacity:.5;cursor:default;}
           <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">reiRiskFlag</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.reiRiskFlag ?? '-'))}</b></div>
           <div><div style="font-size:11px;color:#9b6b6b;font-weight:800;">missingControlAfterHighRiskFlag</div><b style="font-size:14px;color:#24323F;">${this._esc(String(pestControlFeatures.missingControlAfterHighRiskFlag ?? '-'))}</b></div>
         </div>
-        <div style="font-size:11px;color:#8a5a5a;margin-top:8px;line-height:1.55;">reviewGuidance: ${pestReviewGuidance.length ? pestReviewGuidance.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 방제/약제 실행 권한 없음</div>
-      </div>
-      <div data-crop-model-feature-sources-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e9edf5;">
-        <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">모델 입력 소스</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#8a5a5a;margin-top:8px;line-height:1.55;">reviewGuidance: ${pestReviewGuidance.length ? pestReviewGuidance.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 방제/약제 실행 권한 없음</div>
+      </article>
+      <article data-crop-ai-evidence-card="model-feature-sources" data-crop-model-feature-sources-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e9edf5;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">모델 입력 소스</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">환경/관수/병해 입력의 가용성과 완성도입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">환경 7일</div><b style="font-size:14px;color:#24323F;">${this._esc(envStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">관수/양액 7일</div><b style="font-size:14px;color:#24323F;">${this._esc(irrStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">병해/방제</div><b style="font-size:14px;color:#24323F;">${this._esc(pestStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">입력 완성도</div><b style="font-size:14px;color:#24323F;">${this._esc(String(inputCompleteness.score ?? '-'))}</b></div>
         </div>
-        <div style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">sourceStatus · inputCompleteness 기준으로 생육조사 외 환경/관수/병해/작업/인터록 입력이 실제 모델 feature에 포함됩니다.</div>
-      </div>
+        <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">sourceStatus · inputCompleteness 기준으로 생육조사 외 환경/관수/병해/작업/인터록 입력이 실제 모델 feature에 포함됩니다.</div>
+      </article>
       </section>
-      <section data-crop-ai-center-reference-summary style="display:block;">
+      <section data-crop-ai-center-reference-summary data-crop-ai-evidence-section="center-reference" style="display:block;background:#f8fbf9;border:1px solid #e2f1e7;border-radius:14px;padding:10px;margin-bottom:12px;">
         <div data-crop-ai-section-heading style="margin-bottom:8px;"><div style="font-size:14px;font-weight:900;color:#24323F;">센터 분석 참고</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">센터 분석은 반복 패턴과 정책 추천 후보 확인용입니다.</div></div>
       <div data-center-crop-policy-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dbeaf8;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
