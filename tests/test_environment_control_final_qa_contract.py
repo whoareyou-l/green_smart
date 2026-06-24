@@ -14,13 +14,13 @@ def _read(path: Path) -> str:
 
 def test_v1998_environment_final_qa_versions_and_docs():
     panel = _read(PANEL)
-    assert '"version": "1.10.2"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.2"' in panel
-    assert 'v1.10.2' in panel[:200]
+    assert '"version": "1.10.3"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.3"' in panel
+    assert 'v1.10.3' in panel[:200]
     plan = _read(PLAN)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert "Status: implemented in `v1.10.2`" in plan
-    assert "v1.10.2 Environment Control final QA" in docs
+    assert "Status: implemented in `v1.10.3`" in plan
+    assert "v1.10.3 Environment Control final QA" in docs
 
 
 def test_environment_final_qa_covers_all_seven_tabs():

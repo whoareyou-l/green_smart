@@ -733,7 +733,7 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     tabs = panel.split("  _envStrategyTabs()", 1)[1].split("  _renderEnvStrategyTabBar", 1)[0]
 
     assert 'navBtn("environment", "mdi:thermometer-lines",  "환경 제어"' in sidebar
-    assert 'this._envStrategyTab = "overview"' in panel
+    assert 'this._envStrategyTab = "ai"' in panel
     assert "data-env-legacy-tab=\"mode\"" in env_page
     assert "data-env-strategy-tab" in env_page
     assert "data-env-strategy-content" in env_page

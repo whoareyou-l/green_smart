@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.2`
+> 기준 버전: `v1.10.3`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -732,7 +732,7 @@ UI Slice 5에서 정리한 내용:
 
 ---
 
-### 8.9 P1 rendered-flow QA v1.10.2
+### 8.9 P1 rendered-flow QA v1.10.3
 
 Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
 
@@ -1642,3 +1642,12 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 
 - v1.10.2 Environment zone card UI/UX alignment: 구역 선택 카드 UI/UX 정렬 기준은 v1.10.2에서도 유지된다.
 - v1.10.2 Environment Control final QA: 환경 제어 구역 선택 카드 header cleanup 후 전체 렌더/계약 기준을 유지한다.
+
+
+### 8.15 v1.10.3 AI-first control tab alignment
+
+작물 설정과 환경 제어 모두 `AI 전략` 하위탭을 첫 번째 탭으로 배치한다. 환경 제어의 `AI 전략`은 작물 설정 AI 전략과 동일한 visible grammar를 따른다: 운영 판단 요약 우선, read-only boundary, 3개 main card(`환경 상태 요약`, `인터록 상태 요약`, `모델 상태 요약`), 접힌 모델·데이터 근거. 기존 `AI 보정·최종값` 편집 UI는 `AI 보정 설정` 탭으로 분리한다. 환경 제어 composition에서 별도 `제어 모드` 카드는 제거하고, 관련 상태는 AI/인터록 요약과 설정 탭 안에서만 표시한다. setValue 행은 고정 컬럼(`label/current/recommended/control`)과 오른쪽 정렬을 사용해 글자 수와 무관하게 정렬을 유지한다.
+
+- v1.10.3 Environment zone card header cleanup: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
+- v1.10.3 Environment zone card UI/UX alignment: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
+- v1.10.3 Environment Control final QA: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
