@@ -89,10 +89,10 @@ def test_v1977_cross_subpage_version_markers():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.9.92"' in manifest
-    assert 'const VERSION = "1.9.92"' in panel
-    assert 'v1.9.92' in panel[:200]
-    assert 'EDGE_VERSION = "1.9.92"' in central
-    assert '기준 버전: `v1.9.92`' in docs
+    assert '"version": "1.9.93"' in manifest
+    assert 'const VERSION = "1.9.93"' in panel
+    assert 'v1.9.93' in panel[:200]
+    assert 'EDGE_VERSION = "1.9.93"' in central
+    assert '기준 버전: `v1.9.93`' in docs
     assert 'UI Slice 6 | v1.9.77 | Cross-subpage consistency pass' in plan
     assert 'Crop Settings subpage consistency final state' in docs
