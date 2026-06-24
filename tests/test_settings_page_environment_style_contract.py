@@ -16,13 +16,13 @@ def _section(text: str, start: str, end: str) -> str:
     return text.split(start, 1)[1].split(end, 1)[0]
 
 
-def test_v11010_versions_and_docs_for_settings_inside_green_smart_shell():
+def test_v11011_versions_and_docs_for_settings_sidebar_navigation_hotfix():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.10.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.10"' in panel
-    assert 'v1.10.10' in panel[:200]
-    assert "v1.10.10 Settings page inside Green Smart shell hotfix" in docs
+    assert '"version": "1.10.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.11"' in panel
+    assert 'v1.10.11' in panel[:200]
+    assert "v1.10.11 Settings sidebar navigation hotfix" in docs
 
 
 def test_settings_state_keeps_green_smart_sidebar_and_main_layout():
@@ -81,6 +81,15 @@ def test_settings_page_preserves_existing_only_fields_and_actions():
         'execute_final_targets',
     ):
         assert forbidden not in settings
+
+
+def test_settings_sidebar_page_click_leaves_settings_state_without_cancel():
+    panel = _read(PANEL)
+    bind = _section(panel, '  _bindSidebar() {', '  _alertPillHtml() {')
+    assert 'this._page = btn.dataset.page;' in bind
+    assert 'this._state = "dashboard";' in bind
+    assert 'this._error = "";' in bind
+    assert 'this._update();' in bind
 
 
 def test_settings_binding_supports_tab_clicks_without_removing_existing_bindings():

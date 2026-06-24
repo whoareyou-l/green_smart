@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.10
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.11
 const DOMAIN = "green_smart";
-const VERSION = "1.10.10";
+const VERSION = "1.10.11";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1724,7 +1724,12 @@ button.action:disabled{opacity:.5;cursor:default;}
     const s = this.shadowRoot.getElementById("sidebar");
     if (!s) return;
     s.querySelectorAll("[data-page]").forEach((btn) =>
-      btn.addEventListener("click", () => { this._page = btn.dataset.page; this._update(); })
+      btn.addEventListener("click", () => {
+        this._page = btn.dataset.page;
+        this._state = "dashboard";
+        this._error = "";
+        this._update();
+      })
     );
     s.querySelectorAll(".sb-settings-btn").forEach((btn) =>
       btn.addEventListener("click", () => this._openSettings())

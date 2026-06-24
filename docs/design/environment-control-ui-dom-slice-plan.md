@@ -650,4 +650,10 @@ Slice 2+ 계약:
 - `_update()` keeps Green Smart sidebar visible for both `dashboard` and `settings` states.
 - The settings gear button is active while settings is open, and `#main-area.has-sidebar` remains applied.
 - The settings content keeps the v1.10.9 one-card/subtab structure and existing-only function boundary, but removes the old `page-head` bypass header and uses the common main-page hero.
+
+### Hotfix — v1.10.11 Settings sidebar navigation without cancel
+
+- When the operator opens `환경 설정` and then clicks a Green Smart sidebar page without pressing `취소`, `_bindSidebar()` must set `_state = "dashboard"` before re-rendering.
+- The selected `_page` is then rendered normally (`홈`, `작물 설정`, `환경 제어`, `관수 제어`, `장치제어`, or `Admin/System`).
+- This navigation path does not save settings and does not add control/manual execution features; explicit `저장` and `취소` remain unchanged.
 - No control execution/manual device/strategy execution features are added to Settings.
