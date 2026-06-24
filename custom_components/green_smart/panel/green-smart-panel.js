@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.78
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.79
 const DOMAIN = "green_smart";
-const VERSION = "1.9.78";
+const VERSION = "1.9.79";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1252,9 +1252,9 @@ button{cursor:pointer;font:inherit;}
 /* ── Crop popup card ────────────────────────────── */
 .popup-card{
   background:#fff;border-radius:20px;padding:28px 28px 22px;
-  width:min(500px,93vw);box-shadow:0 16px 56px rgba(0,0,0,.22);
-  max-height:88vh;overflow-y:auto;
-  animation:popIn .18s cubic-bezier(.4,0,.2,1);
+  width:min(500px,93vw);max-height:min(88vh,760px);overflow-y:auto;overscroll-behavior:contain;
+  box-shadow:0 16px 56px rgba(0,0,0,.22);
+  animation:popIn .22s cubic-bezier(.4,0,.2,1);
 }
 @keyframes popIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
 .pop-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1.5px solid #f0f7f1;}

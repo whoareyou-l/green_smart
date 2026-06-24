@@ -241,17 +241,18 @@ Target pages:
 ```text
 data-crop-ui-icon-tab
 data-crop-tab-icon
-data-crop-tab-emoji
 data-crop-tab-label
 ```
 
-| tab | icon | emoji fallback |
-|---|---|---|
-| 작기 설정 | `mdi:sprout` | `🌱` |
-| 생육조사 | `mdi:clipboard-pulse-outline` | `📋` |
-| AI 전략 | `mdi:brain` | `🧠` |
-| 병해충 예찰 | `mdi:bug-outline` | `🐛` |
-| 방제 기록 | `mdi:spray` | `💧` |
+| tab | icon |
+|---|---|
+| 작기 설정 | `mdi:sprout` |
+| 생육조사 | `mdi:clipboard-pulse-outline` |
+| AI 전략 | `mdi:brain` |
+| 병해충 예찰 | `mdi:bug-outline` |
+| 방제 기록 | `mdi:spray` |
+
+> v1.9.78 correction supersedes the old text emoji fallback: 하위탭은 이모티콘(HA icon) + 하위탭명만 표시하고 `data-crop-tab-emoji` / `${t.emoji}`는 렌더하지 않는다.
 
 ---
 
@@ -340,14 +341,15 @@ Fix issues found on the actual rendered Crop Settings screen before continuing A
 
 ### Fixes
 
-- Basic tab icon: use `icon: "mdi:sprout"` and explicit `emoji: "🌱"` fallback rendered through `data-crop-tab-emoji` / `${t.emoji}` so the tab never appears blank.
+- Basic tab icon: originally added icon fallback; superseded by v1.9.78 so tabs now render HA icon + label only, without duplicate text emoji fallback.
 - Latest growth survey crop name: translate raw crop keys with `_cropLabelForDisplay(` and `const latestCropLabel = this._cropLabelForDisplay(` so `lettuce` renders as `상추`, with `토마토`, `파프리카`, `오이`, `허브` labels preserved.
 - Growth record row actions: add `data-growth-edit`, `data-growth-edit="${i}"` / `data-crop-growth-edit-action`, open `_openGrowthEditPopup(`, prefill the existing record, and save through `PUT", `green_smart/crop/growth/${id}``.
 
 ### Required markers
 
 ```text
-data-crop-tab-emoji
+data-crop-tab-icon
+data-crop-tab-label
 data-growth-edit
 data-crop-growth-edit-action
 _cropLabelForDisplay(
@@ -630,3 +632,16 @@ treatmentAreaM2
 perPyeongUsage
 cropModelNutritionHint
 ```
+
+---
+
+## Rendered UI QA hotfix — v1.9.79
+
+Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
+
+- Browser/login check: Prod HA reaches the login screen without console errors; authenticated panel rendering was not performed because no HA user credentials were used or changed.
+- Render harness check: Crop Settings page rendered with mocked HA data using the production panel JS.
+- Confirmed in browser DOM: subtab text is icon + label only, no `data-crop-tab-emoji`; growth/pest/control record action markers render; AI summary/evidence markers render; pest/control order is summary → action row → records.
+- Confirmed in browser DOM: Control modal auto-fills dilution, treatment area, per-pyeong usage (`0.5` chemical + `500` water → `1000` dilution, `363.64㎡`, `4.55L/평`).
+- Hotfix: `.popup-card` now has `max-height:min(88vh,760px)`, `overflow-y:auto`, and `overscroll-behavior:contain` so long dose-calculation modals do not lose access to lower fields/actions on short viewports.
+- Runtime hotfix: Center crop policy datetime fields from DB may arrive as ISO strings; `_coerce_naive_datetime()` normalizes datetime/date/string values before age and expiry checks, preventing `replace() takes at least 2 positional arguments` scheduler warnings.

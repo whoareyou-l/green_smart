@@ -102,6 +102,26 @@ CROP_SAFETY_RULE_DEFAULTS = {
     },
 }
 
+def _coerce_naive_datetime(value):
+    """Normalize DB datetime/date/ISO-string values to naive datetime for age checks."""
+    if value in (None, ""):
+        return None
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time())
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        try:
+            return datetime.fromisoformat(raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            _LOGGER.warning("policy_datetime_parse_failed value=%r", raw)
+            return None
+    return None
+
+
 CROP_STAGE_CALIBRATION_VERSION = "crop_stage_calibration_v1"
 CROP_STAGE_CALIBRATION_DEFAULTS = [
     {
@@ -2464,13 +2484,12 @@ async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zon
     received_at = row.get("received_at")
     stale_after = int(row.get("stale_after_seconds") or policy.get("stale_after_seconds") or 600)
     fallback_after = int(row.get("fallback_after_seconds") or policy.get("fallback_after_seconds") or 1800)
+    received_at_dt = _coerce_naive_datetime(received_at)
+    valid_until_dt = _coerce_naive_datetime(valid_until)
     now = datetime.now()
     age_seconds = None
-    if received_at:
-        try:
-            age_seconds = max(0, int((now - received_at.replace(tzinfo=None)).total_seconds()))
-        except Exception:
-            age_seconds = None
+    if received_at_dt:
+        age_seconds = max(0, int((now - received_at_dt).total_seconds()))
     if status == "rejected":
         reason_codes = ["center_policy_rejected"]
     elif age_seconds is not None and age_seconds >= fallback_after:
@@ -2479,7 +2498,7 @@ async def _active_center_crop_policy(hass, season_id: int, farm_id: int = 1, zon
     elif age_seconds is not None and age_seconds >= stale_after:
         status = "stale_restricted"
         reason_codes = ["center_policy_stale_restricted"]
-    elif valid_until and valid_until.replace(tzinfo=None) < now:
+    elif valid_until_dt and valid_until_dt < now:
         status = "stale_usable"
         reason_codes = ["center_policy_stale_usable"]
     else:

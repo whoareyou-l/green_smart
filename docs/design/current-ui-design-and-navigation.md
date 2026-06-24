@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.78`
+> 기준 버전: `v1.9.79`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.78` |
+| 현재 version | `1.9.79` |
 
 작업 시 우선순위:
 
@@ -434,24 +434,23 @@ cropSettingsAllowExecution
 
 v1.9.70부터 작물 설정 하위 탭은 환경 제어 하위 탭과 같은 **아이콘 + 텍스트** 탭 패턴을 사용한다.
 
-v1.9.73부터 HA icon 렌더링 실패 시에도 빈 탭으로 보이지 않도록 `icon: "mdi:sprout"`, `emoji: "🌱"`, `data-crop-tab-emoji`, `${t.emoji}` fallback을 함께 렌더한다.
+v1.9.78부터 사용자 수정 기준에 따라 하위 탭은 **이모티콘(HA icon) + 하위탭명**만 표시한다. 중복 텍스트 emoji fallback(`data-crop-tab-emoji`, `${t.emoji}`)은 렌더하지 않는다.
 
 계약 marker:
 
 ```text
 data-crop-ui-icon-tab
 data-crop-tab-icon
-data-crop-tab-emoji
 data-crop-tab-label
 ```
 
-| key | label | icon | emoji fallback | 목적 |
-|---|---|---|---|---|
-| `basic` | 작기 설정 | `mdi:sprout` | `🌱` | 작기 등록/수정/철거/삭제와 선택 작기 lifecycle 확인 |
-| `growth` | 생육조사 | `mdi:clipboard-pulse-outline` | `📋` | 작물별 dynamic metrics 기록과 최신 조사/다음 조사 안내 |
-| `ai` | AI 전략 | `mdi:brain` | `🧠` | 생육 리포트, 모델/인터록/정책/데이터 준비 상태를 read-only로 요약 |
-| `pest` | 병해충 예찰 | `mdi:bug-outline` | `🐛` | 발생 위치/심각도 기록과 후속 방제 필요 여부 확인 |
-| `control` | 방제 기록 | `mdi:spray` | `💧` | 약제/PLS/PHI/REI/방제 이력 기록과 안전 확인 |
+| key | label | icon | 목적 |
+|---|---|---|---|
+| `basic` | 작기 설정 | `mdi:sprout` | 작기 등록/수정/철거/삭제와 선택 작기 lifecycle 확인 |
+| `growth` | 생육조사 | `mdi:clipboard-pulse-outline` | 작물별 dynamic metrics 기록과 최신 조사/다음 조사 안내 |
+| `ai` | AI 전략 | `mdi:brain` | 생육 리포트, 모델/인터록/정책/데이터 준비 상태를 read-only로 요약 |
+| `pest` | 병해충 예찰 | `mdi:bug-outline` | 발생 위치/심각도 기록과 후속 방제 필요 여부 확인 |
+| `control` | 방제 기록 | `mdi:spray` | 약제/PLS/PHI/REI/방제 이력 기록과 안전 확인 |
 
 ### 8.3 작기 selector
 
@@ -1424,7 +1423,7 @@ autoSchedulePesticideApplication
 
 ---
 
-## Crop Settings requested UI corrections — v1.9.78
+## Crop Settings requested UI corrections — v1.9.79
 
 User-requested correction slice after the v1.9.77 final pass.
 
@@ -1499,3 +1498,16 @@ Behavior:
 - The active crop season + treatment scope estimates used area when possible. Operators may override area manually.
 - 평당 사용량 자동 계산 uses `waterAmount / (areaM2 / 3.305785)`.
 - The calculated summary is preserved in `amount`, and structured fields are carried in payload as crop model/nutrition evidence candidates only; this does not grant execution authority.
+
+---
+
+## Rendered UI QA hotfix — v1.9.79
+
+Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
+
+- Browser/login check: Prod HA reaches the login screen without console errors; authenticated panel rendering was not performed because no HA user credentials were used or changed.
+- Render harness check: Crop Settings page rendered with mocked HA data using the production panel JS.
+- Confirmed in browser DOM: subtab text is icon + label only, no `data-crop-tab-emoji`; growth/pest/control record action markers render; AI summary/evidence markers render; pest/control order is summary → action row → records.
+- Confirmed in browser DOM: Control modal auto-fills dilution, treatment area, per-pyeong usage (`0.5` chemical + `500` water → `1000` dilution, `363.64㎡`, `4.55L/평`).
+- Hotfix: `.popup-card` now has `max-height:min(88vh,760px)`, `overflow-y:auto`, and `overscroll-behavior:contain` so long dose-calculation modals do not lose access to lower fields/actions on short viewports.
+- Runtime hotfix: Center crop policy datetime fields from DB may arrive as ISO strings; `_coerce_naive_datetime()` normalizes datetime/date/string values before age and expiry checks, preventing `replace() takes at least 2 positional arguments` scheduler warnings.
