@@ -27,7 +27,6 @@ def test_v1989_ai_decision_dom_main_order():
         "data-crop-ai-strategy-header",
         "data-crop-ai-readonly-boundary",
         "data-crop-ai-decision-summary",
-        "data-crop-ai-decision-flow",
         "data-crop-ai-interlock-summary",
         "data-crop-ai-model-status-summary",
         "data-crop-ai-advanced-details",
@@ -39,7 +38,7 @@ def test_v1989_ai_decision_dom_main_order():
 
 def test_v1989_ai_decision_summary_is_operator_facing_crop_state():
     card = _report_card()
-    summary = _section(card, "data-crop-ai-decision-summary", "data-crop-ai-decision-flow")
+    summary = _section(card, "data-crop-ai-decision-summary", "data-crop-ai-interlock-summary")
     assert "data-crop-ai-primary-summary" in summary
     assert "작물 상태 요약" in summary
     assert "data-crop-ai-primary-metric-grid" in summary
@@ -54,20 +53,12 @@ def test_v1989_ai_decision_summary_is_operator_facing_crop_state():
         assert technical_status not in summary
 
 
-def test_v1989_ai_decision_flow_has_four_steps():
+def test_v1989_ai_decision_flow_removed_in_v1992():
     card = _report_card()
-    flow = _section(card, "data-crop-ai-decision-flow", "data-crop-ai-interlock-summary")
-    assert "AI 판단 흐름" in flow
-    assert "data-crop-ai-decision-flow-steps" in flow
-    for step in (
-        'data-crop-ai-flow-step="input"',
-        'data-crop-ai-flow-step="model"',
-        'data-crop-ai-flow-step="interlock"',
-        'data-crop-ai-flow-step="action"',
-    ):
-        assert step in flow
-    for text in ("입력 확인", "모델 판단", "인터록 확인", "운영 제안"):
-        assert text in flow
+    assert "data-crop-ai-decision-flow" not in card
+    assert "data-crop-ai-decision-flow-steps" not in card
+    assert "data-crop-ai-flow-step" not in card
+    assert "AI 판단 흐름" not in card
 
 
 def test_v1989_ai_interlock_and_model_status_are_main_cards_not_detail_cards():
@@ -126,18 +117,26 @@ def test_v1989_versions_and_docs_record_decision_dom():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.91"' in manifest
-    assert 'const VERSION = "1.9.91"' in panel
-    assert 'EDGE_VERSION = "1.9.91"' in central
-    assert "v1.9.91 AI Strategy decision-oriented DOM" in docs
+    assert '"version": "1.9.92"' in manifest
+    assert 'const VERSION = "1.9.92"' in panel
+    assert 'EDGE_VERSION = "1.9.92"' in central
+    assert "v1.9.92 AI Strategy decision-oriented DOM" in docs
     for marker in (
         "data-crop-ai-decision-summary",
-        "data-crop-ai-decision-flow",
         "data-crop-ai-primary-metric-grid",
-        "data-crop-ai-decision-flow-steps",
+        "data-crop-ai-main-card",
+        "data-crop-ai-main-card-header",
+        "data-crop-ai-main-card-body",
+        "data-crop-ai-main-card-chip-group",
         "data-crop-ai-top-models",
         "data-crop-ai-submodels",
         "data-crop-ai-technical-evidence-stack",
     ):
         assert marker in panel
         assert marker in docs
+    for removed_marker in (
+        "data-crop-ai-decision-flow",
+        "data-crop-ai-decision-flow-steps",
+        "data-crop-ai-flow-step",
+    ):
+        assert removed_marker not in panel

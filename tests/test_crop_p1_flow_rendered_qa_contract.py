@@ -62,10 +62,10 @@ def test_v1982_p1_flow_version_and_docs_contract():
     ui_doc = _read(UI_DOC)
     master = _read(MASTER)
 
-    assert '"version": "1.9.91"' in manifest
-    assert 'const VERSION = "1.9.91"' in panel
-    assert "v1.9.91" in panel[:200]
-    assert 'EDGE_VERSION = "1.9.91"' in central
-    assert "기준 버전: `v1.9.91`" in ui_doc
-    assert "P1 rendered-flow QA v1.9.91" in ui_doc
-    assert "P1 rendered-flow QA v1.9.91" in master
+    assert '"version": "1.9.92"' in manifest
+    assert 'const VERSION = "1.9.92"' in panel
+    assert "v1.9.92" in panel[:200]
+    assert 'EDGE_VERSION = "1.9.92"' in central
+    assert "기준 버전: `v1.9.92`" in ui_doc
+    assert "P1 rendered-flow QA v1.9.92" in ui_doc
+    assert "P1 rendered-flow QA v1.9.92" in master
