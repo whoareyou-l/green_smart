@@ -750,9 +750,9 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     assert 'key: "interlock"' in tabs
     assert 'key: "final"' not in tabs
     assert 'key: "permissions"' not in tabs
-    for key in ("ai", "overview", "interlock", "safety", "ai-settings", "operations", "devices", "logs"):
+    for key in ("ai", "interlock", "safety", "ai-settings", "operations", "devices", "logs"):
         assert f'key: "{key}"' in tabs
-    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
+    for old_key in ("mode", "overview", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
         assert f'key: "{old_key}"' not in tabs
 
 

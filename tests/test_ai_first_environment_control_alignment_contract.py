@@ -18,10 +18,10 @@ def _method(panel: str, start: str, end: str) -> str:
 def test_v1103_ai_first_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.7"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.7"' in panel
-    assert 'v1.10.7' in panel[:200]
-    assert "v1.10.7 AI-first control tab alignment" in docs
+    assert '"version": "1.10.8"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.8"' in panel
+    assert 'v1.10.8' in panel[:200]
+    assert "v1.10.8 AI-first control tab alignment" in docs
 
 
 def test_crop_settings_ai_strategy_tab_is_first():
@@ -36,7 +36,7 @@ def test_crop_settings_ai_strategy_tab_is_first():
 def test_environment_ai_strategy_tab_is_first_and_named_like_crop():
     panel = _read(PANEL)
     tabs = _method(panel, '  _envStrategyTabs() {', '  _renderEnvStrategyTabBar() {')
-    assert tabs.index('{ key: "ai", label: "AI 전략", icon: "mdi:brain" }') < tabs.index('{ key: "overview", label: "운영 요약"')
+    assert tabs.index('{ key: "ai", label: "AI 전략", icon: "mdi:brain" }') < tabs.index('{ key: "interlock", label: "인터록 설정"')
     tabbar = _method(panel, '  _renderEnvStrategyTabBar() {', '  _renderEnvStrategyTabContent')
     assert 'this._envStrategyTab = "ai";' in tabbar
     ai = _method(panel, '  _renderEnvAiStrategyTabContent(s, modeOptions, aiStatusOptions, statusText) {', '  _renderEnvStrategyTabContent')

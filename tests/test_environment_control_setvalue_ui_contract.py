@@ -28,10 +28,10 @@ def _env_content_section() -> str:
 
 def test_v1995_environment_tabs_are_restructured_to_vertical_slice_targets():
     tabs = _env_tabs_section()
-    expected = ["ai", "overview", "interlock", "safety", "ai-settings", "operations", "devices", "logs"]
+    expected = ["ai", "interlock", "safety", "ai-settings", "operations", "devices", "logs"]
     for key in expected:
         assert f'key: "{key}"' in tabs or f'key:"{key}"' in tabs
-    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
+    for old_key in ("mode", "overview", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
         assert f'key: "{old_key}"' not in tabs
         assert f'key:"{old_key}"' not in tabs
     assert "this._envStrategyTab = \"ai\"" in _read(PANEL)
@@ -39,7 +39,7 @@ def test_v1995_environment_tabs_are_restructured_to_vertical_slice_targets():
 
 def test_v1995_environment_old_tab_keys_are_preserved_as_hidden_compatibility_markers():
     panel = _read(PANEL)
-    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
+    for old_key in ("mode", "overview", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
         assert f'data-env-legacy-tab="{old_key}"' in panel
 
 
@@ -90,14 +90,12 @@ def test_v1995_environment_status_record_tabs_have_non_setvalue_shells():
         "data-env-status-card",
         "data-env-status-metric-grid",
         "data-env-status-metric",
-        "data-env-status-note",
-        "data-env-status-action-row",
         "data-env-subtab-list-header",
         "data-env-subtab-record-list",
         "data-env-subtab-record-row",
     ):
         assert marker in panel
-    for tab in ("overview", "operations", "devices", "logs"):
+    for tab in ("operations", "devices", "logs"):
         assert f'tab === "{tab}"' in _env_content_section()
 
 
@@ -106,10 +104,10 @@ def test_v1995_environment_versions_docs_and_forbidden_markers():
     docs = _read(PLAN) + "\n" + _read(CURRENT_UI)
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
-    assert '"version": "1.10.7"' in manifest
-    assert 'const VERSION = "1.10.7"' in panel
+    assert '"version": "1.10.8"' in manifest
+    assert 'const VERSION = "1.10.8"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert "v1.10.7" in docs
+    assert "v1.10.8" in docs
     for forbidden in (
         "data-env-setvalue-direct-execute",
         "environmentSetValueAllowDirectExecution",

@@ -18,10 +18,10 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1104_interlock_safety_split_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.7"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.7"' in panel
-    assert 'v1.10.7' in panel[:200]
-    assert "v1.10.7 Environment interlock/safety tab split" in docs
+    assert '"version": "1.10.8"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.8"' in panel
+    assert 'v1.10.8' in panel[:200]
+    assert "v1.10.8 Environment interlock/safety tab split" in docs
 
 
 def test_environment_tabs_merge_targets_and_interlock_then_safety():
@@ -29,7 +29,6 @@ def test_environment_tabs_merge_targets_and_interlock_then_safety():
     tabs = _section(panel, '  _envStrategyTabs() {', '  _renderEnvStrategyTabBar() {')
     expected_order = [
         '{ key: "ai", label: "AI 전략"',
-        '{ key: "overview", label: "운영 요약"',
         '{ key: "interlock", label: "인터록 설정"',
         '{ key: "safety", label: "안전 설정"',
         '{ key: "ai-settings", label: "AI 보정 설정"',
@@ -86,12 +85,13 @@ def test_safety_tab_contains_safety_boundaries_not_target_pid_values():
     assert '온도 PID 목표값' not in safety
 
 
-def test_control_mode_card_removed_from_overview_and_interlock_safety_composition():
+def test_control_mode_card_removed_from_interlock_safety_composition():
     panel = _read(PANEL)
-    overview = _section(panel, 'if (tab === "overview")', 'if (tab === "interlock")')
+    content = _section(panel, '  _renderEnvStrategyTabContent(s, modeOptions, aiStatusOptions, statusText) {', '  _loadControlScope() {')
+    interlock = content.split('if (tab === "interlock")', 1)[1].split('if (tab === "safety")', 1)[0]
     safety_ops = _section(panel, '  _renderControlSafetyOpsTabContent(domain) {', '  _renderControlDeviceMapTabContent(domain) {')
-    assert '제어 모드' not in overview
-    assert 'data-zone-control-mode-card' not in overview
+    assert '제어 모드' not in interlock
+    assert 'data-zone-control-mode-card' not in interlock
     assert '_renderZoneControlModeCard(domain)' not in safety_ops
     assert 'data-env-control-mode-card-removed' in safety_ops
 

@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.7`
+> 기준 버전: `v1.10.8`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -1687,3 +1687,14 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 - v1.10.7 Environment interlock/safety tab split: current v1.10.7 compatibility marker retained after zone helper text removal.
 - v1.10.7 Environment unified scope/tab card: current v1.10.7 compatibility marker retained after zone helper text removal.
 - v1.10.7 Environment storage target moved to docs: current v1.10.7 compatibility marker retained after zone helper text removal.
+
+- v1.10.8 Environment overview tab removed: 환경 제어의 `운영 요약` 하위탭은 UI에서 제거한다. 기본 첫 탭은 `AI 전략`이고 다음 visible 탭은 `인터록 설정`이다. 과거 overview 키는 hidden legacy marker(`data-env-legacy-tab="overview"`)로만 유지한다.
+- P1 rendered-flow QA v1.10.8: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 AI-first control tab alignment: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment zone card header cleanup: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment zone card UI/UX alignment: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment Control final QA: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment interlock/safety tab split: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment unified scope/tab card: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment storage target moved to docs: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment zone helper text moved to docs: current v1.10.8 compatibility marker retained after Environment overview tab removal.

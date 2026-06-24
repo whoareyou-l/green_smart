@@ -539,3 +539,14 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.10.7 Environment interlock/safety tab split: current v1.10.7 compatibility marker retained after zone helper text removal.
 - v1.10.7 Environment unified scope/tab card: current v1.10.7 compatibility marker retained after zone helper text removal.
 - v1.10.7 Environment storage target moved to docs: current v1.10.7 compatibility marker retained after zone helper text removal.
+
+- v1.10.8 Environment overview tab removed: 환경 제어의 `운영 요약` 하위탭은 UI에서 제거한다. 기본 첫 탭은 `AI 전략`이고 다음 visible 탭은 `인터록 설정`이다. 과거 overview 키는 hidden legacy marker(`data-env-legacy-tab="overview"`)로만 유지한다.
+- P1 rendered-flow QA v1.10.8: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 AI-first control tab alignment: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment zone card header cleanup: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment zone card UI/UX alignment: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment Control final QA: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment interlock/safety tab split: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment unified scope/tab card: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment storage target moved to docs: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+- v1.10.8 Environment zone helper text moved to docs: current v1.10.8 compatibility marker retained after Environment overview tab removal.

@@ -40,7 +40,7 @@ def test_env_control_current_tab_inventory_is_documented():
         assert f"`{tab}`" in plan
     for old_tab in ("mode", "temperature", "humidity", "co2", "aiOps", "safety", "safetyOps", "deviceMap"):
         assert f'data-env-legacy-tab="{old_tab}"' in panel
-    for new_tab in ("ai", "overview", "interlock", "safety", "ai-settings", "operations", "devices", "logs"):
+    for new_tab in ("ai", "interlock", "safety", "ai-settings", "operations", "devices", "logs"):
         assert f'key: "{new_tab}"' in panel or f'key:"{new_tab}"' in panel
     assert "현재 `_envStrategyTabs()`는 10개 하위탭" in plan
 

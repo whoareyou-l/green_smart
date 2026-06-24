@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 def test_v1102_zone_card_header_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.7"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.7"' in panel
-    assert 'v1.10.7' in panel[:200]
-    assert "v1.10.7 Environment zone card header cleanup" in docs
+    assert '"version": "1.10.8"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.8"' in panel
+    assert 'v1.10.8' in panel[:200]
+    assert "v1.10.8 Environment zone card header cleanup" in docs
 
 
 def test_environment_scope_bar_removes_duplicate_top_zone_title():
