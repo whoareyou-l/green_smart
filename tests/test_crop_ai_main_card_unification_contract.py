@@ -58,10 +58,10 @@ def test_v1992_versions_and_docs_record_main_card_cleanup():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.96"' in manifest
-    assert 'const VERSION = "1.9.96"' in panel
+    assert '"version": "1.9.97"' in manifest
+    assert 'const VERSION = "1.9.97"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert "v1.9.96 AI main card unification" in docs
+    assert "v1.9.97 AI main card unification" in docs
     for marker in (
         "data-crop-ai-main-card",
         "data-crop-ai-main-card-header",

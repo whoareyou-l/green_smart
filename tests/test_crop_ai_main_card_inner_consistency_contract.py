@@ -105,10 +105,10 @@ def test_v1993_versions_and_docs_record_inner_consistency():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.96"' in manifest
-    assert 'const VERSION = "1.9.96"' in panel
+    assert '"version": "1.9.97"' in manifest
+    assert 'const VERSION = "1.9.97"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert "v1.9.96 AI main card inner consistency" in docs
+    assert "v1.9.97 AI main card inner consistency" in docs
     for marker in (
         "data-crop-ai-main-metric-grid",
         "data-crop-ai-main-metric",

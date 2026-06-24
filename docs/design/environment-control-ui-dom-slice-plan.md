@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.9.96
+> 기준 버전: v1.9.97
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -38,8 +38,14 @@ Status: implemented in `v1.9.96`.
 
 ### Slice 4 — 운영/상태 하위탭 적용
 
-- AI 운영/안전·리허설/장치 매핑/로그는 상태·기록형 패턴으로 정리
-- 실행 권한/수동 제어 권한이 있는 버튼은 safety boundary와 RBAC wording을 함께 표시
+Status: implemented in `v1.9.97`.
+
+- `operations / devices / logs`를 상태·기록형 패턴으로 정리
+- `operations`는 `data-env-operations-polish` grammar로 AI 운영과 안전·리허설을 분리한다.
+- `devices`는 `data-env-devices-polish` grammar로 entity state / entity mapping / mapping validation을 분리한다.
+- `logs`는 `data-env-logs-polish` grammar로 summary → list header → record rows/empty state를 적용한다.
+- 실행 권한/수동 제어 권한이 있는 버튼은 safety boundary와 RBAC wording을 함께 표시한다.
+- 금지 marker: `data-env-operations-direct-execute`, `data-env-devices-manual-execute`, `environmentStatusTabsAllowDirectExecution`, `data-env-control-bypass-safety`.
 
 ### Slice 5 — 렌더 QA + Prod release
 
