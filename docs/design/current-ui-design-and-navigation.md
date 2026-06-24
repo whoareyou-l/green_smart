@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.0`
+> 기준 버전: `v1.10.1`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -732,7 +732,7 @@ UI Slice 5에서 정리한 내용:
 
 ---
 
-### 8.9 P1 rendered-flow QA v1.10.0
+### 8.9 P1 rendered-flow QA v1.10.1
 
 Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
 
@@ -1627,3 +1627,10 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 ### 8.11 v1.10.0 Environment zone-centric crop-season scope
 
 환경 제어 상단의 기존 구역 선택 카드 위치는 `data-env-season-zone-selector` 작기구역 카드로 대체한다. 이 카드는 작물 설정의 작기 선택 카드와 같은 형식(`crop-season-selector` clone contract)을 사용하며, 각 카드가 작기 ID와 구역 ID를 함께 선택해 `crop_season_id + zone_id + environment` 저장 scope를 바꾼다. 직접 실행 권한은 추가하지 않는다.
+
+
+### 8.13 v1.10.1 Environment zone card UI/UX alignment
+
+환경 제어 상단 scope selector의 표시 이름은 `구역 선택 카드`로 통일한다. 도메인 모델은 계속 구역이 부모, 작기는 구역에 연결되는 현재 재배 상태이며, 카드 UI는 작기 선택 카드와 동일한 3줄 카드 문법을 사용한다: 1줄 `구역 · 현재 작기`, 2줄 `정식일`, 3줄 `재배 상태`. 불필요한 `구역 중심`, `현재 작기:` 접두어, 카드 내부 마지막 저장 줄은 제거해 작기 선택 카드와 같은 밀도와 리듬을 유지한다.
+
+- v1.10.1 Environment Control final QA: 환경 제어 구역 선택 카드 UI/UX 보정 후 전체 렌더/계약 기준을 유지한다.

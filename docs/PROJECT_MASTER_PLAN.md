@@ -489,3 +489,9 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.9.99 Environment season-zone card: 환경 제어 상단 구역 선택 카드 위치에 작물 설정의 작기 선택 카드와 같은 형식의 작기구역 카드를 적용한다. 선택은 작기+구역 저장 scope만 바꾸며 실행 권한을 추가하지 않는다.
 
 - v1.10.0 Environment zone-centric crop-season scope: 환경 제어 상단 scope를 구역 중심으로 전환했다. 구역이 부모, 작기는 구역에 연결되는 현재 재배 상태이며 선택/저장은 `zone_id + crop_season_id + environment` 조합을 유지한다.
+
+- v1.10.1 Environment zone card UI/UX alignment: 환경 제어 상단 구역 선택 카드 명칭을 `구역 선택 카드`로 통일하고, 작기 선택 카드와 동일한 3줄 카드 문법으로 구역+현재 작기를 표시한다. 구역 중심 모델은 유지한다.
+
+- v1.10.1 Environment Control final QA: 환경 제어 구역 선택 카드 UI/UX 보정 후 전체 렌더/계약 기준을 유지한다.
+
+- P1 rendered-flow QA v1.10.1: 환경 제어 구역 선택 카드 UI/UX 보정 후 P1 렌더 흐름 QA 기준을 유지한다.

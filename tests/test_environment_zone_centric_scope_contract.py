@@ -11,13 +11,13 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_v1100_zone_centric_versions_and_docs():
+def test_v1101_zone_centric_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.0"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.0"' in panel
-    assert 'v1.10.0' in panel[:200]
-    assert "v1.10.0 Environment zone-centric crop-season scope" in docs
+    assert '"version": "1.10.1"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.1"' in panel
+    assert 'v1.10.1' in panel[:200]
+    assert "v1.10.1 Environment zone card UI/UX alignment" in docs
     assert "구역이 부모, 작기는 구역에 연결되는 현재 재배 상태" in docs
 
 
@@ -43,15 +43,16 @@ def test_zone_card_visual_hierarchy_puts_zone_first_and_season_inside():
         'data-env-zone-season-current-crop',
         'data-env-zone-season-plant-date',
         'data-env-zone-season-status',
-        'data-env-zone-season-save-summary',
-        '구역 중심',
-        '현재 작기',
+        'data-env-zone-season-primary-line',
+        'data-env-zone-season-secondary-line',
+        'data-env-zone-season-status-line',
+        '구역 선택',
         'flex-shrink:0;border:2px solid ${selected ?',
-        'border-radius:12px;padding:10px 14px;cursor:pointer;min-width:168px;',
+        'border-radius:12px;padding:10px 14px;cursor:pointer;min-width:148px;',
         'background:${selected ?',
     ):
         assert marker in helper
-    assert helper.index('data-env-zone-season-zone-label') < helper.index('data-env-zone-season-current-crop')
+    assert helper.index('data-env-zone-season-zone-label') < helper.index('data-env-zone-season-plant-date')
 
 
 def test_zone_card_binding_selects_zone_first_then_attached_season():

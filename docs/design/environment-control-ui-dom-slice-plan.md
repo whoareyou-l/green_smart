@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.10.0
+> 기준 버전: v1.10.1
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -49,7 +49,7 @@ Status: implemented in `v1.9.97`.
 
 ### Slice 5 — 렌더 QA + Prod release
 
-Status: implemented in `v1.10.0`.
+Status: implemented in `v1.10.1`.
 
 - 환경 제어 전체 하위탭 렌더 순회: `overview / setpoints / rules / ai / operations / devices / logs`.
 - 금지 marker 검사: setValue/status 탭 모두 direct execution marker 부재.
@@ -574,3 +574,12 @@ Slice 2+ 계약:
 - 선택 시 `zone_id`를 먼저 고정하고, 해당 구역의 활성 `crop_season_id`를 함께 scope에 연결한다.
 - 저장 문구는 `구역 + 현재 작기 + 제어영역 → green_smart_zone_control_settings`로 표시한다.
 - 직접 실행/direct execution 권한은 추가하지 않는다.
+
+
+### Follow-up — v1.10.1 Environment zone card UI/UX alignment
+
+- 상단 selector 이름은 `구역 선택`으로 통일한다.
+- 구역 카드 내부 UI는 작기 선택 카드와 동일한 3줄 카드 문법을 사용한다.
+- 1줄: `구역 · 현재 작기`, 2줄: `정식일`, 3줄: `재배 중/철거완료/작기 미연결`.
+- `구역 중심`, `현재 작기:` 같은 설명형 접두어와 카드 내부 마지막 저장 줄은 제거한다.
+- 저장 scope는 `구역 + 현재 작기 + 제어영역`으로 유지한다.

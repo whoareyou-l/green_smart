@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.0
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.1
 const DOMAIN = "green_smart";
-const VERSION = "1.10.0";
+const VERSION = "1.10.1";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -7879,22 +7879,19 @@ button.action:disabled{opacity:.5;cursor:default;}
       const cropLabel = this._zoneSeasonLabel(season);
       return `<div data-env-zone-season-card data-env-zone-season-zone-id="${z.id}" data-env-zone-season-season-id="${this._esc(seasonId)}"
         style="flex-shrink:0;border:2px solid ${selected ? '#51AE60' : '#e0e0e0'};
-               border-radius:12px;padding:10px 14px;cursor:pointer;min-width:168px;
+               border-radius:12px;padding:10px 14px;cursor:pointer;min-width:148px;
                background:${selected ? '#f0faf1' : '#fafafa'};">
-        <div data-env-zone-season-zone-label style="font-size:12px;font-weight:900;color:${selected ? '#24323F' : '#666'};">
-          ${this._esc(z.label)} · 구역 중심</div>
-        <div data-env-zone-season-current-crop style="font-size:12px;font-weight:700;color:${selected ? '#2f6b3c' : '#777'};margin-top:4px;">
-          현재 작기: ${emoji} ${this._esc(cropLabel)}</div>
-        <div data-env-zone-season-plant-date style="font-size:11px;color:${selected ? '#7a9780' : '#aaa'};margin-top:2px;">
+        <div data-env-zone-season-primary-line data-env-zone-season-zone-label data-env-zone-season-current-crop style="font-size:12px;font-weight:700;color:${selected ? '#24323F' : '#666'};">
+          ${this._esc(z.label)} · ${emoji} ${this._esc(cropLabel)}</div>
+        <div data-env-zone-season-secondary-line data-env-zone-season-plant-date style="font-size:11px;color:${selected ? '#7a9780' : '#aaa'};margin-top:2px;">
           ${season?.plantDate || '정식일 미기록'}${season ? ' 정식' : ''}</div>
-        <div data-env-zone-season-status style="font-size:10px;font-weight:700;margin-top:4px;color:${active ? '#51AE60' : '#bbb'};">
-          ${active ? '● 재배 중' : (season ? '○ 철거완료' : '○ 작기 미연결')} · 환경 제어</div>
-        <div data-env-zone-season-save-summary style="font-size:10px;color:${selected ? '#4a6741' : '#aaa'};margin-top:3px;">마지막 저장: ${this._esc(saveNotice)}</div>
+        <div data-env-zone-season-status-line data-env-zone-season-status style="font-size:10px;font-weight:700;margin-top:4px;color:${active ? '#51AE60' : '#bbb'};">
+          ${active ? '● 재배 중' : (season ? '○ 철거완료' : '○ 작기 미연결')}</div>
       </div>`;
     }).join("");
     return `<div data-env-zone-season-selector data-env-zone-season-model="zone-parent-season-child" style="margin-bottom:2px;flex:1 1 100%;">
-      <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:8px;">구역별 현재 작기 선택</div>
-      <div style="font-size:11px;color:#7a9780;margin:-3px 0 8px;">구역이 부모, 작기는 구역에 연결되는 현재 재배 상태입니다. 카드를 선택하면 구역과 해당 구역의 현재 작기가 함께 환경 제어 저장 범위가 됩니다.</div>
+      <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:8px;">구역 선택</div>
+      <div style="font-size:11px;color:#7a9780;margin:-3px 0 8px;">작기 선택 카드와 동일한 3줄 카드 문법으로 구역과 현재 작기를 함께 표시합니다.</div>
       <div id="env-zone-season-selector" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">${cards}</div>
     </div>`;
   }
@@ -7978,9 +7975,9 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _renderControlScopeBar(domain) {
-    const scopeTitle = domain === "environment" ? "구역별 현재 작기 선택" : "구역 선택";
+    const scopeTitle = "구역 선택";
     const scopeDesc = domain === "environment"
-      ? "구역이 부모이고, 작기는 구역에 연결되는 현재 재배 상태입니다. 구역 카드를 선택하면 해당 구역의 현재 작기가 환경 제어 저장 범위에 함께 연결됩니다."
+      ? "작기 선택 카드와 동일한 UI로 구역을 선택합니다. 카드 안에는 해당 구역의 현재 작기가 함께 표시됩니다."
       : `구역 카드를 탭처럼 선택하면 해당 구역의 ${this._esc(this._controlDomainLabel(domain))} 설정값이 바로 연동됩니다.`;
     return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1 1 100%;">
