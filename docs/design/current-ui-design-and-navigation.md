@@ -580,6 +580,8 @@ UX 문구:
 
 ### 8.6 AI 전략 탭 (`ai`)
 
+Source-of-truth UI/DOM pattern: [`docs/design/crop-ai-strategy-ui-dom-pattern.md`](./crop-ai-strategy-ui-dom-pattern.md). AI 전략 하위탭 또는 유사한 패널형 하위탭을 수정할 때는 이 문서의 메인 카드 shell, 내부 metric/note/action 구조, 상세 evidence section 분류, 금지 marker 기준을 먼저 적용한다.
+
 현재 기능:
 
 - `_renderGrowthReportCard()`

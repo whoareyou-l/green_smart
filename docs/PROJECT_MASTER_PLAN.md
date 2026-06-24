@@ -446,6 +446,8 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - 생육 리포트 알림 설정을 작기별/농장별 정책으로 확장하고, 알림 이력 UI를 제공한다.
 - 병해충 예찰/방제 기록의 약제·병해충 추천을 작물/작기/최근 발생 이력에 맞춰 랭킹한다.
 
+- v1.9.93 AI Strategy UI/DOM source-of-truth pattern: `docs/design/crop-ai-strategy-ui-dom-pattern.md`를 기준 문서로 둔다. 이후 AI 전략 하위탭 작업은 메인 3카드, 접힘 상세 evidence section, 모델 운영/검증 참고 분류, 금지 marker 기준을 이 문서에 맞춰 수행한다.
+
 ### UI Polish Phase P2. 생육 AI 전략 분리와 제어 페이지 정보 구조 정리
 
 목표:
