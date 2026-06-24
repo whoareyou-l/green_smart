@@ -411,11 +411,28 @@ Make scouting records actionable: what was found, how serious it is, whether fol
 
 ### Required markers
 
+UI must include the visible Korean labels `병해충 예찰 요약`, `고위험/미해결`, `다음 행동`, and `방제 기록으로 이동`.
+
 ```text
 data-crop-pest-summary-card
 data-crop-pest-severity-overview
 data-crop-pest-record-list
+data-crop-pest-record-row
+data-crop-pest-record-summary
+data-crop-pest-record-meta
+data-crop-pest-delete-action
+data-pest-del
 data-crop-pest-next-action
+data-crop-pest-go-control
+```
+
+### Forbidden markers/behavior
+
+```text
+data-crop-pest-control-form
+data-crop-pest-apply-treatment
+data-crop-pest-execute-control
+pestAllowPesticideExecution
 ```
 
 ---

@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.74`
+> 기준 버전: `v1.9.75`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.74` |
+| 현재 version | `1.9.75` |
 
 작업 시 우선순위:
 
@@ -639,7 +639,24 @@ UI Slice 3에서 정리한 내용:
 | `high` | 높음 |
 | `critical` | 위험 |
 
-UI Slice 4에서 정리할 방향:
+UI Slice 4 v1.9.75 구현 기준:
+
+- `data-crop-pest-summary-card`: 예찰 건수, 최신 예찰, 고위험/미해결 상태를 상단 `병해충 예찰 요약`으로 표시한다.
+- `data-crop-pest-severity-overview`: 낮음/보통/높음/위험 중 특히 `고위험/미해결`인 `high`/`critical` 개수를 농장주/직원이 먼저 보게 한다.
+- `data-crop-pest-next-action`: `다음 행동` 문구와 `방제 기록으로 이동` 버튼을 제공한다. 버튼 marker는 `data-crop-pest-go-control`이며 방제 기록 탭으로 이동만 한다.
+- `data-crop-pest-record-list`: compact record list. 각 row는 `data-crop-pest-record-row`, `data-crop-pest-record-summary`, `data-crop-pest-record-meta`, `data-crop-pest-delete-action`, 기존 삭제 바인딩용 `data-pest-del`을 가진다.
+- 방제 입력 폼/약제 실행을 이 탭에 중복하지 않는다.
+
+금지 marker / behavior:
+
+```text
+data-crop-pest-control-form
+data-crop-pest-apply-treatment
+data-crop-pest-execute-control
+pestAllowPesticideExecution
+```
+
+UI Slice 4에서 정리한 내용:
 
 - severity summary 추가
 - 미해결/고위험 예찰을 상단에 집중 표시

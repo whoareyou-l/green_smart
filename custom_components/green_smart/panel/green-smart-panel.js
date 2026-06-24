@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.74
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.75
 const DOMAIN = "green_smart";
-const VERSION = "1.9.74";
+const VERSION = "1.9.75";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4641,22 +4641,34 @@ button.action:disabled{opacity:.5;cursor:default;}
   _renderCropPestTab() {
     const SEVERITY = { low: "낮음", mid: "보통", high: "높음", critical: "위험" };
     const SEVERITY_COLOR = { low: "#51AE60", mid: "#f39c12", high: "#e67e22", critical: "#c0392b" };
+    const pestSeverityCounts = this._pestData.reduce((acc, r) => {
+      const key = r.severity || "low";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+    const highRiskPests = this._pestData.filter((r) => ["high", "critical"].includes(r.severity));
+    const latestPest = this._pestData[0] || null;
+    const pestNextAction = highRiskPests.length
+      ? "고위험/미해결 예찰이 있습니다. 발생 범위와 최근 방제 이력을 확인한 뒤 필요한 경우 방제 기록으로 이어가세요."
+      : this._pestData.length
+      ? "현재 고위험 예찰은 없습니다. 다음 정기 예찰 때 발생도 변화를 확인하세요."
+      : "첫 예찰 기록을 추가해 병해충 발생 여부를 남기세요.";
     const pageRows = this._paginatedCropRows("pest", this._pestData);
     const rows = pageRows.length
       ? pageRows.map((r) => {
         const i = r.__cropIndex;
         return `
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;">
+        <div data-crop-pest-record-row style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;border:1px solid #e3f1e5;">
           <div style="flex:0 0 72px;font-size:12px;font-weight:700;color:#51AE60;">${r.date}</div>
-          <div style="flex:1;display:flex;flex-wrap:wrap;gap:4px 14px;">
+          <div data-crop-pest-record-summary style="flex:1;display:flex;flex-wrap:wrap;gap:4px 14px;">
             <span style="font-size:12px;color:#4a6741;font-weight:700;">${this._esc(r.type)}</span>
-            <span style="font-size:12px;color:#4a6741;">위치: ${this._esc(r.location)}</span>
+            <span data-crop-pest-record-meta style="font-size:12px;color:#4a6741;">위치: ${this._esc(r.location)}</span>
             <span style="font-size:12px;font-weight:700;color:${SEVERITY_COLOR[r.severity]||"#7a9780"};">
               발생도: ${SEVERITY[r.severity]||r.severity}</span>
             ${r.note ? `<span style="font-size:11px;color:#7a9780;width:100%;">${this._esc(r.note)}</span>` : ""}
           </div>
-          <button data-pest-del="${i}" title="삭제"
-            style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;padding:2px 6px;">✕</button>
+          <button data-pest-del="${i}" data-crop-pest-delete-action title="삭제"
+            style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>
         </div>`;
       }).join("")
       : `<div style="text-align:center;padding:32px 0;color:#b0c4b1;font-size:13px;">
@@ -4676,7 +4688,16 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 병해충 추가</button>
         </div>
       </div>
-      <div id="pest-list">${rows}</div>
+      <div data-crop-pest-summary-card style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">병해충 예찰 요약</div>
+        <div data-crop-pest-severity-overview style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:9px;">
+          <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">전체 예찰</div><b style="font-size:18px;color:#24323F;">${this._esc(String(this._pestData.length))}건</b><div style="font-size:10px;color:#9aae9d;">최신 ${this._esc(latestPest?.date || '-')}</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">고위험/미해결</div><b style="font-size:18px;color:${highRiskPests.length ? '#c0392b' : '#51AE60'};">${this._esc(String(highRiskPests.length))}건</b><div style="font-size:10px;color:#9aae9d;">높음 ${this._esc(String(pestSeverityCounts.high || 0))} · 위험 ${this._esc(String(pestSeverityCounts.critical || 0))}</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">최근 예찰</div><b style="font-size:18px;color:#24323F;">${this._esc(latestPest?.type || '없음')}</b><div style="font-size:10px;color:#9aae9d;">${this._esc(SEVERITY[latestPest?.severity] || latestPest?.severity || '-')}</div></div>
+        </div>
+        <div data-crop-pest-next-action style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 행동</b> ${this._esc(pestNextAction)} <button data-crop-pest-go-control type="button" style="margin-left:6px;background:#fff8f5;color:#e67e22;border:1px solid #f3c79d;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:900;cursor:pointer;">방제 기록으로 이동</button></div>
+      </div>
+      <div id="pest-list" data-crop-pest-record-list>${rows}</div>
       ${this._renderCropPager("pest", this._pestData.length)}`;
   }
 
@@ -6048,6 +6069,13 @@ button.action:disabled{opacity:.5;cursor:default;}
         this._openGrowthEditPopup(idx);
       })
     );
+
+    root.querySelectorAll("[data-crop-pest-go-control]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this._cropSubTab = "control";
+        this._refreshCropContent();
+      });
+    });
 
     // 삭제 버튼
     root.querySelectorAll("[data-growth-del]").forEach(b =>
