@@ -1135,6 +1135,8 @@ Validation card checks:
 
 ## 10. 환경 제어 페이지
 
+Source-of-truth UI/DOM slice plan: [`docs/design/environment-control-ui-dom-slice-plan.md`](./environment-control-ui-dom-slice-plan.md). 환경 제어 페이지는 작물 설정과 달리 설정값을 직접 변경하는 하위탭이 있으므로, 정보/상태/기록형 하위탭은 공통 summary/list 패턴을 따르고 설정값 변경형 하위탭은 `data-env-setvalue-*` UI/DOM 표준을 따른다.
+
 렌더 함수: `_renderEnvSettingsPage()`
 
 SubHero:

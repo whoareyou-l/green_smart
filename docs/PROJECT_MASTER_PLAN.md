@@ -447,6 +447,7 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - 병해충 예찰/방제 기록의 약제·병해충 추천을 작물/작기/최근 발생 이력에 맞춰 랭킹한다.
 
 - v1.9.94 AI Strategy UI/DOM source-of-truth pattern: `docs/design/crop-ai-strategy-ui-dom-pattern.md`를 기준 문서로 둔다. 이후 AI 전략 하위탭 작업은 메인 3카드, 접힘 상세 evidence section, 모델 운영/검증 참고 분류, 금지 marker 기준을 이 문서에 맞춰 수행한다.
+- Environment Control UI/DOM vertical slice plan: `docs/design/environment-control-ui-dom-slice-plan.md`를 기준 문서로 둔다. 환경 제어는 설정값 변경형 하위탭이 있으므로 `data-env-setvalue-*` 표준을 별도로 도입하고, overview/setpoints/rules/ai/operations/devices/logs 수직 슬라이스로 정리한다.
 
 ### UI Polish Phase P2. 생육 AI 전략 분리와 제어 페이지 정보 구조 정리
 
