@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.9.98
+> 기준 버전: v1.9.99
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -49,7 +49,7 @@ Status: implemented in `v1.9.97`.
 
 ### Slice 5 — 렌더 QA + Prod release
 
-Status: implemented in `v1.9.98`.
+Status: implemented in `v1.9.99`.
 
 - 환경 제어 전체 하위탭 렌더 순회: `overview / setpoints / rules / ai / operations / devices / logs`.
 - 금지 marker 검사: setValue/status 탭 모두 direct execution marker 부재.
@@ -557,3 +557,11 @@ Slice 2+ 계약:
 6. Prod check_config/restart/smoke
 7. commit/tag/release
 ```
+
+
+### Follow-up — v1.9.99 Environment season-zone card
+
+- 환경 제어 상단의 기존 구역 선택 카드 위치를 `data-env-season-zone-selector`로 교체한다.
+- 카드는 작물 설정의 작기 선택 카드와 동일한 시각 문법을 사용하고 `data-env-season-zone-cloned-from="crop-season-selector"`로 traceability를 남긴다.
+- 카드 선택 시 작기와 구역을 함께 바꿔 `crop_season_id + zone_id + environment` scope에 연결한다.
+- 직접 실행/direct execution 권한은 추가하지 않는다.

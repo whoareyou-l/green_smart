@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.98
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.99
 const DOMAIN = "green_smart";
-const VERSION = "1.9.98";
+const VERSION = "1.9.99";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -7848,6 +7848,61 @@ button.action:disabled{opacity:.5;cursor:default;}
     return this._renderCropSeasonLikeControlScope(domain);
   }
 
+  _renderEnvironmentSeasonZoneCards(domain) {
+    if (domain !== "environment") return this._renderControlZoneTabs(domain);
+    const CROP_EMOJI = { tomato:'🍅', paprika:'🫑', strawberry:'🍓', lettuce:'🥬', herb:'🌿', cucumber:'🥒', other:'🌱' };
+    const CROP_LABELS = { tomato:"토마토", paprika:"파프리카", strawberry:"딸기", lettuce:"상추", herb:"허브", cucumber:"오이", other:"기타" };
+    const seasons = Array.isArray(this._cropSeasons) ? this._cropSeasons : [];
+    if (!this._dbReady && seasons.length === 0) {
+      return `<div data-env-season-zone-selector data-env-season-zone-cloned-from="crop-season-selector" style="text-align:center;padding:24px;color:#7a9780;font-size:13px;flex:1 1 100%;"><div style="font-size:24px;margin-bottom:8px;">🌱</div>작기구역 데이터를 불러오는 중...</div>`;
+    }
+    if (seasons.length === 0) {
+      return `<div data-env-season-zone-selector data-env-season-zone-cloned-from="crop-season-selector" style="text-align:center;padding:24px;flex:1 1 100%;"><div style="font-size:28px;margin-bottom:8px;">🌿</div><div style="font-size:14px;font-weight:800;color:#24323F;margin-bottom:6px;">등록된 작기구역이 없습니다</div><div style="font-size:12px;color:#7a9780;">작물 설정에서 첫 작기를 등록하면 환경 제어 범위로 사용할 수 있습니다.</div></div>`;
+    }
+    const selectedSeasonId = String(this._currentControlSeasonId());
+    const selectedZoneId = Number(this._controlScope?.zoneId || 1);
+    const saveNotice = this._controlSaveNotice?.domain === domain ? `${this._controlSaveNotice.time} · ${this._controlSaveNotice.label}` : "아직 저장 전";
+    const cards = seasons.map((s) => {
+      const zoneId = Number(s.zoneId ?? s.zone_id ?? s.zone ?? 1) || 1;
+      const selected = String(s.id) === selectedSeasonId && zoneId === selectedZoneId;
+      const emoji = CROP_EMOJI[s.cropType] || '🌱';
+      const cropLabel = CROP_LABELS[s.cropType] || s.cropType || '작물';
+      const varietyLabel = s.variety ? ` · ${this._esc(s.variety)}` : '';
+      const zoneLabel = this._seasonZoneLabel(s) || `${zoneId}구역`;
+      const active = !s.demolishDate;
+      return `<div data-env-season-zone-card data-env-season-zone-season-id="${this._esc(String(s.id))}" data-env-season-zone-zone-id="${zoneId}"
+        style="flex-shrink:0;border:2px solid ${selected ? '#51AE60' : '#e0e0e0'};
+               border-radius:12px;padding:10px 14px;cursor:pointer;min-width:148px;
+               background:${selected ? '#f0faf1' : '#fafafa'};">
+        <div data-env-season-zone-crop-label style="font-size:12px;font-weight:700;color:${selected ? '#24323F' : '#666'};">
+          ${emoji} ${this._esc(cropLabel)}${varietyLabel} · ${this._esc(zoneLabel)}</div>
+        <div data-env-season-zone-plant-date style="font-size:11px;color:${selected ? '#7a9780' : '#aaa'};margin-top:2px;">
+          ${s.plantDate || '미기록'} 정식</div>
+        <div data-env-season-zone-status style="font-size:10px;font-weight:700;margin-top:4px;
+          color:${active ? '#51AE60' : '#bbb'};">
+          ${active ? '● 재배 중' : '○ 철거완료'} · 환경 제어</div>
+        <div data-env-season-zone-save-summary style="font-size:10px;color:${selected ? '#4a6741' : '#aaa'};margin-top:3px;">마지막 저장: ${this._esc(saveNotice)}</div>
+      </div>`;
+    }).join("");
+    return `<div data-env-season-zone-selector data-env-season-zone-cloned-from="crop-season-selector" style="margin-bottom:2px;flex:1 1 100%;">
+      <div style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;margin-bottom:8px;">작기구역 선택</div>
+      <div style="font-size:11px;color:#7a9780;margin:-3px 0 8px;">작물 설정의 작기 선택 카드와 같은 형식으로 환경 제어 저장 범위를 선택합니다.</div>
+      <div id="env-season-zone-selector" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">${cards}</div>
+    </div>`;
+  }
+
+  _selectControlSeasonZoneFromCard(domain, seasonId, zoneId) {
+    const numericSeasonId = Number(seasonId);
+    const numericZoneId = Number(zoneId) || 1;
+    if (Number.isFinite(numericSeasonId) && numericSeasonId > 0) this._activeSeasonId = numericSeasonId;
+    this._controlScope = { ...this._controlScope, seasonId: String(seasonId), zoneId: numericZoneId };
+    this._saveControlScope();
+    this._ensureScopedControlState(domain);
+    this._requestZoneControlHydration(domain);
+    this._pageRendered = null;
+    this._update();
+  }
+
   _renderControlAiOpsTabContent(domain) {
     return `${domain === "environment" ? this._renderEnvironmentStrategyPreviewCard(domain) : ""}
       ${domain === "irrigation" ? this._renderIrrigationStrategyPreviewCard(domain) : ""}
@@ -7912,12 +7967,16 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _renderControlScopeBar(domain) {
+    const scopeTitle = domain === "environment" ? "작기구역 선택" : "구역 선택";
+    const scopeDesc = domain === "environment"
+      ? "작물 설정의 작기 선택 카드와 같은 형식으로 작기+구역을 선택하면 해당 환경 제어 설정값이 바로 연동됩니다."
+      : `구역 카드를 탭처럼 선택하면 해당 구역의 ${this._esc(this._controlDomainLabel(domain))} 설정값이 바로 연동됩니다.`;
     return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1 1 100%;">
-        <div><div class="sec-title">구역 선택</div><div style="font-size:12px;color:#7a9780;margin-top:3px;">구역 카드를 탭처럼 선택하면 해당 구역의 ${this._esc(this._controlDomainLabel(domain))} 설정값이 바로 연동됩니다.</div></div>
+        <div><div class="sec-title">${scopeTitle}</div><div style="font-size:12px;color:#7a9780;margin-top:3px;">${scopeDesc}</div></div>
         <button class="btn btn-ghost" data-control-preset-open>프리셋 설정</button>
       </div>
-      ${this._renderControlZoneTabs(domain)}
+      ${domain === "environment" ? this._renderEnvironmentSeasonZoneCards(domain) : this._renderControlZoneTabs(domain)}
       <div data-control-scope-summary style="font-size:12px;color:#2f6b3c;line-height:1.55;background:#f3fbf4;border:1px solid #d7ecd9;border-radius:10px;padding:8px 10px;flex:1 1 100%;">
         <b>저장 대상</b> · ${this._esc(this._currentControlScopeLabel(domain))}
         <span data-control-scope-storage-key style="margin-left:8px;">작기 + 구역 + 제어영역 → green_smart_zone_control_settings</span>
@@ -8929,6 +8988,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelectorAll("[data-control-scope-bar]").forEach((bar) => {
       const domain = bar.dataset.controlScopeDomain || "environment";
       bar.querySelectorAll("[data-control-zone-tab]").forEach((btn) => btn.addEventListener("click", () => this._selectControlZoneFromCard(domain, btn.dataset.controlZoneId)));
+      bar.querySelectorAll("[data-env-season-zone-card]").forEach((card) => card.addEventListener("click", () => this._selectControlSeasonZoneFromCard(domain, card.dataset.envSeasonZoneSeasonId, card.dataset.envSeasonZoneZoneId)));
       bar.querySelector("[data-control-preset-open]")?.addEventListener("click", () => this._openControlPresetModal(domain));
     });
   }
