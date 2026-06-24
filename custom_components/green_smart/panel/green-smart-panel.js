@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.73
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.74
 const DOMAIN = "green_smart";
-const VERSION = "1.9.73";
+const VERSION = "1.9.74";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4204,6 +4204,13 @@ button.action:disabled{opacity:.5;cursor:default;}
     const validationStatus = predictionValidation.needsReviewCount > 0 ? "validation_needs_review" : predictionValidation.pendingCount > 0 ? "pending" : predictionValidation.validatedCount > 0 ? "validated" : "no_predictions";
     const validationStatusLabel = { validated: "검증 완료", pending: "검증 대기", validation_needs_review: "검토 필요", no_predictions: "예측 기록 없음" }[validationStatus] || validationStatus;
     const mlReady = !!mlUpgradeReadiness.ready;
+    const aiNextAction = operatorMissingInputs.length
+      ? `부족한 입력 ${operatorMissingInputs.length}개를 먼저 보완하고 다음 생육조사를 저장하세요.`
+      : cropInterlock.cropInterlockBlocked
+      ? "작물 인터록 차단 사유를 확인하고 승인/보완 절차를 먼저 진행하세요."
+      : validationStatus === "validation_needs_review"
+      ? "예측 검증 결과를 검토하고 실제 조사값과 다른 항목을 확인하세요."
+      : "이번 주 생육조사와 예측 검증 상태를 유지하고 상세 근거는 필요할 때만 펼쳐 확인하세요.";
     /* Center policy guidance / Center policy resolution UX: read-only guidance only, no execution authority. */
     return `<section class="gs-card" data-growth-report-card style="padding:14px;margin-bottom:14px;background:#fbfefb;border:1px solid #e3f1e5;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;">
@@ -4218,6 +4225,19 @@ button.action:disabled{opacity:.5;cursor:default;}
           <button data-weekly-report-export title="주간 리포트 내보내기" style="border:1px solid #c8e6c9;background:#fff;color:#51AE60;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:file-download-outline" style="--mdi-icon-size:18px;"></ha-icon></button>
           <button data-growth-report-refresh data-weekly-report-refresh-icon data-weekly-report-refreshing="false" title="리포트 새로고침" style="border:1px solid #c8e6c9;background:#f5faf6;color:#51AE60;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;"><ha-icon icon="mdi:refresh" style="--mdi-icon-size:18px;"></ha-icon></button>
         </div>
+      </div>
+      <div data-crop-ai-readonly-boundary style="background:#f7fbff;border:1px solid #dbeaf8;border-radius:14px;padding:10px;margin-bottom:10px;color:#4f6f83;font-size:11px;line-height:1.55;font-weight:800;">
+        현장 Edge가 최종 판단 · read-only · 자동 실행 없음 · 자동 학습/배포 없음 · 환경/관수/장치 PID 적용은 제외
+      </div>
+      <div data-crop-ai-primary-summary style="background:linear-gradient(135deg,#f7fff9 0%,#f7fbff 100%);border:1px solid #cfe8d8;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(64,117,78,0.08);">
+        <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">이번 주 작물 판단 요약</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;">
+          <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">입력 상태</div><b style="font-size:16px;color:${weeklyInputStatus.complete ? '#51AE60' : '#c97a00'};">${this._esc(weeklyInputStatus.label || (weeklyInputStatus.complete ? '완료' : '입력 필요'))}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">부족 ${this._esc(String(operatorMissingInputs.length))}개</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">생육단계/예측</div><b style="font-size:16px;color:#24323F;">${this._esc(stageDiagnosis.stageLabel || predictedStage7d.stageLabel || '미확정')}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">검증 ${this._esc(validationStatusLabel)}</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">리스크</div><b style="font-size:16px;color:${pestRisk.level === 'high' ? '#c0392b' : pestRisk.level === 'medium' ? '#f39c12' : '#51AE60'};">${riskLabel}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">인터록 ${this._esc(cropInterlock.cropInterlockStatus || 'clear')}</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div style="font-size:11px;color:#5f7f70;font-weight:900;">ML 준비도</div><b style="font-size:16px;color:${mlReady ? '#51AE60' : '#7a9780'};">${mlReady ? '확장 가능' : '준비중'}</b><div style="font-size:10px;color:#8aa091;margin-top:3px;">read-only dataset</div></div>
+        </div>
+        <div data-crop-ai-next-action style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;margin-top:9px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 행동</b> ${this._esc(aiNextAction)}</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin-bottom:10px;">
         <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">G-Index 추이</div><b style="font-size:20px;color:#24323F;">${this._esc(String(latestG))}</b><div style="font-size:11px;color:#7a9780;">${gIndexTrend.length}개 point · 초장 ${heightTrend.length}개</div></div>
@@ -4283,6 +4303,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:10px;color:#7a9780;margin-top:8px;line-height:1.5;">${operatorWarnings.length ? operatorWarnings.map(w => this._esc(w)).join(' · ') : '실행 권한 없음'} · 모바일/PC 반응형 요약 · 상세 근거는 아래 카드에서 확인</div>
       </div>
+      <details data-crop-ai-advanced-details style="background:#fff;border:1px solid #dbeee0;border-radius:16px;padding:10px;margin-bottom:12px;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:900;color:#24323F;display:flex;align-items:center;gap:6px;"><ha-icon icon="mdi:database-search-outline" style="--mdi-icon-size:17px;"></ha-icon>상세 모델 근거</summary>
+        <div data-crop-ai-technical-evidence-grid style="margin-top:10px;">
       <div data-crop-trainable-baseline-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e4f0ff;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px;">
           <div>
@@ -4433,6 +4456,8 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div data-center-crop-policy-next-action style="font-size:11px;color:#4a6741;margin-top:5px;line-height:1.55;"><b>다음 조치</b> ${this._esc(translatedNextAction)}</div>
         <div style="font-size:10px;color:#9aae9d;margin-top:5px;">fresh · stale_usable · stale_restricted · fallback_safe · rejected · recommend_only</div>
       </div>
+        </div>
+      </details>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid ${cropInterlock.cropInterlockBlocked ? '#f3c8c8' : '#dbeee0'};" data-crop-interlock-card>
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:6px;">
           <div style="font-size:12px;font-weight:900;color:#24323F;">작물 인터록</div>

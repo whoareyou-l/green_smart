@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.73`
+> 기준 버전: `v1.9.74`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.73` |
+| 현재 version | `1.9.74` |
 
 작업 시 우선순위:
 
@@ -589,7 +589,25 @@ UX 문구:
 - `GET green_smart/crop/seasons/{season_id}/growth-report`
 - operator workflow, stage prediction, validation, trainable baseline, feature sources, dataset readiness, center policy/interlock analytics 등 read-only 모델 근거 표시
 
-UI Slice 3에서 정리할 방향:
+UI Slice 3 v1.9.74 구현 기준:
+
+- `data-crop-ai-readonly-boundary`: 상단 공통 경계 배너. 문구는 `현장 Edge가 최종 판단 · read-only · 자동 실행 없음 · 자동 학습/배포 없음 · 환경/관수/장치 PID 적용은 제외`.
+- `data-crop-ai-primary-summary`: 농장주/직원용 “이번 주 작물 판단 요약”. 입력 상태, 생육단계/예측, 리스크, ML 준비도를 한 화면에서 먼저 보여준다.
+- `data-crop-ai-next-action`: `operatorWorkflow`, `validationStatusLabel`, `mlReady`, `cropInterlock` 상태를 기준으로 이번 주 다음 행동을 한 줄로 안내한다.
+- `data-crop-ai-advanced-details`: 학습 데이터, feature source, score components, Center policy raw 변수는 `<details data-crop-ai-advanced-details` / `<summary` 구조로 접는다. summary 문구는 `상세 모델 근거`.
+- `data-crop-ai-technical-evidence-grid`: 접힌 상세 모델 근거 영역. 기존 `data-crop-trainable-baseline-card`, `data-crop-stage-prediction-score-card`, `data-crop-kma-weather-stress-card`, `data-crop-training-dataset-export-card`, `data-crop-model-feature-sources-card`, `data-center-crop-policy-card` marker는 보존한다.
+
+금지 marker / behavior:
+
+```text
+data-crop-ai-execute-device
+data-crop-ai-train-production-model
+centerPolicyAllowExecution
+cropAiAllowExecution
+autoDeployProductionModel
+```
+
+UI Slice 3에서 정리한 내용:
 
 - operator workflow + 예측/검증/readiness를 하나의 primary summary로 병합
 - training dataset, feature source, score components, center policy raw variables는 advanced details로 접기

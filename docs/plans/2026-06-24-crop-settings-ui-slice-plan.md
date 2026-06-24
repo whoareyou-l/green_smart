@@ -372,11 +372,14 @@ Fix the worst card-sprawl area. AI Strategy must start with a farmer-readable de
 
 ### Required markers
 
+UI must include the visible Korean labels `이번 주 작물 판단 요약`, `다음 행동`, `상세 모델 근거`, `자동 실행 없음`, and `자동 학습/배포 없음`. Technical evidence must be collapsed with literal markers `<details data-crop-ai-advanced-details` and `<summary`.
+
 ```text
 data-crop-ai-primary-summary
 data-crop-ai-next-action
 data-crop-ai-advanced-details
 data-crop-ai-readonly-boundary
+data-crop-ai-technical-evidence-grid
 ```
 
 ### Forbidden markers/behavior
@@ -385,6 +388,8 @@ data-crop-ai-readonly-boundary
 data-crop-ai-execute-device
 data-crop-ai-train-production-model
 centerPolicyAllowExecution
+cropAiAllowExecution
+autoDeployProductionModel
 ```
 
 ---
