@@ -430,7 +430,7 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - 방제 기록 모달 compact layout: 방제일 아래 현재 작기와 처리 범위를 같은 줄에 배치하고 처리 위치 상세를 제거한다. 그 아래에 약제명/추가 버튼/비고 순서로 배치한다.
 - P1 rendered-flow QA v1.9.86: Home → 작물 설정 → 병해충 예찰 → 방제 기록 실제 렌더 흐름에서 Home KPI 분리, pest/control 요약→액션→목록 순서, 병해충/방제 compact 모달, 금지 실행 marker 부재, console error 부재를 확인한다.
 - P1 rendered-flow QA v1.9.87: 현재 버전 기준 P1 smoke 계약은 유지하되, AI 전략은 목록 리스트가 아닌 panel-type layout 예외로 검증한다.
-- P1 rendered-flow QA v1.9.99: 현재 버전 기준 P1 smoke 계약은 유지하되, AI 전략은 모델 계층 구조로 검증하고 환경 제어 상태·기록형 탭은 별도 polish grammar로 검증하고, v1.9.99에서 7개 환경 제어 탭 전체 렌더 QA와 direct-execution 금지 marker smoke를 완료한다.
+- P1 rendered-flow QA v1.10.0: 현재 버전 기준 P1 smoke 계약은 유지하되, AI 전략은 모델 계층 구조로 검증하고 환경 제어 상태·기록형 탭은 별도 polish grammar로 검증하고, v1.9.99에서 7개 환경 제어 탭 전체 렌더 QA와 direct-execution 금지 marker smoke를 완료한다.
 - v1.9.84 revert note: 사용자 확인 없이 진행된 v1.9.83 Home real-state tasks 변경은 되돌리고, Home 첫 카드의 고정 안내 구조는 v1.9.82 기준으로 복귀한다. 실제 SafetyGuard/Growth/Pest/Control 기반 산출은 후속 고도화 후보로만 남긴다.
 - v1.9.85 five requested Crop Settings UI corrections: 하위탭은 아이콘+하위탭명만 표시하고 중복 이모지를 금지한다. 작기/생육조사/병해충 예찰/방제 기록 목록은 공통 수정+삭제 action group을 사용하되 철거 버튼은 작기 목록에만 둔다. AI 전략은 단일 요약+접힌 기술 근거 구조로 정리한다. 병해충/방제 탭은 요약 카드→액션 줄→기록 목록 순서를 공유한다. 방제 모달은 약제 사용량과 물 사용량을 같은 row의 2열 grid로 배치한다.
 - v1.9.86 Crop Settings unified subtab list layout: 기록형 하위탭은 `data-crop-subtab-main-format` 안에서 하위탭 요약 카드(`data-crop-subtab-summary-card`) → 목록 헤더(`data-crop-subtab-list-header`, 제목/설명/총 갯수/버튼) → 목록 리스트(`data-crop-subtab-record-list`, row들) 순서를 공유한다. 병해충/방제의 제목 블록은 요약 카드 위가 아니라 목록 헤더로 이동한다.
@@ -484,6 +484,8 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 7. 현장 오프라인 상황에서도 로컬 인터록은 동작해야 한다.
 8. 제품 repo는 HACS custom integration을 유지하고, Docker/NUC 운영 구성은 deploy repo에 둔다.
 
-- v1.9.99 Environment Control final QA: `overview / setpoints / rules / ai / operations / devices / logs` 전체 렌더 QA, setValue save/reset binding smoke, status/record grammar 확인, Prod marker smoke를 완료한다. 실행 권한 추가 없이 direct-execution forbidden marker를 유지한다.
+- v1.10.0 Environment Control final QA: `overview / setpoints / rules / ai / operations / devices / logs` 전체 렌더 QA, setValue save/reset binding smoke, status/record grammar 확인, Prod marker smoke를 완료한다. 실행 권한 추가 없이 direct-execution forbidden marker를 유지한다.
 
 - v1.9.99 Environment season-zone card: 환경 제어 상단 구역 선택 카드 위치에 작물 설정의 작기 선택 카드와 같은 형식의 작기구역 카드를 적용한다. 선택은 작기+구역 저장 scope만 바꾸며 실행 권한을 추가하지 않는다.
+
+- v1.10.0 Environment zone-centric crop-season scope: 환경 제어 상단 scope를 구역 중심으로 전환했다. 구역이 부모, 작기는 구역에 연결되는 현재 재배 상태이며 선택/저장은 `zone_id + crop_season_id + environment` 조합을 유지한다.

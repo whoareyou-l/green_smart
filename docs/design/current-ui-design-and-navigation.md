@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.99`
+> 기준 버전: `v1.10.0`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -732,7 +732,7 @@ UI Slice 5에서 정리한 내용:
 
 ---
 
-### 8.9 P1 rendered-flow QA v1.9.99
+### 8.9 P1 rendered-flow QA v1.10.0
 
 Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
 
@@ -1619,11 +1619,11 @@ Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections
 - Runtime hotfix: Center crop policy datetime fields from DB may arrive as ISO strings; `_coerce_naive_datetime()` normalizes datetime/date/string values before age and expiry checks, preventing `replace() takes at least 2 positional arguments` scheduler warnings.
 
 
-### 8.10 v1.9.99 Environment Control final QA
+### 8.10 v1.10.0 Environment Control final QA
 
 Environment Control final QA covers all seven tabs: `overview / setpoints / rules / ai / operations / devices / logs`. The QA baseline keeps setValue save/reset binding, status/record grammar, Prod marker smoke, and direct-execution forbidden markers under contract.
 
 
-### 8.11 v1.9.99 Environment season-zone card
+### 8.11 v1.10.0 Environment zone-centric crop-season scope
 
 환경 제어 상단의 기존 구역 선택 카드 위치는 `data-env-season-zone-selector` 작기구역 카드로 대체한다. 이 카드는 작물 설정의 작기 선택 카드와 같은 형식(`crop-season-selector` clone contract)을 사용하며, 각 카드가 작기 ID와 구역 ID를 함께 선택해 `crop_season_id + zone_id + environment` 저장 scope를 바꾼다. 직접 실행 권한은 추가하지 않는다.

@@ -900,7 +900,7 @@ def test_control_scope_save_ux_shows_current_crop_zone_and_domain_for_phase3():
         "data-control-scope-storage-key",
         "data-control-state-bound",
         "저장 대상",
-        "작기 + 구역 + 제어영역",
+        "구역 + 현재 작기 + 제어영역",
         "green_smart_zone_control_settings",
         "마지막 저장",
     ]:
