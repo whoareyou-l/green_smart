@@ -495,6 +495,39 @@ Normalize the whole Crop Settings page after all subpages are individually clean
 - Update `docs/design/current-ui-design-and-navigation.md` final state.
 - Verify no hidden duplicate cards remain.
 
+### Required final markers
+
+UI must include the visible Korean phrases `농장주/직원용 요약 우선` and `모바일 360px 기준`.
+
+```text
+data-crop-consistency-shell
+data-crop-consistency-mobile-safe
+data-crop-consistency-action-row
+data-crop-consistency-card-radius
+data-crop-consistency-final-pass
+data-crop-basic-summary-card
+data-crop-growth-workflow-card
+data-crop-ai-primary-summary
+data-crop-pest-summary-card
+data-crop-control-safety-summary
+```
+
+### Final forbidden markers/behavior
+
+```text
+data-crop-ai-execute-device
+data-crop-ai-train-production-model
+data-crop-pest-control-form
+data-crop-pest-apply-treatment
+data-crop-control-execute-spray
+data-crop-control-auto-apply
+centerPolicyAllowExecution
+cropAiAllowExecution
+pestAllowPesticideExecution
+controlAllowPesticideExecution
+autoSchedulePesticideApplication
+```
+
 ---
 
 ## 6. Testing strategy

@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.76`
+> 기준 버전: `v1.9.77`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.76` |
+| 현재 version | `1.9.77` |
 
 작업 시 우선순위:
 
@@ -1371,3 +1371,53 @@ git diff --check
 | 관수/장치 기존 설계 문서 API | 일부 `/api/irrigation/...`, `/api/devices/...` 초안은 현재 wrapper/zones API와 다름 |
 | UI framework | 설계 문서 일부의 React/Vue 표현은 future migration reference이며 현재 runtime은 Vanilla JS |
 | 실제 장비 연결 | C20 전까지 금지. 현재는 virtual HA entities/rehearsal 기준 |
+---
+
+## Crop Settings subpage consistency final state — v1.9.77
+
+UI Slice 6 final pass locks the Crop Settings subpages to a shared operator-facing pattern.
+
+Required consistency markers:
+
+```text
+data-crop-consistency-shell
+data-crop-consistency-mobile-safe
+data-crop-consistency-action-row
+data-crop-consistency-card-radius
+data-crop-consistency-final-pass
+```
+
+Final state rules:
+
+- 농장주/직원용 요약 우선: every subpage starts from a summary/workflow/safety card before dense rows.
+- 모바일 360px 기준: subpage summaries and action rows use `repeat(auto-fit,minmax(` and/or `flex-wrap:wrap` so narrow screens do not require card dumping.
+- Consistent card radius: summary cards keep the 16~18px rounded Green Smart card family.
+- Consistent action hierarchy: primary add/action buttons stay green, secondary export/edit buttons stay outlined, destructive delete buttons stay small red outlined buttons.
+- Hidden duplicate cards are forbidden; prior detail-heavy evidence stays collapsed or lower in hierarchy.
+
+Subpage summary anchors:
+
+```text
+data-crop-basic-summary-card
+data-crop-growth-summary-card
+data-crop-growth-workflow-card
+data-crop-ai-primary-summary
+data-crop-pest-summary-card
+data-crop-control-safety-summary
+```
+
+Scope boundary markers that must remain absent from panel code:
+
+```text
+data-crop-ai-execute-device
+data-crop-ai-train-production-model
+data-crop-pest-control-form
+data-crop-pest-apply-treatment
+data-crop-control-execute-spray
+data-crop-control-auto-apply
+centerPolicyAllowExecution
+cropAiAllowExecution
+pestAllowPesticideExecution
+controlAllowPesticideExecution
+autoSchedulePesticideApplication
+```
