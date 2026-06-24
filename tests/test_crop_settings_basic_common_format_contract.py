@@ -99,10 +99,10 @@ def test_v1972_basic_common_format_version_and_plan_shift():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.9.84"' in manifest
-    assert 'const VERSION = "1.9.84"' in panel
-    assert 'v1.9.84' in panel[:200]
-    assert 'EDGE_VERSION = "1.9.84"' in central
-    assert '기준 버전: `v1.9.84`' in docs
+    assert '"version": "1.9.85"' in manifest
+    assert 'const VERSION = "1.9.85"' in panel
+    assert 'v1.9.85' in panel[:200]
+    assert 'EDGE_VERSION = "1.9.85"' in central
+    assert '기준 버전: `v1.9.85`' in docs
     assert 'UI Correction | v1.9.72 | 작기 설정 공통 포맷 재적용' in plan
     assert 'UI Slice 3 | v1.9.74 | AI 전략' in plan

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.84
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.85
 const DOMAIN = "green_smart";
-const VERSION = "1.9.84";
+const VERSION = "1.9.85";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4589,7 +4589,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             <button data-growth-edit="${i}" data-crop-growth-edit-action title="수정"
               style="background:#fff;border:1px solid #b7dfbd;border-radius:9px;cursor:pointer;color:#51AE60;font-size:12px;font-weight:800;padding:6px 9px;display:flex;align-items:center;gap:4px;"><ha-icon icon="mdi:pencil" style="--mdi-icon-size:15px;"></ha-icon>수정</button>`, `
             <button data-growth-del="${i}" data-crop-growth-delete-action title="삭제"
-              style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>`)}
+              style="min-width:32px;height:32px;border-radius:9px;border:1.5px solid #f1b8bf;background:#fff7f8;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;"><ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon></button>`)}
         </div>`;
       }).join("")
       : `<div data-crop-ui-empty-state style="text-align:center;padding:34px 12px;color:#7a9780;font-size:13px;border:1px dashed #d7e8da;border-radius:16px;background:#fbfefb;">
@@ -4662,7 +4662,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropAiStrategyTab() {
     return `
-      <div data-crop-ai-consolidated-layout data-crop-ai-duplicate-card-guard data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-action-row data-crop-consistency-card-radius data-crop-consistency-final-pass style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <div data-crop-ai-summary-card data-crop-ai-consolidated-layout data-crop-ai-duplicate-card-guard data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-action-row data-crop-consistency-card-radius data-crop-consistency-final-pass style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
         <div>
           <div style="font-size:15px;font-weight:900;color:#24323F;">AI 전략</div>
           <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 리포트 · G-Index · 수확량 예측 · 병해 위험 분석을 한 곳에서 확인합니다.</div>
@@ -4700,8 +4700,11 @@ button.action:disabled{opacity:.5;cursor:default;}
               발생도: ${SEVERITY[r.severity]||r.severity}</span>
             ${r.note ? `<span style="font-size:11px;color:#7a9780;width:100%;">${this._esc(r.note)}</span>` : ""}
           </div>
-          ${this._cropRecordActionGroup('data-crop-pest-record-actions', '', `<button data-pest-del="${i}" data-crop-pest-delete-action title="삭제"
-            style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;">✕</button>`)}
+          ${this._cropRecordActionGroup('data-crop-pest-record-actions', `
+            <button data-pest-edit="${i}" data-crop-pest-edit-action title="수정"
+              style="background:#fff;border:1px solid #b7dfbd;border-radius:9px;cursor:pointer;color:#51AE60;font-size:12px;font-weight:800;padding:6px 9px;display:flex;align-items:center;gap:4px;"><ha-icon icon="mdi:pencil" style="--mdi-icon-size:15px;"></ha-icon>수정</button>`, `
+            <button data-pest-del="${i}" data-crop-pest-delete-action title="삭제"
+              style="min-width:32px;height:32px;border-radius:9px;border:1.5px solid #f1b8bf;background:#fff7f8;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;"><ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon></button>`)}
         </div>`;
       }).join("")
       : `<div style="text-align:center;padding:32px 0;color:#b0c4b1;font-size:13px;">
@@ -4786,8 +4789,11 @@ button.action:disabled{opacity:.5;cursor:default;}
                   ${r.note  ? `<span style="font-size:11px;color:#7a9780;">${this._esc(r.note)}</span>` : ""}
                 </div>
               </div>
-              ${this._cropRecordActionGroup('data-crop-control-record-actions', '', `<button data-control-del="${i}" data-crop-control-delete-action title="삭제"
-                style="background:#fff;border:1px solid #f1d2d2;border-radius:9px;cursor:pointer;color:#c0392b;font-size:14px;padding:5px 8px;flex-shrink:0;">✕</button>`)}
+              ${this._cropRecordActionGroup('data-crop-control-record-actions', `
+                <button data-control-edit="${i}" data-crop-control-edit-action title="수정"
+                  style="background:#fff;border:1px solid #b7dfbd;border-radius:9px;cursor:pointer;color:#51AE60;font-size:12px;font-weight:800;padding:6px 9px;display:flex;align-items:center;gap:4px;"><ha-icon icon="mdi:pencil" style="--mdi-icon-size:15px;"></ha-icon>수정</button>`, `
+                <button data-control-del="${i}" data-crop-control-delete-action title="삭제"
+                  style="min-width:32px;height:32px;border-radius:9px;border:1.5px solid #f1b8bf;background:#fff7f8;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><ha-icon icon="mdi:trash-can-outline" style="--mdi-icon-size:18px;"></ha-icon></button>`)}
             </div>
           </div>`;
         }).join("")
@@ -4799,7 +4805,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       <div data-crop-control-top-heading style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
         <span style="font-size:13px;font-weight:700;color:#24323F;">방제 기록 <span style="color:#7a9780;font-weight:400;">(${this._controlData.length}건)</span></span>
       </div>
-      <div data-crop-control-safety-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
+      <div data-crop-control-summary-card data-crop-control-safety-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
         <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">방제 안전 요약</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:9px;">
           <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">최근 방제</div><b style="font-size:18px;color:#24323F;">${this._esc(latestControl?.date || '없음')}</b><div style="font-size:10px;color:#9aae9d;">${this._esc(String(allControlPesticides.length))}개 약제 기록</div></div>
@@ -4818,7 +4824,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
           + 방제 기록 추가</button>
       </div>
-      <div id="control-list" data-crop-control-treatment-list>${rows}</div>
+      <div id="control-list" data-crop-control-record-list data-crop-control-treatment-list>${rows}</div>
       ${this._renderCropPager("control", this._controlData.length)}`;
   }
 
@@ -5450,10 +5456,13 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _openPestAddPopup() {
+    const editIndex = arguments[0] ?? null;
+    const isEdit = Number.isInteger(editIndex);
+    const editRecord = isEdit ? (this._pestData[editIndex] || null) : null;
     const today = new Date().toISOString().slice(0, 10);
     const MAX_PEST_TYPES = 6;
     const currentSeasonLabel = this._activeSeasonLabel();
-    const pestTypes = [{ name: "", source: "", severity: "1" }];
+    const pestTypes = editRecord?.type ? String(editRecord.type).split(",").map(name => ({ name: name.trim(), source: "", severity: String(editRecord.severity || "1") })).filter(p => p.name) : [{ name: "", source: "", severity: "1" }];
     const debounceTimers = {};
     this._openCropPopup(`
       <div class="popup-card" data-pest-compact-modal>
@@ -5462,14 +5471,14 @@ button.action:disabled{opacity:.5;cursor:default;}
             <ha-icon icon="mdi:bug" style="--mdi-icon-size:22px;"></ha-icon>
           </div>
           <div>
-            <div class="pop-title-main">병해충 예찰 추가</div>
+            <div class="pop-title-main">${isEdit ? "병해충 예찰 수정" : "병해충 예찰 추가"}</div>
             <div class="pop-title-sub">선택된 작기 기준으로 여러 병해충을 기록합니다</div>
           </div>
         </div>
         <div class="pop-fields">
           <div class="pop-field">
             <label>조사일</label>
-            <input type="date" id="p-date" value="${today}">
+            <input type="date" id="p-date" value="${this._esc(editRecord?.date || today)}">
           </div>
           <div class="pop-field-row" data-pest-scope-row>
             <div class="pop-field" data-pest-active-season-pill>
@@ -5479,8 +5488,8 @@ button.action:disabled{opacity:.5;cursor:default;}
             <div class="pop-field">
               <label>발생 범위</label>
               <select id="p-location-scope" data-pest-location-scope-select>
-                <option value="전체">전체</option>
-                <option value="부분">부분</option>
+                <option value="전체" ${String(editRecord?.location || "").includes("부분") ? "" : "selected"}>전체</option>
+                <option value="부분" ${String(editRecord?.location || "").includes("부분") ? "selected" : ""}>부분</option>
               </select>
             </div>
           </div>
@@ -5491,7 +5500,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           </div>
           <div class="pop-field" data-pest-note-compact>
             <label>비고</label>
-            <input type="text" id="p-note" placeholder="추가 메모">
+            <input type="text" id="p-note" value="${this._esc(editRecord?.note || "")}" placeholder="추가 메모">
           </div>
         </div>
         <div class="pop-foot">
@@ -5569,9 +5578,10 @@ button.action:disabled{opacity:.5;cursor:default;}
         };
         try {
           const result = await this._hass.callApi(
-            "POST", `green_smart/crop/seasons/${this._activeSeasonId}/pest`, body
+            isEdit ? "PATCH" : "POST", isEdit && editRecord?.id ? `green_smart/crop/pest/${editRecord.id}` : `green_smart/crop/seasons/${this._activeSeasonId}/pest`, body
           );
-          this._pestData.unshift(result);
+          if (isEdit) this._pestData[editIndex] = result || { ...editRecord, ...body };
+          else this._pestData.unshift(result);
           await this._fetchGrowthReport();
           this._closePopup();
           this._refreshCropContent();
@@ -5580,6 +5590,10 @@ button.action:disabled{opacity:.5;cursor:default;}
         }
       });
     });
+  }
+
+  _openPestEditPopup(idx) {
+    this._openPestAddPopup(idx);
   }
 
   _formatPesticideMoa(item) {
@@ -5621,12 +5635,15 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _openControlAddPopup() {
+    const editIndex = arguments[0] ?? null;
+    const isEdit = Number.isInteger(editIndex);
+    const editRecord = isEdit ? (this._controlData[editIndex] || null) : null;
     const today = new Date().toISOString().slice(0, 10);
     const MAX_PESTS = 5;
     const currentSeasonLabel = this._activeSeasonLabel();
 
     // ── 로컬 상태 ───────────────────────────────────────────────────────────────
-    const entries = [{ name: "", regNo: "", moa: "", dil: "", amount: "", chemicalAmount: "", waterAmount: "", treatmentAreaM2: "", perPyeongUsage: "", pls: null, mixWarning: "", plsWarning: "" }];
+    const entries = Array.isArray(editRecord?.pesticides) && editRecord.pesticides.length ? editRecord.pesticides.map(p => ({ name: p.name || "", regNo: p.regNo || "", moa: p.moa || "", dil: p.dil || "", amount: p.amount || "", chemicalAmount: p.chemicalAmount || "", waterAmount: p.waterAmount || "", treatmentAreaM2: p.treatmentAreaM2 || editRecord.area || "", perPyeongUsage: p.perPyeongUsage || "", pls: p.pls ?? null, mixWarning: p.mixWarning || "", plsWarning: p.plsWarning || "" })) : [{ name: "", regNo: "", moa: "", dil: "", amount: "", chemicalAmount: "", waterAmount: "", treatmentAreaM2: "", perPyeongUsage: "", pls: null, mixWarning: "", plsWarning: "" }];
     const debounceTimers = {};
 
     // ── 이전 기록에서 약제별 자동완성 데이터 추출 ───────────────────────────────
@@ -5653,7 +5670,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             <ha-icon icon="mdi:spray" style="--mdi-icon-size:22px;"></ha-icon>
           </div>
           <div>
-            <div class="pop-title-main">방제 기록 추가</div>
+            <div class="pop-title-main">${isEdit ? "방제 기록 수정" : "방제 기록 추가"}</div>
             <div class="pop-title-sub">농약 사용 내역을 약제별로 기록합니다</div>
           </div>
         </div>
@@ -5661,7 +5678,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           <!-- 방제일 -->
           <div class="pop-field" data-control-date-field>
             <label>방제일</label>
-            <input type="date" id="c-date" value="${today}">
+            <input type="date" id="c-date" value="${this._esc(editRecord?.date || today)}">
           </div>
           <!-- 처리 범위 -->
           <div class="pop-field-row" data-control-scope-row>
@@ -5672,8 +5689,8 @@ button.action:disabled{opacity:.5;cursor:default;}
             <div class="pop-field">
               <label>처리 범위</label>
               <select id="c-location-scope" data-control-location-scope-select>
-                <option value="전체">전체</option>
-                <option value="부분">부분</option>
+                <option value="전체" ${String(editRecord?.location || "").includes("부분") ? "" : "selected"}>전체</option>
+                <option value="부분" ${String(editRecord?.location || "").includes("부분") ? "selected" : ""}>부분</option>
               </select>
             </div>
           </div>
@@ -5752,7 +5769,7 @@ button.action:disabled{opacity:.5;cursor:default;}
               </div>
             </div>
             <!-- 사용량 / 희석 / 면적 자동 계산 -->
-            <div data-control-dose-grid class="pop-field-row" style="margin-bottom:10px;">
+            <div data-control-dose-grid data-control-usage-row class="pop-field-row" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px;">
               <div class="pop-field">
                 <label>약제 사용량</label>
                 <input type="number" data-chemical-amount-input="${idx}" value="${this._esc(e.chemicalAmount)}" placeholder="예) 0.5" min="0" step="0.01">
@@ -6116,6 +6133,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._bindCropContent(root);
   }
 
+  _openControlEditPopup(idx) {
+    this._openControlAddPopup(idx);
+  }
+
   _bindCropContent(root) {
     // 추가 버튼
     root.querySelector("#basic-add-btn")?.addEventListener("click",    () => this._openCropBasicAddPopup());
@@ -6197,6 +6218,18 @@ button.action:disabled{opacity:.5;cursor:default;}
       b.addEventListener("click", () => {
         const idx = +b.dataset.growthEdit;
         this._openGrowthEditPopup(idx);
+      })
+    );
+    root.querySelectorAll("[data-pest-edit]").forEach(b =>
+      b.addEventListener("click", () => {
+        const idx = +b.dataset.pestEdit;
+        this._openPestEditPopup(idx);
+      })
+    );
+    root.querySelectorAll("[data-control-edit]").forEach(b =>
+      b.addEventListener("click", () => {
+        const idx = +b.dataset.controlEdit;
+        this._openControlEditPopup(idx);
       })
     );
 
