@@ -3,6 +3,8 @@ import importlib.util
 import sys
 import types
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 CROP_VIEWS = ROOT / "custom_components" / "green_smart" / "crop_views.py"
 ZONE_VIEWS = ROOT / "custom_components" / "green_smart" / "zone_control_views.py"
@@ -417,7 +419,129 @@ def test_crop_model_snapshot_includes_crop_interlock_summary():
     assert "modelBlockedByInterlock" in result
 
 
+@pytest.mark.asyncio
+async def test_crop_prediction_validation_requires_exact_7_day_actual_survey(monkeypatch):
+    crop_views = _load_crop_views_for_helper_tests()
+    executed = []
+
+    async def fake_fetchone(hass, query, params=()):
+        return {"id": 12, "cropType": "lettuce", "plantDate": "2026-06-01", "zoneId": 1}
+
+    async def fake_fetchall(hass, query, params=()):
+        if "FROM growth_surveys" in query:
+            return [
+                {"id": 103, "date": "2026-06-28", "cropType": "lettuce", "metricsJson": "[]"},
+                {"id": 102, "date": "2026-06-27", "cropType": "lettuce", "metricsJson": "[]"},
+                {"id": 101, "date": "2026-06-20", "cropType": "lettuce", "metricsJson": "[]"},
+            ]
+        raise AssertionError(f"unexpected fetchall query: {query}")
+
+    async def fake_control_rows(hass, season_id, limit=10):
+        return []
+
+    async def fake_pending(hass, *, season_id, limit=50):
+        return [{
+            "id": 55,
+            "sourceSurveyId": 100,
+            "predictedForDate": "2026-06-27",
+            "predictionJson": '{"predictedStage7d":{"stageId":"lettuce_leaf_expansion_main","stageLabel":"본격 엽생장기"}}',
+            "validationStatus": "pending",
+        }]
+
+    async def fake_execute(hass, query, params=()):
+        executed.append(params)
+        return 1
+
+    def fake_actual_stage(season, growth_row, growth_rows=None, control_rows=None):
+        return {"stageId": "lettuce_leaf_expansion_main", "stageLabel": "본격 엽생장기", "actualSurveyId": growth_row["id"]}
+
+    monkeypatch.setattr(crop_views, "fetchone", fake_fetchone)
+    monkeypatch.setattr(crop_views, "fetchall", fake_fetchall)
+    monkeypatch.setattr(crop_views, "_crop_control_rows_with_pesticides", fake_control_rows)
+    monkeypatch.setattr(crop_views, "_pending_crop_prediction_snapshots", fake_pending)
+    monkeypatch.setattr(crop_views, "execute", fake_execute)
+    monkeypatch.setattr(crop_views, "_actual_stage_label_from_growth_survey", fake_actual_stage)
+
+    result = await crop_views._validate_pending_crop_training_snapshots(object(), season_id=12)
+
+    assert result["validatedCount"] == 1
+    assert result["validationRows"][0]["actualSurveyId"] == 102
+    assert executed[0][1] == 102
+
+
+@pytest.mark.asyncio
+async def test_crop_prediction_validation_marks_missing_exact_7_day_survey_as_needs_review(monkeypatch):
+    crop_views = _load_crop_views_for_helper_tests()
+    executed = []
+
+    async def fake_fetchone(hass, query, params=()):
+        return {"id": 12, "cropType": "lettuce", "plantDate": "2026-06-01", "zoneId": 1}
+
+    async def fake_fetchall(hass, query, params=()):
+        if "FROM growth_surveys" in query:
+            return [
+                {"id": 103, "date": "2026-06-28", "cropType": "lettuce", "metricsJson": "[]"},
+                {"id": 101, "date": "2026-06-20", "cropType": "lettuce", "metricsJson": "[]"},
+            ]
+        raise AssertionError(f"unexpected fetchall query: {query}")
+
+    async def fake_control_rows(hass, season_id, limit=10):
+        return []
+
+    async def fake_pending(hass, *, season_id, limit=50):
+        return [{
+            "id": 56,
+            "sourceSurveyId": 100,
+            "predictedForDate": "2026-06-27",
+            "predictionJson": '{"predictedStage7d":{"stageId":"lettuce_leaf_expansion_main","stageLabel":"본격 엽생장기"}}',
+            "validationStatus": "pending",
+        }]
+
+    async def fake_execute(hass, query, params=()):
+        executed.append(params)
+        return 1
+
+    monkeypatch.setattr(crop_views, "fetchone", fake_fetchone)
+    monkeypatch.setattr(crop_views, "fetchall", fake_fetchall)
+    monkeypatch.setattr(crop_views, "_crop_control_rows_with_pesticides", fake_control_rows)
+    monkeypatch.setattr(crop_views, "_pending_crop_prediction_snapshots", fake_pending)
+    monkeypatch.setattr(crop_views, "execute", fake_execute)
+
+    result = await crop_views._validate_pending_crop_training_snapshots(object(), season_id=12)
+
+    assert result["needsReviewCount"] == 1
+    assert result["validationRows"][0]["actualSurveyId"] is None
+    assert result["validationRows"][0]["validationStatus"] == "validation_needs_review"
+    assert result["validationRows"][0]["reviewReason"] == "exact_7_day_survey_missing"
+    assert executed[0][1] is None
+
+
+def test_crop_stage_prediction_uses_feature_snapshot_completeness_and_kma_weather_stress():
+    crop_views = _load_crop_views_for_helper_tests()
+
+    season = {"id": 12, "cropType": "lettuce", "plantDate": "2026-06-01", "plantDensity": 16}
+    growth_rows = [{
+        "date": "2026-06-20",
+        "cropType": "lettuce",
+        "height": 18,
+        "leafCount": 16,
+        "stemDia": 12,
+        "truss": 130,
+        "node": 20,
+        "metricsJson": '[{"key":"leafLength","value":18},{"key":"leafWidth","value":12},{"key":"leafCount","value":16},{"key":"freshWeight","value":130},{"key":"plantHeight","value":20}]',
+    }]
+
+    result = crop_views._crop_model_snapshot_from_report_parts(None, 12, season, growth_rows, [], [])
+    stage_prediction = result["trainableBaseline"]["stagePrediction7d"]
+    feature_snapshot = result["trainableBaseline"]["featureSnapshot"]
+
+    assert stage_prediction["stageEvidence"]["kmaWeatherStress"] == feature_snapshot["kmaWeatherStress7d"]
+    assert "kmaWeatherStressScore" in stage_prediction["score"]["scoreComponents"]
+    assert "kmaWeatherStress7d" in stage_prediction["missingInputs"] or feature_snapshot["kmaWeatherStress7d"].get("sourceStatus") == "ready"
+
+
 def test_crop_specific_growth_survey_metrics_use_tomato_g_index_and_lettuce_l_index():
+
     crop_views = _load_crop_views_for_helper_tests()
 
     tomato = {

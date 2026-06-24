@@ -81,10 +81,24 @@ When a new weekly growth survey is entered, previous pending 7-day prediction ro
 ```text
 1. Operator records weekly growth survey.
 2. System finds pending crop_model_training_snapshots whose predicted_for_date is due.
-3. System derives actual stage from the new survey/stage diagnosis.
-4. System writes actual_validation_json.
-5. validation_status changes from pending to validated or validation_needs_review.
-6. Panel shows prediction validation status read-only.
+3. System validates a 7-day prediction only against the 7-day-after growth survey data.
+4. System derives actual stage from that 7-day-after survey/stage diagnosis.
+5. System writes actual_validation_json.
+6. validation_status changes from pending to validated or validation_needs_review according to a documented validation policy.
+7. Panel shows prediction validation status read-only.
+```
+
+Confirmed validation cadence:
+
+```text
+Growth surveys are intended once per week; the 7-day model exists because validation should use the 7-day-after survey.
+```
+
+Open validation-policy point resolved:
+
+```text
+If the exact 7-day-after survey is missing, do not choose nearest survey.
+Set validation_status to validation_needs_review and store reviewReason exact_7_day_survey_missing.
 ```
 
 ## Files

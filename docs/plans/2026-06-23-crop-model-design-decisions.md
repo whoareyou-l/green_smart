@@ -94,6 +94,23 @@ The growth stage prediction output uses:
 
 The model does **not** start with daily day1~day7 stage labels. It predicts the most likely stage after 7 days and provides the expected transition window.
 
+### Confirmed decision 4A — prediction validation survey cadence
+
+The validation loop is based on the intended operational cadence:
+
+```text
+one growth survey per week
+```
+
+Therefore a 7-day stage prediction is validated only with the **7-day-after growth survey data**. The system must not silently choose an arbitrary nearest survey as a default assumption. If the exact 7-day validation survey is absent, the snapshot moves to `validation_needs_review` with review reason `exact_7_day_survey_missing`.
+
+Implementation boundary:
+
+- Do not implement nearest-survey fallback.
+- Do not validate with pre-target survey data.
+- If the exact 7-day-after survey is missing, write `actual_validation_json` with `actualSurveyId: null`, `validationStatus: "validation_needs_review"`, and `reviewReason: "exact_7_day_survey_missing"`.
+- Keep this loop read-only/model-training oriented; no environment, irrigation, device, PID, or physical execution authority is added.
+
 Required output fields:
 
 ```json

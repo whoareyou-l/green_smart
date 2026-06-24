@@ -2101,19 +2101,48 @@ async def _validate_pending_crop_training_snapshots(hass, *, season_id: int) -> 
     needsReviewCount = 0
     for row in pending:
         target_date = row.get("predictedForDate")
+        target_dt = _coerce_naive_datetime(target_date)
         actual_row = None
-        for growth_row in growth_rows:
-            if str(growth_row.get("date")) >= str(target_date):
-                actual_row = growth_row
-                break
-        if not actual_row and growth_rows:
-            actual_row = growth_rows[0]
-        if not actual_row:
-            continue
+        if target_dt:
+            target_day = target_dt.date().isoformat()
+            for growth_row in growth_rows:
+                growth_dt = _coerce_naive_datetime(growth_row.get("date"))
+                if growth_dt and growth_dt.date().isoformat() == target_day:
+                    actual_row = growth_row
+                    break
         try:
             prediction = json.loads(row.get("predictionJson") or "{}") if isinstance(row.get("predictionJson"), str) else (row.get("predictionJson") or {})
         except Exception:
             prediction = {}
+        if not actual_row:
+            actualValidation = {
+                "version": CROP_PREDICTION_VALIDATION_VERSION,
+                "snapshotId": row.get("id"),
+                "sourceSurveyId": row.get("sourceSurveyId"),
+                "actualSurveyId": None,
+                "predictedForDate": target_date,
+                "predictedStage7d": prediction.get("predictedStage7d") or {},
+                "actualStage": {},
+                "stageMatched": False,
+                "transitionTimingErrorDays": None,
+                "validationStatus": "validation_needs_review",
+                "reviewReason": "exact_7_day_survey_missing",
+            }
+            await execute(hass, """
+                UPDATE crop_model_training_snapshots
+                SET actual_validation_json = %s,
+                    actual_survey_id = %s,
+                    validation_status = %s
+                WHERE id = %s
+            """, (
+                json.dumps(actualValidation, ensure_ascii=False, default=str),
+                None,
+                "validation_needs_review",
+                row.get("id"),
+            ))
+            needsReviewCount += 1
+            validationRows.append(actualValidation)
+            continue
         actualStage = _actual_stage_label_from_growth_survey(season, actual_row, growth_rows, control_rows)
         match = _prediction_stage_match(prediction, actualStage)
         actualValidation = {
@@ -2221,7 +2250,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         control_rows=control_rows,
     )
     qualityDisorderSummary = featureSnapshot.get("qualityDisorderSummary") or _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
-    stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=growthIndex, growth_rows=growth_rows)
+    stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=growthIndex, growth_rows=growth_rows, featureSources=featureSnapshot)
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
     trainableBaseline = {
         "version": CROP_TRAINABLE_BASELINE_VERSION,

@@ -77,8 +77,8 @@ def test_v1986_list_header_contract_versions_and_docs():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.12"' in manifest
-    assert 'const VERSION = "1.10.12"' in panel
+    assert '"version": "1.10.13"' in manifest
+    assert 'const VERSION = "1.10.13"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.86 Crop Settings unified subtab list layout" in docs
     assert "v1.9.99 AI Strategy panel-type layout" in docs
