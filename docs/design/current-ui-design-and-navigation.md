@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.85`
+> 기준 버전: `v1.9.86`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -17,7 +17,7 @@
 | Custom element | `green-smart-panel` |
 | 소스 파일 | `custom_components/green_smart/panel/green-smart-panel.js` |
 | module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
-| 현재 version | `1.9.85` |
+| 현재 version | `1.9.86` |
 
 작업 시 우선순위:
 
@@ -698,7 +698,7 @@ UI Slice 5 v1.9.76 구현 기준:
 - `data-crop-control-treatment-list`: compact treatment list. 각 row는 `data-crop-control-treatment-row`, `data-crop-control-treatment-summary`, `data-crop-control-treatment-meta`, `data-crop-control-pesticide-chip-group`, `data-crop-control-delete-action`, 기존 삭제 바인딩용 `data-control-del`을 가진다.
 - export/add/delete는 유지하되 action hierarchy를 명확히 한다.
 
-UI Polish Phase P1 v1.9.85 방제 기록 모달 compact 기준:
+UI Polish Phase P1 v1.9.86 방제 기록 모달 compact 기준:
 
 - `data-control-compact-modal`: 방제 기록 추가 모달은 compact popup card로 렌더한다.
 - `data-control-date-field`: 방제일은 모달 첫 입력으로 둔다.
@@ -730,7 +730,7 @@ UI Slice 5에서 정리한 내용:
 
 ---
 
-### 8.9 P1 rendered-flow QA v1.9.85
+### 8.9 P1 rendered-flow QA v1.9.86
 
 Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
 
@@ -738,11 +738,19 @@ v1.9.84에서는 사용자 확인 없이 진행됐던 v1.9.83 Home real-state ta
 
 v1.9.85 five requested Crop Settings UI corrections:
 
+Compatibility note: v1.9.86 five requested Crop Settings UI corrections 문구는 기존 current-version 계약 호환을 위해 유지하되, 실제 5개 요청사항 완료 릴리스는 v1.9.85이고 v1.9.86은 그 위의 공통 하위탭 목록 레이아웃 보정이다.
+
 - 하위탭은 `data-crop-tab-icon` + `data-crop-tab-label`만 사용하고 중복 emoji marker를 렌더하지 않는다.
 - 작기/생육조사/병해충 예찰/방제 기록 row는 공통 수정+삭제 action group을 사용한다. 철거 버튼은 작기 목록의 `data-season-demolish`에만 존재한다.
 - AI 전략은 `data-crop-ai-summary-card` 한 개의 상단 요약과 `data-crop-ai-advanced-details` 접힘 기술 근거로 정리한다.
 - 병해충 예찰과 방제 기록은 요약 카드 → 액션 줄 → 기록 목록 순서를 공유한다.
 - 방제 모달은 `data-control-usage-row` 안에서 약제 사용량과 물 사용량을 같은 2열 grid에 배치한다.
+
+v1.9.86 Crop Settings unified subtab list layout:
+
+- 모든 하위탭은 `data-crop-subtab-main-format` 안에서 하위탭 요약 카드(`data-crop-subtab-summary-card`) → 목록 헤더(`data-crop-subtab-list-header`) → 목록 리스트(`data-crop-subtab-record-list`) 순서를 공유한다.
+- 목록 헤더는 `data-crop-list-title`, `data-crop-list-description`, `data-crop-list-count`, `data-crop-list-actions`를 포함한다.
+- 병해충 예찰/방제 기록의 제목 블록은 요약 카드 위가 아니라 목록 헤더로 이동한다.
 
 - Home 첫 카드는 `data-home-action-summary`로 위험 알림/오늘 할 일/조치 필요를 담당하고, 온도/습도/CO₂/VPD 숫자는 `_renderKPIStrip(kpi)`에서 확인한다.
 - 병해충 예찰은 `data-crop-pest-summary-card` → `data-crop-pest-action-row` → `data-crop-pest-record-list` 순서를 유지한다.
@@ -1472,7 +1480,7 @@ autoSchedulePesticideApplication
 
 ---
 
-## Crop Settings requested UI corrections — v1.9.85
+## Crop Settings requested UI corrections — v1.9.86
 
 User-requested correction slice after the v1.9.77 final pass.
 
@@ -1550,7 +1558,7 @@ Behavior:
 
 ---
 
-## Rendered UI QA hotfix — v1.9.85
+## Rendered UI QA hotfix — v1.9.86
 
 Scope is intentionally limited to v1.9.78 requested Crop Settings UI corrections plus QA findings.
 

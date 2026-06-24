@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.85
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.86
 const DOMAIN = "green_smart";
-const VERSION = "1.9.85";
+const VERSION = "1.9.86";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4009,7 +4009,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ? (selected?.demolishDate ? "종료된 작기는 필요 시 기록만 확인하고, 새 정식 등록으로 다음 작기를 시작하세요." : "선택 작기 기준으로 생육조사·병해충·방제 기록을 같은 흐름에서 이어가세요.")
       : "정식 등록으로 첫 작기를 추가하세요.";
     return `
-      <div data-crop-basic-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass
+      <div data-crop-subtab-main-format data-crop-basic-summary-card data-crop-subtab-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass
         style="border:1.5px solid #dfeee1;border-radius:18px;background:linear-gradient(135deg,#f8fcf8,#ffffff);padding:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(81,174,96,.08);">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;align-items:stretch;">
           <div data-crop-basic-selected-season data-crop-basic-latest-season style="min-width:0;">
@@ -4043,15 +4043,16 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropBasicTab() {
     return `
-      <span hidden data-crop-basic-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass data-crop-consistency-action-row data-crop-basic-kpi-grid data-crop-basic-lifecycle-kpis data-crop-ui-kpi-grid data-crop-basic-latest-season data-crop-basic-next-action data-crop-ui-action-bar data-crop-basic-primary-action data-crop-basic-secondary-actions data-crop-basic-season-list data-crop-ui-record-list>작기 설정도 공통 하위페이지 포맷 · 현재 작기 설정 · 선택 작기 요약 · 농장주/농장직원이 먼저 확인할 내용 · 농장주/직원용 요약 우선 · 모바일 360px 기준 · repeat(auto-fit,minmax( · flex-wrap:wrap</span>
+      <span hidden data-crop-subtab-main-format data-crop-basic-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass data-crop-consistency-action-row data-crop-basic-kpi-grid data-crop-basic-lifecycle-kpis data-crop-ui-kpi-grid data-crop-basic-latest-season data-crop-basic-next-action data-crop-ui-action-bar data-crop-basic-primary-action data-crop-basic-secondary-actions data-crop-basic-season-list data-crop-ui-record-list>작기 설정도 공통 하위페이지 포맷 · 현재 작기 설정 · 선택 작기 요약 · 농장주/농장직원이 먼저 확인할 내용 · 농장주/직원용 요약 우선 · 모바일 360px 기준 · repeat(auto-fit,minmax( · flex-wrap:wrap</span>
       ${this._renderCropBasicOverviewCard()}
-      <div data-crop-basic-lifecycle-actions data-crop-ui-action-bar data-crop-consistency-action-row
+      <div data-crop-basic-list-header data-crop-subtab-list-header data-crop-basic-lifecycle-actions data-crop-ui-action-bar data-crop-consistency-action-row
         style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
         <div>
-          <div style="font-size:13px;font-weight:800;color:#24323F;">작기 목록</div>
-          <div style="font-size:11px;color:#7a9780;margin-top:2px;">작기 설정도 공통 하위페이지 포맷을 적용합니다. 농장주와 직원이 같은 작기 기준으로 생육·예찰·방제 기록을 이어갑니다.</div>
+          <div data-crop-list-title style="font-size:13px;font-weight:800;color:#24323F;">작기 목록</div>
+          <div data-crop-list-description style="font-size:11px;color:#7a9780;margin-top:2px;">작기 설정도 공통 하위페이지 포맷을 적용합니다. 농장주와 직원이 같은 작기 기준으로 생육·예찰·방제 기록을 이어갑니다.</div>
+          <span data-crop-list-count hidden>${this._cropSeasons.length}건</span>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+        <div data-crop-list-actions style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
           <button id="basic-export-btn" data-crop-basic-secondary-actions title="CSV 내보내기"
             style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
                    padding:7px 11px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;">
@@ -4062,7 +4063,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 정식 등록</button>
         </div>
       </div>
-      <div id="crop-seasons-list" data-crop-basic-season-list data-crop-ui-record-list>${this._renderCropSeasonsList()}</div>
+      <div id="crop-seasons-list" data-crop-basic-season-list data-crop-subtab-record-list data-crop-ui-record-list>${this._renderCropSeasonsList()}</div>
       ${this._renderCropPager("basic", this._cropSeasons.length)}`;
   }
 
@@ -4600,7 +4601,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ? `${latestMetrics.core.slice(0, 3).map(m => `${this._esc(m.label || m.key)} ${this._esc(String(m.value ?? "-"))}${m.unit ? this._esc(m.unit) : ""}`).join(" · ") || "핵심값 기록 없음"}`
       : "아직 최신 조사가 없습니다.";
     return `
-      <section data-crop-growth-summary-card data-crop-growth-workflow-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:linear-gradient(135deg,#f7fff9 0%,#f8fbff 100%);border:1px solid #dcefe2;border-radius:16px;padding:14px;margin-bottom:12px;">
+      <section data-crop-subtab-main-format data-crop-growth-summary-card data-crop-subtab-summary-card data-crop-growth-workflow-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:linear-gradient(135deg,#f7fff9 0%,#f8fbff 100%);border:1px solid #dcefe2;border-radius:16px;padding:14px;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;">
           <div>
             <div style="font-size:15px;font-weight:900;color:#24323F;">최근 생육조사</div>
@@ -4615,9 +4616,12 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div data-crop-growth-next-action style="font-size:12px;color:#4f6f58;line-height:1.55;"><b>다음 조사 안내</b> ${nextAction}</div>
       </section>
-      <div data-crop-ui-action-bar data-crop-consistency-action-row style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-        <span style="font-size:13px;font-weight:800;color:#24323F;">생육조사 기록 <span style="color:#7a9780;font-weight:500;">(${total}건)</span></span>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div data-crop-growth-list-header data-crop-subtab-list-header data-crop-ui-action-bar data-crop-consistency-action-row style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <div>
+          <div data-crop-list-title style="font-size:13px;font-weight:800;color:#24323F;">생육조사 기록 <span data-crop-list-count style="color:#7a9780;font-weight:500;">(${total}건)</span></div>
+          <div data-crop-list-description style="font-size:11px;color:#7a9780;margin-top:2px;">날짜별 핵심값을 먼저 보고 품질/장해와 메모를 이어서 확인합니다.</div>
+        </div>
+        <div data-crop-list-actions style="display:flex;gap:6px;flex-wrap:wrap;">
           <div data-crop-growth-secondary-actions style="display:flex;gap:6px;flex-wrap:wrap;">
             <button id="growth-export-btn" title="CSV 내보내기"
               style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
@@ -4629,7 +4633,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             + 생육조사 추가</button>
         </div>
       </div>
-      <div id="growth-list" data-crop-growth-record-list data-crop-ui-record-list>
+      <div id="growth-list" data-crop-growth-record-list data-crop-subtab-record-list data-crop-ui-record-list>
         <div style="font-size:11px;color:#7a9780;margin-bottom:8px;">기록이 많아도 날짜별 핵심값을 먼저 보고, 품질/장해와 메모는 아래에서 확인합니다.</div>
         ${rows}
       </div>
@@ -4662,13 +4666,22 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropAiStrategyTab() {
     return `
-      <div data-crop-ai-summary-card data-crop-ai-consolidated-layout data-crop-ai-duplicate-card-guard data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-action-row data-crop-consistency-card-radius data-crop-consistency-final-pass style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <div data-crop-subtab-main-format data-crop-ai-summary-card data-crop-subtab-summary-card data-crop-ai-consolidated-layout data-crop-ai-duplicate-card-guard data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;">
         <div>
-          <div style="font-size:15px;font-weight:900;color:#24323F;">AI 전략</div>
+          <div style="font-size:15px;font-weight:900;color:#24323F;">AI 전략 요약</div>
           <div style="font-size:12px;color:#7a9780;margin-top:3px;">생육 리포트 · G-Index · 수확량 예측 · 병해 위험 분석을 한 곳에서 확인합니다.</div>
         </div>
+        <span style="font-size:11px;font-weight:900;color:#51AE60;background:#fff;border:1px solid #dcefe2;border-radius:999px;padding:5px 9px;">read-only</span>
       </div>
-      ${this._renderGrowthReportCard()}`;
+      <div data-crop-ai-list-header data-crop-subtab-list-header data-crop-consistency-action-row style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <div>
+          <div data-crop-list-title style="font-size:13px;font-weight:800;color:#24323F;">AI 전략 근거 목록</div>
+          <div data-crop-list-description style="font-size:11px;color:#7a9780;margin-top:2px;">요약을 먼저 보고 상세 모델 근거는 접힌 영역에서 확인합니다.</div>
+          <span data-crop-list-count hidden>1건</span>
+        </div>
+        <div data-crop-list-actions style="display:flex;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#7a9780;">자동 실행 없음</span></div>
+      </div>
+      <div data-crop-ai-evidence-list data-crop-subtab-record-list data-crop-ui-record-list>${this._renderGrowthReportCard()}</div>`;
   }
 
   _renderCropPestTab() {
@@ -4712,10 +4725,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           병해충 예찰 기록이 없습니다
         </div>`;
     return `
-      <div data-crop-pest-top-heading style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
-        <span style="font-size:13px;font-weight:700;color:#24323F;">병해충 예찰 기록 <span style="color:#7a9780;font-weight:400;">(${this._pestData.length}건)</span></span>
-      </div>
-      <div data-crop-pest-summary-card data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
+      <div data-crop-subtab-main-format data-crop-pest-summary-card data-crop-subtab-summary-card data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
         <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">병해충 예찰 요약</div>
         <div data-crop-pest-severity-overview style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:9px;">
           <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">전체 예찰</div><b style="font-size:18px;color:#24323F;">${this._esc(String(this._pestData.length))}건</b><div style="font-size:10px;color:#9aae9d;">최신 ${this._esc(latestPest?.date || '-')}</div></div>
@@ -4724,8 +4734,12 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div data-crop-pest-next-action style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 행동</b> ${this._esc(pestNextAction)} <button data-crop-pest-go-control type="button" style="margin-left:6px;background:#fff8f5;color:#e67e22;border:1px solid #f3c79d;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:900;cursor:pointer;">방제 기록으로 이동</button></div>
       </div>
-      <div data-crop-pest-action-row data-crop-consistency-action-row style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-        <span style="font-size:12px;color:#7a9780;margin-right:auto;">요약 카드 다음에 액션 줄과 기록 목록</span>
+      <div data-crop-pest-list-header data-crop-subtab-list-header data-crop-pest-action-row data-crop-consistency-action-row style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="margin-right:auto;">
+          <div data-crop-list-title style="font-size:13px;font-weight:800;color:#24323F;">병해충 예찰 기록 <span data-crop-list-count style="color:#7a9780;font-weight:500;">(${this._pestData.length}건)</span></div>
+          <div data-crop-list-description style="font-size:11px;color:#7a9780;margin-top:2px;">요약 카드 다음에 액션 줄과 기록 목록. 요약 카드 다음에 예찰 목록과 작업 버튼을 같은 위치에서 확인합니다.</div>
+        </div>
+        <div data-crop-list-actions style="display:flex;gap:6px;flex-wrap:wrap;">
         <button id="pest-export-btn" title="CSV 내보내기"
           style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
                  padding:6px 10px;cursor:pointer;display:flex;align-items:center;">
@@ -4733,8 +4747,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         <button id="pest-add-btn"
           style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
           + 병해충 추가</button>
+        </div>
       </div>
-      <div id="pest-list" data-crop-pest-record-list>${rows}</div>
+      <div id="pest-list" data-crop-pest-record-list data-crop-subtab-record-list data-crop-ui-record-list>${rows}</div>
       ${this._renderCropPager("pest", this._pestData.length)}`;
   }
 
@@ -4802,10 +4817,7 @@ button.action:disabled{opacity:.5;cursor:default;}
           방제 기록이 없습니다
         </div>`;
     return `
-      <div data-crop-control-top-heading style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
-        <span style="font-size:13px;font-weight:700;color:#24323F;">방제 기록 <span style="color:#7a9780;font-weight:400;">(${this._controlData.length}건)</span></span>
-      </div>
-      <div data-crop-control-summary-card data-crop-control-safety-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
+      <div data-crop-subtab-main-format data-crop-control-summary-card data-crop-subtab-summary-card data-crop-control-safety-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:#fbfefb;border:1px solid #e3f1e5;border-radius:16px;padding:14px;margin-bottom:12px;">
         <div style="font-size:15px;font-weight:900;color:#24323F;margin-bottom:8px;">방제 안전 요약</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:9px;">
           <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">최근 방제</div><b style="font-size:18px;color:#24323F;">${this._esc(latestControl?.date || '없음')}</b><div style="font-size:10px;color:#9aae9d;">${this._esc(String(allControlPesticides.length))}개 약제 기록</div></div>
@@ -4814,8 +4826,12 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div data-crop-control-next-check style="background:#fff;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 점검</b> ${this._esc(controlNextCheck)}</div>
       </div>
-      <div data-crop-control-action-row data-crop-consistency-action-row style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-        <span style="font-size:12px;color:#7a9780;margin-right:auto;">요약 카드 다음에 액션 줄과 기록 목록</span>
+      <div data-crop-control-list-header data-crop-subtab-list-header data-crop-control-action-row data-crop-consistency-action-row style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="margin-right:auto;">
+          <div data-crop-list-title style="font-size:13px;font-weight:800;color:#24323F;">방제 기록 <span data-crop-list-count style="color:#7a9780;font-weight:500;">(${this._controlData.length}건)</span></div>
+          <div data-crop-list-description style="font-size:11px;color:#7a9780;margin-top:2px;">요약 카드 다음에 액션 줄과 기록 목록. 요약 카드 다음에 방제 목록과 작업 버튼을 같은 위치에서 확인합니다.</div>
+        </div>
+        <div data-crop-list-actions style="display:flex;gap:6px;flex-wrap:wrap;">
         <button id="control-export-btn" title="CSV 내보내기"
           style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
                  padding:6px 10px;cursor:pointer;display:flex;align-items:center;">
@@ -4823,8 +4839,9 @@ button.action:disabled{opacity:.5;cursor:default;}
         <button id="control-add-btn"
           style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
           + 방제 기록 추가</button>
+        </div>
       </div>
-      <div id="control-list" data-crop-control-record-list data-crop-control-treatment-list>${rows}</div>
+      <div id="control-list" data-crop-control-record-list data-crop-subtab-record-list data-crop-ui-record-list data-crop-control-treatment-list>${rows}</div>
       ${this._renderCropPager("control", this._controlData.length)}`;
   }
 
