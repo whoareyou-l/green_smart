@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.6
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.7
 const DOMAIN = "green_smart";
-const VERSION = "1.10.6";
+const VERSION = "1.10.7";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -7925,7 +7925,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div data-env-zone-season-selector-title style="font-size:11px;font-weight:700;color:#51AE60;letter-spacing:.4px;">구역 선택</div>
         <button class="btn btn-ghost" data-control-preset-open data-control-preset-compact style="font-size:11px;padding:6px 10px;border-radius:999px;line-height:1.1;min-height:28px;">프리셋 설정</button>
       </div>
-      <div style="font-size:11px;color:#7a9780;margin:-3px 0 8px;">작기 선택 카드와 동일한 3줄 카드 문법으로 구역과 현재 작기를 함께 표시합니다.</div>
+      <span hidden data-env-zone-card-helper-doc-only="작기 선택 카드와 동일한 3줄 카드 문법으로 구역과 현재 작기를 함께 표시합니다."></span>
       <div id="env-zone-season-selector" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">${cards}</div>
     </div>`;
   }

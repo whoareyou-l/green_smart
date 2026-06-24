@@ -106,10 +106,10 @@ def test_v1995_environment_versions_docs_and_forbidden_markers():
     docs = _read(PLAN) + "\n" + _read(CURRENT_UI)
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
-    assert '"version": "1.10.6"' in manifest
-    assert 'const VERSION = "1.10.6"' in panel
+    assert '"version": "1.10.7"' in manifest
+    assert 'const VERSION = "1.10.7"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert "v1.10.6" in docs
+    assert "v1.10.7" in docs
     for forbidden in (
         "data-env-setvalue-direct-execute",
         "environmentSetValueAllowDirectExecution",

@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.10.6
+> 기준 버전: v1.10.7
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -49,7 +49,7 @@ Status: implemented in `v1.9.97`.
 
 ### Slice 5 — 렌더 QA + Prod release
 
-Status: implemented in `v1.10.6`.
+Status: implemented in `v1.10.7`.
 
 - 환경 제어 전체 하위탭 렌더 순회: `overview / setpoints / rules / ai / operations / devices / logs`.
 - 금지 marker 검사: setValue/status 탭 모두 direct execution marker 부재.
@@ -622,3 +622,10 @@ Slice 2+ 계약:
 - Storage scope remains documented as `crop_season_id + zone_id + domain`.
 - Storage table/key remains `green_smart_zone_control_settings`.
 - The panel keeps a hidden `data-env-storage-scope-doc-only` marker so contracts can verify the storage model remains documented but not visible.
+
+
+### Follow-up — v1.10.7 Environment zone helper text moved to docs
+
+- Environment Control no longer shows the helper sentence: `작기 선택 카드와 동일한 3줄 카드 문법으로 구역과 현재 작기를 함께 표시합니다.`.
+- The zone card grammar remains documented: 3 lines = zone + current crop, plant date, cultivation/connection status.
+- The panel keeps hidden `data-env-zone-card-helper-doc-only` marker so contracts verify the design rule without showing operator-facing helper copy.

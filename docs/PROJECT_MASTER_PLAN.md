@@ -529,3 +529,13 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.10.6 Environment Control final QA: current v1.10.6 compatibility marker retained after storage target summary removal.
 - v1.10.6 Environment interlock/safety tab split: current v1.10.6 compatibility marker retained after storage target summary removal.
 - v1.10.6 Environment unified scope/tab card: current v1.10.6 compatibility marker retained after storage target summary removal.
+
+- v1.10.7 Environment zone helper text moved to docs: 환경 제어 화면의 `작기 선택 카드와 동일한 3줄 카드 문법으로 구역과 현재 작기를 함께 표시합니다.` 설명 문구는 UI에서 제거한다. 구역 카드는 작기 선택 카드와 동일하게 3줄 구조(구역+현재 작기 / 정식일 / 재배 상태)를 유지하며, 이 문법 설명은 문서와 hidden marker(`data-env-zone-card-helper-doc-only`)로만 남긴다.
+- P1 rendered-flow QA v1.10.7: current v1.10.7 compatibility marker retained after zone helper text removal.
+- v1.10.7 AI-first control tab alignment: current v1.10.7 compatibility marker retained after zone helper text removal.
+- v1.10.7 Environment zone card header cleanup: current v1.10.7 compatibility marker retained after zone helper text removal.
+- v1.10.7 Environment zone card UI/UX alignment: current v1.10.7 compatibility marker retained after zone helper text removal.
+- v1.10.7 Environment Control final QA: current v1.10.7 compatibility marker retained after zone helper text removal.
+- v1.10.7 Environment interlock/safety tab split: current v1.10.7 compatibility marker retained after zone helper text removal.
+- v1.10.7 Environment unified scope/tab card: current v1.10.7 compatibility marker retained after zone helper text removal.
+- v1.10.7 Environment storage target moved to docs: current v1.10.7 compatibility marker retained after zone helper text removal.
