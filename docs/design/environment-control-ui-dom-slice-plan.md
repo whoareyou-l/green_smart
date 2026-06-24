@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.10.3
+> 기준 버전: v1.10.4
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -49,7 +49,7 @@ Status: implemented in `v1.9.97`.
 
 ### Slice 5 — 렌더 QA + Prod release
 
-Status: implemented in `v1.10.3`.
+Status: implemented in `v1.10.4`.
 
 - 환경 제어 전체 하위탭 렌더 순회: `overview / setpoints / rules / ai / operations / devices / logs`.
 - 금지 marker 검사: setValue/status 탭 모두 direct execution marker 부재.
@@ -598,3 +598,12 @@ Slice 2+ 계약:
 - 기존 AI 보정 편집 UI는 `AI 보정 설정` 탭으로 유지한다.
 - 별도 `제어 모드` 카드는 화면 composition에서 제거한다.
 - setValue 행은 `label/current/recommended/control` 고정 컬럼과 오른쪽 정렬을 사용한다.
+
+
+### Follow-up — v1.10.4 Environment interlock/safety tab split
+
+- `setpoints` + `rules` visible tabs are merged into `interlock`.
+- `interlock` contains PID target values and interlock thresholds.
+- `safety` contains absolute limits, sensor error policy, strong-wind boundary, and SafetyGuard gate.
+- `setpoints` and `rules` remain hidden legacy markers only.
+- Standalone control-mode card stays removed from overview/interlock/safety composition.

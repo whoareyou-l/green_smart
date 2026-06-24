@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.3`
+> 기준 버전: `v1.10.4`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -732,7 +732,7 @@ UI Slice 5에서 정리한 내용:
 
 ---
 
-### 8.9 P1 rendered-flow QA v1.10.3
+### 8.9 P1 rendered-flow QA v1.10.4
 
 Home/Crop P1 흐름은 실제 브라우저 렌더 smoke 기준으로 다음을 함께 확인한다.
 
@@ -1651,3 +1651,13 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 - v1.10.3 Environment zone card header cleanup: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
 - v1.10.3 Environment zone card UI/UX alignment: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
 - v1.10.3 Environment Control final QA: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
+
+
+### 8.16 v1.10.4 Environment interlock/safety tab split
+
+환경 제어의 `목표값 설정`과 `인터록·안전 설정`은 `인터록 설정`으로 병합한다. 목표값은 결국 인터록/PID 기준값이므로 온도·습도/VPD·CO₂ PID 목표와 온도/습도/CO₂ 인터록 기준을 한 탭에서 관리한다. 별도 `안전 설정` 탭은 절대 안전 한계, 센서 오류 시 제어 방식, 강풍 폐쇄 풍속, SafetyGuard gate처럼 PID 목표값과 분리해야 하는 안전 경계를 담당한다. 운영 요약과 인터록/안전 관련 탭에서는 독립 `제어 모드` 카드를 표시하지 않는다.
+
+- v1.10.4 AI-first control tab alignment: current v1.10.4 compatibility marker retained after interlock/safety split.
+- v1.10.4 Environment zone card header cleanup: current v1.10.4 compatibility marker retained after interlock/safety split.
+- v1.10.4 Environment zone card UI/UX alignment: current v1.10.4 compatibility marker retained after interlock/safety split.
+- v1.10.4 Environment Control final QA: current v1.10.4 compatibility marker retained after interlock/safety split.

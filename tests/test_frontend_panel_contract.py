@@ -714,12 +714,15 @@ def test_environment_control_strategy_distinguishes_base_ai_final_and_permission
     for role in ["Admin", "Farm Owner", "Farm Worker"]:
         assert role not in env_page
         assert role in doc
-    setpoints_block = content.split('if (tab === "setpoints")', 1)[1].split('if (tab === "rules")', 1)[0]
+    setpoints_block = content.split('if (tab === "interlock")', 1)[1].split('if (tab === "safety")', 1)[0]
     for field in ["주간 목표온도", "야간 목표온도", "기본 ADT", "기본 DIF", "목표 습도", "목표 VPD", "목표 CO₂"]:
         assert field in setpoints_block
-    rules_block = content.split('if (tab === "rules")', 1)[1].split('if (tab === "ai")', 1)[0]
-    for field in ["난방 시작 온도", "난방 정지 온도", "환기 시작 온도", "환기 최대 온도", "최대 습도", "최소 VPD", "CO₂ 공급 시작값", "CO₂ 공급 정지값", "절대 최고온도", "절대 최저온도"]:
+    rules_block = content.split('if (tab === "interlock")', 1)[1].split('if (tab === "safety")', 1)[0]
+    for field in ["난방 시작 온도", "난방 정지 온도", "환기 시작 온도", "환기 최대 온도", "최대 습도", "최소 VPD", "CO₂ 공급 시작값", "CO₂ 공급 정지값"]:
         assert field in rules_block
+    safety_block = content.split('if (tab === "safety")', 1)[1].split('if (tab === "ai-settings")', 1)[0]
+    for field in ["절대 최고온도", "절대 최저온도", "센서 오류 시 제어 방식", "강풍 폐쇄 풍속"]:
+        assert field in safety_block
     assert "_calculateFinalAppliedTargets" in panel
     assert "_bindControlStrategyInputs" in panel
     assert "_saveControlStrategy" in panel
@@ -744,12 +747,12 @@ def test_environment_strategy_uses_thermometer_icon_and_subtabs_single_active_ca
     assert "this._envStrategyTab = btn.dataset.envStrategyTab" in binder
     assert "strategy-grid" not in env_page
     assert "_strategySection(" not in env_page
-    assert 'key: "interlock"' not in tabs
+    assert 'key: "interlock"' in tabs
     assert 'key: "final"' not in tabs
     assert 'key: "permissions"' not in tabs
-    for key in ("overview", "setpoints", "rules", "ai", "operations", "devices", "logs"):
+    for key in ("ai", "overview", "interlock", "safety", "ai-settings", "operations", "devices", "logs"):
         assert f'key: "{key}"' in tabs
-    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safety", "safetyOps", "deviceMap"):
+    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
         assert f'key: "{old_key}"' not in tabs
 
 

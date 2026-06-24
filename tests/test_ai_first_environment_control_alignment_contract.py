@@ -18,10 +18,10 @@ def _method(panel: str, start: str, end: str) -> str:
 def test_v1103_ai_first_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.3"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.3"' in panel
-    assert 'v1.10.3' in panel[:200]
-    assert "v1.10.3 AI-first control tab alignment" in docs
+    assert '"version": "1.10.4"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.4"' in panel
+    assert 'v1.10.4' in panel[:200]
+    assert "v1.10.4 AI-first control tab alignment" in docs
 
 
 def test_crop_settings_ai_strategy_tab_is_first():

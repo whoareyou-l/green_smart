@@ -28,10 +28,10 @@ def _env_content_section() -> str:
 
 def test_v1995_environment_tabs_are_restructured_to_vertical_slice_targets():
     tabs = _env_tabs_section()
-    expected = ["overview", "setpoints", "rules", "ai", "operations", "devices", "logs"]
+    expected = ["ai", "overview", "interlock", "safety", "ai-settings", "operations", "devices", "logs"]
     for key in expected:
         assert f'key: "{key}"' in tabs or f'key:"{key}"' in tabs
-    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safety", "safetyOps", "deviceMap"):
+    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
         assert f'key: "{old_key}"' not in tabs
         assert f'key:"{old_key}"' not in tabs
     assert "this._envStrategyTab = \"ai\"" in _read(PANEL)
@@ -39,7 +39,7 @@ def test_v1995_environment_tabs_are_restructured_to_vertical_slice_targets():
 
 def test_v1995_environment_old_tab_keys_are_preserved_as_hidden_compatibility_markers():
     panel = _read(PANEL)
-    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safety", "safetyOps", "deviceMap"):
+    for old_key in ("mode", "temperature", "humidity", "co2", "aiOps", "safetyOps", "deviceMap"):
         assert f'data-env-legacy-tab="{old_key}"' in panel
 
 
@@ -70,7 +70,7 @@ def test_v1995_environment_setvalue_dom_shell_and_inputs_exist():
     # Save compatibility markers must stay on inputs.
     for marker in ("data-control-field", "data-control-group", "data-control-key"):
         assert marker in panel
-    for tab in ("setpoints", "rules", "ai"):
+    for tab in ("interlock", "safety", "ai-settings"):
         assert f'tab === "{tab}"' in content
 
 
@@ -106,10 +106,10 @@ def test_v1995_environment_versions_docs_and_forbidden_markers():
     docs = _read(PLAN) + "\n" + _read(CURRENT_UI)
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
-    assert '"version": "1.10.3"' in manifest
-    assert 'const VERSION = "1.10.3"' in panel
+    assert '"version": "1.10.4"' in manifest
+    assert 'const VERSION = "1.10.4"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert "v1.10.3" in docs
+    assert "v1.10.4" in docs
     for forbidden in (
         "data-env-setvalue-direct-execute",
         "environmentSetValueAllowDirectExecution",

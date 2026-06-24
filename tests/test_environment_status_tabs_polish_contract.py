@@ -13,8 +13,8 @@ def panel_text() -> str:
 def test_current_version_is_1_9_97():
     panel = panel_text()
     manifest = MANIFEST.read_text(encoding="utf-8")
-    assert '"version": "1.10.3"' in manifest
-    assert 'const VERSION = "1.10.3"' in panel
+    assert '"version": "1.10.4"' in manifest
+    assert 'const VERSION = "1.10.4"' in panel
 
 
 def test_environment_operations_status_polish_contract():
@@ -90,7 +90,7 @@ def test_environment_status_tabs_keep_execution_boundary():
 def test_environment_status_slice_documented():
     doc = DOC.read_text(encoding="utf-8")
     assert "Slice 4" in doc
-    assert "Status: implemented in `v1.10.3`" in doc
+    assert "Status: implemented in `v1.10.4`" in doc
     assert "data-env-operations-polish" in doc
     assert "data-env-devices-polish" in doc
     assert "data-env-logs-polish" in doc

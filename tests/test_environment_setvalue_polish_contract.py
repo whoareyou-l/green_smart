@@ -18,11 +18,11 @@ def _env_content() -> str:
 
 def test_v1996_environment_setvalue_polish_version_and_docs():
     panel = _read(PANEL)
-    assert '"version": "1.10.3"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.3"' in panel
+    assert '"version": "1.10.4"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.4"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in _read(CENTRAL)
     plan = _read(PLAN)
-    assert "Status: implemented in `v1.10.3`" in plan
+    assert "Status: implemented in `v1.10.4`" in plan
     assert "setValue 하위탭 세부 polish" in plan
 
 
@@ -49,9 +49,9 @@ def test_v1996_environment_setvalue_visual_grammar_markers_exist():
 def test_v1996_environment_setvalue_tabs_have_summary_group_footer_grammar():
     content = _env_content()
     slices = {
-        "setpoints": content.split('if (tab === "setpoints")', 1)[1].split('if (tab === "rules")', 1)[0],
-        "rules": content.split('if (tab === "rules")', 1)[1].split('if (tab === "ai")', 1)[0],
-        "ai": content.split('if (tab === "ai")', 1)[1].split('if (tab === "operations")', 1)[0],
+        "interlock": content.split('if (tab === "interlock")', 1)[1].split('if (tab === "safety")', 1)[0],
+        "safety": content.split('if (tab === "safety")', 1)[1].split('if (tab === "ai-settings")', 1)[0],
+        "ai-settings": content.split('if (tab === "ai-settings")', 1)[1].split('const statusSummary', 1)[0],
     }
     for tab, block in slices.items():
         assert "data-env-setvalue-polish" in block
@@ -60,10 +60,10 @@ def test_v1996_environment_setvalue_tabs_have_summary_group_footer_grammar():
         assert "setValueFooter" in block
         assert "data-env-setvalue-action-row" in content
         assert "data-env-setvalue-save" in content
-    assert slices["setpoints"].count("group(") >= 3
-    assert slices["rules"].count("group(") >= 4
-    assert slices["ai"].count("group(") >= 2
-    assert "data-env-setvalue-preview-card" in slices["ai"]
+    assert slices["interlock"].count("group(") >= 5
+    assert slices["safety"].count("group(") >= 3
+    assert slices["ai-settings"].count("group(") >= 2
+    assert "data-env-setvalue-preview-card" in slices["ai-settings"]
 
 
 def test_v1996_environment_setvalue_rows_preserve_save_markers_and_forbid_direct_execution():
