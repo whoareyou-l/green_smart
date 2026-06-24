@@ -430,10 +430,12 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - 방제 기록 모달 compact layout: 방제일 아래 현재 작기와 처리 범위를 같은 줄에 배치하고 처리 위치 상세를 제거한다. 그 아래에 약제명/추가 버튼/비고 순서로 배치한다.
 - P1 rendered-flow QA v1.9.86: Home → 작물 설정 → 병해충 예찰 → 방제 기록 실제 렌더 흐름에서 Home KPI 분리, pest/control 요약→액션→목록 순서, 병해충/방제 compact 모달, 금지 실행 marker 부재, console error 부재를 확인한다.
 - P1 rendered-flow QA v1.9.87: 현재 버전 기준 P1 smoke 계약은 유지하되, AI 전략은 목록 리스트가 아닌 panel-type layout 예외로 검증한다.
+- P1 rendered-flow QA v1.9.88: 현재 버전 기준 P1 smoke 계약은 유지하되, AI 전략은 모델 계층 구조로 검증한다.
 - v1.9.84 revert note: 사용자 확인 없이 진행된 v1.9.83 Home real-state tasks 변경은 되돌리고, Home 첫 카드의 고정 안내 구조는 v1.9.82 기준으로 복귀한다. 실제 SafetyGuard/Growth/Pest/Control 기반 산출은 후속 고도화 후보로만 남긴다.
 - v1.9.85 five requested Crop Settings UI corrections: 하위탭은 아이콘+하위탭명만 표시하고 중복 이모지를 금지한다. 작기/생육조사/병해충 예찰/방제 기록 목록은 공통 수정+삭제 action group을 사용하되 철거 버튼은 작기 목록에만 둔다. AI 전략은 단일 요약+접힌 기술 근거 구조로 정리한다. 병해충/방제 탭은 요약 카드→액션 줄→기록 목록 순서를 공유한다. 방제 모달은 약제 사용량과 물 사용량을 같은 row의 2열 grid로 배치한다.
 - v1.9.86 Crop Settings unified subtab list layout: 기록형 하위탭은 `data-crop-subtab-main-format` 안에서 하위탭 요약 카드(`data-crop-subtab-summary-card`) → 목록 헤더(`data-crop-subtab-list-header`, 제목/설명/총 갯수/버튼) → 목록 리스트(`data-crop-subtab-record-list`, row들) 순서를 공유한다. 병해충/방제의 제목 블록은 요약 카드 위가 아니라 목록 헤더로 이동한다.
 - v1.9.87 AI Strategy panel-type layout: AI 전략은 목록 리스트가 아닌 `data-crop-ai-strategy-panel` 타입으로 분리한다. `data-crop-ai-strategy-header`와 `data-crop-ai-evidence-panel`을 사용하고, `data-crop-ai-list-header`/`data-crop-ai-evidence-list`/`data-crop-subtab-record-list`는 AI 탭에서 사용하지 않는다. 첫 화면은 `data-crop-ai-primary-summary`의 `이번 주 작물 판단 요약` 1개와 `data-crop-ai-next-action`만 보이고, 모델/데이터/인터록 카드는 `data-crop-ai-advanced-details` 접힘 영역에 둔다.
+- v1.9.88 AI Strategy model hierarchy restructure: 메인 영역은 작물 상태 요약(`data-crop-ai-primary-gl-index`, `data-crop-ai-primary-yield-prediction`, `data-crop-ai-primary-pest-risk`) → 인터록 상태 요약(`data-crop-ai-interlock-summary`) → 모델 상태 요약(`data-crop-ai-model-status-summary`) → 상세 모델 근거(`data-crop-ai-advanced-details`) 순서로 구성한다. 상세 모델 근거는 `data-crop-ai-stage-prediction-model` → `data-crop-ai-reproductive-vegetative-model` → `data-crop-ai-pest-prediction-model` 상위 모델 뒤에 `data-crop-ai-submodel-evidence-section` 이하 하위 모델/입력 근거 순서로 정리한다.
 
 후속 고도화 후보:
 
