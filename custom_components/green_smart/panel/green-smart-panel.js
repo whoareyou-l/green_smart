@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.4
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.5
 const DOMAIN = "green_smart";
-const VERSION = "1.10.4";
+const VERSION = "1.10.5";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -8016,7 +8016,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     const compactPresetStyle = domain === "environment"
       ? "display:none;"
       : "";
-    return `<div class="gs-card control-scope-bar" data-control-scope-bar data-control-scope-domain="${domain}" style="padding:14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+    const scopeClass = domain === "environment" ? "control-scope-bar" : "gs-card control-scope-bar";
+    const scopeStyle = domain === "environment" ? "padding:0;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;" : "padding:14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;";
+    const envInlineMarker = domain === "environment" ? "data-env-scope-inline" : "";
+    return `<div class="${scopeClass}" data-control-scope-bar ${envInlineMarker} data-control-scope-domain="${domain}" style="${scopeStyle}">
       <div data-control-scope-header style="display:${domain === "environment" ? "none" : "flex"};align-items:flex-start;justify-content:space-between;gap:10px;flex:1 1 100%;margin-bottom:${domain === "environment" ? "-4px" : "0"};">
         <div><div data-control-scope-title style="display:${domain === "environment" ? "none" : "block"};" class="sec-title">${domain === "environment" ? "" : scopeTitle}</div><div style="display:${domain === "environment" ? "none" : "block"};font-size:12px;color:#7a9780;margin-top:3px;">${scopeDesc}</div></div>
         ${domain === "environment" ? "" : `<button class="btn btn-ghost" data-control-preset-open data-control-preset-compact style="${compactPresetStyle}">프리셋 설정</button>`}
@@ -8156,8 +8159,8 @@ button.action:disabled{opacity:.5;cursor:default;}
     const statusText = s.systemStatus.aiStatus === "ok" ? "AI 연결 정상" : s.systemStatus.aiStatus === "error" ? "AI 오류" : s.systemStatus.interlockActive ? "인터록 단독 작동중" : "AI 대기";
     const modeOptions = [["interlock", "인터록 모드"], ["ai_assist", "AI 보조 모드"], ["manual", "수동 모드"], ["emergency_stop", "비상 정지 모드"]];
     const aiStatusOptions = [["ok", "AI 연결 정상"], ["standby", "AI 대기"], ["error", "AI 오류"]];
-    const body = `${this._renderControlScopeBar("environment")}
-      <div class="gs-card" style="padding:16px;">
+    const body = `<div class="gs-card" data-env-ui-shell data-env-unified-scope-tab-card>
+        ${this._renderControlScopeBar("environment")}
         <span hidden data-env-legacy-tab="mode"></span> <span hidden data-env-legacy-tab="temperature"></span> <span hidden data-env-legacy-tab="humidity"></span> <span hidden data-env-legacy-tab="co2"></span> <span hidden data-env-legacy-tab="setpoints"></span> <span hidden data-env-legacy-tab="rules"></span> <span hidden data-env-legacy-tab="aiOps"></span> <span hidden data-env-legacy-tab="safety"></span> <span hidden data-env-legacy-tab="safetyOps"></span> <span hidden data-env-legacy-tab="deviceMap"></span>
         <span hidden data-env-strategy-tab data-ai-strategy data-final-target data-safety-limit data-control-log>
           제어 모드 온도 제어 습도 / VPD 제어 CO₂ 제어 AI 전략 / 최종 적용값 저광기 전략 안전 한계 작동 로그 AI 보정값 최종 적용값 주간 목표온도 야간 목표온도 목표 습도 목표 VPD 목표 CO₂ 기본 ADT 기본 DIF 난방 시작 온도 난방 정지 온도 환기 시작 온도 환기 최대 온도 고온 경보 온도 저온 경보 온도
@@ -8169,8 +8172,8 @@ button.action:disabled{opacity:.5;cursor:default;}
           _renderZoneControlModeCard("environment") _renderZoneInterlockSettingsCard("environment") _renderZoneSafetyGuardWatchdogCard("environment") _renderZoneSafetyGuardEventHistoryCard("environment") _renderZoneLimitedAutoPolicyCard("environment") _renderZoneRehearsalReadinessCard("environment") _renderZoneVirtualRehearsalCard("environment") _renderZoneDryRunPreviewCard("environment")
           _renderZoneEntityStateSummaryCard("environment") _renderZoneEntityMappingCard("environment") _renderZoneEntityMappingValidationCard("environment")
         </span>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="control-strategy-save" data-env-setvalue-save class="btn btn-primary">전략 저장</button></div>`;
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="control-strategy-save" data-env-setvalue-save class="btn btn-primary">전략 저장</button></div>
+      </div>`;
     return this._renderCommonMainPageShell(
       "environment",
       "환경 제어",

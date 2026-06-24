@@ -18,10 +18,10 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1104_interlock_safety_split_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.4"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.4"' in panel
-    assert 'v1.10.4' in panel[:200]
-    assert "v1.10.4 Environment interlock/safety tab split" in docs
+    assert '"version": "1.10.5"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.5"' in panel
+    assert 'v1.10.5' in panel[:200]
+    assert "v1.10.5 Environment interlock/safety tab split" in docs
 
 
 def test_environment_tabs_merge_targets_and_interlock_then_safety():

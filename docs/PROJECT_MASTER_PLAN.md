@@ -507,9 +507,16 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.10.3 Environment zone card UI/UX alignment: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
 - v1.10.3 Environment Control final QA: current v1.10.3 compatibility marker retained after AI-first control tab alignment.
 
-- v1.10.4 Environment interlock/safety tab split: 환경 제어 목표값 설정과 인터록 설정을 `인터록 설정` 탭으로 병합하고, 절대 안전 한계/센서 오류/SafetyGuard는 별도 `안전 설정` 탭으로 분리했다. 운영 요약과 인터록/안전 탭에서 별도 제어 모드 카드를 제거했다.
+- v1.10.5 Environment interlock/safety tab split: 환경 제어 목표값 설정과 인터록 설정을 `인터록 설정` 탭으로 병합하고, 절대 안전 한계/센서 오류/SafetyGuard는 별도 `안전 설정` 탭으로 분리했다. 운영 요약과 인터록/안전 탭에서 별도 제어 모드 카드를 제거했다.
 
 - v1.10.4 AI-first control tab alignment: current v1.10.4 compatibility marker retained after interlock/safety split.
 - v1.10.4 Environment zone card header cleanup: current v1.10.4 compatibility marker retained after interlock/safety split.
 - v1.10.4 Environment zone card UI/UX alignment: current v1.10.4 compatibility marker retained after interlock/safety split.
-- v1.10.4 Environment Control final QA: current v1.10.4 compatibility marker retained after interlock/safety split.
+- v1.10.5 Environment Control final QA: current v1.10.4 compatibility marker retained after interlock/safety split.
+
+- v1.10.5 Environment unified scope/tab card: 작물 설정의 작기 선택 + 하위탭 단일 카드 구조와 맞추기 위해 환경 제어의 구역 선택과 하위탭을 `data-env-unified-scope-tab-card` 하나의 `gs-card` 안에 배치했다. 환경 제어 scope bar는 `data-env-scope-inline`으로 카드 껍데기를 만들지 않는다.
+
+- P1 rendered-flow QA v1.10.5: current v1.10.5 compatibility marker retained after unified environment scope/tab card polish.
+- v1.10.5 AI-first control tab alignment: current v1.10.5 compatibility marker retained after unified environment scope/tab card polish.
+- v1.10.5 Environment zone card header cleanup: current v1.10.5 compatibility marker retained after unified environment scope/tab card polish.
+- v1.10.5 Environment zone card UI/UX alignment: current v1.10.5 compatibility marker retained after unified environment scope/tab card polish.

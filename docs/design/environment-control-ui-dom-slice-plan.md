@@ -1,6 +1,6 @@
 # Environment Control UI/DOM Vertical Slice Plan
 
-> 기준 버전: v1.10.4
+> 기준 버전: v1.10.5
 > 대상: `custom_components/green_smart/panel/green-smart-panel.js` 환경 제어 페이지 `_renderEnvSettingsPage()` / `_renderEnvStrategyTabContent()`
 > 목표: 작물 설정 페이지에서 확정한 UI/DOM 통일 원칙을 환경 제어 페이지에 맞게 적용하되, 환경 제어 특성상 설정값을 직접 변경하는 하위탭은 별도 `setValue` UI/DOM 표준으로 통일한다.
 
@@ -49,7 +49,7 @@ Status: implemented in `v1.9.97`.
 
 ### Slice 5 — 렌더 QA + Prod release
 
-Status: implemented in `v1.10.4`.
+Status: implemented in `v1.10.5`.
 
 - 환경 제어 전체 하위탭 렌더 순회: `overview / setpoints / rules / ai / operations / devices / logs`.
 - 금지 marker 검사: setValue/status 탭 모두 direct execution marker 부재.
@@ -607,3 +607,10 @@ Slice 2+ 계약:
 - `safety` contains absolute limits, sensor error policy, strong-wind boundary, and SafetyGuard gate.
 - `setpoints` and `rules` remain hidden legacy markers only.
 - Standalone control-mode card stays removed from overview/interlock/safety composition.
+
+
+### Follow-up — v1.10.5 Environment unified scope/tab card
+
+- Environment Control now matches Crop Settings shell composition: selector and subtab bar live in one `gs-card`.
+- `_renderControlScopeBar("environment")` renders inline with `data-env-scope-inline`; irrigation/device scope bars keep their own card shell.
+- `data-env-unified-scope-tab-card` marks the unified environment selector+tab shell.
