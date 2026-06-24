@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.8
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.9
 const DOMAIN = "green_smart";
-const VERSION = "1.10.8";
+const VERSION = "1.10.9";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -267,6 +267,7 @@ class GreenSmartPanel extends HTMLElement {
     this._alerts = [];
     this._popup = null;
     this._cropSubTab = "ai";
+    this._settingsSubTab = "connection";
     this._cropSeasons = [];
     this._growthData = [];
     this._growthReportData = null;
@@ -9303,57 +9304,115 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   // ── Settings page ──────────────────────────────────────────────────────────────
 
+  _settingsTabs() {
+    return [
+      { key: "connection", label: "연결 설정", icon: "mdi:lan-connect" },
+      { key: "zones", label: "구역 설정", icon: "mdi:greenhouse" },
+      { key: "weather", label: "날씨 설정", icon: "mdi:weather-partly-cloudy" },
+      { key: "central", label: "중앙 연동", icon: "mdi:server-network" },
+    ];
+  }
+
+  _renderSettingsTabBar() {
+    const tabs = this._settingsTabs();
+    if (!tabs.some((t) => t.key === this._settingsSubTab)) this._settingsSubTab = "connection";
+    return `<div class="env-strategy-tabs" data-settings-tab-bar style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">
+      ${tabs.map((t) => `<button class="c-tab ${this._settingsSubTab === t.key ? "active" : ""}" data-settings-tab="${t.key}" style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;white-space:nowrap;"><ha-icon icon="${t.icon}" style="width:15px;height:15px;"></ha-icon>${t.label}</button>`).join("")}
+    </div>`;
+  }
+
+  _settingsSection(icon, title, subtitle, body) {
+    return `<section data-settings-section class="gs-card strategy-card" style="padding:16px;margin-bottom:12px;">
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><ha-icon icon="${icon}" style="color:#51AE60;"></ha-icon>${title}</div>
+      <div style="font-size:12px;color:#7a9780;margin-bottom:14px;line-height:1.5;">${subtitle}</div>
+      <div class="form" data-settings-existing-fields style="display:grid;gap:12px;">${body}</div>
+    </section>`;
+  }
+
+  _renderSettingsTabContent(f) {
+    const tab = this._settingsSubTab || "connection";
+    if (tab === "zones") return this._settingsSection("mdi:greenhouse", "구역 설정", "기존 설치 구역 수와 센서 구성을 저장합니다. 환경 제어와 같은 탭 구조이지만 설정 기능만 수행합니다.", `
+      <div class="grid">
+        <label>온실 구역<input id="greenhouse_zones" type="number" min="1" max="20" value="${this._esc(f.greenhouse_zones)}"></label>
+        <label>양액 구역<input id="nutrient_zones" type="number" min="1" max="10" value="${this._esc(f.nutrient_zones)}"></label>
+      </div>
+      <label>스티븐슨 스크린<input id="stevenson_screens" type="number" min="1" max="10" value="${this._esc(f.stevenson_screens)}"></label>
+      <label>WeatherFlow 접두사<input id="weatherflow_prefix" value="${this._esc(f.weatherflow_prefix)}" autocomplete="off"></label>
+    `);
+    if (tab === "weather") return this._settingsSection("mdi:weather-partly-cloudy", "날씨 설정", "기존 온실 주소 기반 위치 매칭, 단기 nx/ny, 중기 권역, 기상청 API 키 관리만 제공합니다.", `
+      <label>온실 주소
+        <input id="greenhouse_address" value="${this._esc(f.greenhouse_address || f.location_name || "")}" autocomplete="off" placeholder="예: 경기도 수원시 영통구">
+      </label>
+      <div class="actions" style="justify-content:flex-start;margin-top:0;">
+        <button class="action" id="weather_location_match" type="button">주소로 날씨 위치 자동 매칭</button>
+      </div>
+      <div id="location_match_status" style="font-size:12px;color:#7a9780;">${this._esc(f.location_name || f.greenhouse_address || "주소를 입력하고 자동 매칭을 눌러주세요.")}</div>
+      <div class="grid">
+        <label>단기 nx<input id="nx" type="number" min="0" max="999" value="${this._esc(f.nx || 60)}"></label>
+        <label>단기 ny<input id="ny" type="number" min="0" max="999" value="${this._esc(f.ny || 127)}"></label>
+      </div>
+      <div class="grid">
+        <label>중기예보 날씨 권역 코드<input id="weather_mid_land_reg_id" value="${this._esc(f.weather_mid_land_reg_id || f.land_regid || "11H10000")}" autocomplete="off" placeholder="11H10000"></label>
+        <label>중기예보 기온 권역 코드<input id="weather_mid_ta_reg_id" value="${this._esc(f.weather_mid_ta_reg_id || f.ta_regid || "11H10701")}" autocomplete="off" placeholder="11H10701"></label>
+      </div>
+      <div data-settings-weather-api-card style="border:1px solid #e1efe5;border-radius:14px;padding:12px;background:#fbfefb;display:grid;gap:10px;">
+        <div style="font-size:13px;font-weight:900;color:#24323F;">기상청 API 키</div>
+        <div id="weather-key-status" style="font-size:12px;color:#7a9780;">API 키 상태 확인 중...</div>
+        <input id="weather-api-key" type="password" autocomplete="off" placeholder="단기예보 API 키">
+        <div id="weather-mid-key-status" style="font-size:12px;color:#7a9780;">중기예보 키 상태 확인 중...</div>
+        <input id="weather-mid-api-key" type="password" autocomplete="off" placeholder="중기예보 API 키 (선택)">
+        <div class="grid">
+          <label>위치 검색<input id="weather-location-query" autocomplete="off" placeholder="시/군/구 검색"></label>
+          <label>검색 결과<input id="weather-location-selected" readonly value="" placeholder="선택된 위치"></label>
+        </div>
+        <div class="actions" style="justify-content:flex-start;margin-top:0;gap:6px;flex-wrap:wrap;">
+          <button class="action" id="weather-location-search" type="button">위치 검색</button>
+          <button class="action primary" id="weather-key-save" type="button">날씨 설정 저장</button>
+          <button class="action" id="weather-key-validate" type="button">단기 키 검사</button>
+          <button class="action" id="weather-mid-key-validate" type="button">중기 키 검사</button>
+          <button class="action" id="weather-key-delete" type="button">API 키 삭제</button>
+        </div>
+        <div id="weather-location-results" style="display:none;border:1px solid #edf4ee;border-radius:12px;overflow:hidden;background:#fff;"></div>
+        <div id="weather-key-result" style="font-size:12px;color:#4a6741;"></div>
+        <div id="weather-key-validate-result" style="font-size:12px;color:#7a9780;"></div>
+        <div id="weather-mid-key-validate-result" style="font-size:12px;color:#7a9780;"></div>
+      </div>
+    `);
+    if (tab === "central") return this._settingsSection("mdi:server-network", "중앙 연동", "기존 중앙 API URL과 활성화 코드 입력만 제공합니다. 활성화 코드는 저장하지 않습니다.", `
+      <label>중앙 API URL
+        <input id="central_base_url" value="${this._esc(f.central_base_url || "http://127.0.0.1:18000")}" autocomplete="off" placeholder="http://127.0.0.1:18000">
+      </label>
+      <label>활성화 코드
+        <input type="password" id="activation_code" value="${this._esc(f.activation_code)}" autocomplete="off" placeholder="선택 사항 — 중앙 API에서 발급한 일회용 코드">
+      </label>
+      <div data-settings-central-note style="font-size:11px;color:#7a9780;line-height:1.5;background:#f8fbf9;border:1px solid #e2f1e7;border-radius:12px;padding:10px;">실제 유료 벤더 자격 증명이나 고객 토큰은 입력하지 마세요. 활성화 코드는 전송에만 사용하고 저장하지 않습니다.</div>
+    `);
+    return this._settingsSection("mdi:lan-connect", "연결 설정", "기존 PLC/Modbus 연결 정보만 수정합니다. 장치 실행이나 제어 기능은 제공하지 않습니다.", `
+      <label>PLC IP 주소<input id="host" value="${this._esc(f.host)}" autocomplete="off"></label>
+      <div class="grid">
+        <label>포트<input id="port" type="number" min="1" max="65535" value="${this._esc(f.port)}"></label>
+        <label>Unit ID<input id="unit_id" type="number" min="1" max="255" value="${this._esc(f.unit_id)}"></label>
+      </div>
+    `);
+  }
+
   _renderSettingsPage() {
     const f = this._form;
-    return `<div class="wizard-area">
-      <div class="wiz-topbar">
-        <div class="wiz-brand"><ha-icon icon="mdi:leaf"></ha-icon>Green Smart 시스템 설정</div>
+    return `<div class="page settings-page" data-settings-env-like-shell>
+      <div class="page-head">
+        <div class="page-icon"><ha-icon icon="mdi:cog"></ha-icon></div>
+        <div><h2>환경 설정</h2><p>Green Smart 중앙 시스템 연결 및 설치 구역 정보를 관리합니다.</p></div>
       </div>
-      <ha-card>
-        <h1>시스템 설정</h1>
-        <p class="sub">Green Smart 중앙 시스템 연결 및 설치 구역 정보를 관리합니다.</p>
-        <div class="form">
-          <label>PLC IP 주소<input id="host" value="${this._esc(f.host)}" autocomplete="off"></label>
-          <div class="grid">
-            <label>포트<input id="port" type="number" min="1" max="65535" value="${this._esc(f.port)}"></label>
-            <label>Unit ID<input id="unit_id" type="number" min="1" max="255" value="${this._esc(f.unit_id)}"></label>
-          </div>
-          <div class="grid">
-            <label>온실 구역<input id="greenhouse_zones" type="number" min="1" max="20" value="${this._esc(f.greenhouse_zones)}"></label>
-            <label>양액 구역<input id="nutrient_zones" type="number" min="1" max="10" value="${this._esc(f.nutrient_zones)}"></label>
-          </div>
-          <label>스티븐슨 스크린<input id="stevenson_screens" type="number" min="1" max="10" value="${this._esc(f.stevenson_screens)}"></label>
-          <label>WeatherFlow 접두사<input id="weatherflow_prefix" value="${this._esc(f.weatherflow_prefix)}" autocomplete="off"></label>
-          <div class="mode-copy" style="margin-top:10px;">
-            <strong>온실 주소 기반 날씨 위치</strong>
-            <span>주소를 입력하면 기상청 단기 격자(nx/ny)와 중기 권역 코드가 자동 매칭됩니다.</span>
-            <div class="form" style="margin-top:12px;">
-              <label>온실 주소
-                <input id="greenhouse_address" value="${this._esc(f.greenhouse_address || f.location_name || "")}" autocomplete="off" placeholder="예: 경기도 수원시 영통구">
-              </label>
-              <div class="actions" style="justify-content:flex-start;margin-top:8px;">
-                <button class="action" id="weather_location_match" type="button">주소로 날씨 위치 자동 매칭</button>
-              </div>
-              <div id="location_match_status" style="font-size:12px;color:#7a9780;margin-top:8px;">
-                ${this._esc(f.location_name || f.greenhouse_address || "주소를 입력하고 자동 매칭을 눌러주세요.")}
-              </div>
-              <div class="grid" style="margin-top:10px;">
-                <label>단기 nx<input id="nx" type="number" min="0" max="999" value="${this._esc(f.nx || 60)}"></label>
-                <label>단기 ny<input id="ny" type="number" min="0" max="999" value="${this._esc(f.ny || 127)}"></label>
-              </div>
-              <div class="grid">
-                <label>중기예보 날씨 권역 코드<input id="weather_mid_land_reg_id" value="${this._esc(f.weather_mid_land_reg_id || f.land_regid || "11H10000")}" autocomplete="off" placeholder="11H10000"></label>
-                <label>중기예보 기온 권역 코드<input id="weather_mid_ta_reg_id" value="${this._esc(f.weather_mid_ta_reg_id || f.ta_regid || "11H10701")}" autocomplete="off" placeholder="11H10701"></label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="actions">
+      <div class="gs-card" data-settings-unified-tab-card>
+        <span hidden data-settings-existing-only-contract>기존 설정 저장, 날씨 위치/API 키, 중앙 연동 입력만 제공; 제어 실행 기능 없음</span>
+        ${this._renderSettingsTabBar()}
+        <div data-settings-content>${this._renderSettingsTabContent(f)}</div>
+        <div class="actions" style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:8px;">
           <button class="action" id="cancel">취소</button>
           <button class="action primary" id="save">저장</button>
         </div>
         ${this._renderError()}
-      </ha-card>
+      </div>
     </div>`;
   }
 
@@ -9426,6 +9485,11 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _bindSettings(root) {
     this._bindInputs(root);
+    root.querySelectorAll("[data-settings-tab]").forEach((btn) => btn.addEventListener("click", () => {
+      this._settingsSubTab = btn.dataset.settingsTab;
+      this._error = "";
+      this._update();
+    }));
     const cancel = root.querySelector("#cancel");
     const save = root.querySelector("#save");
     if (cancel) cancel.addEventListener("click", () => {

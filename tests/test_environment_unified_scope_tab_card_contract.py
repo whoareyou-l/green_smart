@@ -18,10 +18,10 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1105_versions_and_docs_for_env_unified_scope_tab_card():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.8"' in _read(MANIFEST)
-    assert 'const VERSION = "1.10.8"' in panel
-    assert 'v1.10.8' in panel[:200]
-    assert "v1.10.8 Environment unified scope/tab card" in docs
+    assert '"version": "1.10.9"' in _read(MANIFEST)
+    assert 'const VERSION = "1.10.9"' in panel
+    assert 'v1.10.9' in panel[:200]
+    assert "v1.10.9 Environment unified scope/tab card" in docs
 
 
 def test_environment_page_places_scope_bar_and_tab_bar_in_one_card_like_crop_settings():

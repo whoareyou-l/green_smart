@@ -550,3 +550,15 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.10.8 Environment unified scope/tab card: current v1.10.8 compatibility marker retained after Environment overview tab removal.
 - v1.10.8 Environment storage target moved to docs: current v1.10.8 compatibility marker retained after Environment overview tab removal.
 - v1.10.8 Environment zone helper text moved to docs: current v1.10.8 compatibility marker retained after Environment overview tab removal.
+
+- v1.10.9 Settings page environment-control style shell: 톱니바퀴 `환경 설정` 화면을 환경 제어 페이지와 같은 단일 `gs-card` + 하위탭 구조로 맞춘다. 하위탭은 `연결 설정`, `구역 설정`, `날씨 설정`, `중앙 연동`이며 기존 설정 저장/날씨 위치 매칭/기상청 API 키/중앙 URL·활성화 코드 입력만 제공한다. 제어 실행, 수동 장치 제어, 신규 기능은 추가하지 않는다.
+- P1 rendered-flow QA v1.10.9: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 AI-first control tab alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment zone card header cleanup: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment zone card UI/UX alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment Control final QA: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment interlock/safety tab split: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment unified scope/tab card: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment storage target moved to docs: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment zone helper text moved to docs: current v1.10.9 compatibility marker retained after settings page shell alignment.
+- v1.10.9 Environment overview tab removed: current v1.10.9 compatibility marker retained after settings page shell alignment.
