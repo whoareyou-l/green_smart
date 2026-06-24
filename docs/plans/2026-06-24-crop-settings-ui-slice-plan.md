@@ -169,10 +169,26 @@ Turn the Basic tab into a clean season lifecycle page: selected season overview,
 
 ```text
 data-crop-basic-overview-card
+data-crop-basic-selected-season
+data-crop-basic-next-action
+data-crop-basic-lifecycle-kpis
 data-crop-basic-lifecycle-actions
+data-crop-basic-primary-action
+data-crop-basic-secondary-actions
+data-crop-basic-danger-actions
 data-crop-basic-season-list
+data-crop-basic-empty-state
 data-crop-ui-empty-state
 ```
+
+### v1.9.69 implementation contract
+
+- `data-crop-basic-overview-card` merges selected-season, zone, status, and cultivation method into one farmer/staff summary.
+- `data-crop-basic-lifecycle-kpis` shows 전체 작기 / 재배 중 / 철거 완료 KPI chips.
+- `data-crop-basic-lifecycle-actions` separates primary, secondary, and danger action zones.
+- `data-crop-basic-season-list` becomes a compact lifecycle record list rather than another bulky summary card.
+- `data-crop-basic-empty-state` uses Korean owner/staff guidance: 정식 등록으로 첫 작기를 추가하세요.
+- The destructive delete action is isolated as a danger action, not visually competing with primary 정식 등록.
 
 ---
 

@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.9.68`
+> 기준 버전: `v1.9.69`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -433,12 +433,29 @@ cropSettingsAllowExecution
 - 삭제
 - 5개 단위 pagination
 
-UI Slice 1에서 정리할 방향:
+v1.9.69 UI Slice 1 기준:
 
-- selector/list 중복 정보 병합
-- 선택 작기 overview 추가
-- 수정/철거/삭제 action hierarchy 정리
-- 빈 상태를 농장주/농장직원이 바로 이해하도록 개선
+- `data-crop-basic-overview-card`: 선택 작기 요약. 농장주/농장직원이 먼저 확인할 내용과 현재 기록 기준을 보여준다.
+- `data-crop-basic-selected-season`: 선택된 작물/품종/구역/재배 방식/상태를 한 곳에 병합한다.
+- `data-crop-basic-lifecycle-kpis`: 전체 작기, 재배 중, 철거 완료 KPI chip grid.
+- `data-crop-basic-next-action`: 다음 행동 안내. 활성 작기는 생육조사·병해충·방제 기록으로 이어가고, 종료 작기는 기록 확인/새 정식 등록으로 안내한다.
+- `data-crop-basic-lifecycle-actions`: 상단 action bar. `data-crop-basic-primary-action`은 정식 등록, `data-crop-basic-secondary-actions`는 CSV/수정/철거, `data-crop-basic-danger-actions`는 삭제로 분리한다.
+- `data-crop-basic-season-list`: 선택 작기와 중복되는 정보는 줄이고 lifecycle 상태와 필요한 행동을 compact record list로 보여준다.
+- `data-crop-basic-empty-state`: 아직 등록된 작기가 없을 때 “정식 등록으로 첫 작기를 추가하세요. 농장주와 직원이 같은 작기 기준으로 기록을 관리합니다.” 문구를 보여준다.
+
+카드 병합/삭제/추가/접기 결정:
+
+| Operation | Applied change |
+|---|---|
+| Merge | selector/list에 흩어진 선택 작기·상태·구역 정보를 `data-crop-basic-overview-card`로 병합 |
+| Delete/Reduce | 목록 row의 중복 강조를 줄이고 lifecycle 상태/action만 남김 |
+| Add | 선택 작기 요약, lifecycle KPI, owner-friendly empty state 추가 |
+| Split | 수정/철거 보조 action과 destructive delete action을 분리 |
+
+향후 유지 방향:
+
+- 새 카드 추가보다 기존 overview/list/action hierarchy를 먼저 보강한다.
+- 삭제는 danger action 영역으로 분리하고, primary 정식 등록 버튼과 나란히 경쟁시키지 않는다.
 
 ### 8.5 생육조사 탭 (`growth`)
 

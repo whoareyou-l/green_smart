@@ -104,5 +104,5 @@ def test_v1958_panel_and_docs_surface_model_feature_sources_contract():
     ):
         assert marker in plan
 
-    assert '"version": "1.9.68"' in manifest
-    assert 'const VERSION = "1.9.68"' in panel
+    assert '"version": "1.9.69"' in manifest
+    assert 'const VERSION = "1.9.69"' in panel
