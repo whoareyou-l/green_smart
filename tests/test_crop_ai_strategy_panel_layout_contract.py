@@ -63,10 +63,10 @@ def test_v1987_ai_strategy_versions_and_docs():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.9.93"' in manifest
-    assert 'const VERSION = "1.9.93"' in panel
-    assert 'EDGE_VERSION = "1.9.93"' in central
-    assert "v1.9.93 AI Strategy panel-type layout" in docs
+    assert '"version": "1.9.94"' in manifest
+    assert 'const VERSION = "1.9.94"' in panel
+    assert 'EDGE_VERSION = "1.9.94"' in central
+    assert "v1.9.94 AI Strategy panel-type layout" in docs
     for marker in (
         "data-crop-ai-strategy-panel",
         "data-crop-ai-strategy-header",

@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.9.93
+// Green Smart — Modern SaaS greenhouse dashboard  v1.9.94
 const DOMAIN = "green_smart";
-const VERSION = "1.9.93";
+const VERSION = "1.9.94";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4593,7 +4593,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     const total = this._growthData.length;
     const latest = total ? this._growthData[total - 1] : null;
     const latestMetrics = latest ? this._growthMetricGroups(latest) : { core: [], quality: [] };
-    const latestCropLabel = this._cropLabelForDisplay(latest?.cropType || this._selectedSeason()?.cropType);
+    const latestCropLabel = this._cropLabelForDisplay(latest?.cropType || this._activeSeason()?.cropType);
     // contract marker: latest survey displays ${latestCropLabel}, not raw cropType such as lettuce
     const latestLabel = latest ? `${this._esc(latest.date)} · ${this._esc(latestCropLabel)}` : "기록 없음";
     const nextAction = latest
@@ -4811,6 +4811,8 @@ button.action:disabled{opacity:.5;cursor:default;}
               ${(p.rei ?? p.REI ?? p.reiHours ?? p.rei_hours) != null ? `<span style="font-weight:400;color:#7a9780;">REI ${this._esc(String(p.rei ?? p.REI ?? p.reiHours ?? p.rei_hours))}h</span>` : ""}
             </span>`;
           }).join(" ");
+          const areaValue = r.area != null ? String(r.area).trim() : "";
+          const areaLabel = areaValue ? (/㎡|평|ha|m2|m²$/i.test(areaValue) ? areaValue : `${areaValue}㎡`) : "";
           return `
           <div data-crop-control-treatment-row style="padding:10px 12px;border-radius:10px;background:#f5faf6;margin-bottom:6px;border:1px solid #e3f1e5;">
             <div style="display:flex;align-items:flex-start;gap:8px;">
@@ -4819,7 +4821,7 @@ button.action:disabled{opacity:.5;cursor:default;}
                 <div data-crop-control-pesticide-chip-group style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">${pestHtml}</div>
                 <div data-crop-control-treatment-meta style="display:flex;flex-wrap:wrap;gap:6px 14px;">
                   ${r.zone  ? `<span style="font-size:11px;color:#4a6741;">구역: ${this._esc(r.zone)}</span>` : ""}
-                  ${r.area  ? `<span style="font-size:11px;color:#4a6741;">면적: ${r.area}㎡</span>` : ""}
+                  ${areaLabel ? `<span style="font-size:11px;color:#4a6741;">면적: ${this._esc(areaLabel)}</span>` : ""}
                   ${r.note  ? `<span style="font-size:11px;color:#7a9780;">${this._esc(r.note)}</span>` : ""}
                 </div>
               </div>
