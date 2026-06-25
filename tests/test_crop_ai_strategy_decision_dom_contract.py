@@ -27,7 +27,8 @@ def test_v1989_ai_decision_dom_main_order():
         "data-crop-ai-strategy-header",
         "data-crop-ai-readonly-boundary",
         "data-crop-ai-decision-summary",
-        "data-crop-ai-interlock-summary",
+        "data-crop-ai-review-request-summary",
+        "data-crop-ai-support-status-summary",
         "data-crop-ai-model-status-summary",
         "data-crop-ai-advanced-details",
     ]
@@ -38,13 +39,14 @@ def test_v1989_ai_decision_dom_main_order():
 
 def test_v1989_ai_decision_summary_is_operator_facing_crop_state():
     card = _report_card()
-    summary = _section(card, "data-crop-ai-decision-summary", "data-crop-ai-interlock-summary")
+    summary = _section(card, "data-crop-ai-decision-summary", "data-crop-ai-review-request-summary")
     assert "data-crop-ai-primary-summary" in summary
-    assert "작물 상태 요약" in summary
+    assert "작물 모델 파이프라인" in summary
     assert "data-crop-ai-primary-metric-grid" in summary
     for marker in (
         "data-crop-ai-primary-gl-index",
-        "data-crop-ai-primary-yield-prediction",
+        "data-crop-ai-model-pipeline-summary",
+        "data-crop-ai-model-pipeline-step",
         "data-crop-ai-primary-pest-risk",
         "data-crop-ai-next-action",
     ):
@@ -63,11 +65,11 @@ def test_v1989_ai_decision_flow_removed_in_v1992():
 
 def test_v1989_ai_interlock_and_model_status_are_main_cards_not_detail_cards():
     card = _report_card()
-    interlock = _section(card, "data-crop-ai-interlock-summary", "data-crop-ai-model-status-summary")
+    interlock = _section(card, "data-crop-ai-support-status-summary", "data-crop-ai-model-status-summary")
     model_status = _section(card, "data-crop-ai-model-status-summary", "data-crop-ai-advanced-details")
     details = _section(card, "data-crop-ai-advanced-details", "</details>")
 
-    assert "인터록 상태 요약" in interlock
+    assert "인터록/모델 운영 상태" in interlock
     assert "data-crop-interlock-card" in interlock
     assert "data-crop-interlock-approval-gate" in interlock
     assert "data-crop-ai-interlock-grid" in interlock
@@ -117,13 +119,17 @@ def test_v1989_versions_and_docs_record_decision_dom():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.19"' in manifest
-    assert 'const VERSION = "1.10.19"' in panel
+    assert '"version": "1.10.20"' in manifest
+    assert 'const VERSION = "1.10.20"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI Strategy decision-oriented DOM" in docs
     for marker in (
         "data-crop-ai-decision-summary",
         "data-crop-ai-primary-metric-grid",
+        "data-crop-ai-model-pipeline-summary",
+        "data-crop-ai-model-pipeline-step",
+        "data-crop-ai-review-request-summary",
+        "data-crop-ai-support-status-summary",
         "data-crop-ai-main-card",
         "data-crop-ai-main-card-header",
         "data-crop-ai-main-card-body",
