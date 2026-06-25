@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.16
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.17
 const DOMAIN = "green_smart";
-const VERSION = "1.10.16";
+const VERSION = "1.10.17";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4211,6 +4211,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     const predictedGrowthBalance7d = growthStatePrediction.predictedBalance7d || {};
     const growthBalanceMovement = growthStatePrediction.balanceMovement || {};
     const growthStateDrivers = growthStatePrediction.driverContributions || {};
+    const riskFactorPrediction = trainableBaseline.riskFactorPrediction || cropModel.riskFactorPrediction || report.riskFactorPrediction || {};
+    const aggregateRiskFactor = riskFactorPrediction.aggregateRisk || {};
+    const highestRiskFactor = riskFactorPrediction.highestRiskItem || {};
+    const riskFactorGroups = [riskFactorPrediction.environmentStress || {}, riskFactorPrediction.irrigationNutrientStress || {}, riskFactorPrediction.pestDiseaseRisk || {}, riskFactorPrediction.operationDataQualityRisk || {}];
     const stagePredictionScore = stagePrediction7d.score || report.stagePredictionScore || {};
     const scoreComponents = stagePredictionScore.scoreComponents || {};
     const predictedStage7d = stagePrediction7d.predictedStage7d || {};
@@ -4284,6 +4288,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             <div data-crop-ai-main-metric data-crop-ai-primary-yield-prediction style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">수확량 예측</div><b data-crop-ai-main-metric-value style="font-size:18px;color:#24323F;">${this._esc(String(yieldPrediction.estimatedKg ?? 0))}kg</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">신뢰도 ${this._esc(yieldPrediction.confidence || "low")}</div></div>
             <div data-crop-ai-main-metric data-crop-ai-primary-pest-risk style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">병해 위험도</div><b data-crop-ai-main-metric-value style="font-size:18px;color:${pestRisk.level === 'high' ? '#c0392b' : pestRisk.level === 'medium' ? '#f39c12' : '#51AE60'};">${riskLabel}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">score ${this._esc(String(pestRisk.score ?? 0))}</div></div>
             <div data-crop-growth-state-numeric-card data-crop-ai-main-metric data-crop-ai-growth-state-score style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">생육상태 수치축</div><b data-crop-ai-main-metric-value data-crop-growth-state-balance-score style="font-size:18px;color:#24323F;">${this._esc(String(currentGrowthBalance.balanceScore ?? 0))}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">7일 ${this._esc(String(predictedGrowthBalance7d.balanceScore ?? 0))} · directionCode ${this._esc(String(currentGrowthBalance.directionCode ?? 9))}</div></div>
+            <div data-crop-risk-factor-numeric-card data-crop-ai-main-metric style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">위험요소 수치</div><b data-crop-ai-main-metric-value data-crop-risk-factor-score style="font-size:18px;color:#24323F;">${this._esc(String(aggregateRiskFactor.score ?? 0))}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">bandCode <span data-crop-risk-factor-band-code>${this._esc(String(aggregateRiskFactor.bandCode ?? 9))}</span> · trendCode <span data-crop-risk-factor-trend-code>${this._esc(String(aggregateRiskFactor.trendCode ?? 9))}</span></div></div>
           </div>
           <div data-crop-ai-main-note data-crop-ai-next-action style="background:#f8fbf9;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 행동</b> ${this._esc(aiNextAction)}</div>
           <div data-crop-ai-main-action-row style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="font-size:10px;color:#7a9780;font-weight:800;background:#f5faf6;border:1px solid #e2f1e7;border-radius:999px;padding:4px 8px;">요약 우선</span><span style="font-size:10px;color:#7a9780;font-weight:800;background:#f5faf6;border:1px solid #e2f1e7;border-radius:999px;padding:4px 8px;">상세 근거는 접힘 영역</span></div>
@@ -4353,7 +4358,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">read-only · no diagnosis · no action · labels are derived outside the core model</div>
         <div data-crop-ai-yield-compatibility-row style="font-size:10px;color:#9aae9d;margin-top:6px;line-height:1.45;">작물별 수확 모델 · ${this._esc(yieldPrediction.modelVersion || "generic_growth_model_v1")} · estimatedKgPerPlant ${this._esc(String(yieldPrediction.estimatedKgPerPlant ?? 0))} · estimatedKgPerArea ${this._esc(String(yieldPrediction.estimatedKgPerArea ?? 0))} · cropModelLabel ${this._esc(yieldPrediction.cropModelLabel || "일반 생육 기반 수확 모델")} · yieldDrivers · confidenceReasons · 주당 예측 · 면적당 예측 · 예측 근거 ${this._esc(yieldPrediction.basis || "crop-specific growth model")}</div>
       </article>
-      <article data-crop-ai-evidence-card="pest-prediction" data-crop-ai-pest-prediction-model data-crop-ai-pest-risk-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+      <article data-crop-ai-evidence-card="pest-prediction" data-crop-risk-factor-numeric-evidence data-crop-ai-pest-prediction-model data-crop-ai-pest-risk-model-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
         <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">병충해 예측</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">병해 위험 모델 · 날씨·환경·방제 이력을 함께 보는 병해 위험 상위 모델입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">top model</span></div>
         <div data-crop-ai-evidence-card-body style="font-size:12px;color:#6b5b4d;line-height:1.6;">
           <b>${riskLabel}</b><span style="color:#9aae9d;"> · ${this._esc(pestRisk.modelVersion || "weather_environment_control_model_v1")}</span><br>
@@ -4366,6 +4371,11 @@ button.action:disabled{opacity:.5;cursor:default;}
           <span style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">최근 방제 ${this._esc(String(controlHistoryDrivers.daysSinceLastControl ?? "없음"))}일</span>
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">위험 요인: ${riskFactors.length ? riskFactors.map(r => this._esc(r)).join(" · ") : "기록 부족"}</div>
+        <div data-crop-risk-factor-items style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          <span data-crop-risk-factor-contract-markers style="display:none;">highTemperatureStress temperatureSwingStress vpdStress ecStress controlFreshnessRisk bandCode trendCode</span>
+          ${riskFactorGroups.flatMap((group) => Object.entries(group)).map(([name, item]) => `<span data-crop-risk-factor-item data-risk-code="${this._esc(String(item.riskCode ?? 0))}" style="font-size:11px;background:#fff8f5;color:#8a5d3b;border-radius:999px;padding:4px 8px;">${this._esc(name)} · score ${this._esc(String(item.score ?? 0))} · bandCode ${this._esc(String(item.bandCode ?? 9))} · trendCode ${this._esc(String(item.trendCode ?? 9))}</span>`).join("") || `<span style="font-size:11px;color:#9aae9d;">risk factor 없음</span>`}
+        </div>
+        <div style="font-size:11px;color:#7a9780;margin-top:5px;">highest riskCode ${this._esc(String(highestRiskFactor.riskCode ?? 0))} · groupCode ${this._esc(String(highestRiskFactor.groupCode ?? 0))} · read-only numeric evidence</div>
         ${recommendedActions.length ? `<div style="font-size:11px;color:#7a9780;margin-top:5px;">권장 조치: ${recommendedActions.map(a => this._esc(a)).join(" · ")}</div>` : ""}
       </article>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e6eef7;" data-stage-diagnosis-card>

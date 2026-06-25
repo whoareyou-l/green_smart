@@ -415,28 +415,30 @@ sensor/interlock data-quality risk
 
 ### Risk severity bands required for diagnosis
 
-The risk model must expose numeric scores, but the diagnosis model must interpret them through explicit severity bands. The band names are operator-facing and must be stable.
+The risk model must expose numeric scores, and later diagnosis interprets those scores through explicit severity bands. The operator-facing band names below are stable explanations for numeric `bandCode`; the risk model core payload uses numeric fields only: `score`, `bandCode`, `trendCode`, `confidenceScore`, and `evidenceScore`.
 
 Recommended baseline bands:
 
-| Band | Korean label | Score range | Diagnosis meaning | Typical response class |
-|---|---|---:|---|---|
-| `immediate_action` | 바로 대처 | `0.85–1.00` | current or near-term crop damage/loss risk is high enough that operator review/action is urgent | urgent work/model request, approval flow likely |
-| `severe` | 심각 | `0.70–0.84` | strong stress/risk; likely to affect crop balance, disease pressure, quality, or yield if not addressed | high-priority review/action request |
-| `moderate` | 중간 | `0.45–0.69` | meaningful risk; should influence diagnosis and may create model/work review signals | normal-priority review request |
-| `weak` | 약함 | `0.20–0.44` | weak signal; keep as evidence and trend monitoring | monitor / low-priority observation |
-| `very_weak` | 매우 약함 | `0.00–0.19` | negligible signal under current evidence | record only |
+| bandCode | Band meaning | Korean label | Score range | Diagnosis meaning | Typical response class |
+|---:|---|---|---:|---|---|
+| `5` | `immediate_action` | 바로 대처 | `0.85–1.00` | current or near-term crop damage/loss risk is high enough that operator review/action is urgent | urgent work/model request, approval flow likely |
+| `4` | `severe` | 심각 | `0.70–0.84` | strong stress/risk; likely to affect crop balance, disease pressure, quality, or yield if not addressed | high-priority review/action request |
+| `3` | `moderate` | 중간 | `0.45–0.69` | meaningful risk; should influence diagnosis and may create model/work review signals | normal-priority review request |
+| `2` | `weak` | 약함 | `0.20–0.44` | weak signal; keep as evidence and trend monitoring | monitor / low-priority observation |
+| `1` | `very_weak` | 매우 약함 | `0.00–0.19` | negligible signal under current evidence | record only |
+| `9` | insufficient data | 데이터 부족 | n/a | not enough evidence | record limitation |
 
 Each detailed risk item should carry both score and band:
 
 ```json
 {
   "highTemperatureStress": {
+    "riskCode": 1001,
     "score": 0.72,
-    "band": "severe",
-    "label": "심각",
-    "trend": "increasing",
-    "responseClass": "high_priority_review"
+    "bandCode": 4,
+    "trendCode": 1,
+    "confidenceScore": 0.73,
+    "evidenceScore": 0.68
   }
 }
 ```

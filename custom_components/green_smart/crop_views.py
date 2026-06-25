@@ -32,6 +32,9 @@ CROP_GROWTH_STATE_PREDICTION_VERSION_CODE = 1
 CROP_GROWTH_STATE_MODEL_FAMILY_CODE = 2101
 CROP_GROWTH_STATE_MODEL_TARGET_CODE = 2201
 CROP_GROWTH_STATE_AXIS_CODE = 1
+CROP_RISK_FACTOR_PREDICTION_VERSION_CODE = 1
+CROP_RISK_FACTOR_MODEL_FAMILY_CODE = 3101
+CROP_RISK_FACTOR_MODEL_TARGET_CODE = 3201
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
     "tomato": {
@@ -2176,6 +2179,202 @@ def _crop_growth_state_prediction(*, latest: dict, previous: dict, growthIndex: 
     }
 
 
+def _crop_risk_factor_band_code(score: float | None) -> int:
+    if score is None:
+        return 9
+    score = max(0.0, min(1.0, float(score)))
+    if score < 0.20:
+        return 1
+    if score < 0.45:
+        return 2
+    if score < 0.70:
+        return 3
+    if score < 0.85:
+        return 4
+    return 5
+
+
+def _crop_risk_factor_trend_code(current: float | None, previous: float | None = None) -> int:
+    if current is None:
+        return 9
+    if previous is None:
+        if current >= 0.70:
+            return 1
+        return 0
+    delta = float(current) - float(previous)
+    if delta >= 0.25:
+        return 2
+    if delta >= 0.08:
+        return 1
+    if delta <= -0.08:
+        return -1
+    return 0
+
+
+def _crop_risk_factor_clamp(value: float | None) -> float:
+    try:
+        numeric = float(value or 0.0)
+    except Exception:
+        numeric = 0.0
+    return round(max(0.0, min(1.0, numeric)), 4)
+
+
+def _crop_risk_factor_item(risk_code: int, score: float | None, *, trend_code: int | None = None, confidence: float = 0.5, evidence: float | None = None) -> dict:
+    score = _crop_risk_factor_clamp(score)
+    confidence = _crop_risk_factor_clamp(confidence)
+    evidence = _crop_risk_factor_clamp(score if evidence is None else evidence)
+    return {
+        "riskCode": int(risk_code),
+        "score": score,
+        "bandCode": _crop_risk_factor_band_code(score),
+        "trendCode": _crop_risk_factor_trend_code(score) if trend_code is None else int(trend_code),
+        "confidenceScore": confidence,
+        "evidenceScore": evidence,
+    }
+
+
+def _crop_risk_factor_stat(features: dict, key: str, field: str = "avg") -> float | None:
+    source = (features or {}).get(key) or {}
+    value = source.get(field)
+    if value is None and field != "value":
+        value = source.get("value")
+    try:
+        return None if value is None else float(value)
+    except Exception:
+        return None
+
+
+def _crop_risk_factor_prediction(featureSnapshot: dict) -> dict:
+    featureSnapshot = featureSnapshot or {}
+    environment = featureSnapshot.get("environmentSummary7d") or {}
+    env_features = environment.get("features") or environment.get("metrics") or {}
+    kma = featureSnapshot.get("kmaWeatherStress7d") or {}
+    kma_features = kma.get("features") or {}
+    irrigation = featureSnapshot.get("irrigationNutrientSummary7d") or {}
+    irrigation_features = irrigation.get("features") or irrigation.get("derivedFeatures") or {}
+    pest_control = featureSnapshot.get("pestControlSummary7d") or {}
+    pest_features = pest_control.get("features") or {}
+    operation = featureSnapshot.get("operationHistorySummary7d") or {}
+    safety = featureSnapshot.get("safetyInterlockSummary") or {}
+    source_coverage = featureSnapshot.get("sourceCoverage") or {}
+    temp_avg = _crop_risk_factor_stat(env_features, "temperature", "avg")
+    temp_min = _crop_risk_factor_stat(env_features, "temperature", "min")
+    temp_max = _crop_risk_factor_stat(env_features, "temperature", "max")
+    humidity_avg = _crop_risk_factor_stat(env_features, "humidity", "avg")
+    vpd_avg = _crop_risk_factor_stat(env_features, "vpd", "avg")
+    co2_avg = _crop_risk_factor_stat(env_features, "co2", "avg")
+    radiation_avg = _crop_risk_factor_stat(env_features, "radiation", "avg")
+    high_temp_days = float(kma_features.get("highTemperatureDays") or 0.0)
+    low_temp_days = float(kma_features.get("lowTemperatureDays") or 0.0)
+    rapid_temp_days = float(kma_features.get("rapidTemperatureChangeDays") or 0.0)
+    high_temp_score = max(_crop_risk_factor_clamp((float(temp_max or 0.0) - 28.0) / 8.0), _crop_risk_factor_clamp(high_temp_days / 5.0))
+    low_temp_score = max(_crop_risk_factor_clamp((12.0 - float(temp_min if temp_min is not None else 12.0)) / 8.0), _crop_risk_factor_clamp(low_temp_days / 5.0))
+    temp_swing_score = max(_crop_risk_factor_clamp(((float(temp_max or 0.0) - float(temp_min or 0.0)) - 8.0) / 10.0), _crop_risk_factor_clamp(rapid_temp_days / 5.0))
+    vpd_score = 0.0 if vpd_avg is None else _crop_risk_factor_clamp(abs(float(vpd_avg) - 1.05) / 1.15)
+    humidity_score = 0.0 if humidity_avg is None else max(_crop_risk_factor_clamp((float(humidity_avg) - 85.0) / 15.0), _crop_risk_factor_clamp((45.0 - float(humidity_avg)) / 20.0))
+    co2_score = 0.0 if co2_avg is None else max(_crop_risk_factor_clamp((350.0 - float(co2_avg)) / 200.0), _crop_risk_factor_clamp((float(co2_avg) - 1200.0) / 600.0))
+    light_score = 0.0 if radiation_avg is None else max(_crop_risk_factor_clamp((120.0 - float(radiation_avg)) / 120.0), _crop_risk_factor_clamp((float(radiation_avg) - 850.0) / 600.0))
+    env_confidence = 0.75 if environment else 0.25
+    environmentStress = {
+        "highTemperatureStress": _crop_risk_factor_item(1001, high_temp_score, confidence=env_confidence),
+        "lowTemperatureStress": _crop_risk_factor_item(1002, low_temp_score, confidence=env_confidence),
+        "temperatureSwingStress": _crop_risk_factor_item(1003, temp_swing_score, confidence=env_confidence),
+        "vpdStress": _crop_risk_factor_item(1004, vpd_score, confidence=env_confidence),
+        "humidityStress": _crop_risk_factor_item(1005, humidity_score, confidence=env_confidence),
+        "co2Stress": _crop_risk_factor_item(1006, co2_score, confidence=env_confidence),
+        "lightDliStress": _crop_risk_factor_item(1007, light_score, confidence=env_confidence),
+    }
+    feed_ec = irrigation_features.get("feedEcAvg")
+    drain_ec = irrigation_features.get("drainEcAvg")
+    feed_ph = irrigation_features.get("feedPhAvg")
+    drain_ph = irrigation_features.get("drainPhAvg")
+    dryback = irrigation_features.get("drybackProxy")
+    drain_rate = irrigation_features.get("drainRateAvg")
+    ec_value = drain_ec if drain_ec is not None else feed_ec
+    ph_value = drain_ph if drain_ph is not None else feed_ph
+    ec_score = 0.0 if ec_value is None else max(_crop_risk_factor_clamp((float(ec_value) - 4.0) / 3.0), _crop_risk_factor_clamp((1.2 - float(ec_value)) / 1.2))
+    ph_score = 0.0 if ph_value is None else max(_crop_risk_factor_clamp((float(ph_value) - 6.8) / 1.0), _crop_risk_factor_clamp((5.3 - float(ph_value)) / 1.0))
+    dryback_score = 0.0 if dryback is None else _crop_risk_factor_clamp((float(dryback) - 35.0) / 45.0)
+    drain_score = 0.0 if drain_rate is None else max(_crop_risk_factor_clamp((15.0 - float(drain_rate)) / 15.0), _crop_risk_factor_clamp((float(drain_rate) - 45.0) / 45.0))
+    irr_confidence = 0.7 if irrigation else 0.25
+    irrigationNutrientStress = {
+        "ecStress": _crop_risk_factor_item(2001, ec_score, confidence=irr_confidence),
+        "phStress": _crop_risk_factor_item(2002, ph_score, confidence=irr_confidence),
+        "dryBackStress": _crop_risk_factor_item(2003, dryback_score, confidence=irr_confidence),
+        "drainImbalanceRisk": _crop_risk_factor_item(2004, drain_score, confidence=irr_confidence),
+    }
+    pest_pressure = pest_features.get("pestPressureScore", pest_control.get("pestPressureScore", pest_control.get("pestRiskScore", 0.0)))
+    disease_pressure = pest_features.get("diseasePressureScore", pest_control.get("diseasePressureScore", pest_control.get("diseaseRiskScore", 0.0)))
+    control_freshness = pest_features.get("controlFreshnessRiskScore", pest_control.get("controlFreshnessRiskScore", 0.0))
+    if not control_freshness and pest_control.get("sourceStatus") in {"missing", "stale"}:
+        control_freshness = 0.55
+    pest_confidence = 0.65 if pest_control else 0.25
+    pestDiseaseRisk = {
+        "pestPressure": _crop_risk_factor_item(3001, pest_pressure, confidence=pest_confidence),
+        "diseasePressure": _crop_risk_factor_item(3002, disease_pressure, confidence=pest_confidence),
+        "controlFreshnessRisk": _crop_risk_factor_item(3003, control_freshness, confidence=pest_confidence),
+    }
+    operation_freshness = 0.0
+    if not operation or source_coverage.get("operationHistorySummary7d") in {"missing", "stale"}:
+        operation_freshness = 0.45
+    if operation.get("missingWorkRecordRisk") is not None:
+        operation_freshness = operation.get("missingWorkRecordRisk")
+    data_quality = 0.0
+    if source_coverage:
+        unavailable = sum(1 for status in source_coverage.values() if status in {"missing", "stale"})
+        data_quality = _crop_risk_factor_clamp(unavailable / max(1, len(source_coverage)))
+    if safety and (safety.get("cropInterlock") or {}).get("cropInterlockBlocked"):
+        data_quality = max(data_quality, 0.65)
+    operationDataQualityRisk = {
+        "operationFreshnessRisk": _crop_risk_factor_item(4001, operation_freshness, confidence=0.55 if operation else 0.35),
+        "sensorInterlockDataQualityRisk": _crop_risk_factor_item(4002, data_quality, confidence=0.65 if source_coverage else 0.35),
+    }
+    groups = {
+        "environmentStress": environmentStress,
+        "irrigationNutrientStress": irrigationNutrientStress,
+        "pestDiseaseRisk": pestDiseaseRisk,
+        "operationDataQualityRisk": operationDataQualityRisk,
+    }
+    group_codes = {"environmentStress": 10, "irrigationNutrientStress": 20, "pestDiseaseRisk": 30, "operationDataQualityRisk": 40}
+    all_items = [(group_name, item_name, item) for group_name, group in groups.items() for item_name, item in group.items()]
+    worst_group, worst_name, worst_item = max(all_items, key=lambda entry: float(entry[2].get("score") or 0.0))
+    aggregate_score = round(sum(float(item.get("score") or 0.0) for _, _, item in all_items) / max(1, len(all_items)), 4)
+    aggregate_trend = 2 if any((int(item.get("trendCode") or 0) == 2 and int(item.get("bandCode") or 0) >= 3) for _, _, item in all_items) else 1 if any((int(item.get("trendCode") or 0) == 1 and int(item.get("bandCode") or 0) >= 3) for _, _, item in all_items) else 0
+    limitations = []
+    if source_coverage:
+        for source, status in source_coverage.items():
+            if status in {"missing", "stale"}:
+                limitations.append({"environmentSummary7d": 10001, "irrigationNutrientSummary7d": 20001, "pestControlSummary7d": 30001, "operationHistorySummary7d": 40001}.get(source, 90001))
+    return {
+        "versionCode": CROP_RISK_FACTOR_PREDICTION_VERSION_CODE,
+        "modelFamilyCode": CROP_RISK_FACTOR_MODEL_FAMILY_CODE,
+        "modelTargetCode": CROP_RISK_FACTOR_MODEL_TARGET_CODE,
+        "windowDays": 7,
+        **groups,
+        "aggregateRisk": {
+            "score": aggregate_score,
+            "bandCode": _crop_risk_factor_band_code(aggregate_score),
+            "trendCode": aggregate_trend,
+            "confidenceScore": round(sum(float(item.get("confidenceScore") or 0.0) for _, _, item in all_items) / max(1, len(all_items)), 4),
+            "evidenceScore": round(sum(float(item.get("evidenceScore") or 0.0) for _, _, item in all_items) / max(1, len(all_items)), 4),
+        },
+        "highestRiskItem": {
+            "groupCode": group_codes[worst_group],
+            "riskCode": int(worst_item["riskCode"]),
+            "score": worst_item["score"],
+            "bandCode": worst_item["bandCode"],
+            "trendCode": worst_item["trendCode"],
+            "confidenceScore": worst_item["confidenceScore"],
+            "evidenceScore": worst_item["evidenceScore"],
+        },
+        "modelLimitationCodes": list(dict.fromkeys(limitations)),
+        "readOnly": True,
+        "executionAuthorityCode": 0,
+        "trainingAuthorityCode": 0,
+        "deploymentAuthorityCode": 0,
+    }
+
+
 def _crop_stage_confidence_score(stage_confidence) -> float:
     mapping = {"high": 0.9, "medium": 0.65, "low": 0.35}
     if isinstance(stage_confidence, (int, float)):
@@ -2690,6 +2889,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         featureSnapshot=featureSnapshot,
         stagePrediction7d=stagePrediction7d,
     )
+    riskFactorPrediction = _crop_risk_factor_prediction(featureSnapshot)
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
     predictionPersistence = _crop_prediction_persistence_metadata(latest=latest, season=season, validation_status="pending")
     pipelineSteps = _crop_stage_model_pipeline_steps(
@@ -2707,6 +2907,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "qualityDisorderSummary": qualityDisorderSummary,
         "stagePrediction7d": stagePrediction7d,
         "growthStatePrediction": growthStatePrediction,
+        "riskFactorPrediction": riskFactorPrediction,
         "predictionPersistence": predictionPersistence,
         "mlUpgradeReadiness": mlUpgradeReadiness,
     }
@@ -2731,6 +2932,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "modelValues": modelValues,
         "trainableBaseline": trainableBaseline,
         "growthStatePrediction": growthStatePrediction,
+        "riskFactorPrediction": riskFactorPrediction,
         "qualityDisorderSummary": qualityDisorderSummary,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,
