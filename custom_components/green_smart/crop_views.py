@@ -28,6 +28,10 @@ CROP_KMA_WEATHER_STRESS_FEATURES_VERSION = "crop_kma_weather_stress_features_v1"
 CROP_TRAINING_DATASET_EXPORT_VERSION = "crop_training_dataset_export_v1"
 CROP_OPERATOR_WORKFLOW_VERSION = "crop_operator_workflow_v1"
 CROP_STAGE_PREDICTION_MODEL_FAMILY = "hybrid_rule_score_v1"
+CROP_GROWTH_STATE_PREDICTION_VERSION_CODE = 1
+CROP_GROWTH_STATE_MODEL_FAMILY_CODE = 2101
+CROP_GROWTH_STATE_MODEL_TARGET_CODE = 2201
+CROP_GROWTH_STATE_AXIS_CODE = 1
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
     "tomato": {
@@ -1945,6 +1949,233 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
     return snapshot
 
 
+def _crop_growth_state_clamp(value: float, low: float = -1.0, high: float = 1.0) -> float:
+    try:
+        numeric = float(value)
+    except Exception:
+        numeric = 0.0
+    return round(max(low, min(high, numeric)), 4)
+
+
+def _crop_growth_state_direction_code(score: float) -> int:
+    if score is None:
+        return 9
+    score = _crop_growth_state_clamp(score)
+    if abs(score) < 0.1:
+        return 0
+    return 1 if score > 0 else -1
+
+
+def _crop_growth_state_magnitude_band_code(score: float | None) -> int:
+    if score is None:
+        return 9
+    magnitude = abs(_crop_growth_state_clamp(score))
+    if magnitude < 0.10:
+        return 0
+    if magnitude < 0.25:
+        return 1
+    if magnitude < 0.45:
+        return 2
+    if magnitude < 0.70:
+        return 3
+    if magnitude < 0.85:
+        return 4
+    return 5
+
+
+def _crop_growth_state_confidence_band_code(score: float | None) -> int:
+    if score is None:
+        return 9
+    score = max(0.0, min(1.0, float(score)))
+    if score < 0.30:
+        return 1
+    if score < 0.50:
+        return 2
+    if score < 0.70:
+        return 3
+    if score < 0.85:
+        return 4
+    return 5
+
+
+def _crop_growth_state_balance_payload(score: float, confidence: float, probability: float | None = None) -> dict:
+    score = _crop_growth_state_clamp(score)
+    confidence = round(max(0.0, min(1.0, float(confidence or 0.0))), 4)
+    payload = {
+        "balanceScore": score,
+        "balancePercent": int(round(score * 100)),
+        "directionCode": _crop_growth_state_direction_code(score),
+        "magnitudeScore": round(abs(score), 4),
+        "magnitudeBandCode": _crop_growth_state_magnitude_band_code(score),
+        "confidenceScore": confidence,
+        "confidenceBandCode": _crop_growth_state_confidence_band_code(confidence),
+    }
+    if probability is not None:
+        payload["probabilityScore"] = round(max(0.0, min(1.0, float(probability))), 4)
+    return payload
+
+
+def _crop_growth_state_numeric_signal(value: float, scale: float) -> float:
+    if not scale:
+        return 0.0
+    return _crop_growth_state_clamp(float(value or 0.0) / float(scale))
+
+
+def _crop_growth_state_growth_survey_signal(latest: dict, previous: dict, growthIndex: dict) -> tuple[float, float]:
+    if not latest:
+        return 0.0, 0.1
+    latest_height = _growth_metric_value(latest, "plantHeight", "height") or 0.0
+    prev_height = _growth_metric_value(previous, "plantHeight", "height") or latest_height
+    latest_leaf = _growth_metric_value(latest, "leafCount", "leafCount") or 0.0
+    prev_leaf = _growth_metric_value(previous, "leafCount", "leafCount") or latest_leaf
+    latest_truss = _growth_metric_value(latest, "trussCount", "truss") or 0.0
+    prev_truss = _growth_metric_value(previous, "trussCount", "truss") or latest_truss
+    latest_fruit = _growth_metric_value(latest, "fruitCount", "fruitCount") or 0.0
+    prev_fruit = _growth_metric_value(previous, "fruitCount", "fruitCount") or latest_fruit
+    height_delta_signal = _crop_growth_state_numeric_signal(latest_height - prev_height, 25.0)
+    leaf_delta_signal = _crop_growth_state_numeric_signal(latest_leaf - prev_leaf, 8.0)
+    truss_delta_signal = _crop_growth_state_numeric_signal(latest_truss - prev_truss, 3.0)
+    fruit_delta_signal = _crop_growth_state_numeric_signal(latest_fruit - prev_fruit, 12.0)
+    index_value = _crop_growth_state_numeric_signal(float((growthIndex or {}).get("value") or 0.0) - 50.0, 50.0)
+    score = (truss_delta_signal * 0.35) + (fruit_delta_signal * 0.25) + (index_value * 0.20) - (height_delta_signal * 0.12) - (leaf_delta_signal * 0.08)
+    confidence = 0.75 if previous else 0.45
+    return _crop_growth_state_clamp(score), confidence
+
+
+def _crop_growth_state_feature_driver_scores(featureSnapshot: dict) -> dict:
+    source_coverage = featureSnapshot.get("sourceCoverage") or {}
+    input_completeness = featureSnapshot.get("inputCompleteness") or {}
+    completeness = max(0.0, min(1.0, float(input_completeness.get("score") or 0.0))) if input_completeness else 0.35
+    kma = featureSnapshot.get("kmaWeatherStress7d") or {}
+    kma_features = kma.get("features") or {}
+    high_temp = float(kma_features.get("highTemperatureDays") or 0.0)
+    low_temp = float(kma_features.get("lowTemperatureDays") or 0.0)
+    rapid_temp = float(kma_features.get("rapidTemperatureChangeDays") or 0.0)
+    environment_score = _crop_growth_state_clamp((high_temp * 0.12) + (rapid_temp * 0.08) - (low_temp * 0.10))
+    environment_conf = 0.7 if source_coverage.get("kmaWeatherStress7d") == "ready" or kma else 0.25
+    irrigation = featureSnapshot.get("irrigationNutrientSummary7d") or {}
+    dryback = float(irrigation.get("dryBackStressScore") or irrigation.get("drybackStressScore") or 0.0)
+    ec_stress = float(irrigation.get("ecStressScore") or 0.0)
+    irrigation_score = _crop_growth_state_clamp((dryback * 0.55) + (ec_stress * 0.35))
+    irrigation_conf = 0.65 if irrigation else 0.25
+    operation = featureSnapshot.get("operationHistorySummary7d") or {}
+    operation_score = 0.0
+    if operation:
+        operation_score = _crop_growth_state_clamp(float(operation.get("generativePressureScore") or 0.0) - float(operation.get("vegetativeSupportScore") or 0.0))
+    operation_conf = 0.55 if operation else 0.2
+    pest_control = featureSnapshot.get("pestControlSummary7d") or {}
+    risk_score = _crop_growth_state_clamp(float(pest_control.get("stressScore") or 0.0) * 0.5 + float(pest_control.get("controlFreshnessRiskScore") or 0.0) * 0.25)
+    risk_conf = 0.55 if pest_control else 0.25
+    return {
+        "environmentSteering": (environment_score, environment_conf),
+        "irrigationNutrientSteering": (irrigation_score, irrigation_conf),
+        "operationSignal": (operation_score, operation_conf),
+        "riskSignal": (risk_score, risk_conf),
+        "completeness": completeness,
+    }
+
+
+def _crop_growth_state_stage_context_signal(stagePrediction7d: dict) -> tuple[float, float]:
+    predicted = (stagePrediction7d or {}).get("predictedStage7d") or {}
+    probability = float(predicted.get("probability") or (stagePrediction7d or {}).get("score", {}).get("probability") or 0.0)
+    current = (stagePrediction7d or {}).get("currentStage") or {}
+    progress = float(current.get("progressScore") or 0.0)
+    score = _crop_growth_state_clamp((probability - 0.5) * 0.6 + (progress - 0.5) * 0.2)
+    confidence = float(predicted.get("confidenceScore") or (stagePrediction7d or {}).get("score", {}).get("confidenceScore") or 0.35)
+    return score, max(0.0, min(1.0, confidence))
+
+
+def _crop_growth_state_driver_contributions(*, latest: dict, previous: dict, growthIndex: dict, featureSnapshot: dict, stagePrediction7d: dict) -> dict:
+    growth_score, growth_conf = _crop_growth_state_growth_survey_signal(latest, previous, growthIndex)
+    feature_scores = _crop_growth_state_feature_driver_scores(featureSnapshot)
+    stage_score, stage_conf = _crop_growth_state_stage_context_signal(stagePrediction7d)
+    specs = {
+        "growthSurveySignal": (101, growth_score, 0.35, growth_conf),
+        "environmentSteering": (201, feature_scores["environmentSteering"][0], 0.25, feature_scores["environmentSteering"][1]),
+        "irrigationNutrientSteering": (301, feature_scores["irrigationNutrientSteering"][0], 0.20, feature_scores["irrigationNutrientSteering"][1]),
+        "operationSignal": (401, feature_scores["operationSignal"][0], 0.10, feature_scores["operationSignal"][1]),
+        "riskSignal": (501, feature_scores["riskSignal"][0], 0.05, feature_scores["riskSignal"][1]),
+        "stageContextSignal": (601, stage_score, 0.05, stage_conf),
+    }
+    return {
+        name: {
+            "driverCode": code,
+            "directionCode": _crop_growth_state_direction_code(score),
+            "rawScore": round(_crop_growth_state_clamp(score), 4),
+            "weight": weight,
+            "contributionScore": round(_crop_growth_state_clamp(score) * weight, 4),
+            "confidenceScore": round(max(0.0, min(1.0, confidence)), 4),
+        }
+        for name, (code, score, weight, confidence) in specs.items()
+    }
+
+
+def _crop_growth_state_prediction(*, latest: dict, previous: dict, growthIndex: dict, featureSnapshot: dict, stagePrediction7d: dict) -> dict:
+    drivers = _crop_growth_state_driver_contributions(
+        latest=latest,
+        previous=previous,
+        growthIndex=growthIndex,
+        featureSnapshot=featureSnapshot,
+        stagePrediction7d=stagePrediction7d,
+    )
+    current_score = _crop_growth_state_clamp(sum(float(driver.get("contributionScore") or 0.0) for driver in drivers.values()))
+    stage_probability = float(((stagePrediction7d or {}).get("score") or {}).get("probability") or 0.5)
+    driver_pressure = _crop_growth_state_clamp(sum(abs(float(driver.get("contributionScore") or 0.0)) for driver in drivers.values()))
+    predicted_score_7d = _crop_growth_state_clamp(current_score + (_crop_growth_state_direction_code(current_score) or 0) * min(0.28, driver_pressure * 0.45 + max(0.0, stage_probability - 0.5) * 0.2))
+    movement_score_7d = _crop_growth_state_clamp(predicted_score_7d - current_score)
+    confidences = [float(driver.get("confidenceScore") or 0.0) * float(driver.get("weight") or 0.0) for driver in drivers.values()]
+    weighted_confidence = round(max(0.0, min(1.0, sum(confidences))), 4)
+    input_completeness = max(0.0, min(1.0, float((featureSnapshot.get("inputCompleteness") or {}).get("score") or 0.0))) if featureSnapshot else 0.35
+    confidence = round(max(0.0, min(1.0, weighted_confidence * 0.7 + input_completeness * 0.3)), 4)
+    prediction_confidence = round(max(0.0, min(1.0, confidence * 0.82)), 4)
+    volatility = round(max(0.0, min(1.0, driver_pressure)), 4)
+    stability = round(max(0.0, min(1.0, 1.0 - volatility * 0.55)), 4)
+    limitations = []
+    if input_completeness < 0.5:
+        limitations.append(1001)
+    source_coverage = featureSnapshot.get("sourceCoverage") or {}
+    missing_driver_codes = {
+        "environmentSummary7d": 20101,
+        "irrigationNutrientSummary7d": 30101,
+        "operationHistorySummary7d": 40101,
+        "pestControlSummary7d": 50101,
+    }
+    for source, code in missing_driver_codes.items():
+        if source_coverage.get(source) in {"missing", "stale"}:
+            limitations.append(code)
+    return {
+        "versionCode": CROP_GROWTH_STATE_PREDICTION_VERSION_CODE,
+        "modelFamilyCode": CROP_GROWTH_STATE_MODEL_FAMILY_CODE,
+        "modelTargetCode": CROP_GROWTH_STATE_MODEL_TARGET_CODE,
+        "axis": {
+            "axisCode": CROP_GROWTH_STATE_AXIS_CODE,
+            "negativePoleCode": -1,
+            "neutralCode": 0,
+            "positivePoleCode": 1,
+            "minScore": -1.0,
+            "maxScore": 1.0,
+        },
+        "currentBalance": _crop_growth_state_balance_payload(current_score, confidence),
+        "predictedBalance7d": _crop_growth_state_balance_payload(predicted_score_7d, prediction_confidence, probability=max(0.0, min(1.0, stage_probability))),
+        "balanceMovement": {
+            "movementScore7d": movement_score_7d,
+            "movementDirectionCode7d": _crop_growth_state_direction_code(movement_score_7d),
+            "movementMagnitudeBandCode7d": _crop_growth_state_magnitude_band_code(movement_score_7d),
+            "velocityScore": round(min(1.0, abs(movement_score_7d)), 4),
+            "accelerationScore": 0.0,
+            "stabilityScore": stability,
+            "volatilityScore": volatility,
+        },
+        "driverContributions": drivers,
+        "inputCompletenessScore": round(input_completeness, 4),
+        "modelLimitationCodes": list(dict.fromkeys(limitations)),
+        "readOnly": True,
+        "executionAuthorityCode": 0,
+        "trainingAuthorityCode": 0,
+        "deploymentAuthorityCode": 0,
+    }
+
+
 def _crop_stage_confidence_score(stage_confidence) -> float:
     mapping = {"high": 0.9, "medium": 0.65, "low": 0.35}
     if isinstance(stage_confidence, (int, float)):
@@ -2452,6 +2683,13 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     )
     qualityDisorderSummary = featureSnapshot.get("qualityDisorderSummary") or _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
     stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=growthIndex, growth_rows=growth_rows, featureSources=featureSnapshot)
+    growthStatePrediction = _crop_growth_state_prediction(
+        latest=latest,
+        previous=growth_rows[1] if len(growth_rows) > 1 else {},
+        growthIndex=growthIndex,
+        featureSnapshot=featureSnapshot,
+        stagePrediction7d=stagePrediction7d,
+    )
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
     predictionPersistence = _crop_prediction_persistence_metadata(latest=latest, season=season, validation_status="pending")
     pipelineSteps = _crop_stage_model_pipeline_steps(
@@ -2468,6 +2706,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "featureSnapshot": featureSnapshot,
         "qualityDisorderSummary": qualityDisorderSummary,
         "stagePrediction7d": stagePrediction7d,
+        "growthStatePrediction": growthStatePrediction,
         "predictionPersistence": predictionPersistence,
         "mlUpgradeReadiness": mlUpgradeReadiness,
     }
@@ -2491,6 +2730,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "growthIndex": growthIndex,
         "modelValues": modelValues,
         "trainableBaseline": trainableBaseline,
+        "growthStatePrediction": growthStatePrediction,
         "qualityDisorderSummary": qualityDisorderSummary,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,

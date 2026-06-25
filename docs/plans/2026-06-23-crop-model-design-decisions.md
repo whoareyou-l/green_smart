@@ -13,6 +13,53 @@ The crop model must be designed in this order:
 3. **리스크 예측** — predict disease, physiological disorder, quality degradation, stale-data, and safety/interlock risks.
 4. **수확량 예측** — predict harvest potential/yield after the above layers are reliable.
 
+## Confirmed decision 1A — corrected crop model responsibility architecture
+
+The earlier wording `생육상태 진단` as the second objective is superseded by the user-confirmed responsibility split documented in:
+
+```text
+docs/plans/2026-06-25-crop-model-responsibility-architecture.md
+```
+
+Corrected order:
+
+```text
+1. 생육단계 예측 모델
+   - current/7-day growth stage prediction.
+
+2. 생육상태 예측 모델
+   - predicts vegetative/generative balance direction from all data affecting that balance.
+   - core output is numeric-first: `balanceScore`, `directionCode`, `magnitudeBandCode`, numeric movement scores, `driverContributions`, numeric driver contributions, and confidence scores.
+   - string states such as `vegetative`, `generative`, `medium`, or `high` must not be used as core state values; any human label must be derived outside the model contract.
+   - does not diagnose slow/normal/recovery/deterioration.
+
+3. 위험요소 예측 모델
+   - predicts specific risk/stress factors as numeric scores and trends, not vague aggregate labels.
+   - examples: high/low temperature stress, rapid temperature-change stress, VPD stress, humidity stress, CO2 stress, light/DLI stress, EC/pH/dry-back/drain stress, pest/disease pressure, control freshness risk, operation risk.
+   - each item must expose clear diagnosis bands: `immediate_action`/바로 대처, `severe`/심각, `moderate`/중간, `weak`/약함, `very_weak`/매우 약함.
+
+4. 통합 작물 진단 모델
+   - interprets stage/state/risk predictions using crop, stage, environment, pest/disease/control history, and growth survey context.
+   - calculates fruit load, leaf load, assimilate production/demand, source-sink gap, and vegetative/generative transition logic.
+   - also diagnoses whether pest scouting/control review, environment-model review, irrigation/nutrient-model review, or crop work review signals are needed.
+   - for vegetative/generative transition support, it must be able to request both environment-model review (ADT/VPD/DIF/DLI/CO2/humidity) and irrigation/nutrient-model review (EC/pH/irrigation frequency/dry-back/drain balance), instead of assuming environment-only action.
+   - if production is lower than load and leaf load is excessive, emits action signals such as `lower_leaf_removal_review`.
+
+5. 조치 추천 모델
+   - converts diagnosis signals into work recommendations or model requests.
+   - does not directly calculate ADT/VPD/DIF/EC/pH targets.
+   - sends requests to future environment/irrigation/nutrient models, which calculate target candidates.
+```
+
+Boundary:
+
+- Prediction models create values.
+- Diagnosis model interprets values and source-sink balance.
+- Recommendation model creates work/model requests.
+- Environment/irrigation/nutrient models calculate target candidates.
+- Safety/Interlock/Approval decides whether target candidates can execute.
+- Execution layer executes only approved commands.
+
 ## Confirmed decision 2 — growth stage prediction horizon
 
 The first model target, **생육단계 예측**, uses a **1-week prediction horizon**.
