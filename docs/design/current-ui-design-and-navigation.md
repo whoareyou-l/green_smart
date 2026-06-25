@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.14`
+> 기준 버전: `v1.10.15`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -1705,6 +1705,7 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 - v1.10.12 Device mapping moved to Settings: 환경 제어 visible 하위탭에서 `장치 매핑·상태`를 제거하고, 환경 설정 하위탭으로 `장치 매핑·상태`를 이동한다. 기존 entity 상태 요약, entity 매핑 추가/삭제/새로고침, 매핑 검증은 그대로 유지하되 환경 설정 화면의 구역 선택 scope 안에서 관리한다. 환경 제어에는 `data-env-legacy-tab="devices"` hidden marker만 남겨 호환성을 유지한다.
 - v1.10.13 Crop Stage Model validation loop hardening: UI/DOM 확장은 중단하고 작물 상위 모델의 1~5단계(생육단계 예측 모델, 작물별 stage rule, feature snapshot, 예측 row 저장, 실제 조사 기반 validation loop)만 보강한다. 7일 예측은 정확히 7일 차 생육조사로만 검증하며, 정확한 7일 차 조사 데이터가 없으면 `validation_needs_review`와 `exact_7_day_survey_missing`로 저장한다. 생육상태 진단, 리스크 예측, 수확량 예측 본체는 사전 계획 전까지 작업하지 않는다.
 - v1.10.14 Ordered Crop Stage Model steps: 사용자가 요청한 작업 순서대로 1단계 생육단계 예측 모델 → 2단계 작물별 stage rule → 3단계 feature snapshot → 4단계 prediction row 저장 → 5단계 정확히 7일 차 validation loop를 독립 계약으로 잠근다. `trainableBaseline.pipelineSteps`는 1~5 순서를 그대로 노출하고, 5단계는 nearest survey fallback 금지 및 `exact_7_day_survey_missing` review 정책을 유지한다. 생육상태 진단/리스크 예측/수확량 예측 본체는 이 릴리스 범위가 아니다.
+- v1.10.15 Sequential Crop Stage Model implementation: 1~5단계를 묶지 않고 각 단계별로 설계→구현→검증을 완료한다. 1단계는 `stagePrediction7d`에 모델 메타데이터/입력/결정/한계/read-only boundary를 추가한다. 2단계는 tomato=G-Index, lettuce=L-Index stage rule 및 stage sequence metadata를 보강하고 unknown crop의 tomato fallback을 차단한다. 3단계는 feature snapshot의 required source groups, coverage, limitations, no-authority boundary를 명시한다. 4단계는 `predictionPersistence`와 sourceSurveyId 없는 orphan row 저장 차단을 추가한다. 5단계는 success/review validation row에 exact-7-day validation policy metadata를 저장한다.
 - P1 rendered-flow QA v1.10.9: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 AI-first control tab alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 Environment zone card header cleanup: current v1.10.9 compatibility marker retained after settings page shell alignment.

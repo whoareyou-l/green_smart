@@ -1281,7 +1281,9 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
     calibrations = calibration_response.get("calibrations") or []
     days_after_transplant = _days_since(season.get("plantDate"))
     selected = _stage_diagnosis_select_calibration(crop_type, calibrations, days_after_transplant, latest, control_rows) or {}
-    latest_index = _growth_g_index(latest) if latest else 0.0
+    stage_sequence = _crop_stage_sequence(crop_type, calibrations)
+    stage_order, previous_stage_id, next_stage_id = _crop_stage_sequence_neighbors(selected.get("stageId"), stage_sequence)
+    latest_index = float((_crop_growth_index(latest) if latest else {}).get("value") or 0.0)
     threshold = selected.get("threshold") or {}
     boundary = selected.get("boundary") or {}
     evidence_status = _stage_diagnosis_entry_evidence_status(latest, selected) if selected else {"required": [], "available": [], "missing": []}
@@ -1303,6 +1305,12 @@ def _crop_stage_diagnosis_from_parts(season_id: int, season: dict, growth_rows: 
         "threshold": threshold,
         "boundary": boundary,
         "source": selected.get("source") or {},
+        "stageRule": selected,
+        "stageRuleSource": "default_or_db_calibration" if selected else "none",
+        "stageSequence": stage_sequence,
+        "stageOrder": stage_order,
+        "previousStageId": previous_stage_id,
+        "nextStageId": next_stage_id,
         "daysAfterTransplant": days_after_transplant,
         "calibrationVersion": calibration_response.get("version"),
     }
@@ -1852,13 +1860,56 @@ async def _persist_crop_model_feature_snapshot(hass, *, season_id: int, season: 
     ))
 
 
+def _crop_feature_source_status(key: str, value, *, growth_count: int | None = None) -> str:
+    if key == "growthSurvey":
+        return "ready" if int(growth_count or 0) > 0 else "missing"
+    if isinstance(value, dict):
+        explicit = value.get("sourceStatus") or value.get("status")
+        if explicit:
+            return str(explicit)
+        return "ready" if bool(value) else "missing"
+    return "ready" if value else "missing"
+
+
+def _crop_feature_source_coverage(*, required_groups: list[str], snapshot: dict, growth_count: int, input_completeness: dict) -> tuple[dict, list[str]]:
+    coverage = {}
+    limitations = []
+    for group in required_groups:
+        status = _crop_feature_source_status(group, snapshot.get(group), growth_count=growth_count)
+        coverage[group] = status
+        if status in {"missing", "stale"}:
+            limitations.append(f"{group}:{status}")
+    raw_score = input_completeness.get("score")
+    try:
+        completeness_score = float(raw_score) if raw_score is not None else None
+    except Exception:
+        completeness_score = None
+    if completeness_score is not None and completeness_score < 0.5:
+        limitations.append("input_completeness_low")
+    return coverage, list(dict.fromkeys(limitations))
+
+
 def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], pestRisk: dict, cropSafety: dict | None, cropInterlock: dict | None, growthIndex: dict, weekly_growth: float, control_rows: list[dict], featureSources: dict | None = None) -> dict:
     latest = growth_rows[0] if growth_rows else {}
     previous = growth_rows[1] if len(growth_rows) > 1 else {}
     qualityDisorderSummary = _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
     safety_interlock = (featureSources or {}).get("safetyInterlockSummary") or {"cropSafety": cropSafety or {}, "cropInterlock": cropInterlock or {}}
-    return {
+    required_groups = [
+        "growthSurvey",
+        "environmentSummary7d",
+        "kmaWeatherStress7d",
+        "irrigationNutrientSummary7d",
+        "pestControlSummary7d",
+        "operationHistorySummary7d",
+        "safetyInterlockSummary",
+    ]
+    snapshot = {
         "version": CROP_TRAINABLE_BASELINE_VERSION,
+        "featureSnapshotStage": "step_3_feature_snapshot",
+        "readOnly": True,
+        "executionAuthority": "none",
+        "trainingAuthority": "none",
+        "deploymentAuthority": "none",
         "cropType": season.get("cropType") or latest.get("cropType") or "other",
         "sourceTables": ["growth_surveys", "sensor_readings", "pest_surveys", "control_records", "control_pesticides", "irrigation_drain_feedback", "irrigation_control_logs", "crop_interlock_approvals", "audit_logs"],
         "featureSources": featureSources or {},
@@ -1882,6 +1933,16 @@ def _crop_trainable_feature_snapshot(*, season: dict, growth_rows: list[dict], p
         "inputCompleteness": (featureSources or {}).get("inputCompleteness") or {},
         "sourceStatus": (featureSources or {}).get("sourceStatus") or {},
     }
+    source_coverage, limitations = _crop_feature_source_coverage(
+        required_groups=required_groups,
+        snapshot=snapshot,
+        growth_count=len(growth_rows),
+        input_completeness=snapshot.get("inputCompleteness") or {},
+    )
+    snapshot["requiredSourceGroups"] = required_groups
+    snapshot["sourceCoverage"] = source_coverage
+    snapshot["featureSnapshotLimitations"] = limitations
+    return snapshot
 
 
 def _crop_stage_confidence_score(stage_confidence) -> float:
@@ -1941,10 +2002,32 @@ def _crop_stage_prediction_7d(*, stageDiagnosis: dict | None, growthIndex: dict,
         confidenceScore = round(max(0.0, confidenceScore - min(0.25, len(set(missingInputs)) * 0.03)), 2)
     explanation = [f"{key}={value}" for key, value in scoreComponents.items()]
     explanation.extend(kmaWeatherStress.get("weatherStressReasons") or [])
+    unique_missing = list(dict.fromkeys(missingInputs))
+    transition_threshold = 0.65
+    selected_action = "mark_next_stage_candidate" if probability >= transition_threshold else "keep_current_stage"
+    predicted_stage_id = current_stage if selected_action == "keep_current_stage" else f"{current_stage}_next_candidate"
+    predicted_stage_label = current_label if selected_action == "keep_current_stage" else f"{current_label} 이후 단계 후보"
+    input_completeness = (featureSources or {}).get("inputCompleteness") or {}
+    source_status = input_completeness.get("sourceStatus") or (featureSources or {}).get("sourceStatus") or {}
+    model_limitations = []
+    if unique_missing:
+        model_limitations.append("missing_inputs:" + ",".join(unique_missing))
+    if (kmaWeatherStress.get("sourceStatus") or "missing") in {"missing", "stale"}:
+        model_limitations.append(f"kma_weather_stress_{kmaWeatherStress.get('sourceStatus') or 'missing'}")
+    if current_stage == "unknown":
+        model_limitations.append("current_stage_unknown")
+    if survey_count < 3:
+        model_limitations.append("weekly_survey_history_short")
     return {
         "version": CROP_STAGE_PREDICTION_SCORE_VERSION,
         "modelFamily": CROP_STAGE_PREDICTION_MODEL_FAMILY,
         "modelTarget": "growth_stage_prediction_7d",
+        "modelStage": "step_1_stage_prediction_model",
+        "predictionHorizonDays": 7,
+        "readOnly": True,
+        "executionAuthority": "none",
+        "trainingAuthority": "none",
+        "deploymentAuthority": "none",
         "score": {"scoreComponents": scoreComponents, "rawScore": rawScore, "probability": probability, "confidenceScore": confidenceScore, "confidencePercent": int(round(confidenceScore * 100)), "explanation": explanation},
         "currentStage": {
             "stageId": current_stage,
@@ -1954,20 +2037,37 @@ def _crop_stage_prediction_7d(*, stageDiagnosis: dict | None, growthIndex: dict,
             "progressScore": scoreComponents.get("growthIndexBandScore"),
         },
         "predictedStage7d": {
-            "stageId": current_stage if probability < 0.65 else f"{current_stage}_next_candidate",
-            "stageLabel": current_label if probability < 0.65 else f"{current_label} 이후 단계 후보",
+            "stageId": predicted_stage_id,
+            "stageLabel": predicted_stage_label,
             "probability": probability,
             "confidenceScore": confidenceScore,
             "confidencePercent": int(round(confidenceScore * 100)),
         },
         "transitionWindow": {
-            "earliestDay": 4 if probability >= 0.65 else 0,
-            "latestDay": 6 if probability >= 0.65 else 7,
+            "earliestDay": 4 if probability >= transition_threshold else 0,
+            "latestDay": 6 if probability >= transition_threshold else 7,
             "probability": probability,
-            "label": "4~6일 내 전환 가능성" if probability >= 0.65 else "7일 내 전환 가능성 낮음/관찰 필요",
+            "label": "4~6일 내 전환 가능성" if probability >= transition_threshold else "7일 내 전환 가능성 낮음/관찰 필요",
         },
+        "predictionInputs": {
+            "surveyCount": survey_count,
+            "stageDiagnosis": diagnosis,
+            "growthIndex": growthIndex,
+            "inputCompleteness": input_completeness,
+            "sourceStatus": source_status,
+            "kmaWeatherStress7d": kmaWeatherStress,
+        },
+        "modelDecision": {
+            "basis": CROP_STAGE_PREDICTION_MODEL_FAMILY,
+            "selectedAction": selected_action,
+            "currentStageId": current_stage,
+            "predictedStageId": predicted_stage_id,
+            "thresholds": {"transitionCandidateProbability": transition_threshold},
+            "nextStageSequenceSource": "step_2_crop_specific_stage_rules_not_applied_here",
+        },
+        "modelLimitations": model_limitations,
         "stageEvidence": {"stageDiagnosis": diagnosis, "growthIndex": growthIndex, "surveyCount": survey_count, "kmaWeatherStress": kmaWeatherStress, "stagePredictionScore": {"scoreComponents": scoreComponents, "rawScore": rawScore}},
-        "missingInputs": list(dict.fromkeys(missingInputs)),
+        "missingInputs": unique_missing,
         "nextSurveyNeeded": list(diagnosis.get("missingEvidence") or []) or ["다음 주 생육조사", "G/L-Index 핵심 항목"],
         "modelReason": "hybrid_rule_score_v1 transparent baseline: score components, numeric confidence, and KMA 7-day weather-stress inputs drive the 7-day stage candidate.",
     }
@@ -2047,17 +2147,41 @@ def _crop_stage_model_pipeline_steps(*, stageDiagnosis: dict, growthIndex: dict,
     ]
 
 
-async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season: dict, cropModel: dict, featureSnapshotId: int | None = None, validation_status: str = "pending") -> int | None:
-    prediction = cropModel.get("trainableBaseline", {}).get("stagePrediction7d") or {}
-    feature_snapshot = cropModel.get("trainableBaseline", {}).get("featureSnapshot") or {}
-    readiness = cropModel.get("trainableBaseline", {}).get("mlUpgradeReadiness") or {}
-    latest = cropModel.get("latestMetrics") or {}
+def _crop_prediction_persistence_metadata(*, latest: dict, season: dict, featureSnapshotId: int | None = None, validation_status: str = "pending") -> dict:
     prediction_date = latest.get("date") or date.today().isoformat()
     try:
         predicted_for_date = (datetime.fromisoformat(str(prediction_date)).date() + timedelta(days=7)).isoformat()
     except Exception:
         predicted_for_date = (date.today() + timedelta(days=7)).isoformat()
-    if not prediction:
+    source_survey_id = latest.get("id")
+    return {
+        "step": 4,
+        "status": "ready" if source_survey_id is not None else "review",
+        "outputTable": "crop_model_training_snapshots",
+        "sourceSurveyId": source_survey_id,
+        "featureSnapshotId": featureSnapshotId,
+        "zoneId": season.get("zoneId"),
+        "cropType": season.get("cropType") or "other",
+        "modelFamily": CROP_STAGE_PREDICTION_MODEL_FAMILY,
+        "targetHorizonDays": 7,
+        "predictionDate": prediction_date,
+        "predictedForDate": predicted_for_date,
+        "initialValidationStatus": validation_status,
+        "executionAuthority": "none",
+        "trainingAuthority": "none",
+        "deploymentAuthority": "none",
+    }
+
+
+async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season: dict, cropModel: dict, featureSnapshotId: int | None = None, validation_status: str = "pending") -> int | None:
+    prediction = cropModel.get("trainableBaseline", {}).get("stagePrediction7d") or {}
+    feature_snapshot = cropModel.get("trainableBaseline", {}).get("featureSnapshot") or {}
+    readiness = cropModel.get("trainableBaseline", {}).get("mlUpgradeReadiness") or {}
+    latest = cropModel.get("latestMetrics") or {}
+    persistence = _crop_prediction_persistence_metadata(latest=latest, season=season, featureSnapshotId=featureSnapshotId, validation_status=validation_status)
+    prediction_date = persistence["predictionDate"]
+    predicted_for_date = persistence["predictedForDate"]
+    if not prediction or persistence.get("sourceSurveyId") is None:
         return None
     return await execute(
         hass,
@@ -2076,7 +2200,7 @@ async def _persist_crop_model_training_snapshot(hass, *, season_id: int, season:
             season.get("cropType") or "other",
             CROP_STAGE_PREDICTION_MODEL_FAMILY,
             7,
-            latest.get("id"),
+            persistence.get("sourceSurveyId"),
             prediction_date,
             predicted_for_date,
             json.dumps(feature_snapshot, ensure_ascii=False, default=str),
@@ -2134,6 +2258,18 @@ def _prediction_stage_match(prediction: dict, actualStage: dict) -> dict:
     }
 
 
+def _crop_prediction_validation_policy_metadata() -> dict:
+    return {
+        "cadence": "weekly_exact_7_day_survey",
+        "nearestSurveyFallback": False,
+        "missingExactSurveyStatus": "validation_needs_review",
+        "reviewReason": "exact_7_day_survey_missing",
+        "executionAuthority": "none",
+        "trainingAuthority": "none",
+        "deploymentAuthority": "none",
+    }
+
+
 async def _validate_pending_crop_training_snapshots(hass, *, season_id: int) -> dict:
     season = await fetchone(hass, """
         SELECT id, crop_type AS cropType, variety, method, plant_date AS plantDate,
@@ -2174,8 +2310,11 @@ async def _validate_pending_crop_training_snapshots(hass, *, season_id: int) -> 
         except Exception:
             prediction = {}
         if not actual_row:
+            validation_policy = _crop_prediction_validation_policy_metadata()
             actualValidation = {
                 "version": CROP_PREDICTION_VALIDATION_VERSION,
+                "validationStage": "step_5_exact_7_day_validation_loop",
+                "validationPolicy": validation_policy,
                 "snapshotId": row.get("id"),
                 "sourceSurveyId": row.get("sourceSurveyId"),
                 "actualSurveyId": None,
@@ -2204,8 +2343,11 @@ async def _validate_pending_crop_training_snapshots(hass, *, season_id: int) -> 
             continue
         actualStage = _actual_stage_label_from_growth_survey(season, actual_row, growth_rows, control_rows)
         match = _prediction_stage_match(prediction, actualStage)
+        validation_policy = _crop_prediction_validation_policy_metadata()
         actualValidation = {
             "version": CROP_PREDICTION_VALIDATION_VERSION,
+            "validationStage": "step_5_exact_7_day_validation_loop",
+            "validationPolicy": validation_policy,
             "snapshotId": row.get("id"),
             "sourceSurveyId": row.get("sourceSurveyId"),
             "actualSurveyId": actual_row.get("id"),
@@ -2311,6 +2453,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
     qualityDisorderSummary = featureSnapshot.get("qualityDisorderSummary") or _crop_quality_disorder_metrics_from_growth(str(season.get("cropType") or latest.get("cropType") or "other"), latest)
     stagePrediction7d = _crop_stage_prediction_7d(stageDiagnosis=stageDiagnosis, growthIndex=growthIndex, growth_rows=growth_rows, featureSources=featureSnapshot)
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
+    predictionPersistence = _crop_prediction_persistence_metadata(latest=latest, season=season, validation_status="pending")
     pipelineSteps = _crop_stage_model_pipeline_steps(
         stageDiagnosis=stageDiagnosis,
         growthIndex=growthIndex,
@@ -2325,6 +2468,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "featureSnapshot": featureSnapshot,
         "qualityDisorderSummary": qualityDisorderSummary,
         "stagePrediction7d": stagePrediction7d,
+        "predictionPersistence": predictionPersistence,
         "mlUpgradeReadiness": mlUpgradeReadiness,
     }
     trainableBaseline["qualityDisorderSummary"] = qualityDisorderSummary
@@ -3577,10 +3721,30 @@ def _stage_diagnosis_entry_evidence_status(latest: dict, calibration: dict) -> d
     return {"required": required, "available": available, "missing": missing}
 
 
+def _crop_stage_sequence(crop_type: str, calibrations: list[dict]) -> list[str]:
+    crop = (crop_type or "").lower()
+    return [
+        str(item.get("stageId"))
+        for item in calibrations
+        if str(item.get("cropType") or "").lower() == crop and item.get("stageId")
+    ]
+
+
+def _crop_stage_sequence_neighbors(stage_id: str | None, sequence: list[str]) -> tuple[int | None, str | None, str | None]:
+    if not stage_id or stage_id not in sequence:
+        return None, None, None
+    idx = sequence.index(stage_id)
+    previous_stage = sequence[idx - 1] if idx > 0 else None
+    next_stage = sequence[idx + 1] if idx < len(sequence) - 1 else None
+    return idx, previous_stage, next_stage
+
+
 def _stage_diagnosis_select_calibration(crop_type: str, calibrations: list[dict], days_after_transplant: int | None, latest: dict, control_rows: list[dict]) -> dict | None:
     by_id = {item.get("stageId"): item for item in calibrations}
     dat = days_after_transplant if days_after_transplant is not None else -1
     crop = (crop_type or "").lower()
+    if crop not in {"tomato", "lettuce"}:
+        return None
     if crop == "lettuce":
         leaf_length = _stage_diagnosis_metric(latest, "leafLength")
         leaf_width = _stage_diagnosis_metric(latest, "leafWidth")
@@ -3644,7 +3808,9 @@ async def _crop_stage_diagnosis_response(hass, season_id: int, *, farm_id: int =
     calibrations = calibration_response.get("calibrations") or []
     days_after_transplant = _days_since(season.get("plantDate"))
     selected = _stage_diagnosis_select_calibration(crop_type, calibrations, days_after_transplant, latest, control_rows) or {}
-    latest_index = _growth_g_index(latest) if latest else 0.0
+    stage_sequence = _crop_stage_sequence(crop_type, calibrations)
+    stage_order, previous_stage_id, next_stage_id = _crop_stage_sequence_neighbors(selected.get("stageId"), stage_sequence)
+    latest_index = float((_crop_growth_index(latest) if latest else {}).get("value") or 0.0)
     threshold = selected.get("threshold") or {}
     boundary = selected.get("boundary") or {}
     evidence_status = _stage_diagnosis_entry_evidence_status(latest, selected) if selected else {"required": [], "available": [], "missing": []}
@@ -3677,6 +3843,12 @@ async def _crop_stage_diagnosis_response(hass, season_id: int, *, farm_id: int =
             "threshold": threshold,
             "boundary": boundary,
             "source": selected.get("source") or {},
+            "stageRule": selected,
+            "stageRuleSource": "default_or_db_calibration" if selected else "none",
+            "stageSequence": stage_sequence,
+            "stageOrder": stage_order,
+            "previousStageId": previous_stage_id,
+            "nextStageId": next_stage_id,
         },
         "sourceTables": ["crop_seasons", "growth_surveys", "control_records", "control_pesticides", "crop_stage_calibrations"],
     }
