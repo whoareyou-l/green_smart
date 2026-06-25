@@ -30,22 +30,31 @@ def test_v1988_ai_main_area_order_is_crop_status_interlock_status_model_status_t
     assert [card.index(marker) for marker in markers] == sorted(card.index(marker) for marker in markers)
 
     primary = _section(card, "data-crop-ai-primary-summary", "data-crop-ai-interlock-summary")
-    assert "data-crop-ai-primary-gl-index" in primary
-    assert "data-crop-ai-primary-yield-prediction" in primary
-    assert "data-crop-ai-primary-pest-risk" in primary
-    assert "G/L-Index" in primary or "G-Index" in primary
-    assert "수확량 예측" in primary
-    assert "병해 위험도" in primary
-    for model_status_text in ("입력 상태", "생육단계/예측", "ML 준비도"):
+    for marker in (
+        "data-crop-ai-primary-gl-index",
+        "data-crop-ai-primary-yield-prediction",
+        "data-crop-ai-primary-pest-risk",
+        "data-crop-ai-summary-stage",
+        "data-crop-ai-summary-growth-state",
+        "data-crop-ai-summary-environment-risk",
+        "data-crop-ai-summary-irrigation-risk",
+        "data-crop-ai-summary-pest-risk",
+    ):
+        assert marker in primary
+    for text in ("작물단계", "작물상태", "환경리스크", "관수리스크", "병충해리스크"):
+        assert text in primary
+    for model_status_text in ("입력 상태", "ML 준비도"):
         assert model_status_text not in primary
 
     interlock = _section(card, "data-crop-ai-interlock-summary", "data-crop-ai-model-status-summary")
-    assert "작물 인터록" in interlock or "인터록 상태 요약" in interlock
+    assert "안전/인터록 상태 요약" in interlock
+    assert "안전상태" in interlock
+    assert "오류건수" in interlock
     assert "data-crop-interlock-card" in interlock
     assert "data-crop-interlock-approval-gate" in interlock
 
     model_status = _section(card, "data-crop-ai-model-status-summary", "data-crop-ai-advanced-details")
-    for text in ("입력 상태", "생육단계/예측", "리스크", "ML 준비도"):
+    for text in ("입력 상태", "ML 준비도", "상세 보기"):
         assert text in model_status
 
 
@@ -72,8 +81,8 @@ def test_v1988_ai_versions_and_docs_record_model_hierarchy():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.20"' in manifest
-    assert 'const VERSION = "1.10.20"' in panel
+    assert '"version": "1.10.21"' in manifest
+    assert 'const VERSION = "1.10.21"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI Strategy model hierarchy restructure" in docs
     for marker in (
