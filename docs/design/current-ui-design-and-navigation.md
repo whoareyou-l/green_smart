@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.17`
+> 기준 버전: `v1.10.18`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -1708,6 +1708,7 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 - v1.10.15 Sequential Crop Stage Model implementation: 1~5단계를 묶지 않고 각 단계별로 설계→구현→검증을 완료한다. 1단계는 `stagePrediction7d`에 모델 메타데이터/입력/결정/한계/read-only boundary를 추가한다. 2단계는 tomato=G-Index, lettuce=L-Index stage rule 및 stage sequence metadata를 보강하고 unknown crop의 tomato fallback을 차단한다. 3단계는 feature snapshot의 required source groups, coverage, limitations, no-authority boundary를 명시한다. 4단계는 `predictionPersistence`와 sourceSurveyId 없는 orphan row 저장 차단을 추가한다. 5단계는 success/review validation row에 exact-7-day validation policy metadata를 저장한다.
 - v1.10.16 Growth State Prediction Model: AI 전략의 생육상태 수치 예측 카드가 `growthStatePrediction`을 표시한다. core state는 문자열 없이 `balanceScore`, `directionCode`, `magnitudeBandCode`, `predictedBalance7d`, `movementScore7d`, `driverContributions`, `confidenceScore`로만 표시하고, UI는 `data-crop-growth-state-numeric-card`, `data-crop-growth-state-numeric-evidence`, `data-crop-growth-state-driver-contributions` marker를 제공한다. 기존 `data-crop-ai-evidence-card="reproductive-vegetative"` 및 yield marker는 호환 alias로 유지한다.
 - v1.10.17 Risk Factor Prediction Model: AI 전략의 위험요소 수치 카드가 `riskFactorPrediction`을 표시한다. core risk는 `score`, `bandCode`, `trendCode`, `riskCode`, `confidenceScore`, `evidenceScore`로만 표시하고, UI는 `data-crop-risk-factor-numeric-card`, `data-crop-risk-factor-numeric-evidence`, `data-crop-risk-factor-item` marker를 제공한다. 이 카드는 read-only evidence이며 방제/환경/관수 실행 버튼을 만들지 않는다.
+- v1.10.18 Integrated Crop Diagnosis Model: AI 전략의 통합진단 수치 카드가 `integratedCropDiagnosis`을 표시한다. UI는 `data-crop-integrated-diagnosis-card`, `data-crop-integrated-diagnosis-evidence`, `data-crop-diagnosis-source-sink-gap`, `data-crop-diagnosis-transition-need-code`, `data-crop-diagnosis-review-signal` marker를 제공한다. 이 카드는 read-only diagnosis evidence이며 setpoint/work-order/execution 버튼을 만들지 않는다.
 - P1 rendered-flow QA v1.10.9: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 AI-first control tab alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 Environment zone card header cleanup: current v1.10.9 compatibility marker retained after settings page shell alignment.

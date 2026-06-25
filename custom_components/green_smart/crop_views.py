@@ -35,6 +35,9 @@ CROP_GROWTH_STATE_AXIS_CODE = 1
 CROP_RISK_FACTOR_PREDICTION_VERSION_CODE = 1
 CROP_RISK_FACTOR_MODEL_FAMILY_CODE = 3101
 CROP_RISK_FACTOR_MODEL_TARGET_CODE = 3201
+CROP_INTEGRATED_DIAGNOSIS_VERSION_CODE = 1
+CROP_INTEGRATED_DIAGNOSIS_MODEL_FAMILY_CODE = 4101
+CROP_INTEGRATED_DIAGNOSIS_MODEL_TARGET_CODE = 4201
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
     "tomato": {
@@ -2375,6 +2378,174 @@ def _crop_risk_factor_prediction(featureSnapshot: dict) -> dict:
     }
 
 
+def _crop_integrated_signal_code(score: float | None) -> int:
+    if score is None:
+        return 9
+    score = max(0.0, min(1.0, float(score)))
+    if score >= 0.85:
+        return 3
+    if score >= 0.70:
+        return 2
+    if score >= 0.45:
+        return 1
+    return 0
+
+
+def _crop_integrated_severity_code(score: float | None) -> int:
+    if score is None:
+        return 9
+    score = abs(max(-1.0, min(1.0, float(score))))
+    if score < 0.10:
+        return 0
+    if score < 0.20:
+        return 1
+    if score < 0.45:
+        return 2
+    if score < 0.70:
+        return 3
+    if score < 0.85:
+        return 4
+    return 5
+
+
+def _crop_integrated_direction_code(score: float | None) -> int:
+    if score is None:
+        return 9
+    score = float(score)
+    if score > 0.05:
+        return 1
+    if score < -0.05:
+        return -1
+    return 0
+
+
+def _crop_integrated_score(value: float | None, low: float = -1.0, high: float = 1.0) -> float:
+    try:
+        numeric = float(value or 0.0)
+    except Exception:
+        numeric = 0.0
+    return round(max(low, min(high, numeric)), 4)
+
+
+def _crop_integrated_crop_diagnosis(*, latest: dict, growthStatePrediction: dict, riskFactorPrediction: dict, stagePrediction7d: dict, featureSnapshot: dict) -> dict:
+    latest = latest or {}
+    growthStatePrediction = growthStatePrediction or {}
+    riskFactorPrediction = riskFactorPrediction or {}
+    stagePrediction7d = stagePrediction7d or {}
+    featureSnapshot = featureSnapshot or {}
+    current_balance = growthStatePrediction.get("currentBalance") or {}
+    predicted_balance = growthStatePrediction.get("predictedBalance7d") or {}
+    movement = growthStatePrediction.get("balanceMovement") or {}
+    risk_aggregate = riskFactorPrediction.get("aggregateRisk") or {}
+    highest_risk = riskFactorPrediction.get("highestRiskItem") or {}
+    def metric(*keys, default=0.0):
+        for key in keys:
+            value = latest.get(key)
+            if value is not None:
+                try:
+                    return float(value)
+                except Exception:
+                    pass
+        return default
+    fruit_count = metric("fruitCount", "fruit_count", default=0.0)
+    truss = metric("truss", "flowerClusterNo", "trussCount", default=0.0)
+    leaf_count = metric("leafCount", "leaf_count", default=0.0)
+    height = metric("height", "plantHeight", default=0.0)
+    stem = metric("stemDiameter", "stemDia", default=0.0)
+    balance_score = _crop_integrated_score(current_balance.get("balanceScore"))
+    predicted_score = _crop_integrated_score(predicted_balance.get("balanceScore"))
+    movement_score = _crop_integrated_score(movement.get("movementScore7d"))
+    aggregate_risk_score = _crop_integrated_score(risk_aggregate.get("score"), 0.0, 1.0)
+    risk_band = int(risk_aggregate.get("bandCode") or 9)
+    fruit_load = _crop_integrated_score((fruit_count / 30.0) + (truss / 10.0) + max(0.0, balance_score) * 0.25, 0.0, 1.0)
+    leaf_load = _crop_integrated_score((leaf_count / 35.0) + (height / 260.0) + (stem / 25.0), 0.0, 1.0)
+    load_gap = _crop_integrated_score(fruit_load - leaf_load)
+    environment_stress = riskFactorPrediction.get("environmentStress") or {}
+    irrigation_stress = riskFactorPrediction.get("irrigationNutrientStress") or {}
+    pest_stress = riskFactorPrediction.get("pestDiseaseRisk") or {}
+    env_score = max([float(item.get("score") or 0.0) for item in environment_stress.values()] or [0.0])
+    irr_score = max([float(item.get("score") or 0.0) for item in irrigation_stress.values()] or [0.0])
+    pest_score = max([float(item.get("score") or 0.0) for item in pest_stress.values()] or [0.0])
+    source_capacity = _crop_integrated_score((leaf_load * 0.45) + max(0.0, 1.0 - env_score) * 0.30 + max(0.0, 1.0 - irr_score) * 0.25, 0.0, 1.0)
+    sink_demand = _crop_integrated_score((fruit_load * 0.55) + abs(predicted_score) * 0.25 + aggregate_risk_score * 0.20, 0.0, 1.0)
+    source_sink_gap = _crop_integrated_score(source_capacity - sink_demand)
+    transition_pressure = _crop_integrated_score(abs(predicted_score) * 0.45 + abs(movement_score) * 0.30 + aggregate_risk_score * 0.25, 0.0, 1.0)
+    env_review = max(_crop_integrated_signal_code(env_score), _crop_integrated_signal_code(transition_pressure if abs(predicted_score) >= 0.45 else 0.0))
+    irr_review = max(_crop_integrated_signal_code(irr_score), _crop_integrated_signal_code(transition_pressure if abs(predicted_score) >= 0.45 else 0.0))
+    pest_review = _crop_integrated_signal_code(pest_score)
+    fruit_adjust = _crop_integrated_signal_code(max(0.0, -source_sink_gap) if fruit_load >= leaf_load else 0.0)
+    lower_leaf = _crop_integrated_signal_code(max(0.0, leaf_load - fruit_load) if leaf_load > 0.70 else 0.0)
+    crop_work = max(lower_leaf, fruit_adjust)
+    readiness = featureSnapshot.get("inputCompleteness") or {}
+    completeness = _crop_integrated_score(readiness.get("score"), 0.0, 1.0)
+    limitations = []
+    if not growthStatePrediction:
+        limitations.append(21001)
+    if not riskFactorPrediction:
+        limitations.append(31001)
+    if completeness < 0.5:
+        limitations.append(42001)
+    confidence = _crop_integrated_score((float(current_balance.get("confidenceScore") or 0.5) * 0.35) + (float(risk_aggregate.get("confidenceScore") or 0.5) * 0.35) + completeness * 0.30, 0.0, 1.0)
+    return {
+        "versionCode": CROP_INTEGRATED_DIAGNOSIS_VERSION_CODE,
+        "modelFamilyCode": CROP_INTEGRATED_DIAGNOSIS_MODEL_FAMILY_CODE,
+        "modelTargetCode": CROP_INTEGRATED_DIAGNOSIS_MODEL_TARGET_CODE,
+        "inputRefs": {
+            "stagePrediction7d": bool(stagePrediction7d),
+            "growthStatePrediction": bool(growthStatePrediction),
+            "riskFactorPrediction": bool(riskFactorPrediction),
+        },
+        "loadBalanceDiagnosis": {
+            "fruitLoadScore": fruit_load,
+            "leafLoadScore": leaf_load,
+            "loadGapScore": load_gap,
+            "loadGapDirectionCode": _crop_integrated_direction_code(load_gap),
+            "confidenceScore": confidence,
+        },
+        "sourceSinkDiagnosis": {
+            "sourceCapacityScore": source_capacity,
+            "sinkDemandScore": sink_demand,
+            "sourceSinkGapScore": source_sink_gap,
+            "gapSeverityCode": _crop_integrated_severity_code(source_sink_gap),
+            "confidenceScore": confidence,
+        },
+        "transitionDiagnosis": {
+            "vegetativeGenerativeBalanceScore": balance_score,
+            "predictedBalance7dScore": predicted_score,
+            "transitionPressureScore": transition_pressure,
+            "transitionNeedCode": _crop_integrated_signal_code(transition_pressure),
+            "environmentModelReviewCode": env_review,
+            "irrigationNutrientModelReviewCode": irr_review,
+            "confidenceScore": confidence,
+        },
+        "riskUrgencyInterpretation": {
+            "aggregateRiskScore": aggregate_risk_score,
+            "aggregateBandCode": risk_band,
+            "highestRiskCode": int(highest_risk.get("riskCode") or 0),
+            "highestRiskGroupCode": int(highest_risk.get("groupCode") or 0),
+            "urgencyCode": _crop_integrated_signal_code(aggregate_risk_score),
+            "trendCode": int(risk_aggregate.get("trendCode") or 0),
+        },
+        "reviewSignals": {
+            "lowerLeafRemovalReviewCode": lower_leaf,
+            "fruitLoadAdjustmentReviewCode": fruit_adjust,
+            "environmentModelReviewCode": env_review,
+            "irrigationNutrientModelReviewCode": irr_review,
+            "pestScoutingOrControlReviewCode": pest_review,
+            "cropWorkReviewCode": crop_work,
+        },
+        "diagnosisReadiness": {
+            "inputCompletenessScore": completeness,
+            "confidenceScore": confidence,
+            "limitationCodes": list(dict.fromkeys(limitations)),
+        },
+        "readOnly": True,
+        "executionAuthorityCode": 0,
+        "trainingAuthorityCode": 0,
+        "deploymentAuthorityCode": 0,
+    }
+
+
 def _crop_stage_confidence_score(stage_confidence) -> float:
     mapping = {"high": 0.9, "medium": 0.65, "low": 0.35}
     if isinstance(stage_confidence, (int, float)):
@@ -2890,6 +3061,13 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         stagePrediction7d=stagePrediction7d,
     )
     riskFactorPrediction = _crop_risk_factor_prediction(featureSnapshot)
+    integratedCropDiagnosis = _crop_integrated_crop_diagnosis(
+        latest=latest,
+        growthStatePrediction=growthStatePrediction,
+        riskFactorPrediction=riskFactorPrediction,
+        stagePrediction7d=stagePrediction7d,
+        featureSnapshot=featureSnapshot,
+    )
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
     predictionPersistence = _crop_prediction_persistence_metadata(latest=latest, season=season, validation_status="pending")
     pipelineSteps = _crop_stage_model_pipeline_steps(
@@ -2908,6 +3086,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "stagePrediction7d": stagePrediction7d,
         "growthStatePrediction": growthStatePrediction,
         "riskFactorPrediction": riskFactorPrediction,
+        "integratedCropDiagnosis": integratedCropDiagnosis,
         "predictionPersistence": predictionPersistence,
         "mlUpgradeReadiness": mlUpgradeReadiness,
     }
@@ -2933,6 +3112,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "trainableBaseline": trainableBaseline,
         "growthStatePrediction": growthStatePrediction,
         "riskFactorPrediction": riskFactorPrediction,
+        "integratedCropDiagnosis": integratedCropDiagnosis,
         "qualityDisorderSummary": qualityDisorderSummary,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,

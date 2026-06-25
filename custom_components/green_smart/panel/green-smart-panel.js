@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.17
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.18
 const DOMAIN = "green_smart";
-const VERSION = "1.10.17";
+const VERSION = "1.10.18";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4215,6 +4215,10 @@ button.action:disabled{opacity:.5;cursor:default;}
     const aggregateRiskFactor = riskFactorPrediction.aggregateRisk || {};
     const highestRiskFactor = riskFactorPrediction.highestRiskItem || {};
     const riskFactorGroups = [riskFactorPrediction.environmentStress || {}, riskFactorPrediction.irrigationNutrientStress || {}, riskFactorPrediction.pestDiseaseRisk || {}, riskFactorPrediction.operationDataQualityRisk || {}];
+    const integratedCropDiagnosis = trainableBaseline.integratedCropDiagnosis || cropModel.integratedCropDiagnosis || report.integratedCropDiagnosis || {};
+    const sourceSinkDiagnosis = integratedCropDiagnosis.sourceSinkDiagnosis || {};
+    const transitionDiagnosis = integratedCropDiagnosis.transitionDiagnosis || {};
+    const reviewSignals = integratedCropDiagnosis.reviewSignals || {};
     const stagePredictionScore = stagePrediction7d.score || report.stagePredictionScore || {};
     const scoreComponents = stagePredictionScore.scoreComponents || {};
     const predictedStage7d = stagePrediction7d.predictedStage7d || {};
@@ -4289,6 +4293,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             <div data-crop-ai-main-metric data-crop-ai-primary-pest-risk style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">병해 위험도</div><b data-crop-ai-main-metric-value style="font-size:18px;color:${pestRisk.level === 'high' ? '#c0392b' : pestRisk.level === 'medium' ? '#f39c12' : '#51AE60'};">${riskLabel}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">score ${this._esc(String(pestRisk.score ?? 0))}</div></div>
             <div data-crop-growth-state-numeric-card data-crop-ai-main-metric data-crop-ai-growth-state-score style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">생육상태 수치축</div><b data-crop-ai-main-metric-value data-crop-growth-state-balance-score style="font-size:18px;color:#24323F;">${this._esc(String(currentGrowthBalance.balanceScore ?? 0))}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">7일 ${this._esc(String(predictedGrowthBalance7d.balanceScore ?? 0))} · directionCode ${this._esc(String(currentGrowthBalance.directionCode ?? 9))}</div></div>
             <div data-crop-risk-factor-numeric-card data-crop-ai-main-metric style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">위험요소 수치</div><b data-crop-ai-main-metric-value data-crop-risk-factor-score style="font-size:18px;color:#24323F;">${this._esc(String(aggregateRiskFactor.score ?? 0))}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">bandCode <span data-crop-risk-factor-band-code>${this._esc(String(aggregateRiskFactor.bandCode ?? 9))}</span> · trendCode <span data-crop-risk-factor-trend-code>${this._esc(String(aggregateRiskFactor.trendCode ?? 9))}</span></div></div>
+            <div data-crop-integrated-diagnosis-card data-crop-ai-main-metric style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">통합진단 수치</div><b data-crop-ai-main-metric-value data-crop-diagnosis-source-sink-gap style="font-size:18px;color:#24323F;">${this._esc(String(sourceSinkDiagnosis.sourceSinkGapScore ?? 0))}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">transitionNeedCode <span data-crop-diagnosis-transition-need-code>${this._esc(String(transitionDiagnosis.transitionNeedCode ?? 9))}</span></div></div>
           </div>
           <div data-crop-ai-main-note data-crop-ai-next-action style="background:#f8fbf9;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:12px;color:#4a6741;line-height:1.55;"><b>다음 행동</b> ${this._esc(aiNextAction)}</div>
           <div data-crop-ai-main-action-row style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="font-size:10px;color:#7a9780;font-weight:800;background:#f5faf6;border:1px solid #e2f1e7;border-radius:999px;padding:4px 8px;">요약 우선</span><span style="font-size:10px;color:#7a9780;font-weight:800;background:#f5faf6;border:1px solid #e2f1e7;border-radius:999px;padding:4px 8px;">상세 근거는 접힘 영역</span></div>
@@ -4377,6 +4382,18 @@ button.action:disabled{opacity:.5;cursor:default;}
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:5px;">highest riskCode ${this._esc(String(highestRiskFactor.riskCode ?? 0))} · groupCode ${this._esc(String(highestRiskFactor.groupCode ?? 0))} · read-only numeric evidence</div>
         ${recommendedActions.length ? `<div style="font-size:11px;color:#7a9780;margin-top:5px;">권장 조치: ${recommendedActions.map(a => this._esc(a)).join(" · ")}</div>` : ""}
+      </article>
+      <article data-crop-integrated-diagnosis-evidence data-crop-ai-evidence-card="integrated-diagnosis" style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">통합 작물 진단</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">단계·상태·위험요소 예측을 해석한 read-only diagnosis signal입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">diagnosis</span></div>
+        <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;">
+          <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">sourceSinkGapScore</div><b style="font-size:20px;color:#24323F;">${this._esc(String(sourceSinkDiagnosis.sourceSinkGapScore ?? 0))}</b><div style="font-size:11px;color:#7a9780;">gapSeverityCode ${this._esc(String(sourceSinkDiagnosis.gapSeverityCode ?? 9))}</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">transitionNeedCode</div><b style="font-size:20px;color:#24323F;">${this._esc(String(transitionDiagnosis.transitionNeedCode ?? 9))}</b><div style="font-size:11px;color:#7a9780;">balance ${this._esc(String(transitionDiagnosis.vegetativeGenerativeBalanceScore ?? 0))}</div></div>
+          <div style="background:#fff;border-radius:12px;padding:10px;"><div style="font-size:11px;color:#7a9780;font-weight:800;">환경/관수 review</div><b style="font-size:20px;color:#24323F;">${this._esc(String(transitionDiagnosis.environmentModelReviewCode ?? 9))}/${this._esc(String(transitionDiagnosis.irrigationNutrientModelReviewCode ?? 9))}</b><div style="font-size:11px;color:#7a9780;">environmentModelReviewCode · irrigationNutrientModelReviewCode</div></div>
+        </div>
+        <div data-crop-ai-evidence-chip-group style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          ${Object.entries(reviewSignals).map(([name, code]) => `<span data-crop-diagnosis-review-signal style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">${this._esc(name)} ${this._esc(String(code))}</span>`).join("") || `<span style="font-size:11px;color:#9aae9d;">review signal 없음</span>`}
+        </div>
+        <div style="font-size:11px;color:#7a9780;margin-top:7px;">read-only · no setpoint · no work order · no execution</div>
       </article>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e6eef7;" data-stage-diagnosis-card>
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">현재 생육단계</div>
