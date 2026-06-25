@@ -41,7 +41,7 @@ def test_v1988_ai_main_area_order_is_crop_status_interlock_status_model_status_t
         "data-crop-ai-summary-pest-risk",
     ):
         assert marker in primary
-    for text in ("작물단계", "작물상태", "환경리스크", "관수리스크", "병충해리스크"):
+    for text in ("작물단계", "작물상태", "환경요약", "관수요약", "병충해요약"):
         assert text in primary
     for model_status_text in ("입력 상태", "ML 준비도"):
         assert model_status_text not in primary
@@ -81,8 +81,8 @@ def test_v1988_ai_versions_and_docs_record_model_hierarchy():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.21"' in manifest
-    assert 'const VERSION = "1.10.21"' in panel
+    assert '"version": "1.10.22"' in manifest
+    assert 'const VERSION = "1.10.22"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI Strategy model hierarchy restructure" in docs
     for marker in (

@@ -44,9 +44,9 @@ def test_v11021_crop_summary_has_requested_five_operator_fields():
     required = {
         "작물단계": "data-crop-ai-summary-stage",
         "작물상태": "data-crop-ai-summary-growth-state",
-        "환경리스크": "data-crop-ai-summary-environment-risk",
-        "관수리스크": "data-crop-ai-summary-irrigation-risk",
-        "병충해리스크": "data-crop-ai-summary-pest-risk",
+        "환경요약": "data-crop-ai-summary-environment-risk",
+        "관수요약": "data-crop-ai-summary-irrigation-risk",
+        "병충해요약": "data-crop-ai-summary-pest-risk",
     }
     for label, marker in required.items():
         assert label in summary
@@ -93,8 +93,8 @@ def test_v11021_versions_and_docs_record_top_summary_cards():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.10.21"' in manifest
-    assert 'const VERSION = "1.10.21"' in panel
+    assert '"version": "1.10.22"' in manifest
+    assert 'const VERSION = "1.10.22"' in panel
     assert "v1.10.21 AI Strategy top summary cards" in docs
     for marker in (
         "data-crop-ai-crop-summary",
