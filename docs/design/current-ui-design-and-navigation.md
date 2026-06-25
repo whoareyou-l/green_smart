@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.18`
+> 기준 버전: `v1.10.19`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -1709,6 +1709,7 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 - v1.10.16 Growth State Prediction Model: AI 전략의 생육상태 수치 예측 카드가 `growthStatePrediction`을 표시한다. core state는 문자열 없이 `balanceScore`, `directionCode`, `magnitudeBandCode`, `predictedBalance7d`, `movementScore7d`, `driverContributions`, `confidenceScore`로만 표시하고, UI는 `data-crop-growth-state-numeric-card`, `data-crop-growth-state-numeric-evidence`, `data-crop-growth-state-driver-contributions` marker를 제공한다. 기존 `data-crop-ai-evidence-card="reproductive-vegetative"` 및 yield marker는 호환 alias로 유지한다.
 - v1.10.17 Risk Factor Prediction Model: AI 전략의 위험요소 수치 카드가 `riskFactorPrediction`을 표시한다. core risk는 `score`, `bandCode`, `trendCode`, `riskCode`, `confidenceScore`, `evidenceScore`로만 표시하고, UI는 `data-crop-risk-factor-numeric-card`, `data-crop-risk-factor-numeric-evidence`, `data-crop-risk-factor-item` marker를 제공한다. 이 카드는 read-only evidence이며 방제/환경/관수 실행 버튼을 만들지 않는다.
 - v1.10.18 Integrated Crop Diagnosis Model: AI 전략의 통합진단 수치 카드가 `integratedCropDiagnosis`을 표시한다. UI는 `data-crop-integrated-diagnosis-card`, `data-crop-integrated-diagnosis-evidence`, `data-crop-diagnosis-source-sink-gap`, `data-crop-diagnosis-transition-need-code`, `data-crop-diagnosis-review-signal` marker를 제공한다. 이 카드는 read-only diagnosis evidence이며 setpoint/work-order/execution 버튼을 만들지 않는다.
+- v1.10.19 Crop Action Recommendation Model: AI 전략의 조치 추천 요청 카드가 `cropActionRecommendation`을 표시한다. UI는 `data-crop-action-recommendation-card`, `data-crop-action-recommendation-evidence`, `data-crop-action-work-request`, `data-crop-action-model-request`, `data-crop-action-priority-code` marker를 제공한다. 이 카드는 read-only request evidence이며 target 값/work-order/execution 버튼을 만들지 않는다.
 - P1 rendered-flow QA v1.10.9: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 AI-first control tab alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 Environment zone card header cleanup: current v1.10.9 compatibility marker retained after settings page shell alignment.

@@ -87,9 +87,9 @@ def test_v1970_common_format_version_markers():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.10.18"' in manifest
-    assert 'const VERSION = "1.10.18"' in panel
-    assert 'v1.10.18' in panel[:200]
+    assert '"version": "1.10.19"' in manifest
+    assert 'const VERSION = "1.10.19"' in panel
+    assert 'v1.10.19' in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert 'v1.9.72' in docs
     assert 'UI Foundation | v1.9.70' in plan

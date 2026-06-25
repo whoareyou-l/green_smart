@@ -38,6 +38,9 @@ CROP_RISK_FACTOR_MODEL_TARGET_CODE = 3201
 CROP_INTEGRATED_DIAGNOSIS_VERSION_CODE = 1
 CROP_INTEGRATED_DIAGNOSIS_MODEL_FAMILY_CODE = 4101
 CROP_INTEGRATED_DIAGNOSIS_MODEL_TARGET_CODE = 4201
+CROP_ACTION_RECOMMENDATION_VERSION_CODE = 1
+CROP_ACTION_RECOMMENDATION_MODEL_FAMILY_CODE = 5101
+CROP_ACTION_RECOMMENDATION_MODEL_TARGET_CODE = 5201
 CROP_GROWTH_INDEX_VERSION = "crop_growth_index_formula_v1"
 CROP_GROWTH_METRIC_CONFIGS = {
     "tomato": {
@@ -2546,6 +2549,69 @@ def _crop_integrated_crop_diagnosis(*, latest: dict, growthStatePrediction: dict
     }
 
 
+def _crop_action_request(request_code: int, priority_code: int, confidence: float, *, target_authority: int | None = None) -> dict:
+    request = {
+        "requestCode": int(request_code),
+        "priorityCode": int(priority_code),
+        "confidenceScore": _crop_integrated_score(confidence, 0.0, 1.0),
+    }
+    if target_authority is not None:
+        request["targetCandidateAuthorityCode"] = int(target_authority)
+    return request
+
+
+def _crop_action_recommendation(integratedCropDiagnosis: dict) -> dict:
+    diagnosis = integratedCropDiagnosis or {}
+    signals = diagnosis.get("reviewSignals") or {}
+    readiness = diagnosis.get("diagnosisReadiness") or {}
+    confidence = _crop_integrated_score(readiness.get("confidenceScore"), 0.0, 1.0)
+
+    def signal(name: str) -> int:
+        try:
+            return int(signals.get(name) or 0)
+        except Exception:
+            return 0
+
+    workReviewRequests = {
+        "lowerLeafRemoval": _crop_action_request(101, signal("lowerLeafRemovalReviewCode"), confidence),
+        "fruitLoadAdjustment": _crop_action_request(102, signal("fruitLoadAdjustmentReviewCode"), confidence),
+        "pestScoutingOrControlReview": _crop_action_request(103, signal("pestScoutingOrControlReviewCode"), confidence),
+        "cropWorkReview": _crop_action_request(104, signal("cropWorkReviewCode"), confidence),
+    }
+    modelReviewRequests = {
+        "environmentModelReview": _crop_action_request(201, signal("environmentModelReviewCode"), confidence, target_authority=0),
+        "irrigationNutrientModelReview": _crop_action_request(301, signal("irrigationNutrientModelReviewCode"), confidence, target_authority=0),
+    }
+    queue = []
+    for request in list(workReviewRequests.values()) + list(modelReviewRequests.values()):
+        if request["priorityCode"] > 0 and request["priorityCode"] != 9:
+            queue.append({
+                "requestCode": request["requestCode"],
+                "priorityCode": request["priorityCode"],
+                "sourceSignalCode": request["requestCode"],
+                "confidenceScore": request["confidenceScore"],
+            })
+    queue.sort(key=lambda item: (-int(item["priorityCode"]), int(item["requestCode"])))
+    return {
+        "versionCode": CROP_ACTION_RECOMMENDATION_VERSION_CODE,
+        "modelFamilyCode": CROP_ACTION_RECOMMENDATION_MODEL_FAMILY_CODE,
+        "modelTargetCode": CROP_ACTION_RECOMMENDATION_MODEL_TARGET_CODE,
+        "inputRefs": {"integratedCropDiagnosis": bool(diagnosis)},
+        "workReviewRequests": workReviewRequests,
+        "modelReviewRequests": modelReviewRequests,
+        "operatorReviewQueue": queue,
+        "recommendationReadiness": {
+            "confidenceScore": confidence,
+            "inputCompletenessScore": _crop_integrated_score(readiness.get("inputCompletenessScore"), 0.0, 1.0),
+            "limitationCodes": list(readiness.get("limitationCodes") or []),
+        },
+        "readOnly": True,
+        "executionAuthorityCode": 0,
+        "trainingAuthorityCode": 0,
+        "deploymentAuthorityCode": 0,
+    }
+
+
 def _crop_stage_confidence_score(stage_confidence) -> float:
     mapping = {"high": 0.9, "medium": 0.65, "low": 0.35}
     if isinstance(stage_confidence, (int, float)):
@@ -3068,6 +3134,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         stagePrediction7d=stagePrediction7d,
         featureSnapshot=featureSnapshot,
     )
+    cropActionRecommendation = _crop_action_recommendation(integratedCropDiagnosis)
     mlUpgradeReadiness = _crop_ml_upgrade_readiness(growth_rows=growth_rows, validation_pair_count=0)
     predictionPersistence = _crop_prediction_persistence_metadata(latest=latest, season=season, validation_status="pending")
     pipelineSteps = _crop_stage_model_pipeline_steps(
@@ -3087,6 +3154,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "growthStatePrediction": growthStatePrediction,
         "riskFactorPrediction": riskFactorPrediction,
         "integratedCropDiagnosis": integratedCropDiagnosis,
+        "cropActionRecommendation": cropActionRecommendation,
         "predictionPersistence": predictionPersistence,
         "mlUpgradeReadiness": mlUpgradeReadiness,
     }
@@ -3113,6 +3181,7 @@ def _crop_model_snapshot_from_report_parts(hass, season_id: int, season: dict, g
         "growthStatePrediction": growthStatePrediction,
         "riskFactorPrediction": riskFactorPrediction,
         "integratedCropDiagnosis": integratedCropDiagnosis,
+        "cropActionRecommendation": cropActionRecommendation,
         "qualityDisorderSummary": qualityDisorderSummary,
         "weeklyGrowthCm": weekly_growth,
         "latestMetrics": latest,

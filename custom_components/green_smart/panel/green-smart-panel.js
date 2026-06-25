@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.18
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.19
 const DOMAIN = "green_smart";
-const VERSION = "1.10.18";
+const VERSION = "1.10.19";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4219,6 +4219,9 @@ button.action:disabled{opacity:.5;cursor:default;}
     const sourceSinkDiagnosis = integratedCropDiagnosis.sourceSinkDiagnosis || {};
     const transitionDiagnosis = integratedCropDiagnosis.transitionDiagnosis || {};
     const reviewSignals = integratedCropDiagnosis.reviewSignals || {};
+    const cropActionRecommendation = trainableBaseline.cropActionRecommendation || cropModel.cropActionRecommendation || report.cropActionRecommendation || {};
+    const workReviewRequests = cropActionRecommendation.workReviewRequests || {};
+    const modelReviewRequests = cropActionRecommendation.modelReviewRequests || {};
     const stagePredictionScore = stagePrediction7d.score || report.stagePredictionScore || {};
     const scoreComponents = stagePredictionScore.scoreComponents || {};
     const predictedStage7d = stagePrediction7d.predictedStage7d || {};
@@ -4394,6 +4397,14 @@ button.action:disabled{opacity:.5;cursor:default;}
           ${Object.entries(reviewSignals).map(([name, code]) => `<span data-crop-diagnosis-review-signal style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:999px;padding:4px 8px;">${this._esc(name)} ${this._esc(String(code))}</span>`).join("") || `<span style="font-size:11px;color:#9aae9d;">review signal 없음</span>`}
         </div>
         <div style="font-size:11px;color:#7a9780;margin-top:7px;">read-only · no setpoint · no work order · no execution</div>
+      </article>
+      <article data-crop-action-recommendation-evidence data-crop-ai-evidence-card="action-recommendation" style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #dfeefe;">
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">조치 추천 요청</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">통합진단 signal을 작업 검토/모델 검토 요청 코드로 변환합니다. 실행 권한은 없습니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">request only</span></div>
+        <div data-crop-action-recommendation-card style="display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;">
+          ${Object.entries(workReviewRequests).map(([name, req]) => `<span data-crop-action-work-request data-crop-action-priority-code="${this._esc(String(req.priorityCode ?? 9))}" style="font-size:11px;background:#f5faf6;color:#5d7d64;border-radius:10px;padding:8px;">${this._esc(name)} · requestCode ${this._esc(String(req.requestCode ?? 0))} · priorityCode ${this._esc(String(req.priorityCode ?? 9))}</span>`).join("") || `<span style="font-size:11px;color:#9aae9d;">work request 없음</span>`}
+          ${Object.entries(modelReviewRequests).map(([name, req]) => `<span data-crop-action-model-request data-crop-action-priority-code="${this._esc(String(req.priorityCode ?? 9))}" style="font-size:11px;background:#f7fbff;color:#4f6f83;border-radius:10px;padding:8px;">${this._esc(name)} · requestCode ${this._esc(String(req.requestCode ?? 0))} · priorityCode ${this._esc(String(req.priorityCode ?? 9))} · targetCandidateAuthorityCode ${this._esc(String(req.targetCandidateAuthorityCode ?? 0))}</span>`).join("") || `<span style="font-size:11px;color:#9aae9d;">model request 없음</span>`}
+        </div>
+        <div style="font-size:11px;color:#7a9780;margin-top:7px;">read-only · no target value · no work order · no execution</div>
       </article>
       <div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e6eef7;" data-stage-diagnosis-card>
         <div style="font-size:12px;font-weight:900;color:#24323F;margin-bottom:6px;">현재 생육단계</div>
