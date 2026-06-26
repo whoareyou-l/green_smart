@@ -567,6 +567,7 @@ M2~M8 모델 확장은 즉시 진행하지 않는다. 먼저 다음 S/C-S phases
 - v1.10.22 Crop summary card labels: 작물 요약 카드의 5개 항목을 작업자용 텍스트 중심으로 조정한다. 작물단계는 stage label + 모델 스코어/신뢰점수, 작물상태는 생식/영양 텍스트 + 방향 이모티콘 + 스코어/신뢰점수, 환경요약과 관수요약은 위험요소 모델의 해당 영역 top factor label + 스코어/신뢰점수, 병충해요약은 병충해 영역 스코어 + 신뢰점수를 표시한다.
 - v1.10.23 Crop summary operator labels: 작물 요약 카드의 환경요약/관수요약/병충해요약을 작업자가 바로 읽을 수 있는 텍스트 메인값으로 보정한다. 환경/관수는 `안정` 대신 위험요소 모델의 top factor label을 표시하고 하단은 스코어/신뢰도만 남긴다. 병충해는 스코어 숫자 대신 매우심각/심각/보통/낮음 등급 텍스트를 메인값으로 표시하고 하단에 스코어/신뢰도를 표시한다. 작물상태 이모티콘은 영양→생식/생식→영양 방향성을 나타내는 화살표형 이모티콘으로 표시한다.
 - v1.10.24 Crop summary visible text cleanup: 작물 요약 카드의 subtitle은 `이번 주 모델을 통해서 출력된 작물 상태의 요약입니다.`로 바꾸고, 내부 개발/운영 boundary 문구(`상세 근거는 모델 상태 카드`, `농장주/직원용 요약 우선`, `read-only`, `자동 실행 없음`)는 작물 요약 카드의 visible UI에서 제거한다. 이 정보는 문서와 테스트 계약에만 남긴다.
+- v1.10.25 Interlock detail modal: 안전/인터록 상태 요약 카드의 중복 설명을 상태 요약 문구로 정리하고, 승인 gate/해소/미해소 차단 정보 및 승인 버튼은 기본 카드에서 제거해 `오류건수` 클릭 상세 모달로 이동한다. 승인 기능은 기존 `data-crop-interlock-approve` 바인딩을 유지한다.
 - P1 rendered-flow QA v1.10.9: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 AI-first control tab alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 Environment zone card header cleanup: current v1.10.9 compatibility marker retained after settings page shell alignment.

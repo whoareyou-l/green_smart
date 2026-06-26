@@ -1,6 +1,6 @@
 # Green Smart Current UI, Design System, Navigation and Page Contract
 
-> 기준 버전: `v1.10.24`
+> 기준 버전: `v1.10.25`
 > 기준 파일: `custom_components/green_smart/panel/green-smart-panel.js`
 > 목적: 앞으로 UI/UX, 사이드바, 페이지, 하위탭, 설정값, 사용자 선호 디자인을 수정할 때 반드시 참조하는 현재 구현 기준서.
 
@@ -1715,6 +1715,7 @@ Environment Control final QA covers all seven tabs: `overview / setpoints / rule
 - v1.10.22 Crop summary card labels: AI 전략의 `작물 요약` 카드 표시 문법을 사용자 요청대로 조정한다. 작물단계는 텍스트 stage label을 메인값으로 두고 작물단계 모델 스코어/신뢰점수를 하단에 표시한다. 작물상태는 강한 생식생장/영양생장 등 텍스트와 방향 이모티콘을 메인값으로 표시하고 작물상태 모델 스코어/신뢰점수를 하단에 표시한다. 환경리스크/관수리스크 명칭은 각각 환경요약/관수요약으로 바꾸고 메인값은 고온/저온/온도급변, 높은 EC/과관수 같은 텍스트 요약으로 표시한다. 병충해요약은 병충해 위험 스코어를 메인값으로 표시하고 신뢰점수를 하단에 표시한다.
 - v1.10.23 Crop summary operator labels: 환경요약/관수요약은 `안정` fallback을 메인값으로 쓰지 않고 위험요소 모델의 top factor 텍스트를 메인값으로 표시한다. 하단에는 각 영역의 스코어와 신뢰도 점수만 표시한다. 병충해요약은 `매우심각`/`심각`/`보통`/`낮음` 등급 텍스트를 메인값으로 표시하고, 하단에는 병충해 영역 스코어와 신뢰도 점수만 표시한다. 작물상태 방향 이모티콘은 과실/잎 아이콘이 아니라 영양↔생식 방향성을 보여주는 `↗️`/`⏫`/`↘️`/`⏬`/`➡️` 계열로 표시한다. Required markers: `data-crop-ai-summary-environment-label`, `data-crop-ai-summary-irrigation-label`, `data-crop-ai-summary-pest-label`, `data-crop-ai-summary-growth-direction-emoji`.
 - v1.10.24 Crop summary visible text cleanup: 작물 요약 카드의 보이는 subtitle은 `이번 주 모델을 통해서 출력된 작물 상태의 요약입니다.`로 표시한다. UI에는 개발/내부 안내 성격의 `작물 요약` 보조 chip, `상세 근거는 모델 상태 카드`, `농장주/직원용 요약 우선 · read-only · 자동 실행 없음` 문구를 노출하지 않는다. 해당 boundary/구성 의도는 문서와 계약에만 보존한다. 앞으로도 read-only/자동 실행 없음/상세 근거 위치/농장주 우선 같은 개발·운영 boundary 문구를 작물 요약 카드의 visible UI에 직접 노출하지 않는다.
+- v1.10.25 Interlock detail modal: 안전/인터록 상태 요약 카드에서 중복 안내문 `안전/인터록 확인 안전상태 · 인터록 상태 · 오류건수를 먼저 확인합니다.`를 `상태 요약 현재 작물 모델 적용 전 확인이 필요한 안전·승인 상태입니다.`로 교체한다. 승인 gate, 승인으로 해소, 미해소 차단, 운영자 확인/농장주 승인/관리자 승인 버튼은 기본 카드에서 숨기고 `오류건수` metric 클릭 시 표시되는 상세 모달로 이동한다. Required markers: `data-crop-ai-error-count-open`, `data-crop-ai-interlock-detail-modal`, `data-crop-ai-interlock-detail-close`, `data-crop-ai-interlock-modal-gate`, `data-crop-ai-interlock-modal-resolved`, `data-crop-ai-interlock-modal-unresolved`, `data-crop-ai-interlock-modal-actions`.
 - P1 rendered-flow QA v1.10.9: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 AI-first control tab alignment: current v1.10.9 compatibility marker retained after settings page shell alignment.
 - v1.10.9 Environment zone card header cleanup: current v1.10.9 compatibility marker retained after settings page shell alignment.
