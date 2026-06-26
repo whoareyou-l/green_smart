@@ -79,13 +79,24 @@ def test_v11025_error_count_modal_binding_exists():
     assert "hidden = true" in panel
 
 
+def test_v11026_interlock_detail_modal_is_hidden_until_error_count_click():
+    summary = _interlock_summary()
+    modal_open = summary.split("data-crop-ai-interlock-detail-modal", 1)[1].split(">", 1)[0]
+    assert "display:none" in modal_open
+    assert "display:flex" not in modal_open
+    panel = _read(PANEL)
+    assert "modal.style.display = \"flex\"" in panel
+    assert "modal.style.display = \"none\"" in panel
+
+
 def test_v11025_versions_and_docs_record_interlock_modal():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.25"' in manifest
-    assert 'const VERSION = "1.10.25"' in panel
+    assert '"version": "1.10.26"' in manifest
+    assert 'const VERSION = "1.10.26"' in panel
     assert "v1.10.25 Interlock detail modal" in docs
+    assert "v1.10.26 Interlock detail modal hidden hotfix" in docs
     for marker in (
         "data-crop-ai-error-count-open",
         "data-crop-ai-interlock-detail-modal",

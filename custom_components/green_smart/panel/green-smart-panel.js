@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.25
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.26
 const DOMAIN = "green_smart";
-const VERSION = "1.10.25";
+const VERSION = "1.10.26";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4335,7 +4335,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             <button type="button" data-crop-ai-summary-error-count data-crop-ai-error-count-open data-crop-ai-main-metric style="text-align:left;background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;cursor:pointer;"><div data-crop-ai-main-metric-label style="font-size:11px;color:#5f7f70;font-weight:900;">오류건수</div><b data-crop-ai-main-metric-value style="font-size:15px;color:${safetyIssueCount ? '#c0392b' : '#51AE60'};">${this._esc(String(safetyIssueCount))}</b><div data-crop-ai-main-metric-help style="font-size:10px;color:#8aa091;margin-top:3px;">눌러서 승인/차단 상세 확인</div></button>
           </div>
           <div data-crop-ai-main-note style="background:#f8fbf9;border:1px solid #e2f1e7;border-radius:12px;padding:10px;font-size:11px;color:#7a9780;line-height:1.55;"><b>상태 요약</b> 현재 작물 모델 적용 전 확인이 필요한 안전·승인 상태입니다.<span data-crop-ai-target-promotion-status data-crop-ai-auto-execution-status style="display:none;">legacy target promotion · 자동 실행 · cropInterlockReasons · cropInterlockActions · require_harvest_safety_clearance markers retained</span></div>
-          <div data-crop-ai-interlock-detail-modal hidden style="position:fixed;inset:0;z-index:10000;background:rgba(36,50,63,0.36);display:flex;align-items:center;justify-content:center;padding:16px;">
+          <div data-crop-ai-interlock-detail-modal hidden style="position:fixed;inset:0;z-index:10000;background:rgba(36,50,63,0.36);display:none;align-items:center;justify-content:center;padding:16px;">
             <div class="popup-card" style="width:min(520px,94vw);background:#fff;border-radius:18px;padding:16px;border:1px solid #dbeee0;box-shadow:0 18px 44px rgba(36,50,63,0.22);">
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;"><div><div style="font-size:15px;font-weight:900;color:#24323F;">안전/인터록 상세</div><div style="font-size:11px;color:#7a9780;margin-top:3px;">오류건수에 포함된 승인·차단 상세입니다.</div></div><button type="button" data-crop-ai-interlock-detail-close style="border:0;background:#f1f5f2;color:#6d8799;border-radius:999px;width:30px;height:30px;cursor:pointer;font-weight:900;">×</button></div>
               <div data-crop-interlock-approval-gate data-crop-ai-interlock-modal-gate style="background:#f8fbf9;border-radius:12px;padding:10px;border:1px solid #e2f1e7;margin-bottom:8px;">
@@ -6315,13 +6315,19 @@ button.action:disabled{opacity:.5;cursor:default;}
     root.querySelectorAll("[data-crop-ai-error-count-open]").forEach((button) => {
       button.addEventListener("click", () => {
         const modal = root.querySelector("[data-crop-ai-interlock-detail-modal]");
-        if (modal) modal.hidden = false;
+        if (modal) {
+          modal.hidden = false;
+          modal.style.display = "flex";
+        }
       });
     });
     root.querySelectorAll("[data-crop-ai-interlock-detail-close]").forEach((button) => {
       button.addEventListener("click", () => {
         const modal = root.querySelector("[data-crop-ai-interlock-detail-modal]");
-        if (modal) modal.hidden = true;
+        if (modal) {
+          modal.hidden = true;
+          modal.style.display = "none";
+        }
       });
     });
     root.querySelectorAll("[data-crop-interlock-approve]").forEach((button) => {
