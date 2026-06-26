@@ -30,7 +30,7 @@ def test_v1974_ai_strategy_has_primary_summary_next_action_and_boundary():
         "data-crop-ai-primary-summary",
         "data-crop-ai-next-action",
         "data-crop-ai-readonly-boundary",
-        "이번 주 작물 판단 요약",
+        "이번 주 모델을 통해서 출력된 작물 상태의 요약입니다.",
         "다음 행동",
         "자동 실행 없음",
         "자동 학습/배포 없음",
@@ -104,10 +104,10 @@ def test_v1974_ai_strategy_version_markers_and_future_shift():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.10.23"' in manifest
-    assert 'const VERSION = "1.10.23"' in panel
-    assert 'v1.10.23' in panel[:200]
+    assert '"version": "1.10.24"' in manifest
+    assert 'const VERSION = "1.10.24"' in panel
+    assert 'v1.10.24' in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert '기준 버전: `v1.10.23`' in docs
+    assert '기준 버전: `v1.10.24`' in docs
     assert 'UI Slice 3 | v1.9.74 | AI 전략' in plan
     assert 'UI Slice 4 | v1.9.75 | 병해충 예찰' in plan

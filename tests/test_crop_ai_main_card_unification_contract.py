@@ -36,7 +36,7 @@ def test_v1992_ai_main_cards_share_common_shell_and_order_without_decision_flow(
     assert report.count("data-crop-ai-main-card") >= 3
     assert report.count("data-crop-ai-main-card-header") >= 3
     assert report.count("data-crop-ai-main-card-body") >= 3
-    assert report.count("data-crop-ai-main-card-chip-group") >= 3
+    assert report.count("data-crop-ai-main-card-chip-group") >= 2
 
 
 def test_v1992_crop_interlock_model_cards_have_same_main_card_contract():
@@ -48,9 +48,11 @@ def test_v1992_crop_interlock_model_cards_have_same_main_card_contract():
         assert "data-crop-ai-main-card" in section
         assert "data-crop-ai-main-card-header" in section
         assert "data-crop-ai-main-card-body" in section
-        assert "data-crop-ai-main-card-chip-group" in section
         assert "border-radius:16px" in section
         assert "box-shadow:0 6px 18px rgba(64,117,78,0.08)" in section
+    assert "data-crop-ai-main-card-chip-group" not in crop
+    assert "data-crop-ai-main-card-chip-group" in interlock
+    assert "data-crop-ai-main-card-chip-group" in model
 
 
 def test_v1992_versions_and_docs_record_main_card_cleanup():
@@ -58,8 +60,8 @@ def test_v1992_versions_and_docs_record_main_card_cleanup():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.23"' in manifest
-    assert 'const VERSION = "1.10.23"' in panel
+    assert '"version": "1.10.24"' in manifest
+    assert 'const VERSION = "1.10.24"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI main card unification" in docs
     for marker in (

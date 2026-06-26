@@ -374,7 +374,7 @@ Fix the worst card-sprawl area. AI Strategy must start with a farmer-readable de
 
 ### Required markers
 
-UI must include the visible Korean labels `이번 주 작물 판단 요약`, `다음 행동`, `상세 모델 근거`, `자동 실행 없음`, and `자동 학습/배포 없음`. Technical evidence must be collapsed with literal markers `<details data-crop-ai-advanced-details` and `<summary`.
+UI must include the visible Korean labels `이번 주 모델을 통해서 출력된 작물 상태의 요약입니다.`, `다음 행동`, and `상세 모델 근거`. Technical evidence must be collapsed with literal markers `<details data-crop-ai-advanced-details` and `<summary`. Internal boundary guidance such as `자동 실행 없음`, `자동 학습/배포 없음`, `상세 근거는 모델 상태 카드`, and `농장주/직원용 요약 우선` is preserved in docs/contracts but must not be exposed inside the visible crop-summary card.
 
 ```text
 data-crop-ai-primary-summary

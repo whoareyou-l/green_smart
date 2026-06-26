@@ -41,8 +41,9 @@ def test_v1993_main_cards_share_inner_metric_action_note_contract():
         assert "data-crop-ai-main-metric-value" in section, name
         assert "data-crop-ai-main-metric-help" in section, name
         assert "data-crop-ai-main-note" in section, name
-        assert "data-crop-ai-main-action-row" in section, name
-        assert "data-crop-ai-main-card-chip-group" in section, name
+        if name != "crop":
+            assert "data-crop-ai-main-action-row" in section, name
+            assert "data-crop-ai-main-card-chip-group" in section, name
         assert section.count("data-crop-ai-main-metric") >= 3, name
 
 
@@ -59,7 +60,8 @@ def test_v1993_main_card_specific_content_is_preserved_inside_shared_contract():
         "data-crop-ai-next-action",
     ):
         assert marker in crop
-    assert "data-crop-ai-main-action-row" in crop
+    assert "data-crop-ai-main-action-row" not in crop
+    assert "data-crop-ai-main-card-chip-group" not in crop
 
     for marker in (
         "data-crop-ai-interlock-status",
@@ -105,8 +107,8 @@ def test_v1993_versions_and_docs_record_inner_consistency():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.10.23"' in manifest
-    assert 'const VERSION = "1.10.23"' in panel
+    assert '"version": "1.10.24"' in manifest
+    assert 'const VERSION = "1.10.24"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI main card inner consistency" in docs
     for marker in (
