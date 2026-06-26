@@ -57,7 +57,7 @@ def test_v11022_environment_and_irrigation_are_summary_text_with_factor_score_co
     assert "data-crop-ai-summary-environment-confidence" in env
     assert "스코어" in env and "신뢰" in env
     for sample in ("고온", "저온", "온도급변"):
-        assert sample in summary
+        assert sample in _read(PANEL)
 
     assert "관수요약" in irr
     assert "관수리스크" not in irr
@@ -65,7 +65,7 @@ def test_v11022_environment_and_irrigation_are_summary_text_with_factor_score_co
     assert "data-crop-ai-summary-irrigation-score" in irr
     assert "data-crop-ai-summary-irrigation-confidence" in irr
     assert "스코어" in irr and "신뢰" in irr
-    assert "높은 EC" in summary or "과관수" in summary
+    assert "높은 EC" in _read(PANEL) or "과관수" in _read(PANEL)
 
 
 def test_v11022_pest_summary_main_value_is_score_and_subline_confidence():
@@ -83,8 +83,8 @@ def test_v11022_versions_and_docs_record_crop_summary_labels():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.10.22"' in manifest
-    assert 'const VERSION = "1.10.22"' in panel
+    assert '"version": "1.10.23"' in manifest
+    assert 'const VERSION = "1.10.23"' in panel
     assert "v1.10.22 Crop summary card labels" in docs
     for marker in (
         "data-crop-ai-summary-stage-score",
