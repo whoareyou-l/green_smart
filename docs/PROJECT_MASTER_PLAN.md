@@ -10,7 +10,7 @@
 
 이 문서는 기존 Green Smart 제품 문서/코드와 새 마스터 플랜을 하나의 실행 기준으로 정렬한다. 앞으로 구현은 이 문서와 Phase 0 산출물 전체를 기준으로 진행한다.
 
-> **현재 우선순위 전환:** `v1.11.1` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다.
+> **현재 우선순위 전환:** `v1.11.2` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다.
 
 Green Smart의 최우선 목표는 다음이다.
 
@@ -74,8 +74,9 @@ Green Smart는 독립 웹서비스가 아니라 Home Assistant 위에서 동작�
 | `custom_components/green_smart/weather_api.py`, `weather_views.py`, `kma_grid.py` | KMA/PSIS 연동 |
 | `custom_components/green_smart/central_api.py`, `central_store.py`, `central_views.py` | central activation/token/allowlisted adapter baseline |
 | `custom_components/green_smart/zone_control_views.py` | zone control, AI output, final target, entity mapping, execution/safety/log API |
-| `custom_components/green_smart/frontend_panel.py` | HA sidebar panel registration |
-| `custom_components/green_smart/panel/green-smart-panel.js` | 전체 Green Smart panel UI |
+| `custom_components/green_smart/frontend_panel.py` | HA sidebar panel registration. R2 기준으로 public module URL은 `/green_smart_panel/green-smart-panel.js?v={manifest.version}` 유지 |
+| `custom_components/green_smart/panel/green-smart-panel.js` | 현재 전체 Green Smart panel UI이며, R2 이후 compatibility shell/public custom element entrypoint로 유지 |
+| `docs/rebuild/frontend-decomposition-plan.md` | R2 frontend module boundary, HA loading strategy, first extraction slice 기준 |
 
 ### 2.3 현재 구현된 제어 루프
 
