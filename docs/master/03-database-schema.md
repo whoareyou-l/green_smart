@@ -1,13 +1,15 @@
 # 3. DB 구상도 — Database Schema
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.11.3`
+> 기준 버전: `v1.11.4`
 > 문서 목적: Green Smart 데이터를 **RBAC / 구역 및 장비 / 작기(Crop Cycle) / 센서 데이터 및 로그** 4대 기둥으로 재정렬한다.
 
 ## 1. DB 설계 원칙
 
+> **R4 implementation compatibility:** 현재 물리 DB는 `crop_seasons`, `crop_season_id`, crop record의 `season_id`를 유지한다. `crop_cycle`/`crop_cycle_id`는 제품/API canonical alias이자 future migration target이며, 명시 승인 전까지 실제 rename/migration은 금지한다. 상세 기준은 `docs/rebuild/db-schema-rationalization-plan.md`를 따른다.
+
 - RDB는 MariaDB/MySQL 기준이다.
-- 새 작기가 시작될 때 테이블을 새로 만들지 않는다. `crop_cycles` row로 논리 격리한다.
+- 새 작기가 시작될 때 테이블을 새로 만들지 않는다. 목표 모델에서는 `crop_cycles` row로 논리 격리하되, 현재 구현은 `crop_seasons` row로 호환 유지한다.
 - 모든 제어/차단/승인/수동 override에는 `user_id` 또는 `actor_type`을 남긴다.
 - raw sensor 장기 시계열은 InfluxDB/HA recorder에 위임할 수 있지만, 모델/제어에 필요한 핵심 sensor log는 RDB에 적재 가능해야 한다.
 - 모든 실행은 재현 가능해야 한다: 입력 snapshot, safety decision, command, result, actor, timestamp.
