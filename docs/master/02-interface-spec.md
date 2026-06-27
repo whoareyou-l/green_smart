@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
-> 기준일: `2026-06-27`  
-> 기준 버전: `v1.10.26`  
+> 기준일: `2026-06-27`
+> 기준 버전: `v1.10.28`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -182,7 +182,7 @@ export const controlService = {
 | GET/POST | `/api/green_smart/zones/ai-control-outputs` | AI 후보 출력 저장/조회 |
 | POST | `/api/green_smart/zones/ai-control-outputs/{id}/apply` | AI 후보를 final target으로 승격 |
 | GET/POST | `/api/green_smart/zones/final-targets` | 실행 후보 final target |
-| POST | `/api/green_smart/zones/execute-final-targets` | dry_run 또는 실제 실행 |
+| POST | `/api/green_smart/zones/execute-final-targets` | dry_run 또는 실제 실행. VS-002 천창 개폐 Dry Run 제어는 `roof_window_open_pct`, `dry_run=true`, `command_id`, `tolerance_pct`, `timeout_ms`, `actualServiceCallSuppressed`를 사용한다 |
 | GET | `/api/green_smart/zones/control-logs` | 실행/차단/검증 로그 |
 | GET | `/api/green_smart/zones/safety-guard-events` | 안전 이벤트 |
 | POST | `/api/green_smart/zones/safety-guard-events/ack` | 이벤트 확인 |

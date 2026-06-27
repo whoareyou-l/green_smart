@@ -1,7 +1,7 @@
 # 4. 통합 시나리오 흐름도 — Workflow Diagram
 
-> 기준일: `2026-06-27`  
-> 기준 버전: `v1.10.26`  
+> 기준일: `2026-06-27`
+> 기준 버전: `v1.10.28`
 > 문서 목적: UI 컴포넌트, Frontend service, Backend API, DB, MQTT/HA Entity, 하드웨어가 시간 순서대로 어떻게 신호를 주고받는지 정의한다.
 
 ## 1. 공통 Actor
@@ -75,7 +75,7 @@ COM-Metric
 
 ---
 
-## 3. 필수 시나리오 B — 사용자의 수동 하드웨어 제어 흐름: 천창 개폐
+## 3. 필수 시나리오 B — 사용자의 수동 하드웨어 제어 흐름: VS-002 천창 개폐 Dry Run 제어
 
 ### 3.1 목적
 
@@ -121,6 +121,8 @@ sequenceDiagram
 ```
 
 명령 API 성공은 "송신 성공"만 의미한다. 실제 완료 판정은 `command_id`, `entity_id`, `current_position_pct`, `tolerance_pct`, `timeout_ms` 기반의 비동기 수렴으로만 확정한다.
+
+VS-002 Dry Run 응답은 실제 장비를 움직이지 않는 대신 `roof_window_open_pct`, `dry_run=true`, `command_id`, `tolerance_pct`, `timeout_ms`, `actualServiceCallSuppressed=true`를 반환해야 한다. Panel은 `data-vs002-roof-window-dry-run-card`에서 이 값을 보여주고, 실제 실행 버튼을 활성화하지 않는다.
 
 ### 3.3 Safety checks
 

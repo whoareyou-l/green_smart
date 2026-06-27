@@ -1002,6 +1002,26 @@ def _split_entity_domain(entity_id: str) -> str:
     return entity_id.split(".", 1)[0] if "." in entity_id else "homeassistant"
 
 
+def _vs002_roof_window_dry_run_target(position_pct=30) -> dict:
+    """VS-002 roof-window dry-run target metadata.
+
+    The actual HA service path is cover.set_cover_position(position=...).
+    Dry-run responses must show command_id/tolerance_pct/timeout_ms and confirm
+    actualServiceCallSuppressed so operators know no actuator moved.
+    """
+    position = max(0, min(100, int(float(position_pct))))
+    return {
+        "roof_window_open_pct": position,
+        "command_id": f"vs002-roof-window-dry-run-{position}",
+        "tolerance_pct": 5,
+        "timeout_ms": 30000,
+        "actualServiceCallSuppressed": True,
+        "service": "cover.set_cover_position",
+        "serviceData": {"position": position},
+        "scenario": "vs002_roof_window_dry_run",
+    }
+
+
 def _service_call_for_mapping(mapping: dict, target_value) -> dict | None:
     entity_id = mapping.get("entityId") or mapping.get("entity_id")
     if not entity_id or target_value is None:
@@ -1646,6 +1666,7 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
             crop_season_id = int(body.get("crop_season_id") or body.get("cropSeasonId"))
             zone_id = int(body.get("zone_id") or body.get("zoneId"))
             dry_run = bool(body.get("dry_run") or body.get("dryRun") or False)
+            vs002_roof_window_dry_run = _vs002_roof_window_dry_run_target(body.get("roof_window_open_pct") or body.get("roofWindowOpenPct") or 30)
             post_state_delay = float(body.get("post_state_delay") or body.get("postStateDelay") or 0.4)
         except Exception as exc:
             return _err(str(exc))
@@ -1729,6 +1750,10 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
                 call["postState"] = pre_state
                 call["stateMatched"] = None
                 call["stateVerification"] = "dry_run"
+                call["actualServiceCallSuppressed"] = True
+                call["command_id"] = vs002_roof_window_dry_run["command_id"]
+                call["tolerance_pct"] = vs002_roof_window_dry_run["tolerance_pct"]
+                call["timeout_ms"] = vs002_roof_window_dry_run["timeout_ms"]
                 continue
             try:
                 await hass.services.async_call(call["domain"], call["service"], call["serviceData"], blocking=True)
@@ -1765,7 +1790,7 @@ class ZoneFinalTargetExecutionView(HomeAssistantView):
         sensorSafetyResults = [r for c in blocked_calls + calls for r in (c.get("sensorSafetyResults") or [])]
         sensorSafetyStatus = "blocked" if any(r.get("sensorRuleMatched") for r in sensorSafetyResults) else "clear"
         safety_guard_summary = {"status": "blocked" if blocked_calls and not safe_state_calls else ("failsafe" if safe_state_calls else "clear"), "blockedCount": len(blocked_calls), "failSafeCount": len(safe_state_calls), "ruleResults": [r for c in blocked_calls + calls for r in ((c.get("safetyGuard") or {}).get("ruleResults") or [])], "reasons": [reason for c in blocked_calls + calls for reason in (c.get("interlockReasons") or [])]}
-        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "operatorConfirmed": operatorConfirmation.get("operatorConfirmed"), "operatorRole": operatorConfirmation.get("operatorRole"), "operatorOverrideReason": operatorConfirmation.get("operatorOverrideReason"), "safetyStatus": safety_guard_summary["status"], "sensorSafetyStatus": sensorSafetyStatus, "sensorSafetyResults": sensorSafetyResults, "safetyGuard": safety_guard_summary}
+        response = {"ok": not errors and not state_failures and not (blocked_calls and not safe_state_calls), "dryRun": dry_run, "executedCount": 0 if dry_run else len(calls) - len(errors), "plannedCount": len(calls) + len(blocked_calls), "calls": calls, "errors": errors, "stateReports": state_reports, "stateMatched": state_matched, "stateVerification": "passed" if state_matched else "failed", "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "blockedByInterlock": bool(blocked_calls), "failSafeApplied": bool(safe_state_calls), "operatorConfirmed": operatorConfirmation.get("operatorConfirmed"), "operatorRole": operatorConfirmation.get("operatorRole"), "operatorOverrideReason": operatorConfirmation.get("operatorOverrideReason"), "safetyStatus": safety_guard_summary["status"], "sensorSafetyStatus": sensorSafetyStatus, "sensorSafetyResults": sensorSafetyResults, "safetyGuard": safety_guard_summary, "vs002RoofWindowDryRun": vs002_roof_window_dry_run if dry_run else None, "actualServiceCallSuppressed": bool(dry_run)}
         if response.get("stateMatched") and not blocked_calls:
             action = "state_verification_passed"
         await _insert_log(hass, farm_id=farm_id, crop_season_id=crop_season_id, zone_id=zone_id, domain=domain, actor=_actor(request), action=action, before={"preState": [r.get("preState") for r in state_reports], "blockedCalls": blocked_calls}, after={"postState": [r.get("postState") for r in state_reports], "dry_run": dry_run, "calls": calls, "errors": errors, "stateReports": state_reports, "blockedCalls": blocked_calls, "safeStateCalls": safe_state_calls, "operatorConfirmation": operatorConfirmation, "safetyStatus": response["safetyStatus"], "sensorSafetyStatus": response.get("sensorSafetyStatus"), "sensorSafetyResults": response.get("sensorSafetyResults"), "safetyGuard": response["safetyGuard"]}, result=result, message="final targets executed via Home Assistant services with SafetyGuard/interlock/fail safe and pre/post state verification")

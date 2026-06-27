@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.27
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.28
 const DOMAIN = "green_smart";
-const VERSION = "1.10.27";
+const VERSION = "1.10.28";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -3672,9 +3672,56 @@ button.action:disabled{opacity:.5;cursor:default;}
     </div>`;
   }
 
+  _renderVs002RoofWindowDryRunCard() {
+    const cfg = this._normalizedForm();
+    this._ensureEquipZones(cfg.greenhouse_zones);
+    const zoneEquip = this._equipment[this._equipZone] || DEFAULT_EQUIP;
+    const position = Number(zoneEquip.roof_window ?? 30);
+    const result = this._vs002RoofWindowDryRunResult || null;
+    return `<div class="gs-card" data-vs002-roof-window-dry-run-card style="padding:16px;margin-bottom:12px;border:1px solid #d7e8dc;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <div><b>천창 개폐 Dry Run</b><div class="strategy-muted">VS-002 · roof_window_open_pct · SafetyGuard/Interlock/Mapping 검증 · 실제 장비 실행 없음</div></div>
+        <button class="mini-btn primary" data-vs002-roof-window-dry-run>Dry Run 실행</button>
+      </div>
+      <label style="font-size:12px;color:#5d7d64;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">목표 개도율
+        <input data-vs002-roof-window-position type="number" min="0" max="100" step="1" value="${this._esc(String(position))}" style="width:90px;border:1px solid #d7e8dc;border-radius:8px;padding:7px;text-align:right;"> %
+      </label>
+      <div class="strategy-muted" style="margin-top:8px;">예정 호출: <code>cover.set_cover_position</code> · payload key <code>roof_window_open_pct</code> · actualServiceCallSuppressed=true</div>
+      <div data-vs002-roof-window-result class="strategy-muted" style="margin-top:8px;">${result ? this._esc(result) : "Dry Run 전입니다."}</div>
+    </div>`;
+  }
+
+  async _runVs002RoofWindowDryRun(root) {
+    const position = Number(root.querySelector("[data-vs002-roof-window-position]")?.value || 30);
+    const cropSeasonId = this._numericControlSeasonId();
+    const zoneId = Number(this._controlScope?.zoneId || this._equipZone + 1 || 1);
+    try {
+      const res = await this._hass.callApi("POST", "green_smart/zones/execute-final-targets", {
+        domain: "device",
+        farm_id: 1,
+        crop_season_id: cropSeasonId || this._activeSeasonId || 1,
+        zone_id: zoneId,
+        dry_run: true,
+        roof_window_open_pct: position,
+        operatorConfirmed: true,
+        operatorConfirmationText: this._operatorConfirmationPhrase("device"),
+        operatorRole: this._currentUserRole(),
+        operatorOverrideReason: "vs002_roof_window_dry_run",
+      });
+      const meta = res?.vs002RoofWindowDryRun || {};
+      this._vs002RoofWindowDryRunResult = `Dry Run 완료 · planned ${res?.plannedCount ?? 0} · safety ${res?.safetyStatus || "-"} · command_id ${meta.command_id || "-"} · actualServiceCallSuppressed ${String(res?.actualServiceCallSuppressed ?? true)}`;
+    } catch (err) {
+      console.warn("VS-002 천창 Dry Run 실패", err);
+      this._vs002RoofWindowDryRunResult = "Dry Run 실패: final target/device mapping/control mode를 확인하세요.";
+    }
+    this._pageRendered = null;
+    this._update();
+  }
+
   _renderWindowPage() {
     return `<div class="page">
       ${this._renderSubHero("천창·측창 제어","천창 및 측창 개도율 설정","mdi:window-open")}
+      ${this._renderVs002RoofWindowDryRunCard()}
       ${this._renderCtrlCard("roof_window")}
       ${this._renderCtrlCard("side_window")}
     </div>`;
@@ -9212,6 +9259,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._bindIrrigationControlInputs(root);
     this._bindDeviceControlInputs(root);
     root.querySelector("[data-vs001-sensor-refresh]")?.addEventListener("click", () => this._fetchCurrentSensorSummary({ patchOnly: true }));
+    root.querySelector("[data-vs002-roof-window-dry-run]")?.addEventListener("click", () => this._runVs002RoofWindowDryRun(root));
     root.querySelectorAll("[data-home-status-card]").forEach((card) => {
       card.addEventListener("click", () => this._openHomeStatusPopup(card.dataset.statusKey));
     });
