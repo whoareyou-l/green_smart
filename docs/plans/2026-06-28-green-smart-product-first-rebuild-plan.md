@@ -14,14 +14,14 @@
 
 ## 0. 왜 리빌딩이 필요한가
 
-현재 `v1.10.29` 기준 진단 수치:
+현재 `v1.11.0` 기준 진단 수치:
 
 | 항목 | 현재 상태 | 리빌딩 판단 |
 |---|---:|---|
 | `panel/green-smart-panel.js` | 10,007 lines | UI 상태·렌더·API 호출·모달·도메인 로직이 한 파일에 과밀 |
 | `crop_views.py` | 4,946 lines | 작기/생육/AI/리포트/인터록/품질/예측이 한 API 파일에 과밀 |
 | `zone_control_views.py` | 2,737 lines | 환경/관수/장치/인터록/실행 경로가 한 파일에 과밀 |
-| `docs/design/ui-information-architecture-and-rbac.md` | 기준 버전 `v1.9.56` | 현재 구현 `v1.10.29`와 문서 기준 괴리 |
+| `docs/design/ui-information-architecture-and-rbac.md` | 기준 버전 `v1.9.56` | 현재 구현 `v1.11.0`와 문서 기준 괴리 |
 | 전체 contract tests | 536 passed | 회귀 방어는 좋지만, 구조 정리는 테스트가 아니라 아키텍처 경계가 필요 |
 
 결론: 기능은 돌아가지만, 계속 vertical slice를 누적하면 UI·API·문서가 더 무거워진다. 다음 단계는 신규 기능이 아니라 **제품 구조 리빌딩 baseline**이다.
@@ -30,7 +30,7 @@
 
 ## 1. 리빌딩 원칙
 
-1. **Prod 안정성 우선:** 현재 `v1.10.29` 운영 반영 상태는 유지한다. 리빌딩 중 prod에 즉시 큰 변경을 넣지 않는다.
+1. **Prod 안정성 우선:** 현재 `v1.11.0` 운영 반영 상태는 유지한다. 리빌딩 중 prod에 즉시 큰 변경을 넣지 않는다.
 2. **제품 구조 먼저:** 화면/도메인/API/DB/model 경계를 먼저 정리한다. Docker/Compose 운영 리빌드는 제품 구조 기준이 확정된 뒤 진행한다.
 3. **기능 추가 중단:** VS-004 같은 신규 기능은 리빌딩 baseline이 생길 때까지 보류한다.
 4. **큰 rewrite 금지:** 한 번에 전체 교체하지 않는다. Compatibility adapter와 contract test로 점진 이관한다.
@@ -94,7 +94,7 @@
 
 ### Phase R0 — 현재 구조 freeze 및 inventory
 
-**Objective:** 현재 `v1.10.29`를 안전 기준선으로 고정하고 리빌딩 대상/보존 대상을 분리한다.
+**Objective:** 현재 `v1.11.0`를 안전 기준선으로 고정하고 리빌딩 대상/보존 대상을 분리한다.
 
 **Files:**
 - Create: `docs/rebuild/current-state-inventory.md`
@@ -110,7 +110,7 @@
 
 ### Phase R1 — 제품 IA/RBAC baseline 재작성
 
-**Objective:** 오래된 `v1.9.56` 기준 IA/RBAC 문서를 `v1.10.29+` 기준으로 재정렬한다.
+**Objective:** 오래된 `v1.9.56` 기준 IA/RBAC 문서를 `v1.11.0+` 기준으로 재정렬한다.
 
 **Files:**
 - Rewrite/Update: `docs/design/ui-information-architecture-and-rbac.md`
