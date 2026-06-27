@@ -299,6 +299,33 @@ async def _ensure_zone(hass, zone_id: int) -> None:
 
 # ── 작기 ──────────────────────────────────────────────────────────────────────
 
+def _vs003_lettuce_crop_cycle_payload(row: dict | None) -> dict:
+    """VS-003 상추 crop_cycle compatibility payload for operator flows."""
+    row = row or {}
+    return {
+        "slice": "VS-003 상추 작기 등록 및 생육조사 입력",
+        "crop_cycle_id": row.get("id"),
+        "cropType": row.get("cropType") or "lettuce",
+        "cropLabel": "상추",
+        "indexType": "L-Index",
+        "storageTables": ["crop_seasons", "growth_surveys"],
+    }
+
+
+def _vs003_lettuce_growth_metrics_payload(row: dict | None) -> dict:
+    """VS-003 lettuce L-Index metrics_json payload marker."""
+    row = row or {}
+    return {
+        "slice": "VS-003 상추 작기 등록 및 생육조사 입력",
+        "growth_survey_id": row.get("id"),
+        "crop_cycle_id": row.get("seasonId") or row.get("season_id"),
+        "cropType": row.get("cropType") or "lettuce",
+        "indexType": "L-Index",
+        "metricsSource": "growth_surveys.metrics_json",
+        "requiredMetricKeys": ["leafLength", "leafWidth", "leafCount", "freshWeight", "plantHeight"],
+    }
+
+
 class CropSeasonsView(HomeAssistantView):
     """GET 전체 목록 / POST 정식 등록."""
     url  = "/api/green_smart/crop/seasons"
@@ -364,6 +391,9 @@ class CropSeasonsView(HomeAssistantView):
             FROM crop_seasons s LEFT JOIN zones z ON z.id = s.zone_id
             WHERE s.id = %s
         """, (new_id,))
+        if row and str(row.get("cropType") or "").lower() == "lettuce":
+            row["vs003"] = _vs003_lettuce_crop_cycle_payload(row)
+            row["crop_cycle_id"] = row.get("id")
         return _json(row)
 
 
@@ -597,6 +627,10 @@ class CropGrowthListView(HomeAssistantView):
                    notes AS note
             FROM growth_surveys WHERE id = %s
         """, (new_id,))
+        if row and str(row.get("cropType") or "").lower() == "lettuce":
+            row["vs003"] = _vs003_lettuce_growth_metrics_payload({**row, "seasonId": int(season_id)})
+            row["crop_cycle_id"] = int(season_id)
+            row["growth_survey_id"] = row.get("id")
         return _json(row)
 
 

@@ -1,7 +1,7 @@
 # 3. DB 구상도 — Database Schema
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.10.28`
+> 기준 버전: `v1.10.29`
 > 문서 목적: Green Smart 데이터를 **RBAC / 구역 및 장비 / 작기(Crop Cycle) / 센서 데이터 및 로그** 4대 기둥으로 재정렬한다.
 
 ## 1. DB 설계 원칙
@@ -565,3 +565,16 @@ CREATE TABLE control_records (
 | `users/roles/...` | `green_smart_admin_role_mappings` + HA user id |
 
 신규 구현은 즉시 기존 테이블명을 강제 변경하지 않는다. 먼저 alias/compatibility layer를 두고 vertical slide 단위로 안전하게 migration한다.
+
+---
+
+## VS-003 상추 작기 등록 및 생육조사 입력 DB 계약
+
+VS-003은 설계명 `crop_cycle`/`crop_cycles`를 현재 물리 테이블 `crop_seasons` row와 호환시킨다. 상추 작기 등록 후 생육조사 입력은 아래 저장 계약을 따른다.
+
+| Table | 목적 | VS-003 필드 |
+|---|---|---|
+| `crop_seasons` | crop_cycle 호환 작기 row | `crop_type='lettuce'`, `zone_id`, `plant_date`, `variety`, `method` |
+| `growth_surveys` | 작기별 생육조사 row | `season_id` = `crop_cycle_id`, `crop_type='lettuce'`, `metrics_json` |
+
+상추 `L-Index` 핵심 입력은 `growth_surveys.metrics_json`에 JSON 배열로 저장한다. 필수 metric key는 `leafLength`, `leafWidth`, `leafCount`, `freshWeight`, `plantHeight`이며, `farm_staff`는 `growth_survey.write` 권한 범위에서 입력한다.

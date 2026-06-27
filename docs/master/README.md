@@ -1,7 +1,7 @@
 # Green Smart 5대 마스터 문서
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.10.28`
+> 기준 버전: `v1.10.29`
 > 목적: 뒤엉킨 Green Smart 코드와 문서를 **설계 기반(Design-Driven)** 으로 재정렬하고, 이후 모든 구현을 **문서 우선 + 수직 슬라이드(Vertical Slide)** 방식으로 진행하기 위한 최상위 마스터 문서 묶음.
 
 ## 0. 절대 원칙
@@ -65,3 +65,16 @@ VS-XXX: 기능명
 | 3 | VS-003 상추 작기 등록 및 생육조사 입력 | crop_cycle 기반 데이터 격리와 농장직원 기록 흐름 검증 |
 | 4 | VS-004 센서 고정값 감지 Fail-Safe | 운영 안전성과 ML 입력 신뢰도 확보 |
 | 5 | VS-005 farm_owner 승인 gate | RBAC + 승인 + audit log의 핵심 슬라이스 |
+
+## 4. 현재 진행 수직 슬라이스 — VS-003 상추 작기 등록 및 생육조사 입력
+
+VS-003은 `farm_staff`가 패널에서 상추 작기를 등록하고 같은 `crop_cycle` 기준으로 생육조사를 입력하는 최소 운영 흐름이다.
+
+| Layer | 계약 |
+|---|---|
+| UI | `data-vs003-lettuce-crop-cycle-card`, `data-vs003-lettuce-growth-survey-card`, `data-vs003-lettuce-l-index-fields` |
+| API | POST `/api/green_smart/crop/seasons`, GET/POST `/api/green_smart/crop/seasons/{crop_cycle_id}/growth` |
+| DB | 현재 물리 테이블 `crop_seasons`를 설계명 `crop_cycle`/`crop_cycles` 호환 row로 사용하고, `growth_surveys.metrics_json`에 상추 L-Index 입력값을 저장 |
+| 작물 | `lettuce` |
+| 생육 지표 | `L-Index`: `leafLength`, `leafWidth`, `leafCount`, `freshWeight`, `plantHeight` |
+| 권한 | `farm_staff`는 `crop.write`, `growth_survey.write` 범위의 기록 입력 담당 |

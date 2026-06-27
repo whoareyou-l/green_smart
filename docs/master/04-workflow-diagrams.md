@@ -1,7 +1,7 @@
 # 4. 통합 시나리오 흐름도 — Workflow Diagram
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.10.28`
+> 기준 버전: `v1.10.29`
 > 문서 목적: UI 컴포넌트, Frontend service, Backend API, DB, MQTT/HA Entity, 하드웨어가 시간 순서대로 어떻게 신호를 주고받는지 정의한다.
 
 ## 1. 공통 Actor
@@ -315,3 +315,45 @@ sequenceDiagram
 - [ ] SafetyGuard/Interlock가 실행 직전에 다시 평가되는가?
 - [ ] 실패/차단/승인/복구 로그가 남는가?
 - [ ] farm_owner/farm_staff/admin별 UI/권한이 분리되는가?
+
+---
+
+## 4. 필수 시나리오 C — VS-003 상추 작기 등록 및 생육조사 입력
+
+### 4.1 목적
+
+`farm_staff`가 Green Smart Panel에서 상추 작기를 등록하고, 같은 `crop_cycle` 기준으로 상추 `L-Index` 생육조사를 입력한다.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Staff as farm_staff
+  participant Panel as green-smart-panel
+  participant API as cropRouter/HomeAssistantView
+  participant DB as MariaDB
+
+  Staff->>Panel: 작물 설정 > 작기 설정 > 정식 등록
+  Panel->>API: POST /api/green_smart/crop/seasons (cropType=lettuce)
+  API->>DB: INSERT crop_seasons
+  DB-->>API: crop_cycle_id compatible season id
+  API-->>Panel: crop_cycle_id + lettuce + L-Index metadata
+  Panel-->>Staff: 상추 작기 카드 표시
+
+  Staff->>Panel: 생육조사 > 생육조사 추가
+  Panel->>API: POST /api/green_smart/crop/seasons/{crop_cycle_id}/growth
+  API->>DB: INSERT growth_surveys(metrics_json)
+  API-->>Panel: growth_survey_id + metrics_json
+  Panel-->>Staff: leafLength/leafWidth/freshWeight 포함 L-Index 기록 표시
+```
+
+### 4.2 수직 슬라이스 범위
+
+```text
+data-vs003-lettuce-crop-cycle-card
+→ POST /api/green_smart/crop/seasons
+→ crop_seasons row as crop_cycle
+→ data-vs003-lettuce-growth-survey-card
+→ POST /api/green_smart/crop/seasons/{crop_cycle_id}/growth
+→ growth_surveys.metrics_json
+→ L-Index fields: leafLength, leafWidth, leafCount, freshWeight, plantHeight
+```

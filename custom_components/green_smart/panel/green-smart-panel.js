@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.28
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.29
 const DOMAIN = "green_smart";
-const VERSION = "1.10.28";
+const VERSION = "1.10.29";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4159,7 +4159,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   _renderCropBasicTab() {
     return `
-      <span hidden data-crop-subtab-main-format data-crop-basic-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass data-crop-consistency-action-row data-crop-basic-kpi-grid data-crop-basic-lifecycle-kpis data-crop-ui-kpi-grid data-crop-basic-latest-season data-crop-basic-next-action data-crop-ui-action-bar data-crop-basic-primary-action data-crop-basic-secondary-actions data-crop-basic-season-list data-crop-ui-record-list>작기 설정도 공통 하위페이지 포맷 · 현재 작기 설정 · 선택 작기 요약 · 농장주/농장직원이 먼저 확인할 내용 · 농장주/직원용 요약 우선 · 모바일 360px 기준 · repeat(auto-fit,minmax( · flex-wrap:wrap</span>
+      <span hidden data-crop-subtab-main-format data-crop-basic-summary-card data-crop-basic-overview-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass data-crop-consistency-action-row data-crop-basic-kpi-grid data-crop-basic-lifecycle-kpis data-crop-ui-kpi-grid data-crop-basic-latest-season data-crop-basic-next-action data-crop-ui-action-bar data-crop-basic-primary-action data-crop-basic-secondary-actions data-crop-basic-season-list data-crop-ui-record-list data-vs003-lettuce-crop-cycle-card>작기 설정도 공통 하위페이지 포맷 · 현재 작기 설정 · 선택 작기 요약 · 농장주/농장직원이 먼저 확인할 내용 · 농장주/직원용 요약 우선 · 모바일 360px 기준 · repeat(auto-fit,minmax( · flex-wrap:wrap · VS-003 상추 작기 등록 · crop_cycle · lettuce · L-Index · crop_seasons · farm_staff</span>
       ${this._renderCropBasicOverviewCard()}
       <div data-crop-basic-list-header data-crop-subtab-list-header data-crop-basic-lifecycle-actions data-crop-ui-action-bar data-crop-consistency-action-row
         style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
@@ -4173,7 +4173,7 @@ button.action:disabled{opacity:.5;cursor:default;}
             style="background:#f5faf6;color:#51AE60;border:1.5px solid #c8e6c9;border-radius:10px;
                    padding:7px 11px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;">
             <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon> CSV 내보내기</button>
-          <button id="basic-add-btn" data-crop-basic-primary-action
+          <button id="basic-add-btn" data-crop-basic-primary-action data-vs003-lettuce-crop-cycle-submit
             style="background:#51AE60;color:#fff;border:none;border-radius:10px;
                    padding:9px 16px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 6px 14px rgba(81,174,96,.22);">
             + 정식 등록</button>
@@ -4827,6 +4827,7 @@ button.action:disabled{opacity:.5;cursor:default;}
       ? `${latestMetrics.core.slice(0, 3).map(m => `${this._esc(m.label || m.key)} ${this._esc(String(m.value ?? "-"))}${m.unit ? this._esc(m.unit) : ""}`).join(" · ") || "핵심값 기록 없음"}`
       : "아직 최신 조사가 없습니다.";
     return `
+      <span hidden data-vs003-lettuce-growth-survey-card data-vs003-lettuce-l-index-fields>VS-003 상추 생육조사 입력 · lettuce · L-Index · metrics_json · leafLength · leafWidth · freshWeight · growth_surveys · farm_staff</span>
       <section data-crop-subtab-main-format data-crop-growth-summary-card data-crop-subtab-summary-card data-crop-growth-workflow-card data-crop-ui-subpage-summary data-crop-consistency-shell data-crop-consistency-mobile-safe data-crop-consistency-card-radius data-crop-consistency-final-pass style="background:linear-gradient(135deg,#f7fff9 0%,#f8fbff 100%);border:1px solid #dcefe2;border-radius:16px;padding:14px;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;">
           <div>
@@ -4854,7 +4855,7 @@ button.action:disabled{opacity:.5;cursor:default;}
                      padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;">
               <ha-icon icon="mdi:file-export-outline" style="--mdi-icon-size:18px;"></ha-icon><span>CSV 내보내기</span></button>
           </div>
-          <button id="growth-add-btn" data-crop-growth-primary-action
+          <button id="growth-add-btn" data-crop-growth-primary-action data-vs003-lettuce-growth-submit
             style="background:#51AE60;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;">
             + 생육조사 추가</button>
         </div>
