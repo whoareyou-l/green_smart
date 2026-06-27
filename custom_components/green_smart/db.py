@@ -514,6 +514,9 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             value DOUBLE NOT NULL,
             unit VARCHAR(32) NULL,
             captured_at TIMESTAMP NOT NULL,
+            quality VARCHAR(32) NULL,
+            raw_payload JSON NULL,
+            received_at TIMESTAMP NULL,
             KEY idx_sensor_readings_lookup (farm_id, zone_id, reading_type, captured_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
@@ -759,6 +762,9 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             await _ensure_column(cur, "control_pesticides", "pls_warning", "pls_warning TEXT NULL AFTER mix_check_note")
             await _ensure_column(cur, "control_pesticides", "phi_days", "phi_days INT NULL AFTER pls_warning")
             await _ensure_column(cur, "control_pesticides", "rei_hours", "rei_hours INT NULL AFTER phi_days")
+            await _ensure_column(cur, "sensor_readings", "quality", "quality VARCHAR(32) NULL AFTER captured_at")
+            await _ensure_column(cur, "sensor_readings", "raw_payload", "raw_payload JSON NULL AFTER quality")
+            await _ensure_column(cur, "sensor_readings", "received_at", "received_at TIMESTAMP NULL AFTER raw_payload")
             await _ensure_column(cur, "crop_model_training_snapshots", "feature_snapshot_id", "feature_snapshot_id BIGINT NULL AFTER season_id")
             await _ensure_index(cur, "crop_model_training_snapshots", "idx_crop_model_training_validation_due", "(predicted_for_date, validation_status, season_id)")
     _LOGGER.info("green_smart DB schema ensured")

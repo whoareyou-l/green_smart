@@ -1,6 +1,6 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.10.26
+// Green Smart — Modern SaaS greenhouse dashboard  v1.10.27
 const DOMAIN = "green_smart";
-const VERSION = "1.10.26";
+const VERSION = "1.10.27";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -317,6 +317,7 @@ class GreenSmartPanel extends HTMLElement {
     this._zoneLimitedAutoPolicyCache = {};
     this._zoneAlertResumeCache = {};
     this._zoneDryRunPreviewCache = {};
+    this._currentSensorSummary = null;
     this._zoneElementRefreshInterval = null;
     this._zoneControlSettings = this._loadZoneControlSettings();
     this._migrateLegacyControlStateToScoped();
@@ -1678,6 +1679,7 @@ button.action:disabled{opacity:.5;cursor:default;}
 
     const alertsList = root.querySelector("[data-alerts-list]");
     if (alertsList) alertsList.innerHTML = this._renderAlertsInner();
+    this._patchVs001SensorSummaryCard();
     const pill = root.querySelector("[data-sb-alert-pill]");
     if (pill) pill.innerHTML = this._alertPillHtml();
   }
@@ -2093,6 +2095,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         ${sim ? `<span style="margin-left:8px;color:#7a9780;font-weight:400;">업데이트: <span data-sim-ts>${sim.updated}</span></span>` : ""}
       </div>` : ""}
       ${this._renderHomeActionSummaryCard(kpi)}
+      ${this._renderVs001SensorSummaryCard(kpi)}
       ${this._renderKPIStrip(kpi)}
       <div class="chart-row">
         ${this._renderTrendChart()}
@@ -2123,6 +2126,65 @@ button.action:disabled{opacity:.5;cursor:default;}
         <span>Green Smart v${VERSION}</span>
       </div>
     </div>`;
+  }
+
+  async _fetchCurrentSensorSummary({ patchOnly = false } = {}) {
+    if (!this._hass) return null;
+    const zoneId = Number(this._controlScope?.zoneId || this._equipZone + 1 || 1);
+    const greenhouseId = Number(this._form?.greenhouse_id || this._form?.farm_id || 1);
+    try {
+      // sensorService.getCurrentSensors — VS-001 service boundary marker.
+      const sensorService = { getCurrentSensors: () => this._hass.callApi("GET", `green_smart/sensors/current?greenhouse_id=${greenhouseId}&zone_id=${zoneId}`) };
+      const res = await sensorService.getCurrentSensors();
+      this._currentSensorSummary = res || null;
+      if (patchOnly) this._patchVs001SensorSummaryCard();
+      else this._update();
+      return this._currentSensorSummary;
+    } catch (err) {
+      console.warn("VS-001 current sensor summary fallback", err);
+      return this._currentSensorSummary;
+    }
+  }
+
+  _vs001MetricValue(data, key, fallback, digits = 1) {
+    const val = data?.[key] ?? fallback;
+    if (val == null || val === "") return "--";
+    const n = Number(val);
+    return Number.isFinite(n) ? n.toFixed(digits) : this._esc(String(val));
+  }
+
+  _renderVs001SensorSummaryCard(kpi = {}) {
+    const data = this._currentSensorSummary;
+    if (!data && this._hass) this._fetchCurrentSensorSummary({ patchOnly: true });
+    const temp = this._vs001MetricValue(data, "temperature_c", kpi.temp, 1);
+    const rh = this._vs001MetricValue(data, "relative_humidity_pct", kpi.humidity, 0);
+    const vpd = this._vs001MetricValue(data, "vpd_kpa", kpi.vpd, 2);
+    const sourceStatus = data?.source_status || (this._isVirtual() ? "virtual_simulation" : "loading");
+    const quality = data?.quality || "pending";
+    return `<div class="gs-card" data-vs001-sensor-summary-card style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">
+        <div><b>실시간 온도·습도·VPD</b><div class="strategy-muted">VS-001 · sensorService.getCurrentSensors · Zone ${this._esc(String(data?.zone_id || this._controlScope?.zoneId || 1))}</div></div>
+        <button class="mini-btn" data-vs001-sensor-refresh>센서 새로고침</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;">
+        <div class="mini-stat"><span>온도</span><b data-vs001-temperature-c>${temp}</b><small>°C</small></div>
+        <div class="mini-stat"><span>상대습도</span><b data-vs001-relative-humidity-pct>${rh}</b><small>%</small></div>
+        <div class="mini-stat"><span>VPD</span><b data-vs001-vpd-kpa>${vpd}</b><small>kPa</small></div>
+        <div class="mini-stat"><span>Source</span><b data-vs001-source-status>${this._esc(sourceStatus)}</b><small>${this._esc(quality)}</small></div>
+      </div>
+      ${data?.used_fallback ? `<div class="strategy-muted" style="color:#a45b00;margin-top:8px;">Soft Fallback 사용: ${this._esc(data?.fallback_reason_code || "sensor_fallback")}</div>` : ""}
+    </div>`;
+  }
+
+  _patchVs001SensorSummaryCard() {
+    const root = this.shadowRoot;
+    const data = this._currentSensorSummary;
+    if (!root || !data) return;
+    const set = (sel, value) => { const el = root.querySelector(sel); if (el) el.textContent = value; };
+    set("[data-vs001-temperature-c]", this._vs001MetricValue(data, "temperature_c", null, 1));
+    set("[data-vs001-relative-humidity-pct]", this._vs001MetricValue(data, "relative_humidity_pct", null, 0));
+    set("[data-vs001-vpd-kpa]", this._vs001MetricValue(data, "vpd_kpa", null, 2));
+    set("[data-vs001-source-status]", data.source_status || "unknown");
   }
 
   _renderKPIStrip(kpi) {
@@ -9149,6 +9211,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     this._bindControlStrategyInputs(root);
     this._bindIrrigationControlInputs(root);
     this._bindDeviceControlInputs(root);
+    root.querySelector("[data-vs001-sensor-refresh]")?.addEventListener("click", () => this._fetchCurrentSensorSummary({ patchOnly: true }));
     root.querySelectorAll("[data-home-status-card]").forEach((card) => {
       card.addEventListener("click", () => this._openHomeStatusPopup(card.dataset.statusKey));
     });

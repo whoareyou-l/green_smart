@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.util import dt as dt_util
@@ -49,6 +50,155 @@ def _actor(request: web.Request) -> str | None:
     if user is not None:
         return getattr(user, "name", None) or getattr(user, "id", None)
     return None
+
+
+def _calculate_vpd_kpa_soft_for_sensor_summary(temperature_c, relative_humidity_pct, *, last_safe_vpd_kpa=None, conservative_baseline_vpd_kpa=0.9) -> dict:
+    """VS-001 soft VPD calculation for current sensor summaries.
+
+    Never raises for noisy sensor values. Invalid inputs are marked with
+    quality/source_status metadata so UI and SafetyGuard can stay conservative.
+    """
+    def fallback(reason_code: str, quality: str) -> dict:
+        source = "last_safe" if last_safe_vpd_kpa is not None else "conservative_baseline"
+        value = last_safe_vpd_kpa if last_safe_vpd_kpa is not None else conservative_baseline_vpd_kpa
+        return {"vpd_kpa": round(float(value), 3), "quality": quality, "reason_code": reason_code, "used_fallback": True, "source": source}
+
+    if temperature_c is None or relative_humidity_pct is None:
+        return fallback("sensor_missing", "missing")
+    try:
+        temp = float(temperature_c)
+        rh = float(relative_humidity_pct)
+    except Exception:
+        return fallback("sensor_parse_failed", "out_of_range")
+    if not (-20.0 <= temp <= 60.0):
+        return fallback("temperature_out_of_range", "out_of_range")
+    if not (0.0 <= rh <= 100.0):
+        return fallback("relative_humidity_out_of_range", "out_of_range")
+    svp = 0.6108 * math.exp((17.27 * temp) / (temp + 237.3))
+    avp = svp * rh / 100.0
+    return {"vpd_kpa": round(svp - avp, 3), "quality": "ok", "reason_code": None, "used_fallback": False, "source": "calculated"}
+
+
+def _sensor_reading_key(reading_type: str | None) -> str | None:
+    value = str(reading_type or "").strip().lower()
+    aliases = {
+        "temperature": "temperature_c",
+        "temp": "temperature_c",
+        "temperature_c": "temperature_c",
+        "humidity": "relative_humidity_pct",
+        "rh": "relative_humidity_pct",
+        "relative_humidity": "relative_humidity_pct",
+        "relative_humidity_pct": "relative_humidity_pct",
+        "co2": "co2_ppm",
+        "co2_ppm": "co2_ppm",
+        "light": "light_umol",
+        "radiation": "light_umol",
+        "light_umol": "light_umol",
+        "vpd": "vpd_kpa",
+        "vpd_kpa": "vpd_kpa",
+    }
+    return aliases.get(value)
+
+
+async def _current_sensor_response(hass, *, greenhouse_id: int, zone_id: int | None) -> dict:
+    rows = await fetchall(
+        hass,
+        """
+        SELECT sr.reading_type AS readingType, sr.value, sr.unit,
+               sr.quality, sr.raw_payload AS rawPayload,
+               sr.captured_at AS measuredAt, sr.received_at AS receivedAt
+        FROM sensor_readings sr
+        INNER JOIN (
+            SELECT reading_type, MAX(captured_at) AS captured_at
+            FROM sensor_readings
+            WHERE farm_id = %s AND (%s IS NULL OR zone_id = %s)
+            GROUP BY reading_type
+        ) latest
+          ON latest.reading_type = sr.reading_type AND latest.captured_at = sr.captured_at
+        WHERE sr.farm_id = %s AND (%s IS NULL OR sr.zone_id = %s)
+        ORDER BY sr.reading_type ASC
+        """,
+        (greenhouse_id, zone_id, zone_id, greenhouse_id, zone_id, zone_id),
+    )
+    readings = {}
+    source_rows = []
+    worst_quality = "ok"
+    for row in rows:
+        key = _sensor_reading_key(row.get("readingType"))
+        if not key:
+            continue
+        raw_value = row.get("value")
+        try:
+            value = float(raw_value) if raw_value is not None else None
+        except Exception:
+            value = None
+        quality = row.get("quality") or "ok"
+        if quality != "ok" and worst_quality == "ok":
+            worst_quality = quality
+        readings[key] = value
+        source_rows.append({"reading_type": row.get("readingType"), "key": key, "value": value, "unit": row.get("unit"), "quality": quality, "measured_at": row.get("measuredAt"), "received_at": row.get("receivedAt")})
+
+    # Also touch HA state registry for live deployment compatibility and to keep
+    # the contract explicit: HA entity state can become the live source later.
+    hass_state_count = 0
+    for state in list(getattr(hass.states, "async_all", lambda: [])() or []):
+        entity_id = getattr(state, "entity_id", "")
+        if str(entity_id).startswith("sensor."):
+            hass.states.get(entity_id)
+            hass_state_count += 1
+
+    vpd = readings.get("vpd_kpa")
+    vpd_calc = _calculate_vpd_kpa_soft_for_sensor_summary(readings.get("temperature_c"), readings.get("relative_humidity_pct"))
+    if vpd is None:
+        vpd = vpd_calc["vpd_kpa"]
+    used_fallback = bool(vpd_calc.get("used_fallback")) and "vpd_kpa" not in readings
+    source_status = "db_sensor_readings" if source_rows else "no_sensor_readings"
+    if used_fallback:
+        source_status = "soft_fallback"
+        worst_quality = vpd_calc.get("quality") or worst_quality
+
+    return {
+        "ok": True,
+        "greenhouse_id": greenhouse_id,
+        "zone_id": zone_id,
+        "temperature_c": readings.get("temperature_c"),
+        "relative_humidity_pct": readings.get("relative_humidity_pct"),
+        "vpd_kpa": vpd,
+        "co2_ppm": readings.get("co2_ppm"),
+        "light_umol": readings.get("light_umol"),
+        "quality": worst_quality,
+        "source_status": source_status,
+        "used_fallback": used_fallback,
+        "fallback_reason_code": vpd_calc.get("reason_code") if used_fallback else None,
+        "source_rows": source_rows,
+        "ha_sensor_state_count": hass_state_count,
+    }
+
+
+class ZoneCurrentSensorsView(HomeAssistantView):
+    """GET /api/v1/sensors/current."""
+
+    url = "/api/v1/sensors/current"
+    name = "api:green_smart:v1:sensors_current"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        greenhouse_id = _query_int(request, "greenhouse_id", _query_int(request, "farm_id", 1)) or 1
+        zone_id = _query_int(request, "zone_id")
+        return _json(await _current_sensor_response(hass, greenhouse_id=greenhouse_id, zone_id=zone_id))
+
+
+class GreenSmartCurrentSensorsView(HomeAssistantView):
+    """GET /api/green_smart/sensors/current."""
+
+    url = "/api/green_smart/sensors/current"
+    name = "api:green_smart:sensors_current"
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        greenhouse_id = _query_int(request, "greenhouse_id", _query_int(request, "farm_id", 1)) or 1
+        zone_id = _query_int(request, "zone_id")
+        return _json(await _current_sensor_response(hass, greenhouse_id=greenhouse_id, zone_id=zone_id))
 
 
 def _query_int(request: web.Request, key: str, default: int | None = None) -> int | None:

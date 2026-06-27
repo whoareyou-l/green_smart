@@ -321,6 +321,7 @@ async def async_setup(hass, config):
     from .zone_control_views import (
         ZoneControlSettingsView, ZoneControlCopySettingsView, ZoneInterlockSettingsView, ZoneControlModeView,
         ZoneControlFinalTargetsView, ZoneControlLogsView,
+        ZoneCurrentSensorsView, GreenSmartCurrentSensorsView,
         ZoneAiControlOutputsView, ZoneAiControlOutputApplyView, ZoneDeviceEntityMappingsView, ZoneEntityMappingValidationView, ZoneRehearsalReadinessView, ZoneVirtualRehearsalView, ZoneEntityStateSummaryView, ZoneFinalTargetExecutionView, ZoneSafetyGuardWatchdogView, ZoneSafetyGuardEventsView, ZoneSafetyGuardEventAckView, ZoneSafetyGuardEventClearView, ZoneEnvironmentStrategyPreviewView, ZoneIrrigationStrategyPreviewView, ZoneLimitedAutoPolicyView, ZoneAlertResumeView,
         EnvironmentControlSettingsView, IrrigationControlSettingsView, DeviceControlSettingsView,
         EnvironmentAiControlOutputsView, IrrigationAiControlOutputsView, DeviceAiControlOutputsView,
@@ -379,6 +380,8 @@ async def async_setup(hass, config):
         hass.http.register_view(ZoneControlCopySettingsView())
         hass.http.register_view(ZoneControlFinalTargetsView())
         hass.http.register_view(ZoneControlLogsView())
+        hass.http.register_view(ZoneCurrentSensorsView())
+        hass.http.register_view(GreenSmartCurrentSensorsView())
         hass.http.register_view(ZoneAiControlOutputsView())
         hass.http.register_view(ZoneAiControlOutputApplyView())
         hass.http.register_view(ZoneDeviceEntityMappingsView())
