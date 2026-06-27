@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.9.56`
+> 기준 버전: `v1.11.1`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -37,6 +37,20 @@ RBAC/UI 정보구조 기준:
 ```text
 docs/design/ui-information-architecture-and-rbac.md
 ```
+
+R1 backend enforcement 기준: frontend의 `visible_enabled`, `visible_disabled`, `summary_only`, `hidden` 상태는 UX 표현일 뿐이다. 다음 API 유형은 backend에서 HA user → Green Smart role → permission을 다시 검증해야 한다.
+
+| API 유형 | Required permission 예시 |
+|---|---|
+| crop create/update/delete | `manage_crop_seasons`, `edit_crop_records` |
+| growth/pest/control record write | `edit_crop_records`, `growth_survey.write`, `pest_scouting.write`, `control_treatment.write` |
+| strategy setting save | `edit_strategy_settings` |
+| interlock rule save | `edit_interlock_rules`, `edit_interlock_thresholds` |
+| dry run | `run_dry_run`, `control.dry_run` |
+| final target execution | `execute_final_targets`, `control.execute.manual` |
+| safety event ack/clear | `ack_safety_event`, `clear_safety_event` |
+| entity mapping | `edit_entity_mapping`, `device.mapping.manage` |
+| user/role/system config | `manage_users_roles`, `system_settings` |
 
 ---
 

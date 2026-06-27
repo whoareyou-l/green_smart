@@ -1,92 +1,47 @@
-# Green Smart UI Information Architecture and RBAC Plan
+# Green Smart UI Information Architecture and RBAC Baseline
 
-> 기준 버전: `v1.9.56`
-> 목적: 앞으로 Green Smart UI 요소를 어디에 배치하고, 어떤 역할이 어떤 페이지/기능을 볼 수 있으며, 비전공자인 농장주·농장직원이 직관적으로 사용할 수 있게 만드는 기준을 고정한다.
+> 기준 버전: `v1.11.1`
+> 리빌딩 단계: `R1 — 제품 IA/RBAC baseline`
+> 목적: Green Smart 화면을 농장 운영 흐름과 역할 권한 기준으로 재정렬한다. 모든 UI 요소는 `조회 / 기록 / 전략 / 실행 / 안전 / 고급설정` 중 하나로 분류하고, `admin / farm_owner / farm_staff` 역할별 표시·실행 상태를 명확히 한다.
 
 ---
 
-## 1. 핵심 원칙
-
-현재 개발 과정에서 환경/관수/장치/안전/리허설/설정 요소가 빠르게 누적되면서 화면 안에서 일부 기능이 섞여 보일 수 있다. 앞으로 UI를 추가하거나 이동할 때는 아래 원칙을 먼저 적용한다.
+## 1. R1 핵심 원칙
 
 ```text
 사용자는 컴퓨터 전공자가 아니다.
 화면은 기능 목록이 아니라 농장 운영 흐름이어야 한다.
-위험한 실행 기능은 숨기지 말고, 맥락·확인·안전상태와 함께 배치한다.
-어드민/농장주/농장직원의 역할에 따라 볼 수 있는 정보와 실행 가능한 기능을 분리한다.
+설정/운영/안전/실행/진단을 같은 카드에 섞지 않는다.
+위험한 실행은 SafetyGuard 상태와 운영자 확인 근처에 둔다.
+frontend hidden/disabled는 UX 보조일 뿐, write/execute API는 backend permission으로 강제한다.
 ```
 
-### 1.1 사용자 유형
+R1 이후 모든 UI 변경은 아래 질문을 먼저 통과해야 한다.
 
-| 사용자 | 기술 수준 | 주 관심사 | UI 원칙 |
-|---|---:|---|---|
-| 어드민 | 높음 | 설치, 시스템 설정, DB/API/HA 연결, 권한, 진단 | 고급 설정은 별도 Admin/System 영역에 모은다 |
-| 농장주 | 중간~낮음 | 농장 상태, 생산성, 위험 알림, 전략 승인, 중요한 실행 | 매출/작물/환경/관수/위험을 한눈에 보여주고, 승인 흐름을 단순화한다 |
-| 농장직원 | 낮음 | 오늘 할 일, 알림 확인, 기록 입력, 허용된 수동 조작 | 전문 용어를 줄이고 “해야 할 일” 중심으로 구성한다 |
-
-### 1.2 화면 설계 언어
-
-- `설정`과 `운영`을 같은 카드에 섞지 않는다.
-- `조회`, `기록`, `권장`, `승인`, `실행`, `고급설정`을 시각적으로 분리한다.
-- 안전/인터록/Fail Safe는 항상 실행 버튼 근처에 요약으로 보여준다.
-- 농장직원이 매일 쓰는 화면은 3초 안에 이해되어야 한다.
-- 관리자용 technical field는 기본 접힘 또는 Admin 전용 화면에 둔다.
-- 에러 메시지는 `DB 오류`, `API 실패`가 아니라 “무엇을 해야 하는지”로 표현한다.
+| 질문 | 기준 |
+|---|---|
+| 이 요소는 어떤 업무 bucket인가? | `조회 / 기록 / 전략 / 실행 / 안전 / 고급설정` 중 하나 |
+| 주 사용자는 누구인가? | `admin`, `farm_owner`, `farm_staff` 중 하나 이상 |
+| 권한이 없으면 어떻게 보이나? | `visible_enabled`, `visible_disabled`, `summary_only`, `hidden` 중 하나 |
+| backend enforcement가 필요한가? | 모든 write/execute/save/delete/ack/clear/apply는 필요 |
+| 농장직원에게 기술정보가 노출되는가? | `entity_id`, PID, raw JSON, API key, token, Central ID는 노출 금지 |
 
 ---
 
-## 2. 정보구조 목표
+## 2. 업무 bucket 정의
 
-현재 sidebar는 다음 5개 페이지다.
-
-```text
-home, crop, environment, irrigation, device
-```
-
-앞으로는 사용자의 업무 흐름에 맞춰 다음 개념으로 정리한다.
-
-| 업무 흐름 | 현재/권장 위치 | 설명 |
-|---|---|---|
-| 오늘 상태 확인 | 홈 | 환경/관수/장치/알림/오늘 할 일을 한눈에 표시 |
-| 작물과 기록 관리 | 작물 설정 | 작기, 생육조사, 병해충, 방제 기록 |
-| 환경 전략 관리 | 환경 제어 | 온도/습도/VPD/CO₂ 전략, 안전 한계, 실행 |
-| 관수 전략 관리 | 관수 제어 | 관수량/EC/pH/VWC/드라이백/양액기 전략, 실행 |
-| 장비 상태와 수동 조작 | 장치제어 | 장치 현황, 허용된 수동 조작, 알람, 이력 |
-| 시스템/연동/권한 | 설정 또는 Admin 영역 | HA/DB/API/Central/날씨/사용자·역할 관리 |
-
-향후 sidebar가 많아지면 1차 메뉴를 아래처럼 그룹화한다.
-
-```text
-홈
-작물/기록
-제어
-  - 환경
-  - 관수
-  - 장치
-알림/작업
-관리
-  - 시스템 설정
-  - 사용자/권한
-  - 진단/백업
-```
-
-현재 5개 sidebar는 유지하되, 각 페이지 내부에서 “농장 운영자가 보는 영역”과 “고급 설정 영역”을 분리하는 것을 우선한다.
+| Bucket | 설명 | 대표 UI | 대표 권한 |
+|---|---|---|---|
+| `조회` | 상태와 요약 확인 | Home KPI, 환경/관수/장치 상태, 최근 로그 요약 | `view_dashboard`, `view_control_pages` |
+| `기록` | 현장 기록 입력 | 작기, 생육조사, 병해충 예찰, 방제 기록 | `edit_crop_records`, `manage_crop_seasons` |
+| `전략` | AI/규칙이 제안하는 운영 방향 | 환경 전략, 관수 전략, 작물 모델 리포트 | `edit_strategy_settings` 또는 summary-only |
+| `실행` | Dry Run, 제한 실행, 수동 조작 | final target 실행, 장치 제어 | `run_dry_run`, `execute_final_targets`, `manual_device_control` |
+| `안전` | 차단/인터록/Fail-Safe/알림 | SafetyGuard, Interlock, event ack/clear, recovery checklist | `ack_safety_event`, `clear_safety_event`, admin/owner approval |
+| `고급설정` | 설치/연동/진단/키/권한 | Admin/System, HA entity mapping, DB/API diagnostics, Central/weather/pesticide config | `system_settings`, `manage_users_roles`, `edit_entity_mapping` |
 
 ---
 
-## 3. 역할 정의 / RBAC
-
-사용자가 말한 “rbek” 기준은 Green Smart에서는 **RBAC(Role-Based Access Control)**로 정의한다.
-
-### 3.1 기본 역할
-
-| Role key | 한국어 | 설명 |
-|---|---|---|
-| `admin` | 어드민 | 설치자/시스템 관리자. 모든 설정과 권한 관리 가능 |
-| `farm_owner` | 농장주 | 농장 운영 책임자. 전략 승인, 중요 실행, 기록/리포트 확인 가능 |
-| `farm_staff` | 농장직원 | 현장 작업자. 조회, 기록 입력, 알림 확인, 허용된 수동 조작 가능 |
-
-### 3.1.1 계정/역할 매핑
+## 3. 역할 정의
 
 Green Smart는 별도 사용자/비밀번호 체계를 만들지 않고 Home Assistant 사용자를 기준으로 역할을 매핑한다.
 
@@ -96,532 +51,176 @@ Home Assistant user ID
 → permissions
 ```
 
-Admin/System의 사용자/권한 화면은 `admin`에게만 보이며, HA 사용자 목록/ID와 Green Smart role mapping을 관리하는 방향으로 구현한다. Admin/System은 `admin` 전용 sidebar 별도 메뉴로 추가한다.
+Admin/System은 `admin` 전용 sidebar 별도 메뉴이며, HA 사용자 목록/ID와 Green Smart role mapping을 관리하는 방향으로 유지한다.
 
-### 3.2 권한 레벨
+| Role key | 한국어 | 제품 관점 | 기술 노출 수준 |
+|---|---|---|---|
+| `admin` | 어드민 | 설치자/관리자. 시스템, 연동, 권한, 진단, 고급 설정 담당 | 전체 기술 정보 가능 |
+| `farm_owner` | 농장주 | 운영 책임자. 상태 확인, 전략 승인, 중요 실행, 리포트/감사 요약 담당 | 기술 상세는 요약/접힘 중심 |
+| `farm_staff` | 농장직원 | 현장 작업자. 오늘 할 일, 기록 입력, 알림 확인, 허용된 수동 조작 담당 | 기술 정보 숨김 또는 쉬운 말 요약 |
 
-| 권한 | 설명 | admin | farm_owner | farm_staff |
-|---|---|---:|---:|---:|
-| `view_dashboard` | 홈/상태 조회 | ✓ | ✓ | ✓ |
-| `view_crop_records` | 작물/기록 조회 | ✓ | ✓ | ✓ |
-| `edit_crop_records` | 생육/병해충/방제 기록 입력 | ✓ | ✓ | ✓ |
-| `manage_crop_seasons` | 작기 생성/수정/철거/삭제 | ✓ | ✓ | 제한 또는 요청 |
-| `view_control_pages` | 환경/관수/장치 제어 페이지 조회 | ✓ | ✓ | ✓ |
-| `edit_strategy_settings` | 환경/관수 전략 설정 변경 | ✓ | ✓ | ✕ |
-| `edit_interlock_thresholds` | SafetyGuard/인터록 기본 임계값 변경 | ✓ | 확인 팝업 후 가능 | ✕ |
-| `edit_interlock_rules` | 고급 rule builder 변경 | ✓ | ✕ | ✕ |
-| `edit_entity_mapping` | HA entity mapping 변경 | ✓ | ✕ | ✕ |
-| `run_dry_run` | Dry Run 실행 | ✓ | ✓ | ✓ |
-| `execute_final_targets` | 실제/제한적 실행 | ✓ | ✓ | 제한된 장비만 |
-| `manual_device_control` | 수동 장치 조작 | ✓ | ✓ | 농장주가 허용한 장치별 범위 |
-| `ack_safety_event` | 안전 이벤트 확인 | ✓ | ✕ | ✕ |
-| `clear_safety_event` | 안전 이벤트 조치 완료/해제 | ✓ | ✕ | ✕ |
-| `manage_users_roles` | 사용자/권한 관리 | ✓ | 선택적 위임 | ✕ |
-| `system_settings` | HA/Central/API/DB/날씨 key 설정 | ✓ | 일부 조회 | ✕ |
-| `view_audit_logs` | 감사 로그/실행 이력 상세 | ✓ | ✓ | 제한 요약 |
+### 3.1 표시 상태
 
-### 3.3 보안 원칙
-
-- 프론트엔드에서 버튼을 숨기는 것은 UX 보조일 뿐 보안 경계가 아니다.
-- 모든 write/execute API는 backend에서 role/permission을 다시 검증해야 한다.
-- 위험 실행은 `role + operator confirmation + SafetyGuard + control mode`를 모두 통과해야 한다.
-- 감사 로그에는 `actor`, `actor_role`, `action`, `before_json`, `after_json`, `result`, `message`를 남긴다.
-
----
-
-## 4. 역할별 볼 수 있는 페이지
-
-### 4.1 페이지 접근 매트릭스
-
-| Page | admin | farm_owner | farm_staff | 비고 |
-|---|---:|---:|---:|---|
-| 홈 | ✓ | ✓ | ✓ | 역할별 카드 노출 다름 |
-| 작물 설정 | ✓ | ✓ | ✓ | 직원은 기록 입력 중심 |
-| 환경 제어 | ✓ | ✓ | 조회+일부 실행 | 설정 변경은 owner 이상 |
-| 관수 제어 | ✓ | ✓ | 조회+일부 실행/기록 | 양액기/PID/entity는 admin |
-| 장치제어 | ✓ | ✓ | 현황+허용 수동조작 | Fail Safe/interlock은 admin/owner |
-| 알림/작업 | ✓ | ✓ | ✓ | 향후 별도 페이지 권장 |
-| 시스템 설정 | ✓ | ✕ | ✕ | Admin/System은 admin 전용 sidebar 메뉴 |
-| 사용자/권한 | ✓ | ✕ | ✕ | HA 사용자 → Green Smart 역할 매핑 |
-| 진단/개발자 | ✓ | ✕ | ✕ | 로그, API 상태, DB 상태 |
-
-### 4.2 홈 화면 역할별 구성
-
-| 카드 | admin | farm_owner | farm_staff |
-|---|---:|---:|---:|
-| 농장 현재 상태 KPI | ✓ | ✓ | ✓ |
-| 위험 알림 / 해야 할 일 | ✓ | ✓ | ✓ |
-| 환경/관수 요약 | ✓ | ✓ | ✓ |
-| 장치 이상 요약 | ✓ | ✓ | ✓ |
-| AI 전략 추천 요약 | ✓ | ✓ | 읽기 전용 |
-| 오늘 작업 체크리스트 | ✓ | ✓ | ✓ 핵심 |
-| 시스템 상태/연동 상태 | ✓ | 요약만 | ✕ |
-| DB/API/HA 진단 | ✓ | ✕ | ✕ |
-
-### 4.3 작물 설정 역할별 구성
-
-| 기능 | admin | farm_owner | farm_staff |
-|---|---:|---:|---:|
-| 작기 조회 | ✓ | ✓ | ✓ |
-| 작기 생성/수정/철거 | ✓ | ✓ | 요청/제한 |
-| 생육조사 입력 | ✓ | ✓ | ✓ |
-| 병해충 예찰 입력 | ✓ | ✓ | ✓ |
-| 방제 기록 입력 | ✓ | ✓ | ✓ |
-| 기록 삭제 | ✓ | ✓ | ✕ 또는 승인 필요 |
-| CSV export | ✓ | ✓ | 제한 |
-
-### 4.4 환경/관수/장치제어 역할별 구성
-
-공통 원칙:
-
-- `농장직원`은 “설정을 바꾸는 사람”이 아니라 “상태를 보고 현장 작업을 수행하는 사람”이다.
-- `농장주`는 전략을 이해하고 승인하는 사람이다.
-- `어드민`은 시스템과 고급 제어를 구성하는 사람이다.
-
-| 영역 | admin | farm_owner | farm_staff |
-|---|---:|---:|---:|
-| 상태 요약 | ✓ | ✓ | ✓ |
-| 전략 preview | ✓ | ✓ | 요약만 |
-| 설정값 입력 | ✓ | ✓ | ✕ |
-| 인터록 기본 임계값 | ✓ | 확인 팝업 후 가능 | ✕ |
-| 인터록 고급 rule builder | ✓ | ✕ | ✕ |
-| SafetyGuard watchdog | ✓ | 요약 조회 | 요약만 |
-| 이벤트 확인 | ✓ | ✕ | ✕ |
-| 이벤트 clear | ✓ | ✕ | ✕ |
-| Dry Run | ✓ | ✓ | ✓ |
-| 실제 실행 | ✓ | ✓ | 제한된 시나리오만 |
-| Entity mapping | ✓ | ✕ | ✕ |
-| Fail Safe/safe_state 설정 | ✓ | ✕ | ✕ |
-| PID/센서 보정 | ✓ | ✕ | ✕ |
-
----
-
-## 5. 페이지별 요소 재배치 기준
-
-## 5.1 홈: “오늘 농장을 운영하는 화면”
-
-홈은 개발자용 대시보드가 아니라 농장주/직원이 처음 보는 화면이다.
-
-### 홈에 있어야 하는 것
-
-1. 오늘 위험 알림
-2. 지금 당장 봐야 하는 환경/관수/장치 상태
-3. 오늘 작업 목록
-4. 자동제어/AI 상태 요약
-5. 최근 실행/차단 로그 요약
-6. 날씨 요약
-
-### 홈에서 빼야 하는 것
-
-- DB/API 상세 진단
-- entity_id 목록
-- PID/센서 보정값
-- 긴 JSON 설정
-- 개발자 marker
-
-이런 요소는 Admin/System 또는 각 제어 페이지의 고급 접힘 영역으로 이동한다.
-
-### 홈 확정 카드 순서
-
-```text
-1. 위험 알림
-2. 오늘 할 일
-3. 조치 필요 작업
-4. 현재 온실 상태 간단 요약
-5. KPI 상세 카드: 온도/습도/VPD/CO₂/관수/장치 상태
-6. 날씨/외부 조건
-7. 최근 실행/차단 로그 요약
-8. AI/자동제어 요약
-```
-
-Home의 첫 카드는 `알림/작업` 영역으로 유지한다. 별도 sidebar 메뉴로 분리하지 않는다.
-
-상태 요약은 숫자 중심으로 표시하고, 색상/배지로 정상·주의·위험을 구분한다. 예: `온도 24.5°C [정상]`, `습도 88% [주의]`. 상태 카드를 클릭하면 팝업으로 상세 설명을 표시한다.
-
-상세 팝업에는 역할별 버튼을 다르게 표시한다.
-
-| 역할 | Home 팝업 조치 |
-|---|---|
-| `farm_staff` | `확인`, `조치 완료 기록`, 권한이 있으면 `장치 정지 Dry Run` |
-| `farm_owner` | `확인`, `조치 완료 기록`, `장치 정지 Dry Run`, `제한 실행 Dry Run` |
-| `admin` | 모든 Home 조치 + 진단/고급 설정 이동 |
-
-Home 팝업 버튼의 현재 baseline은 **실제 장비 실행이 아니라 감사 로그와 Dry Run 사전점검**이다.
-
-```text
-확인              → safety-guard-events/ack 기록
-조치 완료 기록    → safety-guard-events/clear 기록
-장치 정지 Dry Run → execute-final-targets(dry_run=true, domain=device)
-제한 실행 Dry Run → execute-final-targets(dry_run=true, status domain)
-```
-
-Home에서 실제 장치를 움직이는 버튼은 제공하지 않는다. 실제 실행은 제어 페이지에서 운영자 확인/권한/Control Mode/SafetyGuard/Interlock/fail-safe를 통과해야 한다.
-
----
-
-## 5.2 작물 설정: “기록 업무 화면”
-
-작물 설정은 제어 설정과 섞지 않는다.
-
-### 남겨야 할 것
-
-- 작기 관리
-- 생육조사
-- 병해충 예찰
-- 방제 기록
-- CSV/export
-- 사진/메모/작업자 기록 향후 확장
-
-### 빼야 할 것
-
-- 환경/관수/장치 실행 버튼
-- SafetyGuard rule builder
-- entity mapping
-- HA service call 상세
-
-### 비전공자 UX
-
-- “생육조사 추가”는 전문 form보다 작물별 쉬운 field 이름 사용
-- 심각도는 `낮음/보통/높음/위험`처럼 한글 단계 사용
-- 저장 후 “기록되었습니다” + 다음 할 일 표시
-
----
-
-## 5.3 환경 제어: “온실 환경 목표와 안전을 관리하는 화면”
-
-환경 제어에는 온도/습도/VPD/CO₂와 환기/스크린 목표가 들어간다.
-
-### 상단에 배치
-
-1. 현재 환경 상태 요약
-2. 목표와 현재의 차이
-3. SafetyGuard 상태
-4. Dry Run / 실행 가능 여부
-
-### 중단에 배치
-
-- 환경 전략 preview
-- AI 전략 추천
-- 최종 적용값
-- 운영자 확인
-- 실행 로그
-
-### 하단/고급에 배치
-
-- 인터록 rule builder
-- 센서 rule
-- Entity mapping
-- mapping validation
-- raw JSON/settings
-
----
-
-## 5.4 관수 제어: “물/양액을 안전하게 주는 화면”
-
-관수 제어는 사용자가 자주 쓰는 화면이므로 가장 직관적이어야 한다.
-
-### 상단에 배치
-
-1. 현재 관수 상태
-2. 오늘 관수 횟수 / 마지막 관수 / 다음 예상
-3. 현재 VWC/EC/pH
-4. 긴급 차단 여부
-5. 오늘 권장 관수량/간격
-
-### 중단에 배치
-
-- 관수 전략 preview
-- 최종 적용값
-- Dry Run
-- 운영자 확인
-- 실행/차단 로그
-
-### 하위탭 정리
-
-| 사용자 친화 그룹 | 현재 탭 | 설명 |
+| State | 의미 | 사용 예 |
 |---|---|---|
-| 기본 운영 | 제어 모드, 기본 관수 설정 | 농장주가 이해해야 하는 핵심 |
-| 작물 수분 전략 | 포수, 일사 비례, 드라이백 | 농장주 중심 |
-| 양액/배액 | 배액 피드백, 양액 전략 | 농장주/전문 직원 |
-| AI/안전 | AI 관수 보정, 안전 한계 | 농장주 승인, admin 고급 |
-| 장비/기술 | 양액기 설정 | admin 전용 또는 고급 접힘 |
-| 이력 | 관수 로그 | 모두 조회 가능 |
+| `visible_enabled` | 권한과 안전 조건이 모두 맞아 실행 가능 | farm_owner의 Dry Run, admin의 설정 저장 |
+| `visible_disabled` | 보여주되 비활성. 이유와 다음 행동을 표시 | SafetyGuard 차단, 권한 부족, 장치 unavailable |
+| `summary_only` | 상세 기술정보 없이 요약만 표시 | farm_staff의 AI 전략 요약, owner의 시스템 상태 요약 |
+| `hidden` | 역할상 무관하거나 보안상 노출 금지 | farm_staff에게 API key/token/raw JSON 숨김 |
 
-### 하단/고급에 배치
+---
 
-- 양액기 entity ID
-- PID 값
-- EC/pH 보정 계수
-- mapping validation
-- raw JSON
+## 4. Sidebar / Page IA
 
-### 비전공자 용어 변환
+현재 sidebar는 6개 운영 page를 기준으로 정렬한다.
 
-| 기술 용어 | UI 권장 표현 |
+| Page key | 표시명 | Primary bucket | 주 사용자 | 설명 |
+|---|---|---|---|---|
+| `home` | 홈 | 조회 / 안전 | 전체 | 오늘 상태, 위험 알림, 오늘 할 일, 최근 실행/차단 요약 |
+| `crop` | 작물/기록 | 기록 / 전략 | 전체 | 작기, 생육조사, 병해충, 방제, 작물 AI 요약 |
+| `environment` | 환경 제어 | 조회 / 전략 / 실행 / 안전 | owner/admin, 일부 staff | 온습도/VPD/CO₂ 상태, 전략, Dry Run, 안전 차단 |
+| `irrigation` | 관수 제어 | 조회 / 전략 / 실행 / 안전 | owner/admin, 일부 staff | VWC/EC/pH/관수 상태, 전략, Dry Run, 안전 차단 |
+| `device` | 장치제어 | 조회 / 실행 / 안전 | owner/admin, 제한 staff | 장치 상태, 허용 수동 조작, 알람, 이력 |
+| `admin` | Admin/System | 고급설정 | admin | 사용자/권한, HA 연결, API key, Central, 진단/백업 |
+
+> R1 기준: Admin/System은 `system_settings` 권한이 있는 사용자에게만 sidebar에 보인다.
+
+---
+
+## 5. Page별 배치 기준
+
+### 5.1 Home — 오늘 농장을 운영하는 화면
+
+| 영역 | Bucket | admin | farm_owner | farm_staff | 기술 노출 |
+|---|---|---:|---:|---:|---|
+| 위험 알림 | 안전 | visible_enabled | visible_enabled | visible_enabled | 쉬운 말 요약 |
+| 오늘 할 일 | 조회/기록 | visible_enabled | visible_enabled | visible_enabled | 쉬운 말 |
+| 현재 온실 상태 KPI | 조회 | visible_enabled | visible_enabled | visible_enabled | 숫자+상태 badge |
+| 환경/관수/장치 요약 | 조회 | visible_enabled | visible_enabled | visible_enabled | staff는 요약 |
+| 최근 실행/차단 로그 | 안전/조회 | visible_enabled | visible_enabled | summary_only | actor/result 중심 |
+| 시스템 진단 | 고급설정 | visible_enabled | summary_only | hidden | Admin/System 이동 |
+
+Home에서 실제 장치를 움직이는 버튼은 제공하지 않는다. 실행은 각 제어 page에서 SafetyGuard/Interlock/Control Mode/operator confirmation을 통과해야 한다.
+
+### 5.2 Crop — 작물/기록 화면
+
+| 기능 | Bucket | admin | farm_owner | farm_staff | 기준 |
+|---|---|---:|---:|---:|---|
+| 작기 조회 | 조회 | visible_enabled | visible_enabled | visible_enabled | crop_cycle 기준 요약 |
+| 작기 생성/수정 | 기록 | visible_enabled | visible_enabled | visible_disabled 또는 요청 | 농장 운영 정책에 따라 제한 |
+| 작기 철거/삭제 | 기록/안전 | visible_enabled | visible_enabled | hidden 또는 승인 필요 | destructive action |
+| 생육조사 입력 | 기록 | visible_enabled | visible_enabled | visible_enabled | staff 핵심 업무 |
+| 병해충 예찰 입력 | 기록 | visible_enabled | visible_enabled | visible_enabled | staff 핵심 업무 |
+| 방제 기록 입력 | 기록/안전 | visible_enabled | visible_enabled | visible_enabled | PLS/PHI/REI 안내 필요 |
+| 작물 AI 전략 | 전략 | visible_enabled | visible_enabled | summary_only | staff에게 raw model detail 숨김 |
+
+### 5.3 Environment — 환경 제어
+
+| 기능 | Bucket | admin | farm_owner | farm_staff | 기준 |
+|---|---|---:|---:|---:|---|
+| 현재 환경 상태 | 조회 | visible_enabled | visible_enabled | visible_enabled | 온도/습도/VPD/CO₂ 숫자 중심 |
+| 설정값 SetValue | 전략 | visible_enabled | visible_enabled | hidden | staff 설정 변경 금지 |
+| 전략 preview | 전략 | visible_enabled | visible_enabled | summary_only | 이유는 쉬운 말 요약 |
+| Dry Run | 실행 | visible_enabled | visible_enabled | visible_enabled | 실제 실행 아님 |
+| 실제/제한 실행 | 실행/안전 | visible_enabled | visible_enabled | visible_disabled | 권한+SafetyGuard 필요 |
+| Interlock 설정 | 안전/고급설정 | visible_enabled | visible_disabled 또는 승인 | hidden | admin 중심 |
+| Entity mapping/PID | 고급설정 | visible_enabled | hidden | hidden | Admin/System 이동 |
+
+### 5.4 Irrigation — 관수 제어
+
+| 기능 | Bucket | admin | farm_owner | farm_staff | 기준 |
+|---|---|---:|---:|---:|---|
+| VWC/EC/pH/관수 상태 | 조회 | visible_enabled | visible_enabled | visible_enabled | 비전문 용어 병기 |
+| 관수 전략 preview | 전략 | visible_enabled | visible_enabled | summary_only | staff는 오늘 조치 중심 |
+| 양액/관수 설정값 | 전략 | visible_enabled | visible_enabled | hidden | owner 이상 |
+| Dry Run | 실행 | visible_enabled | visible_enabled | visible_enabled | 실제 실행 전 검증 |
+| 실제/제한 실행 | 실행/안전 | visible_enabled | visible_enabled | visible_disabled | 안전 조건 필요 |
+| 양액기/PID/entity | 고급설정 | visible_enabled | hidden | hidden | Admin/System 이동 |
+
+### 5.5 Device — 장치제어
+
+| 기능 | Bucket | admin | farm_owner | farm_staff | 기준 |
+|---|---|---:|---:|---:|---|
+| 장치 상태 | 조회 | visible_enabled | visible_enabled | visible_enabled | available/unavailable 쉬운 말 표시 |
+| 허용 수동 조작 | 실행 | visible_enabled | visible_enabled | visible_disabled 또는 visible_enabled | 농장주가 허용한 장치별 범위만 |
+| 장치 알람/이력 | 안전/조회 | visible_enabled | visible_enabled | summary_only | staff는 조치 중심 |
+| Fail Safe/safe_state 설정 | 안전/고급설정 | visible_enabled | hidden | hidden | admin 전용 |
+| HA entity mapping | 고급설정 | visible_enabled | hidden | hidden | admin 전용 |
+
+### 5.6 Admin/System — 고급설정 화면
+
+Admin/System은 농장 운영 화면이 아니라 설치·진단·연동·권한 관리 화면이다.
+
+| 기능 | Bucket | admin | farm_owner | farm_staff |
+|---|---|---:|---:|---:|
+| 사용자/역할 매핑 | 고급설정 | visible_enabled | hidden | hidden |
+| HA 연결/entity mapping | 고급설정 | visible_enabled | hidden | hidden |
+| API key / Central activation / weather / pesticide config | 고급설정 | visible_enabled | hidden | hidden |
+| DB/API/HA diagnostics | 고급설정 | visible_enabled | hidden 또는 summary_only | hidden |
+| audit/backup | 고급설정/안전 | visible_enabled | summary_only | hidden |
+
+---
+
+## 6. Technical field 이동 기준
+
+아래 항목은 운영자 화면(Home/Crop/Environment/Irrigation/Device)의 기본 노출에서 제외하고, Admin/System 또는 고급 접힘 영역으로 이동한다.
+
+| Technical field | 기본 위치 | 예외 |
+|---|---|---|
+| `entity_id` | Admin/System HA 연결/entity mapping | 장애 팝업에서 admin에게만 표시 가능 |
+| PID/제어 계수 | Admin/System 또는 고급 설정 | owner에게는 “제어 민감도” 수준 요약만 |
+| raw JSON | Admin/System diagnostics | contract/debug 문서에만 허용 |
+| API key/token/activation code | Admin/System secure config | 값은 절대 표시하지 않고 masked hint만 |
+| DB/API 상세 오류 | Admin/System diagnostics | 운영자 화면에는 “무엇을 해야 하는지”만 표시 |
+| MQTT topic | Admin/System 또는 통신 명세서 | staff/owner 기본 UI에는 숨김 |
+| 개발자 marker/data attribute | 코드/테스트 전용 | 화면 표시 금지 |
+
+---
+
+## 7. Backend enforcement 기준
+
+Frontend 역할 상태는 UX일 뿐이다. 아래 API 유형은 backend에서 반드시 permission을 검증해야 한다.
+
+| API 유형 | Required permission 예시 |
 |---|---|
-| VWC | 배지 수분율 또는 배지 함수율 |
+| crop create/update/delete | `manage_crop_seasons`, `edit_crop_records` |
+| growth/pest/control record write | `edit_crop_records`, `growth_survey.write`, `pest_scouting.write`, `control_treatment.write` |
+| strategy setting save | `edit_strategy_settings` |
+| interlock rule save | `edit_interlock_rules`, `edit_interlock_thresholds` |
+| dry run | `run_dry_run`, `control.dry_run` |
+| final target execution | `execute_final_targets`, `control.execute.manual` |
+| safety event ack/clear | `ack_safety_event`, `clear_safety_event` |
+| entity mapping | `edit_entity_mapping`, `device.mapping.manage` |
+| user/role/system config | `manage_users_roles`, `system_settings` |
+
+---
+
+## 8. Non-technical wording dictionary
+
+| Technical | 운영자 표현 |
+|---|---|
+| `entity_id` | 연결된 장치 주소 |
+| VPD | 공기 건조도(VPD) |
 | EC | 양액 농도(EC) |
-| pH | 산도(pH) |
-| dryback | 야간 수분 빠짐(드라이백) |
+| VWC | 배지 수분율 |
+| dryback | 야간 수분 빠짐 |
 | final target | 실행할 최종 목표 |
 | interlock | 안전 차단 조건 |
-| failsafe | 안전 위치로 전환 |
+| failsafe | 안전 위치 전환 |
+| unavailable | 장치 연결 안 됨 |
+| timeout | 정해진 시간 안에 응답 없음 |
+| stale sensor | 오래된 센서값 |
+| fixed sensor | 값이 변하지 않는 센서 의심 |
 
 ---
 
-## 5.5 장치제어: “장비 상태와 허용된 조작 화면”
-
-장치제어는 기술 설정과 현장 조작이 섞이기 쉽다. 반드시 분리한다.
-
-### 상단에 배치
-
-1. 장치 이상 여부
-2. 주요 장치 현재 상태
-3. 허용된 수동 조작
-4. 알람/장애
-
-### 중단에 배치
-
-- 장치 현황
-- 수동 제어
-- 자동 제어 상태
-- 알람 및 장애
-- 제어 이력
-
-### 하단/고급에 배치
-
-- 환기 장치 설정
-- 스크린 장치 설정
-- 장치 그룹 관리
-- 인터록 설정
-- Fail Safe 설정
-- entity mapping
-
-### 직원용 장치제어
-
-농장직원에게는 아래처럼 보여야 한다.
-
-```text
-장치 상태: 정상/주의/위험
-할 수 있는 조작: 열기/닫기/정지/확인
-왜 못 하는지: 강풍으로 천창 닫힘, 안전 차단 중
-다음 행동: 관리자에게 알림, 현장 점검, 알림 확인
-```
-
----
-
-## 5.6 설정/Admin: “기술 설정과 권한을 모으는 화면”
-
-현재 Settings page에는 PLC/구역/날씨/Central 설정이 들어간다. 앞으로는 Admin 전용 영역으로 분리하는 것이 좋다.
-
-### Admin/System에 모을 것
-
-- PLC/Modbus/virtual mode
-- HA entity mapping
-- Central API activation/token 상태
-- KMA/PSIS API key
-- DB/API 상태
-- 사용자/역할/RBAC 관리
-- 백업/복구
-- 진단 로그
-- 개발자/contract marker
-
-### 농장주에게 보여줄 수 있는 것
-
-- 연결 상태 요약
-- 날씨 위치
-- 설치 정보
-- 사용자 목록 일부
-
-### 농장직원에게 숨길 것
-
-- API key
-- DB 설정
-- entity_id mapping
-- PID/보정값
-- raw JSON
-- Central token/activation
-
----
-
-## 6. RBAC 기반 UI 표시 규칙
-
-### 6.1 표시 상태 4단계
-
-권한이 없다고 무조건 숨기면 사용자가 “왜 안 되는지” 모른다. 다음 4단계를 사용한다.
-
-| 상태 | 사용 상황 | UI 표현 |
-|---|---|---|
-| `visible_enabled` | 권한 있고 실행 가능 | 일반 버튼/입력 |
-| `visible_disabled` | 볼 수는 있으나 현재 조건상 불가 | 비활성 + 이유 표시 |
-| `summary_only` | 상세는 제한, 요약만 허용 | 카드 요약만 표시 |
-| `hidden` | 보안상 노출 금지 | 화면에서 제거 |
-
-예시:
-
-```text
-농장직원이 인터록 설정을 볼 필요는 없다 → hidden 또는 summary_only
-농장직원이 강풍 차단으로 천창을 열 수 없다 → visible_disabled + “강풍 안전차단 중”
-농장주가 entity_id mapping을 볼 필요는 없다 → hidden
-농장주가 SafetyGuard 상태는 봐야 한다 → summary_only
-```
-
-### 6.2 버튼/기능 표시 기준
-
-| 기능 | farm_staff UI | farm_owner UI | admin UI |
-|---|---|---|---|
-| 저장 | 기록 저장만 | 전략/기록 저장 | 전체 저장 |
-| 실행 | 제한된 실행 | 승인 후 실행 | 전체 실행 |
-| 설정 변경 | 없음/요청 | 주요 전략 설정 | 고급 설정 포함 |
-| 삭제 | 대부분 숨김 | 확인 후 허용 | 허용 |
-| 고급 설정 | 숨김 | 접힘 요약 | 전체 표시 |
-| 진단 | 숨김 | 요약 | 상세 |
-
----
-
-## 7. 구현 시 필요한 데이터 모델 / API 방향
-
-현재 Home Assistant 인증은 기본적으로 HA user context에 의존한다. Green Smart RBAC는 별도 로그인 체계가 아니라 **HA 사용자 ID → Green Smart 역할 매핑**으로 구현한다.
-
-### 7.1 권장 신규 개념
-
-```text
-HA user ID
-Green Smart role mapping
-Green Smart role permissions
-optional farm/zone scope mapping
-```
-
-1차 persistence는 HA Store 기반 role mapping을 우선 검토한다. MariaDB role table은 multi-farm/edge tenancy나 복잡한 권한 query가 필요해질 때 별도 migration으로 추가한다. 별도 Green Smart username/password 체계는 이번 기준에서 제외한다.
-
-### 7.2 최소 API 방향
-
-향후 추가 권장:
-
-```text
-GET /api/green_smart/auth/me
-GET /api/green_smart/auth/permissions
-GET /api/green_smart/admin/users
-POST /api/green_smart/admin/users/{user_id}/role
-```
-
-`/auth/me` 응답 예:
-
-```json
-{
-  "userId": "ha-user-id",
-  "displayName": "홍길동",
-  "role": "farm_owner",
-  "permissions": ["view_dashboard", "run_dry_run", "execute_final_targets"],
-  "farmId": 1,
-  "allowedZones": [1, 2]
-}
-```
-
-### 7.3 backend enforcement 원칙
-
-- 모든 write/execute API는 `require_permission(permission)` 형태의 공통 helper를 통과한다.
-- `farm_id`, `zone_id`도 권한 범위와 비교한다.
-- 현재 `actor_role` log field를 RBAC role과 연결한다.
-- frontend role gate는 UX용이며 backend 검증이 최종이다.
-
----
-
-## 8. UI 재구성 로드맵
-
-### Phase IA-1. 현재 요소 inventory와 그룹 재배치
-
-목표:
-
-- 각 페이지의 카드/탭/버튼을 `조회`, `기록`, `전략`, `실행`, `안전`, `고급설정`으로 태깅한다.
-
-산출물:
-
-- `data-ui-section` / 문서 표
-- 페이지별 “상단/중단/하단/고급” 배치표
-
-### Phase IA-2. 농장주/직원 모드 UX
-
-목표:
-
-- role별 표시 상태를 적용한다.
-- 직원용 화면에서 고급 기술 용어와 위험 설정을 숨긴다.
-
-산출물:
-
-- role별 sidebar/page visibility
-- disabled reason message
-- 안전 차단 이유 표시
-
-### Phase IA-3. RBAC backend contract
-
-목표:
-
-- `auth/me`, permission helper, audit role 연결 설계.
-
-산출물:
-
-- DB/API contract test
-- backend permission helper
-- write/execute API enforcement
-
-### Phase IA-4. Admin/System 분리
-
-목표:
-
-- entity mapping, HA/Central/API key, DB 진단, 사용자/권한을 Admin 영역에 모은다.
-
-산출물:
-
-- Admin sidebar/group
-- system settings page
-- role management page
-
-### Phase IA-5. 비전공자 UX polish
-
-목표:
-
-- 전문 용어를 쉬운 한글로 보완하고, 작업 흐름 중심 안내를 추가한다.
-
-산출물:
-
-- field label/help text dictionary
-- empty/error/success states
-- mobile first layout 검증
-
----
-
-## 9. 작업 Definition of Done
-
-UI/RBAC 관련 작업은 아래 조건을 모두 만족해야 완료다.
-
-- [ ] 해당 변경이 어느 사용자 역할을 위한 것인지 명시되어 있다.
-- [ ] farm_staff가 볼 필요 없는 고급 설정은 숨김/요약/접힘 처리되어 있다.
-- [ ] 위험 실행 버튼에는 SafetyGuard 상태와 실행 전 확인이 붙어 있다.
-- [ ] 권한 없는 버튼은 이유 없이 사라지지 않는다. 필요한 경우 비활성 + 이유를 표시한다.
-- [ ] backend write/execute API 권한 검증 계획 또는 구현이 있다.
-- [ ] `zone_control_logs` 또는 후속 audit log에 actor/role/action이 남는다.
-- [ ] 모바일 WebView에서 핵심 작업이 가능하다.
-- [ ] 문서가 `PROJECT_MASTER_PLAN.md`와 관련 상세 기준서에 반영되어 있다.
-
----
-
-## 10. 즉시 적용할 문서 기준
-
-앞으로 Green Smart UI를 수정할 때는 다음 순서로 확인한다.
-
-1. 이 문서: 정보구조/RBAC/비전공자 UX 기준
-2. `../plans/2026-06-22-ui-rbac-reorganization-implementation-plan.md`: 실제 정리·업데이트·모듈화 실행 플랜과 모호성 10% 이하 질문 gate
-3. `current-ui-design-and-navigation.md`: 현재 페이지/탭/필드 구조
-4. `current-backend-api-db-ha-contract.md`: API/DB/실행/SafetyGuard 기준
-5. `PROJECT_MASTER_PLAN.md`: Phase와 완료 기준
-
-구현 전에 반드시 답해야 하는 질문:
-
-```text
-이 요소는 누구를 위한 것인가? admin, farm_owner, farm_staff 중 누구인가?
-이 요소는 조회/기록/전략/실행/안전/고급설정 중 어디에 속하는가?
-농장직원이 이 문구를 보고 바로 행동할 수 있는가?
-권한이 없거나 안전상 실행 불가할 때 이유가 표시되는가?
-이 기능이 backend에서도 권한 검증되는가?
-```
+## 9. R1 완료 기준
+
+- [x] UI 요소 bucket 기준 고정
+- [x] role별 page/function matrix 고정
+- [x] Admin/System 이동 대상 technical field 고정
+- [x] visible/disabled/summary/hidden 표시 상태 고정
+- [x] backend permission enforcement 대상 고정
+- [x] `docs/design/current-ui-design-and-navigation.md`와 연결
+- [x] `docs/design/current-backend-api-db-ha-contract.md`와 연결
+- [x] R1 contract test로 회귀 방어
