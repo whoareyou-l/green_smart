@@ -1,8 +1,8 @@
-# 5. ML 모델 및 인터록 명세서 — Logic & Fail-Safe Spec
+# 5. 로직 알고리즘 및 예외처리 명세서 — Logic Algorithm & Exception Handling Spec
 
 > 기준일: `2026-06-27`
 > 기준 버전: `v1.10.29`
-> 문서 목적: Green Smart의 모델 로직, VPD 계산, 센서 기반 예측/제어 알고리즘, Interlock, Fail-Safe 규칙을 정의한다.
+> 문서 목적: Green Smart의 **시스템의 두뇌와 생존 장치**를 정의한다. VPD 계산 수식, PID/제어 알고리즘, AI 판단 규칙, SafetyGuard/Interlock, 인터넷 단절·센서 고장·장비 오류 같은 온실 현장 예외상황의 Fail-Safe 조치를 명문화한다.
 
 ## 1. 핵심 원칙
 
@@ -10,6 +10,27 @@
 AI output은 실행 명령이 아니다.
 AI output → candidate → final target → SafetyGuard/Interlock/Approval → HA service call
 ```
+
+로직/예외처리 문서는 아래 4가지를 항상 함께 다룬다.
+
+| 구분 | 포함 내용 |
+|---|---|
+| 연산 규칙 | VPD 계산, PID/비례 제어, 작물 생육 지표, 임계값 판정 |
+| 제어 판단 | 전략 후보, final target 산출, 실행 가능/차단 판단 |
+| 예외 감지 | 인터넷 단절, MQTT LWT offline, 센서 missing/stale/fixed/out_of_range, 장비 unavailable/timeout |
+| 생존 조치 | 로컬 모드 전환, 안전 위치, 자동 실행 hold, 알림, 복구 checklist |
+
+| 예외 | 기본 Fail-Safe 조치 |
+|---|---|
+| 인터넷 단절 | 현장 NUC/HA 로컬 모드 유지, 외부 AI/Cloud 의존 실행 중단, 마지막 안전 전략 또는 보수 baseline 사용 |
+| Edge/MQTT LWT offline | 자동 실행 차단, 해당 zone 장치/센서 stale 후보 처리, SafetyGuard event 생성 |
+| 센서 고장/고정값 | VPD soft fallback, `SENSOR_FALLBACK_WARNING`, 제어 강도 제한 |
+| 천창 feedback timeout | command timeout 처리, 추가 실행 hold, 현장 점검 안내 |
+| 강풍/강우 | 천창 폐쇄 우선. 단, 네트워크 단절 시에도 로컬 rule이 안전 위치를 선택해야 함 |
+| 저온/고온/VPD 이상 | 인터록 우선순위에 따라 개폐/환기/관수 실행 후보를 제한 |
+
+예시 기준: 인터넷 단절과 센서 불확실성이 동시에 발생하면 천창을 무조건 새 명령으로 움직이지 않는다. 로컬 SafetyGuard가 현장 센서/장비 상태를 확인할 수 있고 안전 조건이 명확한 경우에만 제한된 safe position(예: 천창 30% 개방 또는 안전 폐쇄)을 선택하며, 불확실하면 자동 실행을 hold하고 현장 확인을 요구한다.
+
 
 각 domain 내부 순서:
 

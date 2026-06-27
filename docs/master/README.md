@@ -28,7 +28,7 @@
 | 2 | [통신 명세서](./02-interface-spec.md) | Frontend service, Backend API, MQTT/HA service 통신 계약 | API, MQTT, HA service, frontend fetch/callApi 변경 |
 | 3 | [DB 구상도](./03-database-schema.md) | RBAC, greenhouse/device, crop_cycle, sensor/control log 물리 스키마 | 테이블, migration, 인덱스, audit/log 변경 |
 | 4 | [통합 시나리오 흐름도](./04-workflow-diagrams.md) | UI/API/DB/MQTT/하드웨어 신호 흐름 | 센서 수집, 수동 제어, 비상 상황, recovery 작업 |
-| 5 | [ML 모델 및 인터록 명세서](./05-ml-interlock-failsafe-spec.md) | VPD, 예측/제어 알고리즘, Interlock, Fail-Safe | AI/제어/안전/자동화/모델 로직 변경 |
+| 5 | [로직 알고리즘 및 예외처리 명세서](./05-ml-interlock-failsafe-spec.md) | VPD 계산, PID/제어 알고리즘, SafetyGuard, Interlock, 인터넷 단절·센서 고장·장비 오류 Fail-Safe | 시스템 연산 규칙, 비상 상황, 예외처리, AI/제어/안전 로직 변경 |
 
 ## 2. 수직 슬라이드 개발 템플릿
 
