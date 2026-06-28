@@ -19,7 +19,11 @@
 // R7-003 Detail/configuration subpages baseline: all five sidebar groups receive read-only placeholder subpages.
 // R7-004 Settings/Admin read-only detail: Settings/Admin renders RBAC/config/admin evidence without mutation authority.
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
-// R7-003 subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
+// R7-003 historical subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
+// R7-007 target sidebar markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-operations" / data-r7-sidebar-group="environment-control" / data-r7-sidebar-group="irrigation-fertigation" / data-r7-sidebar-group="device-control" / data-r7-sidebar-group="recommendation-automation" / data-r7-sidebar-group="safety-history" / data-r7-sidebar-group="settings-admin".
+// R7-007 target subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-operations" / data-r7-detail-subpage="environment-control" / data-r7-detail-subpage="irrigation-fertigation" / data-r7-detail-subpage="device-control" / data-r7-detail-subpage="recommendation-automation" / data-r7-detail-subpage="safety-history" / data-r7-detail-subpage="settings-admin".
+// R7-002 historical sidebar label order compatibility: 운영 홈 → 작물 중심 운영 → 현장 상태 → 추천·실행 검토 → 설정·관리.
+// RS-002/RS-005 historical source-copy compatibility only, not current operator copy: 작물이 먼저이고 제어는 그 다음입니다 / 추천은 실행 전 승인과 안전검사를 거칩니다 / 구역별 추천·실행 검토 / 실행 전 승인과 안전검사.
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
 // R7 adapter evidence links: sourceMonitoringReadOnlyAdapter / sourceSafetyInterlockReadOnlyAdapter.
 // R7 detail page shell grammar: detailHeader → evidenceSummary → zoneTabs → selectedZonePanel → optionalDetailModal.
@@ -29,30 +33,44 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.38";
+const REBUILD_VERSION = "1.12.39";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
   { key: "growth-goal", label: "생육목표", description: "오늘 작물이 가야 할 목표를 정리합니다." },
   { key: "influence-map", label: "영향지도", description: "환경·관수·장치가 작물에 주는 영향을 봅니다." },
-  { key: "recommend-act", label: "추천·실행", description: "추천을 검토하고 승인 후 실행합니다." },
+  { key: "recommend-act", label: "추천·자동화", description: "수동 기준 대비 AI/자동화 보조 차이를 검토합니다." },
+]);
+
+const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
+  { key: "operations-home", label: "운영 홈", replacement: "operations-home" },
+  { key: "crop-centered", label: "작물 중심 운영", replacement: "crop-operations" },
+  { key: "field-status", label: "현장 상태", replacement: "environment-control + irrigation-fertigation + device-control" },
+  { key: "recommendation-review", label: "추천·실행 검토", replacement: "recommendation-automation" },
+  { key: "settings-admin", label: "설정·관리", replacement: "settings-admin" },
 ]);
 
 const R7_SIDEBAR_GROUPS = Object.freeze([
-  { key: "operations-home", label: "운영 홈", summary: "오늘 작물 중심 overview", target: "crop-status" },
-  { key: "crop-centered", label: "작물 중심 운영", summary: "작물상태·생육목표·구역 drilldown", target: "growth-goal" },
-  { key: "field-status", label: "현장 상태", summary: "환경·관수·장치의 작물 영향", target: "influence-map" },
-  { key: "recommendation-review", label: "추천·실행 검토", summary: "추천·승인·리허설·안전 근거", target: "recommend-act" },
-  { key: "settings-admin", label: "설정·관리", summary: "Admin/System·장치 매핑·RBAC", target: "settings-admin" },
+  { key: "operations-home", label: "운영 홈", summary: "오늘 운영 상태·fallback·우선 확인", target: "operations-home" },
+  { key: "crop-operations", label: "작물 운영", summary: "currentCrop·crop_cycle·생육목표", target: "crop-operations" },
+  { key: "environment-control", label: "환경 제어", summary: "온도·습도·VPD·CO₂ 수동 기준", target: "environment-control" },
+  { key: "irrigation-fertigation", label: "관수·양액", summary: "관수·EC/pH·배액·드라이백 기준", target: "irrigation-fertigation" },
+  { key: "device-control", label: "장치 제어", summary: "수동/자동 모드·장치 매핑·인터록", target: "device-control" },
+  { key: "recommendation-automation", label: "추천·자동화", summary: "AI 보조·자동화 차이·fallback", target: "recommendation-automation" },
+  { key: "safety-history", label: "안전·이력", summary: "Safety·Interlock·Fail Safe·감사", target: "safety-history" },
+  { key: "settings-admin", label: "설정·관리", summary: "RBAC·HA 매핑·진단·secret redaction", target: "settings-admin" },
 ]);
 
 const R7_DETAIL_SUBPAGES = Object.freeze([
-  { key: "operations-home", label: "운영 홈", summary: "오늘의 작물 운영 요약을 읽기 전용으로 정리합니다.", source: "currentCropAssignment + dataAvailability", zoneScope: "전체 구역 우선, 필요한 구역은 stage drilldown에서 확인", safety: "추천·실행 전 승인/안전검사 필요" },
-  { key: "crop-centered", label: "작물 중심 운영", summary: "작물상태와 생육목표 상세 subpage 자리입니다.", source: "currentCropAssignment + growthTargetProjection", zoneScope: "작물상태/생육목표 stage 안의 zoneTabs를 재사용", safety: "작기/목표 수정 권한은 아직 없음" },
-  { key: "field-status", label: "현장 상태", summary: "환경·관수·장치가 작물에 주는 영향을 확인하는 subpage 자리입니다.", source: "monitoringReadOnlyAdapter + environmentImpactProjection", zoneScope: "구역별 장비 profile과 freshness evidence", safety: "센서 수집/장치 제어는 아직 없음" },
-  { key: "recommendation-review", label: "추천·실행 검토", summary: "추천, 승인, 안전, 가상 리허설 근거를 검토하는 subpage 자리입니다.", source: "recommendationReviewProjection + safetyInterlockReadOnlyAdapter + virtualExecutionRehearsalScaffold", zoneScope: "추천 stage 안의 zone-scoped evidence", safety: "승인 해제/실행/MQTT 명령은 아직 없음" },
-  { key: "settings-admin", label: "설정·관리", summary: "Admin/System, 장치 매핑, RBAC/config 설정 subpage 자리입니다.", source: "RBAC/config documentation baseline", zoneScope: "관리 설정은 zone data를 직접 변경하지 않음", safety: "설정 저장/삭제/권한 변경은 아직 없음" },
+  { key: "operations-home", label: "운영 홈", summary: "오늘의 운영 모드, AI fallback, 우선 확인 구역을 읽기 전용으로 요약합니다.", manualBase: "현재 수동/자동 운영 기준과 fallback 기준", automation: "도메인별 정상/주의 상태 요약", aiAssist: "AI 사용 가능 여부와 보조 적용 상태", safety: "차단 알람과 Fail Safe 상태 우선 표시", source: "currentCropAssignment + dataAvailability + domainHealthSummary", zoneScope: "전체 구역 우선, 필요한 구역은 각 도메인에서 확인" },
+  { key: "crop-operations", label: "작물 운영", summary: "currentCrop, crop_cycle, 생육목표, 작물 기록을 운영 기준으로 정리합니다.", manualBase: "작물별 기준 범위와 생육목표", automation: "작기 상태/기록 기반 read-only workflow", aiAssist: "생육단계·상태·위험·진단·조치 추천 evidence", safety: "작물 운영은 환경/관수/장치 명령을 직접 실행하지 않음", source: "currentCropAssignment + growthTargetProjection + crop model evidence", zoneScope: "zone parent + currentCrop attached" },
+  { key: "environment-control", label: "환경 제어", summary: "온도, 습도, VPD, CO₂, 광, 환기, 난방, 냉방의 수동 기준과 자동화 후보를 분리합니다.", manualBase: "manualEnvironmentSettings", automation: "ruleScheduleEnvironmentAutomation", aiAssist: "aiEnvironmentCorrection if enabled and healthy", safety: "environmentSafetyLimits / deviceInterlock clamp", source: "monitoringReadOnlyAdapter + environmentImpactProjection", zoneScope: "구역별 환경 상태와 freshness evidence" },
+  { key: "irrigation-fertigation", label: "관수·양액", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준을 관리합니다.", manualBase: "baseIrrigationSettings", automation: "ruleScheduleIrrigationAutomation", aiAssist: "aiIrrigationCorrection if enabled and healthy", safety: "irrigationSafetyLimits clamp", source: "irrigation settings + rootzone/water evidence", zoneScope: "구역별 관수·양액 상태와 센서 stale 여부" },
+  { key: "device-control", label: "장치 제어", summary: "장치 상태, 수동/자동/잠금/점검 모드, HA entity mapping과 인터록을 분리합니다.", manualBase: "deviceMode: manual / auto / locked / maintenance", automation: "operatorRequestedAction or automationCandidate", aiAssist: "optional aiStrategyHint only", safety: "permission → Safety → Interlock → Fail Safe", source: "equipmentProfile + HA entity mapping metadata", zoneScope: "구역별 장치 profile과 통신 상태" },
+  { key: "recommendation-automation", label: "추천·자동화", summary: "수동 기준값, 기본 자동제어 후보, AI 추천/보정, fallback 값을 비교합니다.", manualBase: "Manual baseline shown first", automation: "Rule/schedule candidate", aiAssist: "AI recommendation/correction/explanation", safety: "Safety-final candidate; no final command authority", source: "recommendationReviewProjection + automationAssistProjection", zoneScope: "추천은 구역별 차이와 미적용 이유를 표시" },
+  { key: "safety-history", label: "안전·이력", summary: "Safety, Interlock, Fail Safe, 알람, 차단 이유, 수동/자동/AI 이력을 모읍니다.", manualBase: "operator-visible block reasons and logs", automation: "rule/schedule automation history", aiAssist: "AI may add evidence only", safety: "authoritative allow/block history", source: "safetyInterlockReadOnlyAdapter + audit/log evidence", zoneScope: "구역별 차단·경보·stale 이력" },
+  { key: "settings-admin", label: "설정·관리", summary: "RBAC, HA entity mapping, 시스템 설정, 진단, 백업, secret redaction을 관리합니다.", manualBase: "users, mapping, system config", automation: "configuration ownership boundary", aiAssist: "admin/model diagnostics only", safety: "admin audit/config boundary; no mutation in this slice", source: "RBAC/config documentation baseline", zoneScope: "관리 설정은 zone data를 직접 변경하지 않음" },
 ]);
 
 const REBUILD_HOME_CONTEXT = Object.freeze({
@@ -92,10 +110,10 @@ const REBUILD_STAGE_DETAILS = Object.freeze({
     metric: (zone) => zone.id === "all" ? "영향 편차" : "구역 장비 영향",
   },
   "recommend-act": {
-    title: "구역별 추천·실행 검토",
-    summary: (zone) => zone.id === "all" ? "전체 추천을 검토하고 구역별 실행 후보를 나눕니다." : `${zone.name} 승인 전 검토`,
-    detail: (zone) => zone.id === "all" ? "추천은 전체 방향을 먼저 확인한 뒤 구역별로 승인·안전검사를 거칩니다." : `${zone.name} 추천은 승인과 안전검사를 거친 뒤 실행 후보로 봅니다.`,
-    metric: (zone) => zone.id === "all" ? "승인 전 검토" : "구역 실행 후보",
+    title: "구역별 추천·자동화 검토",
+    summary: (zone) => zone.id === "all" ? "전체 AI 보조와 자동화 후보를 수동 기준과 비교합니다." : `${zone.name} 수동 기준 대비 보조 검토`,
+    detail: (zone) => zone.id === "all" ? "추천은 수동 기준값과 기본 자동제어 후보를 먼저 보여준 뒤 AI 보정 차이를 설명합니다." : `${zone.name} 추천은 실행 권한이 아니라 수동 기준 대비 보조 근거로 봅니다.`,
+    metric: (zone) => zone.id === "all" ? "수동 기준 대비 차이" : "구역 보조 후보",
   },
 });
 
@@ -565,7 +583,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
               <dt style="font-weight:800;">기준</dt><dd style="margin:0;">${config.metric(zone)}</dd>
               <dt style="font-weight:800;">장비</dt><dd data-zone-context-equipment data-zone-equipment-profile style="margin:0;">${zone.equipmentProfile?.labels?.join(" · ") || zone.equipment.join(" · ")}</dd>
             </dl>
-            <p data-zone-readonly-note style="margin:10px 0 0;color:#78927f;font-size:12px;line-height:1.5;">읽기 전용 · 추천은 실행 전 승인과 안전검사를 거친 뒤 별도 단계에서 다룹니다.</p>
+            <p data-zone-readonly-note style="margin:10px 0 0;color:#78927f;font-size:12px;line-height:1.5;">읽기 전용 · AI 추천은 수동 기준과 기본 자동제어를 보조하며 Safety/Interlock/Fail Safe를 우회하지 않습니다.</p>
             <button type="button" data-zone-detail-modal-button data-zone-detail-stage="${stageKey}" data-zone-detail-zone-id="${zone.id}" style="margin-top:12px;border:1px solid #cfe3d4;border-radius:999px;background:#f8fcf9;color:#31523b;padding:7px 11px;font-size:12px;font-weight:800;cursor:pointer;">구역 상세</button>
           </section>`;
         }).join("")}
@@ -661,15 +679,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
         <article data-r7-dashboard-hero style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f0f8f2);padding:24px;">
           <p style="margin:0 0 8px;font-size:12px;font-weight:800;color:#5d7d64;letter-spacing:.08em;text-transform:uppercase;">Crop-centered OS</p>
           <h1 style="margin:0 0 12px;font-size:30px;line-height:1.2;color:#24323f;">작물 중심 운영체계</h1>
-          <p style="margin:0;color:#5d6f62;line-height:1.7;">작물이 먼저이고 제어는 그 다음입니다. 작물상태 → 생육목표 → 환경·관수·장치 영향 → 추천·실행 흐름으로 오늘의 운영 판단을 정리합니다.</p>
-          <p style="margin:14px 0 0;font-size:13px;color:#78927f;">구역별 세부 정보는 각 단계 안에서 탭으로 필요한 구역만 선택해 확인합니다 · 추천은 실행 전 승인과 안전검사를 거칩니다</p>
+          <p style="margin:0;color:#5d6f62;line-height:1.7;">작물이 먼저이고 제어는 manual/base settings에서 시작합니다. 수동 설정 → 기본 자동제어 → AI 보조 → Safety/Interlock/Fail Safe 순서로 오늘의 운영 판단을 정리합니다.</p>
+          <p style="margin:14px 0 0;font-size:13px;color:#78927f;">구역별 세부 정보는 각 단계 안에서 탭으로 필요한 구역만 선택해 확인합니다 · AI가 없어도 수동 기준과 기본 자동제어로 운영 가능해야 합니다</p>
         </article>
         ${this.renderR7SourceShapesSummary()}
         <section data-crop-os-flow-stages data-r7-stage-grid data-cba-layout="single-column-stage-flow" style="display:grid;grid-template-columns:1fr;gap:18px;">
           <article data-r7-stage-card="crop-status" data-stage-card-shell data-crop-os-stage="crop-status" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">1. 작물상태</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">작물의 현재 생육 상태, 이상 징후, 관찰 필요 지점을 먼저 보여줍니다.</p>${this.renderZoneDrilldown("crop-status")}</article>
           <article data-r7-stage-card="growth-goal" data-stage-card-shell data-crop-os-stage="growth-goal" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">2. 생육목표</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">오늘 목표 생육 방향과 우선순위를 운영자가 이해할 수 있게 정리합니다.</p>${this.renderZoneDrilldown("growth-goal")}</article>
           <article data-r7-stage-card="environment-impact" data-stage-card-shell data-crop-os-stage="environment-impact" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">3. 환경·관수·장치 영향</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">온도, 습도, 광, 관수, 장치 상태를 작물 영향 관점으로 묶어 보여줍니다.</p>${this.renderZoneDrilldown("environment-impact")}</article>
-          <article data-r7-stage-card="recommend-act" data-stage-card-shell data-crop-os-stage="recommend-act" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">4. 추천·실행</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">추천 이유를 확인하고, 승인과 안전검사 후 실행하는 흐름을 둡니다.</p>${this.renderZoneDrilldown("recommend-act")}</article>
+          <article data-r7-stage-card="recommend-act" data-stage-card-shell data-crop-os-stage="recommend-act" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">4. 추천·자동화</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">수동 기준값과 기본 자동제어 후보를 먼저 보고, AI 보조 차이와 fallback 값을 검토합니다.</p>${this.renderZoneDrilldown("recommend-act")}</article>
         </section>
       </section>
     `;
@@ -690,9 +708,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7Sidebar() {
-    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:16px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
+    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:16px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
       <div style="font-weight:1000;color:#24323f;font-size:18px;">Green Smart</div>
-      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">작물 중심 운영 shell · read-only</p>
+      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">수동 설정 우선 환경제어 shell · read-only</p>
+      <template data-r7-deprecated-sidebar-groups>${R7_DEPRECATED_SIDEBAR_GROUPS.map((group) => `data-r7-sidebar-group="${group.key}" ${group.label} → ${group.replacement}`).join(" | ")}</template>
       ${R7_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" style="display:block;border:1px solid #e2eee5;border-radius:14px;background:#f8fcf9;color:#31523b;text-decoration:none;padding:11px 12px;"><strong style="display:block;font-size:14px;">${group.label}</strong><span style="display:block;margin-top:4px;color:#78927f;font-size:11px;line-height:1.4;">${group.summary}</span></a>`).join("")}
     </aside>`;
   }
@@ -747,12 +766,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7DetailSubpage(subpage) {
-    return `<article data-r7-detail-subpage="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
+    return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
-        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">read-only placeholder</p>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">manual-first read-only domain</p>
         <h3 style="margin:0;color:#24323f;font-size:18px;">${subpage.label}</h3>
       </header>
       <p data-r7-subpage-evidence-summary style="margin:0;color:#5d6f62;line-height:1.6;">${subpage.summary}</p>
+      <dl data-r7-domain-layer-summary style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#31523b;font-size:12px;">
+        <dt style="font-weight:900;">Manual/Base</dt><dd data-r7-manual-base-settings style="margin:0;">${subpage.manualBase}</dd>
+        <dt style="font-weight:900;">Rule/Schedule</dt><dd data-r7-rule-schedule-automation style="margin:0;">${subpage.automation}</dd>
+        <dt style="font-weight:900;">AI Assist</dt><dd data-r7-ai-assist-layer style="margin:0;">${subpage.aiAssist}</dd>
+        <dt style="font-weight:900;">Safety Final</dt><dd data-r7-safety-finalization style="margin:0;">${subpage.safety}</dd>
+      </dl>
       <p data-r7-subpage-source-freshness style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">Source freshness: ${subpage.source}</p>
       <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
@@ -765,7 +790,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7SubpagePlaceholders() {
-    return `<section data-r7-detail-subpages-baseline style="display:grid;gap:12px;">
+    return `<section data-r7-detail-subpages-baseline data-r7-manual-first-domain-baseline style="display:grid;gap:12px;">
       ${R7_DETAIL_SUBPAGES.map((subpage) => this.renderR7DetailSubpage(subpage)).join("")}
     </section>`;
   }
@@ -773,9 +798,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7PageShell() {
     return `<section data-r7-page-shell style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7 Page Shell</p>
-        <h2 style="margin:0;color:#24323f;font-size:22px;">운영 홈 · 작물 중심 작업공간</h2>
-        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 흐름을 고정하고, 본문은 기존 crop-centered dashboard를 그대로 감쌉니다. 실행 권한은 추가하지 않습니다.</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-007 Manual-first Page Shell</p>
+        <h2 style="margin:0;color:#24323f;font-size:22px;">수동 설정 우선 환경제어 작업공간</h2>
+        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 홈, 작물, 환경, 관수·양액, 장치, 추천·자동화, 안전·이력, 설정·관리로 재정렬합니다. 실행 권한은 추가하지 않습니다.</p>
       </header>
       <div data-r7-page-workspace style="display:grid;gap:16px;">
         ${this.renderR7SubpagePlaceholders()}

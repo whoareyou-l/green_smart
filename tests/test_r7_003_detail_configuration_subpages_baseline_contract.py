@@ -18,11 +18,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_003_version_surfaces_are_1_12_37():
-    assert '"version": "1.12.38"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.38"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.38"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.39"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.39"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.39"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_002_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.38" in _read(path)
+        assert "v1.12.39" in _read(path)
 
 
 def test_r7_003_doc_declares_selected_scope_and_boundaries():
@@ -132,12 +132,16 @@ def test_r7_003_node_smoke_renders_all_detail_subpage_placeholders():
       const required = [
         'data-r7-detail-subpages-baseline',
         'data-r7-detail-subpage="operations-home"',
-        'data-r7-detail-subpage="crop-centered"',
-        'data-r7-detail-subpage="field-status"',
-        'data-r7-detail-subpage="recommendation-review"',
+        'data-r7-detail-subpage="crop-operations"',
+        'data-r7-detail-subpage="environment-control"',
+        'data-r7-detail-subpage="irrigation-fertigation"',
+        'data-r7-detail-subpage="device-control"',
+        'data-r7-detail-subpage="recommendation-automation"',
+        'data-r7-detail-subpage="safety-history"',
         'data-r7-detail-subpage="settings-admin"',
         'data-r7-subpage-readonly-boundary="true"',
         'data-r7-subpage-config-placeholder',
+        'data-r7-manual-first-domain-baseline',
         'data-r7-main-dashboard'
       ];
       for (const item of required) {{
