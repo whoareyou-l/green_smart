@@ -115,6 +115,15 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "readOnly": True,
         "executionEnabled": False,
     }
+    operator_approval_scaffold = {
+        "approvalState": "required" if crop_cycle_id else "not_required",
+        "approvalRequired": True if crop_cycle_id else False,
+        "disabledReason": "작업자 승인과 안전/인터록 사전검증 전에는 실행할 수 없습니다.",
+        "executionBlocked": True,
+        "sourceRecommendationReview": recommendation_review_projection,
+        "readOnly": True,
+        "executionEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -128,6 +137,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "growthTargetProjection": growth_target_projection,
         "environmentImpactProjection": environment_impact_projection,
         "recommendationReviewProjection": recommendation_review_projection,
+        "operatorApprovalScaffold": operator_approval_scaffold,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },

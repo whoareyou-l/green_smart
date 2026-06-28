@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.19`
+> 기준 버전: `v1.12.20`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -155,6 +155,18 @@ No write/mutation in RS-020
 ```
 
 RS-020 기준 `추천·실행` 화면은 `currentCropAssignment`, `growthTargetProjection`, `environmentImpactProjection`에서 파생된 `recommendationReviewProjection`을 읽기 전용으로 표시한다. Projection은 `reviewState`, `reviewSummary`, `reviewInputs`, `approvalRequired`를 제공하며 추천 승인/저장/실행은 포함하지 않는다.
+
+### 1.11 Operator approval scaffold
+
+```text
+Operator approval scaffold
+operatorApprovalScaffold
+recommendationReviewProjection → operatorApprovalScaffold
+작업자 승인 필요
+No write/mutation in RS-021
+```
+
+RS-021 기준 `추천·실행` 화면은 추천 검토 뒤에 `operatorApprovalScaffold`를 read-only/disabled 상태로 표시한다. 작업자 승인, 안전/인터록 사전검증 전 실행은 차단된다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

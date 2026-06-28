@@ -7,13 +7,14 @@
 // RS-018 growth target read-only projection: currentCropAssignment → growthTargetProjection for 생육목표.
 // RS-019 environment impact read-only projection: currentCropAssignment + equipmentProfile + dataAvailability for 영향지도.
 // RS-020 recommendation review read-only projection: currentCropAssignment + growthTargetProjection + environmentImpactProjection for 추천·실행.
+// RS-021 operator approval scaffold: recommendationReviewProjection → operatorApprovalScaffold for disabled 작업자 승인 상태.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.19";
+const REBUILD_VERSION = "1.12.20";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -255,6 +256,29 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderOperatorApprovalScaffold(zone, stageKey) {
+    if (!["recommendation-execution"].includes(stageKey)) return "";
+    const scaffold = zone.operatorApprovalScaffold || {};
+    const state = scaffold.approvalState || "required";
+    const approvalRequired = scaffold.approvalRequired !== false;
+    const disabledReason = scaffold.disabledReason || "작업자 승인과 안전/인터록 사전검증 전에는 실행할 수 없습니다.";
+    const executionBlocked = scaffold.executionBlocked !== false;
+    const readOnly = scaffold.readOnly !== false;
+    const executionEnabled = scaffold.executionEnabled === true;
+    return `
+      <section data-operator-approval-scaffold-card data-operator-approval-state="${state}" data-operator-approval-required="${approvalRequired}" data-operator-approval-disabled-reason="${disabledReason}" data-operator-approval-execution-blocked="${executionBlocked}" data-operator-approval-readonly="${readOnly}" data-operator-approval-execution-enabled="${executionEnabled}" style="margin:10px 0;border:1px solid #f0d2b9;border-radius:14px;background:#fff8f1;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#865222;">작업자 승인 scaffold · 실행 비활성화</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#6b421d;font-size:12px;">
+          <dt style="font-weight:900;">승인 상태</dt><dd style="margin:0;">${state}</dd>
+          <dt style="font-weight:900;">작업자 승인 필요</dt><dd style="margin:0;">${approvalRequired ? "필요" : "불필요"}</dd>
+          <dt style="font-weight:900;">실행 차단</dt><dd style="margin:0;">${executionBlocked ? "차단" : "대기"}</dd>
+          <dt style="font-weight:900;">비활성 사유</dt><dd style="margin:0;">${disabledReason}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#8a674c;font-size:12px;line-height:1.5;">추천은 작업자 승인과 안전/인터록 사전검증 전까지 실행할 수 없습니다. RS-021은 승인 저장·실행 없이 read-only/disabled scaffold만 제공합니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -325,6 +349,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${this.renderGrowthTargetProjection(zone, stageKey)}
             ${this.renderEnvironmentImpactProjection(zone, stageKey)}
             ${this.renderRecommendationReviewProjection(zone, stageKey)}
+            ${this.renderOperatorApprovalScaffold(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}

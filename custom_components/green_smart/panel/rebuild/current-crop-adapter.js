@@ -107,12 +107,26 @@ export function normalizeRecommendationReviewProjection(
   };
 }
 
+export function normalizeOperatorApprovalScaffold(zone = {}, recommendationReviewProjection = normalizeRecommendationReviewProjection(zone)) {
+  const scaffold = zone.operatorApprovalScaffold || zone.operator_approval_scaffold || {};
+  return {
+    approvalState: scaffold.approvalState || (recommendationReviewProjection.approvalRequired ? "required" : "not_required"),
+    approvalRequired: scaffold.approvalRequired ?? Boolean(recommendationReviewProjection.approvalRequired),
+    disabledReason: scaffold.disabledReason || "작업자 승인과 안전/인터록 사전검증 전에는 실행할 수 없습니다.",
+    executionBlocked: scaffold.executionBlocked ?? true,
+    sourceRecommendationReview: scaffold.sourceRecommendationReview || recommendationReviewProjection,
+    readOnly: true,
+    executionEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
   const growthTargetProjection = normalizeGrowthTargetProjection(zone, currentCropAssignment);
   const environmentImpactProjection = normalizeEnvironmentImpactProjection(zone, currentCropAssignment);
   const recommendationReviewProjection = normalizeRecommendationReviewProjection(zone, currentCropAssignment, growthTargetProjection, environmentImpactProjection);
+  const operatorApprovalScaffold = normalizeOperatorApprovalScaffold(zone, recommendationReviewProjection);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -126,6 +140,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     growthTargetProjection,
     environmentImpactProjection,
     recommendationReviewProjection,
+    operatorApprovalScaffold,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],
