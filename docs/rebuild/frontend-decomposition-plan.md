@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.11.4`
+> 기준 버전: `v1.11.5`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
 
@@ -186,6 +186,22 @@ RB-001 Admin/System shell 분리
 ```
 
 RB-001은 실제 기술 설정을 새로 추가하지 않는다. 현재 Admin/System render boundary를 module로 빼낼 준비와 marker contract를 먼저 만든다.
+
+### RB-001 completion note
+
+`v1.11.5`에서 Admin/System render boundary extracted 상태가 되었다.
+
+```text
+custom_components/green_smart/panel/domains/admin/admin-page.js
+```
+
+완료 범위:
+
+- `domains/admin/admin-page.js`가 Admin/System tab/page render helper를 export한다.
+- `green-smart-panel.js`는 public compatibility shell과 lifecycle/binding/storage 책임을 유지한다.
+- 기존 `data-admin-*`, `data-ui-section`, `data-required-permission`, `data-role-visibility`, `data-common-main-page="admin-system"` marker를 유지한다.
+- API route/DB/prod 변경 없음.
+- Crop/environment/irrigation/device extraction remains deferred.
 
 ---
 

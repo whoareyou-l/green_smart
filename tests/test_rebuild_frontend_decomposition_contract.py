@@ -14,11 +14,11 @@ def _read(path: Path) -> str:
 
 
 def test_r2_version_surfaces_are_v1112():
-    assert '"version": "1.11.4"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.4"' in _read(PANEL)
-    assert "v1.11.4" in _read(PLAN)
-    assert "v1.11.4" in _read(PRODUCT_PLAN)
-    assert "v1.11.4" in _read(MASTER)
+    assert '"version": "1.11.5"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.5"' in _read(PANEL)
+    assert "v1.11.5" in _read(PLAN)
+    assert "v1.11.5" in _read(PRODUCT_PLAN)
+    assert "v1.11.5" in _read(MASTER)
 
 
 def test_r2_ha_loading_keeps_single_public_panel_entrypoint():
@@ -102,13 +102,19 @@ def test_r2_first_extraction_is_admin_system_not_crop_or_execution():
     assert "docs/rebuild/frontend-decomposition-plan.md" in master
 
 
-def test_r2_contract_preserves_no_implementation_split_yet():
+def test_r2_contract_preserves_no_large_split_beyond_rb001_admin_shell():
     plan = _read(PLAN)
-    # R2 is documentation/contract only. Actual module files should not exist yet.
+    # R2 itself was documentation/contract only. After RB-001, only the low-risk
+    # Admin/System shell module is allowed; core/API/component and high-risk
+    # domain extractions must still not exist.
+    assert (ROOT / "custom_components" / "green_smart" / "panel" / "domains/admin/admin-page.js").exists()
     for rel in (
         "core/api-client.js",
         "core/render-shell.js",
-        "domains/admin/admin-page.js",
+        "domains/crop/crop-page.js",
+        "domains/environment/environment-page.js",
+        "domains/irrigation/irrigation-page.js",
+        "domains/device/device-page.js",
         "components/cards",
     ):
         assert not (ROOT / "custom_components" / "green_smart" / "panel" / rel).exists()
@@ -119,5 +125,6 @@ def test_r2_contract_preserves_no_implementation_split_yet():
         "custom element 이름 변경 | 금지",
         "API route 변경 | 금지",
         "prod stack 변경 | 금지",
+        "Admin/System render boundary extracted",
     ):
         assert marker in plan

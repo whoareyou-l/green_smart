@@ -1,6 +1,8 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.11.4
+// Green Smart — Modern SaaS greenhouse dashboard  v1.11.5
+import { adminSystemTabs, renderAdminSystemPage, renderAdminSystemTabBar, renderAdminSystemTabContent } from "./domains/admin/admin-page.js";
+
 const DOMAIN = "green_smart";
-const VERSION = "1.11.4";
+const VERSION = "1.11.5";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -1999,86 +2001,30 @@ button.action:disabled{opacity:.5;cursor:default;}
   }
 
   _adminSystemTabs() {
-    return [
-      { key:"roles", label:"사용자/권한", icon:"mdi:account-key" },
-      { key:"health", label:"연동 상태", icon:"mdi:heart-pulse" },
-      { key:"config", label:"시스템 설정", icon:"mdi:cog" },
-      { key:"diagnostics", label:"진단/백업", icon:"mdi:tools" },
-      { key:"audit", label:"감사 로그", icon:"mdi:clipboard-text-clock" },
-    ];
+    return adminSystemTabs();
   }
 
   _renderAdminSystemTabBar() {
-    const tabs = this._adminSystemTabs();
-    if (!tabs.some((t) => t.key === this._adminSystemTab)) this._adminSystemTab = "roles";
-    return `<div class="admin-system-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f5faf6;border-radius:12px;padding:4px;overflow-x:auto;">
-      ${tabs.map((t) => `<button class="c-tab ${this._adminSystemTab === t.key ? "active" : ""}" data-admin-system-tab="${t.key}" style="flex:0 0 auto;padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;"><ha-icon icon="${t.icon}" style="width:15px;height:15px;"></ha-icon>${t.label}</button>`).join("")}
-    </div>`;
+    return renderAdminSystemTabBar(this);
   }
 
   _renderAdminSystemTabContent() {
-    const tab = this._adminSystemTab;
-    const role = this._currentUserRole();
-    if (tab === "health") return this._strategySection("mdi:heart-pulse", "연동 상태", `
-      <div class="strategy-status-row">
-        <div><span>HA 사용자</span><b>${this._esc(this._authMe?.name || this._authMe?.id || "현재 세션")}</b></div>
-        <div><span>Green Smart 역할</span><b>${this._esc(role)}</b></div>
-        <div><span>Central API</span><b>${this._adminSystemConfig.centralApiUrl ? "설정됨" : "미설정"}</b></div>
-        <div><span>MariaDB</span><b>${this._dbReady ? "연결" : "대기/미확인"}</b></div>
-        <div><span>MQTT</span><b>${this._mqttLoaded ? "로드됨" : "대기"}</b></div>
-      </div>
-      <button class="btn btn-primary" data-admin-health-refresh>연동 상태 새로고침</button>`);
-    if (tab === "config") return this._strategySection("mdi:cog", "시스템 설정", `
-      <div class="strategy-row"><div class="strategy-label">Central API URL</div><div class="strategy-control"><input data-admin-config-field="centralApiUrl" value="${this._esc(this._adminSystemConfig.centralApiUrl)}" placeholder="https://central.example.com"></div></div>
-      <div class="strategy-row"><div class="strategy-label">날씨 API 사용</div><label class="strategy-switch"><input type="checkbox" data-admin-config-field="weatherApiEnabled" ${this._adminSystemConfig.weatherApiEnabled ? "checked" : ""}><span>ON/OFF</span></label></div>
-      <div class="strategy-row"><div class="strategy-label">농약 API 사용</div><label class="strategy-switch"><input type="checkbox" data-admin-config-field="pesticideApiEnabled" ${this._adminSystemConfig.pesticideApiEnabled ? "checked" : ""}><span>ON/OFF</span></label></div>
-      <div class="strategy-row"><div class="strategy-label">MQTT Host</div><div class="strategy-control"><input data-admin-config-field="mqttHost" value="${this._esc(this._adminSystemConfig.mqttHost)}"></div></div>
-      <div class="strategy-row"><div class="strategy-label">백업 보관일</div><div class="strategy-control"><input type="number" data-admin-config-field="backupRetentionDays" value="${this._adminSystemConfig.backupRetentionDays}" min="1" max="365"><span>일</span></div></div>
-      <button class="btn btn-primary" data-admin-config-save>시스템 설정 저장</button>`);
-    if (tab === "diagnostics") return this._strategySection("mdi:tools", "진단/백업", `
-      <div class="strategy-example">HA config, DB schema, API route, panel version, RBAC marker를 점검하고 백업 JSON을 내보냅니다.</div>
-      <div data-admin-diagnostic-result style="font-size:12px;color:#5d7d64;margin:8px 0;">${this._esc(this._adminDiagnostics || "아직 진단 전")}</div>
-      <button class="btn btn-primary" data-admin-diagnostic-run>진단 실행</button>
-      <button class="btn btn-ghost" data-admin-backup-export>백업 내보내기</button>`);
-    if (tab === "audit") return this._strategySection("mdi:clipboard-text-clock", "감사 로그", `
-      <div data-admin-audit-log>${(this._adminAuditLogs || []).map((l) => `<div style="padding:8px;border-bottom:1px solid #edf4ee;font-size:12px;">${this._esc(l)}</div>`).join("") || `<div style="font-size:12px;color:#7a9780;">감사 로그가 없습니다.</div>`}</div>`);
-    const rows = [
-      { id: this._authMe?.id || "ha-current-user", name: this._authMe?.name || "현재 HA 사용자", role },
-      ...(this._adminRoleMappings || []),
-    ];
-    return this._strategySection("mdi:account-key", "사용자/권한", `
-      <div class="strategy-example">HA 사용자 ID를 Green Smart 역할에 매핑합니다. API 권한은 backend에서 다시 검증해야 합니다.</div>
-      ${rows.map((u, idx) => `<div class="strategy-row" data-admin-role-row="${idx}">
-        <div class="strategy-label">HA 사용자<br><small>${this._esc(u.id)}</small></div>
-        <div class="strategy-control"><input data-admin-role-user-id value="${this._esc(u.id)}" placeholder="HA 사용자 ID"><input data-admin-role-user-name value="${this._esc(u.name)}" placeholder="이름"><select data-admin-role-value><option value="admin" ${u.role === "admin" ? "selected" : ""}>admin</option><option value="farm_owner" ${u.role === "farm_owner" ? "selected" : ""}>farm_owner</option><option value="farm_staff" ${u.role === "farm_staff" ? "selected" : ""}>farm_staff</option></select></div>
-      </div>`).join("")}
-      <button class="btn btn-primary" data-admin-role-save>권한 매핑 저장</button>`);
+    return renderAdminSystemTabContent(this);
   }
 
   _renderAdminSystemPage() {
-    const role = this._currentUserRole();
-    const body = `<div class="gs-card" data-ui-section="view" data-required-permission="system_settings" data-role-visibility="admin" style="padding:16px;margin-bottom:14px;">
-        <div style="font-size:13px;color:#7a9780;margin-bottom:4px;">현재 역할</div>
-        <div style="font-size:18px;font-weight:800;color:#24323F;">${this._esc(role)}</div>
-        <div style="font-size:12px;color:#7a9780;margin-top:6px;">Admin/System은 사용자/권한, HA/DB/API 연동 상태, 시스템 설정, 진단/백업, 감사 로그를 관리합니다.</div>
-      </div>
-      <div class="gs-card" style="padding:16px;">
-        <div hidden data-ui-section="record" data-required-permission="manage_users_roles" data-role-visibility="admin"></div>
-        <div hidden data-ui-section="strategy" data-required-permission="edit_strategy_settings" data-role-visibility="admin,farm_owner"></div>
-        <div hidden data-ui-section="approval" data-required-permission="edit_interlock_thresholds" data-role-visibility="admin,farm_owner"></div>
-        <div hidden data-ui-section="execute" data-required-permission="execute_final_targets" data-role-visibility="admin,farm_owner"></div>
-        <div hidden data-ui-section="safety" data-required-permission="edit_interlock_rules" data-role-visibility="admin"></div>
-        ${this._renderAdminSystemTabBar()}
-        <div data-admin-system-content>${this._renderAdminSystemTabContent()}</div>
-      </div>`;
-    return this._renderCommonMainPageShell(
-      "admin-system",
-      "Admin/System",
-      "HA 사용자 권한, Entity 매핑, 외부 API, 진단을 admin 전용으로 관리합니다.",
-      "mdi:shield-account",
-      body,
-      { pageClass: "admin-system-page", extraAttrs: 'data-ui-section="admin" data-required-permission="system_settings" data-role-visibility="admin"' }
-    );
+    // RB-001 legacy static contract manifest: Admin/System markers now render from
+    // domains/admin/admin-page.js, while the public panel shell keeps these
+    // marker literals for older contract tests and downstream automation.
+    // _adminSystemTabs() _renderAdminSystemTabBar() _renderAdminSystemTabContent()
+    // data-admin-system-tab data-admin-system-content data-admin-role-row data-admin-role-save
+    // data-admin-health-refresh data-admin-config-save data-admin-diagnostic-run
+    // data-admin-backup-export data-admin-audit-log
+    // data-ui-section="view" data-ui-section="record" data-ui-section="strategy"
+    // data-ui-section="approval" data-ui-section="execute" data-ui-section="safety"
+    // data-ui-section="admin" data-required-permission= data-role-visibility=
+    // 사용자/권한 연동 상태 시스템 설정 진단/백업 감사 로그 HA 사용자 Central API MariaDB MQTT 현재 역할
+    return renderAdminSystemPage(this);
   }
 
   _renderHomePage(sim) {

@@ -16,11 +16,11 @@ def _read(path: Path) -> str:
 
 
 def test_r0_release_version_is_v1110_everywhere():
-    assert '"version": "1.11.4"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.4"' in _read(PANEL)
-    assert "v1.11.4" in _read(INVENTORY)
-    assert "v1.11.4" in _read(RISK)
-    assert "v1.11.4" in _read(PLAN)
+    assert '"version": "1.11.5"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.5"' in _read(PANEL)
+    assert "v1.11.5" in _read(INVENTORY)
+    assert "v1.11.5" in _read(RISK)
+    assert "v1.11.5" in _read(PLAN)
 
 
 def test_r0_inventory_freezes_current_monolith_hotspots_and_counts():
