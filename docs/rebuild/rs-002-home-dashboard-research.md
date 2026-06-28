@@ -106,6 +106,23 @@ Implementation implication:
 - `COM-ZoneDetailModal` provides optional detail and must use modal scroll/body lock behavior.
 - Do not use a persistent horizontal card rail for zone navigation.
 
+## RS-004 visual layout correction
+
+User correction:
+
+```text
+Modal opens centered with explicit display:flex.
+Stage cards are one per row.
+avoid crowded multi-card grid.
+```
+
+Implementation implication:
+
+- Opening `COM-ZoneDetailModal` must set `modal.hidden = false` and `modal.style.display = "flex"` so fixed overlay content is centered by `align-items:center` and `justify-content:center`.
+- Closing the modal must set `modal.hidden = true` and `modal.style.display = "none"`.
+- `PAGE-CropCenteredHome` uses `data-cba-layout="single-column-stage-flow"` and `grid-template-columns:1fr` for the four stage cards.
+- Each stage card uses `data-stage-card-shell` and appears one per row to reduce visual crowding.
+
 ## Developer-only transition notes
 
 The following points are development/release guidance only and must remain in docs/tests, not in rendered frontend copy:

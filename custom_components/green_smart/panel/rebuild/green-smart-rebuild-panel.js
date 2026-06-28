@@ -1,7 +1,7 @@
 // Green Smart rebuild panel
 // Developer-only rebuild notes belong in docs/rebuild/*, not in rendered UI copy.
 
-const REBUILD_VERSION = "1.12.2";
+const REBUILD_VERSION = "1.12.3";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
@@ -172,13 +172,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p style="margin:0;color:#31523b;font-size:13px;">장비: ${zone.equipment.join(" · ")}</p>
     `;
     modal.hidden = false;
+    modal.style.display = "flex";
     document.body.classList.add("gs-modal-open");
     modal.querySelector("[data-zone-detail-modal-close]")?.focus();
   }
 
   _closeZoneDetailModal() {
     const modal = this.querySelector("[data-zone-detail-modal]");
-    if (modal) modal.hidden = true;
+    if (modal) {
+      modal.hidden = true;
+      modal.style.display = "none";
+    }
     document.body.classList.remove("gs-modal-open");
   }
 
@@ -191,11 +195,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
           <p style="margin:0;color:#5d6f62;line-height:1.7;">작물이 먼저이고 제어는 그 다음입니다. 작물상태 → 생육목표 → 환경·관수·장치 영향 → 추천·실행 흐름으로 오늘의 운영 판단을 정리합니다.</p>
           <p style="margin:14px 0 0;font-size:13px;color:#78927f;">구역별 세부 정보는 각 단계 안에서 탭으로 필요한 구역만 선택해 확인합니다 · 추천은 실행 전 승인과 안전검사를 거칩니다</p>
         </article>
-        <section data-crop-os-flow-stages style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
-          <article data-crop-os-stage="crop-status" style="border:1px solid #e3eee6;border-radius:16px;background:#fff;padding:16px;"><strong>1. 작물상태</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">작물의 현재 생육 상태, 이상 징후, 관찰 필요 지점을 먼저 보여줍니다.</p>${this.renderZoneDrilldown("crop-status")}</article>
-          <article data-crop-os-stage="growth-goal" style="border:1px solid #e3eee6;border-radius:16px;background:#fff;padding:16px;"><strong>2. 생육목표</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">오늘 목표 생육 방향과 우선순위를 운영자가 이해할 수 있게 정리합니다.</p>${this.renderZoneDrilldown("growth-goal")}</article>
-          <article data-crop-os-stage="environment-impact" style="border:1px solid #e3eee6;border-radius:16px;background:#fff;padding:16px;"><strong>3. 환경·관수·장치 영향</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">온도, 습도, 광, 관수, 장치 상태를 작물 영향 관점으로 묶어 보여줍니다.</p>${this.renderZoneDrilldown("environment-impact")}</article>
-          <article data-crop-os-stage="recommend-act" style="border:1px solid #e3eee6;border-radius:16px;background:#fff;padding:16px;"><strong>4. 추천·실행</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">추천 이유를 확인하고, 승인과 안전검사 후 실행하는 흐름을 둡니다.</p>${this.renderZoneDrilldown("recommend-act")}</article>
+        <section data-crop-os-flow-stages data-cba-layout="single-column-stage-flow" style="display:grid;grid-template-columns:1fr;gap:18px;">
+          <article data-stage-card-shell data-crop-os-stage="crop-status" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">1. 작물상태</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">작물의 현재 생육 상태, 이상 징후, 관찰 필요 지점을 먼저 보여줍니다.</p>${this.renderZoneDrilldown("crop-status")}</article>
+          <article data-stage-card-shell data-crop-os-stage="growth-goal" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">2. 생육목표</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">오늘 목표 생육 방향과 우선순위를 운영자가 이해할 수 있게 정리합니다.</p>${this.renderZoneDrilldown("growth-goal")}</article>
+          <article data-stage-card-shell data-crop-os-stage="environment-impact" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">3. 환경·관수·장치 영향</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">온도, 습도, 광, 관수, 장치 상태를 작물 영향 관점으로 묶어 보여줍니다.</p>${this.renderZoneDrilldown("environment-impact")}</article>
+          <article data-stage-card-shell data-crop-os-stage="recommend-act" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">4. 추천·실행</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">추천 이유를 확인하고, 승인과 안전검사 후 실행하는 흐름을 둡니다.</p>${this.renderZoneDrilldown("recommend-act")}</article>
         </section>
       </section>
     `;
@@ -203,7 +207,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderZoneDetailModal() {
     return `
-      <div data-cba-component="COM-ZoneDetailModal" data-zone-detail-modal role="dialog" aria-modal="true" aria-labelledby="zone-detail-modal-title" hidden style="position:fixed;inset:0;background:rgba(31,42,36,.38);z-index:10000;align-items:center;justify-content:center;padding:18px;">
+      <div data-cba-component="COM-ZoneDetailModal" data-zone-detail-modal role="dialog" aria-modal="true" aria-labelledby="zone-detail-modal-title" hidden style="display:none;position:fixed;inset:0;background:rgba(31,42,36,.38);z-index:10000;align-items:center;justify-content:center;padding:18px;">
         <section style="max-width:520px;width:100%;border-radius:20px;background:#ffffff;border:1px solid #dcebe0;padding:20px;box-shadow:0 20px 60px rgba(31,42,36,.22);">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
             <h3 id="zone-detail-modal-title" data-zone-detail-modal-title style="margin:0;font-size:20px;color:#24323f;">구역 상세</h3>
