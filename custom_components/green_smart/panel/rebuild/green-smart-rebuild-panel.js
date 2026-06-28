@@ -26,6 +26,8 @@
 // R7-008 environment literal marker manifest: data-r7-environment-manual-setting="주간 온도" / data-r7-environment-manual-setting="야간 온도" / data-r7-environment-manual-setting="습도" / data-r7-environment-manual-setting="VPD" / data-r7-environment-manual-setting="CO₂" / data-r7-environment-manual-setting="광/DLI" / data-r7-environment-rule="주야간 전환" / data-r7-environment-rule="환기 단계" / data-r7-environment-rule="난방 최소온도" / data-r7-environment-rule="CO₂ 시간대" / data-r7-environment-ai-item="aiEnvironmentCorrection" / data-r7-environment-ai-item="수동 기준 대비 차이" / data-r7-environment-ai-item="fallback" / data-r7-environment-safety-item="environmentSafetyLimits" / data-r7-environment-safety-item="deviceInterlock" / data-r7-environment-safety-item="finalEnvironmentTargets".
 // R7-009 irrigation detail markers: data-r7-irrigation-fertigation-detail / data-r7-irrigation-manual-settings / data-r7-irrigation-rule-schedule / data-r7-irrigation-ai-assist / data-r7-irrigation-safety-final / data-r7-irrigation-fallback.
 // R7-009 irrigation literal marker manifest: data-r7-irrigation-manual-setting="관수 스케줄" / data-r7-irrigation-manual-setting="일사 누적 관수" / data-r7-irrigation-manual-setting="EC 목표" / data-r7-irrigation-manual-setting="pH 목표" / data-r7-irrigation-manual-setting="급액량" / data-r7-irrigation-manual-setting="배액률" / data-r7-irrigation-manual-setting="드라이백" / data-r7-irrigation-manual-setting="양액 레시피" / data-r7-irrigation-rule="시간 기반 관수" / data-r7-irrigation-rule="일사 누적 관수" / data-r7-irrigation-rule="근권 수분 기준 관수" / data-r7-irrigation-rule="저수조/배액 재활용 점검" / data-r7-irrigation-ai-item="aiIrrigationCorrection" / data-r7-irrigation-ai-item="수동 기준 대비 차이" / data-r7-irrigation-ai-item="fallback" / data-r7-irrigation-safety-item="irrigationSafetyLimits" / data-r7-irrigation-safety-item="sensorFreshness" / data-r7-irrigation-safety-item="finalIrrigationTargets".
+// R7-010 device detail markers: data-r7-device-control-detail / data-r7-device-manual-settings / data-r7-device-rule-schedule / data-r7-device-ai-assist / data-r7-device-safety-final / data-r7-device-fallback.
+// R7-010 device literal marker manifest: data-r7-device-manual-setting="manual" / data-r7-device-manual-setting="auto" / data-r7-device-manual-setting="locked" / data-r7-device-manual-setting="maintenance" / data-r7-device-manual-setting="HA entity mapping" / data-r7-device-manual-setting="MQTT topic mapping later only" / data-r7-device-rule="operatorRequestedAction" / data-r7-device-rule="automationCandidate" / data-r7-device-rule="mode gate" / data-r7-device-rule="mapping health" / data-r7-device-ai-item="optional aiStrategyHint" / data-r7-device-ai-item="hint only" / data-r7-device-ai-item="fallback" / data-r7-device-safety-item="permission check" / data-r7-device-safety-item="Safety check" / data-r7-device-safety-item="Interlock check" / data-r7-device-safety-item="Fail Safe check" / data-r7-device-safety-item="HA/MQTT status".
 // R7-002 historical sidebar label order compatibility: 운영 홈 → 작물 중심 운영 → 현장 상태 → 추천·실행 검토 → 설정·관리.
 // RS-002/RS-005 historical source-copy compatibility only, not current operator copy: 작물이 먼저이고 제어는 그 다음입니다 / 추천은 실행 전 승인과 안전검사를 거칩니다 / 구역별 추천·실행 검토 / 실행 전 승인과 안전검사.
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
@@ -37,7 +39,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.41";
+const REBUILD_VERSION = "1.12.42";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -883,6 +885,64 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+  renderR7DeviceControlDetail() {
+    const manualSettings = [
+      ["manual", "수동 모드", "작업자가 현장 기준으로 직접 판단하는 모드 evidence"],
+      ["auto", "자동 모드", "규칙/스케줄 후보를 허용하되 safety gate 필요"],
+      ["locked", "잠금 모드", "권한/안전 사유로 조작 차단"],
+      ["maintenance", "점검 모드", "정비 중에는 자동 후보를 표시만 함"],
+      ["HA entity mapping", "entity_id 매핑", "장치 상태 확인용 mapping metadata"],
+      ["MQTT topic mapping later only", "later only", "Physical MQTT/device hookup 전까지 실행에 사용하지 않음"],
+    ];
+    const automationRules = [
+      ["operatorRequestedAction", "작업자 요청은 read-only 후보로만 표시"],
+      ["automationCandidate", "규칙/스케줄 자동화 후보도 mode gate를 통과해야 함"],
+      ["mode gate", "manual/auto/locked/maintenance 상태로 후보를 제한"],
+      ["mapping health", "HA/MQTT mapping 상태는 실행 허용 조건의 evidence"],
+    ];
+    const aiAssist = [
+      ["optional aiStrategyHint", "AI는 장치 전략 힌트만 제공"],
+      ["hint only", "AI는 장치 명령을 직접 내리지 않음"],
+      ["fallback", "AI disabled/unhealthy/timeout/stale이면 hint를 제외"],
+    ];
+    const safetyFinal = [
+      ["permission check", "역할/권한이 없으면 조작 차단"],
+      ["Safety check", "작물/환경/관수 safety 조건을 먼저 확인"],
+      ["Interlock check", "강풍/비/저온/센서 stale/장치 오류 interlock"],
+      ["Fail Safe check", "통신 장애·비정상 상태면 safe state 유지"],
+      ["HA/MQTT status", "HA/MQTT 상태는 read-only evidence; 실행 권한 없음"],
+    ];
+    return `<section data-r7-device-control-detail data-r7-device-readonly-boundary="true" data-r7-device-physical-hookup-blocked="true" data-r7-device-control-formula="deviceMode: manual / auto / locked / maintenance + operatorRequestedAction or automationCandidate + optional aiStrategyHint → permission check → Safety check → Interlock check → Fail Safe check = allowed command or blocked reason" style="border:1px solid #cfe3d4;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
+      <header>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-010 read-only device control detail</p>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">장치 제어 · 수동/모드 기준 우선</h4>
+        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">AI 없이도 수동/자동/잠금/점검 모드와 장치 매핑 상태를 확인할 수 있어야 합니다. R7-010은 모드 저장, 수동 조작, 자동 실행, HA service call, MQTT/device command 없이 read-only 구조만 표시합니다.</p>
+      </header>
+      <section data-r7-device-manual-settings style="display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">1. Manual/Base Settings</strong>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;">
+          ${manualSettings.map(([key, label, note]) => `<p data-r7-device-manual-setting="${key}" style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>${label}</b><br><span style="font-size:13px;color:#24323f;font-weight:900;">${key}</span><br><span style="color:#78927f;">${note}</span></p>`).join("")}
+        </div>
+      </section>
+      <section data-r7-device-rule-schedule style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">2. Rule/Schedule Automation</strong>
+        ${automationRules.map(([label, note]) => `<p data-r7-device-rule="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-device-ai-assist data-r7-device-ai-authority="hint-only" style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">3. AI Assist / Optimization</strong>
+        ${aiAssist.map(([label, note]) => `<p data-r7-device-ai-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-device-safety-final style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">4. Permission / Safety / Interlock / Fail Safe Finalization</strong>
+        ${safetyFinal.map(([label, note]) => `<p data-r7-device-safety-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-device-fallback style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#8a6d1d;font-size:13px;">장치 실행/fallback 원칙</strong>
+        <p style="margin:6px 0 0;color:#6b5a22;font-size:12px;line-height:1.6;">AI는 optional aiStrategyHint만 제공하며 장치 명령을 직접 내리지 않습니다. 장치 실행은 권한, 모드, Safety, Interlock, Fail Safe, HA/MQTT 상태를 통과해야 합니다. Physical MQTT/device hookup remains blocked until virtual scenario verification passes.</p>
+      </section>
+    </section>`;
+  }
+
   renderR7DetailSubpage(subpage) {
     return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
@@ -901,6 +961,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
       ${subpage.key === "environment-control" ? this.renderR7EnvironmentControlDetail() : ""}
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""}
+      ${subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""}
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
       <details style="border-top:1px solid #edf4ef;padding-top:8px;">
         <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
@@ -918,7 +979,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7PageShell() {
     return `<section data-r7-page-shell style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-009 Irrigation/Fertigation Detail</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-010 Device Control Detail</p>
         <h2 style="margin:0;color:#24323f;font-size:22px;">수동 설정 우선 환경제어 작업공간</h2>
         <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 홈, 작물, 환경, 관수·양액, 장치, 추천·자동화, 안전·이력, 설정·관리로 재정렬합니다. 실행 권한은 추가하지 않습니다.</p>
       </header>
