@@ -1,5 +1,9 @@
 # Zone-scoped Control Settings 설계
 
+> Status: historical/adapter reference
+> Do not use as product direction.
+> Current source of truth: `docs/master/03-database-schema.md`, `docs/master/02-interface-spec.md`, `docs/rebuild/legacy-direction-inventory.md`
+
 ## 목표
 
 Green Smart의 `환경 제어`, `관수 제어`, `장치제어` 설정을 전체 농장 단위가 아니라 **작기 + 구역 + 제어영역(domain)** 단위로 저장하고, 이후 backend DB/API 및 AI Agent 출력값과 같은 키 구조로 연결한다.

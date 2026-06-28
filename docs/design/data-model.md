@@ -1,5 +1,9 @@
 # Green Smart Data Model
 
+> Status: historical/adapter reference
+> Do not use as product direction.
+> Current source of truth: `docs/master/03-database-schema.md`, `docs/rebuild/legacy-direction-inventory.md`
+
 > Phase 0 data model baseline.  
 > Parent: `docs/PROJECT_MASTER_PLAN.md`
 

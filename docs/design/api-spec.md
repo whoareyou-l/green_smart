@@ -1,5 +1,9 @@
 # Green Smart API Spec
 
+> Status: historical/adapter reference
+> Do not use as product direction.
+> Current source of truth: `docs/master/02-interface-spec.md`, `docs/rebuild/legacy-direction-inventory.md`
+
 > Phase 0 API baseline.  
 > Parent: `docs/PROJECT_MASTER_PLAN.md`
 

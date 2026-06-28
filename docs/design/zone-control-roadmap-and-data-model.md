@@ -1,5 +1,9 @@
 # Green Smart Zone Control Roadmap and Data Model
 
+> Status: historical/adapter reference
+> Do not use as product direction.
+> Current source of truth: `docs/master/03-database-schema.md`, `docs/master/05-ml-interlock-failsafe-spec.md`, `docs/rebuild/legacy-direction-inventory.md`
+
 > 작성일: 2026-06-20
 > 기준 버전: `v1.9.56` / Product Phase 6 baseline 완료, Crop Safety Rules C-S1B baseline 완료, Crop Interlock C-S2 baseline 완료, Model Phase M1 작기 모델 snapshot baseline 완료, UI Polish Phase P4 완료, Control Phase C19D 완료
 > 대상 파일: `custom_components/green_smart/db.py`, `custom_components/green_smart/zone_control_views.py`, `custom_components/green_smart/panel/green-smart-panel.js`

@@ -10,7 +10,7 @@
 
 이 문서는 기존 Green Smart 제품 문서/코드와 새 마스터 플랜을 하나의 실행 기준으로 정렬한다. 앞으로 구현은 이 문서와 Phase 0 산출물 전체를 기준으로 진행한다.
 
-> **현재 우선순위 전환:** `v1.12.7` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다. **기존 RB 산출물은 reference/evidence로만 사용**하며, 다음 RB 계속 진행 금지: 새 구현은 `새 master docs → 새 target architecture → 새 vertical slice scaffold` 순서의 from-scratch rebuild 기준선에서 시작한다.
+> **현재 우선순위 전환:** `v1.12.8` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다. **기존 RB 산출물은 reference/evidence로만 사용**하며, 다음 RB 계속 진행 금지: 새 구현은 `새 master docs → 새 target architecture → 새 vertical slice scaffold` 순서의 from-scratch rebuild 기준선에서 시작한다.
 
 Green Smart의 최우선 목표는 다음이다.
 
@@ -37,6 +37,7 @@ AI가 작동하지 않아도 문제가 생기지 않게 인터록/안전 제어�
 | [`docs/design/data-model.md`](design/data-model.md) | 초기 data model baseline | schema 확장, migration 설계 |
 | [`docs/master/03-database-schema.md`](master/03-database-schema.md) | RBAC-first target DB schema, `gs_` target tables, crop_cycle/currentCrop canonical naming, legacy adapter boundary | DB 스키마/테이블/필드 재설계, RBAC-first schema, migration gate |
 | [`docs/rebuild/db-schema-rationalization-plan.md`](rebuild/db-schema-rationalization-plan.md) | legacy physical schema를 adapter-only로 격리하고 target schema/migration gate를 관리 | legacy→target schema 전환 정책, migration 승인 기준 |
+| [`docs/rebuild/legacy-direction-inventory.md`](rebuild/legacy-direction-inventory.md) | legacy direction inventory: historical reference / adapter-only / legacy panel / current source-of-truth boundary | legacy 흔적 분류, 제품 방향성 누수 방지, 신규 수직 슬라이스 경계 |
 | [`docs/design/control-engine-contracts.md`](design/control-engine-contracts.md) | control engine/SafetyGuard 계약 | 실행/차단/Fail Safe/로그 계약 변경 |
 | [`docs/design/home-assistant-integration-contract.md`](design/home-assistant-integration-contract.md) | HA integration contract | HA setup lifecycle, panel registration, entity/platform 변경 |
 
