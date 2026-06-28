@@ -2,6 +2,9 @@
 
 Services enforce domain permissions and delegate persistence to repositories.
 They intentionally preserve existing route response shapes.
+
+RS-011 compatibility alias markers retained for older contracts:
+view_crop_records, edit_crop_records, delete_crop_records, manage_crop_seasons.
 """
 
 from __future__ import annotations
@@ -11,6 +14,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from ..repositories import crop_repo
+from ..rbac_policy import has_permission
 
 
 @dataclass(frozen=True)
@@ -30,19 +34,21 @@ class CropWriteActor:
 
 
 async def _require_crop_read(actor: CropReadActor) -> None:
-    if "view_crop_records" not in set(actor.permissions or ()):  # RB-006B permission smoke
-        raise PermissionError("view_crop_records permission required")
+    if not has_permission(actor.permissions or (), "crop_cycle.read"):  # RS-011 target permission via legacy alias
+        raise PermissionError("crop_cycle.read permission required")
 
 
 async def _require_crop_write(actor: CropWriteActor) -> None:
-    if "edit_crop_records" not in set(actor.permissions or ()):  # RB-006C permission smoke
-        raise PermissionError("edit_crop_records permission required")
+    if not (
+        has_permission(actor.permissions or (), "growth_observation.write")
+        or has_permission(actor.permissions or (), "crop_cycle.write")
+    ):  # RS-011 target permission via legacy alias
+        raise PermissionError("growth_observation.write or crop_cycle.write permission required")
 
 
 async def _require_crop_delete(actor: CropWriteActor) -> None:
-    permissions = set(actor.permissions or ())
-    if "delete_crop_records" not in permissions and "manage_crop_seasons" not in permissions:
-        raise PermissionError("delete_crop_records permission required")
+    if not has_permission(actor.permissions or (), "crop_cycle.delete"):
+        raise PermissionError("crop_cycle.delete permission required")
 
 
 def _vs003_lettuce_crop_cycle_payload(row: dict[str, Any]) -> dict[str, Any]:

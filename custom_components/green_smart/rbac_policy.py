@@ -26,6 +26,34 @@ RBAC_BACKEND_ENFORCED_ACTION_CLASSES = (
     "apply",
 )
 
+# RS-011 compatibility boundary: legacy permission labels remain accepted by
+# adapters, while product-facing checks should target gs_permissions codes.
+RBAC_PERMISSION_ALIASES: dict[str, tuple[str, ...]] = {
+    "home_context.read": ("view_dashboard",),
+    "crop_cycle.read": ("view_crop_records",),
+    "crop_cycle.write": ("manage_crop_seasons",),
+    "crop_cycle.delete": ("delete_crop_records", "manage_crop_seasons"),
+    "growth_observation.write": ("edit_crop_records",),
+    "pest_scouting.write": ("edit_crop_records",),
+    "treatment_record.write": ("edit_crop_records",),
+    "device.mapping.manage": ("edit_entity_mapping",),
+    "recommendation.approve": ("edit_strategy_settings",),
+    "execution.dry_run": ("run_dry_run",),
+    "execution.command": ("execute_final_targets", "manual_device_control"),
+    "safety.rule.manage": ("edit_interlock_rules", "edit_interlock_thresholds"),
+    "safety.event.ack": ("ack_safety_event",),
+    "safety.event.clear": ("clear_safety_event",),
+    "settings.manage": ("system_settings",),
+    "rbac.manage": ("manage_users_roles", "manage_farm_staff_roles"),
+    "audit.read": ("view_audit_logs",),
+}
+
+RBAC_PERMISSION_REVERSE_ALIASES: dict[str, tuple[str, ...]] = {
+    legacy: tuple(target for target, aliases in RBAC_PERMISSION_ALIASES.items() if legacy in aliases)
+    for aliases in RBAC_PERMISSION_ALIASES.values()
+    for legacy in aliases
+}
+
 GREEN_SMART_ROLE_PERMISSIONS: dict[str, tuple[str, ...]] = {
     "admin": (
         "view_dashboard",
@@ -116,8 +144,27 @@ def normalize_green_smart_role(role: str | None) -> str:
     return value if value in GREEN_SMART_ROLES else "farm_staff"
 
 
+def normalize_permission_aliases(permissions: tuple[str, ...] | list[str] | set[str] | None) -> set[str]:
+    """Return permissions expanded across target gs_permissions codes and legacy aliases."""
+    expanded = {str(permission).strip() for permission in (permissions or ()) if str(permission).strip()}
+    for permission in tuple(expanded):
+        for legacy in RBAC_PERMISSION_ALIASES.get(permission, ()):  # target -> legacy
+            expanded.add(legacy)
+        for target in RBAC_PERMISSION_REVERSE_ALIASES.get(permission, ()):  # legacy -> target
+            expanded.add(target)
+    return expanded
+
+
+def has_permission(permissions: tuple[str, ...] | list[str] | set[str] | None, required_permission: str) -> bool:
+    """Return whether permissions satisfy required_permission across RS-011 aliases."""
+    required = str(required_permission or "").strip()
+    if not required:
+        return False
+    return required in normalize_permission_aliases(permissions)
+
+
 def permissions_for_role(role: str | None) -> list[str]:
-    """Return product permissions for a role."""
+    """Return compatibility permissions for a role; use aliases for target checks."""
     return list(GREEN_SMART_ROLE_PERMISSIONS[normalize_green_smart_role(role)])
 
 

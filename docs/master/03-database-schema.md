@@ -1,7 +1,7 @@
 # 3. DB 구상도 — RBAC-first Target Database Schema
 
 > 기준일: `2026-06-28`
-> 기준 버전: `v1.12.9`
+> 기준 버전: `v1.12.10`
 > 문서 목적: Green Smart rebuild의 DB를 **RBAC-first target schema**로 새로 정의한다. 기존 legacy physical schema is adapter-only이며, 제품/API/문서 방향은 이 문서를 기준으로 한다.
 
 ## 0. 중요한 범위 선언
@@ -81,6 +81,7 @@ Core permission seed:
 home_context.read
 crop_cycle.read
 crop_cycle.write
+crop_cycle.delete
 growth_observation.write
 pest_scouting.write
 treatment_record.write
@@ -94,7 +95,23 @@ safety.event.ack
 safety.event.clear
 settings.manage
 rbac.manage
+audit.read
 ```
+
+### 2.3.1 RBAC permission naming boundary
+
+```text
+Target permission seed remains `gs_permissions.code`
+Compatibility permission aliases are adapter-only
+manage_crop_seasons -> crop_cycle.write
+edit_crop_records -> growth_observation.write
+run_dry_run -> execution.dry_run
+execute_final_targets -> execution.command
+manage_users_roles -> rbac.manage
+system_settings -> settings.manage
+```
+
+Legacy compatibility strings may be accepted by adapters while existing routes remain live, but target docs/API/rebuild UI must use `gs_permissions.code` names.
 
 ### 2.4 `gs_user_role_assignments`
 
