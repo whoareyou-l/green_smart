@@ -173,6 +173,28 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "deviceCommandEnabled": False,
         "mqttEnabled": False,
     }
+    virtual_runner_dry_run_result_adapter = {
+        "adapterState": "dry_run_results_adapted_not_executable" if crop_cycle_id else "empty",
+        "dryRunMode": "synthetic_read_only_adapter",
+        "scenarioDryRunResults": [
+            {
+                "scenario": item.get("scenario"),
+                "dryRunResult": "simulated_not_executed",
+                "sourceResultState": item.get("resultState", "not_run"),
+                "executionAllowed": False,
+            }
+            for item in virtual_runner_input_contract["inputScenarios"]
+        ],
+        "sourceInputContract": virtual_runner_input_contract,
+        "resultAuthority": "review_only",
+        "summaryState": "pending_operator_review" if crop_cycle_id else "empty",
+        "readOnly": True,
+        "executionEnabled": False,
+        "runnerExecutionEnabled": False,
+        "approvalReleaseEnabled": False,
+        "deviceCommandEnabled": False,
+        "mqttEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -191,6 +213,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "virtualExecutionRehearsalScaffold": virtual_execution_rehearsal_scaffold,
         "rehearsalResultReviewProjection": rehearsal_result_review_projection,
         "virtualRunnerInputContract": virtual_runner_input_contract,
+        "virtualRunnerDryRunResultAdapter": virtual_runner_dry_run_result_adapter,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },
