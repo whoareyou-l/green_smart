@@ -1,14 +1,16 @@
 // Green Smart rebuild panel
 // Developer-only rebuild notes belong in docs/rebuild/*, not in rendered UI copy.
 // RS-012 render shell consumes normalized crop_cycle/currentCrop DTO from current-crop-adapter.js.
+// RS-015 async context loading: fetch protected home context API, normalize response, keep static read-only fallback.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.13";
+const REBUILD_VERSION = "1.12.14";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
+const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
   { key: "growth-goal", label: "생육목표", description: "오늘 작물이 가야 할 목표를 정리합니다." },
@@ -64,10 +66,35 @@ class GreenSmartRebuildPanel extends HTMLElement {
   constructor() {
     super();
     this._homeContext = getRebuildHomeContext(REBUILD_HOME_CONTEXT);
+    this._contextLoadState = "loading";
+    this._contextLoadError = null;
+    this._contextRequestId = 0;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
   connectedCallback() {
+    this.render();
+    this._loadHomeContext();
+  }
+
+  async _loadHomeContext() {
+    const requestId = ++this._contextRequestId;
+    this._contextLoadState = "loading";
+    this._contextLoadError = null;
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi("GET", REBUILD_CONTEXT_API_PATH);
+      if (requestId !== this._contextRequestId) return;
+      this._homeContext = normalizeRebuildHomeContext(response);
+      this._contextLoadState = "ready";
+      this._contextLoadError = null;
+    } catch (error) {
+      if (requestId !== this._contextRequestId) return;
+      this._homeContext = getRebuildHomeContext(REBUILD_HOME_CONTEXT);
+      this._contextLoadState = "error";
+      this._contextLoadError = error?.message || "context-load-failed";
+    }
     this.render();
   }
 
@@ -111,6 +138,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _contextMetaForRender() {
     return this._homeContext || getRebuildHomeContext(REBUILD_HOME_CONTEXT);
+  }
+
+  renderContextLoadNotice() {
+    if (this._contextLoadState === "ready") return "";
+    const message = this._contextLoadState === "loading"
+      ? "실제 온실 데이터를 불러오는 중입니다."
+      : "실제 데이터를 읽지 못해 읽기 전용 기본 화면으로 표시합니다.";
+    return `<aside data-rebuild-context-load-notice data-rebuild-context-error="${this._contextLoadError || ""}" style="border:1px solid #d7e8db;border-radius:14px;background:#fbfdfb;color:#5d6f62;padding:12px;font-size:12px;line-height:1.5;">${message}</aside>`;
   }
 
   renderZoneTabs(stageKey) {
@@ -256,7 +291,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderOperatingHome() {
     const contextMeta = this._contextMetaForRender();
     return `
-      <section data-cba-page="PAGE-CropCenteredHome" data-crop-os-home data-rebuild-context-source="${contextMeta.contextSource}" data-rebuild-greenhouse-id="${contextMeta.greenhouseId}" data-rebuild-context-generated-at="${contextMeta.generatedAt}" style="display:grid;gap:14px;">
+      <section data-cba-page="PAGE-CropCenteredHome" data-crop-os-home data-rebuild-context-source="${contextMeta.contextSource}" data-rebuild-context-load-state="${this._contextLoadState}" data-rebuild-greenhouse-id="${contextMeta.greenhouseId}" data-rebuild-context-generated-at="${contextMeta.generatedAt}" style="display:grid;gap:14px;">
+        ${this.renderContextLoadNotice()}
         <article style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f0f8f2);padding:24px;">
           <p style="margin:0 0 8px;font-size:12px;font-weight:800;color:#5d7d64;letter-spacing:.08em;text-transform:uppercase;">Crop-centered OS</p>
           <h1 style="margin:0 0 12px;font-size:30px;line-height:1.2;color:#24323f;">작물 중심 운영체계</h1>

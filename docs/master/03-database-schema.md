@@ -1,7 +1,7 @@
 # 3. DB 구상도 — RBAC-first Target Database Schema
 
 > 기준일: `2026-06-28`
-> 기준 버전: `v1.12.13`
+> 기준 버전: `v1.12.14`
 > 문서 목적: Green Smart rebuild의 DB를 **RBAC-first target schema**로 새로 정의한다. 기존 legacy physical schema is adapter-only이며, 제품/API/문서 방향은 이 문서를 기준으로 한다.
 
 ## 0. 중요한 범위 선언

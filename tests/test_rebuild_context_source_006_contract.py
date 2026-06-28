@@ -30,7 +30,7 @@ def test_rs006_home_context_source_shape_is_explicit_before_api_hookup():
         assert marker in source
 
 
-def test_rs006_adapter_normalizes_context_without_direct_backend_or_execution_calls():
+def test_rs006_adapter_normalizes_context_and_keeps_static_fallback_without_execution_calls():
     source = _read(REBUILD_PANEL)
     for marker in (
         "normalizeRebuildHomeContext",
@@ -41,17 +41,20 @@ def test_rs006_adapter_normalizes_context_without_direct_backend_or_execution_ca
         "data-rebuild-context-source",
         "data-rebuild-greenhouse-id",
         "data-rebuild-context-generated-at",
+        "REBUILD_HOME_CONTEXT",
+        "static-fixture-before-api",
     ):
         assert marker in source
 
     for forbidden in (
         "fetch(",
-        "hass.callApi",
         "callService(",
         "executeFinalTargets",
         "data-zone-execute-button",
     ):
         assert forbidden not in source
+
+    assert "hass.callApi" in source  # RS-015 allows protected read-only API loading.
 
 
 def test_rs006_render_uses_context_zones_not_legacy_flat_constants_directly():
