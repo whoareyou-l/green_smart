@@ -1,7 +1,7 @@
 # 1. CBA 화면 기획서 — UI/UX 설계도
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.26`
+> 기준 버전: `v1.12.27`
 > 문서 목적: Green Smart 화면을 **공통 부품(COM) → 복합 모듈(MOD) → 전체 페이지(PAGE)** 3단계로 정리하여, 코드가 화면마다 중복/난립하지 않도록 한다.
 
 ## 1. 설계 원칙
@@ -453,3 +453,14 @@ environmentAllowDirectExecution
 - 작물 AI 카드에서 장치 실행 버튼을 직접 노출하지 않는다.
 - 병해충/방제 기록에서 자동 살포/자동 방제 스케줄을 생성하지 않는다.
 - 설정 페이지를 HA full-screen page처럼 분리하지 않는다. 항상 Green Smart sidebar shell 안에 둔다.
+
+
+## VS-N002 Crop cycle recording scaffold
+
+```text
+VS-N002 Crop cycle recording scaffold
+cropCycleRecordingScaffold
+recordingMode = scaffold_only
+```
+
+The UI grammar may show crop-cycle recording ownership later, but VS-N002 itself does not add a visible save form or change existing Crop Settings save behavior.

@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.26`
+> 기준 버전: `v1.12.27`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -648,3 +648,15 @@ Timeout/failure 예시:
   }
 }
 ```
+
+
+## VS-N002 Crop cycle recording scaffold interface boundary
+
+```text
+VS-N002 Crop cycle recording scaffold
+crop_cycle/currentCrop DTO boundary
+runtimeWriteAdapterEnabled = false
+No existing crop season save behavior change in VS-N002
+```
+
+Existing compatibility routes stay unchanged. A future slice may add a write adapter only after RED contract and explicit scope confirmation.

@@ -154,3 +154,18 @@ Create tests/test_rebuild_master_docs_gap_contract.py
 Update docs/master/README.md so active work is from-scratch rebuild, not VS-003
 Run targeted tests
 ```
+
+
+## Stage 6 — Second Vertical Rebuild Slice Selection
+
+Second selected slice: VS-N002 Crop cycle recording scaffold
+
+Status: `v1.12.27`에서 scaffold-only 계약/DTO/권한 경계 완료.
+
+Reason: after VS-N001 RBAC/Admin ownership, crop-cycle recording needs a product-facing DTO/permission scaffold before monitoring and interlock slices consume crop context.
+
+```text
+RBAC/Admin ownership scaffold → Crop cycle recording scaffold → Real-time monitoring read-only slice
+No write/mutation in VS-N002
+No DB migration in VS-N002
+```
