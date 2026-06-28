@@ -1,6 +1,6 @@
 # RS-009 Legacy Direction Inventory
 
-> 기준 버전: `v1.12.16` / updated in `v1.12.16`
+> 기준 버전: `v1.12.17` / updated in `v1.12.17`
 > Status: active boundary contract
 > 목적: Green Smart rebuild에서 legacy가 제품 방향성으로 남지 않도록, historical reference / adapter-only / legacy panel / current source of truth 경계를 명확히 한다.
 
@@ -153,7 +153,8 @@ Boundary:
 | RS-015 | Rebuild panel async context loading completed: rebuild panel fetches the protected home context API with `hass.callApi`, normalizes the response, and keeps static read-only fallback. |
 | RS-016 | Crop cycle read-only page slice completed: 작물상태/생육목표 now render currentCrop crop_cycle read-only cards from normalized API context. |
 | RS-017 | Zone current crop assignment read model completed: each zone now exposes currentCropAssignment linking currentCrop/crop_cycle, equipmentProfile, and dataAvailability as read-only projection. |
-| RS-018 | Growth target read-only projection |
+| RS-018 | Growth target read-only projection completed: 생육목표 now renders growthTargetProjection from currentCropAssignment as read-only target status. |
+| RS-019 | Environment impact read-only projection |
 
 ---
 

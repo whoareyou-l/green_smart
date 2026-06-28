@@ -46,9 +46,29 @@ export function normalizeCurrentCropAssignment(zone = {}, currentCrop = normaliz
   };
 }
 
+export function normalizeGrowthTargetProjection(zone = {}, currentCropAssignment = normalizeCurrentCropAssignment(zone)) {
+  const projection = zone.growthTargetProjection || zone.growth_target_projection || {};
+  const currentCrop = currentCropAssignment.currentCrop || normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
+  const targetBasis = projection.targetBasis || {
+    crop_cycle_id: currentCrop.crop_cycle_id,
+    crop_type: currentCrop.crop_type,
+    growth_stage: currentCrop.growth_stage,
+  };
+  return {
+    projectionState: projection.projectionState || (currentCrop.crop_cycle_id ? "ready" : "empty"),
+    targetStageLabel: projection.targetStageLabel || currentCrop.growth_stage || "작기 정보 없음",
+    targetFocus: projection.targetFocus || "생육 균형 유지",
+    targetBasis,
+    sourceAssignment: projection.sourceAssignment || currentCropAssignment,
+    readOnly: true,
+    executionEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
+  const growthTargetProjection = normalizeGrowthTargetProjection(zone, currentCropAssignment);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -59,6 +79,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     activeCropCycleId: currentCrop.crop_cycle_id,
     crop_cycle: currentCrop.crop_cycle_id,
     currentCropAssignment,
+    growthTargetProjection,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],

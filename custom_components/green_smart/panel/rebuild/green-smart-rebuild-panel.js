@@ -4,13 +4,14 @@
 // RS-015 async context loading: fetch protected home context API, normalize response, keep static read-only fallback.
 // RS-016 crop cycle read-only page slice: 작물상태/생육목표 show currentCrop.crop_cycle_id as read-only product data.
 // RS-017 zone current crop assignment read model: zone → currentCrop/crop_cycle, equipmentProfile, dataAvailability.
+// RS-018 growth target read-only projection: currentCropAssignment → growthTargetProjection for 생육목표.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.16";
+const REBUILD_VERSION = "1.12.17";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -180,6 +181,29 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderGrowthTargetProjection(zone, stageKey) {
+    if (!["growth-goal"].includes(stageKey)) return "";
+    const projection = zone.growthTargetProjection || {};
+    const state = projection.projectionState || "empty";
+    const stageLabel = projection.targetStageLabel || zone.currentCrop?.growth_stage || zone.state || "작기 정보 없음";
+    const focus = projection.targetFocus || "생육 균형 유지";
+    const basis = projection.targetBasis || { crop_cycle_id: zone.currentCrop?.crop_cycle_id ?? zone.crop_cycle ?? "" };
+    const cropCycleId = basis.crop_cycle_id ?? "";
+    const readOnly = projection.readOnly !== false;
+    const executionEnabled = projection.executionEnabled === true;
+    return `
+      <section data-growth-target-projection-card data-growth-target-projection-state="${state}" data-growth-target-stage-label="${stageLabel}" data-growth-target-focus="${focus}" data-growth-target-basis-crop-cycle-id="${cropCycleId}" data-growth-target-readonly="${readOnly}" data-growth-target-execution-enabled="${executionEnabled}" style="margin:10px 0;border:1px solid #eadfb8;border-radius:14px;background:#fffdf5;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#7a6220;">생육목표 projection · read-only</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#5d4a17;font-size:12px;">
+          <dt style="font-weight:900;">목표 단계</dt><dd style="margin:0;">${stageLabel}</dd>
+          <dt style="font-weight:900;">목표 초점</dt><dd style="margin:0;">${focus}</dd>
+          <dt style="font-weight:900;">기준 작기</dt><dd style="margin:0;">${cropCycleId || "없음"}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#89743b;font-size:12px;line-height:1.5;">currentCropAssignment 기반 읽기 전용 projection입니다. 목표 수정·저장·실행은 RS-018 범위에 포함하지 않습니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -247,6 +271,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             <h4 data-zone-context-crop data-zone-current-crop style="margin:0 0 8px;font-size:16px;color:#24323f;">${zone.currentCrop?.crop_label_ko || zone.currentCrop?.cropLabelKo || zone.crop} · <span data-zone-growth-stage>${zone.currentCrop?.growth_stage || zone.currentCrop?.growthStage || zone.state}</span></h4>
             ${this.renderCropCycleReadOnlyCard(zone, stageKey)}
             ${this.renderCurrentCropAssignmentReadModel(zone)}
+            ${this.renderGrowthTargetProjection(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}

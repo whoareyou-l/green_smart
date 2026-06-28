@@ -27,6 +27,20 @@ def _crop_label_ko(crop_type: str | None) -> str:
     return CROP_LABELS_KO.get(str(crop_type or "other").lower(), "기타 작물")
 
 
+def _growth_target_focus(crop_type: str | None, growth_stage: str | None) -> str:
+    """Return a read-only operator-facing growth target focus label."""
+    stage = str(growth_stage or "").strip()
+    if "정식" in stage:
+        return "활착 안정"
+    if "착과" in stage or "비대" in stage:
+        return "착과·비대 균형"
+    if "개화" in stage:
+        return "개화·수분 안정"
+    if str(crop_type or "").lower() == "lettuce":
+        return "엽채 생장 균일화"
+    return "생육 균형 유지"
+
+
 def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
     """Map one legacy physical crop row into a product-facing zone context DTO."""
     zone_id = row.get("zone_id") or row.get("zoneId") or 0
@@ -60,6 +74,19 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "readOnly": True,
         "executionEnabled": False,
     }
+    growth_target_projection = {
+        "projectionState": "ready" if crop_cycle_id else "empty",
+        "targetStageLabel": current_crop["growth_stage"],
+        "targetFocus": _growth_target_focus(current_crop["crop_type"], current_crop["growth_stage"]),
+        "targetBasis": {
+            "crop_cycle_id": crop_cycle_id,
+            "crop_type": current_crop["crop_type"],
+            "growth_stage": current_crop["growth_stage"],
+        },
+        "sourceAssignment": current_crop_assignment,
+        "readOnly": True,
+        "executionEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -70,6 +97,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "equipmentProfile": equipment_profile,
         "dataAvailability": data_availability,
         "currentCropAssignment": current_crop_assignment,
+        "growthTargetProjection": growth_target_projection,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },
