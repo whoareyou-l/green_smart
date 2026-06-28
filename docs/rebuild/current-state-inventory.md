@@ -1,9 +1,9 @@
 # Green Smart R0 Current-State Inventory
 
 > 기준일: `2026-06-28`
-> 기준 버전: `v1.11.17`
+> 기준 버전: `v1.12.0`
 > 기준 커밋: R0 시작 시 `f886301`
-> 목적: 제품 구조 리빌딩 전에 현재 `v1.11.17` 운영 기준선을 freeze하고, 보존할 계약과 리빌딩 대상을 분리한다.
+> 목적: 제품 구조 리빌딩 전에 현재 `v1.12.0` 운영 기준선을 freeze하고, 보존할 계약과 리빌딩 대상을 분리한다.
 
 ---
 
@@ -17,7 +17,7 @@ R0는 기능 구현 단계가 아니다. 현재 구조를 정확히 목록화하
 | DB migration | 금지 |
 | 신규 기능 VS-004 | 보류 |
 | R0 산출물 | inventory, risk register, baseline contract |
-| 릴리즈 목표 | `v1.11.17` 문서/계약 baseline release |
+| 릴리즈 목표 | `v1.12.0` 문서/계약 baseline release |
 
 ---
 
@@ -212,4 +212,4 @@ R0 이후 모든 리빌딩 slice는 아래 계약을 깨면 안 된다.
 - [x] prod 변경 금지 Gate 명시
 - [x] risk register 작성
 - [x] baseline contract test 추가
-- [x] `v1.11.17` 릴리즈 대상으로 버전 정합화
+- [x] `v1.12.0` 릴리즈 대상으로 버전 정합화

@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.11.17`
+> 기준 버전: `v1.12.0`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 상태: `reference/evidence only after direction correction`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
@@ -192,7 +192,7 @@ RB-001은 실제 기술 설정을 새로 추가하지 않는다. 현재 Admin/Sy
 
 ### RB-001 completion note
 
-`v1.11.17`에서 Admin/System render boundary extracted 상태가 되었다.
+`v1.12.0`에서 Admin/System render boundary extracted 상태가 되었다.
 
 ```text
 custom_components/green_smart/panel/domains/admin/admin-page.js
@@ -208,7 +208,7 @@ custom_components/green_smart/panel/domains/admin/admin-page.js
 
 ### RB-002 completion note
 
-`v1.11.17`에서 Panel API client adapter baseline이 추가되었다.
+`v1.12.0`에서 Panel API client adapter baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/core/api-client.js
@@ -225,7 +225,7 @@ custom_components/green_smart/panel/core/api-client.js
 
 ### RB-003 Crop read-only component extraction
 
-`v1.11.17`에서 Crop read-only render helper baseline이 추가되었다.
+`v1.12.0`에서 Crop read-only render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-readonly.js
@@ -241,7 +241,7 @@ custom_components/green_smart/panel/domains/crop/crop-readonly.js
 
 ### RB-004 Crop write modal extraction
 
-`v1.11.17`에서 Crop write modal render helper baseline이 추가되었다.
+`v1.12.0`에서 Crop write modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-write-modal.js
@@ -259,7 +259,7 @@ custom_components/green_smart/panel/domains/crop/crop-write-modal.js
 
 ### RB-004B Growth survey modal render extraction
 
-`v1.11.17`에서 생육조사 modal render helper baseline이 추가되었다.
+`v1.12.0`에서 생육조사 modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-growth-modal.js
@@ -277,7 +277,7 @@ custom_components/green_smart/panel/domains/crop/crop-growth-modal.js
 
 ### RB-004C Pest scouting modal render extraction
 
-`v1.11.17`에서 병해충 예찰 modal render helper baseline이 추가되었다.
+`v1.12.0`에서 병해충 예찰 modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-pest-modal.js
@@ -295,7 +295,7 @@ custom_components/green_smart/panel/domains/crop/crop-pest-modal.js
 
 ### RB-004D Control/treatment modal render extraction
 
-`v1.11.17`에서 방제 기록 modal render helper baseline이 추가되었다.
+`v1.12.0`에서 방제 기록 modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-control-modal.js
@@ -313,7 +313,7 @@ custom_components/green_smart/panel/domains/crop/crop-control-modal.js
 
 ### RB-005 Safety/Execution UI proximity
 
-`v1.11.17`에서 실행성 UI 근접 안전 요약 baseline이 추가되었다.
+`v1.12.0`에서 실행성 UI 근접 안전 요약 baseline이 추가되었다.
 
 완료 범위:
 

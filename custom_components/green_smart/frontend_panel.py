@@ -16,13 +16,27 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 _PANEL_URL_PATH = "green_smart"
-_PANEL_COMPONENT = "green-smart-panel"
+_PANEL_COMPONENT = "green-smart-rebuild-panel"
 _PANEL_TITLE = "Green Smart"
 _PANEL_ICON = "mdi:greenhouse"
+_LEGACY_PANEL_URL_PATH = "green_smart_legacy"
+_LEGACY_PANEL_COMPONENT = "green-smart-panel"
+_LEGACY_PANEL_TITLE = "Green Smart Legacy"
+_LEGACY_PANEL_ICON = "mdi:archive-outline"
 _PANEL_STATIC_DIR = Path(__file__).parent / "panel"
 
 def _get_panel_js_url() -> str:
-    """Return JS URL with version query string for cache busting."""
+    """Return main rebuild JS URL with version query string for cache busting."""
+    try:
+        manifest = json.loads((Path(__file__).parent / "manifest.json").read_text())
+        version = manifest.get("version", "0")
+    except Exception:
+        version = "0"
+    return f"/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v={version}"
+
+
+def _get_legacy_panel_js_url() -> str:
+    """Return legacy JS URL with version query string for reference/runtime compatibility."""
     try:
         manifest = json.loads((Path(__file__).parent / "manifest.json").read_text())
         version = manifest.get("version", "0")
@@ -42,7 +56,9 @@ async def async_setup_panel(hass: HomeAssistant) -> None:
     # URL을 setup 시마다 새로 계산 — Python 모듈 캐시 문제 방지.
     # manifest.json sync read는 executor에서 실행해 HA event loop blocking 경고를 피한다.
     panel_js_url = await hass.async_add_executor_job(_get_panel_js_url)
+    legacy_panel_js_url = await hass.async_add_executor_job(_get_legacy_panel_js_url)
     await _register_panel(hass, panel_js_url)
+    await _register_legacy_panel(hass, legacy_panel_js_url)
 
 
 async def _register_static_path(hass: HomeAssistant) -> None:
@@ -75,10 +91,29 @@ async def _register_panel(hass: HomeAssistant, module_url: str) -> None:
             require_admin=False,
         )
         _LOGGER.warning(
-            "green_smart panel registered successfully at url_path=%s", _PANEL_URL_PATH
+            "green_smart main rebuild panel registered successfully at url_path=%s", _PANEL_URL_PATH
         )
     except Exception:
-        _LOGGER.exception("green_smart panel registration FAILED")
+        _LOGGER.exception("green_smart main rebuild panel registration FAILED")
+
+
+async def _register_legacy_panel(hass: HomeAssistant, module_url: str) -> None:
+    try:
+        from homeassistant.components.panel_custom import async_register_panel
+        await async_register_panel(
+            hass,
+            webcomponent_name=_LEGACY_PANEL_COMPONENT,
+            frontend_url_path=_LEGACY_PANEL_URL_PATH,
+            sidebar_title=_LEGACY_PANEL_TITLE,
+            sidebar_icon=_LEGACY_PANEL_ICON,
+            module_url=module_url,
+            require_admin=False,
+        )
+        _LOGGER.warning(
+            "green_smart legacy reference panel registered successfully at url_path=%s", _LEGACY_PANEL_URL_PATH
+        )
+    except Exception:
+        _LOGGER.exception("green_smart legacy reference panel registration FAILED")
 
 
 def _register_ws_commands(hass: HomeAssistant, domain_data: dict[str, Any]) -> None:
