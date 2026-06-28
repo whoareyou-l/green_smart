@@ -22,11 +22,11 @@ def _read(path: Path) -> str:
 
 
 def test_rs009_version_surfaces_are_v1128():
-    assert '"version": "1.12.11"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.11"' in _read(PANEL)
-    assert 'REBUILD_VERSION = "1.12.11"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.12"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.12"' in _read(PANEL)
+    assert 'REBUILD_VERSION = "1.12.12"' in _read(REBUILD_PANEL)
     for path in (INVENTORY, MASTER, MASTER_DB, PRODUCT_PLAN):
-        assert "v1.12.11" in _read(path)
+        assert "v1.12.12" in _read(path)
 
 
 def test_legacy_direction_inventory_exists_and_declares_boundaries():

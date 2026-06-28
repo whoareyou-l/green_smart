@@ -7,7 +7,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.11";
+const REBUILD_VERSION = "1.12.12";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },

@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.12.11`
+> 기준 버전: `v1.12.12`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 상태: `reference/evidence only after direction correction`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.

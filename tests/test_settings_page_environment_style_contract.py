@@ -19,9 +19,9 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v11012_versions_and_docs_for_settings_device_mapping_move():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.12.11"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.11"' in panel
-    assert 'v1.12.11' in panel[:200]
+    assert '"version": "1.12.12"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.12"' in panel
+    assert 'v1.12.12' in panel[:200]
     assert "v1.10.12 Device mapping moved to Settings" in docs
 
 
