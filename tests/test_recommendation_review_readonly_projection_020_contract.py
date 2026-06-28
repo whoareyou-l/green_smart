@@ -27,11 +27,11 @@ def _load_service():
 
 
 def test_rs020_version_surfaces_are_aligned_to_1_12_19():
-    assert '"version": "1.12.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.35"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.34" in _read(path)
+        assert "v1.12.35" in _read(path)
 
 
 def test_rs020_document_records_recommendation_review_projection_boundary():
@@ -131,7 +131,7 @@ def test_rebuild_panel_renders_recommendation_review_projection_only_for_recomme
         "추천·실행 projection",
     ):
         assert marker in source
-    assert '["recommendation-execution"].includes(stageKey)' in source
+    assert '["recommend-act"].includes(stageKey)' in source
 
     for forbidden in (
         "data-recommendation-review-approve-button",
@@ -156,7 +156,7 @@ def test_rebuild_panel_recommendation_review_node_smoke_uses_normalized_context(
       panel.hass = {{ callApi: async () => ({{ contextSource: 'legacy-physical-readonly-adapter', zones: [{{ id: 'zone-2', zone_id: 2, name: 'B구역', currentCrop: {{ crop_cycle_id: 18, crop_type: 'lettuce', crop_label_ko: '상추', growth_stage: '엽채 생육 관찰' }}, currentCropAssignment: {{ assignmentState: 'assigned', sourceRowId: 18, readOnly: true, executionEnabled: false }}, growthTargetProjection: {{ projectionState: 'ready', targetStageLabel: '엽채 생육 관찰', targetFocus: '엽채 생장 균일화', targetBasis: {{ crop_cycle_id: 18 }}, readOnly: true, executionEnabled: false }}, environmentImpactProjection: {{ impactState: 'ready', impactFocus: '환경 영향 확인', impactFactors: ['천창'], freshnessLabel: '3분 전 갱신', readOnly: true, executionEnabled: false }}, recommendationReviewProjection: {{ reviewState: 'ready', reviewSummary: '추천 검토 대기', approvalRequired: true, readOnly: true, executionEnabled: false }} }}] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      const html = panel.renderRecommendationReviewProjection(panel._homeContext.zones[0], 'recommendation-execution');
+      const html = panel.renderRecommendationReviewProjection(panel._homeContext.zones[0], 'recommend-act');
       const hidden = panel.renderRecommendationReviewProjection(panel._homeContext.zones[0], 'influence-map');
       console.log(html);
       if (!html.includes('data-recommendation-review-projection-card')) process.exit(1);
@@ -183,7 +183,7 @@ def test_docs_specs_plan_and_inventory_record_rs020_and_next_step():
         assert marker in spec
     for marker in (
         "Phase R4.16 — Recommendation review read-only projection",
-        "Status:** `v1.12.34`에서 추천·실행 read-only projection 완료",
+        "Status:** `v1.12.35`에서 추천·실행 read-only projection 완료",
         "No production route removal in RS-020",
         "No DB migration in RS-020",
         "No write/mutation in RS-020",

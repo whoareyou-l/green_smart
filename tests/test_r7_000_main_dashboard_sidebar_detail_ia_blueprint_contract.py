@@ -19,11 +19,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_000_version_surfaces_are_1_12_34():
-    assert '"version": "1.12.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.35"' in _read(REBUILD_PANEL)
     for path in (DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.34" in _read(path)
+        assert "v1.12.35" in _read(path)
 
 
 def test_r7_000_blueprint_declares_r6_to_r7_transition_and_no_runtime_change():
@@ -117,12 +117,9 @@ def test_r7_000_does_not_change_runtime_or_panel_implementation_yet():
     assert "safetyInterlockReadOnlyAdapter" in service_text
     assert "GET /api/green_smart/rebuild/home/context" in view_text
     assert "requires_auth = True" in view_text
-    # Blueprint slice should not introduce new R7 DOM markers into the panel yet.
-    forbidden_panel_markers = (
-        "data-r7-main-dashboard",
-        "data-r7-sidebar-primary-groups",
-        "data-r7-detail-page-shell",
-        "data-r7-zone-detail-modal",
-    )
-    for marker in forbidden_panel_markers:
-        assert marker not in rebuild_panel
+    # R7-000 itself was blueprint-only. Later R7-001 is allowed to introduce
+    # concrete R7 dashboard markers while preserving the same API/runtime bounds.
+    assert "data-r7-main-dashboard" in rebuild_panel
+    assert "data-r7-detail-page-shell" in rebuild_panel
+    assert "callService(" not in rebuild_panel
+    assert ".callService" not in rebuild_panel

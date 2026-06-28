@@ -27,11 +27,11 @@ def _load_service():
 
 
 def test_rs022_version_surfaces_are_aligned_to_1_12_21():
-    assert '"version": "1.12.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.35"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.34" in _read(path)
+        assert "v1.12.35" in _read(path)
 
 
 def test_rs022_document_records_safety_interlock_preflight_boundary():
@@ -90,7 +90,7 @@ def test_rebuild_panel_renders_safety_preflight_only_for_recommendation_stage_wi
     source = _read(REBUILD_PANEL)
     for marker in ("RS-022 safety/interlock preflight projection", "renderSafetyInterlockPreflightProjection(zone, stageKey)", "data-safety-interlock-preflight-card", "data-safety-preflight-state", "data-safety-state", "data-interlock-state", "data-failsafe-state", "data-preflight-blocked-reasons", "data-preflight-required-checks", "data-preflight-readonly", "data-preflight-execution-enabled", "Safety / Interlock / Fail Safe 사전검증"):
         assert marker in source
-    assert '["recommendation-execution"].includes(stageKey)' in source
+    assert '["recommend-act"].includes(stageKey)' in source
     for forbidden in ("data-preflight-execute-button", "data-preflight-approve-button", "hass.callService", "executeFinalTargets", "POST", "PUT", "DELETE"):
         assert forbidden not in source
 
@@ -105,7 +105,7 @@ def test_rebuild_panel_safety_preflight_node_smoke():
       panel.hass = {{ callApi: async () => ({{ zones: [{{ id: 'zone-2', name: 'B구역', safetyInterlockPreflightProjection: {{ preflightState: 'blocked_until_review', safetyState: 'pending', interlockState: 'pending', failSafeState: 'standby', blockedReasons: ['operator_approval_required'], requiredChecks: ['작업자 승인', 'Safety 검증'], readOnly: true, executionEnabled: false }} }}] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      const html = panel.renderSafetyInterlockPreflightProjection(panel._homeContext.zones[0], 'recommendation-execution');
+      const html = panel.renderSafetyInterlockPreflightProjection(panel._homeContext.zones[0], 'recommend-act');
       const hidden = panel.renderSafetyInterlockPreflightProjection(panel._homeContext.zones[0], 'growth-goal');
       if (!html.includes('data-safety-interlock-preflight-card')) process.exit(1);
       if (!html.includes('blocked_until_review')) process.exit(2);
@@ -122,7 +122,7 @@ def test_docs_specs_plan_and_inventory_record_rs022_and_next_step():
     inventory = _read(LEGACY_INVENTORY)
     for marker in ("Safety/Interlock preflight projection", "safetyInterlockPreflightProjection", "operatorApprovalScaffold → safetyInterlockPreflightProjection", "Safety / Interlock / Fail Safe 사전검증", "No write/mutation in RS-022"):
         assert marker in spec
-    for marker in ("Phase R4.18 — Safety/Interlock preflight projection", "Status:** `v1.12.34`에서 Safety/Interlock preflight projection 완료", "No production route removal in RS-022", "No DB migration in RS-022", "No write/mutation in RS-022"):
+    for marker in ("Phase R4.18 — Safety/Interlock preflight projection", "Status:** `v1.12.35`에서 Safety/Interlock preflight projection 완료", "No production route removal in RS-022", "No DB migration in RS-022", "No write/mutation in RS-022"):
         assert marker in plan
     assert "RS-022" in inventory
     assert "Safety/Interlock preflight projection completed" in inventory

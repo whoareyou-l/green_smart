@@ -1,6 +1,6 @@
 # R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-> 기준 버전: `v1.12.34`
+> 기준 버전: `v1.12.35`
 > Status: R7-000 complete
 > 목적: R6 read-only adapter 3종 완료 후, 실제 화면 구현 전에 메인 대시보드/사이드바/상세페이지/하위페이지 IA를 고정한다.
 
@@ -187,3 +187,28 @@ R7-001 Main dashboard redesign
 ```
 
 R7-001 may implement the first operator-visible crop-centered dashboard, but it must use the source shapes listed above and retain read-only/no-execution boundaries unless separately approved.
+
+
+## R7-001 Main Dashboard Redesign
+
+`v1.12.35`에서 R7-001 main dashboard redesign을 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-001-main-dashboard-redesign.md
+```
+
+Boundary:
+
+```text
+R7-001 Main Dashboard Redesign
+implements the first operator-visible crop-centered dashboard
+render from existing GET /api/green_smart/rebuild/home/context shape
+No fixture-only cards in R7-001
+No API route change in R7-001
+No DB migration in R7-001
+No execution authority in R7-001
+No approval/override release in R7-001
+No SafetyGuard/Interlock runtime behavior change in R7-001
+```

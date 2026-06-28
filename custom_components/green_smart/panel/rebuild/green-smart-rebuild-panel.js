@@ -14,13 +14,17 @@
 // RS-025 virtual runner input contract: rehearsalResultReviewProjection → virtualRunnerInputContract.
 // RS-026 virtual runner dry-run result adapter: virtualRunnerInputContract → virtualRunnerDryRunResultAdapter.
 // RS-027 virtual rehearsal pass/fail review projection: virtualRunnerDryRunResultAdapter → virtualRehearsalPassFailReviewProjection.
+// R7-001 Main dashboard redesign: operator-visible crop-centered dashboard renders from R6 read-only source shapes.
+// R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
+// R7 adapter evidence links: sourceMonitoringReadOnlyAdapter / sourceSafetyInterlockReadOnlyAdapter.
+// R7 detail page shell grammar: detailHeader → evidenceSummary → zoneTabs → selectedZonePanel → optionalDetailModal.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.34";
+const REBUILD_VERSION = "1.12.35";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -237,7 +241,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderRecommendationReviewProjection(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const projection = zone.recommendationReviewProjection || {};
     const inputs = projection.reviewInputs || {};
     const growth = inputs.growthTargetProjection || zone.growthTargetProjection || {};
@@ -263,7 +267,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderOperatorApprovalScaffold(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const scaffold = zone.operatorApprovalScaffold || {};
     const state = scaffold.approvalState || "required";
     const approvalRequired = scaffold.approvalRequired !== false;
@@ -286,7 +290,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderSafetyInterlockPreflightProjection(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const projection = zone.safetyInterlockPreflightProjection || {};
     const preflight = projection.preflightState || "blocked_until_review";
     const safety = projection.safetyState || "pending";
@@ -312,7 +316,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderVirtualExecutionRehearsalScaffold(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const scaffold = zone.virtualExecutionRehearsalScaffold || {};
     const rehearsalState = scaffold.rehearsalState || "blocked_until_virtual_rehearsal";
     const scenarios = scaffold.scenarioSet || ["normal", "strong_wind", "rain", "low_temperature", "sensor_fault", "blocked", "fail_safe", "recovery"];
@@ -337,7 +341,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderRehearsalResultReviewProjection(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const review = zone.rehearsalResultReviewProjection || {};
     const reviewState = review.reviewState || "pending_virtual_results";
     const summary = review.resultSummary || "가상 리허설 결과 검토 대기: 실제 실행 없이 시나리오별 결과를 확인합니다.";
@@ -362,7 +366,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderVirtualRunnerInputContract(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const contract = zone.virtualRunnerInputContract || {};
     const inputState = contract.inputState || "contract_ready_not_executable";
     const runnerMode = contract.runnerMode || "read_only_contract";
@@ -387,7 +391,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderVirtualRunnerDryRunResultAdapter(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const adapter = zone.virtualRunnerDryRunResultAdapter || {};
     const adapterState = adapter.adapterState || "dry_run_results_adapted_not_executable";
     const dryRunMode = adapter.dryRunMode || "synthetic_read_only_adapter";
@@ -412,7 +416,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderVirtualRehearsalPassFailReviewProjection(zone, stageKey) {
-    if (!["recommendation-execution"].includes(stageKey)) return "";
+    if (!["recommend-act"].includes(stageKey)) return "";
     const projection = zone.virtualRehearsalPassFailReviewProjection || {};
     const reviewState = projection.reviewState || "pass_fail_review_pending";
     const overallDecision = projection.overallDecision || "review_needed";
@@ -454,6 +458,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ? "실제 온실 데이터를 불러오는 중입니다."
       : "실제 데이터를 읽지 못해 읽기 전용 기본 화면으로 표시합니다.";
     return `<aside data-rebuild-context-load-notice data-rebuild-context-error="${this._contextLoadError || ""}" style="border:1px solid #d7e8db;border-radius:14px;background:#fbfdfb;color:#5d6f62;padding:12px;font-size:12px;line-height:1.5;">${message}</aside>`;
+  }
+
+  renderR7SourceShapesSummary() {
+    return `
+      <section data-r7-source-shapes data-r7-readonly-boundary="true" style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
+          <strong style="font-size:15px;color:#24323f;">R6 읽기 전용 근거로 렌더링</strong>
+          <span style="border:1px solid #d7e8db;border-radius:999px;background:#f8fcf9;color:#31523b;padding:5px 10px;font-size:12px;font-weight:900;">read-only · no execution</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <span data-r7-source-current-crop-assignment style="border-radius:999px;background:#f3f7f4;color:#31523b;padding:5px 9px;font-size:12px;font-weight:800;">currentCropAssignment</span>
+          <span data-r7-source-monitoring-readonly-adapter style="border-radius:999px;background:#f3f7f4;color:#31523b;padding:5px 9px;font-size:12px;font-weight:800;">monitoringReadOnlyAdapter</span>
+          <span data-r7-source-safety-interlock-readonly-adapter style="border-radius:999px;background:#f3f7f4;color:#31523b;padding:5px 9px;font-size:12px;font-weight:800;">safetyInterlockReadOnlyAdapter</span>
+          <span data-r7-source-environment-impact-projection style="border-radius:999px;background:#f3f7f4;color:#31523b;padding:5px 9px;font-size:12px;font-weight:800;">environmentImpactProjection</span>
+          <span data-r7-source-recommendation-review-projection style="border-radius:999px;background:#f3f7f4;color:#31523b;padding:5px 9px;font-size:12px;font-weight:800;">recommendationReviewProjection</span>
+          <span data-r7-source-virtual-execution-rehearsal-scaffold style="border-radius:999px;background:#f3f7f4;color:#31523b;padding:5px 9px;font-size:12px;font-weight:800;">virtualExecutionRehearsalScaffold</span>
+        </div>
+        <p style="margin:0;color:#6b7f70;font-size:12px;line-height:1.5;">기존 GET /api/green_smart/rebuild/home/context shape만 사용합니다. dashboard redesign은 API/DB/실행 권한을 추가하지 않습니다.</p>
+      </section>
+    `;
   }
 
   renderZoneTabs(stageKey) {
@@ -531,7 +555,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderZoneDrilldown(stageKey) {
     const config = REBUILD_STAGE_DETAILS[stageKey];
     return `
-      <div data-cba-component="MOD-CropStageZoneDetail" data-crop-os-stage-zone-detail data-zone-detail-stage="${stageKey}" style="margin-top:14px;border-top:1px solid #edf4ef;padding-top:12px;">
+      <div data-cba-component="MOD-CropStageZoneDetail" data-r7-detail-page-shell data-r7-detail-page-shell-grammar="detailHeader → evidenceSummary → zoneTabs → selectedZonePanel → optionalDetailModal" data-crop-os-stage-zone-detail data-zone-detail-stage="${stageKey}" style="margin-top:14px;border-top:1px solid #edf4ef;padding-top:12px;">
         <strong style="font-size:13px;color:#31523b;">${config.title}</strong>
         <p style="margin:6px 0 0;color:#78927f;font-size:12px;line-height:1.5;">구역 탭으로 필요한 구역만 선택해 봅니다. 전체 내용을 펼쳐 스크롤하지 않습니다.</p>
         ${this.renderZoneTabs(stageKey)}
@@ -611,19 +635,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderOperatingHome() {
     const contextMeta = this._contextMetaForRender();
     return `
-      <section data-cba-page="PAGE-CropCenteredHome" data-crop-os-home data-rebuild-context-source="${contextMeta.contextSource}" data-rebuild-context-load-state="${this._contextLoadState}" data-rebuild-greenhouse-id="${contextMeta.greenhouseId}" data-rebuild-context-generated-at="${contextMeta.generatedAt}" style="display:grid;gap:14px;">
+      <section data-cba-page="PAGE-CropCenteredHome" data-r7-main-dashboard data-crop-os-home data-rebuild-context-source="${contextMeta.contextSource}" data-rebuild-context-load-state="${this._contextLoadState}" data-rebuild-greenhouse-id="${contextMeta.greenhouseId}" data-rebuild-context-generated-at="${contextMeta.generatedAt}" style="display:grid;gap:14px;">
         ${this.renderContextLoadNotice()}
-        <article style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f0f8f2);padding:24px;">
+        <article data-r7-dashboard-hero style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f0f8f2);padding:24px;">
           <p style="margin:0 0 8px;font-size:12px;font-weight:800;color:#5d7d64;letter-spacing:.08em;text-transform:uppercase;">Crop-centered OS</p>
           <h1 style="margin:0 0 12px;font-size:30px;line-height:1.2;color:#24323f;">작물 중심 운영체계</h1>
           <p style="margin:0;color:#5d6f62;line-height:1.7;">작물이 먼저이고 제어는 그 다음입니다. 작물상태 → 생육목표 → 환경·관수·장치 영향 → 추천·실행 흐름으로 오늘의 운영 판단을 정리합니다.</p>
           <p style="margin:14px 0 0;font-size:13px;color:#78927f;">구역별 세부 정보는 각 단계 안에서 탭으로 필요한 구역만 선택해 확인합니다 · 추천은 실행 전 승인과 안전검사를 거칩니다</p>
         </article>
-        <section data-crop-os-flow-stages data-cba-layout="single-column-stage-flow" style="display:grid;grid-template-columns:1fr;gap:18px;">
-          <article data-stage-card-shell data-crop-os-stage="crop-status" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">1. 작물상태</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">작물의 현재 생육 상태, 이상 징후, 관찰 필요 지점을 먼저 보여줍니다.</p>${this.renderZoneDrilldown("crop-status")}</article>
-          <article data-stage-card-shell data-crop-os-stage="growth-goal" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">2. 생육목표</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">오늘 목표 생육 방향과 우선순위를 운영자가 이해할 수 있게 정리합니다.</p>${this.renderZoneDrilldown("growth-goal")}</article>
-          <article data-stage-card-shell data-crop-os-stage="environment-impact" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">3. 환경·관수·장치 영향</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">온도, 습도, 광, 관수, 장치 상태를 작물 영향 관점으로 묶어 보여줍니다.</p>${this.renderZoneDrilldown("environment-impact")}</article>
-          <article data-stage-card-shell data-crop-os-stage="recommend-act" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">4. 추천·실행</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">추천 이유를 확인하고, 승인과 안전검사 후 실행하는 흐름을 둡니다.</p>${this.renderZoneDrilldown("recommend-act")}</article>
+        ${this.renderR7SourceShapesSummary()}
+        <section data-crop-os-flow-stages data-r7-stage-grid data-cba-layout="single-column-stage-flow" style="display:grid;grid-template-columns:1fr;gap:18px;">
+          <article data-r7-stage-card="crop-status" data-stage-card-shell data-crop-os-stage="crop-status" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">1. 작물상태</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">작물의 현재 생육 상태, 이상 징후, 관찰 필요 지점을 먼저 보여줍니다.</p>${this.renderZoneDrilldown("crop-status")}</article>
+          <article data-r7-stage-card="growth-goal" data-stage-card-shell data-crop-os-stage="growth-goal" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">2. 생육목표</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">오늘 목표 생육 방향과 우선순위를 운영자가 이해할 수 있게 정리합니다.</p>${this.renderZoneDrilldown("growth-goal")}</article>
+          <article data-r7-stage-card="environment-impact" data-stage-card-shell data-crop-os-stage="environment-impact" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">3. 환경·관수·장치 영향</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">온도, 습도, 광, 관수, 장치 상태를 작물 영향 관점으로 묶어 보여줍니다.</p>${this.renderZoneDrilldown("environment-impact")}</article>
+          <article data-r7-stage-card="recommend-act" data-stage-card-shell data-crop-os-stage="recommend-act" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">4. 추천·실행</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">추천 이유를 확인하고, 승인과 안전검사 후 실행하는 흐름을 둡니다.</p>${this.renderZoneDrilldown("recommend-act")}</article>
         </section>
       </section>
     `;

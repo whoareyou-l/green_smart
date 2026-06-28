@@ -29,11 +29,11 @@ def _load_service():
 
 
 def test_rs027_version_surfaces_are_aligned_to_1_12_26():
-    assert '"version": "1.12.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.35"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, WORKFLOW_SPEC, FAILSAFE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.34" in _read(path)
+        assert "v1.12.35" in _read(path)
 
 
 def test_rs027_document_records_pass_fail_review_projection_boundary():
@@ -114,7 +114,7 @@ def test_rebuild_panel_renders_pass_fail_review_projection_only_for_recommendati
     source = _read(REBUILD_PANEL)
     for marker in ("RS-027 virtual rehearsal pass/fail review projection", "renderVirtualRehearsalPassFailReviewProjection(zone, stageKey)", "data-virtual-rehearsal-pass-fail-review-card", "data-virtual-rehearsal-review-state", "data-virtual-rehearsal-overall-decision", "data-virtual-rehearsal-scenario-reviews", "data-virtual-rehearsal-pass-fail-readonly", "data-virtual-rehearsal-pass-fail-execution-enabled", "data-virtual-rehearsal-pass-fail-runner-execution-enabled", "data-virtual-rehearsal-pass-fail-device-command-enabled", "data-virtual-rehearsal-pass-fail-mqtt-enabled", "가상 리허설 pass/fail 검토"):
         assert marker in source
-    assert '["recommendation-execution"].includes(stageKey)' in source
+    assert '["recommend-act"].includes(stageKey)' in source
     for forbidden in ("data-virtual-pass-approve-button", "data-virtual-fail-release-button", "data-virtual-rehearsal-execute-button", "data-device-command-button", "hass.callService", "executeFinalTargets", "mqtt.publish", "POST", "PUT", "DELETE"):
         assert forbidden not in source
 
@@ -129,7 +129,7 @@ def test_rebuild_panel_pass_fail_review_projection_node_smoke():
       panel.hass = {{ callApi: async () => ({{ zones: [{{ id: 'zone-2', name: 'B구역', virtualRehearsalPassFailReviewProjection: {{ reviewState: 'pass_fail_review_pending', overallDecision: 'review_needed', scenarioReviews: [{{scenario:'normal', decision:'review_needed', executionAllowed:false}}, {{scenario:'fail_safe', decision:'review_needed', executionAllowed:false}}], passFailAuthority: 'operator_review_only', operatorReviewRequired: true, readOnly: true, executionEnabled: false, runnerExecutionEnabled: false, approvalReleaseEnabled: false, deviceCommandEnabled: false, mqttEnabled: false }} }}] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      const html = panel.renderVirtualRehearsalPassFailReviewProjection(panel._homeContext.zones[0], 'recommendation-execution');
+      const html = panel.renderVirtualRehearsalPassFailReviewProjection(panel._homeContext.zones[0], 'recommend-act');
       const hidden = panel.renderVirtualRehearsalPassFailReviewProjection(panel._homeContext.zones[0], 'growth-goal');
       if (!html.includes('data-virtual-rehearsal-pass-fail-review-card')) process.exit(1);
       if (!html.includes('pass_fail_review_pending')) process.exit(2);
@@ -154,7 +154,7 @@ def test_docs_specs_plan_and_inventory_record_rs027_and_rs_series_completion():
         assert marker in workflow
     for marker in ("pass/fail review projection does not release interlock", "approvalReleaseEnabled remains false", "No device command in RS-027"):
         assert marker in failsafe
-    for marker in ("Phase R4.23 — Virtual rehearsal pass/fail review projection", "Status:** `v1.12.34`에서 Virtual rehearsal pass/fail review projection 완료", "No production route removal in RS-027", "No DB migration in RS-027", "No write/mutation in RS-027", "RS sequence complete before R5 scaffold"):
+    for marker in ("Phase R4.23 — Virtual rehearsal pass/fail review projection", "Status:** `v1.12.35`에서 Virtual rehearsal pass/fail review projection 완료", "No production route removal in RS-027", "No DB migration in RS-027", "No write/mutation in RS-027", "RS sequence complete before R5 scaffold"):
         assert marker in plan
     assert "RS-027" in inventory
     assert "Virtual rehearsal pass/fail review projection completed" in inventory

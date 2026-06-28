@@ -29,11 +29,11 @@ def _load_service():
 
 
 def test_rs025_version_surfaces_are_aligned_to_1_12_24():
-    assert '"version": "1.12.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.35"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, WORKFLOW_SPEC, FAILSAFE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.34" in _read(path)
+        assert "v1.12.35" in _read(path)
 
 
 def test_rs025_document_records_virtual_runner_input_boundary():
@@ -107,7 +107,7 @@ def test_rebuild_panel_renders_virtual_runner_input_contract_only_for_recommenda
     source = _read(REBUILD_PANEL)
     for marker in ("RS-025 virtual runner input contract", "renderVirtualRunnerInputContract(zone, stageKey)", "data-virtual-runner-input-contract-card", "data-virtual-runner-input-state", "data-virtual-runner-mode", "data-virtual-runner-input-scenarios", "data-virtual-runner-readonly", "data-virtual-runner-execution-enabled", "data-virtual-runner-runner-execution-enabled", "data-virtual-runner-device-command-enabled", "data-virtual-runner-mqtt-enabled", "가상 러너 입력 계약"):
         assert marker in source
-    assert '["recommendation-execution"].includes(stageKey)' in source
+    assert '["recommend-act"].includes(stageKey)' in source
     for forbidden in ("data-virtual-runner-execute-button", "data-virtual-runner-start-button", "data-device-command-button", "hass.callService", "executeFinalTargets", "mqtt.publish", "POST", "PUT", "DELETE"):
         assert forbidden not in source
 
@@ -122,7 +122,7 @@ def test_rebuild_panel_virtual_runner_input_contract_node_smoke():
       panel.hass = {{ callApi: async () => ({{ zones: [{{ id: 'zone-2', name: 'B구역', virtualRunnerInputContract: {{ inputState: 'contract_ready_not_executable', runnerMode: 'read_only_contract', inputScenarios: [{{scenario:'normal', resultState:'not_run'}}, {{scenario:'fail_safe', resultState:'not_run'}}], executionCandidate: false, readOnly: true, executionEnabled: false, runnerExecutionEnabled: false, approvalReleaseEnabled: false, deviceCommandEnabled: false, mqttEnabled: false }} }}] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      const html = panel.renderVirtualRunnerInputContract(panel._homeContext.zones[0], 'recommendation-execution');
+      const html = panel.renderVirtualRunnerInputContract(panel._homeContext.zones[0], 'recommend-act');
       const hidden = panel.renderVirtualRunnerInputContract(panel._homeContext.zones[0], 'growth-goal');
       if (!html.includes('data-virtual-runner-input-contract-card')) process.exit(1);
       if (!html.includes('contract_ready_not_executable')) process.exit(2);
@@ -146,7 +146,7 @@ def test_docs_specs_plan_and_inventory_record_rs025_and_next_step():
         assert marker in workflow
     for marker in ("runner input contract does not release interlock", "runnerExecutionEnabled remains false", "No device command in RS-025"):
         assert marker in failsafe
-    for marker in ("Phase R4.21 — Virtual runner input contract", "Status:** `v1.12.34`에서 Virtual runner input contract 완료", "No production route removal in RS-025", "No DB migration in RS-025", "No write/mutation in RS-025"):
+    for marker in ("Phase R4.21 — Virtual runner input contract", "Status:** `v1.12.35`에서 Virtual runner input contract 완료", "No production route removal in RS-025", "No DB migration in RS-025", "No write/mutation in RS-025"):
         assert marker in plan
     assert "RS-025" in inventory
     assert "Virtual runner input contract completed" in inventory

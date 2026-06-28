@@ -29,11 +29,11 @@ def _load_service():
 
 
 def test_rs023_version_surfaces_are_aligned_to_1_12_22():
-    assert '"version": "1.12.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.35"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, WORKFLOW_SPEC, FAILSAFE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.34" in _read(path)
+        assert "v1.12.35" in _read(path)
 
 
 def test_rs023_document_records_virtual_rehearsal_boundary_and_scenarios():
@@ -97,7 +97,7 @@ def test_rebuild_panel_renders_virtual_rehearsal_only_for_recommendation_stage_w
     source = _read(REBUILD_PANEL)
     for marker in ("RS-023 virtual execution rehearsal scaffold", "renderVirtualExecutionRehearsalScaffold(zone, stageKey)", "data-virtual-execution-rehearsal-card", "data-virtual-rehearsal-state", "data-virtual-rehearsal-current-scenario", "data-virtual-rehearsal-scenarios", "data-virtual-rehearsal-readonly", "data-virtual-rehearsal-execution-enabled", "data-virtual-rehearsal-device-command-enabled", "data-virtual-rehearsal-mqtt-enabled", "가상 실행 리허설"):
         assert marker in source
-    assert '["recommendation-execution"].includes(stageKey)' in source
+    assert '["recommend-act"].includes(stageKey)' in source
     for forbidden in ("data-virtual-execution-run-button", "data-device-command-button", "hass.callService", "executeFinalTargets", "mqtt.publish", "POST", "PUT", "DELETE"):
         assert forbidden not in source
 
@@ -112,7 +112,7 @@ def test_rebuild_panel_virtual_rehearsal_node_smoke():
       panel.hass = {{ callApi: async () => ({{ zones: [{{ id: 'zone-2', name: 'B구역', virtualExecutionRehearsalScaffold: {{ rehearsalState: 'blocked_until_virtual_rehearsal', scenarioSet: ['normal','strong_wind','rain','low_temperature','sensor_fault','blocked','fail_safe','recovery'], currentScenario: 'blocked', readinessSummary: '가상 실행 리허설 전', readOnly: true, executionEnabled: false, deviceCommandEnabled: false, mqttEnabled: false }} }}] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      const html = panel.renderVirtualExecutionRehearsalScaffold(panel._homeContext.zones[0], 'recommendation-execution');
+      const html = panel.renderVirtualExecutionRehearsalScaffold(panel._homeContext.zones[0], 'recommend-act');
       const hidden = panel.renderVirtualExecutionRehearsalScaffold(panel._homeContext.zones[0], 'growth-goal');
       if (!html.includes('data-virtual-execution-rehearsal-card')) process.exit(1);
       if (!html.includes('blocked_until_virtual_rehearsal')) process.exit(2);
@@ -136,7 +136,7 @@ def test_docs_specs_plan_and_inventory_record_rs023_and_next_step():
         assert marker in workflow
     for marker in ("Safety/Interlock/Fail Safe preflight remains source", "virtual rehearsal does not release interlock", "No device command in RS-023"):
         assert marker in failsafe
-    for marker in ("Phase R4.19 — Virtual execution rehearsal scaffold", "Status:** `v1.12.34`에서 Virtual execution rehearsal scaffold 완료", "No production route removal in RS-023", "No DB migration in RS-023", "No write/mutation in RS-023"):
+    for marker in ("Phase R4.19 — Virtual execution rehearsal scaffold", "Status:** `v1.12.35`에서 Virtual execution rehearsal scaffold 완료", "No production route removal in RS-023", "No DB migration in RS-023", "No write/mutation in RS-023"):
         assert marker in plan
     assert "RS-023" in inventory
     assert "Virtual execution rehearsal scaffold completed" in inventory

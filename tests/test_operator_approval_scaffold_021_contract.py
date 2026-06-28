@@ -27,11 +27,11 @@ def _load_service():
 
 
 def test_rs021_version_surfaces_are_aligned_to_1_12_20():
-    assert '"version": "1.12.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.35"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.34" in _read(path)
+        assert "v1.12.35" in _read(path)
 
 
 def test_rs021_document_records_operator_approval_scaffold_boundary():
@@ -116,7 +116,7 @@ def test_rebuild_panel_renders_operator_approval_scaffold_only_for_recommendatio
         "작업자 승인 scaffold",
     ):
         assert marker in source
-    assert '["recommendation-execution"].includes(stageKey)' in source
+    assert '["recommend-act"].includes(stageKey)' in source
 
     for forbidden in (
         "data-operator-approval-approve-button",
@@ -141,7 +141,7 @@ def test_rebuild_panel_operator_approval_node_smoke():
       panel.hass = {{ callApi: async () => ({{ zones: [{{ id: 'zone-2', name: 'B구역', currentCrop: {{ crop_cycle_id: 18 }}, recommendationReviewProjection: {{ reviewState: 'ready', approvalRequired: true }}, operatorApprovalScaffold: {{ approvalState: 'required', disabledReason: '작업자 승인과 안전/인터록 사전검증 전에는 실행할 수 없습니다.', executionBlocked: true, readOnly: true, executionEnabled: false }} }}] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      const html = panel.renderOperatorApprovalScaffold(panel._homeContext.zones[0], 'recommendation-execution');
+      const html = panel.renderOperatorApprovalScaffold(panel._homeContext.zones[0], 'recommend-act');
       const hidden = panel.renderOperatorApprovalScaffold(panel._homeContext.zones[0], 'growth-goal');
       console.log(html);
       if (!html.includes('data-operator-approval-scaffold-card')) process.exit(1);
@@ -168,7 +168,7 @@ def test_docs_specs_plan_and_inventory_record_rs021_and_next_step():
         assert marker in spec
     for marker in (
         "Phase R4.17 — Operator approval scaffold",
-        "Status:** `v1.12.34`에서 작업자 승인 scaffold 완료",
+        "Status:** `v1.12.35`에서 작업자 승인 scaffold 완료",
         "No production route removal in RS-021",
         "No DB migration in RS-021",
         "No write/mutation in RS-021",
