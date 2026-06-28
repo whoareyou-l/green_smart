@@ -6,7 +6,13 @@ from datetime import date, datetime, timedelta
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from .db import fetchall, fetchone, execute
-from .services.crop_service import CropReadActor, list_crop_seasons
+from .services.crop_service import (
+    CropReadActor,
+    list_control_records,
+    list_crop_seasons,
+    list_growth_records,
+    list_pest_records,
+)
 from .weather_api import WeatherStore, fetch_weekly_forecast
 
 _LOGGER = logging.getLogger(__name__)
@@ -585,17 +591,22 @@ class CropGrowthListView(HomeAssistantView):
     name = "api:green_smart:crop:growth:list"
 
     async def get(self, request: web.Request, season_id: str) -> web.Response:
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
         hass = request.app["hass"]
-        rows = await fetchall(hass, """
-            SELECT id, survey_date AS date, plant_height AS height,
-                   leaf_count AS leafCount, stem_diameter AS stemDia,
-                   truss_count AS truss, node_count AS node,
-                   crop_type AS cropType, metrics_json AS metricsJson,
-                   notes AS note
-            FROM growth_surveys
-            WHERE season_id = %s AND deleted_at IS NULL
-            ORDER BY survey_date DESC
-        """, (int(season_id),))
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropReadActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            # RB-006B permission smoke: read-only crop records require view_crop_records.
+            rows = await list_growth_records(hass, actor, int(season_id))
+        except PermissionError as exc:
+            return _err(str(exc), 403)
         return _json(rows)
 
     async def post(self, request: web.Request, season_id: str) -> web.Response:
@@ -4752,14 +4763,22 @@ class CropPestListView(HomeAssistantView):
     name = "api:green_smart:crop:pest:list"
 
     async def get(self, request: web.Request, season_id: str) -> web.Response:
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
         hass = request.app["hass"]
-        rows = await fetchall(hass, """
-            SELECT id, survey_date AS date, pest_type AS type,
-                   location, severity, notes AS note
-            FROM pest_surveys
-            WHERE season_id = %s AND deleted_at IS NULL
-            ORDER BY survey_date DESC
-        """, (int(season_id),))
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropReadActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            # RB-006B permission smoke: read-only crop records require view_crop_records.
+            rows = await list_pest_records(hass, actor, int(season_id))
+        except PermissionError as exc:
+            return _err(str(exc), 403)
         return _json(rows)
 
     async def post(self, request: web.Request, season_id: str) -> web.Response:
@@ -4810,47 +4829,23 @@ class CropControlListView(HomeAssistantView):
     name = "api:green_smart:crop:control:list"
 
     async def get(self, request: web.Request, season_id: str) -> web.Response:
-        hass = request.app["hass"]
-        rows = await fetchall(hass, """
-            SELECT
-                r.id, r.control_date AS date,
-                r.zone_description AS zone, r.notes AS note,
-                p.id AS pId, p.sort_order AS pSort,
-                p.pesticide_name AS name, p.reg_no AS regNo,
-                p.mode_of_action AS moa, p.dilution_ratio AS dil,
-                p.usage_amount AS amount, p.pls_compliant AS pls,
-                p.mixable AS mixable, p.mix_check_status AS mixCheckStatus,
-                p.mix_check_note AS mixCheckNote, p.pls_warning AS plsWarning,
-                p.phi_days AS phiDays, p.rei_hours AS reiHours
-            FROM control_records r
-            LEFT JOIN control_pesticides p ON p.control_id = r.id
-            WHERE r.season_id = %s AND r.deleted_at IS NULL
-            ORDER BY r.control_date DESC, p.sort_order ASC
-        """, (int(season_id),))
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
 
-        # Python 에서 record.id 기준 그룹핑
-        records: dict[int, dict] = {}
-        for row in rows:
-            rid = row["id"]
-            if rid not in records:
-                records[rid] = {
-                    "id": rid, "date": row["date"],
-                    "zone": row["zone"], "note": row["note"],
-                    "pesticides": [],
-                }
-            if row.get("pId") is not None:
-                records[rid]["pesticides"].append({
-                    "name": row["name"], "regNo": row["regNo"],
-                    "moa": row["moa"], "dil": row["dil"],
-                    "amount": row["amount"], "pls": bool(row["pls"]) if row["pls"] is not None else None,
-                    "mixable": bool(row["mixable"]) if row["mixable"] is not None else None,
-                    "mixCheckStatus": row["mixCheckStatus"],
-                    "mixCheckNote": row["mixCheckNote"],
-                    "plsWarning": row["plsWarning"],
-                    "phiDays": row["phiDays"],
-                    "reiHours": row["reiHours"],
-                })
-        return _json(list(records.values()))
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropReadActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            # RB-006B permission smoke: read-only crop records require view_crop_records.
+            rows = await list_control_records(hass, actor, int(season_id))
+        except PermissionError as exc:
+            return _err(str(exc), 403)
+        return _json(rows)
 
     async def post(self, request: web.Request, season_id: str) -> web.Response:
         hass = request.app["hass"]

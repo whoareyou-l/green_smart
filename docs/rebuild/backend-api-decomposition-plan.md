@@ -1,6 +1,6 @@
 # Green Smart Backend/API Decomposition Plan
 
-> 기준 버전: `v1.11.8`
+> 기준 버전: `v1.11.9`
 > 리빌딩 단계: `R3 — Backend/API decomposition plan`
 > 목적: `crop_views.py`와 `zone_control_views.py`를 즉시 분리하지 않고, 기존 HTTP route compatibility를 유지하는 adapter-first backend 구조, service/repository 경계, 첫 extraction slice를 문서/계약으로 고정한다.
 
@@ -212,7 +212,7 @@ RB-006A는 `GET /api/green_smart/crop/seasons` 또는 작물 요약 read-only ro
 
 ### RB-006A completion note
 
-`v1.11.8`에서 Crop read-only service/repo boundary baseline이 추가되었다.
+`v1.11.9`에서 Crop read-only service/repo boundary baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/services/crop_service.py
@@ -242,6 +242,21 @@ custom_components/green_smart/repositories/crop_repo.py
 | RB-007B | SafetyGuard service boundary | watchdog/events read paths | actual execution semantics 변경 |
 | RB-007C | Execution service boundary | execute-final-targets | virtual rehearsal+HA config check 전 prod 변경 |
 | RB-007D | Environment/Irrigation/Device service split | domain-specific settings/strategy | route path/response shape 변경 |
+
+### RB-006B Crop record read-only repositories completion note
+
+`v1.11.9`에서 Crop record read-only repositories baseline이 추가되었다.
+
+완료 범위:
+
+- `growth/pest/control read GET helpers`를 `services/crop_service.py`와 `repositories/crop_repo.py`로 확장한다.
+- `list_growth_records`, `list_pest_records`, `list_control_records`가 legacy response shape를 유지한다.
+- `GET /api/green_smart/crop/seasons/{season_id}/growth` route path 변경 없음.
+- `GET /api/green_smart/crop/seasons/{season_id}/pest` route path 변경 없음.
+- `GET /api/green_smart/crop/seasons/{season_id}/control` route path 변경 없음.
+- `write/delete modal 경로 변경 없음`.
+- `response shape 변경 없음`.
+- `DB migration 없음`.
 
 ---
 

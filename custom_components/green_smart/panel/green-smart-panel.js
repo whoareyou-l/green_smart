@@ -1,10 +1,10 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.11.8
+// Green Smart — Modern SaaS greenhouse dashboard  v1.11.9
 import { createApiClient } from "./core/api-client.js";
 import { renderCropBasicOverviewCard, renderCropBasicTab, renderCropSeasonsList } from "./domains/crop/crop-readonly.js";
 import { adminSystemTabs, renderAdminSystemPage, renderAdminSystemTabBar, renderAdminSystemTabContent } from "./domains/admin/admin-page.js";
 
 const DOMAIN = "green_smart";
-const VERSION = "1.11.8";
+const VERSION = "1.11.9";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];

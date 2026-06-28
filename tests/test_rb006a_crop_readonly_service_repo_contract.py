@@ -16,9 +16,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb006a_version_surfaces_are_v1118():
-    assert '"version": "1.11.8"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.8"' in _read(PANEL)
-    assert "v1.11.8" in _read(BACKEND_PLAN)
+    assert '"version": "1.11.9"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.9"' in _read(PANEL)
+    assert "v1.11.9" in _read(BACKEND_PLAN)
 
 
 def test_rb006a_repository_exists_and_owns_crop_seasons_select_only():
@@ -71,7 +71,9 @@ def test_rb006a_service_exists_enforces_read_permission_and_preserves_shape():
 
 def test_rb006a_crop_get_route_delegates_to_service_while_post_stays_in_view():
     crop = _read(CROP_VIEWS)
-    assert "from .services.crop_service import CropReadActor, list_crop_seasons" in crop
+    assert "from .services.crop_service import (" in crop
+    assert "CropReadActor" in crop
+    assert "list_crop_seasons" in crop
     assert "from .rbac import _ha_user_from_request" in crop
     get_section = crop.split("class CropSeasonsView", 1)[1].split("    async def post", 1)[0]
     post_section = crop.split("    async def post", 1)[1].split("class CropSeasonDemolishView", 1)[0]
@@ -109,7 +111,7 @@ def test_rb006a_docs_record_backend_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006A Crop read-only service/repo boundary",
-        "v1.11.8",
+        "v1.11.9",
         "services/crop_service.py",
         "repositories/crop_repo.py",
         "GET /api/green_smart/crop/seasons",
