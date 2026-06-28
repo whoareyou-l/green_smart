@@ -30,6 +30,7 @@ RBAC_BACKEND_ENFORCED_ACTION_CLASSES = (
 # adapters, while product-facing checks should target gs_permissions codes.
 RBAC_PERMISSION_ALIASES: dict[str, tuple[str, ...]] = {
     "home_context.read": ("view_dashboard",),
+    "monitoring.read": ("view_monitoring", "view_dashboard"),
     "crop_cycle.read": ("view_crop_records",),
     "crop_cycle.write": ("manage_crop_seasons",),
     "crop_cycle.delete": ("delete_crop_records", "manage_crop_seasons"),
@@ -115,7 +116,7 @@ RBAC_ROLE_OWNERSHIP = {
 }
 
 RBAC_PERMISSION_BUCKETS = {
-    "조회": ("view_dashboard", "view_crop_records", "view_control_pages"),
+    "조회": ("view_dashboard", "view_monitoring", "view_crop_records", "view_control_pages"),
     "기록": ("edit_crop_records", "manage_crop_seasons"),
     "전략": ("edit_strategy_settings",),
     "실행": ("run_dry_run", "execute_final_targets", "manual_device_control"),

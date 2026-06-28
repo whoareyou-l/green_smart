@@ -1,6 +1,6 @@
 # Green Smart Target Architecture — From-Scratch Rebuild Baseline
 
-> 기준 버전: `v1.12.27`
+> 기준 버전: `v1.12.28`
 > 상태: 방향 전환 기준선
 > 목적: 기존 RB 산출물을 이어서 계속 패치하지 않고, 이전 작업을 reference/evidence로 삼아 새 제품 구조를 설계한 뒤 새 vertical rebuild slice로 구현한다.
 
@@ -256,7 +256,7 @@ The chosen slice must define UI → frontend service → backend route/service �
 
 ## 14. VS-N002 Crop cycle recording scaffold
 
-`v1.12.27` adds the second R5 scaffold slice:
+`v1.12.28` adds the second R5 scaffold slice:
 
 ```text
 VS-N002 Crop cycle recording scaffold
@@ -268,3 +268,20 @@ No DB migration in VS-N002
 ```
 
 This slice is scaffold-only. It does not change existing crop season save behavior and does not add a runtime write adapter.
+
+
+## 15. VS-N003 Real-time monitoring read-only scaffold
+
+`v1.12.28` adds the third R5 scaffold slice:
+
+```text
+VS-N003 Real-time monitoring read-only scaffold
+RBAC/Admin ownership scaffold → Crop cycle recording scaffold → Real-time monitoring read-only slice → Interlock/Safety core scaffold
+realtimeMonitoringReadOnlyScaffold
+monitoring/read-only DTO boundary
+sensor state freshness boundary
+No DB migration in VS-N003
+No sensor collection/scheduler in VS-N003
+```
+
+This slice is scaffold-only. It does not query `sensor_readings`, read HA entities, start sensor collection, or render a panel monitoring card.

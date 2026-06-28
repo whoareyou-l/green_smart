@@ -1,7 +1,7 @@
 # 4. 통합 시나리오 흐름도 — Workflow Diagram
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.27`
+> 기준 버전: `v1.12.28`
 > 문서 목적: UI 컴포넌트, Frontend service, Backend API, DB, MQTT/HA Entity, 하드웨어가 시간 순서대로 어떻게 신호를 주고받는지 정의한다.
 
 ## 1. 공통 Actor
@@ -402,3 +402,14 @@ dry-run result adapter → pass/fail review projection
 ```
 
 The pass/fail remains operator_review_only. No real-device hookup in RS-027.
+
+
+## VS-N003 Real-time monitoring read-only scaffold workflow boundary
+
+```text
+VS-N003 Real-time monitoring read-only scaffold
+sensor state freshness boundary
+No sensor collection/scheduler in VS-N003
+```
+
+The workflow defines freshness states before live collection is attached.
