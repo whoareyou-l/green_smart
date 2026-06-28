@@ -1,8 +1,9 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.11.5
+// Green Smart — Modern SaaS greenhouse dashboard  v1.11.6
+import { createApiClient } from "./core/api-client.js";
 import { adminSystemTabs, renderAdminSystemPage, renderAdminSystemTabBar, renderAdminSystemTabContent } from "./domains/admin/admin-page.js";
 
 const DOMAIN = "green_smart";
-const VERSION = "1.11.5";
+const VERSION = "1.11.6";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -245,6 +246,7 @@ class GreenSmartPanel extends HTMLElement {
   constructor() {
     super();
     this._hass = null;
+    this._api = null;
     this._state = "init";
     this._loading = true;
     this._saving = false;
@@ -330,6 +332,7 @@ class GreenSmartPanel extends HTMLElement {
   set hass(hass) {
     const first = !this._hass;
     this._hass = hass;
+    this._api = createApiClient(this._hass);
     if (first) { this._renderShell(); this._init(); return; }
     if (this._state === "dashboard") this._update();
   }
@@ -437,7 +440,7 @@ class GreenSmartPanel extends HTMLElement {
 
   async _fetchAuthMe() {
     try {
-      this._authMe = await this._hass.callApi("GET", "green_smart/auth/me");
+      this._authMe = await this._api.admin.getCurrentUser();
     } catch (err) {
       // Transitional fallback only. Production RBAC source is /api/green_smart/auth/me.
       this._authMe = { role: "farm_staff", roleSource: "auth_me_unavailable", permissions: [...GREEN_SMART_ROLE_PERMISSIONS.farm_staff] };
@@ -3406,10 +3409,10 @@ button.action:disabled{opacity:.5;cursor:default;}
       </div>`;
       try {
         const [localCur, fcstResp, cfgResp, weeklyResp] = await Promise.all([
-          this._hass.callApi("GET", "green_smart/weather/current").catch(() => ({})),
-          this._hass.callApi("GET", "green_smart/weather/forecast").catch(() => ({})),
-          this._hass.callApi("GET", "green_smart/weather/config").catch(() => ({})),
-          this._hass.callApi("GET", "green_smart/weather/weekly").catch(() => ({})),
+          this._api.weather.getCurrent().catch(() => ({})),
+          this._api.weather.getForecast().catch(() => ({})),
+          this._api.weather.getConfig().catch(() => ({})),
+          this._api.weather.getWeekly().catch(() => ({})),
         ]);
         const cfg = Object.assign({}, this._normalizedForm(), cfgResp || {});
         const centralModalForecast = await this._hass.callApi("POST", "green_smart/central/weather/forecast", {
@@ -5013,7 +5016,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   // ── DB 데이터 로딩 ────────────────────────────────────────────────────────
   async _loadCropData() {
     try {
-      const seasons = await this._hass.callApi("GET", "green_smart/crop/seasons");
+      const seasons = await this._api.crop.listSeasons();
       this._cropSeasons = seasons || [];
       this._dbReady = true;
       await this._migrateFromLocalStorage();
@@ -5034,10 +5037,10 @@ button.action:disabled{opacity:.5;cursor:default;}
 
   async _loadSeasonDetail(seasonId) {
     const [growth, pest, control, report, centerAnalytics] = await Promise.all([
-      this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/growth`).catch(() => []),
-      this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/pest`).catch(()  => []),
-      this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/control`).catch(() => []),
-      this._hass.callApi("GET", `green_smart/crop/seasons/${seasonId}/growth-report`).catch(() => null),
+      this._api.crop.getGrowthRecords(seasonId).catch(() => []),
+      this._api.crop.getPestRecords(seasonId).catch(()  => []),
+      this._api.crop.getControlRecords(seasonId).catch(() => []),
+      this._api.crop.getGrowthReport(seasonId).catch(() => null),
       this._fetchCenterCropInterlockAnalytics(seasonId, false).catch(() => null),
     ]);
     this._growthData  = growth  || [];
@@ -5050,7 +5053,7 @@ button.action:disabled{opacity:.5;cursor:default;}
   async _fetchGrowthReport() {
     if (!this._hass || !this._activeSeasonId) return null;
     try {
-      const report = await this._hass.callApi("GET", `green_smart/crop/seasons/${this._activeSeasonId}/growth-report`);
+      const report = await this._api.crop.getGrowthReport(this._activeSeasonId);
       this._growthReportData = report;
       this._refreshCropContent();
       return report;

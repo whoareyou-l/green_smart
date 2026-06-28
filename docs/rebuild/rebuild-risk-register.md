@@ -1,7 +1,7 @@
 # Green Smart R0 Rebuild Risk Register
 
 > 기준일: `2026-06-28`
-> 기준 버전: `v1.11.5`
+> 기준 버전: `v1.11.6`
 > 목적: 제품 구조 리빌딩 중 prod 안정성, 데이터 보존, UI/API compatibility, 현장 안전을 해치지 않기 위한 위험 목록과 대응 기준을 고정한다.
 
 ---
@@ -13,7 +13,7 @@
 | R0 prod 변경 | 금지 |
 | R0 DB migration | 금지 |
 | R0 신규 기능 | 금지 |
-| R0 release | 문서/계약/버전 baseline만 `v1.11.5`으로 release |
+| R0 release | 문서/계약/버전 baseline만 `v1.11.6`으로 release |
 | prod cutover | R6 이후 별도 승인 필요 |
 
 ---
@@ -101,4 +101,4 @@ pytest -q
 - R0 inventory 작성 완료
 - R0 risk register 작성 완료
 - R0 baseline contract 예정
-- R0 release target: `v1.11.5`
+- R0 release target: `v1.11.6`
