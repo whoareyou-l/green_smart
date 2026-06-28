@@ -1,7 +1,7 @@
 # 1. CBA 화면 기획서 — UI/UX 설계도
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.1`
+> 기준 버전: `v1.12.2`
 > 문서 목적: Green Smart 화면을 **공통 부품(COM) → 복합 모듈(MOD) → 전체 페이지(PAGE)** 3단계로 정리하여, 코드가 화면마다 중복/난립하지 않도록 한다.
 
 ## 1. 설계 원칙
@@ -176,6 +176,9 @@ PAGE-* = Pages/Views, MOD를 배치한 최종 화면
 | COM-Metric | 지표 | label/value/help 3단 구조 | `label`, `value`, `unit`, `help`, `trend` | 값만 던지고 의미 생략 금지 |
 | COM-Modal | 팝업 | 상세/입력/승인 화면 | `open`, `title`, `onClose`, `size` | 초기 렌더 노출 금지 |
 | COM-Tab | 탭 | 하위 화면 전환 | `active`, `icon`, `label` | 중복 emoji+icon 표시 금지 |
+| COM-ZoneTabs | 구역 탭 | 전체/A/B 등 구역 선택 | `activeZoneId`, `stageKey`, `aria-selected` | 모든 구역 내용을 펼쳐 스크롤바로 탐색시키지 않음 |
+| COM-ZonePanel | 선택 구역 패널 | 선택된 구역 요약만 표시 | `zoneId`, `stageKey`, `hidden` | 비활성 구역 내용은 `hidden` 처리 |
+| COM-ZoneDetailModal | 구역 상세 모달 | 선택 구역 상세 확인 | `open`, `zoneId`, `stageKey` | `COM-Modal` scroll lock 규칙 준수 |
 | COM-Typography | 텍스트 | 제목/본문/도움말 | `variant`, `tone` | 개발자 내부 문구 노출 금지 |
 
 ### 2.1 공통 DOM 계약
@@ -205,6 +208,7 @@ data-crop-ui-record-list
 | MOD-CropCycleCard | 작기 카드 | Crop | crop_cycles | 상추/토마토 작기 상태 표시 | crop_cycle_id 유지 |
 | MOD-GrowthSurveyList | 생육조사 목록 | Crop | growth_surveys | 주간 기록 입력/수정/삭제 | 수행자 user_id 기록 |
 | MOD-CropAiSummary | 작물 AI 요약 | Crop AI | crop model API | 작물단계/상태/환경/관수/병충해 요약 | read-only |
+| MOD-CropStageZoneDetail | 작물 운영 단계별 구역 상세 | Rebuild Home | REBUILD_ZONE_CONTEXTS, stage details | 작물상태/생육목표/환경·관수·장치 영향/추천·실행 각각에서 구역 탭으로 선택 구역 패널 표시 | 별도 `구역별 작물 운영` 섹션 금지 |
 | MOD-InterlockSummary | 안전/인터록 요약 | Crop/Control | interlock API | 안전상태/인터록/오류건수 표시 | 오류건수 클릭 모달 |
 | MOD-WindowController | 천창 제어 | Device/Env | controlService, HA cover | Dry Run, 승인 후 제어 | SafetyGuard 필수 |
 | MOD-ControlModeCard | 제어 모드 | Env/Irr/Device | control mode API | manual/assist/auto/disabled | auto는 allowAutoExecution 필요 |
@@ -304,6 +308,7 @@ crop_cycle_id 변경 후 이전 작기의 생육조사/AI 요약/제어 로그�
 | ID | 페이지 | 사용자 | 핵심 모듈 | 성공 기준 |
 |---|---|---|---|---|
 | PAGE-Dashboard | 홈 | farm_owner, farm_staff | MOD-SensorCard, MOD-EmergencyBanner, MOD-ControlLogList | 현재 온실 상태와 조치 필요를 10초 안에 파악 |
+| PAGE-CropCenteredHome | 새 작물 중심 홈 | farm_owner, farm_staff | MOD-CropStageZoneDetail | 작물상태 → 생육목표 → 환경/관수/장치 영향 → 추천/실행 흐름에서 구역 탭으로 세부 확인 | 개발/레거시 전환 문구 노출 금지 |
 | PAGE-CropSettings | 작물 설정 | 전 역할 | MOD-CropCycleCard, MOD-GrowthSurveyList, MOD-CropAiSummary, MOD-InterlockSummary | 상추/토마토 작기와 기록을 한 흐름으로 관리 |
 | PAGE-EnvironmentControl | 환경 제어 | owner/admin | MOD-ZoneSeasonSelector, MOD-VpdMetric, MOD-ControlModeCard | 온습도/VPD 목표와 safety 상태 확인 |
 | PAGE-IrrigationControl | 관수 제어 | owner/admin/staff 제한 | 관수전략, EC/pH, drain feedback | 자동 급액 전 safety/approval 확인 |

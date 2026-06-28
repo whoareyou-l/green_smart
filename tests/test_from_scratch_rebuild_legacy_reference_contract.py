@@ -78,4 +78,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     rebuild = _read(REBUILD_PANEL)
     assert "Green Smart — Modern SaaS greenhouse dashboard" in legacy
     assert "green-smart-rebuild-panel" in rebuild
-    assert len(rebuild.splitlines()) < 180
+    # RS-003 adds real CBA tab/panel/modal interactions while keeping the rebuild surface small.
+    assert len(rebuild.splitlines()) < 300

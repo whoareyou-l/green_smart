@@ -79,11 +79,32 @@ Crop-centered OS with zone-scoped detail inside each main operating step.
 This does **not** mean adding a standalone `구역별 작물 운영` section/card. Zone scope belongs inside each crop-centered step:
 
 ```text
-작물상태: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
-생육목표: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
-환경/관수/장치 영향: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
-추천/실행: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
+작물상태: 전체 / A구역 / B구역 tabs or detail modal
+생육목표: 전체 / A구역 / B구역 tabs or detail modal
+환경/관수/장치 영향: 전체 / A구역 / B구역 tabs or detail modal
+추천/실행: 전체 / A구역 / B구역 tabs or detail modal
 ```
+
+## RS-003 zone tab interaction decision
+
+User correction: 구역 탭이 있으면 모든 구역 내용을 펼쳐 스크롤바를 만들지 않는다.
+
+Decision:
+
+```text
+selected zone panel only
+modal is optional detail, not primary navigation
+horizontal scroll is not the primary zone navigation
+CBA: COM-ZoneTabs → COM-ZonePanel → COM-ZoneDetailModal → MOD-CropStageZoneDetail → PAGE-CropCenteredHome
+```
+
+Implementation implication:
+
+- Each crop-centered step owns one `MOD-CropStageZoneDetail`.
+- `COM-ZoneTabs` selects `전체/A구역/B구역`.
+- `COM-ZonePanel` displays only the active zone panel with `hidden` for inactive panels.
+- `COM-ZoneDetailModal` provides optional detail and must use modal scroll/body lock behavior.
+- Do not use a persistent horizontal card rail for zone navigation.
 
 ## Developer-only transition notes
 
