@@ -1,6 +1,6 @@
 # Green Smart Target Architecture — From-Scratch Rebuild Baseline
 
-> 기준 버전: `v1.12.31`
+> 기준 버전: `v1.12.32`
 > 상태: 방향 전환 기준선
 > 목적: 기존 RB 산출물을 이어서 계속 패치하지 않고, 이전 작업을 reference/evidence로 삼아 새 제품 구조를 설계한 뒤 새 vertical rebuild slice로 구현한다.
 
@@ -256,7 +256,7 @@ The chosen slice must define UI → frontend service → backend route/service �
 
 ## 14. VS-N002 Crop cycle recording scaffold
 
-`v1.12.31` adds the second R5 scaffold slice:
+`v1.12.32` adds the second R5 scaffold slice:
 
 ```text
 VS-N002 Crop cycle recording scaffold
@@ -272,7 +272,7 @@ This slice is scaffold-only. It does not change existing crop season save behavi
 
 ## 15. VS-N003 Real-time monitoring read-only scaffold
 
-`v1.12.31` adds the third R5 scaffold slice:
+`v1.12.32` adds the third R5 scaffold slice:
 
 ```text
 VS-N003 Real-time monitoring read-only scaffold
@@ -289,7 +289,7 @@ This slice is scaffold-only. It does not query `sensor_readings`, read HA entiti
 
 ## 16. VS-N004 Interlock/Safety core scaffold
 
-`v1.12.31` adds the fourth R5 scaffold slice:
+`v1.12.32` adds the fourth R5 scaffold slice:
 
 ```text
 VS-N004 Interlock/Safety core scaffold
@@ -306,7 +306,7 @@ This slice is scaffold-only. It does not change existing SafetyGuard/Interlock r
 
 ## R5 Foundation Completion Baseline
 
-`v1.12.31`에서 R5 foundation closure를 완료했다.
+`v1.12.32`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -333,7 +333,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.12.31`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.12.32`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -355,5 +355,37 @@ No SafetyGuard runtime behavior change in R6-001
 No Interlock runtime behavior change in R6-001
 No approval/override release in R6-001
 No MQTT/device command in R6-001
+question gates must use clarify tool
+```
+
+
+## R6-002 Monitoring Read-only Adapter
+
+`v1.12.32`에서 R6-002 Monitoring read-only adapter를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r6-002-monitoring-readonly-adapter.md
+```
+
+Boundary:
+
+```text
+R6-002 Monitoring Read-only Adapter
+R6-001 Crop Cycle Read-only Adapter → R6-002 Monitoring Read-only Adapter
+dataAvailability + equipmentProfile → monitoringReadOnlyAdapter
+runtimeReadAdapterEnabled = true
+sensorCollectionEnabled = false
+No write/mutation in R6-002
+No DB migration in R6-002
+No sensor collection/scheduler in R6-002
+No HA entity read API in R6-002
+No execution decision change in R6-002
+No SafetyGuard runtime behavior change in R6-002
+No Interlock runtime behavior change in R6-002
+No approval/override release in R6-002
+No MQTT/device command in R6-002
+No panel redesign in R6-002
 question gates must use clarify tool
 ```

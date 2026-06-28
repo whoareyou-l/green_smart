@@ -1,7 +1,7 @@
 # Green Smart 5대 마스터 문서
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.31`
+> 기준 버전: `v1.12.32`
 > 목적: 뒤엉킨 Green Smart 코드와 문서를 **설계 기반(Design-Driven)** 으로 재정렬하고, 이후 모든 구현을 **문서 우선 + 수직 슬라이드(Vertical Slide)** 방식으로 진행하기 위한 최상위 마스터 문서 묶음.
 
 ## 0. 절대 원칙
@@ -94,7 +94,7 @@ VS-003은 과거 기준에서 `farm_staff`가 패널에서 상추 작기를 등�
 
 ## R5 Foundation Completion Baseline
 
-`v1.12.31`에서 R5 foundation closure를 완료했다.
+`v1.12.32`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -121,7 +121,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.12.31`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.12.32`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -143,5 +143,37 @@ No SafetyGuard runtime behavior change in R6-001
 No Interlock runtime behavior change in R6-001
 No approval/override release in R6-001
 No MQTT/device command in R6-001
+question gates must use clarify tool
+```
+
+
+## R6-002 Monitoring Read-only Adapter
+
+`v1.12.32`에서 R6-002 Monitoring read-only adapter를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r6-002-monitoring-readonly-adapter.md
+```
+
+Boundary:
+
+```text
+R6-002 Monitoring Read-only Adapter
+R6-001 Crop Cycle Read-only Adapter → R6-002 Monitoring Read-only Adapter
+dataAvailability + equipmentProfile → monitoringReadOnlyAdapter
+runtimeReadAdapterEnabled = true
+sensorCollectionEnabled = false
+No write/mutation in R6-002
+No DB migration in R6-002
+No sensor collection/scheduler in R6-002
+No HA entity read API in R6-002
+No execution decision change in R6-002
+No SafetyGuard runtime behavior change in R6-002
+No Interlock runtime behavior change in R6-002
+No approval/override release in R6-002
+No MQTT/device command in R6-002
+No panel redesign in R6-002
 question gates must use clarify tool
 ```

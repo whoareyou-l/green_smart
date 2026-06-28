@@ -20,9 +20,9 @@ def _class_section(source: str, class_name: str, next_marker: str) -> str:
 
 
 def test_rb006c_version_surfaces_are_v11110():
-    assert '"version": "1.12.31"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.31"' in _read(PANEL)
-    assert "v1.12.31" in _read(BACKEND_PLAN)
+    assert '"version": "1.12.32"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.32"' in _read(PANEL)
+    assert "v1.12.32" in _read(BACKEND_PLAN)
 
 
 def test_rb006c_repository_owns_crop_season_write_sql_and_legacy_refetch_shape():
@@ -145,7 +145,7 @@ def test_rb006c_docs_record_write_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006C Crop season write service/repo boundary",
-        "v1.12.31",
+        "v1.12.32",
         "create/update/delete/demolish write helpers",
         "create_crop_season",
         "update_crop_season",

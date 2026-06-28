@@ -6,6 +6,9 @@ Core shape rule: zone parent + currentCrop attached.
 
 This re-baselines the existing RS-013/RS-014 read-only adapter as the first
 post-R5 foundation runtime adapter. It remains read-only and execution-disabled.
+
+R6-002 Monitoring read-only adapter attaches monitoringReadOnlyAdapter to each
+zone context. dataAvailability + equipmentProfile → monitoringReadOnlyAdapter.
 """
 
 from __future__ import annotations
@@ -33,6 +36,10 @@ RS_013_DATA_AVAILABILITY_SOURCE = "legacy_physical_readonly_adapter"
 R6_001_BOUNDARY = "legacy physical crop_seasons rows → product-facing crop_cycle/currentCrop DTO"
 R6_001_SHAPE_RULE = "zone parent + currentCrop attached"
 
+R6_002_ADAPTER_NAME = "R6-002 Monitoring read-only adapter"
+R6_002_BOUNDARY = "dataAvailability + equipmentProfile → monitoringReadOnlyAdapter"
+R6_002_CONTEXT_SOURCE = "zone-context-monitoring-readonly-adapter"
+
 
 def _crop_label_ko(crop_type: str | None) -> str:
     return CROP_LABELS_KO.get(str(crop_type or "other").lower(), "기타 작물")
@@ -56,6 +63,49 @@ def _freshness_label(freshness_minutes: Any) -> str:
     if isinstance(freshness_minutes, (int, float)):
         return f"{int(freshness_minutes)}분 전 갱신"
     return "갱신 시각 없음"
+
+
+def normalize_monitoring_readonly_adapter(
+    *,
+    zone_id: int | str | None,
+    crop_cycle_id: int | str | None,
+    data_availability: dict[str, Any] | None,
+    equipment_profile: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Return the R6-002 monitoring read-only adapter DTO.
+
+    This adapter composes already-read zone context evidence. It does not collect
+    sensors, read Home Assistant entity state, mutate DB rows, send MQTT, or
+    execute device commands.
+    """
+
+    availability = dict(data_availability or {})
+    equipment = dict(equipment_profile or {})
+    state = str(availability.get("state") or "empty")
+    if crop_cycle_id and state == "empty":
+        state = "partial"
+    summary = "현재 작기 연결 전: 모니터링 근거 없음" if state == "empty" else "구역 컨텍스트 기준 모니터링 근거 연결됨"
+    return {
+        "r6_002_adapter": True,
+        "adapterName": R6_002_ADAPTER_NAME,
+        "adapterBoundary": R6_002_BOUNDARY,
+        "contextSource": R6_002_CONTEXT_SOURCE,
+        "zone_id": zone_id,
+        "crop_cycle_id": crop_cycle_id,
+        "sourceDataAvailability": availability,
+        "sourceEquipmentProfile": equipment,
+        "dataFreshnessState": state,
+        "freshnessBoundary": "sensor state freshness boundary",
+        "monitoringSummary": summary,
+        "runtimeReadAdapterEnabled": True,
+        "readOnly": True,
+        "writeEnabled": False,
+        "sensorCollectionEnabled": False,
+        "dbMigrationEnabled": False,
+        "executionEnabled": False,
+        "deviceCommandEnabled": False,
+        "mqttEnabled": False,
+    }
 
 
 def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
@@ -82,6 +132,12 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "updatedAt": updated_at,
         "note": "기존 물리 DB에서 읽은 작기 정보를 target DTO로 변환했습니다.",
     }
+    monitoring_readonly_adapter = normalize_monitoring_readonly_adapter(
+        zone_id=zone_id,
+        crop_cycle_id=crop_cycle_id,
+        data_availability=data_availability,
+        equipment_profile=equipment_profile,
+    )
     current_crop_assignment = {
         "assignmentState": "assigned" if crop_cycle_id else "unassigned",
         "zone_id": zone_id,
@@ -111,6 +167,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "impactFactors": equipment_profile["labels"],
         "freshnessLabel": _freshness_label(data_availability.get("freshnessMinutes")),
         "sourceAssignment": current_crop_assignment,
+        "sourceMonitoringReadOnlyAdapter": monitoring_readonly_adapter,
         "dataAvailability": data_availability,
         "readOnly": True,
         "executionEnabled": False,
@@ -244,6 +301,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "crop_cycle": crop_cycle_id,
         "equipmentProfile": equipment_profile,
         "dataAvailability": data_availability,
+        "monitoringReadOnlyAdapter": monitoring_readonly_adapter,
         "currentCropAssignment": current_crop_assignment,
         "growthTargetProjection": growth_target_projection,
         "environmentImpactProjection": environment_impact_projection,

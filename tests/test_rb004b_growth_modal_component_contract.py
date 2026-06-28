@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb004b_version_surfaces_are_v11113():
-    assert '"version": "1.12.31"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.31"' in _read(PANEL)
-    assert "v1.12.31" in _read(FRONTEND_PLAN)
+    assert '"version": "1.12.32"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.32"' in _read(PANEL)
+    assert "v1.12.32" in _read(FRONTEND_PLAN)
 
 
 def test_rb004b_growth_modal_module_exists_and_exports_pure_render_helpers():
@@ -96,7 +96,7 @@ def test_rb004b_docs_record_growth_modal_extraction_boundaries():
     project = _read(PROJECT_MASTER)
     shared_markers = (
         "RB-004B Growth survey modal render extraction",
-        "v1.12.31",
+        "v1.12.32",
         "domains/crop/crop-growth-modal.js",
         "생육조사 modal render helpers only",
         "save/API bindings remain in panel shell",

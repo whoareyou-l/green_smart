@@ -1,6 +1,6 @@
 # R6-001 Crop Cycle Read-only Adapter
 
-> 기준 버전: `v1.12.31`
+> 기준 버전: `v1.12.32`
 > Status: R6-001 complete
 > 목적: R5 foundation 이후 첫 runtime adapter를 쓰기/실행 없이 얇게 열고, 기존 물리 작기 데이터를 product-facing `crop_cycle/currentCrop` DTO로 연결한다.
 
@@ -92,3 +92,35 @@ question gates must use clarify tool
 ```
 
 If a later slice changes runtime behavior, page IA, or adapter scope, ask one fresh `clarify` question first.
+
+
+## R6-002 Monitoring Read-only Adapter
+
+`v1.12.32`에서 R6-002 Monitoring read-only adapter를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r6-002-monitoring-readonly-adapter.md
+```
+
+Boundary:
+
+```text
+R6-002 Monitoring Read-only Adapter
+R6-001 Crop Cycle Read-only Adapter → R6-002 Monitoring Read-only Adapter
+dataAvailability + equipmentProfile → monitoringReadOnlyAdapter
+runtimeReadAdapterEnabled = true
+sensorCollectionEnabled = false
+No write/mutation in R6-002
+No DB migration in R6-002
+No sensor collection/scheduler in R6-002
+No HA entity read API in R6-002
+No execution decision change in R6-002
+No SafetyGuard runtime behavior change in R6-002
+No Interlock runtime behavior change in R6-002
+No approval/override release in R6-002
+No MQTT/device command in R6-002
+No panel redesign in R6-002
+question gates must use clarify tool
+```
