@@ -1,7 +1,7 @@
 # Green Smart 5대 마스터 문서
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.33`
+> 기준 버전: `v1.12.34`
 > 목적: 뒤엉킨 Green Smart 코드와 문서를 **설계 기반(Design-Driven)** 으로 재정렬하고, 이후 모든 구현을 **문서 우선 + 수직 슬라이드(Vertical Slide)** 방식으로 진행하기 위한 최상위 마스터 문서 묶음.
 
 ## 0. 절대 원칙
@@ -94,7 +94,7 @@ VS-003은 과거 기준에서 `farm_staff`가 패널에서 상추 작기를 등�
 
 ## R5 Foundation Completion Baseline
 
-`v1.12.33`에서 R5 foundation closure를 완료했다.
+`v1.12.34`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -121,7 +121,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.12.33`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.12.34`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -149,7 +149,7 @@ question gates must use clarify tool
 
 ## R6-002 Monitoring Read-only Adapter
 
-`v1.12.33`에서 R6-002 Monitoring read-only adapter를 완료했다.
+`v1.12.34`에서 R6-002 Monitoring read-only adapter를 완료했다.
 
 Reference:
 
@@ -181,7 +181,7 @@ question gates must use clarify tool
 
 ## R6-003 Safety/Interlock Read-only Adapter
 
-`v1.12.33`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+`v1.12.34`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
 
 Reference:
 
@@ -206,5 +206,30 @@ No execution decision change in R6-003
 No approval/override release in R6-003
 No MQTT/device command in R6-003
 No panel redesign in R6-003
+question gates must use clarify tool
+```
+
+
+## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+
+`v1.12.34`에서 R7-000 IA blueprint를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-000-main-dashboard-sidebar-detail-ia-blueprint.md
+```
+
+Boundary:
+
+```text
+R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+작물상태 → 생육목표 → 환경/관수/장치 영향 → 추천/실행
+R7-000 is an IA blueprint only
+No panel DOM implementation change in R7-000
+No API route change in R7-000
+No DB migration in R7-000
+No execution authority in R7-000
+No SafetyGuard/Interlock runtime behavior change in R7-000
 question gates must use clarify tool
 ```

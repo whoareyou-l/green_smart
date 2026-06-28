@@ -1,6 +1,6 @@
 # R6-003 Safety/Interlock Read-only Adapter
 
-> 기준 버전: `v1.12.33`
+> 기준 버전: `v1.12.34`
 > Status: R6-003 complete
 > 목적: R6-002 monitoring evidence와 기존 preflight projection을 조합해 안전·인터록 read-only evidence DTO를 zone context에 붙인다.
 
@@ -86,5 +86,30 @@ R7-000 Main dashboard/sidebar/detail-page IA blueprint
 ```
 
 ```text
+question gates must use clarify tool
+```
+
+
+## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+
+`v1.12.34`에서 R7-000 IA blueprint를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-000-main-dashboard-sidebar-detail-ia-blueprint.md
+```
+
+Boundary:
+
+```text
+R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+작물상태 → 생육목표 → 환경/관수/장치 영향 → 추천/실행
+R7-000 is an IA blueprint only
+No panel DOM implementation change in R7-000
+No API route change in R7-000
+No DB migration in R7-000
+No execution authority in R7-000
+No SafetyGuard/Interlock runtime behavior change in R7-000
 question gates must use clarify tool
 ```

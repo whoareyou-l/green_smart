@@ -160,7 +160,7 @@ Run targeted tests
 
 Second selected slice: VS-N002 Crop cycle recording scaffold
 
-Status: `v1.12.33`에서 scaffold-only 계약/DTO/권한 경계 완료.
+Status: `v1.12.34`에서 scaffold-only 계약/DTO/권한 경계 완료.
 
 Reason: after VS-N001 RBAC/Admin ownership, crop-cycle recording needs a product-facing DTO/permission scaffold before monitoring and interlock slices consume crop context.
 
@@ -175,7 +175,7 @@ No DB migration in VS-N002
 
 Third selected slice: VS-N003 Real-time monitoring read-only scaffold
 
-Status: `v1.12.33`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
+Status: `v1.12.34`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
 
 Reason: after RBAC/Admin ownership and crop-cycle context, monitoring needs a read-only DTO and freshness boundary before Interlock/Safety consumes sensor state.
 
@@ -190,7 +190,7 @@ No sensor collection/scheduler in VS-N003
 
 Fourth selected slice: VS-N004 Interlock/Safety core scaffold
 
-Status: `v1.12.33`에서 scaffold-only safety/interlock DTO/권한/state-gate 경계 완료.
+Status: `v1.12.34`에서 scaffold-only safety/interlock DTO/권한/state-gate 경계 완료.
 
 Reason: after RBAC, crop-cycle context, and monitoring read-only state, Interlock/Safety needs a read-only state-gate boundary before any future runtime adapter or approval/override release.
 
@@ -203,7 +203,7 @@ No approval/override release in VS-N004
 
 ## R5 Foundation Completion Baseline
 
-`v1.12.33`에서 R5 foundation closure를 완료했다.
+`v1.12.34`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -230,7 +230,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.12.33`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.12.34`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -258,7 +258,7 @@ question gates must use clarify tool
 
 ## R6-002 Monitoring Read-only Adapter
 
-`v1.12.33`에서 R6-002 Monitoring read-only adapter를 완료했다.
+`v1.12.34`에서 R6-002 Monitoring read-only adapter를 완료했다.
 
 Reference:
 
@@ -290,7 +290,7 @@ question gates must use clarify tool
 
 ## R6-003 Safety/Interlock Read-only Adapter
 
-`v1.12.33`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+`v1.12.34`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
 
 Reference:
 
@@ -315,5 +315,30 @@ No execution decision change in R6-003
 No approval/override release in R6-003
 No MQTT/device command in R6-003
 No panel redesign in R6-003
+question gates must use clarify tool
+```
+
+
+## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+
+`v1.12.34`에서 R7-000 IA blueprint를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-000-main-dashboard-sidebar-detail-ia-blueprint.md
+```
+
+Boundary:
+
+```text
+R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+작물상태 → 생육목표 → 환경/관수/장치 영향 → 추천/실행
+R7-000 is an IA blueprint only
+No panel DOM implementation change in R7-000
+No API route change in R7-000
+No DB migration in R7-000
+No execution authority in R7-000
+No SafetyGuard/Interlock runtime behavior change in R7-000
 question gates must use clarify tool
 ```

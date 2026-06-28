@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.12.33`
+> 기준 버전: `v1.12.34`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 상태: `reference/evidence only after direction correction`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
@@ -385,3 +385,28 @@ pytest -q
 - [x] API adapter strategy 문서화
 - [x] first extraction slice를 RB-001 Admin/System shell로 확정
 - [x] R2 contract test로 회귀 방어
+
+
+## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+
+`v1.12.34`에서 R7-000 IA blueprint를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-000-main-dashboard-sidebar-detail-ia-blueprint.md
+```
+
+Boundary:
+
+```text
+R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
+작물상태 → 생육목표 → 환경/관수/장치 영향 → 추천/실행
+R7-000 is an IA blueprint only
+No panel DOM implementation change in R7-000
+No API route change in R7-000
+No DB migration in R7-000
+No execution authority in R7-000
+No SafetyGuard/Interlock runtime behavior change in R7-000
+question gates must use clarify tool
+```
