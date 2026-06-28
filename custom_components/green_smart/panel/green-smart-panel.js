@@ -1,4 +1,4 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.11.15
+// Green Smart — Modern SaaS greenhouse dashboard  v1.11.16
 import { createApiClient } from "./core/api-client.js";
 import { renderCropBasicOverviewCard, renderCropBasicTab, renderCropSeasonsList } from "./domains/crop/crop-readonly.js";
 import { cropBasicAddZones, cropBasicEditValues, renderCropBasicAddModal, renderCropBasicEditModal } from "./domains/crop/crop-write-modal.js";
@@ -8,7 +8,7 @@ import { controlModalContext, renderControlPesticideEntry, renderControlTreatmen
 import { adminSystemTabs, renderAdminSystemPage, renderAdminSystemTabBar, renderAdminSystemTabContent } from "./domains/admin/admin-page.js";
 
 const DOMAIN = "green_smart";
-const VERSION = "1.11.15";
+const VERSION = "1.11.16";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -7326,6 +7326,34 @@ button.action:disabled{opacity:.5;cursor:default;}
     ].join("\n");
   }
 
+  _renderZoneExecutionProximitySafetySummary(domain) {
+    const cacheKey = this._scopedControlCacheKey(domain);
+    const watchdog = this._zoneSafetyGuardWatchdogCache?.[cacheKey] || null;
+    const events = this._zoneSafetyGuardEventCache?.[cacheKey] || null;
+    const dryRun = this._zoneDryRunPreviewCache?.[cacheKey] || null;
+    const rehearsal = this._zoneVirtualRehearsalCache?.[cacheKey] || null;
+    const limited = this._zoneLimitedAutoPolicyCache?.[cacheKey] || null;
+    const blockedCount = Array.isArray(dryRun?.blockedCalls) ? dryRun.blockedCalls.length : 0;
+    const failsafeCount = Array.isArray(dryRun?.safeStateCalls) ? dryRun.safeStateCalls.length : 0;
+    const eventCount = Array.isArray(events?.events) ? events.events.length : Array.isArray(events) ? events.length : 0;
+    const safetyStatus = dryRun?.safetyStatus || watchdog?.status || watchdog?.watchdogStatus || "대기";
+    const rehearsalStatus = rehearsal?.virtualRehearsalStatus || rehearsal?.c20GateStatus || "가상 리허설 필요";
+    const stateVerification = dryRun?.stateVerification || (dryRun?.dryRun ? "dry_run" : "실행 전 미확인");
+    const autoGate = limited?.resumeAllowed || limited?.deviceGroupAutoAllow ? "정책 확인" : "보수 모드";
+    return `<div data-zone-execution-proximity-safety-summary data-zone-execution-proximity-domain="${domain}" style="border:1px solid #f0d9b5;background:#fffdf8;border-radius:12px;padding:10px;margin:8px 0;display:grid;gap:7px;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><b>실행 직전 안전 요약</b><span class="strategy-muted">SafetyGuard → Interlock → Fail Safe → State verification</span></div>
+      <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+        <div data-zone-execution-proximity-safetyguard>SafetyGuard <b>${this._esc(safetyStatus)}</b></div>
+        <div data-zone-execution-proximity-interlock>Interlock 차단 <b>${this._esc(blockedCount)}</b></div>
+        <div data-zone-execution-proximity-failsafe>Fail Safe <b>${this._esc(failsafeCount)}</b></div>
+        <div data-zone-execution-proximity-state-verification>State verification <b>${this._esc(stateVerification)}</b></div>
+        <div data-zone-execution-proximity-rehearsal>Virtual rehearsal <b>${this._esc(rehearsalStatus)}</b></div>
+        <div>Safety events <b>${this._esc(eventCount)}</b></div>
+      </div>
+      <div class="strategy-muted">제한적 자동제어 gate: ${this._esc(autoGate)} · 실행 semantics 변경 없음 · actual service call authority 변경 없음 · 실제 장비 연결 금지: virtual rehearsal before physical device hookup.</div>
+    </div>`;
+  }
+
   _renderZoneVirtualRehearsalCard(domain) {
     const cacheKey = this._scopedControlCacheKey(domain);
     const data = this._zoneVirtualRehearsalCache?.[cacheKey] || null;
@@ -7387,6 +7415,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="gs-card" data-zone-operator-confirm-card data-zone-operator-confirm-domain="${domain}" style="padding:16px;margin-bottom:12px;border:1px solid #f0d9b5;background:#fffdf8;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
         <div><b>운영자 실행 확인</b><div class="strategy-muted">manual/assist/auto · 실제 장비 실행 확인 · 실행 권한 · override 사유 · 재개/override UX</div></div>
+        <!-- data-zone-execution-proximity-safety-summary -->${this._renderZoneExecutionProximitySafetySummary(domain)}
         <button class="mini-btn primary" data-zone-final-execute-confirmed data-zone-final-execute-domain="${domain}">확인 후 최종값 실행</button>
       </div>
       <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
@@ -7408,6 +7437,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     return `<div class="gs-card" data-zone-dry-run-card data-zone-dry-run-domain="${domain}" style="padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
         <div><b>Dry Run UI</b><div class="strategy-muted">실행 전 확인 · 예정 service call · 현재 상태 · 안전 차단 · Fail Safe · 실제 장비는 움직이지 않습니다</div></div>
+        <!-- data-zone-execution-proximity-safety-summary -->${this._renderZoneExecutionProximitySafetySummary(domain)}
         <button class="mini-btn primary" data-zone-dry-run-preview data-zone-dry-run-domain="${domain}">Dry Run 실행 전 확인</button>
       </div>
       <div class="strategy-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:8px;">
