@@ -42,6 +42,24 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "plant_date": row.get("plant_date"),
         "demolish_date": row.get("demolish_date"),
     }
+    equipment_profile = {"labels": ["구역 장비 요약 대기"]}
+    data_availability = {
+        "state": "ok" if crop_cycle_id else "empty",
+        "freshnessMinutes": None,
+        "source": "legacy_physical_readonly_adapter",
+        "updatedAt": updated_at,
+        "note": "기존 물리 DB에서 읽은 작기 정보를 target DTO로 변환했습니다.",
+    }
+    current_crop_assignment = {
+        "assignmentState": "assigned" if crop_cycle_id else "unassigned",
+        "zone_id": zone_id,
+        "sourceRowId": compatibility_crop_season_id,
+        "currentCrop": current_crop,
+        "equipmentProfile": equipment_profile,
+        "dataAvailability": data_availability,
+        "readOnly": True,
+        "executionEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -49,14 +67,9 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "currentCrop": current_crop,
         "activeCropCycleId": crop_cycle_id,
         "crop_cycle": crop_cycle_id,
-        "equipmentProfile": {"labels": ["구역 장비 요약 대기"]},
-        "dataAvailability": {
-            "state": "ok" if crop_cycle_id else "empty",
-            "freshnessMinutes": None,
-            "source": "legacy_physical_readonly_adapter",
-            "updatedAt": updated_at,
-            "note": "기존 물리 DB에서 읽은 작기 정보를 target DTO로 변환했습니다.",
-        },
+        "equipmentProfile": equipment_profile,
+        "dataAvailability": data_availability,
+        "currentCropAssignment": current_crop_assignment,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },

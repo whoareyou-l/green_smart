@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.15`
+> 기준 버전: `v1.12.16`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -106,6 +106,19 @@ No write/mutation in RS-016
 ```
 
 RS-016 기준 rebuild panel은 `작물상태 / 생육목표` 구역 패널에 `currentCrop.crop_cycle_id`, `crop_type`, `crop_label_ko`, `growth_stage`, `variety`, `plant_date`를 읽기 전용 카드로 표시한다. 이 slice는 표시 전용이며 crop cycle 생성/수정/삭제, DB migration, 실제 장치 연결을 포함하지 않는다.
+
+### 1.7 Zone current crop assignment read model
+
+```text
+Zone current crop assignment read model
+currentCropAssignment
+zone → currentCrop/crop_cycle
+zone → equipmentProfile
+zone → dataAvailability
+No write/mutation in RS-017
+```
+
+RS-017 기준 각 구역 DTO는 `currentCropAssignment`를 가진다. 이 read model은 현재 작기 배정 상태, source row evidence, currentCrop, equipmentProfile, dataAvailability를 하나의 읽기 전용 projection으로 묶는다. `readOnly: true`, `executionEnabled: false`가 유지되며 배정 변경/저장/삭제 UI는 제공하지 않는다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

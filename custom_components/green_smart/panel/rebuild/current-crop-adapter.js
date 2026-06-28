@@ -30,8 +30,25 @@ export function normalizeCurrentCrop(currentCrop = {}) {
   };
 }
 
+export function normalizeCurrentCropAssignment(zone = {}, currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {})) {
+  const assignment = zone.currentCropAssignment || zone.current_crop_assignment || {};
+  const equipmentProfile = assignment.equipmentProfile || zone.equipmentProfile || { labels: zone.equipment || [] };
+  const dataAvailability = assignment.dataAvailability || zone.dataAvailability || zone.dataStatus || { state: currentCrop.crop_cycle_id ? "ok" : "empty", source: "adapter_fallback", updatedAt: null };
+  return {
+    assignmentState: assignment.assignmentState || (currentCrop.crop_cycle_id ? "assigned" : "unassigned"),
+    zone_id: firstPresent(assignment.zone_id, zone.zone_id, zone.zoneId),
+    sourceRowId: firstPresent(assignment.sourceRowId, assignment.source_row_id, currentCrop.crop_cycle_id),
+    currentCrop,
+    equipmentProfile,
+    dataAvailability,
+    readOnly: true,
+    executionEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
+  const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -41,6 +58,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     currentCrop,
     activeCropCycleId: currentCrop.crop_cycle_id,
     crop_cycle: currentCrop.crop_cycle_id,
+    currentCropAssignment,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],
