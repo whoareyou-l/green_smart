@@ -1,7 +1,7 @@
 # 5. 로직 알고리즘 및 예외처리 명세서 — Logic Algorithm & Exception Handling Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.23`
+> 기준 버전: `v1.12.24`
 > 문서 목적: Green Smart의 **시스템의 두뇌와 생존 장치**를 정의한다. VPD 계산 수식, PID/제어 알고리즘, AI 판단 규칙, SafetyGuard/Interlock, 인터넷 단절·센서 고장·장비 오류 같은 온실 현장 예외상황의 Fail-Safe 조치를 명문화한다.
 
 ## 1. 핵심 원칙
@@ -495,3 +495,8 @@ Safety/Interlock/Fail Safe preflight remains source. The virtual rehearsal does 
 ## RS-024 Rehearsal result review safety boundary
 
 The result review does not release interlock. approvalReleaseEnabled remains false. No device command in RS-024.
+
+
+## RS-025 Virtual runner input safety boundary
+
+The runner input contract does not release interlock. runnerExecutionEnabled remains false. No device command in RS-025.

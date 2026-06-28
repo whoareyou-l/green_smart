@@ -1,6 +1,6 @@
 # RS-009 Legacy Direction Inventory
 
-> 기준 버전: `v1.12.23` / updated in `v1.12.23`
+> 기준 버전: `v1.12.24` / updated in `v1.12.24`
 > Status: active boundary contract
 > 목적: Green Smart rebuild에서 legacy가 제품 방향성으로 남지 않도록, historical reference / adapter-only / legacy panel / current source of truth 경계를 명확히 한다.
 
@@ -160,7 +160,8 @@ Boundary:
 | RS-022 | Safety/Interlock preflight projection completed: 추천·실행 now renders safetyInterlockPreflightProjection as read-only preflight state. |
 | RS-023 | Virtual execution rehearsal scaffold completed: 추천·실행 now renders virtualExecutionRehearsalScaffold as read-only rehearsal status. |
 | RS-024 | Rehearsal result review projection completed: 추천·실행 now renders rehearsalResultReviewProjection as read-only result review. |
-| RS-025 | Virtual runner input contract |
+| RS-025 | Virtual runner input contract completed: 추천·실행 now renders virtualRunnerInputContract as read-only runner input shape. |
+| RS-026 | Virtual runner dry-run result adapter |
 
 ---
 

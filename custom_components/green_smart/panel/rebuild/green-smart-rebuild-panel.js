@@ -11,13 +11,14 @@
 // RS-022 safety/interlock preflight projection: operatorApprovalScaffold → safetyInterlockPreflightProjection.
 // RS-023 virtual execution rehearsal scaffold: safetyInterlockPreflightProjection → virtualExecutionRehearsalScaffold.
 // RS-024 rehearsal result review projection: virtualExecutionRehearsalScaffold → rehearsalResultReviewProjection.
+// RS-025 virtual runner input contract: rehearsalResultReviewProjection → virtualRunnerInputContract.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.23";
+const REBUILD_VERSION = "1.12.24";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -358,6 +359,31 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderVirtualRunnerInputContract(zone, stageKey) {
+    if (!["recommendation-execution"].includes(stageKey)) return "";
+    const contract = zone.virtualRunnerInputContract || {};
+    const inputState = contract.inputState || "contract_ready_not_executable";
+    const runnerMode = contract.runnerMode || "read_only_contract";
+    const inputScenarios = contract.inputScenarios || ["normal", "strong_wind", "rain", "low_temperature", "sensor_fault", "blocked", "fail_safe", "recovery"].map((scenario) => ({ scenario, resultState: "not_run" }));
+    const scenarioText = inputScenarios.map((item) => `${item.scenario}:${item.resultState || "not_run"}`).join(",");
+    const readOnly = contract.readOnly !== false;
+    const executionEnabled = contract.executionEnabled === true;
+    const runnerExecutionEnabled = contract.runnerExecutionEnabled === true;
+    const deviceCommandEnabled = contract.deviceCommandEnabled === true;
+    const mqttEnabled = contract.mqttEnabled === true;
+    return `
+      <section data-virtual-runner-input-contract-card data-virtual-runner-input-state="${inputState}" data-virtual-runner-mode="${runnerMode}" data-virtual-runner-input-scenarios="${scenarioText}" data-virtual-runner-readonly="${readOnly}" data-virtual-runner-execution-enabled="${executionEnabled}" data-virtual-runner-runner-execution-enabled="${runnerExecutionEnabled}" data-virtual-runner-device-command-enabled="${deviceCommandEnabled}" data-virtual-runner-mqtt-enabled="${mqttEnabled}" style="margin:10px 0;border:1px solid #d7cef2;border-radius:14px;background:#fbf9ff;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#59469a;">가상 러너 입력 계약 · read-only</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#4b3d76;font-size:12px;">
+          <dt style="font-weight:900;">입력 상태</dt><dd style="margin:0;">${inputState}</dd>
+          <dt style="font-weight:900;">러너 모드</dt><dd style="margin:0;">${runnerMode}</dd>
+          <dt style="font-weight:900;">입력 시나리오</dt><dd style="margin:0;">${inputScenarios.map((item) => `${item.scenario}=${item.resultState || "not_run"}`).join(" · ")}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#675b86;font-size:12px;line-height:1.5;">RS-025는 실제 virtual runner 실행 전 입력 계약만 고정합니다. runner 실행, 승인 해제, MQTT, 장치 명령은 제공하지 않습니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -432,6 +458,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${this.renderSafetyInterlockPreflightProjection(zone, stageKey)}
             ${this.renderVirtualExecutionRehearsalScaffold(zone, stageKey)}
             ${this.renderRehearsalResultReviewProjection(zone, stageKey)}
+            ${this.renderVirtualRunnerInputContract(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}

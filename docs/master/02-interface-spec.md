@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.23`
+> 기준 버전: `v1.12.24`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -203,6 +203,18 @@ No approval/execution release in RS-024
 ```
 
 RS-024 기준 `추천·실행` 화면은 가상 실행 리허설 scaffold 뒤에 결과 검토 projection을 read-only로 표시한다. 실제 virtual runner, 승인 해제, 실행 권한 부여는 포함하지 않는다.
+
+### 1.15 Virtual runner input contract
+
+```text
+Virtual runner input contract
+virtualRunnerInputContract
+rehearsalResultReviewProjection → virtualRunnerInputContract
+가상 러너 입력 계약
+No virtual runner execution in RS-025
+```
+
+RS-025 기준 `추천·실행` 화면은 리허설 결과 검토 projection 뒤에 virtual runner input contract를 read-only로 표시한다. 실제 runner 실행, 승인 해제, 장치 명령은 포함하지 않는다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

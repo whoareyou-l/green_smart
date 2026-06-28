@@ -166,6 +166,23 @@ export function normalizeRehearsalResultReviewProjection(zone = {}, virtualExecu
   };
 }
 
+export function normalizeVirtualRunnerInputContract(zone = {}, rehearsalResultReviewProjection = normalizeRehearsalResultReviewProjection(zone)) {
+  const contract = zone.virtualRunnerInputContract || zone.virtual_runner_input_contract || {};
+  return {
+    inputState: contract.inputState || "contract_ready_not_executable",
+    runnerMode: contract.runnerMode || "read_only_contract",
+    inputScenarios: contract.inputScenarios || rehearsalResultReviewProjection.scenarioResults || [],
+    sourceReview: contract.sourceReview || rehearsalResultReviewProjection,
+    executionCandidate: false,
+    readOnly: true,
+    executionEnabled: false,
+    runnerExecutionEnabled: false,
+    approvalReleaseEnabled: false,
+    deviceCommandEnabled: false,
+    mqttEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
@@ -176,6 +193,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
   const safetyInterlockPreflightProjection = normalizeSafetyInterlockPreflightProjection(zone, operatorApprovalScaffold);
   const virtualExecutionRehearsalScaffold = normalizeVirtualExecutionRehearsalScaffold(zone, safetyInterlockPreflightProjection);
   const rehearsalResultReviewProjection = normalizeRehearsalResultReviewProjection(zone, virtualExecutionRehearsalScaffold);
+  const virtualRunnerInputContract = normalizeVirtualRunnerInputContract(zone, rehearsalResultReviewProjection);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -193,6 +211,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     safetyInterlockPreflightProjection,
     virtualExecutionRehearsalScaffold,
     rehearsalResultReviewProjection,
+    virtualRunnerInputContract,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],
