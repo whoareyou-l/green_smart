@@ -1,7 +1,7 @@
 # 5. 로직 알고리즘 및 예외처리 명세서 — Logic Algorithm & Exception Handling Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.21`
+> 기준 버전: `v1.12.22`
 > 문서 목적: Green Smart의 **시스템의 두뇌와 생존 장치**를 정의한다. VPD 계산 수식, PID/제어 알고리즘, AI 판단 규칙, SafetyGuard/Interlock, 인터넷 단절·센서 고장·장비 오류 같은 온실 현장 예외상황의 Fail-Safe 조치를 명문화한다.
 
 ## 1. 핵심 원칙
@@ -485,3 +485,8 @@ def choose_interlock_action(candidates: list[dict]) -> dict:
 - [ ] 모든 blocked/failsafe/approval/execute가 control_logs에 남는가?
 - [ ] 상추/토마토 등 작물별 threshold 차이를 문서화했는가?
 - [ ] 실제 장비 전 virtual rehearsal 시나리오가 있는가?
+
+
+## RS-023 Virtual rehearsal safety boundary
+
+Safety/Interlock/Fail Safe preflight remains source. The virtual rehearsal does not release interlock. No device command in RS-023.

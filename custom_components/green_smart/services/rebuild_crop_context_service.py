@@ -135,6 +135,17 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "readOnly": True,
         "executionEnabled": False,
     }
+    virtual_execution_rehearsal_scaffold = {
+        "rehearsalState": "blocked_until_virtual_rehearsal" if crop_cycle_id else "empty",
+        "scenarioSet": ["normal", "strong_wind", "rain", "low_temperature", "sensor_fault", "blocked", "fail_safe", "recovery"],
+        "currentScenario": "blocked",
+        "readinessSummary": "가상 실행 리허설 전: Safety/Interlock/Fail Safe 사전검증 필요",
+        "sourcePreflight": safety_interlock_preflight_projection,
+        "readOnly": True,
+        "executionEnabled": False,
+        "deviceCommandEnabled": False,
+        "mqttEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -150,6 +161,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "recommendationReviewProjection": recommendation_review_projection,
         "operatorApprovalScaffold": operator_approval_scaffold,
         "safetyInterlockPreflightProjection": safety_interlock_preflight_projection,
+        "virtualExecutionRehearsalScaffold": virtual_execution_rehearsal_scaffold,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },
