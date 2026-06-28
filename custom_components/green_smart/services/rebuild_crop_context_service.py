@@ -41,6 +41,12 @@ def _growth_target_focus(crop_type: str | None, growth_stage: str | None) -> str
     return "생육 균형 유지"
 
 
+def _freshness_label(freshness_minutes: Any) -> str:
+    if isinstance(freshness_minutes, (int, float)):
+        return f"{int(freshness_minutes)}분 전 갱신"
+    return "갱신 시각 없음"
+
+
 def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
     """Map one legacy physical crop row into a product-facing zone context DTO."""
     zone_id = row.get("zone_id") or row.get("zoneId") or 0
@@ -87,6 +93,16 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "readOnly": True,
         "executionEnabled": False,
     }
+    environment_impact_projection = {
+        "impactState": "ready" if crop_cycle_id else "empty",
+        "impactFocus": "구역 장비와 데이터 신선도 기준 영향 확인",
+        "impactFactors": equipment_profile["labels"],
+        "freshnessLabel": _freshness_label(data_availability.get("freshnessMinutes")),
+        "sourceAssignment": current_crop_assignment,
+        "dataAvailability": data_availability,
+        "readOnly": True,
+        "executionEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -98,6 +114,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "dataAvailability": data_availability,
         "currentCropAssignment": current_crop_assignment,
         "growthTargetProjection": growth_target_projection,
+        "environmentImpactProjection": environment_impact_projection,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },

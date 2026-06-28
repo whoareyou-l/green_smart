@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb004_version_surfaces_are_v11112():
-    assert '"version": "1.12.17"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.17"' in _read(PANEL)
-    assert "v1.12.17" in _read(FRONTEND_PLAN)
+    assert '"version": "1.12.18"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.18"' in _read(PANEL)
+    assert "v1.12.18" in _read(FRONTEND_PLAN)
 
 
 def test_rb004_crop_write_modal_module_exists_and_exports_pure_render_helpers():
@@ -108,7 +108,7 @@ def test_rb004_docs_record_write_modal_extraction_boundaries():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-004 Crop write modal extraction",
-        "v1.12.17",
+        "v1.12.18",
         "domains/crop/crop-write-modal.js",
         "작기 write modal render helpers only",
         "save/delete bindings remain in panel shell",

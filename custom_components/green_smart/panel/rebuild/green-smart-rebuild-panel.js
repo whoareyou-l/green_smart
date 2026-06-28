@@ -5,13 +5,14 @@
 // RS-016 crop cycle read-only page slice: 작물상태/생육목표 show currentCrop.crop_cycle_id as read-only product data.
 // RS-017 zone current crop assignment read model: zone → currentCrop/crop_cycle, equipmentProfile, dataAvailability.
 // RS-018 growth target read-only projection: currentCropAssignment → growthTargetProjection for 생육목표.
+// RS-019 environment impact read-only projection: currentCropAssignment + equipmentProfile + dataAvailability for 영향지도.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.17";
+const REBUILD_VERSION = "1.12.18";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -204,6 +205,29 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderEnvironmentImpactProjection(zone, stageKey) {
+    if (!["influence-map"].includes(stageKey)) return "";
+    const projection = zone.environmentImpactProjection || {};
+    const state = projection.impactState || "empty";
+    const focus = projection.impactFocus || "구역 장비와 데이터 신선도 기준 영향 확인";
+    const factors = projection.impactFactors || zone.equipmentProfile?.labels || zone.equipment || [];
+    const freshness = projection.freshnessLabel || "갱신 시각 없음";
+    const readOnly = projection.readOnly !== false;
+    const executionEnabled = projection.executionEnabled === true;
+    return `
+      <section data-environment-impact-projection-card data-environment-impact-state="${state}" data-environment-impact-focus="${focus}" data-environment-impact-factors="${factors.join(", ")}" data-environment-impact-freshness="${freshness}" data-environment-impact-readonly="${readOnly}" data-environment-impact-execution-enabled="${executionEnabled}" style="margin:10px 0;border:1px solid #cfe0ef;border-radius:14px;background:#f7fbff;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#2d617e;">영향지도 projection · read-only</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#234c64;font-size:12px;">
+          <dt style="font-weight:900;">영향 상태</dt><dd style="margin:0;">${state}</dd>
+          <dt style="font-weight:900;">영향 초점</dt><dd style="margin:0;">${focus}</dd>
+          <dt style="font-weight:900;">영향 요소</dt><dd style="margin:0;">${factors.join(" · ") || "구역 장비 요약 대기"}</dd>
+          <dt style="font-weight:900;">데이터 신선도</dt><dd style="margin:0;">${freshness}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#55778b;font-size:12px;line-height:1.5;">currentCropAssignment + equipmentProfile + dataAvailability 기반 읽기 전용 projection입니다. 영향 값 수정·저장·실행은 RS-019 범위에 포함하지 않습니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -272,6 +296,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${this.renderCropCycleReadOnlyCard(zone, stageKey)}
             ${this.renderCurrentCropAssignmentReadModel(zone)}
             ${this.renderGrowthTargetProjection(zone, stageKey)}
+            ${this.renderEnvironmentImpactProjection(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}

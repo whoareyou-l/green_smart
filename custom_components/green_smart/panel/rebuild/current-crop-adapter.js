@@ -65,10 +65,32 @@ export function normalizeGrowthTargetProjection(zone = {}, currentCropAssignment
   };
 }
 
+function freshnessLabel(dataAvailability = {}) {
+  return Number.isFinite(dataAvailability.freshnessMinutes) ? `${dataAvailability.freshnessMinutes}분 전 갱신` : "갱신 시각 없음";
+}
+
+export function normalizeEnvironmentImpactProjection(zone = {}, currentCropAssignment = normalizeCurrentCropAssignment(zone)) {
+  const projection = zone.environmentImpactProjection || zone.environment_impact_projection || {};
+  const equipmentProfile = projection.equipmentProfile || currentCropAssignment.equipmentProfile || zone.equipmentProfile || { labels: zone.equipment || [] };
+  const dataAvailability = projection.dataAvailability || currentCropAssignment.dataAvailability || zone.dataAvailability || zone.dataStatus || {};
+  const impactFactors = projection.impactFactors || equipmentProfile.labels || [];
+  return {
+    impactState: projection.impactState || (currentCropAssignment.currentCrop?.crop_cycle_id ? "ready" : "empty"),
+    impactFocus: projection.impactFocus || "구역 장비와 데이터 신선도 기준 영향 확인",
+    impactFactors,
+    freshnessLabel: projection.freshnessLabel || freshnessLabel(dataAvailability),
+    sourceAssignment: projection.sourceAssignment || currentCropAssignment,
+    dataAvailability,
+    readOnly: true,
+    executionEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
   const growthTargetProjection = normalizeGrowthTargetProjection(zone, currentCropAssignment);
+  const environmentImpactProjection = normalizeEnvironmentImpactProjection(zone, currentCropAssignment);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -80,6 +102,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     crop_cycle: currentCrop.crop_cycle_id,
     currentCropAssignment,
     growthTargetProjection,
+    environmentImpactProjection,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],

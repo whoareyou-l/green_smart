@@ -104,10 +104,10 @@ def test_v1974_ai_strategy_version_markers_and_future_shift():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.12.17"' in manifest
-    assert 'const VERSION = "1.12.17"' in panel
-    assert 'v1.12.17' in panel[:200]
+    assert '"version": "1.12.18"' in manifest
+    assert 'const VERSION = "1.12.18"' in panel
+    assert 'v1.12.18' in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert '기준 버전: `v1.12.17`' in docs
+    assert '기준 버전: `v1.12.18`' in docs
     assert 'UI Slice 3 | v1.9.74 | AI 전략' in plan
     assert 'UI Slice 4 | v1.9.75 | 병해충 예찰' in plan
