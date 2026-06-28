@@ -24,6 +24,8 @@
 // R7-007 target subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-operations" / data-r7-detail-subpage="environment-control" / data-r7-detail-subpage="irrigation-fertigation" / data-r7-detail-subpage="device-control" / data-r7-detail-subpage="recommendation-automation" / data-r7-detail-subpage="safety-history" / data-r7-detail-subpage="settings-admin".
 // R7-008 environment detail markers: data-r7-environment-control-detail / data-r7-environment-manual-settings / data-r7-environment-rule-schedule / data-r7-environment-ai-assist / data-r7-environment-safety-final / data-r7-environment-fallback.
 // R7-008 environment literal marker manifest: data-r7-environment-manual-setting="주간 온도" / data-r7-environment-manual-setting="야간 온도" / data-r7-environment-manual-setting="습도" / data-r7-environment-manual-setting="VPD" / data-r7-environment-manual-setting="CO₂" / data-r7-environment-manual-setting="광/DLI" / data-r7-environment-rule="주야간 전환" / data-r7-environment-rule="환기 단계" / data-r7-environment-rule="난방 최소온도" / data-r7-environment-rule="CO₂ 시간대" / data-r7-environment-ai-item="aiEnvironmentCorrection" / data-r7-environment-ai-item="수동 기준 대비 차이" / data-r7-environment-ai-item="fallback" / data-r7-environment-safety-item="environmentSafetyLimits" / data-r7-environment-safety-item="deviceInterlock" / data-r7-environment-safety-item="finalEnvironmentTargets".
+// R7-009 irrigation detail markers: data-r7-irrigation-fertigation-detail / data-r7-irrigation-manual-settings / data-r7-irrigation-rule-schedule / data-r7-irrigation-ai-assist / data-r7-irrigation-safety-final / data-r7-irrigation-fallback.
+// R7-009 irrigation literal marker manifest: data-r7-irrigation-manual-setting="관수 스케줄" / data-r7-irrigation-manual-setting="일사 누적 관수" / data-r7-irrigation-manual-setting="EC 목표" / data-r7-irrigation-manual-setting="pH 목표" / data-r7-irrigation-manual-setting="급액량" / data-r7-irrigation-manual-setting="배액률" / data-r7-irrigation-manual-setting="드라이백" / data-r7-irrigation-manual-setting="양액 레시피" / data-r7-irrigation-rule="시간 기반 관수" / data-r7-irrigation-rule="일사 누적 관수" / data-r7-irrigation-rule="근권 수분 기준 관수" / data-r7-irrigation-rule="저수조/배액 재활용 점검" / data-r7-irrigation-ai-item="aiIrrigationCorrection" / data-r7-irrigation-ai-item="수동 기준 대비 차이" / data-r7-irrigation-ai-item="fallback" / data-r7-irrigation-safety-item="irrigationSafetyLimits" / data-r7-irrigation-safety-item="sensorFreshness" / data-r7-irrigation-safety-item="finalIrrigationTargets".
 // R7-002 historical sidebar label order compatibility: 운영 홈 → 작물 중심 운영 → 현장 상태 → 추천·실행 검토 → 설정·관리.
 // RS-002/RS-005 historical source-copy compatibility only, not current operator copy: 작물이 먼저이고 제어는 그 다음입니다 / 추천은 실행 전 승인과 안전검사를 거칩니다 / 구역별 추천·실행 검토 / 실행 전 승인과 안전검사.
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
@@ -35,7 +37,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.40";
+const REBUILD_VERSION = "1.12.41";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -823,6 +825,64 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+  renderR7IrrigationFertigationDetail() {
+    const manualSettings = [
+      ["관수 스케줄", "06:00 / 10:30 / 14:30", "기본 시간 기반 관수 기준"],
+      ["일사 누적 관수", "100~160 J/cm²", "일사량 기준 추가 관수 후보"],
+      ["EC 목표", "EC 1.8~2.4 dS/m", "작물/생육단계별 양액 농도 기준"],
+      ["pH 목표", "pH 5.8~6.3", "양액 흡수 안정 범위"],
+      ["급액량", "구역별 기준", "회당 급액량은 구역/배지 기준"],
+      ["배액률", "배액률 20~30%", "과소/과다 배액을 safety evidence로 표시"],
+      ["드라이백", "드라이백 8~12%", "야간/일출 전 근권 수분 회복 기준"],
+      ["양액 레시피", "작물별 기준", "레시피 소유는 관수·양액 도메인"],
+    ];
+    const automationRules = [
+      ["시간 기반 관수", "운영자가 정한 시간표 기준으로 후보 표시"],
+      ["일사 누적 관수", "누적 일사량 기준에 도달하면 추가 후보 산출"],
+      ["근권 수분 기준 관수", "VWC/드라이백 evidence가 충분할 때만 후보 표시"],
+      ["저수조/배액 재활용 점검", "저수조/배액 상태가 정상일 때만 재활용 후보 표시"],
+    ];
+    const aiAssist = [
+      ["aiIrrigationCorrection", "enabled and healthy일 때만 보정 후보로 표시"],
+      ["수동 기준 대비 차이", "EC/pH/급액량/배액률/드라이백별 delta를 설명해야 함"],
+      ["fallback", "AI disabled/unhealthy/timeout/stale이면 보정 제외"],
+    ];
+    const safetyFinal = [
+      ["irrigationSafetyLimits", "과관수/저수조/배액/EC/pH 한계로 clamp"],
+      ["sensorFreshness", "센서 stale 또는 배액 오류 시 AI 보정 제한"],
+      ["finalIrrigationTargets", "Safety clamp 이후의 최종 후보만 표시"],
+    ];
+    return `<section data-r7-irrigation-fertigation-detail data-r7-irrigation-readonly-boundary="true" data-r7-irrigation-control-formula="baseIrrigationSettings + ruleScheduleIrrigationAutomation + aiIrrigationCorrection → calculatedIrrigationTargets → irrigationSafetyLimits clamp → finalIrrigationTargets" style="border:1px solid #cfe3d4;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
+      <header>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-009 read-only irrigation/fertigation detail</p>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">관수·양액 · 수동 기준 우선</h4>
+        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">AI 없이도 관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 양액 레시피 기준으로 운영 가능해야 합니다. R7-009는 설정 저장이나 펌프/밸브/양액기 실행 없이 read-only 구조만 표시합니다.</p>
+      </header>
+      <section data-r7-irrigation-manual-settings style="display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">1. Manual/Base Settings</strong>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;">
+          ${manualSettings.map(([label, value, note]) => `<p data-r7-irrigation-manual-setting="${label}" style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>${label}</b><br><span style="font-size:15px;color:#24323f;font-weight:900;">${value}</span><br><span style="color:#78927f;">${note}</span></p>`).join("")}
+        </div>
+      </section>
+      <section data-r7-irrigation-rule-schedule style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">2. Rule/Schedule Automation</strong>
+        ${automationRules.map(([label, note]) => `<p data-r7-irrigation-rule="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-irrigation-ai-assist data-r7-irrigation-ai-authority="assist-only" style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">3. AI Assist / Optimization</strong>
+        ${aiAssist.map(([label, note]) => `<p data-r7-irrigation-ai-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-irrigation-safety-final style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">4. Safety / Interlock / Fail Safe Finalization</strong>
+        ${safetyFinal.map(([label, note]) => `<p data-r7-irrigation-safety-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-irrigation-fallback data-r7-irrigation-ai-fallback-to-manual="true" style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#8a6d1d;font-size:13px;">AI 장애/fallback 원칙</strong>
+        <p style="margin:6px 0 0;color:#6b5a22;font-size:12px;line-height:1.6;">AI 상태가 disabled/unhealthy/timeout/stale이면 aiIrrigationCorrection을 제외하고 baseIrrigationSettings + ruleScheduleIrrigationAutomation 기준으로 계속 운영합니다. 관수·양액 도메인은 환경 actuator strategy를 직접 소유하지 않습니다. 센서 stale, 배액 오류, 장치 장애, 권한 제한은 AI 관수 보정보다 우선합니다.</p>
+      </section>
+    </section>`;
+  }
+
   renderR7DetailSubpage(subpage) {
     return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
@@ -840,6 +900,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
       ${subpage.key === "environment-control" ? this.renderR7EnvironmentControlDetail() : ""}
+      ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""}
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
       <details style="border-top:1px solid #edf4ef;padding-top:8px;">
         <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
@@ -857,7 +918,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7PageShell() {
     return `<section data-r7-page-shell style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-008 Environment Control Detail</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-009 Irrigation/Fertigation Detail</p>
         <h2 style="margin:0;color:#24323f;font-size:22px;">수동 설정 우선 환경제어 작업공간</h2>
         <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 홈, 작물, 환경, 관수·양액, 장치, 추천·자동화, 안전·이력, 설정·관리로 재정렬합니다. 실행 권한은 추가하지 않습니다.</p>
       </header>
