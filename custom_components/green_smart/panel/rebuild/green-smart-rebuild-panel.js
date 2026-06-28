@@ -15,6 +15,8 @@
 // RS-026 virtual runner dry-run result adapter: virtualRunnerInputContract → virtualRunnerDryRunResultAdapter.
 // RS-027 virtual rehearsal pass/fail review projection: virtualRunnerDryRunResultAdapter → virtualRehearsalPassFailReviewProjection.
 // R7-001 Main dashboard redesign: operator-visible crop-centered dashboard renders from R6 read-only source shapes.
+// R7-002 Sidebar navigation + page shell: R7 sidebar primary groups wrap the crop-centered workspace without adding execution authority.
+// R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
 // R7 adapter evidence links: sourceMonitoringReadOnlyAdapter / sourceSafetyInterlockReadOnlyAdapter.
 // R7 detail page shell grammar: detailHeader → evidenceSummary → zoneTabs → selectedZonePanel → optionalDetailModal.
@@ -24,7 +26,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.35";
+const REBUILD_VERSION = "1.12.36";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -32,6 +34,14 @@ const REBUILD_PAGES = Object.freeze([
   { key: "growth-goal", label: "생육목표", description: "오늘 작물이 가야 할 목표를 정리합니다." },
   { key: "influence-map", label: "영향지도", description: "환경·관수·장치가 작물에 주는 영향을 봅니다." },
   { key: "recommend-act", label: "추천·실행", description: "추천을 검토하고 승인 후 실행합니다." },
+]);
+
+const R7_SIDEBAR_GROUPS = Object.freeze([
+  { key: "operations-home", label: "운영 홈", summary: "오늘 작물 중심 overview", target: "crop-status" },
+  { key: "crop-centered", label: "작물 중심 운영", summary: "작물상태·생육목표·구역 drilldown", target: "growth-goal" },
+  { key: "field-status", label: "현장 상태", summary: "환경·관수·장치의 작물 영향", target: "influence-map" },
+  { key: "recommendation-review", label: "추천·실행 검토", summary: "추천·승인·리허설·안전 근거", target: "recommend-act" },
+  { key: "settings-admin", label: "설정·관리", summary: "Admin/System·장치 매핑·RBAC", target: "settings-admin" },
 ]);
 
 const REBUILD_HOME_CONTEXT = Object.freeze({
@@ -668,18 +678,49 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderR7Sidebar() {
+    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:16px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
+      <div style="font-weight:1000;color:#24323f;font-size:18px;">Green Smart</div>
+      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">작물 중심 운영 shell · read-only</p>
+      ${R7_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" style="display:block;border:1px solid #e2eee5;border-radius:14px;background:#f8fcf9;color:#31523b;text-decoration:none;padding:11px 12px;"><strong style="display:block;font-size:14px;">${group.label}</strong><span style="display:block;margin-top:4px;color:#78927f;font-size:11px;line-height:1.4;">${group.summary}</span></a>`).join("")}
+    </aside>`;
+  }
+
+  renderR7MobileNav() {
+    return `<nav data-r7-mobile-nav style="display:flex;gap:8px;overflow:auto;border:1px solid #dcebe0;border-radius:16px;background:#fff;padding:10px;">
+      ${R7_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-mobile-nav-item="${group.key}" style="white-space:nowrap;border-radius:999px;background:#eef7f0;color:#31523b;text-decoration:none;padding:8px 10px;font-size:12px;font-weight:900;">${group.label}</a>`).join("")}
+    </nav>`;
+  }
+
+  renderR7PageShell() {
+    return `<section data-r7-page-shell style="display:grid;gap:16px;">
+      <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7 Page Shell</p>
+        <h2 style="margin:0;color:#24323f;font-size:22px;">운영 홈 · 작물 중심 작업공간</h2>
+        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 흐름을 고정하고, 본문은 기존 crop-centered dashboard를 그대로 감쌉니다. 실행 권한은 추가하지 않습니다.</p>
+      </header>
+      <div data-r7-page-workspace>${this.renderOperatingHome()}</div>
+    </section>`;
+  }
+
   render() {
     const nav = REBUILD_PAGES.map((page) => `<a href="#${page.key}" data-rebuild-nav-key="${page.key}" style="display:inline-flex;padding:8px 10px;border-radius:999px;background:#eef7f0;color:#31523b;text-decoration:none;font-size:13px;font-weight:700;">${page.label}</a>`).join("");
     this.innerHTML = `
-      <main data-rebuild-root data-rebuild-blank-page style="min-height:100vh;padding:24px;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-        <section data-rebuild-empty-shell style="max-width:1080px;margin:0 auto;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:24px;">
-          <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5d7d64;">Green Smart</p>
-          <h2 style="margin:0 0 10px;font-size:22px;color:#24323f;">오늘의 작물 운영을 먼저 확인합니다</h2>
-          <p style="margin:0;color:#5d6f62;line-height:1.6;">작물 상태와 목표를 기준으로 환경·관수·장치 영향을 함께 보고, 구역별 상세는 각 단계 안에서 확인합니다.</p>
-          <nav data-rebuild-shell-nav style="display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;">${nav}</nav>
-        </section>
-        <section data-rebuild-shell-main style="max-width:1080px;margin:18px auto 0;">${this.renderOperatingHome()}</section>
-        <div data-rebuild-version="${REBUILD_VERSION}" style="max-width:1080px;margin:18px auto 0;font-size:12px;color:#78927f;">Green Smart ${REBUILD_VERSION}</div>
+      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell style="min-height:100vh;padding:24px;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+        <div style="max-width:1280px;margin:0 auto;display:grid;gap:14px;">
+          ${this.renderR7MobileNav()}
+          <section data-rebuild-empty-shell style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:18px;">
+            <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5d7d64;">Green Smart</p>
+            <h2 style="margin:0 0 10px;font-size:22px;color:#24323f;">오늘의 작물 운영을 먼저 확인합니다</h2>
+            <p style="margin:0;color:#5d6f62;line-height:1.6;">작물 상태와 목표를 기준으로 환경·관수·장치 영향을 함께 보고, 구역별 상세는 각 단계 안에서 확인합니다.</p>
+            <nav data-rebuild-shell-nav style="display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;">${nav}</nav>
+          </section>
+          <section style="display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:18px;align-items:start;">
+            ${this.renderR7Sidebar()}
+            <section data-rebuild-shell-main>${this.renderR7PageShell()}</section>
+          </section>
+          <div data-rebuild-version="${REBUILD_VERSION}" style="font-size:12px;color:#78927f;">Green Smart ${REBUILD_VERSION}</div>
+        </div>
       </main>
       ${this.renderZoneDetailModal()}
     `;

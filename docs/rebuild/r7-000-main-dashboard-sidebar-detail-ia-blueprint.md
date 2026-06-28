@@ -1,6 +1,6 @@
 # R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-> 기준 버전: `v1.12.35`
+> 기준 버전: `v1.12.36`
 > Status: R7-000 complete
 > 목적: R6 read-only adapter 3종 완료 후, 실제 화면 구현 전에 메인 대시보드/사이드바/상세페이지/하위페이지 IA를 고정한다.
 
@@ -191,7 +191,7 @@ R7-001 may implement the first operator-visible crop-centered dashboard, but it 
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.12.35`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.12.36`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -211,4 +211,28 @@ No DB migration in R7-001
 No execution authority in R7-001
 No approval/override release in R7-001
 No SafetyGuard/Interlock runtime behavior change in R7-001
+```
+
+
+## R7-002 Sidebar Navigation + Page Shell
+
+`v1.12.36`에서 R7-002 sidebar navigation + page shell을 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-002-sidebar-navigation-page-shell.md
+```
+
+Boundary:
+
+```text
+R7-002 Sidebar Navigation + Page Shell
+implements the R7 sidebar primary groups and page shell
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+No API route change in R7-002
+No DB migration in R7-002
+No execution authority in R7-002
+No approval/override release in R7-002
+No SafetyGuard/Interlock runtime behavior change in R7-002
 ```
