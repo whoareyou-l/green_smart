@@ -1,6 +1,6 @@
 # R5 Foundation Completion Baseline
 
-> 기준 버전: `v1.12.30`
+> 기준 버전: `v1.12.31`
 > Status: R5 foundation complete
 > 목적: `VS-N001~VS-N004` scaffold-only sequence를 하나의 foundation baseline으로 닫고, runtime/UI/adapter/실행 권한 작업으로 자동 전진하지 못하게 한다.
 
@@ -76,3 +76,31 @@ R5 foundation is complete only when:
 - Full local tests pass.
 - Prod static smoke verifies the released version if version surfaces change.
 - GitHub release is verified.
+
+
+## R6-001 Crop Cycle Read-only Adapter
+
+`v1.12.31`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r6-001-crop-cycle-readonly-adapter.md
+```
+
+Boundary:
+
+```text
+R6-001 Crop Cycle Read-only Adapter
+R5 foundation complete before runtime adapters
+legacy physical crop_seasons rows → product-facing crop_cycle/currentCrop DTO
+zone parent + currentCrop attached
+No write/mutation in R6-001
+No DB migration in R6-001
+No execution decision change in R6-001
+No SafetyGuard runtime behavior change in R6-001
+No Interlock runtime behavior change in R6-001
+No approval/override release in R6-001
+No MQTT/device command in R6-001
+question gates must use clarify tool
+```

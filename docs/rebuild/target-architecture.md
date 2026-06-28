@@ -1,6 +1,6 @@
 # Green Smart Target Architecture — From-Scratch Rebuild Baseline
 
-> 기준 버전: `v1.12.30`
+> 기준 버전: `v1.12.31`
 > 상태: 방향 전환 기준선
 > 목적: 기존 RB 산출물을 이어서 계속 패치하지 않고, 이전 작업을 reference/evidence로 삼아 새 제품 구조를 설계한 뒤 새 vertical rebuild slice로 구현한다.
 
@@ -256,7 +256,7 @@ The chosen slice must define UI → frontend service → backend route/service �
 
 ## 14. VS-N002 Crop cycle recording scaffold
 
-`v1.12.30` adds the second R5 scaffold slice:
+`v1.12.31` adds the second R5 scaffold slice:
 
 ```text
 VS-N002 Crop cycle recording scaffold
@@ -272,7 +272,7 @@ This slice is scaffold-only. It does not change existing crop season save behavi
 
 ## 15. VS-N003 Real-time monitoring read-only scaffold
 
-`v1.12.30` adds the third R5 scaffold slice:
+`v1.12.31` adds the third R5 scaffold slice:
 
 ```text
 VS-N003 Real-time monitoring read-only scaffold
@@ -289,7 +289,7 @@ This slice is scaffold-only. It does not query `sensor_readings`, read HA entiti
 
 ## 16. VS-N004 Interlock/Safety core scaffold
 
-`v1.12.30` adds the fourth R5 scaffold slice:
+`v1.12.31` adds the fourth R5 scaffold slice:
 
 ```text
 VS-N004 Interlock/Safety core scaffold
@@ -306,7 +306,7 @@ This slice is scaffold-only. It does not change existing SafetyGuard/Interlock r
 
 ## R5 Foundation Completion Baseline
 
-`v1.12.30`에서 R5 foundation closure를 완료했다.
+`v1.12.31`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -327,5 +327,33 @@ No Interlock runtime behavior change in R5 foundation closure
 No execution decision change in R5 foundation closure
 No approval/override release in R5 foundation closure
 No MQTT/device command in R5 foundation closure
+question gates must use clarify tool
+```
+
+
+## R6-001 Crop Cycle Read-only Adapter
+
+`v1.12.31`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r6-001-crop-cycle-readonly-adapter.md
+```
+
+Boundary:
+
+```text
+R6-001 Crop Cycle Read-only Adapter
+R5 foundation complete before runtime adapters
+legacy physical crop_seasons rows → product-facing crop_cycle/currentCrop DTO
+zone parent + currentCrop attached
+No write/mutation in R6-001
+No DB migration in R6-001
+No execution decision change in R6-001
+No SafetyGuard runtime behavior change in R6-001
+No Interlock runtime behavior change in R6-001
+No approval/override release in R6-001
+No MQTT/device command in R6-001
 question gates must use clarify tool
 ```

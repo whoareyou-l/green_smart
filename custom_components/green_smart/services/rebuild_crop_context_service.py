@@ -1,6 +1,11 @@
-"""RS-013 read-only service boundary for rebuild crop context.
+"""R6-001 Crop cycle read-only adapter for rebuild crop context.
 
-Maps legacy physical DB rows into product-facing crop_cycle/currentCrop DTOs.
+RS-013 read-only service boundary is preserved as compatibility evidence.
+Maps legacy physical crop_seasons rows → product-facing crop_cycle/currentCrop DTO.
+Core shape rule: zone parent + currentCrop attached.
+
+This re-baselines the existing RS-013/RS-014 read-only adapter as the first
+post-R5 foundation runtime adapter. It remains read-only and execution-disabled.
 """
 
 from __future__ import annotations
@@ -21,6 +26,12 @@ CROP_LABELS_KO = {
     "mixed": "혼합 작물",
     "other": "기타 작물",
 }
+
+R6_001_ADAPTER_NAME = "R6-001 Crop cycle read-only adapter"
+R6_001_CONTEXT_SOURCE = "legacy-physical-readonly-adapter"
+RS_013_DATA_AVAILABILITY_SOURCE = "legacy_physical_readonly_adapter"
+R6_001_BOUNDARY = "legacy physical crop_seasons rows → product-facing crop_cycle/currentCrop DTO"
+R6_001_SHAPE_RULE = "zone parent + currentCrop attached"
 
 
 def _crop_label_ko(crop_type: str | None) -> str:
@@ -66,7 +77,8 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
     data_availability = {
         "state": "ok" if crop_cycle_id else "empty",
         "freshnessMinutes": None,
-        "source": "legacy_physical_readonly_adapter",
+        "source": RS_013_DATA_AVAILABILITY_SOURCE,
+        "adapterSource": R6_001_CONTEXT_SOURCE,
         "updatedAt": updated_at,
         "note": "기존 물리 DB에서 읽은 작기 정보를 target DTO로 변환했습니다.",
     }
@@ -221,6 +233,12 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
         "name": row.get("zone_name") or f"{zone_id}구역",
+        "r6_001_adapter": True,
+        "adapterName": R6_001_ADAPTER_NAME,
+        "adapterBoundary": R6_001_BOUNDARY,
+        "shapeRule": R6_001_SHAPE_RULE,
+        "readOnly": True,
+        "executionEnabled": False,
         "currentCrop": current_crop,
         "activeCropCycleId": crop_cycle_id,
         "crop_cycle": crop_cycle_id,
@@ -246,7 +264,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
 def rebuild_home_context_from_rows(rows: list[dict[str, Any]], *, greenhouse_id: str = "greenhouse-main") -> dict[str, Any]:
     """Return the read-only rebuild home context DTO for rows."""
     return {
-        "contextSource": "legacy-physical-readonly-adapter",
+        "contextSource": R6_001_CONTEXT_SOURCE,
         "readOnly": True,
         "executionEnabled": False,
         "greenhouseId": greenhouse_id,
