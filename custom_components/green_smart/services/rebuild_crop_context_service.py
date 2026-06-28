@@ -9,6 +9,9 @@ post-R5 foundation runtime adapter. It remains read-only and execution-disabled.
 
 R6-002 Monitoring read-only adapter attaches monitoringReadOnlyAdapter to each
 zone context. dataAvailability + equipmentProfile → monitoringReadOnlyAdapter.
+
+R6-003 Safety/Interlock read-only adapter attaches safetyInterlockReadOnlyAdapter
+to each zone context. monitoringReadOnlyAdapter + safetyInterlockPreflightProjection → safetyInterlockReadOnlyAdapter.
 """
 
 from __future__ import annotations
@@ -39,6 +42,10 @@ R6_001_SHAPE_RULE = "zone parent + currentCrop attached"
 R6_002_ADAPTER_NAME = "R6-002 Monitoring read-only adapter"
 R6_002_BOUNDARY = "dataAvailability + equipmentProfile → monitoringReadOnlyAdapter"
 R6_002_CONTEXT_SOURCE = "zone-context-monitoring-readonly-adapter"
+
+R6_003_ADAPTER_NAME = "R6-003 Safety/Interlock read-only adapter"
+R6_003_BOUNDARY = "monitoringReadOnlyAdapter + safetyInterlockPreflightProjection → safetyInterlockReadOnlyAdapter"
+R6_003_CONTEXT_SOURCE = "zone-context-safety-interlock-readonly-adapter"
 
 
 def _crop_label_ko(crop_type: str | None) -> str:
@@ -101,6 +108,52 @@ def normalize_monitoring_readonly_adapter(
         "readOnly": True,
         "writeEnabled": False,
         "sensorCollectionEnabled": False,
+        "dbMigrationEnabled": False,
+        "executionEnabled": False,
+        "deviceCommandEnabled": False,
+        "mqttEnabled": False,
+    }
+
+
+def normalize_safety_interlock_readonly_adapter(
+    *,
+    zone_id: int | str | None,
+    crop_cycle_id: int | str | None,
+    monitoring_readonly_adapter: dict[str, Any] | None,
+    safety_interlock_preflight_projection: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Return the R6-003 safety/interlock read-only adapter DTO.
+
+    This adapter composes existing read-only monitoring/preflight evidence only.
+    It does not call SafetyGuard runtime, Interlock runtime, approval override,
+    MQTT, Home Assistant services, or device commands.
+    """
+
+    monitoring = dict(monitoring_readonly_adapter or {})
+    preflight = dict(safety_interlock_preflight_projection or {})
+    has_crop = bool(crop_cycle_id)
+    safety_state = str(preflight.get("safetyState") or ("pending" if has_crop else "empty"))
+    interlock_state = str(preflight.get("interlockState") or ("pending" if has_crop else "empty"))
+    summary = "현재 작기 연결 전: 안전·인터록 근거 없음" if not has_crop else "안전·인터록 사전검증 근거 연결됨"
+    return {
+        "r6_003_adapter": True,
+        "adapterName": R6_003_ADAPTER_NAME,
+        "adapterBoundary": R6_003_BOUNDARY,
+        "contextSource": R6_003_CONTEXT_SOURCE,
+        "zone_id": zone_id,
+        "crop_cycle_id": crop_cycle_id,
+        "sourceMonitoringReadOnlyAdapter": monitoring,
+        "sourcePreflightProjection": preflight,
+        "safetyState": safety_state,
+        "interlockState": interlock_state,
+        "failSafeState": preflight.get("failSafeState") or ("standby" if has_crop else "empty"),
+        "blockedReasons": list(preflight.get("blockedReasons") or ([] if not has_crop else ["operator_approval_required"])),
+        "safetySummary": summary,
+        "runtimeSafetyAdapterEnabled": True,
+        "readOnly": True,
+        "writeEnabled": False,
+        "executionDecisionEnabled": False,
+        "approvalOverrideEnabled": False,
         "dbMigrationEnabled": False,
         "executionEnabled": False,
         "deviceCommandEnabled": False,
@@ -195,21 +248,28 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
     }
     safety_interlock_preflight_projection = {
         "preflightState": "blocked_until_review" if crop_cycle_id else "empty",
-        "safetyState": "pending",
-        "interlockState": "pending",
-        "failSafeState": "standby",
-        "blockedReasons": ["operator_approval_required"],
-        "requiredChecks": ["작업자 승인", "Safety 검증", "Interlock 검증", "Fail Safe 확인"],
+        "safetyState": "pending" if crop_cycle_id else "empty",
+        "interlockState": "pending" if crop_cycle_id else "empty",
+        "failSafeState": "standby" if crop_cycle_id else "empty",
+        "blockedReasons": ["operator_approval_required"] if crop_cycle_id else [],
+        "requiredChecks": ["작업자 승인", "Safety 검증", "Interlock 검증", "Fail Safe 확인"] if crop_cycle_id else [],
         "sourceOperatorApproval": operator_approval_scaffold,
         "readOnly": True,
         "executionEnabled": False,
     }
+    safety_interlock_readonly_adapter = normalize_safety_interlock_readonly_adapter(
+        zone_id=zone_id,
+        crop_cycle_id=crop_cycle_id,
+        monitoring_readonly_adapter=monitoring_readonly_adapter,
+        safety_interlock_preflight_projection=safety_interlock_preflight_projection,
+    )
     virtual_execution_rehearsal_scaffold = {
         "rehearsalState": "blocked_until_virtual_rehearsal" if crop_cycle_id else "empty",
         "scenarioSet": ["normal", "strong_wind", "rain", "low_temperature", "sensor_fault", "blocked", "fail_safe", "recovery"],
         "currentScenario": "blocked",
         "readinessSummary": "가상 실행 리허설 전: Safety/Interlock/Fail Safe 사전검증 필요",
         "sourcePreflight": safety_interlock_preflight_projection,
+        "sourceSafetyInterlockReadOnlyAdapter": safety_interlock_readonly_adapter,
         "readOnly": True,
         "executionEnabled": False,
         "deviceCommandEnabled": False,
@@ -308,6 +368,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "recommendationReviewProjection": recommendation_review_projection,
         "operatorApprovalScaffold": operator_approval_scaffold,
         "safetyInterlockPreflightProjection": safety_interlock_preflight_projection,
+        "safetyInterlockReadOnlyAdapter": safety_interlock_readonly_adapter,
         "virtualExecutionRehearsalScaffold": virtual_execution_rehearsal_scaffold,
         "rehearsalResultReviewProjection": rehearsal_result_review_projection,
         "virtualRunnerInputContract": virtual_runner_input_contract,

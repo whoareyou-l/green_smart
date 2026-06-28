@@ -1,6 +1,6 @@
 # R6-002 Monitoring Read-only Adapter
 
-> 기준 버전: `v1.12.32`
+> 기준 버전: `v1.12.33`
 > Status: R6-002 complete
 > 목적: R6-001 crop-cycle zone context 위에 모니터링 evidence DTO를 읽기 전용으로 붙인다.
 
@@ -85,5 +85,36 @@ R6-003 Safety/Interlock read-only adapter
 ```
 
 ```text
+question gates must use clarify tool
+```
+
+
+## R6-003 Safety/Interlock Read-only Adapter
+
+`v1.12.33`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r6-003-safety-interlock-readonly-adapter.md
+```
+
+Boundary:
+
+```text
+R6-003 Safety/Interlock Read-only Adapter
+R6-002 Monitoring Read-only Adapter → R6-003 Safety/Interlock Read-only Adapter
+monitoringReadOnlyAdapter + safetyInterlockPreflightProjection → safetyInterlockReadOnlyAdapter
+runtimeSafetyAdapterEnabled = true
+executionDecisionEnabled = false
+approvalOverrideEnabled = false
+No write/mutation in R6-003
+No DB migration in R6-003
+No existing SafetyGuard runtime behavior change in R6-003
+No existing Interlock runtime behavior change in R6-003
+No execution decision change in R6-003
+No approval/override release in R6-003
+No MQTT/device command in R6-003
+No panel redesign in R6-003
 question gates must use clarify tool
 ```
