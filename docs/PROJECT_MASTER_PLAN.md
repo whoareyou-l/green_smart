@@ -10,7 +10,7 @@
 
 이 문서는 기존 Green Smart 제품 문서/코드와 새 마스터 플랜을 하나의 실행 기준으로 정렬한다. 앞으로 구현은 이 문서와 Phase 0 산출물 전체를 기준으로 진행한다.
 
-> **현재 우선순위 전환:** `v1.11.11` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다.
+> **현재 우선순위 전환:** `v1.11.12` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다.
 
 Green Smart의 최우선 목표는 다음이다.
 
@@ -81,6 +81,7 @@ Green Smart는 독립 웹서비스가 아니라 Home Assistant 위에서 동작�
 | `custom_components/green_smart/panel/core/api-client.js` | RB-002 Panel API client adapter. `hass.callApi` route/response shape를 바꾸지 않는 thin wrapper |
 | `custom_components/green_smart/panel/domains/admin/admin-page.js` | RB-001 Admin/System render boundary module. lifecycle/binding/storage는 panel shell에 유지 |
 | `custom_components/green_smart/panel/domains/crop/crop-readonly.js` | RB-003 Crop read-only render helper module. 작기 설정 summary/list/record-row HTML만 분리하며 write modal/save/delete는 panel shell에 유지 |
+| `custom_components/green_smart/panel/domains/crop/crop-write-modal.js` | RB-004 Crop write modal render helper module. 정식 등록/작기 수정 modal HTML과 values helper만 분리하며 save/delete bindings는 panel shell에 유지 |
 | `docs/rebuild/frontend-decomposition-plan.md` | R2 frontend module boundary, HA loading strategy, first extraction slice 기준 |
 | `docs/rebuild/backend-api-decomposition-plan.md` | R3 backend route compatibility, service/repository boundary, first extraction slice 기준 |
 | `docs/rebuild/db-schema-rationalization-plan.md` | R4 DB/schema naming alias, scope key, migration gate 기준 |

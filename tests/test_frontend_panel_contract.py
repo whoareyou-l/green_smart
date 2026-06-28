@@ -29,26 +29,28 @@ def test_crop_basic_tab_uses_zone_id_name_not_legacy_zone_placeholder():
 
 def test_crop_basic_add_popup_renders_configured_zone_groups_with_collapse_and_multi_save():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
-    popup = panel.split("_openCropBasicAddPopup()", 1)[1].split("// ── CSV 내보내기", 1)[0]
+    modal = (ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-write-modal.js").read_text(encoding="utf-8")
+    popup = panel.split("_openCropBasicAddPopup()", 1)[1].split("_openCropBasicEditPopup", 1)[0]
 
-    assert "const cfg = this._normalizedForm()" in popup
-    assert "cfg.greenhouse_zones" in popup
-    assert "data-basic-zone-toggle" in popup
-    assert "data-basic-zone-body" in popup
-    assert "_basicZoneCollapsed" in panel
+    assert "panel._normalizedForm()" in modal
+    assert "cfg.greenhouse_zones" in modal
+    assert "data-basic-zone-toggle" in modal
+    assert "data-basic-zone-body" in modal
+    assert "_basicZoneCollapsed" in modal
     assert "Promise.all" in popup
     assert "selectedZones.map" in popup
-    assert "zoneId: zone.id" in popup
+    assert "zoneId: zone.id" in modal
 
 
 def test_crop_basic_add_popup_has_per_zone_crop_fields_and_same_as_previous_checkbox():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
-    popup = panel.split("_openCropBasicAddPopup()", 1)[1].split("// ── CSV 내보내기", 1)[0]
+    modal = (ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-write-modal.js").read_text(encoding="utf-8")
+    popup = panel.split("_openCropBasicAddPopup()", 1)[1].split("_openCropBasicEditPopup", 1)[0]
 
-    assert "data-basic-crop-type" in popup
-    assert "data-basic-variety" in popup
-    assert "data-basic-method" in popup
-    assert "data-basic-same-as-prev" in popup
+    assert "data-basic-crop-type" in modal
+    assert "data-basic-variety" in modal
+    assert "data-basic-method" in modal
+    assert "data-basic-same-as-prev" in modal
     assert "_syncBasicZoneCommonFields" in panel
     assert "cropType: zoneValues.cropType" in popup
     assert "variety: zoneValues.variety" in popup
