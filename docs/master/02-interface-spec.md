@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.10`
+> 기준 버전: `v1.12.11`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -46,6 +46,17 @@ Response shape:
 ```
 
 RS-007은 route shell과 fixture response만 고정한다. 실제 DB source 연결은 후속 slice에서 진행한다.
+
+### 1.2 Rebuild currentCrop adapter boundary
+
+```text
+normalizeRebuildHomeContext
+currentCrop.crop_cycle_id
+compatibilityAliases.cropSeasonId
+legacy fixture shape may contain cropSeasonId but rendered rebuild DTO uses crop_cycle/currentCrop
+```
+
+RS-012 기준 rebuild frontend는 static fixture 또는 future API response를 `panel/rebuild/current-crop-adapter.js`에서 먼저 product-facing DTO로 정규화한다. Render shell은 `currentCrop`, `crop_cycle`, `activeCropCycleId`를 소비하고 legacy cropSeasonId는 `compatibilityAliases.cropSeasonId`에만 남긴다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

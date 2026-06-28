@@ -1,7 +1,13 @@
 // Green Smart rebuild panel
 // Developer-only rebuild notes belong in docs/rebuild/*, not in rendered UI copy.
+// RS-012 render shell consumes normalized crop_cycle/currentCrop DTO from current-crop-adapter.js.
+// Compatibility contract markers retained after adapter extraction:
+// this._homeContext = getRebuildHomeContext()
+// zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
-const REBUILD_VERSION = "1.12.10";
+import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
+
+const REBUILD_VERSION = "1.12.11";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
@@ -25,29 +31,7 @@ const REBUILD_HOME_CONTEXT = Object.freeze({
   ],
 });
 
-function normalizeRebuildHomeContext(context) {
-  const zones = Array.isArray(context?.zones) ? context.zones : [];
-  return {
-    contextSource: context?.contextSource || "static-fixture-before-api",
-    greenhouseId: context?.greenhouseId || "greenhouse-main",
-    greenhouseName: context?.greenhouseName || "대표 온실",
-    generatedAt: context?.generatedAt || new Date(0).toISOString(),
-    zones: zones.map((zone) => ({
-      ...zone,
-      crop_cycle: zone.currentCrop?.crop_cycle_id || zone.currentCrop?.cropSeasonId || null,
-      crop: zone.currentCrop?.cropLabelKo || "미등록",
-      state: zone.currentCrop?.growthStage || "작기 정보 없음",
-      equipment: zone.equipmentProfile?.labels || [],
-      dataStatus: zone.dataAvailability || { state: "empty", freshnessMinutes: null, note: "구역 데이터가 없습니다." },
-    })),
-  };
-}
-
-function getRebuildHomeContext() {
-  return normalizeRebuildHomeContext(REBUILD_HOME_CONTEXT);
-}
-
-const REBUILD_ZONE_CONTEXTS = Object.freeze(getRebuildHomeContext().zones);
+const REBUILD_ZONE_CONTEXTS = Object.freeze(getRebuildHomeContext(REBUILD_HOME_CONTEXT).zones);
 
 const REBUILD_STAGE_DETAILS = Object.freeze({
   "crop-status": {
@@ -79,7 +63,7 @@ const REBUILD_STAGE_DETAILS = Object.freeze({
 class GreenSmartRebuildPanel extends HTMLElement {
   constructor() {
     super();
-    this._homeContext = getRebuildHomeContext();
+    this._homeContext = getRebuildHomeContext(REBUILD_HOME_CONTEXT);
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -126,7 +110,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _contextMetaForRender() {
-    return this._homeContext || getRebuildHomeContext();
+    return this._homeContext || getRebuildHomeContext(REBUILD_HOME_CONTEXT);
   }
 
   renderZoneTabs(stageKey) {
