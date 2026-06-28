@@ -20,12 +20,12 @@ def _class_section(source: str, class_name: str, next_marker: str) -> str:
 
 
 def test_rb006b_version_surfaces_are_v1119():
-    assert '"version": "1.11.9"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.9"' in _read(PANEL)
-    assert "v1.11.9" in _read(BACKEND_PLAN)
+    assert '"version": "1.11.10"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.10"' in _read(PANEL)
+    assert "v1.11.10" in _read(BACKEND_PLAN)
 
 
-def test_rb006b_repository_owns_growth_pest_control_read_sql_only():
+def test_rb006b_repository_preserves_growth_pest_control_read_helpers():
     repo = _read(CROP_REPO)
     for marker in (
         "async def list_growth_records",
@@ -43,6 +43,7 @@ def test_rb006b_repository_owns_growth_pest_control_read_sql_only():
         "reiHours",
     ):
         assert marker in repo
+    read_section = repo.split("async def list_growth_records", 1)[1]
     for forbidden in (
         "INSERT INTO growth_surveys",
         "INSERT INTO pest_surveys",
@@ -50,13 +51,10 @@ def test_rb006b_repository_owns_growth_pest_control_read_sql_only():
         "UPDATE growth_surveys",
         "UPDATE pest_surveys",
         "UPDATE control_records",
-        "DELETE FROM growth_surveys",
-        "DELETE FROM pest_surveys",
-        "DELETE FROM control_records",
         "HomeAssistantView",
         "web.Request",
     ):
-        assert forbidden not in repo
+        assert forbidden not in read_section
 
 
 def test_rb006b_service_exposes_record_read_methods_with_permission_smoke():
@@ -136,12 +134,12 @@ def test_rb006b_docs_record_record_readonly_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006B Crop record read-only repositories",
-        "v1.11.9",
+        "v1.11.10",
         "growth/pest/control read GET helpers",
         "list_growth_records",
         "list_pest_records",
         "list_control_records",
-        "write/delete modal 경로 변경 없음",
+        "RB-006C Crop season write service/repo boundary",
         "route path 변경 없음",
         "response shape 변경 없음",
         "DB migration 없음",

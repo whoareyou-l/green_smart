@@ -1,6 +1,6 @@
 # Green Smart Backend/API Decomposition Plan
 
-> 기준 버전: `v1.11.9`
+> 기준 버전: `v1.11.10`
 > 리빌딩 단계: `R3 — Backend/API decomposition plan`
 > 목적: `crop_views.py`와 `zone_control_views.py`를 즉시 분리하지 않고, 기존 HTTP route compatibility를 유지하는 adapter-first backend 구조, service/repository 경계, 첫 extraction slice를 문서/계약으로 고정한다.
 
@@ -212,7 +212,7 @@ RB-006A는 `GET /api/green_smart/crop/seasons` 또는 작물 요약 read-only ro
 
 ### RB-006A completion note
 
-`v1.11.9`에서 Crop read-only service/repo boundary baseline이 추가되었다.
+`v1.11.10`에서 Crop read-only service/repo boundary baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/services/crop_service.py
@@ -245,7 +245,7 @@ custom_components/green_smart/repositories/crop_repo.py
 
 ### RB-006B Crop record read-only repositories completion note
 
-`v1.11.9`에서 Crop record read-only repositories baseline이 추가되었다.
+`v1.11.10`에서 Crop record read-only repositories baseline이 추가되었다.
 
 완료 범위:
 
@@ -255,6 +255,22 @@ custom_components/green_smart/repositories/crop_repo.py
 - `GET /api/green_smart/crop/seasons/{season_id}/pest` route path 변경 없음.
 - `GET /api/green_smart/crop/seasons/{season_id}/control` route path 변경 없음.
 - `write/delete modal 경로 변경 없음`.
+- `response shape 변경 없음`.
+- `DB migration 없음`.
+
+### RB-006C Crop season write service/repo boundary completion note
+
+`v1.11.10`에서 Crop season write service/repo boundary baseline이 추가되었다.
+
+완료 범위:
+
+- `create/update/delete/demolish write helpers`를 `services/crop_service.py`와 `repositories/crop_repo.py`로 확장한다.
+- `create_crop_season`, `update_crop_season`, `demolish_crop_season`, `hard_delete_crop_season`가 legacy response shape를 유지한다.
+- `POST /api/green_smart/crop/seasons` route path 변경 없음.
+- `PATCH /api/green_smart/crop/seasons/{season_id}` route path 변경 없음.
+- `DELETE /api/green_smart/crop/seasons/{season_id}` route path 변경 없음.
+- `PATCH /api/green_smart/crop/seasons/{season_id}/demolish` route path 변경 없음.
+- `growth/pest/control write 경로 변경 없음`.
 - `response shape 변경 없음`.
 - `DB migration 없음`.
 

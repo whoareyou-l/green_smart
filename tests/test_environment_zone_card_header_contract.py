@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 def test_v1102_zone_card_header_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.11.9"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.9"' in panel
-    assert 'v1.11.9' in panel[:200]
+    assert '"version": "1.11.10"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.10"' in panel
+    assert 'v1.11.10' in panel[:200]
     assert "v1.10.9 Environment zone card header cleanup" in docs
 
 

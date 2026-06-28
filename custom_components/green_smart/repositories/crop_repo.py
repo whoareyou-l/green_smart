@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..db import fetchall
+from ..db import execute, fetchall, fetchone
 
 
 async def list_crop_seasons(hass) -> list[dict[str, Any]]:
@@ -27,6 +27,92 @@ async def list_crop_seasons(hass) -> list[dict[str, Any]]:
         WHERE s.deleted_at IS NULL
         ORDER BY s.plant_date DESC
     """)
+
+
+async def get_crop_season(hass, season_id: int, *, include_deleted: bool = False) -> dict[str, Any] | None:
+    """Return one crop season with the legacy create/update response keys."""
+    deleted_clause = "" if include_deleted else "AND s.deleted_at IS NULL"
+    return await fetchone(hass, f"""
+        SELECT s.id, s.crop_type AS cropType, s.variety, s.method,
+               s.plant_date AS plantDate, s.demolish_date AS demolishDate,
+               s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
+               s.total_plants AS totalPlants, s.plant_density AS plantDensity,
+               s.train_dir AS trainDir, s.notes,
+               COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
+        FROM crop_seasons s LEFT JOIN zones z ON z.id = s.zone_id
+        WHERE s.id = %s {deleted_clause}
+    """, (int(season_id),))
+
+
+async def create_crop_season(hass, body: dict[str, Any]) -> int:
+    """Insert a crop season and return the new legacy season id."""
+    new_id = await execute(hass, """
+        INSERT INTO crop_seasons
+            (greenhouse_id, zone_id, crop_type, variety, method,
+             plant_date, row_spacing, plant_spacing,
+             total_plants, plant_density, train_dir, notes)
+        VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        int(body["zoneId"]),
+        body.get("cropType") or "other",
+        body.get("variety") or "",
+        body.get("method") or "hydro",
+        body.get("plantDate"),
+        body.get("rowSpacing"),
+        body.get("plantSpacing"),
+        body.get("totalPlants"),
+        body.get("plantDensity"),
+        body.get("trainDir") or "v",
+        body.get("notes") or "",
+    ))
+    return int(new_id)
+
+
+async def update_crop_season(hass, season_id: int, body: dict[str, Any]) -> None:
+    """Update an active crop season with the legacy field mapping."""
+    await execute(hass, """
+        UPDATE crop_seasons
+        SET zone_id = %s, crop_type = %s, variety = %s, method = %s,
+            plant_date = %s, row_spacing = %s, plant_spacing = %s,
+            total_plants = %s, plant_density = %s, train_dir = %s,
+            notes = %s, updated_at = NOW()
+        WHERE id = %s AND deleted_at IS NULL
+    """, (
+        int(body["zoneId"]),
+        body.get("cropType") or "other",
+        body.get("variety") or "",
+        body.get("method") or "hydro",
+        body.get("plantDate"),
+        body.get("rowSpacing"),
+        body.get("plantSpacing"),
+        body.get("totalPlants"),
+        body.get("plantDensity"),
+        body.get("trainDir") or "v",
+        body.get("notes") or "",
+        int(season_id),
+    ))
+
+
+async def demolish_crop_season(hass, season_id: int, demolish_date: str) -> None:
+    """Set the crop season demolish date without changing route semantics."""
+    await execute(hass,
+        "UPDATE crop_seasons SET demolish_date = %s, updated_at = NOW() WHERE id = %s AND deleted_at IS NULL",
+        (demolish_date, int(season_id)),
+    )
+
+
+async def hard_delete_crop_season(hass, season_id: int) -> None:
+    """Hard delete a crop season and dependent legacy records in the old order."""
+    sid = int(season_id)
+    await execute(hass, """
+        DELETE cp FROM control_pesticides cp
+        JOIN control_records cr ON cr.id = cp.control_id
+        WHERE cr.season_id = %s
+    """, (sid,))
+    await execute(hass, "DELETE FROM control_records WHERE season_id = %s", (sid,))
+    await execute(hass, "DELETE FROM pest_surveys WHERE season_id = %s", (sid,))
+    await execute(hass, "DELETE FROM growth_surveys WHERE season_id = %s", (sid,))
+    await execute(hass, "DELETE FROM crop_seasons WHERE id = %s", (sid,))
 
 
 async def list_growth_records(hass, season_id: int) -> list[dict[str, Any]]:

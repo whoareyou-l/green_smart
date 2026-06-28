@@ -16,12 +16,12 @@ def _read(path: Path) -> str:
 
 
 def test_rb006a_version_surfaces_are_v1118():
-    assert '"version": "1.11.9"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.9"' in _read(PANEL)
-    assert "v1.11.9" in _read(BACKEND_PLAN)
+    assert '"version": "1.11.10"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.10"' in _read(PANEL)
+    assert "v1.11.10" in _read(BACKEND_PLAN)
 
 
-def test_rb006a_repository_exists_and_owns_crop_seasons_select_only():
+def test_rb006a_repository_exists_and_preserves_crop_seasons_select_helper():
     assert CROP_REPO.exists()
     repo = _read(CROP_REPO)
     for marker in (
@@ -36,6 +36,7 @@ def test_rb006a_repository_exists_and_owns_crop_seasons_select_only():
         "zoneId",
     ):
         assert marker in repo
+    list_section = repo.split("async def list_crop_seasons", 1)[1].split("async def get_crop_season", 1)[0]
     for forbidden in (
         "INSERT INTO crop_seasons",
         "UPDATE crop_seasons",
@@ -44,7 +45,7 @@ def test_rb006a_repository_exists_and_owns_crop_seasons_select_only():
         "HomeAssistantView",
         "web.Response",
     ):
-        assert forbidden not in repo
+        assert forbidden not in list_section
 
 
 def test_rb006a_service_exists_enforces_read_permission_and_preserves_shape():
@@ -87,7 +88,8 @@ def test_rb006a_crop_get_route_delegates_to_service_while_post_stays_in_view():
         assert marker in get_section
     assert "SELECT" not in get_section
     assert "FROM crop_seasons" not in get_section
-    assert "INSERT INTO crop_seasons" in post_section
+    assert "create_crop_season(hass, actor, body)" in post_section
+    assert "INSERT INTO crop_seasons" not in post_section
     assert "UPDATE crop_seasons" not in get_section
     assert "DELETE FROM crop_seasons" not in get_section
 
@@ -111,11 +113,11 @@ def test_rb006a_docs_record_backend_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006A Crop read-only service/repo boundary",
-        "v1.11.9",
+        "v1.11.10",
         "services/crop_service.py",
         "repositories/crop_repo.py",
         "GET /api/green_smart/crop/seasons",
-        "crop create/update/delete 변경 없음",
+        "RB-006C Crop season write service/repo boundary",
         "route path 변경 없음",
         "response shape 변경 없음",
         "DB migration 없음",

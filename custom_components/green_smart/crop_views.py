@@ -8,10 +8,15 @@ from homeassistant.components.http import HomeAssistantView
 from .db import fetchall, fetchone, execute
 from .services.crop_service import (
     CropReadActor,
+    CropWriteActor,
+    create_crop_season,
+    demolish_crop_season,
+    hard_delete_crop_season,
     list_control_records,
     list_crop_seasons,
     list_growth_records,
     list_pest_records,
+    update_crop_season,
 )
 from .weather_api import WeatherStore, fetch_weekly_forecast
 
@@ -358,13 +363,15 @@ class CropSeasonsView(HomeAssistantView):
         return _json(rows)
 
     async def post(self, request: web.Request) -> web.Response:
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
         hass = request.app["hass"]
         try:
             body = await request.json()
         except Exception:
             return _err("Invalid JSON")
 
-        crop_type  = body.get("cropType", "other")
         plant_date = body.get("plantDate")
         zone_id    = body.get("zoneId")
         if not plant_date or not zone_id:
@@ -372,37 +379,17 @@ class CropSeasonsView(HomeAssistantView):
 
         zone_id_int = int(zone_id)
         await _ensure_zone(hass, zone_id_int)
-        new_id = await execute(hass, """
-            INSERT INTO crop_seasons
-                (greenhouse_id, zone_id, crop_type, variety, method,
-                 plant_date, row_spacing, plant_spacing,
-                 total_plants, plant_density, train_dir, notes)
-            VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            zone_id_int, crop_type,
-            body.get("variety") or "",
-            body.get("method") or "hydro",
-            plant_date,
-            body.get("rowSpacing"),
-            body.get("plantSpacing"),
-            body.get("totalPlants"),
-            body.get("plantDensity"),
-            body.get("trainDir") or "v",
-            body.get("notes") or "",
-        ))
-        row = await fetchone(hass, """
-            SELECT s.id, s.crop_type AS cropType, s.variety, s.method,
-                   s.plant_date AS plantDate, s.demolish_date AS demolishDate,
-                   s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
-                   s.total_plants AS totalPlants, s.plant_density AS plantDensity,
-                   s.train_dir AS trainDir, s.notes,
-                   COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
-            FROM crop_seasons s LEFT JOIN zones z ON z.id = s.zone_id
-            WHERE s.id = %s
-        """, (new_id,))
-        if row and str(row.get("cropType") or "").lower() == "lettuce":
-            row["vs003"] = _vs003_lettuce_crop_cycle_payload(row)
-            row["crop_cycle_id"] = row.get("id")
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropWriteActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            row = await create_crop_season(hass, actor, body)
+        except PermissionError as exc:
+            return _err(str(exc), 403)
         return _json(row)
 
 
@@ -412,17 +399,27 @@ class CropSeasonDemolishView(HomeAssistantView):
     name = "api:green_smart:crop:season:demolish"
 
     async def patch(self, request: web.Request, season_id: str) -> web.Response:
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
         hass = request.app["hass"]
         try:
             body = await request.json()
         except Exception:
             body = {}
         demolish_date = body.get("date") or date.today().isoformat()
-        await execute(hass,
-            "UPDATE crop_seasons SET demolish_date = %s, updated_at = NOW() WHERE id = %s AND deleted_at IS NULL",
-            (demolish_date, int(season_id)),
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
         )
-        return _json({"id": int(season_id), "demolishDate": demolish_date})
+        actor = CropWriteActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            row = await demolish_crop_season(hass, actor, int(season_id), demolish_date)
+        except PermissionError as exc:
+            return _err(str(exc), 403)
+        return _json(row)
 
 
 class CropSeasonDeleteView(HomeAssistantView):
@@ -431,6 +428,9 @@ class CropSeasonDeleteView(HomeAssistantView):
     name = "api:green_smart:crop:season:delete"
 
     async def patch(self, request: web.Request, season_id: str) -> web.Response:
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
         hass = request.app["hass"]
         try:
             body = await request.json()
@@ -443,52 +443,37 @@ class CropSeasonDeleteView(HomeAssistantView):
             return _err("plantDate, zoneId 필수")
         zone_id_int = int(zone_id)
         await _ensure_zone(hass, zone_id_int)
-        await execute(hass, """
-            UPDATE crop_seasons
-            SET zone_id = %s, crop_type = %s, variety = %s, method = %s,
-                plant_date = %s, row_spacing = %s, plant_spacing = %s,
-                total_plants = %s, plant_density = %s, train_dir = %s,
-                notes = %s, updated_at = NOW()
-            WHERE id = %s AND deleted_at IS NULL
-        """, (
-            zone_id_int,
-            body.get("cropType") or "other",
-            body.get("variety") or "",
-            body.get("method") or "hydro",
-            plant_date,
-            body.get("rowSpacing"),
-            body.get("plantSpacing"),
-            body.get("totalPlants"),
-            body.get("plantDensity"),
-            body.get("trainDir") or "v",
-            body.get("notes") or "",
-            int(season_id),
-        ))
-        row = await fetchone(hass, """
-            SELECT s.id, s.crop_type AS cropType, s.variety, s.method,
-                   s.plant_date AS plantDate, s.demolish_date AS demolishDate,
-                   s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
-                   s.total_plants AS totalPlants, s.plant_density AS plantDensity,
-                   s.train_dir AS trainDir, s.notes,
-                   COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
-            FROM crop_seasons s LEFT JOIN zones z ON z.id = s.zone_id
-            WHERE s.id = %s AND s.deleted_at IS NULL
-        """, (int(season_id),))
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropWriteActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            row = await update_crop_season(hass, actor, int(season_id), body)
+        except PermissionError as exc:
+            return _err(str(exc), 403)
         return _json(row)
 
     async def delete(self, request: web.Request, season_id: str) -> web.Response:
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
         hass = request.app["hass"]
         sid = int(season_id)
-        await execute(hass, """
-            DELETE cp FROM control_pesticides cp
-            JOIN control_records cr ON cr.id = cp.control_id
-            WHERE cr.season_id = %s
-        """, (sid,))
-        await execute(hass, "DELETE FROM control_records WHERE season_id = %s", (sid,))
-        await execute(hass, "DELETE FROM pest_surveys WHERE season_id = %s", (sid,))
-        await execute(hass, "DELETE FROM growth_surveys WHERE season_id = %s", (sid,))
-        await execute(hass, "DELETE FROM crop_seasons WHERE id = %s", (sid,))
-        return _json({"ok": True, "id": sid, "hardDeleted": True})
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropWriteActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            row = await hard_delete_crop_season(hass, actor, sid)
+        except PermissionError as exc:
+            return _err(str(exc), 403)
+        return _json(row)
 
 
 def _normalize_growth_metrics(raw_metrics, crop_type: str) -> list[dict]:
