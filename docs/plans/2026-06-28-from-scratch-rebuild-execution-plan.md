@@ -160,7 +160,7 @@ Run targeted tests
 
 Second selected slice: VS-N002 Crop cycle recording scaffold
 
-Status: `v1.12.29`에서 scaffold-only 계약/DTO/권한 경계 완료.
+Status: `v1.12.30`에서 scaffold-only 계약/DTO/권한 경계 완료.
 
 Reason: after VS-N001 RBAC/Admin ownership, crop-cycle recording needs a product-facing DTO/permission scaffold before monitoring and interlock slices consume crop context.
 
@@ -175,7 +175,7 @@ No DB migration in VS-N002
 
 Third selected slice: VS-N003 Real-time monitoring read-only scaffold
 
-Status: `v1.12.29`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
+Status: `v1.12.30`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
 
 Reason: after RBAC/Admin ownership and crop-cycle context, monitoring needs a read-only DTO and freshness boundary before Interlock/Safety consumes sensor state.
 
@@ -190,7 +190,7 @@ No sensor collection/scheduler in VS-N003
 
 Fourth selected slice: VS-N004 Interlock/Safety core scaffold
 
-Status: `v1.12.29`에서 scaffold-only safety/interlock DTO/권한/state-gate 경계 완료.
+Status: `v1.12.30`에서 scaffold-only safety/interlock DTO/권한/state-gate 경계 완료.
 
 Reason: after RBAC, crop-cycle context, and monitoring read-only state, Interlock/Safety needs a read-only state-gate boundary before any future runtime adapter or approval/override release.
 
@@ -198,4 +198,31 @@ Reason: after RBAC, crop-cycle context, and monitoring read-only state, Interloc
 RBAC/Admin ownership scaffold → Crop cycle recording scaffold → Real-time monitoring read-only slice → Interlock/Safety core scaffold
 No execution decision change in VS-N004
 No approval/override release in VS-N004
+```
+
+
+## R5 Foundation Completion Baseline
+
+`v1.12.30`에서 R5 foundation closure를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r5-foundation-completion-baseline.md
+```
+
+Boundary:
+
+```text
+R5 foundation complete before runtime adapters
+No DB migration in R5 foundation closure
+No write/mutation in R5 foundation closure
+No runtime adapter in R5 foundation closure
+No panel read-only card in R5 foundation closure
+No SafetyGuard runtime behavior change in R5 foundation closure
+No Interlock runtime behavior change in R5 foundation closure
+No execution decision change in R5 foundation closure
+No approval/override release in R5 foundation closure
+No MQTT/device command in R5 foundation closure
+question gates must use clarify tool
 ```

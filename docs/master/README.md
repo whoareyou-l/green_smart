@@ -1,7 +1,7 @@
 # Green Smart 5대 마스터 문서
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.29`
+> 기준 버전: `v1.12.30`
 > 목적: 뒤엉킨 Green Smart 코드와 문서를 **설계 기반(Design-Driven)** 으로 재정렬하고, 이후 모든 구현을 **문서 우선 + 수직 슬라이드(Vertical Slide)** 방식으로 진행하기 위한 최상위 마스터 문서 묶음.
 
 ## 0. 절대 원칙
@@ -90,3 +90,30 @@ VS-003은 과거 기준에서 `farm_staff`가 패널에서 상추 작기를 등�
 | 작물 | `lettuce` |
 | 생육 지표 | `L-Index`: `leafLength`, `leafWidth`, `leafCount`, `freshWeight`, `plantHeight` |
 | 권한 | `farm_staff`는 `crop.write`, `growth_survey.write` 범위의 기록 입력 담당 |
+
+
+## R5 Foundation Completion Baseline
+
+`v1.12.30`에서 R5 foundation closure를 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r5-foundation-completion-baseline.md
+```
+
+Boundary:
+
+```text
+R5 foundation complete before runtime adapters
+No DB migration in R5 foundation closure
+No write/mutation in R5 foundation closure
+No runtime adapter in R5 foundation closure
+No panel read-only card in R5 foundation closure
+No SafetyGuard runtime behavior change in R5 foundation closure
+No Interlock runtime behavior change in R5 foundation closure
+No execution decision change in R5 foundation closure
+No approval/override release in R5 foundation closure
+No MQTT/device command in R5 foundation closure
+question gates must use clarify tool
+```
