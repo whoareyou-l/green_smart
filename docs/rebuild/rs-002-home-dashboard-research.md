@@ -123,6 +123,31 @@ Implementation implication:
 - `PAGE-CropCenteredHome` uses `data-cba-layout="single-column-stage-flow"` and `grid-template-columns:1fr` for the four stage cards.
 - Each stage card uses `data-stage-card-shell` and appears one per row to reduce visual crowding.
 
+## RS-005 state grammar vertical slice
+
+Scope: keep the rebuild home read-only, but make zone panels communicate real product data states before API hookup.
+
+State grammar:
+
+```text
+loading / empty / partial / stale / error / ok
+```
+
+Decision:
+
+```text
+read-only 상태 문법
+실행 버튼 금지
+COM-StateBadge + COM-DataFreshnessPill + COM-EmptyState + COM-LoadingSkeleton
+```
+
+Implementation implication:
+
+- Every selected zone panel shows a state badge and data freshness pill.
+- Loading zones show a contextual skeleton, not developer text.
+- Empty/error zones show an operator-facing empty state.
+- Recommendation/action copy remains read-only; no execute/apply/service-call control is introduced in RS-005.
+
 ## Developer-only transition notes
 
 The following points are development/release guidance only and must remain in docs/tests, not in rendered frontend copy:

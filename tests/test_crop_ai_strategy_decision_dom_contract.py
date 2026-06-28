@@ -122,8 +122,8 @@ def test_v1989_versions_and_docs_record_decision_dom():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.12.3"' in manifest
-    assert 'const VERSION = "1.12.3"' in panel
+    assert '"version": "1.12.4"' in manifest
+    assert 'const VERSION = "1.12.4"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI Strategy decision-oriented DOM" in docs
     for marker in (

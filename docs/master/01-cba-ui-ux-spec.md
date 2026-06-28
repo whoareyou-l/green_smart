@@ -1,7 +1,7 @@
 # 1. CBA 화면 기획서 — UI/UX 설계도
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.3`
+> 기준 버전: `v1.12.4`
 > 문서 목적: Green Smart 화면을 **공통 부품(COM) → 복합 모듈(MOD) → 전체 페이지(PAGE)** 3단계로 정리하여, 코드가 화면마다 중복/난립하지 않도록 한다.
 
 ## 1. 설계 원칙
@@ -171,6 +171,10 @@ PAGE-* = Pages/Views, MOD를 배치한 최종 화면
 | COM-Input | 입력 | 텍스트/숫자 입력 | `type`, `value`, `unit`, `min`, `max`, `dirty` | 저장 API 직접 호출 금지 |
 | COM-Select | 선택 | 작기/구역/모드 선택 | `options`, `value`, `label`, `disabledReason` | 선택 시 실제 실행 금지 |
 | COM-Badge | 상태 배지 | 정상/경고/차단/승인필요 표시 | `status`, `label`, `tone` | raw code만 노출 금지 |
+| COM-StateBadge | 상태 배지 | ok/partial/stale/empty/loading/error를 운영자 언어로 표시 | `state`, `tone`, `label` | raw state code만 노출 금지 |
+| COM-EmptyState | 데이터 없음 안내 | 비어 있거나 오류인 상태를 안내 | `message`, `reason`, `nextHint` | 개발자/레거시 문구 노출 금지 |
+| COM-LoadingSkeleton | 로딩 스켈레톤 | 데이터 로딩 중 자리 표시 | `loading`, `label` | spinner만 두고 맥락 생략 금지 |
+| COM-DataFreshnessPill | 데이터 신선도 | 몇 분 전 갱신/갱신 없음 표시 | `freshnessMinutes`, `label` | 오래된 데이터를 정상처럼 표시 금지 |
 | COM-Pill | 작은 정보 chip | 센서값/권한/범위 표시 | `label`, `value`, `unit` | 긴 문장/복잡 설명 금지 |
 | COM-Card | 카드 shell | 정보 그룹화 | `title`, `subtitle`, `actions`, `compact` | 데이터 fetch 직접 금지 |
 | COM-Metric | 지표 | label/value/help 3단 구조 | `label`, `value`, `unit`, `help`, `trend` | 값만 던지고 의미 생략 금지 |

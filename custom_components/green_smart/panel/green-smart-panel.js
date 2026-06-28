@@ -1,4 +1,4 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.12.3
+// Green Smart — Modern SaaS greenhouse dashboard  v1.12.4
 import { createApiClient } from "./core/api-client.js";
 import { renderCropBasicOverviewCard, renderCropBasicTab, renderCropSeasonsList } from "./domains/crop/crop-readonly.js";
 import { cropBasicAddZones, cropBasicEditValues, renderCropBasicAddModal, renderCropBasicEditModal } from "./domains/crop/crop-write-modal.js";
@@ -8,7 +8,7 @@ import { controlModalContext, renderControlPesticideEntry, renderControlTreatmen
 import { adminSystemTabs, renderAdminSystemPage, renderAdminSystemTabBar, renderAdminSystemTabContent } from "./domains/admin/admin-page.js";
 
 const DOMAIN = "green_smart";
-const VERSION = "1.12.3";
+const VERSION = "1.12.4";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];

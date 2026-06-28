@@ -1,7 +1,7 @@
 // Green Smart rebuild panel
 // Developer-only rebuild notes belong in docs/rebuild/*, not in rendered UI copy.
 
-const REBUILD_VERSION = "1.12.3";
+const REBUILD_VERSION = "1.12.4";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
@@ -11,9 +11,12 @@ const REBUILD_PAGES = Object.freeze([
 ]);
 
 const REBUILD_ZONE_CONTEXTS = Object.freeze([
-  { id: "all", name: "전체", crop: "전체 작물", state: "전체 구역 요약", equipment: ["구역별 장비 요약"] },
-  { id: "zone-a", name: "A구역", crop: "토마토", state: "착과·비대 관찰", equipment: ["천창", "측창", "양액기"] },
-  { id: "zone-b", name: "B구역", crop: "딸기", state: "개화·수분 관리", equipment: ["보온커튼", "관수밸브", "순환팬"] },
+  { id: "all", name: "전체", crop: "전체 작물", state: "전체 구역 요약", equipment: ["구역별 장비 요약"], dataStatus: { state: "partial", freshnessMinutes: 6, note: "일부 구역 데이터가 아직 보강 중입니다." } },
+  { id: "zone-a", name: "A구역", crop: "토마토", state: "착과·비대 관찰", equipment: ["천창", "측창", "양액기"], dataStatus: { state: "ok", freshnessMinutes: 2, note: "최근 데이터 기준으로 확인했습니다." } },
+  { id: "zone-b", name: "B구역", crop: "딸기", state: "개화·수분 관리", equipment: ["보온커튼", "관수밸브", "순환팬"], dataStatus: { state: "stale", freshnessMinutes: 38, note: "최근 수집 시각이 오래되어 현장 확인이 필요합니다." } },
+  { id: "zone-c", name: "C구역", crop: "미등록", state: "작기 정보 없음", equipment: ["장비 매핑 없음"], dataStatus: { state: "empty", freshnessMinutes: null, note: "현재 연결된 작기와 장비 정보가 없습니다." } },
+  { id: "zone-loading", name: "동기화", crop: "불러오는 중", state: "데이터 수집 중", equipment: ["동기화 대기"], dataStatus: { state: "loading", freshnessMinutes: null, note: "구역 데이터를 불러오는 중입니다." } },
+  { id: "zone-error", name: "점검", crop: "확인 필요", state: "데이터 오류", equipment: ["상태 확인 필요"], dataStatus: { state: "error", freshnessMinutes: null, note: "데이터를 읽지 못했습니다. 연결 상태를 확인합니다." } },
 ]);
 
 const REBUILD_STAGE_DETAILS = Object.freeze({
@@ -51,6 +54,36 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   connectedCallback() {
     this.render();
+  }
+
+  _zoneStateTone(state) {
+    return ({ ok: "#2f7d46", partial: "#8a6d1d", stale: "#a35f00", empty: "#6b7280", loading: "#3b6ea8", error: "#b42318" })[state] || "#6b7280";
+  }
+
+  _zoneStateLabel(state) {
+    return ({ ok: "정상", partial: "부분 데이터", stale: "오래됨", empty: "데이터 없음", loading: "불러오는 중", error: "오류" })[state] || "상태 확인";
+  }
+
+  renderStateBadge(status) {
+    const state = status?.state || "empty";
+    const tone = this._zoneStateTone(state);
+    return `<span data-cba-component="COM-StateBadge" data-zone-state-badge data-zone-state="${state}" style="display:inline-flex;align-items:center;border:1px solid ${tone};border-radius:999px;color:${tone};background:#fff;padding:4px 9px;font-size:12px;font-weight:800;">${this._zoneStateLabel(state)}</span>`;
+  }
+
+  renderDataFreshnessPill(status) {
+    const minutes = status?.freshnessMinutes;
+    const label = Number.isFinite(minutes) ? `${minutes}분 전 갱신` : "갱신 시각 없음";
+    return `<span data-cba-component="COM-DataFreshnessPill" data-zone-freshness-pill style="display:inline-flex;align-items:center;border-radius:999px;background:#f3f7f4;color:#5d6f62;padding:4px 9px;font-size:12px;font-weight:700;">${label}</span>`;
+  }
+
+  renderLoadingSkeleton(status) {
+    if (status?.state !== "loading") return "";
+    return `<div data-cba-component="COM-LoadingSkeleton" data-zone-loading-skeleton style="margin-top:10px;border-radius:12px;background:linear-gradient(90deg,#eef5f0,#f8fcf9,#eef5f0);padding:12px;color:#78927f;font-size:12px;">구역 정보를 불러오는 중입니다.</div>`;
+  }
+
+  renderEmptyState(status) {
+    if (!["empty", "error"].includes(status?.state)) return "";
+    return `<div data-cba-component="COM-EmptyState" data-zone-empty-state style="margin-top:10px;border:1px dashed #d7e8db;border-radius:12px;background:#fbfdfb;padding:12px;color:#5d6f62;font-size:12px;line-height:1.5;">${status.note}</div>`;
   }
 
   renderZoneTabs(stageKey) {
@@ -92,13 +125,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${selected ? "" : "hidden"}
             style="border:1px solid #e2eee5;border-radius:14px;background:#ffffff;padding:14px;"
           >
+            <div data-zone-state-row style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;">
+              ${this.renderStateBadge(zone.dataStatus)}
+              ${this.renderDataFreshnessPill(zone.dataStatus)}
+            </div>
             <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#78927f;">${zone.name}</p>
             <h4 data-zone-context-crop style="margin:0 0 8px;font-size:16px;color:#24323f;">${config.summary(zone)}</h4>
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
+            ${this.renderLoadingSkeleton(zone.dataStatus)}
+            ${this.renderEmptyState(zone.dataStatus)}
             <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#31523b;font-size:12px;">
               <dt style="font-weight:800;">기준</dt><dd style="margin:0;">${config.metric(zone)}</dd>
               <dt style="font-weight:800;">장비</dt><dd data-zone-context-equipment style="margin:0;">${zone.equipment.join(" · ")}</dd>
             </dl>
+            <p data-zone-readonly-note style="margin:10px 0 0;color:#78927f;font-size:12px;line-height:1.5;">읽기 전용 · 추천은 실행 전 승인과 안전검사를 거친 뒤 별도 단계에서 다룹니다.</p>
             <button type="button" data-zone-detail-modal-button data-zone-detail-stage="${stageKey}" data-zone-detail-zone-id="${zone.id}" style="margin-top:12px;border:1px solid #cfe3d4;border-radius:999px;background:#f8fcf9;color:#31523b;padding:7px 11px;font-size:12px;font-weight:800;cursor:pointer;">구역 상세</button>
           </section>`;
         }).join("")}
