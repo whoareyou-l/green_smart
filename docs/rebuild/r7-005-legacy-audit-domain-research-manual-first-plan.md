@@ -187,9 +187,17 @@ When AI is disabled, unhealthy, timed out, stale, or rejected:
 
 ## 9. Revised implementation roadmap
 
+Detailed domain specification now lives in:
+
+```text
+docs/rebuild/r7-006-manual-first-target-domain-spec.md
+```
+
+Roadmap:
+
 ```text
 R7-005 Legacy Influence Audit + Domain Research + Manual-first Plan  ← this baseline
-R7-006 Target IA Contract: manual-first domain keys/labels and old-key deprecation map
+R7-006 Manual-first Target Domain Specification + target IA contract
 R7-007 Sidebar/Page Shell Rework: old five groups → target domains, no API/DB/execution
 R7-008 Environment Control manual/base settings read-only detail
 R7-009 Irrigation/Fertigation manual/base settings read-only detail

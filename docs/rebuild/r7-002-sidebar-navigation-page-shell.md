@@ -2,7 +2,9 @@
 
 > 기준 버전: `v1.12.38`
 > Status: R7-002 complete
-> 목적: R7-000에서 확정한 sidebar primary groups와 page shell을 rebuild panel에 구현한다.
+> 목적: R7 sidebar primary groups and page shell.
+
+> R7-005+ direction note: this document preserves the old five-group R7 sidebar as historical/compatibility evidence. The target IA is now manual-first and environment-control oriented: `운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리`. Future sidebar/page-shell work must follow `r7-006-manual-first-target-domain-spec.md`, not extend the old `현장 상태` / `추천·실행 검토` grouping by inertia.
 
 ## 1. Scope
 

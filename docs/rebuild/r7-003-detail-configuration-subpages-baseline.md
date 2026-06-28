@@ -3,6 +3,9 @@
 > 기준 버전: `v1.12.38`
 > Status: R7-003 complete
 > selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
+> 목적: all five R7 sidebar groups receive read-only detail/config placeholder baselines.
+
+> R7-005+ direction note: these five placeholders are now classified as `DEPRECATE/REWRITE` in `r7-005-legacy-audit-domain-research-manual-first-plan.md`. Keep this document as evidence of what was released, but do not treat the old placeholder set as the product target. New detail pages must follow the manual-first target domains in `r7-006-manual-first-target-domain-spec.md`.
 
 ## 1. Scope
 

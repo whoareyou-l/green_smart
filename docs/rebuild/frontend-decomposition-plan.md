@@ -387,6 +387,27 @@ pytest -q
 - [x] R2 contract test로 회귀 방어
 
 
+## R7-005+ Manual-first domain reset notice
+
+`v1.12.38`까지의 R7-000~R7-004 기록은 완료된 historical/compatibility evidence로 보존한다. 그러나 R7-005 이후의 현재 제품 방향은 `docs/rebuild/r7-005-legacy-audit-domain-research-manual-first-plan.md`와 `docs/rebuild/r7-006-manual-first-target-domain-spec.md`가 우선한다.
+
+Current target:
+
+```text
+Green Smart = 수동 운영 가능한 환경제어 OS
+AI = 보조/추천/최적화 레이어
+Safety / Interlock / Fail Safe = 최종 허용/차단 권한
+```
+
+Target domains:
+
+```text
+운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리
+```
+
+Old R7 groups such as `현장 상태`, `추천·실행 검토`, `field-status`, and `recommendation-review` must not be extended as the future product IA. They are adaptation/deprecation inputs for the R7-006/R7-007 shell rework.
+
+
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
 `v1.12.38`에서 R7-000 IA blueprint를 완료했다.

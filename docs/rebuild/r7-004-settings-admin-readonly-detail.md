@@ -4,6 +4,8 @@
 > Status: R7-004 complete
 > user-selected scope: 설정·관리 — RBAC/config/admin read-only detail
 
+> R7-005+ direction note: R7-004 remains `KEEP/ADAPT` under the new target `설정·관리` domain. It must keep its read-only, no-mutation, secret-redaction boundary while the surrounding sidebar/IA changes to the manual-first environment-control model in `r7-006-manual-first-target-domain-spec.md`.
+
 ## 1. Scope
 
 The user selected the Settings/Admin group for the first real R7 detail subpage implementation.

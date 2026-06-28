@@ -4,6 +4,8 @@
 > Status: R7-001 complete
 > 목적: R7-000 IA blueprint를 첫 operator-visible crop-centered dashboard로 구현한다.
 
+> R7-005+ direction note: this document is historical completion evidence for the earlier crop-centered R7 dashboard. The current target domain direction is now defined by `r7-005-legacy-audit-domain-research-manual-first-plan.md` and `r7-006-manual-first-target-domain-spec.md`: Green Smart is a manual-operable environment-control OS, AI is an assist layer, and the old `현장 상태` / `추천·실행 검토` framing must be adapted before future UI work.
+
 ## 1. Scope
 
 R7-001 implements the first operator-visible crop-centered dashboard in the rebuild panel.
