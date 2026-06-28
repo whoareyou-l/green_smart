@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.11.12`
+> 기준 버전: `v1.11.13`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
 
@@ -189,7 +189,7 @@ RB-001은 실제 기술 설정을 새로 추가하지 않는다. 현재 Admin/Sy
 
 ### RB-001 completion note
 
-`v1.11.12`에서 Admin/System render boundary extracted 상태가 되었다.
+`v1.11.13`에서 Admin/System render boundary extracted 상태가 되었다.
 
 ```text
 custom_components/green_smart/panel/domains/admin/admin-page.js
@@ -205,7 +205,7 @@ custom_components/green_smart/panel/domains/admin/admin-page.js
 
 ### RB-002 completion note
 
-`v1.11.12`에서 Panel API client adapter baseline이 추가되었다.
+`v1.11.13`에서 Panel API client adapter baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/core/api-client.js
@@ -222,7 +222,7 @@ custom_components/green_smart/panel/core/api-client.js
 
 ### RB-003 Crop read-only component extraction
 
-`v1.11.12`에서 Crop read-only render helper baseline이 추가되었다.
+`v1.11.13`에서 Crop read-only render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-readonly.js
@@ -238,7 +238,7 @@ custom_components/green_smart/panel/domains/crop/crop-readonly.js
 
 ### RB-004 Crop write modal extraction
 
-`v1.11.12`에서 Crop write modal render helper baseline이 추가되었다.
+`v1.11.13`에서 Crop write modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-write-modal.js
@@ -253,6 +253,24 @@ custom_components/green_smart/panel/domains/crop/crop-write-modal.js
 - `route path 변경 없음`.
 - `response shape 변경 없음`.
 - 생육/병해충/방제 record modal은 이번 slice에서 변경하지 않는다.
+
+### RB-004B Growth survey modal render extraction
+
+`v1.11.13`에서 생육조사 modal render helper baseline이 추가되었다.
+
+```text
+custom_components/green_smart/panel/domains/crop/crop-growth-modal.js
+```
+
+완료 범위:
+
+- `domains/crop/crop-growth-modal.js`가 `growthModalContext`, `renderGrowthMetricFields`, `renderGrowthQualityDisorderFields`, `renderGrowthSurveyModal`을 export한다.
+- `생육조사 modal render helpers only`: crop-specific metric fields, 품질/생리장해 section, 조사일/비고/save button HTML만 분리한다.
+- `save/API bindings remain in panel shell`: growth PUT/POST, metrics payload assembly, growth report refresh, popup close/refresh는 `green-smart-panel.js`에 유지한다.
+- `병해충/방제 modal 변경 없음`.
+- `API/DB 변경 없음`.
+- `route path 변경 없음`.
+- `response shape 변경 없음`.
 
 ---
 

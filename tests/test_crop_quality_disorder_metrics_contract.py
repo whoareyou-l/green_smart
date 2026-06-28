@@ -3,6 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CROP = ROOT / "custom_components" / "green_smart" / "crop_views.py"
 PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js"
+GROWTH_MODAL = ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-growth-modal.js"
 MANIFEST = ROOT / "custom_components" / "green_smart" / "manifest.json"
 CENTRAL = ROOT / "custom_components" / "green_smart" / "central_views.py"
 PLAN = ROOT / "docs" / "plans" / "2026-06-24-crop-model-slice-execution-plan.md"
@@ -91,6 +92,8 @@ def test_v1960_feature_snapshot_exposes_quality_disorder_contract():
 
 def test_v1960_panel_quality_disorder_inputs_and_summary_contract():
     panel = PANEL.read_text(encoding="utf-8")
+    growth_modal = GROWTH_MODAL.read_text(encoding="utf-8")
+    frontend = panel + "\n" + growth_modal
     for marker in (
         "qualityDisorderFields",
         "data-growth-quality-disorder-section",
@@ -99,16 +102,16 @@ def test_v1960_panel_quality_disorder_inputs_and_summary_contract():
         "품질/장해 요약",
         "riskFlags",
     ):
-        assert marker in panel
+        assert marker in frontend
     for key in TOMATO_KEYS + LETTUCE_KEYS:
-        assert key in panel
+        assert key in frontend
 
 
 def test_v1960_version_markers_contract():
     manifest = MANIFEST.read_text(encoding="utf-8")
     panel = PANEL.read_text(encoding="utf-8")
     central = CENTRAL.read_text(encoding="utf-8")
-    assert '"version": "1.11.12"' in manifest
-    assert 'const VERSION = "1.11.12"' in panel
-    assert "v1.11.12" in panel[:200]
+    assert '"version": "1.11.13"' in manifest
+    assert 'const VERSION = "1.11.13"' in panel
+    assert "v1.11.13" in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central

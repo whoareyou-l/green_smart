@@ -97,12 +97,13 @@ def test_crop_basic_demolished_seasons_still_show_delete_button_without_edit_or_
 
 def test_growth_add_popup_uses_selected_season_crop_type_for_dynamic_fields():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    modal = (ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-growth-modal.js").read_text(encoding="utf-8")
     popup = panel.split("_openGrowthAddPopup(editIndex = null)", 1)[1].split("_openPestAddPopup()", 1)[0]
 
-    assert "_activeSeason()" in panel
-    assert "_growthFieldConfigForCrop" in panel
-    assert "activeSeason.cropType" in popup or "activeSeason?.cropType" in popup
-    assert "data-growth-field" in popup
+    assert "_activeSeason()" in modal
+    assert "_growthFieldConfigForCrop" in modal
+    assert "activeSeason?.cropType" in popup
+    assert "data-growth-field" in modal
     for crop in ("tomato", "paprika", "strawberry", "lettuce", "cucumber", "herb"):
         assert crop in panel
     for metric in ("plantHeight", "stemDiameter", "flowerClusterNo", "fruitSetNode", "leafLength", "leafWidth", "freshWeight"):

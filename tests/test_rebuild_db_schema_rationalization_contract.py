@@ -15,12 +15,12 @@ def _read(path: Path) -> str:
 
 
 def test_r4_version_surfaces_are_v1114():
-    assert '"version": "1.11.12"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.12"' in _read(PANEL)
-    assert "v1.11.12" in _read(PLAN)
-    assert "v1.11.12" in _read(PRODUCT_PLAN)
-    assert "v1.11.12" in _read(MASTER)
-    assert "v1.11.12" in _read(MASTER_DB)
+    assert '"version": "1.11.13"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.13"' in _read(PANEL)
+    assert "v1.11.13" in _read(PLAN)
+    assert "v1.11.13" in _read(PRODUCT_PLAN)
+    assert "v1.11.13" in _read(MASTER)
+    assert "v1.11.13" in _read(MASTER_DB)
 
 
 def test_r4_physical_schema_still_uses_current_names_and_no_crop_cycles_table():
