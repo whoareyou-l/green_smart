@@ -160,7 +160,7 @@ Run targeted tests
 
 Second selected slice: VS-N002 Crop cycle recording scaffold
 
-Status: `v1.12.28`에서 scaffold-only 계약/DTO/권한 경계 완료.
+Status: `v1.12.29`에서 scaffold-only 계약/DTO/권한 경계 완료.
 
 Reason: after VS-N001 RBAC/Admin ownership, crop-cycle recording needs a product-facing DTO/permission scaffold before monitoring and interlock slices consume crop context.
 
@@ -175,7 +175,7 @@ No DB migration in VS-N002
 
 Third selected slice: VS-N003 Real-time monitoring read-only scaffold
 
-Status: `v1.12.28`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
+Status: `v1.12.29`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
 
 Reason: after RBAC/Admin ownership and crop-cycle context, monitoring needs a read-only DTO and freshness boundary before Interlock/Safety consumes sensor state.
 
@@ -183,4 +183,19 @@ Reason: after RBAC/Admin ownership and crop-cycle context, monitoring needs a re
 RBAC/Admin ownership scaffold → Crop cycle recording scaffold → Real-time monitoring read-only slice → Interlock/Safety core scaffold
 No DB migration in VS-N003
 No sensor collection/scheduler in VS-N003
+```
+
+
+## Stage 8 — Fourth Vertical Rebuild Slice Selection
+
+Fourth selected slice: VS-N004 Interlock/Safety core scaffold
+
+Status: `v1.12.29`에서 scaffold-only safety/interlock DTO/권한/state-gate 경계 완료.
+
+Reason: after RBAC, crop-cycle context, and monitoring read-only state, Interlock/Safety needs a read-only state-gate boundary before any future runtime adapter or approval/override release.
+
+```text
+RBAC/Admin ownership scaffold → Crop cycle recording scaffold → Real-time monitoring read-only slice → Interlock/Safety core scaffold
+No execution decision change in VS-N004
+No approval/override release in VS-N004
 ```

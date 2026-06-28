@@ -41,6 +41,7 @@ RBAC_PERMISSION_ALIASES: dict[str, tuple[str, ...]] = {
     "recommendation.approve": ("edit_strategy_settings",),
     "execution.dry_run": ("run_dry_run",),
     "execution.command": ("execute_final_targets", "manual_device_control"),
+    "safety.core.read": ("view_safety_status", "view_dashboard"),
     "safety.rule.manage": ("edit_interlock_rules", "edit_interlock_thresholds"),
     "safety.event.ack": ("ack_safety_event",),
     "safety.event.clear": ("clear_safety_event",),
@@ -120,7 +121,7 @@ RBAC_PERMISSION_BUCKETS = {
     "기록": ("edit_crop_records", "manage_crop_seasons"),
     "전략": ("edit_strategy_settings",),
     "실행": ("run_dry_run", "execute_final_targets", "manual_device_control"),
-    "안전": ("ack_safety_event", "clear_safety_event", "edit_interlock_thresholds", "edit_interlock_rules"),
+    "안전": ("view_safety_status", "ack_safety_event", "clear_safety_event", "edit_interlock_thresholds", "edit_interlock_rules"),
     "고급설정": ("manage_users_roles", "manage_farm_staff_roles", "system_settings", "edit_entity_mapping"),
 }
 

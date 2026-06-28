@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.28`
+> 기준 버전: `v1.12.29`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -672,3 +672,15 @@ No HA entity read API in VS-N003
 ```
 
 Existing compatibility routes stay unchanged. A future slice may add a read adapter only after RED contract and explicit scope confirmation.
+
+
+## VS-N004 Interlock/Safety core scaffold interface boundary
+
+```text
+VS-N004 Interlock/Safety core scaffold
+safety/interlock read-only DTO boundary
+runtimeSafetyAdapterEnabled = false
+No existing SafetyGuard runtime behavior change in VS-N004
+```
+
+Existing compatibility routes and runtime SafetyGuard/Interlock decisions stay unchanged. A future adapter requires a separate RED contract and question gate.

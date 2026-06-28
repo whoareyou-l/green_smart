@@ -1,7 +1,7 @@
 # 4. 통합 시나리오 흐름도 — Workflow Diagram
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.28`
+> 기준 버전: `v1.12.29`
 > 문서 목적: UI 컴포넌트, Frontend service, Backend API, DB, MQTT/HA Entity, 하드웨어가 시간 순서대로 어떻게 신호를 주고받는지 정의한다.
 
 ## 1. 공통 Actor
@@ -413,3 +413,14 @@ No sensor collection/scheduler in VS-N003
 ```
 
 The workflow defines freshness states before live collection is attached.
+
+
+## VS-N004 Interlock/Safety core scaffold workflow boundary
+
+```text
+VS-N004 Interlock/Safety core scaffold
+safety state gate boundary
+No approval/override release in VS-N004
+```
+
+The workflow defines where safety state gates must sit before future execution/approval work, but does not change live workflows.

@@ -1,7 +1,7 @@
 # 5. 로직 알고리즘 및 예외처리 명세서 — Logic Algorithm & Exception Handling Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.28`
+> 기준 버전: `v1.12.29`
 > 문서 목적: Green Smart의 **시스템의 두뇌와 생존 장치**를 정의한다. VPD 계산 수식, PID/제어 알고리즘, AI 판단 규칙, SafetyGuard/Interlock, 인터넷 단절·센서 고장·장비 오류 같은 온실 현장 예외상황의 Fail-Safe 조치를 명문화한다.
 
 ## 1. 핵심 원칙
@@ -522,3 +522,15 @@ executionEnabled = false
 ```
 
 Monitoring evidence may become input to Interlock/Safety later, but VS-N003 grants no execution authority.
+
+
+## VS-N004 Interlock/Safety core scaffold safety boundary
+
+```text
+VS-N004 Interlock/Safety core scaffold
+read-only safety evidence only
+No execution decision change in VS-N004
+executionDecisionEnabled = false
+```
+
+Safety/interlock evidence may become a future runtime adapter input, but VS-N004 grants no execution decision, approval override, or device command authority.
