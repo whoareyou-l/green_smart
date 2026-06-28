@@ -50,8 +50,10 @@ def test_rebuild_panel_is_now_the_main_product_surface():
     source = _read(REBUILD_PANEL)
     assert "green-smart-rebuild-panel" in source
     assert "data-rebuild-root" in source
-    assert "Start from blank page/scaffold." in source
-    assert "No legacy panel module imports." in source
+    assert "오늘의 작물 운영을 먼저 확인합니다" in source
+    assert "작물 상태와 목표를 기준으로" in source
+    assert "Start from blank page/scaffold." not in source
+    assert "No legacy panel module imports." not in source
 
 
 def test_legacy_doc_records_rename_and_main_surface_rule():
@@ -61,5 +63,7 @@ def test_legacy_doc_records_rename_and_main_surface_rule():
         "green_smart_legacy",
         "green-smart-rebuild-panel is the main product surface",
         "green-smart-panel remains legacy reference/runtime only",
+        "Start from blank page/scaffold.",
+        "No legacy panel module imports.",
     ):
         assert marker in doc

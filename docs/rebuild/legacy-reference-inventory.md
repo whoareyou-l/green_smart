@@ -70,6 +70,17 @@ custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js
 
 That scaffold must intentionally avoid importing legacy crop/environment/admin page modules. It starts with an empty shell and only grows from new master documents and target architecture.
 
+Development contract wording, for docs/tests only:
+
+```text
+Legacy UI/features are reference only.
+Start from blank page/scaffold.
+No legacy panel module imports.
+No production cutover without explicit approval.
+```
+
+These strings must not be rendered as operator-facing frontend copy. The frontend should show only current product behavior and operating guidance.
+
 ## Main vs legacy registration
 
 From this point forward:

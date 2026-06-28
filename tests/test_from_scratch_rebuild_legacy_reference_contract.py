@@ -38,13 +38,24 @@ def test_from_scratch_rebuild_panel_exists_as_new_main_surface():
         "green-smart-rebuild-panel",
         "data-rebuild-root",
         "data-rebuild-empty-shell",
+        "작물 중심 운영체계",
+        "오늘의 작물 운영을 먼저 확인합니다",
+        "구역별 세부 정보는 각 단계 안에서",
+    ):
+        assert marker in source
+
+
+def test_from_scratch_transition_rules_stay_in_docs_not_rendered_panel():
+    source = _read(REBUILD_PANEL)
+    doc = _read(LEGACY_DOC)
+    for marker in (
         "Legacy UI/features are reference only.",
         "Start from blank page/scaffold.",
         "No legacy panel module imports.",
         "No production cutover without explicit approval.",
-        "작물 중심 운영체계",
     ):
-        assert marker in source
+        assert marker not in source
+        assert marker in doc
 
 
 def test_from_scratch_rebuild_panel_does_not_import_legacy_modules():
@@ -67,4 +78,4 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     rebuild = _read(REBUILD_PANEL)
     assert "Green Smart — Modern SaaS greenhouse dashboard" in legacy
     assert "green-smart-rebuild-panel" in rebuild
-    assert len(rebuild.splitlines()) < 120
+    assert len(rebuild.splitlines()) < 180

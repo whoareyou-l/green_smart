@@ -73,8 +73,33 @@ Each greenhouse zone may have a different crop, crop state, equipment set, and d
 Therefore the home dashboard should read as:
 
 ```text
-Crop-centered OS with zone-specific crop contexts.
+Crop-centered OS with zone-scoped detail inside each main operating step.
 ```
+
+This does **not** mean adding a standalone `구역별 작물 운영` section/card. Zone scope belongs inside each crop-centered step:
+
+```text
+작물상태: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
+생육목표: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
+환경/관수/장치 영향: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
+추천/실행: 전체 / A구역 / B구역 tabs, horizontal cards, or detail modal
+```
+
+## Developer-only transition notes
+
+The following points are development/release guidance only and must remain in docs/tests, not in rendered frontend copy:
+
+```text
+레거시를 참고하되, 작물 중심으로 다시 시작합니다.
+기존 UI/기능은 참고 자료입니다.
+새 메인 화면은 기능 탭이 아니라 작물 운영 흐름으로 설계합니다.
+Legacy UI/features are reference only.
+Start from blank page/scaffold.
+No legacy panel module imports.
+No production cutover without explicit approval.
+```
+
+Operator-facing UI should describe the current product behavior only, for example crop operation flow, zone detail tabs/scroll, approval, and safety checks.
 
 ## Forbidden direction
 

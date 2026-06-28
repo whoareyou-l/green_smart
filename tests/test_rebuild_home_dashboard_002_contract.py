@@ -31,7 +31,7 @@ def test_rs002_home_dashboard_labels_are_crop_first_not_function_first():
         "환경·관수·장치 영향",
         "추천·실행",
         "작물이 먼저이고 제어는 그 다음입니다",
-        "데이터 연결 전",
+        "구역별 세부 정보는 각 단계 안에서",
         "추천은 실행 전 승인과 안전검사를 거칩니다",
     ):
         assert label in source
@@ -41,14 +41,20 @@ def test_rs002_home_dashboard_supports_zone_specific_crop_contexts():
     source = _read(REBUILD_PANEL)
     for marker in (
         "REBUILD_ZONE_CONTEXTS",
-        "data-crop-os-zone-contexts",
+        "REBUILD_STAGE_DETAILS",
+        "data-crop-os-stage-zone-detail",
+        "data-zone-detail-stage",
+        "data-zone-detail-tabs",
+        "data-zone-detail-modal-button",
         "data-zone-context-card",
         "data-zone-context-id",
         "data-zone-context-crop",
         "data-zone-context-state",
         "data-zone-context-equipment",
-        "구역별 작물 운영",
-        "구역마다 작물·상태·장비 구성이 다릅니다",
+        "구역별 작물상태",
+        "구역별 생육목표",
+        "구역별 환경·관수·장치 영향",
+        "구역별 추천·실행 검토",
         "토마토",
         "딸기",
         "천창",
@@ -63,7 +69,34 @@ def test_rs002_zone_context_keeps_crop_as_main_frame_but_zones_as_detail_frame()
     source = _read(REBUILD_PANEL)
     assert "작물 중심" in source
     assert "구역별" in source
-    assert source.index("작물 중심 운영체계") < source.index("구역별 작물 운영")
+    assert "data-crop-os-zone-contexts" not in source
+    assert "구역별 작물 운영" not in source
+    for call in (
+        'this.renderZoneDrilldown("crop-status")',
+        'this.renderZoneDrilldown("growth-goal")',
+        'this.renderZoneDrilldown("environment-impact")',
+        'this.renderZoneDrilldown("recommend-act")',
+    ):
+        assert call in source
+
+
+def test_rs002_frontend_does_not_show_developer_rebuild_or_legacy_transition_copy():
+    source = _read(REBUILD_PANEL)
+    for forbidden in (
+        "레거시를 참고하되",
+        "작물 중심으로 다시 시작합니다",
+        "기존 UI/기능은 참고 자료입니다",
+        "새 메인 화면은 기능 탭이 아니라",
+        "Legacy UI/features are reference only",
+        "Start from blank page/scaffold",
+        "No legacy panel module imports",
+        "No production cutover without explicit approval",
+        "legacy-reference-only",
+        "blank-first",
+        "no-legacy-imports",
+        "explicit-cutover-gate",
+    ):
+        assert forbidden not in source
 
 
 def test_rs002_rebuild_nav_does_not_present_legacy_domain_tabs_as_primary_frame():

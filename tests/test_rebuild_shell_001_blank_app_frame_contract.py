@@ -46,7 +46,8 @@ def test_rs001_rebuild_panel_exports_pages_for_future_new_modules():
     source = _read(REBUILD_PANEL)
     assert "REBUILD_PAGES" in source
     assert "REBUILD_ZONE_CONTEXTS" in source
-    assert "export { GreenSmartRebuildPanel, REBUILD_ELEMENT_NAME, REBUILD_PAGES, REBUILD_VERSION, REBUILD_ZONE_CONTEXTS }" in source
+    assert "REBUILD_STAGE_DETAILS" in source
+    assert "export { GreenSmartRebuildPanel, REBUILD_ELEMENT_NAME, REBUILD_PAGES, REBUILD_VERSION, REBUILD_ZONE_CONTEXTS" in source
     assert "Object.freeze" in source
 
 
