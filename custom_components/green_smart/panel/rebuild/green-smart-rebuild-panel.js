@@ -1,7 +1,7 @@
 // Green Smart rebuild panel
 // Developer-only rebuild notes belong in docs/rebuild/*, not in rendered UI copy.
 
-const REBUILD_VERSION = "1.12.4";
+const REBUILD_VERSION = "1.12.5";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
@@ -10,14 +10,43 @@ const REBUILD_PAGES = Object.freeze([
   { key: "recommend-act", label: "추천·실행", description: "추천을 검토하고 승인 후 실행합니다." },
 ]);
 
-const REBUILD_ZONE_CONTEXTS = Object.freeze([
-  { id: "all", name: "전체", crop: "전체 작물", state: "전체 구역 요약", equipment: ["구역별 장비 요약"], dataStatus: { state: "partial", freshnessMinutes: 6, note: "일부 구역 데이터가 아직 보강 중입니다." } },
-  { id: "zone-a", name: "A구역", crop: "토마토", state: "착과·비대 관찰", equipment: ["천창", "측창", "양액기"], dataStatus: { state: "ok", freshnessMinutes: 2, note: "최근 데이터 기준으로 확인했습니다." } },
-  { id: "zone-b", name: "B구역", crop: "딸기", state: "개화·수분 관리", equipment: ["보온커튼", "관수밸브", "순환팬"], dataStatus: { state: "stale", freshnessMinutes: 38, note: "최근 수집 시각이 오래되어 현장 확인이 필요합니다." } },
-  { id: "zone-c", name: "C구역", crop: "미등록", state: "작기 정보 없음", equipment: ["장비 매핑 없음"], dataStatus: { state: "empty", freshnessMinutes: null, note: "현재 연결된 작기와 장비 정보가 없습니다." } },
-  { id: "zone-loading", name: "동기화", crop: "불러오는 중", state: "데이터 수집 중", equipment: ["동기화 대기"], dataStatus: { state: "loading", freshnessMinutes: null, note: "구역 데이터를 불러오는 중입니다." } },
-  { id: "zone-error", name: "점검", crop: "확인 필요", state: "데이터 오류", equipment: ["상태 확인 필요"], dataStatus: { state: "error", freshnessMinutes: null, note: "데이터를 읽지 못했습니다. 연결 상태를 확인합니다." } },
-]);
+const REBUILD_HOME_CONTEXT = Object.freeze({
+  contextSource: "static-fixture-before-api",
+  greenhouseId: "greenhouse-main",
+  greenhouseName: "대표 온실",
+  generatedAt: "2026-06-28T00:00:00+09:00",
+  zones: [
+    { id: "all", name: "전체", currentCrop: { cropSeasonId: null, cropType: "mixed", cropLabelKo: "전체 작물", growthStage: "전체 구역 요약" }, equipmentProfile: { labels: ["구역별 장비 요약"] }, dataAvailability: { state: "partial", freshnessMinutes: 6, note: "일부 구역 데이터가 아직 보강 중입니다." } },
+    { id: "zone-a", name: "A구역", currentCrop: { cropSeasonId: "season-tomato-a", cropType: "tomato", cropLabelKo: "토마토", growthStage: "착과·비대 관찰" }, equipmentProfile: { labels: ["천창", "측창", "양액기"] }, dataAvailability: { state: "ok", freshnessMinutes: 2, note: "최근 데이터 기준으로 확인했습니다." } },
+    { id: "zone-b", name: "B구역", currentCrop: { cropSeasonId: "season-strawberry-b", cropType: "strawberry", cropLabelKo: "딸기", growthStage: "개화·수분 관리" }, equipmentProfile: { labels: ["보온커튼", "관수밸브", "순환팬"] }, dataAvailability: { state: "stale", freshnessMinutes: 38, note: "최근 수집 시각이 오래되어 현장 확인이 필요합니다." } },
+    { id: "zone-c", name: "C구역", currentCrop: { cropSeasonId: null, cropType: null, cropLabelKo: "미등록", growthStage: "작기 정보 없음" }, equipmentProfile: { labels: ["장비 매핑 없음"] }, dataAvailability: { state: "empty", freshnessMinutes: null, note: "현재 연결된 작기와 장비 정보가 없습니다." } },
+    { id: "zone-loading", name: "동기화", currentCrop: { cropSeasonId: null, cropType: null, cropLabelKo: "불러오는 중", growthStage: "데이터 수집 중" }, equipmentProfile: { labels: ["동기화 대기"] }, dataAvailability: { state: "loading", freshnessMinutes: null, note: "구역 데이터를 불러오는 중입니다." } },
+    { id: "zone-error", name: "점검", currentCrop: { cropSeasonId: null, cropType: null, cropLabelKo: "확인 필요", growthStage: "데이터 오류" }, equipmentProfile: { labels: ["상태 확인 필요"] }, dataAvailability: { state: "error", freshnessMinutes: null, note: "데이터를 읽지 못했습니다. 연결 상태를 확인합니다." } },
+  ],
+});
+
+function normalizeRebuildHomeContext(context) {
+  const zones = Array.isArray(context?.zones) ? context.zones : [];
+  return {
+    contextSource: context?.contextSource || "static-fixture-before-api",
+    greenhouseId: context?.greenhouseId || "greenhouse-main",
+    greenhouseName: context?.greenhouseName || "대표 온실",
+    generatedAt: context?.generatedAt || new Date(0).toISOString(),
+    zones: zones.map((zone) => ({
+      ...zone,
+      crop: zone.currentCrop?.cropLabelKo || "미등록",
+      state: zone.currentCrop?.growthStage || "작기 정보 없음",
+      equipment: zone.equipmentProfile?.labels || [],
+      dataStatus: zone.dataAvailability || { state: "empty", freshnessMinutes: null, note: "구역 데이터가 없습니다." },
+    })),
+  };
+}
+
+function getRebuildHomeContext() {
+  return normalizeRebuildHomeContext(REBUILD_HOME_CONTEXT);
+}
+
+const REBUILD_ZONE_CONTEXTS = Object.freeze(getRebuildHomeContext().zones);
 
 const REBUILD_STAGE_DETAILS = Object.freeze({
   "crop-status": {
@@ -49,6 +78,7 @@ const REBUILD_STAGE_DETAILS = Object.freeze({
 class GreenSmartRebuildPanel extends HTMLElement {
   constructor() {
     super();
+    this._homeContext = getRebuildHomeContext();
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -86,11 +116,23 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-cba-component="COM-EmptyState" data-zone-empty-state style="margin-top:10px;border:1px dashed #d7e8db;border-radius:12px;background:#fbfdfb;padding:12px;color:#5d6f62;font-size:12px;line-height:1.5;">${status.note}</div>`;
   }
 
+  _zonesForRender() {
+    return this._homeContext?.zones || [];
+  }
+
+  _findZoneForRender(zoneId) {
+    return this._zonesForRender().find((item) => item.id === zoneId) || this._zonesForRender()[0];
+  }
+
+  _contextMetaForRender() {
+    return this._homeContext || getRebuildHomeContext();
+  }
+
   renderZoneTabs(stageKey) {
     const selectedZoneId = this._selectedZoneId[stageKey] || "all";
     return `
       <div data-cba-component="COM-ZoneTabs" data-zone-tablist data-zone-tab-stage="${stageKey}" role="tablist" aria-label="${REBUILD_STAGE_DETAILS[stageKey].title}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-        ${REBUILD_ZONE_CONTEXTS.map((zone) => {
+        ${this._zonesForRender().map((zone) => {
           const selected = zone.id === selectedZoneId;
           return `<button
             type="button"
@@ -113,7 +155,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZoneId = this._selectedZoneId[stageKey] || "all";
     return `
       <div data-cba-component="COM-ZonePanel" data-zone-panels data-zone-panel-stage="${stageKey}" data-active-zone-id="${selectedZoneId}" style="margin-top:12px;">
-        ${REBUILD_ZONE_CONTEXTS.map((zone) => {
+        ${this._zonesForRender().map((zone) => {
           const selected = zone.id === selectedZoneId;
           return `<section
             data-zone-panel
@@ -130,13 +172,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
               ${this.renderDataFreshnessPill(zone.dataStatus)}
             </div>
             <p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#78927f;">${zone.name}</p>
-            <h4 data-zone-context-crop style="margin:0 0 8px;font-size:16px;color:#24323f;">${config.summary(zone)}</h4>
+            <h4 data-zone-context-crop data-zone-current-crop style="margin:0 0 8px;font-size:16px;color:#24323f;">${zone.currentCrop?.cropLabelKo || zone.crop} · <span data-zone-growth-stage>${zone.currentCrop?.growthStage || zone.state}</span></h4>
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}
             <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#31523b;font-size:12px;">
               <dt style="font-weight:800;">기준</dt><dd style="margin:0;">${config.metric(zone)}</dd>
-              <dt style="font-weight:800;">장비</dt><dd data-zone-context-equipment style="margin:0;">${zone.equipment.join(" · ")}</dd>
+              <dt style="font-weight:800;">장비</dt><dd data-zone-context-equipment data-zone-equipment-profile style="margin:0;">${zone.equipmentProfile?.labels?.join(" · ") || zone.equipment.join(" · ")}</dd>
             </dl>
             <p data-zone-readonly-note style="margin:10px 0 0;color:#78927f;font-size:12px;line-height:1.5;">읽기 전용 · 추천은 실행 전 승인과 안전검사를 거친 뒤 별도 단계에서 다룹니다.</p>
             <button type="button" data-zone-detail-modal-button data-zone-detail-stage="${stageKey}" data-zone-detail-zone-id="${zone.id}" style="margin-top:12px;border:1px solid #cfe3d4;border-radius:999px;background:#f8fcf9;color:#31523b;padding:7px 11px;font-size:12px;font-weight:800;cursor:pointer;">구역 상세</button>
@@ -199,7 +241,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _openZoneDetailModal(stageKey, zoneId) {
-    const zone = REBUILD_ZONE_CONTEXTS.find((item) => item.id === zoneId) || REBUILD_ZONE_CONTEXTS[0];
+    const zone = this._findZoneForRender(zoneId);
     const config = REBUILD_STAGE_DETAILS[stageKey];
     const modal = this.querySelector("[data-zone-detail-modal]");
     if (!modal || !config) return;
@@ -227,8 +269,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderOperatingHome() {
+    const contextMeta = this._contextMetaForRender();
     return `
-      <section data-cba-page="PAGE-CropCenteredHome" data-crop-os-home style="display:grid;gap:14px;">
+      <section data-cba-page="PAGE-CropCenteredHome" data-crop-os-home data-rebuild-context-source="${contextMeta.contextSource}" data-rebuild-greenhouse-id="${contextMeta.greenhouseId}" data-rebuild-context-generated-at="${contextMeta.generatedAt}" style="display:grid;gap:14px;">
         <article style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f0f8f2);padding:24px;">
           <p style="margin:0 0 8px;font-size:12px;font-weight:800;color:#5d7d64;letter-spacing:.08em;text-transform:uppercase;">Crop-centered OS</p>
           <h1 style="margin:0 0 12px;font-size:30px;line-height:1.2;color:#24323f;">작물 중심 운영체계</h1>

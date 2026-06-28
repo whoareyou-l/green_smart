@@ -148,6 +148,40 @@ Implementation implication:
 - Empty/error zones show an operator-facing empty state.
 - Recommendation/action copy remains read-only; no execute/apply/service-call control is introduced in RS-005.
 
+## RS-006 context source vertical slice
+
+Scope: define the home context source shape before backend/API hookup.
+
+Decision:
+
+```text
+zone parent + currentCrop attached
+contextSource = static-fixture-before-api
+normalizeRebuildHomeContext
+read-only context adapter
+no fetch/API/service execution in RS-006
+```
+
+Context shape:
+
+```text
+REBUILD_HOME_CONTEXT
+  contextSource
+  greenhouseId / greenhouseName / generatedAt
+  zones[]
+    id / name
+    currentCrop: cropSeasonId, cropType, cropLabelKo, growthStage
+    equipmentProfile: labels[]
+    dataAvailability: state, freshnessMinutes, note
+```
+
+Implementation implication:
+
+- Rendering reads zones through `getRebuildHomeContext()` and `normalizeRebuildHomeContext()`.
+- The current fixture is explicitly marked `static-fixture-before-api`.
+- No direct `fetch`, HA API call, service call, or execution control is introduced.
+- The next slice may replace the fixture source with a read-only API adapter without changing panel DOM contracts.
+
 ## Developer-only transition notes
 
 The following points are development/release guidance only and must remain in docs/tests, not in rendered frontend copy:

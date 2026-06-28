@@ -1,7 +1,7 @@
 # 1. CBA 화면 기획서 — UI/UX 설계도
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.4`
+> 기준 버전: `v1.12.5`
 > 문서 목적: Green Smart 화면을 **공통 부품(COM) → 복합 모듈(MOD) → 전체 페이지(PAGE)** 3단계로 정리하여, 코드가 화면마다 중복/난립하지 않도록 한다.
 
 ## 1. 설계 원칙
@@ -212,7 +212,7 @@ data-crop-ui-record-list
 | MOD-CropCycleCard | 작기 카드 | Crop | crop_cycles | 상추/토마토 작기 상태 표시 | crop_cycle_id 유지 |
 | MOD-GrowthSurveyList | 생육조사 목록 | Crop | growth_surveys | 주간 기록 입력/수정/삭제 | 수행자 user_id 기록 |
 | MOD-CropAiSummary | 작물 AI 요약 | Crop AI | crop model API | 작물단계/상태/환경/관수/병충해 요약 | read-only |
-| MOD-CropStageZoneDetail | 작물 운영 단계별 구역 상세 | Rebuild Home | REBUILD_ZONE_CONTEXTS, stage details | 작물상태/생육목표/환경·관수·장치 영향/추천·실행 각각에서 구역 탭으로 선택 구역 패널 표시 | 별도 `구역별 작물 운영` 섹션 금지 |
+| MOD-CropStageZoneDetail | 작물 운영 단계별 구역 상세 | Rebuild Home | REBUILD_HOME_CONTEXT, REBUILD_ZONE_CONTEXTS, stage details | 작물상태/생육목표/환경·관수·장치 영향/추천·실행 각각에서 구역 탭으로 선택 구역 패널 표시 | 별도 `구역별 작물 운영` 섹션 금지 |
 | MOD-InterlockSummary | 안전/인터록 요약 | Crop/Control | interlock API | 안전상태/인터록/오류건수 표시 | 오류건수 클릭 모달 |
 | MOD-WindowController | 천창 제어 | Device/Env | controlService, HA cover | Dry Run, 승인 후 제어 | SafetyGuard 필수 |
 | MOD-ControlModeCard | 제어 모드 | Env/Irr/Device | control mode API | manual/assist/auto/disabled | auto는 allowAutoExecution 필요 |
@@ -237,6 +237,28 @@ data-crop-ui-record-list
 - Interlock/Safety:
 - 테스트 marker:
 ```
+
+### 3.1.1 Rebuild Home Context Source 계약
+
+`PAGE-CropCenteredHome`의 구역 데이터는 API 연결 전이라도 명시적인 context source shape를 따라야 한다.
+
+```text
+REBUILD_HOME_CONTEXT
+contextSource: static-fixture-before-api
+greenhouseId / greenhouseName / generatedAt
+zone parent + currentCrop attached
+zones[]
+  currentCrop: cropSeasonId, cropType, cropLabelKo, growthStage
+  equipmentProfile: labels[]
+  dataAvailability: state, freshnessMinutes, note
+```
+
+규칙:
+
+- `currentCrop`은 zone의 하위 attached context다.
+- `equipmentProfile`은 구역별 장비 표시 source다.
+- `dataAvailability`는 `COM-StateBadge`, `COM-DataFreshnessPill`, `COM-EmptyState`, `COM-LoadingSkeleton`의 입력이다.
+- RS-006에서는 `contextSource`가 `static-fixture-before-api`이며, fetch/API/service execution은 금지한다.
 
 ### 3.2 작기 변경 State Propagation 계약
 
