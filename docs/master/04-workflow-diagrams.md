@@ -1,7 +1,7 @@
 # 4. 통합 시나리오 흐름도 — Workflow Diagram
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.22`
+> 기준 버전: `v1.12.23`
 > 문서 목적: UI 컴포넌트, Frontend service, Backend API, DB, MQTT/HA Entity, 하드웨어가 시간 순서대로 어떻게 신호를 주고받는지 정의한다.
 
 ## 1. 공통 Actor
@@ -366,3 +366,12 @@ normal → strong_wind → rain → low_temperature → sensor_fault → blocked
 ```
 
 This is a read-only rehearsal. No real-device hookup in RS-023.
+
+
+## RS-024 Rehearsal result review workflow
+
+```text
+virtual rehearsal scaffold → result review projection
+```
+
+Each scenario result remains not_run until real virtual runner slice. No real-device hookup in RS-024.

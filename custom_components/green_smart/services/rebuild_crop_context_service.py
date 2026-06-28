@@ -146,6 +146,20 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "deviceCommandEnabled": False,
         "mqttEnabled": False,
     }
+    rehearsal_result_review_projection = {
+        "reviewState": "pending_virtual_results" if crop_cycle_id else "empty",
+        "resultSummary": "가상 리허설 결과 검토 대기: 실제 실행 없이 시나리오별 결과를 확인합니다.",
+        "scenarioResults": [
+            {"scenario": scenario, "resultState": "not_run"}
+            for scenario in virtual_execution_rehearsal_scaffold["scenarioSet"]
+        ],
+        "sourceRehearsal": virtual_execution_rehearsal_scaffold,
+        "readOnly": True,
+        "executionEnabled": False,
+        "approvalReleaseEnabled": False,
+        "deviceCommandEnabled": False,
+        "mqttEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -162,6 +176,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "operatorApprovalScaffold": operator_approval_scaffold,
         "safetyInterlockPreflightProjection": safety_interlock_preflight_projection,
         "virtualExecutionRehearsalScaffold": virtual_execution_rehearsal_scaffold,
+        "rehearsalResultReviewProjection": rehearsal_result_review_projection,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },

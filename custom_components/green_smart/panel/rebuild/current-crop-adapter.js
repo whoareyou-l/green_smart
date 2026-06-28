@@ -150,6 +150,22 @@ export function normalizeVirtualExecutionRehearsalScaffold(zone = {}, safetyInte
   };
 }
 
+export function normalizeRehearsalResultReviewProjection(zone = {}, virtualExecutionRehearsalScaffold = normalizeVirtualExecutionRehearsalScaffold(zone)) {
+  const review = zone.rehearsalResultReviewProjection || zone.rehearsal_result_review_projection || {};
+  const scenarios = virtualExecutionRehearsalScaffold.scenarioSet || ["normal", "strong_wind", "rain", "low_temperature", "sensor_fault", "blocked", "fail_safe", "recovery"];
+  return {
+    reviewState: review.reviewState || "pending_virtual_results",
+    resultSummary: review.resultSummary || "가상 리허설 결과 검토 대기: 실제 실행 없이 시나리오별 결과를 확인합니다.",
+    scenarioResults: review.scenarioResults || scenarios.map((scenario) => ({ scenario, resultState: "not_run" })),
+    sourceRehearsal: review.sourceRehearsal || virtualExecutionRehearsalScaffold,
+    readOnly: true,
+    executionEnabled: false,
+    approvalReleaseEnabled: false,
+    deviceCommandEnabled: false,
+    mqttEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
@@ -159,6 +175,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
   const operatorApprovalScaffold = normalizeOperatorApprovalScaffold(zone, recommendationReviewProjection);
   const safetyInterlockPreflightProjection = normalizeSafetyInterlockPreflightProjection(zone, operatorApprovalScaffold);
   const virtualExecutionRehearsalScaffold = normalizeVirtualExecutionRehearsalScaffold(zone, safetyInterlockPreflightProjection);
+  const rehearsalResultReviewProjection = normalizeRehearsalResultReviewProjection(zone, virtualExecutionRehearsalScaffold);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -175,6 +192,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     operatorApprovalScaffold,
     safetyInterlockPreflightProjection,
     virtualExecutionRehearsalScaffold,
+    rehearsalResultReviewProjection,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],

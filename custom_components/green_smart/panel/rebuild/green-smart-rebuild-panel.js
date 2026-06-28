@@ -10,13 +10,14 @@
 // RS-021 operator approval scaffold: recommendationReviewProjection → operatorApprovalScaffold for disabled 작업자 승인 상태.
 // RS-022 safety/interlock preflight projection: operatorApprovalScaffold → safetyInterlockPreflightProjection.
 // RS-023 virtual execution rehearsal scaffold: safetyInterlockPreflightProjection → virtualExecutionRehearsalScaffold.
+// RS-024 rehearsal result review projection: virtualExecutionRehearsalScaffold → rehearsalResultReviewProjection.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.22";
+const REBUILD_VERSION = "1.12.23";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -332,6 +333,31 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderRehearsalResultReviewProjection(zone, stageKey) {
+    if (!["recommendation-execution"].includes(stageKey)) return "";
+    const review = zone.rehearsalResultReviewProjection || {};
+    const reviewState = review.reviewState || "pending_virtual_results";
+    const summary = review.resultSummary || "가상 리허설 결과 검토 대기: 실제 실행 없이 시나리오별 결과를 확인합니다.";
+    const scenarioResults = review.scenarioResults || ["normal", "strong_wind", "rain", "low_temperature", "sensor_fault", "blocked", "fail_safe", "recovery"].map((scenario) => ({ scenario, resultState: "not_run" }));
+    const scenarioText = scenarioResults.map((item) => `${item.scenario}:${item.resultState || "not_run"}`).join(",");
+    const readOnly = review.readOnly !== false;
+    const executionEnabled = review.executionEnabled === true;
+    const approvalReleaseEnabled = review.approvalReleaseEnabled === true;
+    const deviceCommandEnabled = review.deviceCommandEnabled === true;
+    const mqttEnabled = review.mqttEnabled === true;
+    return `
+      <section data-rehearsal-result-review-card data-rehearsal-result-review-state="${reviewState}" data-rehearsal-result-summary="${summary}" data-rehearsal-result-scenarios="${scenarioText}" data-rehearsal-result-readonly="${readOnly}" data-rehearsal-result-execution-enabled="${executionEnabled}" data-rehearsal-result-approval-release-enabled="${approvalReleaseEnabled}" data-rehearsal-result-device-command-enabled="${deviceCommandEnabled}" data-rehearsal-result-mqtt-enabled="${mqttEnabled}" style="margin:10px 0;border:1px solid #ead7a6;border-radius:14px;background:#fffdf5;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#7a5a12;">리허설 결과 검토 · read-only</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#5b4819;font-size:12px;">
+          <dt style="font-weight:900;">검토 상태</dt><dd style="margin:0;">${reviewState}</dd>
+          <dt style="font-weight:900;">결과 요약</dt><dd style="margin:0;">${summary}</dd>
+          <dt style="font-weight:900;">시나리오 결과</dt><dd style="margin:0;">${scenarioResults.map((item) => `${item.scenario}=${item.resultState || "not_run"}`).join(" · ")}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#746236;font-size:12px;line-height:1.5;">RS-024는 실제 virtual runner 전 단계입니다. 모든 시나리오 결과는 not_run 검토 상태이며 승인 해제, 실행, MQTT, 장치 명령을 제공하지 않습니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -405,6 +431,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${this.renderOperatorApprovalScaffold(zone, stageKey)}
             ${this.renderSafetyInterlockPreflightProjection(zone, stageKey)}
             ${this.renderVirtualExecutionRehearsalScaffold(zone, stageKey)}
+            ${this.renderRehearsalResultReviewProjection(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}
