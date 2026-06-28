@@ -1,0 +1,1 @@
+"""Green Smart service layer."""

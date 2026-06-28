@@ -17,11 +17,11 @@ def _read(path: Path) -> str:
 
 
 def test_r3_version_surfaces_are_v1113():
-    assert '"version": "1.11.7"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.7"' in _read(PANEL)
-    assert "v1.11.7" in _read(PLAN)
-    assert "v1.11.7" in _read(PRODUCT_PLAN)
-    assert "v1.11.7" in _read(MASTER)
+    assert '"version": "1.11.8"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.8"' in _read(PANEL)
+    assert "v1.11.8" in _read(PLAN)
+    assert "v1.11.8" in _read(PRODUCT_PLAN)
+    assert "v1.11.8" in _read(MASTER)
 
 
 def test_r3_current_backend_hotspots_are_documented_from_real_files():
@@ -115,14 +115,14 @@ def test_r3_first_backend_extraction_is_crop_read_only_not_execution():
     assert "docs/rebuild/backend-api-decomposition-plan.md" in master
 
 
-def test_r3_contract_preserves_no_backend_split_or_migration_yet():
+def test_r3_contract_preserves_no_backend_split_or_migration_beyond_rb006a():
     plan = _read(PLAN)
     db = _read(DB)
     init = _read(INIT)
+    assert (ROOT / "custom_components" / "green_smart" / "services/crop_service.py").exists()
+    assert (ROOT / "custom_components" / "green_smart" / "repositories/crop_repo.py").exists()
     for rel in (
         "api_views/crop.py",
-        "services/crop_service.py",
-        "repositories/crop_repo.py",
         "schedulers/safety_guard_scheduler.py",
     ):
         assert not (ROOT / "custom_components" / "green_smart" / rel).exists()
@@ -135,6 +135,7 @@ def test_r3_contract_preserves_no_backend_split_or_migration_yet():
         "scheduler 실행 방식 변경 | 금지",
         "prod stack 변경 | 금지",
         "신규 기능 구현 | 금지",
+        "Crop read-only service/repo boundary baseline",
     ):
         assert marker in plan
 

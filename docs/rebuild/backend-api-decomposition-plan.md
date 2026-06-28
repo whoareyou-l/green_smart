@@ -1,6 +1,6 @@
 # Green Smart Backend/API Decomposition Plan
 
-> 기준 버전: `v1.11.7`
+> 기준 버전: `v1.11.8`
 > 리빌딩 단계: `R3 — Backend/API decomposition plan`
 > 목적: `crop_views.py`와 `zone_control_views.py`를 즉시 분리하지 않고, 기존 HTTP route compatibility를 유지하는 adapter-first backend 구조, service/repository 경계, 첫 extraction slice를 문서/계약으로 고정한다.
 
@@ -209,6 +209,24 @@ RB-006A Crop read-only service/repo boundary
 ```
 
 RB-006A는 `GET /api/green_smart/crop/seasons` 또는 작물 요약 read-only route만 대상으로 하며, create/update/delete/modal 저장 경로는 건드리지 않는다.
+
+### RB-006A completion note
+
+`v1.11.8`에서 Crop read-only service/repo boundary baseline이 추가되었다.
+
+```text
+custom_components/green_smart/services/crop_service.py
+custom_components/green_smart/repositories/crop_repo.py
+```
+
+완료 범위:
+
+- `GET /api/green_smart/crop/seasons` route path 변경 없음.
+- response shape 변경 없음: legacy keys `cropType`, `plantDate`, `demolishDate`, `zoneName`, `zoneId` 등을 유지한다.
+- `repositories/crop_repo.py`가 crop seasons SELECT SQL을 소유한다.
+- `services/crop_service.py`가 read actor DTO와 `view_crop_records` permission smoke를 소유한다.
+- crop create/update/delete 변경 없음.
+- DB migration 없음.
 
 ---
 

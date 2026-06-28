@@ -10,7 +10,7 @@
 
 이 문서는 기존 Green Smart 제품 문서/코드와 새 마스터 플랜을 하나의 실행 기준으로 정렬한다. 앞으로 구현은 이 문서와 Phase 0 산출물 전체를 기준으로 진행한다.
 
-> **현재 우선순위 전환:** `v1.11.7` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다.
+> **현재 우선순위 전환:** `v1.11.8` 이후 신규 기능 수직 슬라이스는 일시 중단하고, [`docs/plans/2026-06-28-green-smart-product-first-rebuild-plan.md`](plans/2026-06-28-green-smart-product-first-rebuild-plan.md)에 따라 **제품 구조 리빌딩 → 운영 스택 리빌딩** 순서로 진행한다.
 
 Green Smart의 최우선 목표는 다음이다.
 
@@ -70,7 +70,9 @@ Green Smart는 독립 웹서비스가 아니라 Home Assistant 위에서 동작�
 |---|---|
 | `custom_components/green_smart/__init__.py` | integration setup, DB bootstrap, view/panel registration. R3 기준으로 장기적으로 scheduler/view registration shell로 축소 |
 | `custom_components/green_smart/db.py` | MariaDB pool/query/schema bootstrap. R3/R4 이후 domain DB query는 repositories로 이동, schema migration은 명시 승인 전 금지. 현재 physical schema는 `crop_seasons`/`crop_season_id` 유지 |
-| `custom_components/green_smart/crop_views.py` | 현재 작기/생육/병해충/방제 API monolith이며, R3 이후 route compatibility adapter로 점진 축소 |
+| `custom_components/green_smart/crop_views.py` | 현재 작기/생육/병해충/방제 API monolith이며, R3 이후 route compatibility adapter로 점진 축소. RB-006A 이후 read-only crop seasons GET은 service/repo로 delegate |
+| `custom_components/green_smart/services/crop_service.py` | RB-006A Crop read-only service boundary. `CropReadActor`, `view_crop_records` permission smoke, response-shape preserving delegation |
+| `custom_components/green_smart/repositories/crop_repo.py` | RB-006A Crop read-only repository. `GET /crop/seasons` legacy SELECT SQL 소유, write SQL 없음 |
 | `custom_components/green_smart/weather_api.py`, `weather_views.py`, `kma_grid.py` | KMA/PSIS 연동 |
 | `custom_components/green_smart/central_api.py`, `central_store.py`, `central_views.py` | central activation/token/allowlisted adapter baseline |
 | `custom_components/green_smart/zone_control_views.py` | 현재 zone control, AI output, final target, entity mapping, execution/safety/log API monolith이며, R3 이후 domain service/repository로 점진 분리 |

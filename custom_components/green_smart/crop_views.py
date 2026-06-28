@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from .db import fetchall, fetchone, execute
+from .services.crop_service import CropReadActor, list_crop_seasons
 from .weather_api import WeatherStore, fetch_weekly_forecast
 
 _LOGGER = logging.getLogger(__name__)
@@ -332,20 +333,22 @@ class CropSeasonsView(HomeAssistantView):
     name = "api:green_smart:crop:seasons"
 
     async def get(self, request: web.Request) -> web.Response:
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
         hass = request.app["hass"]
-        rows = await fetchall(hass, """
-            SELECT
-                s.id, s.crop_type AS cropType, s.variety, s.method,
-                s.plant_date AS plantDate, s.demolish_date AS demolishDate,
-                s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
-                s.total_plants AS totalPlants, s.plant_density AS plantDensity,
-                s.train_dir AS trainDir, s.notes,
-                COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
-            FROM crop_seasons s
-            LEFT JOIN zones z ON z.id = s.zone_id
-            WHERE s.deleted_at IS NULL
-            ORDER BY s.plant_date DESC
-        """)
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropReadActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            # RB-006A permission smoke: read-only crop seasons requires view_crop_records.
+            rows = await list_crop_seasons(hass, actor)
+        except PermissionError as exc:
+            return _err(str(exc), 403)
         return _json(rows)
 
     async def post(self, request: web.Request) -> web.Response:
