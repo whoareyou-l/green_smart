@@ -16,7 +16,9 @@
 // RS-027 virtual rehearsal pass/fail review projection: virtualRunnerDryRunResultAdapter → virtualRehearsalPassFailReviewProjection.
 // R7-001 Main dashboard redesign: operator-visible crop-centered dashboard renders from R6 read-only source shapes.
 // R7-002 Sidebar navigation + page shell: R7 sidebar primary groups wrap the crop-centered workspace without adding execution authority.
+// R7-003 Detail/configuration subpages baseline: all five sidebar groups receive read-only placeholder subpages.
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
+// R7-003 subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
 // R7 adapter evidence links: sourceMonitoringReadOnlyAdapter / sourceSafetyInterlockReadOnlyAdapter.
 // R7 detail page shell grammar: detailHeader → evidenceSummary → zoneTabs → selectedZonePanel → optionalDetailModal.
@@ -26,7 +28,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.36";
+const REBUILD_VERSION = "1.12.37";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -42,6 +44,14 @@ const R7_SIDEBAR_GROUPS = Object.freeze([
   { key: "field-status", label: "현장 상태", summary: "환경·관수·장치의 작물 영향", target: "influence-map" },
   { key: "recommendation-review", label: "추천·실행 검토", summary: "추천·승인·리허설·안전 근거", target: "recommend-act" },
   { key: "settings-admin", label: "설정·관리", summary: "Admin/System·장치 매핑·RBAC", target: "settings-admin" },
+]);
+
+const R7_DETAIL_SUBPAGES = Object.freeze([
+  { key: "operations-home", label: "운영 홈", summary: "오늘의 작물 운영 요약을 읽기 전용으로 정리합니다.", source: "currentCropAssignment + dataAvailability", zoneScope: "전체 구역 우선, 필요한 구역은 stage drilldown에서 확인", safety: "추천·실행 전 승인/안전검사 필요" },
+  { key: "crop-centered", label: "작물 중심 운영", summary: "작물상태와 생육목표 상세 subpage 자리입니다.", source: "currentCropAssignment + growthTargetProjection", zoneScope: "작물상태/생육목표 stage 안의 zoneTabs를 재사용", safety: "작기/목표 수정 권한은 아직 없음" },
+  { key: "field-status", label: "현장 상태", summary: "환경·관수·장치가 작물에 주는 영향을 확인하는 subpage 자리입니다.", source: "monitoringReadOnlyAdapter + environmentImpactProjection", zoneScope: "구역별 장비 profile과 freshness evidence", safety: "센서 수집/장치 제어는 아직 없음" },
+  { key: "recommendation-review", label: "추천·실행 검토", summary: "추천, 승인, 안전, 가상 리허설 근거를 검토하는 subpage 자리입니다.", source: "recommendationReviewProjection + safetyInterlockReadOnlyAdapter + virtualExecutionRehearsalScaffold", zoneScope: "추천 stage 안의 zone-scoped evidence", safety: "승인 해제/실행/MQTT 명령은 아직 없음" },
+  { key: "settings-admin", label: "설정·관리", summary: "Admin/System, 장치 매핑, RBAC/config 설정 subpage 자리입니다.", source: "RBAC/config documentation baseline", zoneScope: "관리 설정은 zone data를 직접 변경하지 않음", safety: "설정 저장/삭제/권한 변경은 아직 없음" },
 ]);
 
 const REBUILD_HOME_CONTEXT = Object.freeze({
@@ -692,6 +702,29 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </nav>`;
   }
 
+  renderR7DetailSubpage(subpage) {
+    return `<article data-r7-detail-subpage="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
+      <header>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">read-only placeholder</p>
+        <h3 style="margin:0;color:#24323f;font-size:18px;">${subpage.label}</h3>
+      </header>
+      <p data-r7-subpage-evidence-summary style="margin:0;color:#5d6f62;line-height:1.6;">${subpage.summary}</p>
+      <p data-r7-subpage-source-freshness style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">Source freshness: ${subpage.source}</p>
+      <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
+      <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
+      <details style="border-top:1px solid #edf4ef;padding-top:8px;">
+        <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
+        <p style="margin:8px 0 0;color:#78927f;font-size:12px;line-height:1.5;">operator summary → source freshness → zone-scoped evidence → safety/interlock boundary → optional technical details</p>
+      </details>
+    </article>`;
+  }
+
+  renderR7SubpagePlaceholders() {
+    return `<section data-r7-detail-subpages-baseline style="display:grid;gap:12px;">
+      ${R7_DETAIL_SUBPAGES.map((subpage) => this.renderR7DetailSubpage(subpage)).join("")}
+    </section>`;
+  }
+
   renderR7PageShell() {
     return `<section data-r7-page-shell style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
@@ -699,7 +732,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
         <h2 style="margin:0;color:#24323f;font-size:22px;">운영 홈 · 작물 중심 작업공간</h2>
         <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 흐름을 고정하고, 본문은 기존 crop-centered dashboard를 그대로 감쌉니다. 실행 권한은 추가하지 않습니다.</p>
       </header>
-      <div data-r7-page-workspace>${this.renderOperatingHome()}</div>
+      <div data-r7-page-workspace style="display:grid;gap:16px;">
+        ${this.renderR7SubpagePlaceholders()}
+        ${this.renderOperatingHome()}
+      </div>
     </section>`;
   }
 

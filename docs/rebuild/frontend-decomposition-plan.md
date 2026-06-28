@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.12.36`
+> 기준 버전: `v1.12.37`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 상태: `reference/evidence only after direction correction`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
@@ -389,7 +389,7 @@ pytest -q
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.12.36`에서 R7-000 IA blueprint를 완료했다.
+`v1.12.37`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -414,7 +414,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.12.36`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.12.37`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -439,7 +439,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.12.36`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.12.37`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -458,4 +458,29 @@ No DB migration in R7-002
 No execution authority in R7-002
 No approval/override release in R7-002
 No SafetyGuard/Interlock runtime behavior change in R7-002
+```
+
+
+## R7-003 Detail/Configuration Subpages Baseline
+
+`v1.12.37`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-003-detail-configuration-subpages-baseline.md
+```
+
+Boundary:
+
+```text
+R7-003 Detail/Configuration Subpages Baseline
+selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+No API route change in R7-003
+No DB migration in R7-003
+No execution authority in R7-003
+No approval/override release in R7-003
+No SafetyGuard/Interlock runtime behavior change in R7-003
+No MQTT/device command in R7-003
 ```
