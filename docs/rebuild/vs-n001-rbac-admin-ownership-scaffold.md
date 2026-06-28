@@ -1,6 +1,6 @@
 # VS-N001 RBAC/Admin Ownership Scaffold
 
-> 기준 버전: `v1.12.6`
+> 기준 버전: `v1.12.7`
 > 상태: first from-scratch rebuild slice scaffold
 > 원칙: backend permission enforcement before UI-only hiding
 
