@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js"
+PEST_MODAL = ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-pest-modal.js"
 MANIFEST = ROOT / "custom_components" / "green_smart" / "manifest.json"
 CENTRAL = ROOT / "custom_components" / "green_smart" / "central_views.py"
 UI_DOC = ROOT / "docs" / "design" / "current-ui-design-and-navigation.md"
@@ -14,6 +15,7 @@ def _read(path: Path) -> str:
 
 def test_v1982_p1_home_crop_flow_rendered_qa_contract_markers():
     panel = _read(PANEL)
+    frontend = panel + "\n" + _read(PEST_MODAL)
 
     required_markers = (
         "data-home-action-summary",
@@ -36,7 +38,7 @@ def test_v1982_p1_home_crop_flow_rendered_qa_contract_markers():
         "data-control-dose-grid",
     )
     for marker in required_markers:
-        assert marker in panel
+        assert marker in frontend
 
     forbidden_markers = (
         "data-home-greenhouse-kpi-inline",
@@ -62,10 +64,10 @@ def test_v1982_p1_flow_version_and_docs_contract():
     ui_doc = _read(UI_DOC)
     master = _read(MASTER)
 
-    assert '"version": "1.11.13"' in manifest
-    assert 'const VERSION = "1.11.13"' in panel
-    assert "v1.11.13" in panel[:200]
+    assert '"version": "1.11.14"' in manifest
+    assert 'const VERSION = "1.11.14"' in panel
+    assert "v1.11.14" in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert "기준 버전: `v1.11.13`" in ui_doc
+    assert "기준 버전: `v1.11.14`" in ui_doc
     assert "P1 rendered-flow QA v1.10.9" in ui_doc
     assert "P1 rendered-flow QA v1.10.9" in master

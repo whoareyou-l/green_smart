@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js"
+PEST_MODAL = ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-pest-modal.js"
 MASTER = ROOT / "docs" / "PROJECT_MASTER_PLAN.md"
 UI_DOC = ROOT / "docs" / "design" / "current-ui-design-and-navigation.md"
 
@@ -14,9 +15,13 @@ def _pest_popup(panel: str) -> str:
     return panel.split("  _openPestAddPopup()", 1)[1].split("  _formatPesticideMoa", 1)[0]
 
 
+def _pest_frontend(panel: str) -> str:
+    return _pest_popup(panel) + "\n" + _read(PEST_MODAL)
+
+
 def test_v1980_pest_popup_compact_scope_row_and_no_free_location_detail():
     panel = _read(PANEL)
-    popup = _pest_popup(panel)
+    popup = _pest_frontend(panel)
 
     for marker in (
         "data-pest-compact-modal",
@@ -38,7 +43,7 @@ def test_v1980_pest_popup_compact_scope_row_and_no_free_location_detail():
 
 def test_v1980_pest_popup_type_and_severity_are_one_row_units():
     panel = _read(PANEL)
-    popup = _pest_popup(panel)
+    popup = _pest_frontend(panel)
 
     row_start = popup.index("data-pest-type-severity-row")
     row = popup[row_start: popup.index("</div>`).join", row_start)]
@@ -55,8 +60,8 @@ def test_v1980_pest_popup_docs_and_version_contract():
     master = _read(MASTER)
     ui_doc = _read(UI_DOC)
 
-    assert '"version": "1.11.13"' in _read(ROOT / "custom_components" / "green_smart" / "manifest.json")
-    assert 'const VERSION = "1.11.13"' in panel
+    assert '"version": "1.11.14"' in _read(ROOT / "custom_components" / "green_smart" / "manifest.json")
+    assert 'const VERSION = "1.11.14"' in panel
     assert "병해충 예찰 모달 compact layout" in master
     for marker in (
         "data-pest-compact-modal",

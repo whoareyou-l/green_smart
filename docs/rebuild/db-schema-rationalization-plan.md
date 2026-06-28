@@ -1,6 +1,6 @@
 # Green Smart DB/Schema Rationalization Plan
 
-> 기준 버전: `v1.11.13`
+> 기준 버전: `v1.11.14`
 > 리빌딩 단계: `R4 — DB/schema rationalization plan`
 > 목적: 실제 DB migration 없이 현재 물리 schema를 보존하면서, 리빌딩 문서/API에서 사용할 naming alias, scope key, future migration gate를 고정한다.
 

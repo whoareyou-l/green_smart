@@ -162,7 +162,9 @@ def test_crop_season_selector_displays_korean_crop_labels_instead_of_raw_keys():
 
 def test_crop_pest_and_control_popups_use_season_location_scope_and_pest_autocomplete():
     panel = (ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js").read_text(encoding="utf-8")
+    pest_modal = (ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-pest-modal.js").read_text(encoding="utf-8")
     pest_popup = panel.split("  _openPestAddPopup()", 1)[1].split("  _formatPesticideMoa", 1)[0]
+    pest_frontend = pest_popup + "\n" + pest_modal
     control_popup = panel.split("  _openControlAddPopup()", 1)[1].split("  _refreshCropContent", 1)[0]
 
     for marker in (
@@ -179,11 +181,11 @@ def test_crop_pest_and_control_popups_use_season_location_scope_and_pest_autocom
         "_activeSeasonLabel()",
         "selectedTypes.join",
     ):
-        assert marker in pest_popup
-    assert "id=\"p-type\"" not in pest_popup
-    assert "id=\"p-loc\"" not in pest_popup
-    assert "p-location-detail" not in pest_popup
-    assert "상세 위치" not in pest_popup
+        assert marker in pest_frontend
+    assert "id=\"p-type\"" not in pest_frontend
+    assert "id=\"p-loc\"" not in pest_frontend
+    assert "p-location-detail" not in pest_frontend
+    assert "상세 위치" not in pest_frontend
 
     for marker in (
         "c-location-scope",

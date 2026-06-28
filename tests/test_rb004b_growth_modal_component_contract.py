@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb004b_version_surfaces_are_v11113():
-    assert '"version": "1.11.13"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.13"' in _read(PANEL)
-    assert "v1.11.13" in _read(FRONTEND_PLAN)
+    assert '"version": "1.11.14"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.14"' in _read(PANEL)
+    assert "v1.11.14" in _read(FRONTEND_PLAN)
 
 
 def test_rb004b_growth_modal_module_exists_and_exports_pure_render_helpers():
@@ -94,17 +94,18 @@ def test_rb004b_docs_record_growth_modal_extraction_boundaries():
     plan = _read(FRONTEND_PLAN)
     master = _read(MASTER_PLAN)
     project = _read(PROJECT_MASTER)
-    for marker in (
+    shared_markers = (
         "RB-004B Growth survey modal render extraction",
-        "v1.11.13",
+        "v1.11.14",
         "domains/crop/crop-growth-modal.js",
         "생육조사 modal render helpers only",
         "save/API bindings remain in panel shell",
-        "병해충/방제 modal 변경 없음",
         "API/DB 변경 없음",
         "route path 변경 없음",
         "response shape 변경 없음",
-    ):
+    )
+    for marker in shared_markers:
         assert marker in plan
         assert marker in master
+    assert "병해충/방제 modal 변경 없음" in plan
     assert "custom_components/green_smart/panel/domains/crop/crop-growth-modal.js" in project
