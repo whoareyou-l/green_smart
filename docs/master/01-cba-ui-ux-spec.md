@@ -1,7 +1,7 @@
 # 1. CBA 화면 기획서 — UI/UX 설계도
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.5`
+> 기준 버전: `v1.12.6`
 > 문서 목적: Green Smart 화면을 **공통 부품(COM) → 복합 모듈(MOD) → 전체 페이지(PAGE)** 3단계로 정리하여, 코드가 화면마다 중복/난립하지 않도록 한다.
 
 ## 1. 설계 원칙
@@ -259,6 +259,20 @@ zones[]
 - `equipmentProfile`은 구역별 장비 표시 source다.
 - `dataAvailability`는 `COM-StateBadge`, `COM-DataFreshnessPill`, `COM-EmptyState`, `COM-LoadingSkeleton`의 입력이다.
 - RS-006에서는 `contextSource`가 `static-fixture-before-api`이며, fetch/API/service execution은 금지한다.
+
+### 3.1.2 RS-007 read-only home context API shell
+
+```text
+GET /api/green_smart/rebuild/home/context
+summary + zones
+static-fixture-before-api
+readOnly: true
+executionEnabled: false
+DB 연결 없음
+서비스 실행 없음
+```
+
+이 API shell은 `PAGE-CropCenteredHome`의 context source를 backend route로 고정하기 위한 read-only 계약이다. RS-007에서는 fixture response만 반환하고, DB 연결/HA service 실행/실행 버튼은 추가하지 않는다.
 
 ### 3.2 작기 변경 State Propagation 계약
 

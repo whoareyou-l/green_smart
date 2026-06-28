@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.5`
+> 기준 버전: `v1.12.6`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -15,6 +15,37 @@ Frontend Web Component
           └─ /api/green_smart/* HomeAssistantView
               └─ DB / HA entity / MQTT entity / SafetyGuard
 ```
+
+### 1.1 RS-007 read-only home context API shell
+
+```text
+GET /api/green_smart/rebuild/home/context
+summary + zones
+static-fixture-before-api
+readOnly: true
+executionEnabled: false
+DB 연결 없음
+서비스 실행 없음
+```
+
+Response shape:
+
+```json
+{
+  "contextSource": "static-fixture-before-api",
+  "readOnly": true,
+  "executionEnabled": false,
+  "summary": {
+    "id": "all",
+    "currentCrop": { "cropSeasonId": null, "cropType": "mixed", "cropLabelKo": "전체 작물", "growthStage": "전체 구역 요약" },
+    "equipmentProfile": { "labels": ["구역별 장비 요약"] },
+    "dataAvailability": { "state": "partial", "freshnessMinutes": 6 }
+  },
+  "zones": []
+}
+```
+
+RS-007은 route shell과 fixture response만 고정한다. 실제 DB source 연결은 후속 slice에서 진행한다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

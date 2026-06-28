@@ -182,6 +182,27 @@ Implementation implication:
 - No direct `fetch`, HA API call, service call, or execution control is introduced.
 - The next slice may replace the fixture source with a read-only API adapter without changing panel DOM contracts.
 
+## RS-007 read-only home context API shell
+
+Confirmed decisions:
+
+```text
+GET /api/green_smart/rebuild/home/context
+summary + zones
+static-fixture-before-api
+readOnly: true
+executionEnabled: false
+DB 연결 없음
+서비스 실행 없음
+```
+
+Scope:
+
+- Add a HomeAssistantView route shell that returns the same context shape defined in RS-006.
+- Keep the response fixture-backed and read-only.
+- Do not connect DB tables in RS-007.
+- Do not expose Dry Run, apply, execute, or HA service execution controls.
+
 ## Developer-only transition notes
 
 The following points are development/release guidance only and must remain in docs/tests, not in rendered frontend copy:

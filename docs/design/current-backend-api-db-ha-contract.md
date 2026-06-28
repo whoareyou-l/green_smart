@@ -1,6 +1,6 @@
 # Green Smart Current Backend, API, DB and Home Assistant Integration Contract
 
-> 기준 버전: `v1.12.5`
+> 기준 버전: `v1.12.6`
 > 기준 파일: `custom_components/green_smart/*.py`
 > 목적: 앞으로 backend/API/DB/HA integration/control execution/SafetyGuard 작업 시 반드시 참조하는 현재 구현 기준서.
 
@@ -37,6 +37,26 @@ RBAC/UI 정보구조 기준:
 ```text
 docs/design/ui-information-architecture-and-rbac.md
 ```
+
+## RS-007 read-only home context API shell
+
+```text
+GET /api/green_smart/rebuild/home/context
+summary + zones
+static-fixture-before-api
+readOnly: true
+executionEnabled: false
+DB 연결 없음
+서비스 실행 없음
+```
+
+Contract:
+
+- Register `RebuildHomeContextView` as a HomeAssistantView.
+- Return fixture-backed context data only.
+- Keep the route authenticated.
+- Do not import DB helpers or query tables in this slice.
+- Do not call HA services or expose execution/apply controls.
 
 R1 backend enforcement 기준: frontend의 `visible_enabled`, `visible_disabled`, `summary_only`, `hidden` 상태는 UX 표현일 뿐이다. 다음 API 유형은 backend에서 HA user → Green Smart role → permission을 다시 검증해야 한다.
 

@@ -1,7 +1,7 @@
 // Green Smart rebuild panel
 // Developer-only rebuild notes belong in docs/rebuild/*, not in rendered UI copy.
 
-const REBUILD_VERSION = "1.12.5";
+const REBUILD_VERSION = "1.12.6";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
