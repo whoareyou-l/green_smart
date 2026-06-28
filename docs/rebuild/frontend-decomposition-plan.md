@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.11.6`
+> 기준 버전: `v1.11.7`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
 
@@ -189,7 +189,7 @@ RB-001은 실제 기술 설정을 새로 추가하지 않는다. 현재 Admin/Sy
 
 ### RB-001 completion note
 
-`v1.11.6`에서 Admin/System render boundary extracted 상태가 되었다.
+`v1.11.7`에서 Admin/System render boundary extracted 상태가 되었다.
 
 ```text
 custom_components/green_smart/panel/domains/admin/admin-page.js
@@ -205,7 +205,7 @@ custom_components/green_smart/panel/domains/admin/admin-page.js
 
 ### RB-002 completion note
 
-`v1.11.6`에서 Panel API client adapter baseline이 추가되었다.
+`v1.11.7`에서 Panel API client adapter baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/core/api-client.js
@@ -219,6 +219,22 @@ custom_components/green_smart/panel/core/api-client.js
 - response shape 변경 없음.
 - full call-site rewrite deferred.
 - `green-smart-panel.js` public shell, HA panel registration, custom element 이름은 유지한다.
+
+### RB-003 Crop read-only component extraction
+
+`v1.11.7`에서 Crop read-only render helper baseline이 추가되었다.
+
+```text
+custom_components/green_smart/panel/domains/crop/crop-readonly.js
+```
+
+완료 범위:
+
+- `domains/crop/crop-readonly.js`가 `renderCropBasicOverviewCard`, `renderCropBasicTab`, `renderCropSeasonsList`를 export한다.
+- read-only render helpers only: 작기 설정 summary/list/empty-state/record-row HTML만 분리한다.
+- crop write modal/save/delete 변경 없음.
+- DB/API 변경 없음.
+- 기존 `green-smart-panel.js` wrapper와 legacy marker manifest를 유지해 기존 static contract와 downstream automation을 보존한다.
 
 ---
 

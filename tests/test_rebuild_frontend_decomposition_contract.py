@@ -14,11 +14,11 @@ def _read(path: Path) -> str:
 
 
 def test_r2_version_surfaces_are_v1112():
-    assert '"version": "1.11.6"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.6"' in _read(PANEL)
-    assert "v1.11.6" in _read(PLAN)
-    assert "v1.11.6" in _read(PRODUCT_PLAN)
-    assert "v1.11.6" in _read(MASTER)
+    assert '"version": "1.11.7"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.7"' in _read(PANEL)
+    assert "v1.11.7" in _read(PLAN)
+    assert "v1.11.7" in _read(PRODUCT_PLAN)
+    assert "v1.11.7" in _read(MASTER)
 
 
 def test_r2_ha_loading_keeps_single_public_panel_entrypoint():
@@ -102,13 +102,15 @@ def test_r2_first_extraction_is_admin_system_not_crop_or_execution():
     assert "docs/rebuild/frontend-decomposition-plan.md" in master
 
 
-def test_r2_contract_preserves_no_large_split_beyond_rb001_rb002_shells():
+def test_r2_contract_preserves_no_large_split_beyond_rb001_rb002_rb003_shells():
     plan = _read(PLAN)
-    # R2 itself was documentation/contract only. After RB-001/RB-002, only the
-    # low-risk Admin/System shell and API client adapter are allowed; render-shell,
-    # component and high-risk domain extractions must still not exist.
+    # R2 itself was documentation/contract only. After RB-001/RB-002/RB-003,
+    # only the low-risk Admin/System shell, API client adapter, and Crop read-only
+    # render helper are allowed; render-shell, component and high-risk domain
+    # extractions must still not exist.
     assert (ROOT / "custom_components" / "green_smart" / "panel" / "domains/admin/admin-page.js").exists()
     assert (ROOT / "custom_components" / "green_smart" / "panel" / "core/api-client.js").exists()
+    assert (ROOT / "custom_components" / "green_smart" / "panel" / "domains/crop/crop-readonly.js").exists()
     for rel in (
         "core/render-shell.js",
         "domains/crop/crop-page.js",
@@ -127,5 +129,6 @@ def test_r2_contract_preserves_no_large_split_beyond_rb001_rb002_shells():
         "prod stack 변경 | 금지",
         "Admin/System render boundary extracted",
         "Panel API client adapter baseline",
+        "Crop read-only render helper baseline",
     ):
         assert marker in plan
