@@ -120,6 +120,21 @@ export function normalizeOperatorApprovalScaffold(zone = {}, recommendationRevie
   };
 }
 
+export function normalizeSafetyInterlockPreflightProjection(zone = {}, operatorApprovalScaffold = normalizeOperatorApprovalScaffold(zone)) {
+  const projection = zone.safetyInterlockPreflightProjection || zone.safety_interlock_preflight_projection || {};
+  return {
+    preflightState: projection.preflightState || (operatorApprovalScaffold.executionBlocked ? "blocked_until_review" : "pending"),
+    safetyState: projection.safetyState || "pending",
+    interlockState: projection.interlockState || "pending",
+    failSafeState: projection.failSafeState || "standby",
+    blockedReasons: projection.blockedReasons || ["operator_approval_required"],
+    requiredChecks: projection.requiredChecks || ["작업자 승인", "Safety 검증", "Interlock 검증", "Fail Safe 확인"],
+    sourceOperatorApproval: projection.sourceOperatorApproval || operatorApprovalScaffold,
+    readOnly: true,
+    executionEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
@@ -127,6 +142,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
   const environmentImpactProjection = normalizeEnvironmentImpactProjection(zone, currentCropAssignment);
   const recommendationReviewProjection = normalizeRecommendationReviewProjection(zone, currentCropAssignment, growthTargetProjection, environmentImpactProjection);
   const operatorApprovalScaffold = normalizeOperatorApprovalScaffold(zone, recommendationReviewProjection);
+  const safetyInterlockPreflightProjection = normalizeSafetyInterlockPreflightProjection(zone, operatorApprovalScaffold);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -141,6 +157,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     environmentImpactProjection,
     recommendationReviewProjection,
     operatorApprovalScaffold,
+    safetyInterlockPreflightProjection,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],

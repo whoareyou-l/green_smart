@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.20`
+> 기준 버전: `v1.12.21`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -167,6 +167,18 @@ No write/mutation in RS-021
 ```
 
 RS-021 기준 `추천·실행` 화면은 추천 검토 뒤에 `operatorApprovalScaffold`를 read-only/disabled 상태로 표시한다. 작업자 승인, 안전/인터록 사전검증 전 실행은 차단된다.
+
+### 1.12 Safety/Interlock preflight projection
+
+```text
+Safety/Interlock preflight projection
+safetyInterlockPreflightProjection
+operatorApprovalScaffold → safetyInterlockPreflightProjection
+Safety / Interlock / Fail Safe 사전검증
+No write/mutation in RS-022
+```
+
+RS-022 기준 `추천·실행` 화면은 `operatorApprovalScaffold` 뒤에 Safety/Interlock/Fail Safe 사전검증 상태를 read-only projection으로 표시한다. 실제 안전 판단, 인터록 해제, 실행은 포함하지 않는다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

@@ -1,6 +1,6 @@
 # RS-009 Legacy Direction Inventory
 
-> 기준 버전: `v1.12.20` / updated in `v1.12.20`
+> 기준 버전: `v1.12.21` / updated in `v1.12.21`
 > Status: active boundary contract
 > 목적: Green Smart rebuild에서 legacy가 제품 방향성으로 남지 않도록, historical reference / adapter-only / legacy panel / current source of truth 경계를 명확히 한다.
 
@@ -157,7 +157,8 @@ Boundary:
 | RS-019 | Environment impact read-only projection completed: 영향지도 now renders environmentImpactProjection from currentCropAssignment, equipmentProfile, and dataAvailability. |
 | RS-020 | Recommendation review read-only projection completed: 추천·실행 now renders recommendationReviewProjection from assignment, growth target, and environment impact projections. |
 | RS-021 | Operator approval scaffold completed: 추천·실행 now renders operatorApprovalScaffold as disabled/read-only approval state before safety preflight. |
-| RS-022 | Safety/Interlock preflight projection |
+| RS-022 | Safety/Interlock preflight projection completed: 추천·실행 now renders safetyInterlockPreflightProjection as read-only preflight state. |
+| RS-023 | Virtual execution rehearsal scaffold |
 
 ---
 

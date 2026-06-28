@@ -8,13 +8,14 @@
 // RS-019 environment impact read-only projection: currentCropAssignment + equipmentProfile + dataAvailability for 영향지도.
 // RS-020 recommendation review read-only projection: currentCropAssignment + growthTargetProjection + environmentImpactProjection for 추천·실행.
 // RS-021 operator approval scaffold: recommendationReviewProjection → operatorApprovalScaffold for disabled 작업자 승인 상태.
+// RS-022 safety/interlock preflight projection: operatorApprovalScaffold → safetyInterlockPreflightProjection.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.20";
+const REBUILD_VERSION = "1.12.21";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -279,6 +280,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderSafetyInterlockPreflightProjection(zone, stageKey) {
+    if (!["recommendation-execution"].includes(stageKey)) return "";
+    const projection = zone.safetyInterlockPreflightProjection || {};
+    const preflight = projection.preflightState || "blocked_until_review";
+    const safety = projection.safetyState || "pending";
+    const interlock = projection.interlockState || "pending";
+    const failSafe = projection.failSafeState || "standby";
+    const blockedReasons = projection.blockedReasons || ["operator_approval_required"];
+    const requiredChecks = projection.requiredChecks || ["작업자 승인", "Safety 검증", "Interlock 검증", "Fail Safe 확인"];
+    const readOnly = projection.readOnly !== false;
+    const executionEnabled = projection.executionEnabled === true;
+    return `
+      <section data-safety-interlock-preflight-card data-safety-preflight-state="${preflight}" data-safety-state="${safety}" data-interlock-state="${interlock}" data-failsafe-state="${failSafe}" data-preflight-blocked-reasons="${blockedReasons.join(",")}" data-preflight-required-checks="${requiredChecks.join(",")}" data-preflight-readonly="${readOnly}" data-preflight-execution-enabled="${executionEnabled}" style="margin:10px 0;border:1px solid #d4dce8;border-radius:14px;background:#f8fbff;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#354e78;">Safety / Interlock / Fail Safe 사전검증 · read-only</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#2c3d5c;font-size:12px;">
+          <dt style="font-weight:900;">사전검증 상태</dt><dd style="margin:0;">${preflight}</dd>
+          <dt style="font-weight:900;">Safety</dt><dd style="margin:0;">${safety}</dd>
+          <dt style="font-weight:900;">Interlock</dt><dd style="margin:0;">${interlock}</dd>
+          <dt style="font-weight:900;">Fail Safe</dt><dd style="margin:0;">${failSafe}</dd>
+          <dt style="font-weight:900;">필수 확인</dt><dd style="margin:0;">${requiredChecks.join(" · ")}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#596b86;font-size:12px;line-height:1.5;">실행 전 Safety / Interlock / Fail Safe 사전검증이 필요합니다. RS-022는 실행 권한 없이 read-only projection만 제공합니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -350,6 +377,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${this.renderEnvironmentImpactProjection(zone, stageKey)}
             ${this.renderRecommendationReviewProjection(zone, stageKey)}
             ${this.renderOperatorApprovalScaffold(zone, stageKey)}
+            ${this.renderSafetyInterlockPreflightProjection(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}

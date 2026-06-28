@@ -124,6 +124,17 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "readOnly": True,
         "executionEnabled": False,
     }
+    safety_interlock_preflight_projection = {
+        "preflightState": "blocked_until_review" if crop_cycle_id else "empty",
+        "safetyState": "pending",
+        "interlockState": "pending",
+        "failSafeState": "standby",
+        "blockedReasons": ["operator_approval_required"],
+        "requiredChecks": ["작업자 승인", "Safety 검증", "Interlock 검증", "Fail Safe 확인"],
+        "sourceOperatorApproval": operator_approval_scaffold,
+        "readOnly": True,
+        "executionEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -138,6 +149,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "environmentImpactProjection": environment_impact_projection,
         "recommendationReviewProjection": recommendation_review_projection,
         "operatorApprovalScaffold": operator_approval_scaffold,
+        "safetyInterlockPreflightProjection": safety_interlock_preflight_projection,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },
