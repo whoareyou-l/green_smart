@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.11.14`
+> 기준 버전: `v1.11.15`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
 
@@ -189,7 +189,7 @@ RB-001은 실제 기술 설정을 새로 추가하지 않는다. 현재 Admin/Sy
 
 ### RB-001 completion note
 
-`v1.11.14`에서 Admin/System render boundary extracted 상태가 되었다.
+`v1.11.15`에서 Admin/System render boundary extracted 상태가 되었다.
 
 ```text
 custom_components/green_smart/panel/domains/admin/admin-page.js
@@ -205,7 +205,7 @@ custom_components/green_smart/panel/domains/admin/admin-page.js
 
 ### RB-002 completion note
 
-`v1.11.14`에서 Panel API client adapter baseline이 추가되었다.
+`v1.11.15`에서 Panel API client adapter baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/core/api-client.js
@@ -222,7 +222,7 @@ custom_components/green_smart/panel/core/api-client.js
 
 ### RB-003 Crop read-only component extraction
 
-`v1.11.14`에서 Crop read-only render helper baseline이 추가되었다.
+`v1.11.15`에서 Crop read-only render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-readonly.js
@@ -238,7 +238,7 @@ custom_components/green_smart/panel/domains/crop/crop-readonly.js
 
 ### RB-004 Crop write modal extraction
 
-`v1.11.14`에서 Crop write modal render helper baseline이 추가되었다.
+`v1.11.15`에서 Crop write modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-write-modal.js
@@ -256,7 +256,7 @@ custom_components/green_smart/panel/domains/crop/crop-write-modal.js
 
 ### RB-004B Growth survey modal render extraction
 
-`v1.11.14`에서 생육조사 modal render helper baseline이 추가되었다.
+`v1.11.15`에서 생육조사 modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-growth-modal.js
@@ -274,7 +274,7 @@ custom_components/green_smart/panel/domains/crop/crop-growth-modal.js
 
 ### RB-004C Pest scouting modal render extraction
 
-`v1.11.14`에서 병해충 예찰 modal render helper baseline이 추가되었다.
+`v1.11.15`에서 병해충 예찰 modal render helper baseline이 추가되었다.
 
 ```text
 custom_components/green_smart/panel/domains/crop/crop-pest-modal.js
@@ -286,6 +286,24 @@ custom_components/green_smart/panel/domains/crop/crop-pest-modal.js
 - `병해충 예찰 modal render helpers only`: modal shell, 조사일, 현재 작기 pill, 발생 범위 select, 병해충/발생 정도 row HTML만 분리한다.
 - `autocomplete/API/save bindings remain in panel shell`: 중앙 농약 API 자동완성 debounce, suggestion binding, pest PATCH/POST, growth report refresh는 `green-smart-panel.js`에 유지한다.
 - `방제 modal 변경 없음`.
+- `API/DB 변경 없음`.
+- `route path 변경 없음`.
+- `response shape 변경 없음`.
+
+### RB-004D Control/treatment modal render extraction
+
+`v1.11.15`에서 방제 기록 modal render helper baseline이 추가되었다.
+
+```text
+custom_components/green_smart/panel/domains/crop/crop-control-modal.js
+```
+
+완료 범위:
+
+- `domains/crop/crop-control-modal.js`가 `controlModalContext`, `renderControlTreatmentModal`, `renderControlPesticideEntry`를 export한다.
+- `방제 기록 modal render helpers only`: modal shell, 방제일, 현재 작기 pill, 처리 범위 select, 약제 row HTML, 사용량/희석/면적/평당 사용량 field만 분리한다.
+- `PLS/혼용 warning render markers preserved`: PLS badge, PLS warning, mix warning, dose grid, `cropModelNutritionHint` marker를 render helper에 보존한다.
+- `pesticide/API/save bindings remain in panel shell`: PSIS autocomplete, mix-check API, PLS conflict check, dose calculation, save POST, growth report refresh는 `green-smart-panel.js`에 유지한다.
 - `API/DB 변경 없음`.
 - `route path 변경 없음`.
 - `response shape 변경 없음`.

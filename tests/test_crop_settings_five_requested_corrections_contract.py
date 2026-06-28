@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js"
+CONTROL_MODAL = ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-control-modal.js"
 MANIFEST = ROOT / "custom_components" / "green_smart" / "manifest.json"
 CENTRAL = ROOT / "custom_components" / "green_smart" / "central_views.py"
 UI_DOC = ROOT / "docs" / "design" / "current-ui-design-and-navigation.md"
@@ -88,7 +89,7 @@ def test_v1985_pest_and_control_follow_summary_action_record_order_with_common_a
 
 def test_v1985_control_modal_places_chemical_and_water_usage_side_by_side():
     panel = _read(PANEL)
-    popup = _section(panel, "  _openControlAddPopup()", "  _openControlEditPopup")
+    popup = _section(panel, "  _openControlAddPopup()", "  _openControlEditPopup") + "\n" + _read(CONTROL_MODAL)
 
     assert "data-control-dose-grid" in popup
     assert "data-control-usage-row" in popup
@@ -106,7 +107,7 @@ def test_v1985_versions_and_docs_record_five_corrections():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.11.14"' in manifest
-    assert 'const VERSION = "1.11.14"' in panel
+    assert '"version": "1.11.15"' in manifest
+    assert 'const VERSION = "1.11.15"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 five requested Crop Settings UI corrections" in docs

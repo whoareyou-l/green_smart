@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
+CONTROL_MODAL = ROOT / "custom_components/green_smart/panel/domains/crop/crop-control-modal.js"
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 CENTRAL = ROOT / "custom_components/green_smart/central_views.py"
 UI_DOC = ROOT / "docs/design/current-ui-design-and-navigation.md"
@@ -93,7 +94,7 @@ def test_v1978_pest_and_control_follow_summary_then_records_layout():
 def test_v1978_control_modal_auto_calculation_fields_and_payload():
     panel = _read(PANEL)
     docs = _read(UI_DOC)
-    modal = _section(panel, "  _openControlAddPopup()", "  _openCropAddPopup()")
+    modal = _section(panel, "  _openControlAddPopup()", "  _openCropAddPopup()") + "\n" + _read(CONTROL_MODAL)
 
     for marker in (
         "data-control-dose-grid",
@@ -122,8 +123,8 @@ def test_v1978_control_modal_auto_calculation_fields_and_payload():
 
 
 def test_v1978_version_markers():
-    assert '"version": "1.11.14"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.14"' in _read(PANEL)
-    assert 'v1.11.14' in _read(PANEL)[:200]
+    assert '"version": "1.11.15"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.15"' in _read(PANEL)
+    assert 'v1.11.15' in _read(PANEL)[:200]
     assert 'EDGE_VERSION = "1.9.96"' in _read(CENTRAL)
-    assert '기준 버전: `v1.11.14`' in _read(UI_DOC)
+    assert '기준 버전: `v1.11.15`' in _read(UI_DOC)

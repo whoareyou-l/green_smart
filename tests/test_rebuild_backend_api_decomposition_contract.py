@@ -17,11 +17,11 @@ def _read(path: Path) -> str:
 
 
 def test_r3_version_surfaces_are_v1113():
-    assert '"version": "1.11.14"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.14"' in _read(PANEL)
-    assert "v1.11.14" in _read(PLAN)
-    assert "v1.11.14" in _read(PRODUCT_PLAN)
-    assert "v1.11.14" in _read(MASTER)
+    assert '"version": "1.11.15"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.15"' in _read(PANEL)
+    assert "v1.11.15" in _read(PLAN)
+    assert "v1.11.15" in _read(PRODUCT_PLAN)
+    assert "v1.11.15" in _read(MASTER)
 
 
 def test_r3_current_backend_hotspots_are_documented_from_real_files():

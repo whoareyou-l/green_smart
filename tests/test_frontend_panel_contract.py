@@ -165,7 +165,9 @@ def test_crop_pest_and_control_popups_use_season_location_scope_and_pest_autocom
     pest_modal = (ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-pest-modal.js").read_text(encoding="utf-8")
     pest_popup = panel.split("  _openPestAddPopup()", 1)[1].split("  _formatPesticideMoa", 1)[0]
     pest_frontend = pest_popup + "\n" + pest_modal
+    control_modal = (ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-control-modal.js").read_text(encoding="utf-8")
     control_popup = panel.split("  _openControlAddPopup()", 1)[1].split("  _refreshCropContent", 1)[0]
+    control_frontend = control_popup + "\n" + control_modal
 
     for marker in (
         "data-pest-type-entry",
@@ -196,7 +198,7 @@ def test_crop_pest_and_control_popups_use_season_location_scope_and_pest_autocom
         "처리 범위",
         "비고",
     ):
-        assert marker in control_popup
+        assert marker in control_frontend
     assert "id=\"c-zone\"" not in control_popup
     assert "c-location-detail" not in control_popup
     assert "처리 위치 상세" not in control_popup

@@ -4,6 +4,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CENTRAL_VIEWS = ROOT / "custom_components" / "green_smart" / "central_views.py"
 INIT = ROOT / "custom_components" / "green_smart" / "__init__.py"
 PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js"
+CONTROL_MODAL = ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-control-modal.js"
 
 
 def _source(path: Path) -> str:
@@ -53,7 +54,7 @@ def test_panel_uses_explicit_central_routes_and_keeps_crop_pest_data_separate():
 
 
 def test_crop_control_modal_uses_central_pesticide_api_autocomplete_inline_mix_and_pls_warnings():
-    source = _source(PANEL)
+    source = _source(PANEL) + "\n" + _source(CONTROL_MODAL)
 
     assert "_openControlAddPopup" in source
     assert '"POST", "green_smart/central/pesticide/search"' in source

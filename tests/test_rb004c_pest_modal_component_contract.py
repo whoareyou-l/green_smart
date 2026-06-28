@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb004c_version_surfaces_are_v11114():
-    assert '"version": "1.11.14"' in _read(MANIFEST)
-    assert 'const VERSION = "1.11.14"' in _read(PANEL)
-    assert "v1.11.14" in _read(FRONTEND_PLAN)
+    assert '"version": "1.11.15"' in _read(MANIFEST)
+    assert 'const VERSION = "1.11.15"' in _read(PANEL)
+    assert "v1.11.15" in _read(FRONTEND_PLAN)
 
 
 def test_rb004c_pest_modal_module_exists_and_exports_pure_render_helpers():
@@ -90,6 +90,8 @@ def test_rb004c_panel_imports_pest_modal_helpers_and_keeps_autocomplete_and_save
 
 def test_rb004c_preserves_growth_control_modals_and_api_boundaries():
     panel = _read(PANEL)
+    control_module = (ROOT / "custom_components" / "green_smart" / "panel" / "domains" / "crop" / "crop-control-modal.js").read_text(encoding="utf-8")
+    frontend = panel + "\n" + control_module
     for marker in (
         "_openGrowthAddPopup",
         "_openControlAddPopup",
@@ -98,24 +100,25 @@ def test_rb004c_preserves_growth_control_modals_and_api_boundaries():
         "data-control-compact-modal",
         '"POST", `green_smart/crop/seasons/${this._activeSeasonId}/growth`',
     ):
-        assert marker in panel
+        assert marker in frontend
 
 
 def test_rb004c_docs_record_pest_modal_extraction_boundaries():
     plan = _read(FRONTEND_PLAN)
     master = _read(MASTER_PLAN)
     project = _read(PROJECT_MASTER)
-    for marker in (
+    shared_markers = (
         "RB-004C Pest scouting modal render extraction",
-        "v1.11.14",
+        "v1.11.15",
         "domains/crop/crop-pest-modal.js",
         "병해충 예찰 modal render helpers only",
         "autocomplete/API/save bindings remain in panel shell",
-        "방제 modal 변경 없음",
         "API/DB 변경 없음",
         "route path 변경 없음",
         "response shape 변경 없음",
-    ):
+    )
+    for marker in shared_markers:
         assert marker in plan
         assert marker in master
+    assert "방제 modal 변경 없음" in plan
     assert "custom_components/green_smart/panel/domains/crop/crop-pest-modal.js" in project
