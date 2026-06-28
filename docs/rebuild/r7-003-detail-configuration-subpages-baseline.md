@@ -1,6 +1,6 @@
 # R7-003 Detail/Configuration Subpages Baseline
 
-> 기준 버전: `v1.12.37`
+> 기준 버전: `v1.12.38`
 > Status: R7-003 complete
 > selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
 
@@ -94,3 +94,27 @@ R7-004 First real detail subpage implementation
 ```
 
 R7-004 should choose one group to replace its placeholder with a deeper read-only implementation. If multiple groups are possible, ask the user before choosing.
+
+
+## R7-004 Settings/Admin Read-only Detail
+
+`v1.12.38`에서 R7-004 settings/admin read-only detail을 완료했다.
+
+Reference:
+
+```text
+docs/rebuild/r7-004-settings-admin-readonly-detail.md
+```
+
+Boundary:
+
+```text
+R7-004 Settings/Admin Read-only Detail
+user-selected scope: 설정·관리 — RBAC/config/admin read-only detail
+No API route change in R7-004
+No DB migration in R7-004
+No execution authority in R7-004
+No role assignment mutation in R7-004
+No raw secrets in R7-004
+No MQTT/device command in R7-004
+```

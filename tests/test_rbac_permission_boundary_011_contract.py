@@ -27,11 +27,11 @@ def _load_module(path: Path, name: str):
 
 
 def test_rs011_version_surfaces_are_aligned_to_1_12_10():
-    assert '"version": "1.12.37"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.37"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.37"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.38"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.38"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.38"' in _read(REBUILD_PANEL)
     for path in (DB_SCHEMA, LEGACY_INVENTORY, PRODUCT_PLAN, RBAC_BOUNDARY):
-        assert "v1.12.37" in _read(path)
+        assert "v1.12.38" in _read(path)
 
 
 def test_rbac_permission_boundary_document_declares_alias_vs_target_names():
@@ -130,7 +130,7 @@ def test_legacy_inventory_and_product_plan_promote_rs011_next_step_completion():
 
     required_plan = (
         "Phase R4.7 — RBAC permission naming boundary",
-        "Status:** `v1.12.37`에서 target gs_permissions permission naming boundary 완료",
+        "Status:** `v1.12.38`에서 target gs_permissions permission naming boundary 완료",
         "No role table migration in RS-011",
         "No production permission removal in RS-011",
         "legacy permission strings = compatibility aliases",
@@ -148,7 +148,11 @@ def test_rebuild_frontend_does_not_render_legacy_permission_copy():
         "run_dry_run",
         "execute_final_targets",
         "manage_users_roles",
-        "system_settings",
     )
     for marker in forbidden:
         assert marker not in text
+    # R7-004 settings/admin read-only detail may display target policy evidence,
+    # but only inside its explicit read-only RBAC/Admin evidence section.
+    assert "system_settings" in text
+    assert "data-r7-settings-admin-detail" in text
+    assert "data-r7-settings-admin-readonly-boundary=\"true\"" in text

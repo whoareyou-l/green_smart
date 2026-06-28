@@ -17,6 +17,7 @@
 // R7-001 Main dashboard redesign: operator-visible crop-centered dashboard renders from R6 read-only source shapes.
 // R7-002 Sidebar navigation + page shell: R7 sidebar primary groups wrap the crop-centered workspace without adding execution authority.
 // R7-003 Detail/configuration subpages baseline: all five sidebar groups receive read-only placeholder subpages.
+// R7-004 Settings/Admin read-only detail: Settings/Admin renders RBAC/config/admin evidence without mutation authority.
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7-003 subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
@@ -28,7 +29,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.37";
+const REBUILD_VERSION = "1.12.38";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -702,6 +703,49 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </nav>`;
   }
 
+  renderR7SettingsAdminDetail() {
+    return `<section data-r7-settings-admin-detail data-r7-settings-admin-readonly-boundary="true" style="border:1px solid #d7e8db;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
+      <header>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-004 read-only admin detail</p>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">설정·관리 · RBAC/config/admin 근거</h4>
+        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">RBAC_ROLE_OWNERSHIP, RBAC_PERMISSION_BUCKETS, RBAC_ADMIN_OWNERSHIP, RBAC_BACKEND_ENFORCED_ACTION_CLASSES를 운영자가 읽을 수 있는 근거로만 표시합니다.</p>
+      </header>
+      <section data-r7-settings-admin-role-ownership style="display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">Role ownership matrix</strong>
+        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+          <p style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>admin</b><br>system_settings · HA mapping · RBAC · diagnostics · config metadata</p>
+          <p style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>farm_owner</b><br>approvals · strategy review · high impact review · manage_farm_staff_roles</p>
+          <p style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>farm_staff</b><br>daily records · routine monitoring · allowed routine actions</p>
+        </div>
+      </section>
+      <section data-r7-settings-admin-permission-buckets style="display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">Permission bucket matrix</strong>
+        <p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.6;">조회 · 기록 · 전략 · 실행 · 안전 · 고급설정</p>
+        <p style="margin:0;color:#78927f;font-size:12px;line-height:1.6;">system_settings · edit_entity_mapping · view_audit_logs are admin/system evidence; write actions remain backend-enforced.</p>
+      </section>
+      <section data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-farm-owner-staff-scope style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">User/role mapping</strong>
+        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">admin owns all role mapping. farm_owner scope is limited to farm_staff assignment evidence only; R7-004 does not mutate roles.</p>
+      </section>
+      <section data-r7-settings-admin-area="ha-entity-mapping" style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">HA entity mapping metadata</strong>
+        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">edit_entity_mapping belongs to admin. This page shows mapping ownership only and does not edit entities.</p>
+      </section>
+      <section data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-secret-redaction style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">System config metadata</strong>
+        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">Raw secret material is never rendered. Stored secret fields are displayed only as [REDACTED].</p>
+      </section>
+      <section data-r7-settings-admin-area="diagnostics-backup-audit" style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">Diagnostics/backup/audit export metadata</strong>
+        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">Diagnostics and audit export ownership belongs to admin; farm_owner may receive summary-only review later by a separate slice.</p>
+      </section>
+      <section data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-backend-enforcement style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">RBAC policy contract</strong>
+        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">RBAC_BACKEND_ENFORCED_ACTION_CLASSES = write / execute / save / delete / ack / clear / apply. UI visibility is presentation only.</p>
+      </section>
+    </section>`;
+  }
+
   renderR7DetailSubpage(subpage) {
     return `<article data-r7-detail-subpage="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
@@ -712,6 +756,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p data-r7-subpage-source-freshness style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">Source freshness: ${subpage.source}</p>
       <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
+      ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
       <details style="border-top:1px solid #edf4ef;padding-top:8px;">
         <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
         <p style="margin:8px 0 0;color:#78927f;font-size:12px;line-height:1.5;">operator summary → source freshness → zone-scoped evidence → safety/interlock boundary → optional technical details</p>
