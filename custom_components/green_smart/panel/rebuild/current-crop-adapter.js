@@ -207,6 +207,30 @@ export function normalizeVirtualRunnerDryRunResultAdapter(zone = {}, virtualRunn
   };
 }
 
+export function normalizeVirtualRehearsalPassFailReviewProjection(zone = {}, virtualRunnerDryRunResultAdapter = normalizeVirtualRunnerDryRunResultAdapter(zone)) {
+  const projection = zone.virtualRehearsalPassFailReviewProjection || zone.virtual_rehearsal_pass_fail_review_projection || {};
+  const scenarioReviews = projection.scenarioReviews || (virtualRunnerDryRunResultAdapter.scenarioDryRunResults || []).map((item) => ({
+    scenario: item.scenario,
+    decision: "review_needed",
+    sourceDryRunResult: item.dryRunResult || "simulated_not_executed",
+    executionAllowed: false,
+  }));
+  return {
+    reviewState: projection.reviewState || "pass_fail_review_pending",
+    overallDecision: projection.overallDecision || "review_needed",
+    scenarioReviews,
+    sourceDryRunResultAdapter: projection.sourceDryRunResultAdapter || virtualRunnerDryRunResultAdapter,
+    passFailAuthority: projection.passFailAuthority || "operator_review_only",
+    operatorReviewRequired: projection.operatorReviewRequired !== false,
+    readOnly: true,
+    executionEnabled: false,
+    runnerExecutionEnabled: false,
+    approvalReleaseEnabled: false,
+    deviceCommandEnabled: false,
+    mqttEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
@@ -219,6 +243,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
   const rehearsalResultReviewProjection = normalizeRehearsalResultReviewProjection(zone, virtualExecutionRehearsalScaffold);
   const virtualRunnerInputContract = normalizeVirtualRunnerInputContract(zone, rehearsalResultReviewProjection);
   const virtualRunnerDryRunResultAdapter = normalizeVirtualRunnerDryRunResultAdapter(zone, virtualRunnerInputContract);
+  const virtualRehearsalPassFailReviewProjection = normalizeVirtualRehearsalPassFailReviewProjection(zone, virtualRunnerDryRunResultAdapter);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -238,6 +263,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     rehearsalResultReviewProjection,
     virtualRunnerInputContract,
     virtualRunnerDryRunResultAdapter,
+    virtualRehearsalPassFailReviewProjection,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],

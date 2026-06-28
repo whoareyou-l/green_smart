@@ -1,6 +1,6 @@
 # RS-009 Legacy Direction Inventory
 
-> 기준 버전: `v1.12.25` / updated in `v1.12.25`
+> 기준 버전: `v1.12.26` / updated in `v1.12.26`
 > Status: active boundary contract
 > 목적: Green Smart rebuild에서 legacy가 제품 방향성으로 남지 않도록, historical reference / adapter-only / legacy panel / current source of truth 경계를 명확히 한다.
 
@@ -162,7 +162,8 @@ Boundary:
 | RS-024 | Rehearsal result review projection completed: 추천·실행 now renders rehearsalResultReviewProjection as read-only result review. |
 | RS-025 | Virtual runner input contract completed: 추천·실행 now renders virtualRunnerInputContract as read-only runner input shape. |
 | RS-026 | Virtual runner dry-run result adapter completed: 추천·실행 now renders virtualRunnerDryRunResultAdapter as read-only simulated result shape. |
-| RS-027 | Virtual rehearsal pass/fail review projection |
+| RS-027 | Virtual rehearsal pass/fail review projection completed: 추천·실행 now renders virtualRehearsalPassFailReviewProjection as read-only operator review shape. |
+| RS sequence complete before R5 scaffold | R4 RS-series is complete; next work moves to Phase R5 Product rebuild execution scaffold. |
 
 ---
 

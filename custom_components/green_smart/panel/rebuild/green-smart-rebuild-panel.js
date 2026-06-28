@@ -13,13 +13,14 @@
 // RS-024 rehearsal result review projection: virtualExecutionRehearsalScaffold → rehearsalResultReviewProjection.
 // RS-025 virtual runner input contract: rehearsalResultReviewProjection → virtualRunnerInputContract.
 // RS-026 virtual runner dry-run result adapter: virtualRunnerInputContract → virtualRunnerDryRunResultAdapter.
+// RS-027 virtual rehearsal pass/fail review projection: virtualRunnerDryRunResultAdapter → virtualRehearsalPassFailReviewProjection.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.25";
+const REBUILD_VERSION = "1.12.26";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -410,6 +411,31 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderVirtualRehearsalPassFailReviewProjection(zone, stageKey) {
+    if (!["recommendation-execution"].includes(stageKey)) return "";
+    const projection = zone.virtualRehearsalPassFailReviewProjection || {};
+    const reviewState = projection.reviewState || "pass_fail_review_pending";
+    const overallDecision = projection.overallDecision || "review_needed";
+    const scenarioReviews = projection.scenarioReviews || ["normal", "strong_wind", "rain", "low_temperature", "sensor_fault", "blocked", "fail_safe", "recovery"].map((scenario) => ({ scenario, decision: "review_needed", executionAllowed: false }));
+    const scenarioText = scenarioReviews.map((item) => `${item.scenario}:${item.decision || "review_needed"}`).join(",");
+    const readOnly = projection.readOnly !== false;
+    const executionEnabled = projection.executionEnabled === true;
+    const runnerExecutionEnabled = projection.runnerExecutionEnabled === true;
+    const deviceCommandEnabled = projection.deviceCommandEnabled === true;
+    const mqttEnabled = projection.mqttEnabled === true;
+    return `
+      <section data-virtual-rehearsal-pass-fail-review-card data-virtual-rehearsal-review-state="${reviewState}" data-virtual-rehearsal-overall-decision="${overallDecision}" data-virtual-rehearsal-scenario-reviews="${scenarioText}" data-virtual-rehearsal-pass-fail-readonly="${readOnly}" data-virtual-rehearsal-pass-fail-execution-enabled="${executionEnabled}" data-virtual-rehearsal-pass-fail-runner-execution-enabled="${runnerExecutionEnabled}" data-virtual-rehearsal-pass-fail-device-command-enabled="${deviceCommandEnabled}" data-virtual-rehearsal-pass-fail-mqtt-enabled="${mqttEnabled}" style="margin:10px 0;border:1px solid #fecaca;border-radius:14px;background:#fffafa;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#991b1b;">가상 리허설 pass/fail 검토 · read-only</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#334155;font-size:12px;">
+          <dt style="font-weight:900;">검토 상태</dt><dd style="margin:0;">${reviewState}</dd>
+          <dt style="font-weight:900;">종합 판단</dt><dd style="margin:0;">${overallDecision}</dd>
+          <dt style="font-weight:900;">시나리오 검토</dt><dd style="margin:0;">${scenarioReviews.map((item) => `${item.scenario}=${item.decision || "review_needed"}`).join(" · ")}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#7f1d1d;font-size:12px;line-height:1.5;">RS-027은 가상 리허설 결과를 pass/fail/review_needed 검토 projection으로 정리합니다. 실제 runner 실행, 승인 해제, MQTT, 장치 명령은 제공하지 않습니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -486,6 +512,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${this.renderRehearsalResultReviewProjection(zone, stageKey)}
             ${this.renderVirtualRunnerInputContract(zone, stageKey)}
             ${this.renderVirtualRunnerDryRunResultAdapter(zone, stageKey)}
+            ${this.renderVirtualRehearsalPassFailReviewProjection(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}

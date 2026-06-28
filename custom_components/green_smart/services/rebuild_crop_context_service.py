@@ -195,6 +195,28 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "deviceCommandEnabled": False,
         "mqttEnabled": False,
     }
+    virtual_rehearsal_pass_fail_review_projection = {
+        "reviewState": "pass_fail_review_pending" if crop_cycle_id else "empty",
+        "overallDecision": "review_needed" if crop_cycle_id else "empty",
+        "scenarioReviews": [
+            {
+                "scenario": item.get("scenario"),
+                "decision": "review_needed",
+                "sourceDryRunResult": item.get("dryRunResult", "simulated_not_executed"),
+                "executionAllowed": False,
+            }
+            for item in virtual_runner_dry_run_result_adapter["scenarioDryRunResults"]
+        ],
+        "sourceDryRunResultAdapter": virtual_runner_dry_run_result_adapter,
+        "passFailAuthority": "operator_review_only",
+        "operatorReviewRequired": True,
+        "readOnly": True,
+        "executionEnabled": False,
+        "runnerExecutionEnabled": False,
+        "approvalReleaseEnabled": False,
+        "deviceCommandEnabled": False,
+        "mqttEnabled": False,
+    }
     return {
         "id": f"zone-{zone_id}",
         "zone_id": zone_id,
@@ -214,6 +236,7 @@ def crop_cycle_row_to_zone_context(row: dict[str, Any]) -> dict[str, Any]:
         "rehearsalResultReviewProjection": rehearsal_result_review_projection,
         "virtualRunnerInputContract": virtual_runner_input_contract,
         "virtualRunnerDryRunResultAdapter": virtual_runner_dry_run_result_adapter,
+        "virtualRehearsalPassFailReviewProjection": virtual_rehearsal_pass_fail_review_projection,
         "compatibilityAliases": {
             "cropSeasonId": compatibility_crop_season_id,
         },

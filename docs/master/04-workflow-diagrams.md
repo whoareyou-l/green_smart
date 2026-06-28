@@ -1,7 +1,7 @@
 # 4. 통합 시나리오 흐름도 — Workflow Diagram
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.25`
+> 기준 버전: `v1.12.26`
 > 문서 목적: UI 컴포넌트, Frontend service, Backend API, DB, MQTT/HA Entity, 하드웨어가 시간 순서대로 어떻게 신호를 주고받는지 정의한다.
 
 ## 1. 공통 Actor
@@ -393,3 +393,12 @@ virtual runner input contract → dry-run result adapter
 ```
 
 The dry-run result remains simulated_not_executed. No real-device hookup in RS-026.
+
+
+## RS-027 Virtual rehearsal pass/fail review workflow
+
+```text
+dry-run result adapter → pass/fail review projection
+```
+
+The pass/fail remains operator_review_only. No real-device hookup in RS-027.

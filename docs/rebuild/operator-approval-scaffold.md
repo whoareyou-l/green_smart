@@ -1,6 +1,6 @@
 # RS-021 Operator Approval Scaffold
 
-> 기준 버전: `v1.12.25`
+> 기준 버전: `v1.12.26`
 > Status: operator approval scaffold
 > 목적: `recommendationReviewProjection` 다음 단계로 `추천·실행` 화면에 작업자 승인 필요 상태를 read-only/disabled scaffold로 표시한다.
 
