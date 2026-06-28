@@ -7,6 +7,7 @@ They intentionally preserve existing route response shapes.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from ..repositories import crop_repo
@@ -99,6 +100,23 @@ async def hard_delete_crop_season(hass, actor: CropWriteActor, season_id: int) -
     await _require_crop_delete(actor)
     await crop_repo.hard_delete_crop_season(hass, season_id)
     return {"ok": True, "id": int(season_id), "hardDeleted": True}
+
+
+async def growth_report_response(
+    hass,
+    actor: CropReadActor,
+    season_id: int,
+    *,
+    builder: Callable[[Any, int], Awaitable[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Return the legacy growth-report response through a service permission boundary.
+
+    RB-006D deliberately injects the existing report builder to avoid a large model
+    helper move and to keep crop_views importable without circular imports.
+    """
+    await _require_crop_read(actor)
+    report = await builder(hass, int(season_id))
+    return report
 
 
 async def list_growth_records(hass, actor: CropReadActor, season_id: int) -> list[dict[str, Any]]:

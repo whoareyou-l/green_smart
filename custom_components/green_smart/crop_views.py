@@ -12,6 +12,7 @@ from .services.crop_service import (
     create_crop_season,
     demolish_crop_season,
     hard_delete_crop_season,
+    growth_report_response,
     list_control_records,
     list_crop_seasons,
     list_growth_records,
@@ -1428,12 +1429,12 @@ def _crop_environment_derived_features(features: dict, *, days: int = 7) -> dict
 
 async def _environment_feature_summary(hass, *, farm_id: int, zone_id: int | None, days: int = 7) -> dict:
     rows = await fetchall(hass, """
-        SELECT reading_type AS readingType, COUNT(*) AS sampleCount,
-               AVG(value) AS avgValue, MIN(value) AS minValue, MAX(value) AS maxValue,
-               SUM(value) AS sumValue,
-               AVG(CASE WHEN HOUR(captured_at) BETWEEN 6 AND 17 THEN value ELSE NULL END) AS dayAvg,
-               AVG(CASE WHEN HOUR(captured_at) < 6 OR HOUR(captured_at) >= 18 THEN value ELSE NULL END) AS nightAvg,
-               MAX(captured_at) AS lastCapturedAt
+        SELECT reading_type AS `readingType`, COUNT(*) AS `sampleCount`,
+               AVG(value) AS `avgValue`, MIN(value) AS `minValue`, MAX(value) AS `maxValue`,
+               SUM(value) AS `sumValue`,
+               AVG(CASE WHEN HOUR(captured_at) BETWEEN 6 AND 17 THEN value ELSE NULL END) AS `dayAvg`,
+               AVG(CASE WHEN HOUR(captured_at) < 6 OR HOUR(captured_at) >= 18 THEN value ELSE NULL END) AS `nightAvg`,
+               MAX(captured_at) AS `lastCapturedAt`
         FROM sensor_readings
         WHERE farm_id = %s AND ((%s IS NULL AND zone_id IS NULL) OR zone_id = %s)
           AND captured_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
@@ -3912,7 +3913,22 @@ class CropGrowthReportView(HomeAssistantView):
     name = "api:green_smart:crop:growth_report"
 
     async def get(self, request: web.Request, season_id: str) -> web.Response:
-        return _json(await _growth_report_response(request.app["hass"], int(season_id)))
+        # Lazy import keeps pure crop model helper tests importable without a full HA package.
+        from .rbac import _ha_user_from_request, _ha_user_id, _ha_user_is_admin, async_get_green_smart_user_role, permissions_for_role
+
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            _ha_user_id(user),
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        actor = CropReadActor(role=role, permissions=tuple(permissions_for_role(role)))
+        try:
+            report = await growth_report_response(hass, actor, int(season_id), builder=_growth_report_response)
+        except PermissionError as exc:
+            return _err(str(exc), 403)
+        return _json(report)
 
 
 class CropModelFeatureSourcesView(HomeAssistantView):

@@ -56,7 +56,7 @@ def test_v1962_backend_environment_feature_contract():
 def test_v1962_environment_sql_reads_sensor_readings_without_schema_change_contract():
     crop = CROP.read_text(encoding="utf-8")
     assert "FROM sensor_readings" in crop
-    assert "reading_type AS readingType" in crop
+    assert "reading_type AS `readingType`" in crop
     assert "AVG(value)" in crop
     assert "MIN(value)" in crop
     assert "MAX(value)" in crop
@@ -103,7 +103,7 @@ def test_v1962_version_markers_contract():
     manifest = MANIFEST.read_text(encoding="utf-8")
     panel = PANEL.read_text(encoding="utf-8")
     central = CENTRAL.read_text(encoding="utf-8")
-    assert '"version": "1.11.10"' in manifest
-    assert 'const VERSION = "1.11.10"' in panel
-    assert "v1.11.10" in panel[:200]
+    assert '"version": "1.11.11"' in manifest
+    assert 'const VERSION = "1.11.11"' in panel
+    assert "v1.11.11" in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
