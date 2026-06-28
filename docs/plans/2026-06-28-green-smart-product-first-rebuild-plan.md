@@ -18,14 +18,14 @@
 
 ## 0. 왜 리빌딩이 필요한가
 
-현재 `v1.12.8` 기준 진단 수치:
+현재 `v1.12.9` 기준 진단 수치:
 
 | 항목 | 현재 상태 | 리빌딩 판단 |
 |---|---:|---|
 | `panel/green-smart-panel.js` | 10,007 lines | UI 상태·렌더·API 호출·모달·도메인 로직이 한 파일에 과밀 |
 | `crop_views.py` | 4,946 lines | 작기/생육/AI/리포트/인터록/품질/예측이 한 API 파일에 과밀 |
 | `zone_control_views.py` | 2,737 lines | 환경/관수/장치/인터록/실행 경로가 한 파일에 과밀 |
-| `docs/design/ui-information-architecture-and-rbac.md` | 기준 버전 `v1.9.56` | 현재 구현 `v1.12.8`와 문서 기준 괴리 |
+| `docs/design/ui-information-architecture-and-rbac.md` | 기준 버전 `v1.9.56` | 현재 구현 `v1.12.9`와 문서 기준 괴리 |
 | 전체 contract tests | 536 passed | 회귀 방어는 좋지만, 구조 정리는 테스트가 아니라 아키텍처 경계가 필요 |
 
 결론: 기능은 돌아가지만, 계속 vertical slice를 누적하면 UI·API·문서가 더 무거워진다. 다음 단계는 신규 기능이 아니라 **제품 구조 리빌딩 baseline**이다.
@@ -34,7 +34,7 @@
 
 ## 1. 리빌딩 원칙
 
-1. **Prod 안정성 우선:** 현재 `v1.12.8` 운영 반영 상태는 유지한다. 리빌딩 중 prod에 즉시 큰 변경을 넣지 않는다.
+1. **Prod 안정성 우선:** 현재 `v1.12.9` 운영 반영 상태는 유지한다. 리빌딩 중 prod에 즉시 큰 변경을 넣지 않는다.
 2. **제품 구조 먼저:** 화면/도메인/API/DB/model 경계를 먼저 정리한다. Docker/Compose 운영 리빌드는 제품 구조 기준이 확정된 뒤 진행한다.
 3. **기능 추가 중단:** VS-004 같은 신규 기능은 리빌딩 baseline이 생길 때까지 보류한다.
 4. **큰 rewrite 금지:** 한 번에 전체 교체하지 않는다. Compatibility adapter와 contract test로 점진 이관한다.
@@ -98,7 +98,7 @@
 
 ### Phase R0 — 현재 구조 freeze 및 inventory
 
-**Objective:** 현재 `v1.12.8`를 안전 기준선으로 고정하고 리빌딩 대상/보존 대상을 분리한다.
+**Objective:** 현재 `v1.12.9`를 안전 기준선으로 고정하고 리빌딩 대상/보존 대상을 분리한다.
 
 **Files:**
 - Create: `docs/rebuild/current-state-inventory.md`
@@ -114,7 +114,7 @@
 
 ### Phase R1 — 제품 IA/RBAC baseline 재작성
 
-**Objective:** 오래된 `v1.9.56` 기준 IA/RBAC 문서를 `v1.12.8+` 기준으로 재정렬한다.
+**Objective:** 오래된 `v1.9.56` 기준 IA/RBAC 문서를 `v1.12.9+` 기준으로 재정렬한다.
 
 **Files:**
 - Rewrite/Update: `docs/design/ui-information-architecture-and-rbac.md`
@@ -129,7 +129,7 @@
 
 ### Phase R2 — Frontend decomposition plan
 
-**Status:** `v1.12.8`에서 기준선 완료. 상세 산출물은 `docs/rebuild/frontend-decomposition-plan.md`.
+**Status:** `v1.12.9`에서 기준선 완료. 상세 산출물은 `docs/rebuild/frontend-decomposition-plan.md`.
 
 **Objective:** 10,007줄 단일 panel JS를 바로 쪼개지 않고, 먼저 모듈 경계와 adapter 전략을 문서/계약으로 고정한다.
 
@@ -157,7 +157,7 @@ panel/
 
 ### Phase R3 — Backend/API decomposition plan
 
-**Status:** `v1.12.8`에서 기준선 완료. 상세 산출물은 `docs/rebuild/backend-api-decomposition-plan.md`.
+**Status:** `v1.12.9`에서 기준선 완료. 상세 산출물은 `docs/rebuild/backend-api-decomposition-plan.md`.
 
 **Objective:** `crop_views.py`, `zone_control_views.py`를 도메인별 view/helper/service로 분리하는 adapter-first 계획 수립.
 
@@ -191,7 +191,7 @@ green_smart/
 
 ### Phase R4 — DB/schema rationalization plan
 
-**Status:** `v1.12.8`에서 기준선 완료. 상세 산출물은 `docs/rebuild/db-schema-rationalization-plan.md`.
+**Status:** `v1.12.9`에서 기준선 완료. 상세 산출물은 `docs/rebuild/db-schema-rationalization-plan.md`.
 
 **Objective:** legacy physical schema를 제품 방향으로 삼지 않고, RBAC-first target schema와 migration gate를 정한다.
 
@@ -203,7 +203,7 @@ green_smart/
 
 ### Phase R4.5 — Legacy direction inventory
 
-**Status:** `v1.12.8`에서 legacy direction inventory 완료. 상세 산출물은 `docs/rebuild/legacy-direction-inventory.md`.
+**Status:** `v1.12.9`에서 legacy direction inventory 완료. 상세 산출물은 `docs/rebuild/legacy-direction-inventory.md`.
 
 **Boundary:**
 ```text
@@ -211,6 +211,18 @@ historical reference, not product direction
 legacy physical schema is adapter-only
 Green Smart Legacy panel = compatibility surface
 rebuild panel only for new product slices
+```
+
+### Phase R4.6 — Crop Cycle API naming boundary
+
+**Status:** `v1.12.9`에서 crop_cycle/currentCrop API naming boundary 완료. 상세 산출물은 `docs/rebuild/crop-cycle-api-boundary.md`.
+
+**Boundary:**
+```text
+No production route removal in RS-010
+No DB migration in RS-010
+crop/seasons = compatibility adapter
+crop_cycle/currentCrop = product-facing target
 ```
 
 ### Phase R5 — Product rebuild execution scaffold
@@ -232,14 +244,14 @@ Historical evidence compatibility markers retained for existing contracts:
 
 ```text
 RB-003 Crop read-only component extraction
-v1.12.8
+v1.12.9
 domains/crop/crop-readonly.js
 read-only render helpers only
 crop write modal/save/delete 변경 없음
 DB/API 변경 없음
 
 RB-004 Crop write modal extraction
-v1.12.8
+v1.12.9
 domains/crop/crop-write-modal.js
 작기 write modal render helpers only
 save/delete bindings remain in panel shell
@@ -248,7 +260,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-004B Growth survey modal render extraction
-v1.12.8
+v1.12.9
 domains/crop/crop-growth-modal.js
 생육조사 modal render helpers only
 save/API bindings remain in panel shell
@@ -257,7 +269,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-004C Pest scouting modal render extraction
-v1.12.8
+v1.12.9
 domains/crop/crop-pest-modal.js
 병해충 예찰 modal render helpers only
 autocomplete/API/save bindings remain in panel shell
@@ -266,7 +278,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-004D Control/treatment modal render extraction
-v1.12.8
+v1.12.9
 domains/crop/crop-control-modal.js
 방제 기록 modal render helpers only
 PLS/혼용 warning render markers preserved
@@ -276,7 +288,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-006A Crop read-only service/repo boundary
-v1.12.8
+v1.12.9
 services/crop_service.py
 repositories/crop_repo.py
 GET /api/green_smart/crop/seasons
@@ -286,7 +298,7 @@ response shape 변경 없음
 DB migration 없음
 
 RB-006B Crop record read-only repositories
-v1.12.8
+v1.12.9
 growth/pest/control read GET helpers
 list_growth_records
 list_pest_records
@@ -297,7 +309,7 @@ response shape 변경 없음
 DB migration 없음
 
 RB-006C Crop season write service/repo boundary
-v1.12.8
+v1.12.9
 create/update/delete/demolish write helpers
 create_crop_season
 update_crop_season
@@ -309,7 +321,7 @@ response shape 변경 없음
 DB migration 없음
 
 RB-006D Crop model/report service boundary
-v1.12.8
+v1.12.9
 growth-report GET service boundary
 growth_report_response
 Center sync scheduler 변경 없음

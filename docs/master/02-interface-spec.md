@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.8`
+> 기준 버전: `v1.12.9`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -127,13 +127,30 @@ API 요청/응답, MQTT payload, DB JSON field는 **하드웨어 도메인 표�
 
 ## 3. Frontend API — 서비스 모듈화
 
+### 3.0 Crop Cycle API boundary
+
+```text
+Target product API
+GET /api/green_smart/crop/cycles
+GET /api/green_smart/crop/current
+POST /api/green_smart/crop/cycles
+crop_cycle_id
+currentCrop
+compatibility adapter only: /api/green_smart/crop/seasons
+Do not document crop/seasons as new product direction
+```
+
+- 신규 product-facing DTO/API는 `crop_cycle_id`, `cropCycles`, `activeCropCycleId`, `currentCrop` 기준을 사용한다.
+- 기존 `/api/green_smart/crop/seasons` route는 운영 호환 adapter로만 유지한다.
+- RS-010에서는 production route removal 또는 DB migration을 하지 않는다.
+
 | Service | 책임 | 주요 메서드 | Backend 연결 |
 |---|---|---|---|
 | `authService` | 현재 사용자/권한 | `getMe()` | `GET /api/green_smart/auth/me` |
 | `configService` | wizard/settings 저장 | `getConfig()`, `saveConfig()` | WS `green_smart/get_config`, `green_smart/save_config` |
 | `sensorService` | 센서/KPI/VPD 조회 | `getCurrentSensors(zoneId)`, `getSensorTrend()` | `entity-state-summary`, future `sensorRouter` |
-| `cropService` | 작기/생육/병해충/방제 | `listCropCycles()`, `createGrowthSurvey()` | `/crop/seasons/*` |
-| `cropAiService` | 작물 AI report | `getGrowthReport(cropCycleId)` | `/crop/seasons/{id}/growth-report` |
+| `cropService` | 작기/생육/병해충/방제 | `listCropCycles()`, `createGrowthSurvey()` | product target `/crop/cycles/*`; compatibility adapter `/crop/seasons/*` |
+| `cropAiService` | 작물 AI report | `getGrowthReport(cropCycleId)` | product target `/crop/cycles/{id}/growth-report`; compatibility adapter `/crop/seasons/{id}/growth-report` |
 | `environmentService` | 환경 전략/목표 | `getStrategyPreview()`, `saveSetValues()` | `/environment/strategy-preview`, `/environment/control-settings` |
 | `irrigationService` | 관수 전략/설정 | `getTodayPlan()`, `saveIrrigationSettings()` | `/irrigation/strategy-preview`, `/irrigation/control-settings` |
 | `deviceService` | 장치 상태/매핑/실행 | `validateMapping()`, `dryRunCommand()` | `/zones/device-entity-mappings`, `/zones/execute-final-targets` |

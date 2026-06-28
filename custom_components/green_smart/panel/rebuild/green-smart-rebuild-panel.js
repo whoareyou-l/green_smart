@@ -1,7 +1,7 @@
 // Green Smart rebuild panel
 // Developer-only rebuild notes belong in docs/rebuild/*, not in rendered UI copy.
 
-const REBUILD_VERSION = "1.12.8";
+const REBUILD_VERSION = "1.12.9";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
@@ -34,6 +34,7 @@ function normalizeRebuildHomeContext(context) {
     generatedAt: context?.generatedAt || new Date(0).toISOString(),
     zones: zones.map((zone) => ({
       ...zone,
+      crop_cycle: zone.currentCrop?.crop_cycle_id || zone.currentCrop?.cropSeasonId || null,
       crop: zone.currentCrop?.cropLabelKo || "미등록",
       state: zone.currentCrop?.growthStage || "작기 정보 없음",
       equipment: zone.equipmentProfile?.labels || [],
