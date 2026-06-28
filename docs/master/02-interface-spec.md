@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.14`
+> 기준 버전: `v1.12.15`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -94,6 +94,18 @@ No write/mutation in RS-015
 ```
 
 RS-015 기준 rebuild panel은 static read-only fallback으로 먼저 렌더링하고, Home Assistant `hass.callApi("GET", REBUILD_CONTEXT_API_PATH)`로 protected home context API를 불러온 뒤 `normalizeRebuildHomeContext(response)`로 product-facing DTO를 정규화한다. 실패 시 fallback context와 `data-rebuild-context-error`를 유지한다.
+
+### 1.6 Crop cycle read-only page slice
+
+```text
+Crop cycle read-only page slice
+data-crop-cycle-readonly-card
+currentCrop.crop_cycle_id
+작물상태 / 생육목표
+No write/mutation in RS-016
+```
+
+RS-016 기준 rebuild panel은 `작물상태 / 생육목표` 구역 패널에 `currentCrop.crop_cycle_id`, `crop_type`, `crop_label_ko`, `growth_stage`, `variety`, `plant_date`를 읽기 전용 카드로 표시한다. 이 slice는 표시 전용이며 crop cycle 생성/수정/삭제, DB migration, 실제 장치 연결을 포함하지 않는다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

@@ -64,8 +64,8 @@ def test_from_scratch_rebuild_panel_does_not_import_legacy_modules():
         "./domains/crop/",
         "./domains/admin/admin-page.js",
         "renderAdminSystemPage",
-        "crop-readonly",
-        "crop-write-modal",
+        "./domains/crop/crop-readonly.js",
+        "./domains/crop/crop-write-modal.js",
         "green-smart-panel.js",
         "_saveAdminRoleMapping",
     )

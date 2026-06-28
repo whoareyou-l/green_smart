@@ -15,11 +15,17 @@ export function normalizeCurrentCrop(currentCrop = {}) {
   const cropType = firstPresent(currentCrop.crop_type, currentCrop.cropType);
   const cropLabelKo = firstPresent(currentCrop.crop_label_ko, currentCrop.cropLabelKo, "미등록");
   const growthStage = firstPresent(currentCrop.growth_stage, currentCrop.growthStage, "작기 정보 없음");
+  const variety = firstPresent(currentCrop.variety, currentCrop.crop_variety, currentCrop.cropVariety, "품종 미등록");
+  const plantDate = firstPresent(currentCrop.plant_date, currentCrop.plantDate, currentCrop.started_at, "정식일 미등록");
+  const demolishDate = firstPresent(currentCrop.demolish_date, currentCrop.demolishDate, null);
   return {
     crop_cycle_id: cropCycleId,
     crop_type: cropType,
     crop_label_ko: cropLabelKo,
     growth_stage: growthStage,
+    variety,
+    plant_date: plantDate,
+    demolish_date: demolishDate,
     currentCrop: true,
   };
 }
