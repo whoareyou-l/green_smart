@@ -24,6 +24,7 @@ export function createApiClient(hass) {
     request,
     admin: {
       getCurrentUser: () => request("GET", "green_smart/auth/me"),
+      assignRole: (haUserId, payload) => request("POST", `green_smart/auth/roles/${haUserId}`, payload),
     },
     crop: {
       listSeasons: () => request("GET", "green_smart/crop/seasons"),

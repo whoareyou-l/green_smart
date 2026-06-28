@@ -12,64 +12,20 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
+from .rbac_policy import (
+    GREEN_SMART_ROLE_PERMISSIONS,
+    GREEN_SMART_ROLES,
+    can_assign_role,
+    normalize_green_smart_role,
+    permissions_for_role,
+    role_assignment_authorization,
+)
 
-GREEN_SMART_ROLES = ("admin", "farm_owner", "farm_staff")
+# Compatibility source marker: farm_owner receives manage_farm_staff_roles only;
+# admin keeps manage_users_roles/system_settings.
+# Static compatibility roles: "admin", "farm_owner", "farm_staff".
 GREEN_SMART_HA_USER_ROLE_STORE_KEY = f"{DOMAIN}_ha_user_roles"
 _GREEN_SMART_HA_USER_ROLE_STORE_VERSION = 1
-
-GREEN_SMART_ROLE_PERMISSIONS: dict[str, tuple[str, ...]] = {
-    "admin": (
-        "view_dashboard",
-        "view_crop_records",
-        "edit_crop_records",
-        "manage_crop_seasons",
-        "view_control_pages",
-        "edit_strategy_settings",
-        "edit_interlock_thresholds",
-        "edit_interlock_rules",
-        "edit_entity_mapping",
-        "run_dry_run",
-        "execute_final_targets",
-        "manual_device_control",
-        "ack_safety_event",
-        "clear_safety_event",
-        "manage_users_roles",
-        "system_settings",
-        "view_audit_logs",
-    ),
-    "farm_owner": (
-        "view_dashboard",
-        "view_crop_records",
-        "edit_crop_records",
-        "manage_crop_seasons",
-        "view_control_pages",
-        "edit_strategy_settings",
-        "edit_interlock_thresholds",
-        "run_dry_run",
-        "execute_final_targets",
-        "manual_device_control",
-        "view_audit_logs",
-    ),
-    "farm_staff": (
-        "view_dashboard",
-        "view_crop_records",
-        "edit_crop_records",
-        "view_control_pages",
-        "run_dry_run",
-        "manual_device_control",
-    ),
-}
-
-
-def normalize_green_smart_role(role: str | None) -> str:
-    """Return a known Green Smart role, defaulting to farm_staff for safety."""
-    value = str(role or "").strip()
-    return value if value in GREEN_SMART_ROLES else "farm_staff"
-
-
-def permissions_for_role(role: str | None) -> list[str]:
-    """Return permissions for a Green Smart role."""
-    return list(GREEN_SMART_ROLE_PERMISSIONS[normalize_green_smart_role(role)])
 
 
 def _ha_user_from_request(request: web.Request) -> Any | None:
@@ -117,16 +73,60 @@ async def async_get_green_smart_user_role(hass, ha_user_id: str, *, is_ha_admin:
     return "farm_staff", "default_farm_staff"
 
 
-async def async_set_green_smart_user_role(hass, ha_user_id: str, role: str) -> dict[str, str]:
-    """Persist a Home Assistant user ID -> Green Smart role mapping."""
+async def async_set_green_smart_user_role(hass, ha_user_id: str, role: str, *, actor_role: str | None = None) -> dict[str, Any]:
+    """Persist a Home Assistant user ID -> Green Smart role mapping after authorization."""
     normalized = normalize_green_smart_role(role)
+    assignment_decision = role_assignment_authorization(actor_role, normalized)
+    if not assignment_decision["allowed"]:
+        raise PermissionError("role_assignment_not_allowed")
     data = await _load_role_map(hass)
     roles = _roles_from_data(data)
     roles[str(ha_user_id)] = normalized
     data["roles"] = roles
     store = Store(hass, _GREEN_SMART_HA_USER_ROLE_STORE_VERSION, GREEN_SMART_HA_USER_ROLE_STORE_KEY)
     await store.async_save(data)
-    return {"ha_user_id": str(ha_user_id), "role": normalized}
+    return {"ha_user_id": str(ha_user_id), "role": normalized, "assignmentDecision": assignment_decision}
+
+
+class GreenSmartRoleAssignmentView(HomeAssistantView):
+    """POST /api/green_smart/auth/roles/{ha_user_id} — authorized role assignment."""
+
+    url = "/api/green_smart/auth/roles/{ha_user_id}"
+    name = "api:green_smart:auth:roles"
+    requires_auth = True
+
+    async def post(self, request: web.Request, ha_user_id: str) -> web.Response:
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        actor_ha_user_id = _ha_user_id(user)
+        actor_role, _role_source = await async_get_green_smart_user_role(
+            hass,
+            actor_ha_user_id,
+            is_ha_admin=_ha_user_is_admin(user),
+        )
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        requested_role = normalize_green_smart_role(body.get("role") if isinstance(body, dict) else None)
+        try:
+            result = await async_set_green_smart_user_role(
+                hass,
+                ha_user_id,
+                requested_role,
+                actor_role=actor_role,
+            )
+        except PermissionError:
+            assignment_decision = role_assignment_authorization(actor_role, requested_role)
+            return web.json_response(
+                {
+                    "ok": False,
+                    "reasonCode": "role_assignment_not_allowed",
+                    "assignmentDecision": assignment_decision,
+                },
+                status=403,
+            )
+        return self.json({"ok": True, **result})
 
 
 class GreenSmartAuthMeView(HomeAssistantView):

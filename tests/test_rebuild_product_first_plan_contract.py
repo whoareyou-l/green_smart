@@ -21,9 +21,26 @@ def test_rebuild_plan_exists_and_sets_product_first_order():
     assert "Green Smart Product-First Rebuild Plan" in plan
     assert "제품 구조 리빌딩 → 운영 스택 리빌딩" in plan
     assert "제품 구조 리빌딩 → 운영 스택 리빌딩" in master
-    assert "v1.11.16" in plan
+    assert "v1.11.17" in plan
     assert "VS-004 신규 기능 구현" in plan
     assert "중단" in plan
+
+
+def test_rebuild_direction_uses_previous_work_as_reference_not_continuation():
+    plan = _read(PLAN)
+    master = _read(MASTER)
+
+    for marker in (
+        "기존 RB 산출물은 reference/evidence로만 사용",
+        "기존 구조를 계속 쪼개는 방식으로 다음 RB를 진행하지 않는다",
+        "새 master docs → 새 target architecture → 새 vertical slice scaffold",
+        "from-scratch rebuild 기준선",
+        "기존 코드 수정은 hotfix와 호환 adapter로만 제한",
+    ):
+        assert marker in plan
+
+    assert "기존 RB 산출물은 reference/evidence로만 사용" in master
+    assert "다음 RB 계속 진행 금지" in master
 
 
 def test_rebuild_plan_has_five_master_document_deliverables():
@@ -57,7 +74,7 @@ def test_rebuild_plan_preserves_prod_and_uses_gate_for_stack_rebuild():
 
     for marker in (
         "Prod 안정성 우선",
-        "현재 `v1.11.16` 운영 반영 상태는 유지",
+        "현재 `v1.11.17` 운영 반영 상태는 유지",
         "prod stack 구조 변경",
         "운영/배포 스택 리빌드 준비",
         "사용자 승인 후 cutover",

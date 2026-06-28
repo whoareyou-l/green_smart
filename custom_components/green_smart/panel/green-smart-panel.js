@@ -1,4 +1,4 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.11.16
+// Green Smart — Modern SaaS greenhouse dashboard  v1.11.17
 import { createApiClient } from "./core/api-client.js";
 import { renderCropBasicOverviewCard, renderCropBasicTab, renderCropSeasonsList } from "./domains/crop/crop-readonly.js";
 import { cropBasicAddZones, cropBasicEditValues, renderCropBasicAddModal, renderCropBasicEditModal } from "./domains/crop/crop-write-modal.js";
@@ -8,7 +8,7 @@ import { controlModalContext, renderControlPesticideEntry, renderControlTreatmen
 import { adminSystemTabs, renderAdminSystemPage, renderAdminSystemTabBar, renderAdminSystemTabContent } from "./domains/admin/admin-page.js";
 
 const DOMAIN = "green_smart";
-const VERSION = "1.11.16";
+const VERSION = "1.11.17";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -19,12 +19,13 @@ const GREEN_SMART_ROLE_PERMISSIONS = {
     "view_control_pages", "edit_strategy_settings", "edit_interlock_thresholds",
     "edit_interlock_rules", "edit_entity_mapping", "run_dry_run", "execute_final_targets",
     "manual_device_control", "ack_safety_event", "clear_safety_event",
-    "manage_users_roles", "system_settings", "view_audit_logs",
+    "manage_users_roles", "manage_farm_staff_roles", "system_settings", "view_audit_logs",
   ]),
   farm_owner: new Set([
     "view_dashboard", "view_crop_records", "edit_crop_records", "manage_crop_seasons",
     "view_control_pages", "edit_strategy_settings", "edit_interlock_thresholds",
     "run_dry_run", "execute_final_targets", "manual_device_control", "view_audit_logs",
+    "manage_farm_staff_roles",
   ]),
   farm_staff: new Set([
     "view_dashboard", "view_crop_records", "edit_crop_records", "view_control_pages",
@@ -8725,15 +8726,24 @@ button.action:disabled{opacity:.5;cursor:default;}
     overlay.onclick = (e) => { if (e.target === overlay) this._closePopup(); };
   }
 
-  _saveAdminRoleMapping(root) {
+  async _saveAdminRoleMapping(root) {
     const rows = Array.from(root.querySelectorAll("[data-admin-role-row]")).map((row) => ({
       id: row.querySelector("[data-admin-role-user-id]")?.value?.trim() || "",
       name: row.querySelector("[data-admin-role-user-name]")?.value?.trim() || "",
       role: row.querySelector("[data-admin-role-value]")?.value || "farm_staff",
     })).filter((r) => r.id);
-    this._adminRoleMappings = rows;
-    localStorage.setItem("green_smart_admin_role_mappings", JSON.stringify(rows));
-    this._pushAdminAuditLog("role_mapping_saved", `${rows.length}명 저장`);
+    const status = root.querySelector("[data-admin-role-api-status]");
+    try {
+      const assignmentResults = await Promise.all(rows.map((row) => this._api.admin.assignRole(row.id, { role: row.role })));
+      this._adminRoleMappings = rows.map((row, idx) => ({ ...row, assignmentDecision: assignmentResults[idx]?.assignmentDecision || null }));
+      if (status) status.textContent = `Backend API로 ${rows.length}명 권한 저장 완료`;
+      this._pushAdminAuditLog("role_mapping_saved_via_api", `${rows.length}명 저장 · assignmentDecision`);
+    } catch (error) {
+      this._adminRoleMappings = rows;
+      localStorage.setItem("green_smart_admin_role_mappings", JSON.stringify(rows));
+      if (status) status.textContent = `Backend 저장 실패 · localStorage 호환 fallback 저장 (${error?.message || "unknown"})`;
+      this._pushAdminAuditLog("role_mapping_saved_fallback_localstorage", `${rows.length}명 저장`);
+    }
     this._pageRendered = null; this._update();
   }
 
@@ -8771,7 +8781,7 @@ button.action:disabled{opacity:.5;cursor:default;}
     page.querySelectorAll("button[data-admin-system-tab]").forEach((btn) => {
       btn.addEventListener("click", () => { this._adminSystemTab = btn.dataset.adminSystemTab; this._pageRendered = null; this._update(); });
     });
-    page.querySelector("[data-admin-role-save]")?.addEventListener("click", () => this._saveAdminRoleMapping(page));
+    page.querySelector("[data-admin-role-save]")?.addEventListener("click", async () => this._saveAdminRoleMapping(page));
     page.querySelector("[data-admin-config-save]")?.addEventListener("click", () => this._saveAdminSystemConfig(page));
     page.querySelector("[data-admin-health-refresh]")?.addEventListener("click", () => { this._pushAdminAuditLog("health_refreshed", "연동 상태 새로고침"); this._pageRendered = null; this._update(); });
     page.querySelector("[data-admin-diagnostic-run]")?.addEventListener("click", () => this._runAdminDiagnostics());

@@ -1,7 +1,7 @@
 # Green Smart 5대 마스터 문서
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.11.16`
+> 기준 버전: `v1.11.17`
 > 목적: 뒤엉킨 Green Smart 코드와 문서를 **설계 기반(Design-Driven)** 으로 재정렬하고, 이후 모든 구현을 **문서 우선 + 수직 슬라이드(Vertical Slide)** 방식으로 진행하기 위한 최상위 마스터 문서 묶음.
 
 ## 0. 절대 원칙
@@ -66,11 +66,23 @@ VS-XXX: 기능명
 | 4 | VS-004 센서 고정값 감지 Fail-Safe | 운영 안전성과 ML 입력 신뢰도 확보 |
 | 5 | VS-005 farm_owner 승인 gate | RBAC + 승인 + audit log의 핵심 슬라이스 |
 
-## 4. 현재 진행 수직 슬라이스 — VS-003 상추 작기 등록 및 생육조사 입력
+## 4. From-scratch rebuild 기준선
 
-VS-003은 `farm_staff`가 패널에서 상추 작기를 등록하고 같은 `crop_cycle` 기준으로 생육조사를 입력하는 최소 운영 흐름이다.
+현재 active work는 기존 VS/RB를 계속 진행하는 것이 아니라 `from-scratch rebuild 기준선`을 확정하는 것이다.
 
-| Layer | 계약 |
+| 기준 문서 | 역할 |
+|---|---|
+| `docs/rebuild/target-architecture.md` | 기존 RB 산출물을 reference/evidence로만 사용하고 새 target architecture를 정의 |
+| `docs/rebuild/master-docs-gap-inventory.md` | 5대 master docs의 gap과 질문 gate를 정리 |
+| `docs/plans/2026-06-28-from-scratch-rebuild-execution-plan.md` | 단계별 실행 계획과 질문 기준 |
+
+첫 vertical rebuild slice는 Stage 3에서 사용자 질문 후 선택한다.
+
+## 5. Historical reference — VS-003 상추 작기 등록 및 생육조사 입력
+
+VS-003은 과거 기준에서 `farm_staff`가 패널에서 상추 작기를 등록하고 같은 `crop_cycle` 기준으로 생육조사를 입력하는 최소 운영 흐름이었다. 현재는 active 진행 항목이 아니라 새 리빌딩 설계 시 참고할 historical/reference evidence다.
+
+| Layer | historical/reference 계약 |
 |---|---|
 | UI | `data-vs003-lettuce-crop-cycle-card`, `data-vs003-lettuce-growth-survey-card`, `data-vs003-lettuce-l-index-fields` |
 | API | POST `/api/green_smart/crop/seasons`, GET/POST `/api/green_smart/crop/seasons/{crop_cycle_id}/growth` |

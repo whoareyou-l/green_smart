@@ -50,7 +50,8 @@ export function renderAdminSystemTabContent(panel) {
     ...(panel._adminRoleMappings || []),
   ];
   return panel._strategySection("mdi:account-key", "사용자/권한", `
-    <div class="strategy-example">HA 사용자 ID를 Green Smart 역할에 매핑합니다. API 권한은 backend에서 다시 검증해야 합니다.</div>
+    <div class="strategy-example" data-admin-role-backend-enforced data-required-permission="manage_farm_staff_roles">HA 사용자 ID를 Green Smart 역할에 매핑합니다. API 권한은 backend에서 다시 검증해야 합니다. backend permission enforcement · farm_owner는 farm_staff 역할만 배정/해제</div>
+    <div data-admin-role-api-status style="font-size:12px;color:#5d7d64;margin:8px 0;">역할 저장은 backend API 우선, localStorage는 호환 fallback입니다. 권한 거부 시 backend reasonCode를 확인합니다.</div>
     ${rows.map((u, idx) => `<div class="strategy-row" data-admin-role-row="${idx}">
       <div class="strategy-label">HA 사용자<br><small>${panel._esc(u.id)}</small></div>
       <div class="strategy-control"><input data-admin-role-user-id value="${panel._esc(u.id)}" placeholder="HA 사용자 ID"><input data-admin-role-user-name value="${panel._esc(u.name)}" placeholder="이름"><select data-admin-role-value><option value="admin" ${u.role === "admin" ? "selected" : ""}>admin</option><option value="farm_owner" ${u.role === "farm_owner" ? "selected" : ""}>farm_owner</option><option value="farm_staff" ${u.role === "farm_staff" ? "selected" : ""}>farm_staff</option></select></div>
