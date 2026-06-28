@@ -1,7 +1,7 @@
 # 2. 통신 명세서 — Interface Spec
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.12`
+> 기준 버전: `v1.12.13`
 > 문서 목적: Green Smart의 모든 데이터 흐름을 **Frontend Service / Backend Router(View) / MQTT·HA Service** 모듈 단위로 분리하여 수직 슬라이드 개발의 연결 계약으로 사용한다.
 
 ## 1. 통신 아키텍처 원칙
@@ -69,6 +69,19 @@ No DB migration in RS-013
 ```
 
 RS-013 기준 backend read adapter는 `crop_seasons`/`zones`를 읽기 전용 source로 사용하지만, 외부 product DTO는 `crop_cycle`, `currentCrop`, `activeCropCycleId`, `compatibilityAliases.cropSeasonId` 경계로만 반환한다.
+
+### 1.4 Rebuild home context API source adapter
+
+```text
+Rebuild home context API source adapter
+GET /api/green_smart/rebuild/home/context
+legacy-physical-readonly-adapter service
+readOnly: true
+executionEnabled: false
+No DB migration in RS-014
+```
+
+RS-014 기준 기존 Home Assistant route path와 auth boundary는 유지한다. API source만 static fixture에서 RS-013 `get_rebuild_home_context_from_legacy_db(hass)` service로 전환한다.
 
 ## 2. Data Key 표준 — API/MQTT/DB 공통 네이밍
 

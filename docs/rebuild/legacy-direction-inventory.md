@@ -1,6 +1,6 @@
 # RS-009 Legacy Direction Inventory
 
-> 기준 버전: `v1.12.12` / updated in `v1.12.12`
+> 기준 버전: `v1.12.13` / updated in `v1.12.13`
 > Status: active boundary contract
 > 목적: Green Smart rebuild에서 legacy가 제품 방향성으로 남지 않도록, historical reference / adapter-only / legacy panel / current source of truth 경계를 명확히 한다.
 
@@ -149,7 +149,8 @@ Boundary:
 | RS-011 | RBAC permission naming cleanup / RBAC permission naming boundary completed: Compatibility permissions stay adapter-only and product-facing docs/checks use target `gs_permissions` codes. |
 | RS-012 | Rebuild frontend activeCropCycle/currentCrop service adapter completed: Compatibility aliases remain adapter-only and rebuild render shell consumes normalized crop_cycle/currentCrop DTO. |
 | RS-013 | Read-only DB adapter from legacy physical source to target DTO completed: legacy physical schema stays adapter-only and product context exposes crop_cycle/currentCrop. |
-| RS-014 | Rebuild home context API source adapter |
+| RS-014 | Rebuild home context API source adapter completed: existing protected route now uses the RS-013 legacy-physical-readonly-adapter service as source. |
+| RS-015 | Rebuild panel async context loading |
 
 ---
 

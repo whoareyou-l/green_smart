@@ -93,8 +93,8 @@ def test_v11021_versions_and_docs_record_top_summary_cards():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.12.12"' in manifest
-    assert 'const VERSION = "1.12.12"' in panel
+    assert '"version": "1.12.13"' in manifest
+    assert 'const VERSION = "1.12.13"' in panel
     assert "v1.10.21 AI Strategy top summary cards" in docs
     for marker in (
         "data-crop-ai-crop-summary",

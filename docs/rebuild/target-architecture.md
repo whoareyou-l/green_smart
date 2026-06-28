@@ -1,6 +1,6 @@
 # Green Smart Target Architecture — From-Scratch Rebuild Baseline
 
-> 기준 버전: `v1.12.12`
+> 기준 버전: `v1.12.13`
 > 상태: 방향 전환 기준선
 > 목적: 기존 RB 산출물을 이어서 계속 패치하지 않고, 이전 작업을 reference/evidence로 삼아 새 제품 구조를 설계한 뒤 새 vertical rebuild slice로 구현한다.
 
