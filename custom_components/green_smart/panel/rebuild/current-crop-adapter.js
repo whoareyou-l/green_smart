@@ -86,11 +86,33 @@ export function normalizeEnvironmentImpactProjection(zone = {}, currentCropAssig
   };
 }
 
+export function normalizeRecommendationReviewProjection(
+  zone = {},
+  currentCropAssignment = normalizeCurrentCropAssignment(zone),
+  growthTargetProjection = normalizeGrowthTargetProjection(zone, currentCropAssignment),
+  environmentImpactProjection = normalizeEnvironmentImpactProjection(zone, currentCropAssignment),
+) {
+  const projection = zone.recommendationReviewProjection || zone.recommendation_review_projection || {};
+  return {
+    reviewState: projection.reviewState || (currentCropAssignment.currentCrop?.crop_cycle_id ? "ready" : "empty"),
+    reviewSummary: projection.reviewSummary || "추천 검토 대기: 생육목표와 환경 영향 projection 확인 필요",
+    reviewInputs: projection.reviewInputs || {
+      assignment: currentCropAssignment,
+      growthTargetProjection,
+      environmentImpactProjection,
+    },
+    approvalRequired: projection.approvalRequired ?? Boolean(currentCropAssignment.currentCrop?.crop_cycle_id),
+    readOnly: true,
+    executionEnabled: false,
+  };
+}
+
 export function normalizeRebuildZoneContext(zone = {}) {
   const currentCrop = normalizeCurrentCrop(zone.currentCrop || zone.current_crop || {});
   const currentCropAssignment = normalizeCurrentCropAssignment(zone, currentCrop);
   const growthTargetProjection = normalizeGrowthTargetProjection(zone, currentCropAssignment);
   const environmentImpactProjection = normalizeEnvironmentImpactProjection(zone, currentCropAssignment);
+  const recommendationReviewProjection = normalizeRecommendationReviewProjection(zone, currentCropAssignment, growthTargetProjection, environmentImpactProjection);
   const compatibilityAliases = {
     cropSeasonId: firstPresent(zone.currentCrop?.cropSeasonId, zone.current_crop?.cropSeasonId, zone.cropSeasonId),
     season_id: firstPresent(zone.currentCrop?.season_id, zone.current_crop?.season_id, zone.season_id),
@@ -103,6 +125,7 @@ export function normalizeRebuildZoneContext(zone = {}) {
     currentCropAssignment,
     growthTargetProjection,
     environmentImpactProjection,
+    recommendationReviewProjection,
     crop: currentCrop.crop_label_ko || "미등록",
     state: currentCrop.growth_stage || "작기 정보 없음",
     equipment: zone.equipmentProfile?.labels || zone.equipment || [],

@@ -1,6 +1,6 @@
 # RS-009 Legacy Direction Inventory
 
-> 기준 버전: `v1.12.18` / updated in `v1.12.18`
+> 기준 버전: `v1.12.19` / updated in `v1.12.19`
 > Status: active boundary contract
 > 목적: Green Smart rebuild에서 legacy가 제품 방향성으로 남지 않도록, historical reference / adapter-only / legacy panel / current source of truth 경계를 명확히 한다.
 
@@ -155,7 +155,8 @@ Boundary:
 | RS-017 | Zone current crop assignment read model completed: each zone now exposes currentCropAssignment linking currentCrop/crop_cycle, equipmentProfile, and dataAvailability as read-only projection. |
 | RS-018 | Growth target read-only projection completed: 생육목표 now renders growthTargetProjection from currentCropAssignment as read-only target status. |
 | RS-019 | Environment impact read-only projection completed: 영향지도 now renders environmentImpactProjection from currentCropAssignment, equipmentProfile, and dataAvailability. |
-| RS-020 | Recommendation review read-only projection |
+| RS-020 | Recommendation review read-only projection completed: 추천·실행 now renders recommendationReviewProjection from assignment, growth target, and environment impact projections. |
+| RS-021 | Operator approval scaffold |
 
 ---
 

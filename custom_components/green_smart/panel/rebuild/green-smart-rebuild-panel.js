@@ -6,13 +6,14 @@
 // RS-017 zone current crop assignment read model: zone → currentCrop/crop_cycle, equipmentProfile, dataAvailability.
 // RS-018 growth target read-only projection: currentCropAssignment → growthTargetProjection for 생육목표.
 // RS-019 environment impact read-only projection: currentCropAssignment + equipmentProfile + dataAvailability for 영향지도.
+// RS-020 recommendation review read-only projection: currentCropAssignment + growthTargetProjection + environmentImpactProjection for 추천·실행.
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.18";
+const REBUILD_VERSION = "1.12.19";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -228,6 +229,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  renderRecommendationReviewProjection(zone, stageKey) {
+    if (!["recommendation-execution"].includes(stageKey)) return "";
+    const projection = zone.recommendationReviewProjection || {};
+    const inputs = projection.reviewInputs || {};
+    const growth = inputs.growthTargetProjection || zone.growthTargetProjection || {};
+    const environment = inputs.environmentImpactProjection || zone.environmentImpactProjection || {};
+    const state = projection.reviewState || "empty";
+    const summary = projection.reviewSummary || "추천 검토 대기: 생육목표와 환경 영향 projection 확인 필요";
+    const approvalRequired = projection.approvalRequired !== false;
+    const readOnly = projection.readOnly !== false;
+    const executionEnabled = projection.executionEnabled === true;
+    return `
+      <section data-recommendation-review-projection-card data-recommendation-review-state="${state}" data-recommendation-review-summary="${summary}" data-recommendation-review-approval-required="${approvalRequired}" data-recommendation-review-readonly="${readOnly}" data-recommendation-review-execution-enabled="${executionEnabled}" style="margin:10px 0;border:1px solid #e5d4f0;border-radius:14px;background:#fdf8ff;padding:12px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:900;color:#684078;">추천·실행 projection · read-only</p>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#52305f;font-size:12px;">
+          <dt style="font-weight:900;">검토 상태</dt><dd style="margin:0;">${state}</dd>
+          <dt style="font-weight:900;">검토 요약</dt><dd style="margin:0;">${summary}</dd>
+          <dt style="font-weight:900;">생육목표 입력</dt><dd style="margin:0;">${growth.targetFocus || "생육목표 projection 대기"}</dd>
+          <dt style="font-weight:900;">환경 영향 입력</dt><dd style="margin:0;">${environment.impactFocus || "환경 영향 projection 대기"}</dd>
+          <dt style="font-weight:900;">승인 필요</dt><dd style="margin:0;">${approvalRequired ? "필요" : "불필요"}</dd>
+        </dl>
+        <p style="margin:10px 0 0;color:#785c86;font-size:12px;line-height:1.5;">currentCropAssignment + growthTargetProjection + environmentImpactProjection 기반 읽기 전용 projection입니다. 추천 승인·저장·실행은 RS-020 범위에 포함하지 않습니다.</p>
+      </section>
+    `;
+  }
+
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
@@ -297,6 +324,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             ${this.renderCurrentCropAssignmentReadModel(zone)}
             ${this.renderGrowthTargetProjection(zone, stageKey)}
             ${this.renderEnvironmentImpactProjection(zone, stageKey)}
+            ${this.renderRecommendationReviewProjection(zone, stageKey)}
             <p data-zone-context-state style="margin:0 0 10px;color:#5d6f62;font-size:13px;line-height:1.6;">${config.detail(zone)}</p>
             ${this.renderLoadingSkeleton(zone.dataStatus)}
             ${this.renderEmptyState(zone.dataStatus)}
