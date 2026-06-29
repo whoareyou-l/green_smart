@@ -1,6 +1,6 @@
 # R7-007 Sidebar/Page Shell Manual-first Rework
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-007 complete
 > Purpose: 이전 R7 5그룹 sidebar/page shell을 manual-first environment-control target domains로 재정렬한다.
 
@@ -11,13 +11,13 @@ R7-007 changes the active rebuild panel sidebar and detail placeholder registry 
 Old/historical IA:
 
 ```text
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 ```
 
 New active IA:
 
 ```text
-운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리
+운영 홈 / 작물 운영 / 환경 제어 / 관수 제어 / 장치 제어 / 자동화 제어 / 안전 제어 / 설정
 ```
 
 ## 2. Product rule
@@ -50,11 +50,11 @@ No role/settings mutation in R7-007
 | `operations-home` | 운영 홈 | today operating mode, AI fallback, priority issues |
 | `crop-operations` | 작물 운영 | currentCrop, crop_cycle, growth target, crop records |
 | `environment-control` | 환경 제어 | manual climate setpoints and rule/AI/safety layers |
-| `irrigation-fertigation` | 관수·양액 | irrigation/fertigation/manual recipe and fallback layers |
+| `irrigation-fertigation` | 관수 제어 | irrigation/fertigation/manual recipe and fallback layers |
 | `device-control` | 장치 제어 | manual/auto/locked/maintenance device mode and interlock |
-| `recommendation-automation` | 추천·자동화 | AI assist comparison against manual/rule baseline |
-| `safety-history` | 안전·이력 | alarms, interlock/fail-safe, audit/history |
-| `settings-admin` | 설정·관리 | RBAC, HA mapping, config, diagnostics, redaction |
+| `recommendation-automation` | 자동화 제어 | AI assist comparison against manual/rule baseline |
+| `safety-history` | 안전 제어 | alarms, interlock/fail-safe, audit/history |
+| `settings-admin` | 설정 | RBAC, HA mapping, config, diagnostics, redaction |
 
 ## 5. Detail placeholder grammar
 
@@ -88,13 +88,13 @@ Old R7 keys are preserved only as non-active deprecation/compatibility evidence:
 |---|---|
 | `crop-centered` / 작물 중심 운영 | `crop-operations` / 작물 운영 |
 | `field-status` / 현장 상태 | `environment-control` + `irrigation-fertigation` + `device-control` |
-| `recommendation-review` / 추천·실행 검토 | `recommendation-automation` / 추천·자동화 |
+| `recommendation-review` / 추천·실행 검토 | `recommendation-automation` / 자동화 제어 |
 
 The active sidebar must not render the old five groups as operator choices.
 
 ## 7. Visible copy changes
 
-- `추천·실행` visible stage wording is replaced with `추천·자동화` where the target shell speaks about AI/rule assist.
+- `추천·실행` visible stage wording is replaced with `자동화 제어` where the target shell speaks about AI/rule assist.
 - The hero explains `수동 설정 → 기본 자동제어 → AI 보조 → Safety/Interlock/Fail Safe`.
 - Read-only notes state that AI cannot bypass manual settings or Safety/Interlock/Fail Safe.
 

@@ -1,6 +1,6 @@
 # R7-001 Main Dashboard Redesign
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-001 complete
 > 목적: R7-000 IA blueprint를 첫 operator-visible crop-centered dashboard로 구현한다.
 
@@ -115,7 +115,7 @@ R7-002 should restructure the navigation shell around the R7 sidebar primary gro
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.12.73`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.12.74`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -128,7 +128,7 @@ Boundary:
 ```text
 R7-002 Sidebar Navigation + Page Shell
 implements the R7 sidebar primary groups and page shell
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 No API route change in R7-002
 No DB migration in R7-002
 No execution authority in R7-002

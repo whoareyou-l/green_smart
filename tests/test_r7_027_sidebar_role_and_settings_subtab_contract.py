@@ -13,16 +13,16 @@ def _read(path: Path) -> str:
 
 
 def test_r7_027_version_surfaces_are_1_12_61():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_027_doc_records_sidebar_and_settings_subtab_requirements():
     text = _read(DOC)
     for phrase in (
-        "설정/관리 도메인의 하위탭은 다른 도메인과 동일하게 클릭 시 active tab/panel이 바뀌어야 한다",
+        "설정 도메인의 하위탭은 다른 도메인과 동일하게 클릭 시 active tab/panel이 바뀌어야 한다",
         'data-r7-sidebar-layout-mode="operator-ha-adjacent"',
         'data-r7-sidebar-layout-mode="full-left-no-ha-sidebar"',
         "green-smart-hide-ha-sidebar",
@@ -31,11 +31,11 @@ def test_r7_027_doc_records_sidebar_and_settings_subtab_requirements():
         "운영 홈: 🏠",
         "작물 운영: 🌱",
         "환경 제어: 🌡️",
-        "관수·양액: 💧",
+        "관수 제어: 💧",
         "장치 제어: ⚙️",
-        "추천·자동화: 🤖",
-        "안전·이력: 🛡️",
-        "설정·관리: 🧩",
+        "자동화 제어: 🤖",
+        "안전 제어: 🛡️",
+        "설정: 🧩",
         "No API route change in R7-027",
     ):
         assert phrase in text

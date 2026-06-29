@@ -36,16 +36,16 @@ def test_r7_006_target_domains_are_explicit_and_replace_old_five_group_ia():
         "운영 홈",
         "작물 운영",
         "환경 제어",
-        "관수·양액",
+        "관수 제어",
         "장치 제어",
-        "추천·자동화",
-        "안전·이력",
-        "설정·관리",
+        "자동화 제어",
+        "안전 제어",
+        "설정",
     ]
     for domain in target_domains:
         assert domain in text
-    assert "OLD: 운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리" in text
-    assert "NEW: 운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리" in text
+    assert "OLD: 운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정" in text
+    assert "NEW: 운영 홈 / 작물 운영 / 환경 제어 / 관수 제어 / 장치 제어 / 자동화 제어 / 안전 제어 / 설정" in text
     assert "old IA remains historical/compatibility evidence only" in text
 
 
@@ -80,9 +80,9 @@ def test_r7_006_domain_boundaries_prevent_ai_first_or_execution_first_design():
         "환경 AI 보정은 Safety/Interlock/Fail Safe를 우회할 수 없다.",
         "AI 관수 보정은 센서 stale, 배액 오류, 장치 장애, 권한 제한을 넘을 수 없다.",
         "AI는 장치 명령을 직접 내리지 않는다.",
-        "추천·자동화는 실행 버튼 중심 화면이 아니다.",
-        "추천·자동화는 final command authority를 갖지 않는다.",
-        "안전·이력은 일반 setpoint owner가 아니다.",
+        "자동화 제어는 실행 버튼 중심 화면이 아니다.",
+        "자동화 제어는 final command authority를 갖지 않는다.",
+        "안전 제어은 일반 setpoint owner가 아니다.",
         "Secret values render as [REDACTED] only.",
     ]
     for phrase in boundaries:
@@ -119,9 +119,9 @@ def test_r7_006_old_ia_deprecation_map_is_explicit():
     mappings = [
         "`crop-centered` / `작물 중심 운영` | adapt to `crop-operations` / `작물 운영`",
         "`field-status` / `현장 상태` | split into `environment-control`, `irrigation-fertigation`, `device-control`",
-        "`recommendation-review` / `추천·실행 검토` | adapt to `recommendation-automation` / `추천·자동화`",
+        "`recommendation-review` / `추천·실행 검토` | adapt to `recommendation-automation` / `자동화 제어`",
         "R7-003 five placeholders | rewrite after R7-006/R7-007 target shell contracts",
-        "R7-004 settings/admin | keep/adapt under `settings-admin` / `설정·관리`",
+        "R7-004 settings/admin | keep/adapt under `settings-admin` / `설정`",
     ]
     for mapping in mappings:
         assert mapping in text
@@ -143,7 +143,7 @@ def test_frontend_decomposition_plan_points_to_current_manual_first_direction():
     assert "R7-005+ Manual-first domain reset notice" in text
     assert "Green Smart = 수동 운영 가능한 환경제어 OS" in text
     assert "AI = 보조/추천/최적화 레이어" in text
-    assert "운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리" in text
+    assert "운영 홈 / 작물 운영 / 환경 제어 / 관수 제어 / 장치 제어 / 자동화 제어 / 안전 제어 / 설정" in text
     assert "must not be extended as the future product IA" in text
 
 

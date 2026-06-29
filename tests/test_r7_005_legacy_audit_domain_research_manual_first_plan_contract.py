@@ -56,11 +56,11 @@ def test_r7_005_synthesizes_real_environment_control_domains():
         "운영 홈",
         "작물 운영",
         "환경 제어",
-        "관수·양액",
+        "관수 제어",
         "장치 제어",
-        "추천·자동화",
-        "안전·이력",
-        "설정·관리",
+        "자동화 제어",
+        "안전 제어",
+        "설정",
     ]
     for domain in target_domains:
         assert domain in text

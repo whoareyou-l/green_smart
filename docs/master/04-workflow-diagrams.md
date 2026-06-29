@@ -1,7 +1,7 @@
 # 4. 통합 시나리오 흐름도 — Workflow Diagram
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > 문서 목적: UI 컴포넌트, Frontend service, Backend API, DB, MQTT/HA Entity, 하드웨어가 시간 순서대로 어떻게 신호를 주고받는지 정의한다.
 
 ## 1. 공통 Actor
@@ -267,7 +267,7 @@ sequenceDiagram
 | 강풍 | 풍속 threshold 초과 | 천창/측창/스크린 위험 동작 차단 또는 safe position |
 | 강우 | rain sensor ON | 천창 열림 차단, 닫힘 우선 |
 | 저온 | temp lower bound 미만 | 환기/관수 위험 동작 제한, 난방/보온 우선 |
-| 펌프 fault | pump fault ON | 관수/양액 실행 차단 |
+| 펌프 fault | pump fault ON | 관수 제어 실행 차단 |
 
 ---
 

@@ -1,8 +1,8 @@
 # R7-009 Irrigation/Fertigation Manual/Base Read-only Detail
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-009 complete
-> Purpose: `관수·양액` 도메인을 manual-first 관수/양액 운영 구조로 구체화한다.
+> Purpose: `관수 제어` 도메인을 manual-first 관수 제어 운영 구조로 구체화한다.
 
 ## 1. Scope
 
@@ -69,7 +69,7 @@ The detail must state:
 ```text
 AI 없이도 관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 양액 레시피 기준으로 운영 가능해야 합니다.
 AI 상태가 disabled/unhealthy/timeout/stale이면 aiIrrigationCorrection을 제외합니다.
-관수·양액 도메인은 환경 actuator strategy를 직접 소유하지 않습니다.
+관수 제어 도메인은 환경 actuator strategy를 직접 소유하지 않습니다.
 센서 stale, 배액 오류, 장치 장애, 권한 제한은 AI 관수 보정보다 우선합니다.
 ```
 

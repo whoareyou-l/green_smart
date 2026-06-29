@@ -86,7 +86,7 @@ def test_v1958_panel_and_docs_surface_model_feature_sources_contract():
         "data-crop-model-feature-sources-card",
         "모델 입력 소스",
         "환경 7일",
-        "관수/양액 7일",
+        "관수 제어 7일",
         "병해/방제",
         "입력 완성도",
         "inputCompleteness",
@@ -104,5 +104,5 @@ def test_v1958_panel_and_docs_surface_model_feature_sources_contract():
     ):
         assert marker in plan
 
-    assert '"version": "1.12.73"' in manifest
-    assert 'const VERSION = "1.12.73"' in panel
+    assert '"version": "1.12.74"' in manifest
+    assert 'const VERSION = "1.12.74"' in panel

@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_011_version_surfaces_are_1_12_43():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_011_doc_records_recommendation_grammar_and_boundaries():
@@ -68,11 +68,11 @@ def test_r7_011_recommendation_detail_names_manual_baseline_items():
     text = _read(REBUILD_PANEL)
     for marker in (
         'data-r7-recommendation-manual-item="환경 수동 기준"',
-        'data-r7-recommendation-manual-item="관수·양액 수동 기준"',
+        'data-r7-recommendation-manual-item="관수 제어 수동 기준"',
         'data-r7-recommendation-manual-item="장치 모드 기준"',
         'data-r7-recommendation-manual-item="AI off fallback value"',
         "환경 수동 기준",
-        "관수·양액 수동 기준",
+        "관수 제어 수동 기준",
         "장치 모드 기준",
         "AI off fallback value",
     ):
@@ -91,7 +91,7 @@ def test_r7_011_recommendation_detail_names_rule_ai_safety_and_fallback_items():
         'data-r7-recommendation-safety-item="Safety-final candidate"',
         'data-r7-recommendation-safety-item="not final command"',
         'data-r7-recommendation-safety-item="no final command authority"',
-        "추천·자동화는 실행 버튼 중심 화면이 아닙니다",
+        "자동화 제어는 실행 버튼 중심 화면이 아닙니다",
         "Safety-final candidate는 최종 명령이 아니며 final command authority를 갖지 않습니다",
     ):
         assert marker in text
@@ -145,7 +145,7 @@ def test_r7_011_node_smoke_renders_recommendation_visual_absorbed_detail_items()
         'data-r7-recommendation-rule-card',
         'data-r7-recommendation-assist-card',
         'data-r7-recommendation-safety-card',
-        '환경 수동 기준', '관수·양액 수동 기준', '장치 모드 기준', 'AI off fallback value',
+        '환경 수동 기준', '관수 제어 수동 기준', '장치 모드 기준', 'AI off fallback value',
         'rule/schedule candidate', 'automation eligibility', 'difference from manual baseline',
         'AI recommendation/correction', 'explanation', 'fallback',
         'Safety-final candidate', 'not final command', 'no final command authority'
@@ -163,13 +163,13 @@ def test_r7_011_node_smoke_renders_recommendation_visual_absorbed_detail_items()
 def test_r7_011_spec_still_defines_recommendation_domain_source_grammar():
     text = _read(SPEC)
     for phrase in (
-        "## 5.6 추천·자동화",
+        "## 5.6 자동화 제어",
         "Manual baseline",
         "Rule/schedule candidate",
         "AI recommendation/correction",
         "Safety-final candidate",
         "Fallback value when AI is off",
-        "추천·자동화는 실행 버튼 중심 화면이 아니다",
-        "추천·자동화는 final command authority를 갖지 않는다",
+        "자동화 제어는 실행 버튼 중심 화면이 아니다",
+        "자동화 제어는 final command authority를 갖지 않는다",
     ):
         assert phrase in text

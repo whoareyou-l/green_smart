@@ -1,46 +1,53 @@
 from pathlib import Path
 import subprocess
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
-DOC = ROOT / "docs/rebuild/r7-035-reference-logo-sage-icons.md"
-LOGO_ASSET = ROOT / "custom_components/green_smart/panel/rebuild/assets/r7-reference-green-smart-logo.png"
+DOC = ROOT / "docs/rebuild/r7-039-sidebar-domain-label-simplification.md"
+
+NEW_LABELS = {
+    "irrigation-fertigation": "관수 제어",
+    "recommendation-automation": "자동화 제어",
+    "safety-history": "안전 제어",
+    "settings-admin": "설정",
+}
+OLD_LABELS = ["관수\u00b7양액", "추천\u00b7자동화", "안전\u00b7이력", "설정\u00b7관리"]
 
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_035_version_surfaces_are_current_after_mdi_supersession():
+def test_r7_039_version_surfaces_are_1_12_74():
     assert '"version": "1.12.74"' in _read(MANIFEST)
     assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
     assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
     assert "v1.12.74" in _read(DOC)
 
 
-def test_r7_035_reference_asset_remains_historical_but_not_active_sidebar_logo():
-    assert LOGO_ASSET.exists()
-    assert LOGO_ASSET.stat().st_size > 500
-    text = _read(REBUILD_PANEL)
-    assert "r7-reference-green-smart-logo.png" not in text
-    assert 'data-r7-sidebar-logo-style="ha-mdi-leaf"' in text
-    assert 'ha-icon icon="mdi:leaf"' in text
-
-
-def test_r7_035_doc_still_records_historical_reference_slice():
+def test_r7_039_doc_records_label_mapping_and_boundary():
     text = _read(DOC)
-    for phrase in (
-        "green rounded square tile with white leaf mark",
-        "muted sage green",
-        "pale mint rounded square tile",
-        "No API route change in R7-035",
-    ):
-        assert phrase in text
+    for key, label in NEW_LABELS.items():
+        assert key in text
+        assert label in text
+    assert "Route/domain keys remain unchanged" in text
+    assert "No API route change in R7-039" in text
 
 
-def test_r7_035_render_smoke_uses_r7_038_mdi_superseding_logo_and_icons():
+def test_r7_039_source_has_new_sidebar_domain_labels_and_keeps_keys():
+    text = _read(REBUILD_PANEL)
+    for key, label in NEW_LABELS.items():
+        assert key in text
+        assert f'label: "{label}"' in text or f'title: "{label}"' in text or f'const settingsTitle = "{label}"' in text
+    assert 'const settingsTitle = "설정"' in text
+    for old in OLD_LABELS:
+        assert old not in text
+
+
+def test_r7_039_render_smoke_sidebar_and_domain_titles_use_new_labels():
     script = f"""
       const classSet = new Set();
       globalThis.location = {{ pathname: '/green_smart', search: '', hash: '' }};
@@ -56,16 +63,20 @@ def test_r7_035_render_smoke_uses_r7_038_mdi_superseding_logo_and_icons():
       const panel = new mod.GreenSmartRebuildPanel();
       panel.hass = {{ user: {{ name: '서원 임', is_admin: true, green_smart_role: 'operator' }}, callApi: async () => ({{ actorRole: 'operator', zones: [] }}) }};
       panel._homeContext = {{ actorRole: 'operator', zones: [] }};
-      for (const collapsed of [true, false]) {{
-        panel._r7SidebarCollapsed = collapsed;
-        panel._activeR7Domain = 'operations-home';
+      panel._r7SidebarCollapsed = false;
+      const expected = new Map({json.dumps(list(NEW_LABELS.items()), ensure_ascii=False)});
+      const oldLabels = {json.dumps(OLD_LABELS, ensure_ascii=False)};
+      for (const [key, label] of expected.entries()) {{
+        panel._activeR7Domain = key;
         panel.render();
-        const aside = panel.innerHTML.match(/<aside[\\s\\S]*?<\\/aside>/)?.[0] || '';
-        const required = ['data-r7-sidebar-logo-style="ha-mdi-leaf"', '<ha-icon icon="mdi:leaf"', 'data-r7-sidebar-icon-style="ha-mdi"', 'ha-icon icon="mdi:home-variant"'];
-        const missing = required.filter((item) => !aside.includes(item));
-        const forbidden = ['r7-reference-green-smart-logo.png', 'data-r7-sidebar-logo-source="attached-reference"', 'data-r7-sidebar-icon-reference-style="soft-sage-filled"', '🏠','🌱','🌡️','💧','⚙️','🤖','🛡️','🧩','#03a9f4'].filter((item) => aside.includes(item));
+        const html = panel.innerHTML;
+        const aside = html.match(/<aside[\\s\\S]*?<\\/aside>/)?.[0] || '';
+        const missing = [];
+        if (!aside.includes(label)) missing.push(`sidebar:${{key}}:${{label}}`);
+        if (!html.includes(`>${{label}}<`) && !html.includes(`aria-label="${{label}}`)) missing.push(`domain:${{key}}:${{label}}`);
+        const forbidden = oldLabels.filter((oldLabel) => aside.includes(oldLabel) || html.includes(`>${{oldLabel}}<`) || html.includes(`aria-label="${{oldLabel}}`));
         if (missing.length || forbidden.length) {{
-          console.error(JSON.stringify({{collapsed, missing, forbidden, aside: aside.slice(0, 1600)}}));
+          console.error(JSON.stringify({{key, label, missing, forbidden, sample: html.slice(0, 2400)}}));
           process.exit(1);
         }}
       }}

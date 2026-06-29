@@ -3850,7 +3850,7 @@ def _crop_operator_workflow_response(*, season_id: int, latest: dict, inputCompl
         ("growthSurvey", "최근 생육조사"),
         ("environment", "환경 7일 요약"),
         ("kmaWeatherStress", "기상청 7일 weather-stress"),
-        ("irrigationNutrient", "관수/양액 7일 요약"),
+        ("irrigationNutrient", "관수 제어 7일 요약"),
         ("pestControl", "병해/방제 이력"),
     ):
         status = (sourceStatus or {}).get(key)

@@ -34,18 +34,18 @@ The active product domains are:
 운영 홈
 작물 운영
 환경 제어
-관수·양액
+관수 제어
 장치 제어
-추천·자동화
-안전·이력
-설정·관리
+자동화 제어
+안전 제어
+설정
 ```
 
 These replace the previous R7 five-group IA as the target direction:
 
 ```text
-OLD: 운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
-NEW: 운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리
+OLD: 운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
+NEW: 운영 홈 / 작물 운영 / 환경 제어 / 관수 제어 / 장치 제어 / 자동화 제어 / 안전 제어 / 설정
 ```
 
 The old IA remains historical/compatibility evidence only until the panel shell is reworked.
@@ -57,11 +57,11 @@ The old IA remains historical/compatibility evidence only until the panel shell 
 | 운영 홈 | 오늘 무엇을 봐야 하나? | daily overview, operating mode, fallback status, priority issues | deep settings, direct execution |
 | 작물 운영 | 무엇을 키우고 현재 작물은 어떤 상태인가? | crop_cycle/currentCrop, growth target, crop records, crop model evidence | climate/device command execution |
 | 환경 제어 | 공기/기후를 어떤 기준으로 유지할 것인가? | temperature, humidity, VPD, CO₂, light/DLI, ventilation/heating/cooling setpoints | irrigation recipe ownership, AI authority |
-| 관수·양액 | 물/양분/근권을 어떤 기준으로 관리할 것인가? | irrigation schedule, EC/pH, drain, dryback, reservoir, recipe | climate actuator strategy ownership |
+| 관수 제어 | 물/양분/근권을 어떤 기준으로 관리할 것인가? | irrigation schedule, EC/pH, drain, dryback, reservoir, recipe | climate actuator strategy ownership |
 | 장치 제어 | 어떤 장치를 어떤 모드로 움직일 수 있는가? | devices, actuator state, manual/auto mode, entity mapping, device interlock | AI direct device command authority |
-| 추천·자동화 | 수동 기준 대비 AI/자동화가 무엇을 제안하는가? | AI status, recommendations, corrections, difference explanation, fallback | final command authority |
-| 안전·이력 | 무엇이 허용/차단/기록됐는가? | alarms, block reasons, safety/interlock/fail-safe, audit/history | normal setpoint ownership |
-| 설정·관리 | 누가/무엇이/어떻게 연결되어 있는가? | RBAC, config, HA mapping, diagnostics, backups, redaction | daily grower workflow |
+| 자동화 제어 | 수동 기준 대비 AI/자동화가 무엇을 제안하는가? | AI status, recommendations, corrections, difference explanation, fallback | final command authority |
+| 안전 제어 | 무엇이 허용/차단/기록됐는가? | alarms, block reasons, safety/interlock/fail-safe, audit/history | normal setpoint ownership |
+| 설정 | 누가/무엇이/어떻게 연결되어 있는가? | RBAC, config, HA mapping, diagnostics, backups, redaction | daily grower workflow |
 
 ## 4. Shared four-layer control grammar
 
@@ -200,7 +200,7 @@ crop_cycle
 병해충 예찰
 방제 기록
 작물별 기준 환경 범위
-작물별 기준 관수/양액 범위
+작물별 기준 관수 제어 범위
 crop model evidence
 ```
 
@@ -269,7 +269,7 @@ manualEnvironmentSettings
 환경 AI 보정은 Safety/Interlock/Fail Safe를 우회할 수 없다.
 ```
 
-## 5.4 관수·양액
+## 5.4 관수 제어
 
 ### Purpose
 
@@ -293,7 +293,7 @@ pH 목표
 저수조 상태
 배액 재활용 상태
 관수 안전 한계
-관수·양액 이력
+관수 제어 이력
 ```
 
 ### Control formula
@@ -311,7 +311,7 @@ baseIrrigationSettings
 
 ```text
 AI 관수 보정은 센서 stale, 배액 오류, 장치 장애, 권한 제한을 넘을 수 없다.
-관수·양액 도메인은 환경 actuator strategy를 직접 소유하지 않는다.
+관수 제어 도메인은 환경 actuator strategy를 직접 소유하지 않는다.
 ```
 
 ## 5.5 장치 제어
@@ -365,7 +365,7 @@ AI는 장치 명령을 직접 내리지 않는다.
 Physical MQTT/device hookup remains blocked until virtual scenario verification passes.
 ```
 
-## 5.6 추천·자동화
+## 5.6 자동화 제어
 
 ### Purpose
 
@@ -401,12 +401,12 @@ Manual baseline
 ### Boundary
 
 ```text
-추천·자동화는 실행 버튼 중심 화면이 아니다.
-추천·자동화는 final command authority를 갖지 않는다.
-추천·자동화는 manual/base settings와의 차이를 설명해야 한다.
+자동화 제어는 실행 버튼 중심 화면이 아니다.
+자동화 제어는 final command authority를 갖지 않는다.
+자동화 제어는 manual/base settings와의 차이를 설명해야 한다.
 ```
 
-## 5.7 안전·이력
+## 5.7 안전 제어
 
 ### Purpose
 
@@ -436,11 +436,11 @@ AI 적용/미적용 이력
 ### Boundary
 
 ```text
-안전·이력은 일반 setpoint owner가 아니다.
+안전 제어은 일반 setpoint owner가 아니다.
 하지만 모든 도메인의 최종 allow/block evidence를 모아야 한다.
 ```
 
-## 5.8 설정·관리
+## 5.8 설정
 
 ### Purpose
 
@@ -467,7 +467,7 @@ secret redaction
 ### Boundary
 
 ```text
-설정·관리는 daily grower workflow가 아니다.
+설정는 daily grower workflow가 아니다.
 Secret values render as [REDACTED] only.
 Role/settings mutation remains separately approved work.
 ```
@@ -478,19 +478,19 @@ Role/settings mutation remains separately approved work.
 작물 운영
   → crop-specific target ranges and crop state
 
-환경 제어 / 관수·양액 / 장치 제어
+환경 제어 / 관수 제어 / 장치 제어
   → manual settings + rule automation + current state
 
-추천·자동화
+자동화 제어
   → optional AI corrections and explanations based on above baselines
 
-안전·이력
+안전 제어
   → final allow/block and audit evidence
 
 운영 홈
   → summarized operating state across all domains
 
-설정·관리
+설정
   → permissions, mappings, configuration boundaries used by all domains
 ```
 
@@ -501,11 +501,11 @@ Role/settings mutation remains separately approved work.
 | 운영 홈 | visible | visible | visible |
 | 작물 운영 | view/record where permitted | view/strategy/review | config/admin evidence |
 | 환경 제어 | status/limited adjustment, later | review/approve baseline, later | mapping/config |
-| 관수·양액 | status/record, later | review/approve baseline, later | recipe/device config |
+| 관수 제어 | status/record, later | review/approve baseline, later | recipe/device config |
 | 장치 제어 | status/limited manual action, later | mode/review, later | HA/MQTT mapping |
-| 추천·자동화 | view recommendations | review/approval, later | model/policy diagnostics |
-| 안전·이력 | block reason visibility | audit/approval visibility | full audit/config |
-| 설정·관리 | hidden or summary-only | partial settings | full admin |
+| 자동화 제어 | view recommendations | review/approval, later | model/policy diagnostics |
+| 안전 제어 | block reason visibility | audit/approval visibility | full audit/config |
+| 설정 | hidden or summary-only | partial settings | full admin |
 
 ## 8. Fallback states
 
@@ -539,10 +539,10 @@ Greenhouse operation does not stop solely because AI failed.
 |---|---|
 | `crop-centered` / `작물 중심 운영` | adapt to `crop-operations` / `작물 운영` |
 | `field-status` / `현장 상태` | split into `environment-control`, `irrigation-fertigation`, `device-control` |
-| `recommendation-review` / `추천·실행 검토` | adapt to `recommendation-automation` / `추천·자동화` |
+| `recommendation-review` / `추천·실행 검토` | adapt to `recommendation-automation` / `자동화 제어` |
 | old `recommend-act` execution implication | keep only as historical stage key until shell rework; remove execution-first wording in target IA |
 | R7-003 five placeholders | rewrite after R7-006/R7-007 target shell contracts |
-| R7-004 settings/admin | keep/adapt under `settings-admin` / `설정·관리` |
+| R7-004 settings/admin | keep/adapt under `settings-admin` / `설정` |
 
 ## 10. Implementation guardrails
 

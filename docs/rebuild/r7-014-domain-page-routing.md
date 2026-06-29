@@ -1,6 +1,6 @@
 # R7-014 Domain Page Routing
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-014 complete
 > Purpose: R7 manual-first domains를 운영 홈 아래에 누적 렌더하지 않고, sidebar/mobile nav 선택에 따라 각 도메인을 실제 page/detail view로 전환한다.
 
@@ -22,11 +22,11 @@ After R7-014:
 운영 홈 = summary dashboard page
 작물 운영 = independent domain page
 환경 제어 = independent domain page
-관수·양액 = independent domain page
+관수 제어 = independent domain page
 장치 제어 = independent domain page
-추천·자동화 = independent domain page
-안전·이력 = independent domain page
-설정·관리 = independent domain page
+자동화 제어 = independent domain page
+안전 제어 = independent domain page
+설정 = independent domain page
 ```
 
 Only one active domain page is visible at a time.

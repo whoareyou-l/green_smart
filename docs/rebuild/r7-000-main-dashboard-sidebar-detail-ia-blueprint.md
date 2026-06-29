@@ -1,6 +1,6 @@
 # R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-000 complete
 > 목적: R6 read-only adapter 3종 완료 후, 실제 화면 구현 전에 메인 대시보드/사이드바/상세페이지/하위페이지 IA를 고정한다.
 
@@ -88,7 +88,7 @@ R7 sidebar primary groups
 | 작물 중심 운영 | crop status, growth target, zone drilldown | not a legacy-only crop-settings page |
 | 현장 상태 | environment/irrigation/device read-only effects | support crop-centered decisions |
 | 추천·실행 검토 | recommendation, approval, virtual rehearsal, safety evidence | read-only first; execution authority remains separate |
-| 설정·관리 | Admin/System, device mapping, RBAC/config | farm_staff avoids technical fields |
+| 설정 | Admin/System, device mapping, RBAC/config | farm_staff avoids technical fields |
 
 The R7 sidebar must not merely copy the legacy domain order as the conceptual model. Domain pages can remain as compatibility/detail surfaces, but the primary operator mental model is crop-centered.
 
@@ -191,7 +191,7 @@ R7-001 may implement the first operator-visible crop-centered dashboard, but it 
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.12.73`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.12.74`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -216,7 +216,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.12.73`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.12.74`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -229,7 +229,7 @@ Boundary:
 ```text
 R7-002 Sidebar Navigation + Page Shell
 implements the R7 sidebar primary groups and page shell
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 No API route change in R7-002
 No DB migration in R7-002
 No execution authority in R7-002
@@ -240,7 +240,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.12.73`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.12.74`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -253,7 +253,7 @@ Boundary:
 ```text
 R7-003 Detail/Configuration Subpages Baseline
 selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 No API route change in R7-003
 No DB migration in R7-003
 No execution authority in R7-003
@@ -265,7 +265,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.12.73`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.12.74`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 
@@ -277,7 +277,7 @@ Boundary:
 
 ```text
 R7-004 Settings/Admin Read-only Detail
-user-selected scope: 설정·관리 — RBAC/config/admin read-only detail
+user-selected scope: 설정 — RBAC/config/admin read-only detail
 No API route change in R7-004
 No DB migration in R7-004
 No execution authority in R7-004

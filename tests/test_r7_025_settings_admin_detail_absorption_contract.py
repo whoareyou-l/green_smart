@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_025_version_surfaces_are_1_12_59():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_025_doc_records_settings_admin_inventory_and_mapping():
@@ -126,7 +126,7 @@ def test_r7_025_node_smoke_renders_visual_settings_admin_without_old_detail_card
         'data-r7-settings-mapping-card',
         'data-r7-settings-system-card',
         'data-r7-settings-rbac-card',
-        '설정·관리는 daily grower workflow가 아닙니다',
+        '설정는 daily grower workflow가 아닙니다',
         'Secret values render as [REDACTED] only'
       ];
       for (const item of required) {{

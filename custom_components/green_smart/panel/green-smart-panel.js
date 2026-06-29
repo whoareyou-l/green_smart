@@ -1,4 +1,4 @@
-// Green Smart — Modern SaaS greenhouse dashboard  v1.12.73
+// Green Smart — Modern SaaS greenhouse dashboard  v1.12.74
 // Green Smart Legacy panel compatibility surface: existing crop/seasons calls stay adapter-only until approved migration.
 import { createApiClient } from "./core/api-client.js";
 import { renderCropBasicOverviewCard, renderCropBasicTab, renderCropSeasonsList } from "./domains/crop/crop-readonly.js";
@@ -9,7 +9,7 @@ import { controlModalContext, renderControlPesticideEntry, renderControlTreatmen
 import { adminSystemTabs, renderAdminSystemPage, renderAdminSystemTabBar, renderAdminSystemTabContent } from "./domains/admin/admin-page.js";
 
 const DOMAIN = "green_smart";
-const VERSION = "1.12.73";
+const VERSION = "1.12.74";
 const PANEL_ELEMENT_REFRESH_MS = 5000;
 const CROP_PAGE_SIZE = 5;
 const WIZARD_STEPS = ["wizard_step1", "wizard_step2", "wizard_step3"];
@@ -4451,7 +4451,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div data-crop-ai-evidence-chip-group style="font-size:11px;color:#6d8799;margin-top:8px;line-height:1.55;">staleReasons: ${environmentStaleReasons.length ? environmentStaleReasons.map(r => this._esc(r)).join(' · ') : '없음'} · read-only model evidence · 환경/관수/장치 실행 권한 없음</div>
       </article>
       <article data-crop-ai-evidence-card="irrigation-nutrient-features" data-crop-irrigation-nutrient-features-card style="background:#fff;border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #e7f5ed;">
-        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">관수/양액 feature</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">EC/pH/dryback 등 생육 균형 보조 입력입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
+        <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">관수 제어 feature</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">EC/pH/dryback 등 생육 균형 보조 입력입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
         <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">sourceStatus</div><b style="font-size:14px;color:#24323F;">${this._esc(irrStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">feedEcAvg</div><b style="font-size:14px;color:#24323F;">${this._esc(String(irrigationNutrientFeatures.feedEcAvg ?? '-'))}</b></div>
@@ -4479,7 +4479,7 @@ button.action:disabled{opacity:.5;cursor:default;}
         <div data-crop-ai-evidence-card-header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:12px;font-weight:900;color:#24323F;">모델 입력 소스</div><div style="font-size:10px;color:#6d8799;margin-top:3px;">환경/관수/병해 입력의 가용성과 완성도입니다.</div></div><span style="font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;background:#f7fbff;color:#6d8799;border:1px solid #dbeaf8;">submodel</span></div>
         <div data-crop-ai-evidence-card-body style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">환경 7일</div><b style="font-size:14px;color:#24323F;">${this._esc(envStatus)}</b></div>
-          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">관수/양액 7일</div><b style="font-size:14px;color:#24323F;">${this._esc(irrStatus)}</b></div>
+          <div><div style="font-size:11px;color:#7a9780;font-weight:800;">관수 제어 7일</div><b style="font-size:14px;color:#24323F;">${this._esc(irrStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">병해/방제</div><b style="font-size:14px;color:#24323F;">${this._esc(pestStatus)}</b></div>
           <div><div style="font-size:11px;color:#7a9780;font-weight:800;">입력 완성도</div><b style="font-size:14px;color:#24323F;">${this._esc(String(inputCompleteness.score ?? '-'))}</b></div>
         </div>

@@ -1,8 +1,8 @@
 # R7-025 Settings/Admin Detail Absorption
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-025 planned
-> Purpose: 기존 `renderR7SettingsAdminDetail()` detail card를 설정·관리 visual Admin boundary 화면으로 흡수한다.
+> Purpose: 기존 `renderR7SettingsAdminDetail()` detail card를 설정 visual Admin boundary 화면으로 흡수한다.
 
 ## 1. Source inventory
 
@@ -63,7 +63,7 @@ data-r7-settings-admin-detail
 
 ## 3. Admin/global boundary
 
-설정·관리는 daily grower workflow가 아니며, zone data를 직접 변경하지 않는다. 화면은 visual evidence를 제공하지만 mutation authority를 갖지 않는다.
+설정는 daily grower workflow가 아니며, zone data를 직접 변경하지 않는다. 화면은 visual evidence를 제공하지만 mutation authority를 갖지 않는다.
 
 ```text
 No API route change in R7-025

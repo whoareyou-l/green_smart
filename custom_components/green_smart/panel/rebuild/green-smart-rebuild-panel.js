@@ -39,10 +39,10 @@
 // R7-010 device detail markers: data-r7-device-control-detail / data-r7-device-manual-settings / data-r7-device-rule-schedule / data-r7-device-ai-assist / data-r7-device-safety-final / data-r7-device-fallback.
 // R7-010 device literal marker manifest: data-r7-device-manual-setting="manual" / data-r7-device-manual-setting="auto" / data-r7-device-manual-setting="locked" / data-r7-device-manual-setting="maintenance" / data-r7-device-manual-setting="HA entity mapping" / data-r7-device-manual-setting="MQTT topic mapping later only" / data-r7-device-rule="operatorRequestedAction" / data-r7-device-rule="automationCandidate" / data-r7-device-rule="mode gate" / data-r7-device-rule="mapping health" / data-r7-device-ai-item="optional aiStrategyHint" / data-r7-device-ai-item="hint only" / data-r7-device-ai-item="fallback" / data-r7-device-safety-item="permission check" / data-r7-device-safety-item="Safety check" / data-r7-device-safety-item="Interlock check" / data-r7-device-safety-item="Fail Safe check" / data-r7-device-safety-item="HA/MQTT status".
 // R7-011 recommendation detail markers: data-r7-recommendation-automation-detail / data-r7-recommendation-manual-baseline / data-r7-recommendation-rule-candidate / data-r7-recommendation-ai-assist / data-r7-recommendation-safety-final / data-r7-recommendation-fallback.
-// R7-011 recommendation literal marker manifest: data-r7-recommendation-manual-item="환경 수동 기준" / data-r7-recommendation-manual-item="관수·양액 수동 기준" / data-r7-recommendation-manual-item="장치 모드 기준" / data-r7-recommendation-manual-item="AI off fallback value" / data-r7-recommendation-rule="rule/schedule candidate" / data-r7-recommendation-rule="automation eligibility" / data-r7-recommendation-rule="difference from manual baseline" / data-r7-recommendation-ai-item="AI recommendation/correction" / data-r7-recommendation-ai-item="explanation" / data-r7-recommendation-ai-item="fallback" / data-r7-recommendation-safety-item="Safety-final candidate" / data-r7-recommendation-safety-item="not final command" / data-r7-recommendation-safety-item="no final command authority".
+// R7-011 recommendation literal marker manifest: data-r7-recommendation-manual-item="환경 수동 기준" / data-r7-recommendation-manual-item="관수 제어 수동 기준" / data-r7-recommendation-manual-item="장치 모드 기준" / data-r7-recommendation-manual-item="AI off fallback value" / data-r7-recommendation-rule="rule/schedule candidate" / data-r7-recommendation-rule="automation eligibility" / data-r7-recommendation-rule="difference from manual baseline" / data-r7-recommendation-ai-item="AI recommendation/correction" / data-r7-recommendation-ai-item="explanation" / data-r7-recommendation-ai-item="fallback" / data-r7-recommendation-safety-item="Safety-final candidate" / data-r7-recommendation-safety-item="not final command" / data-r7-recommendation-safety-item="no final command authority".
 // R7-012 safety/history detail markers: data-r7-safety-history-detail / data-r7-safety-history-status / data-r7-safety-history-reasons / data-r7-safety-history-timeline / data-r7-safety-history-audit.
 // R7-012 safety/history literal marker manifest: data-r7-safety-history-status-item="Safety 상태" / data-r7-safety-history-status-item="Interlock 상태" / data-r7-safety-history-status-item="Fail Safe 상태" / data-r7-safety-history-status-item="알람" / data-r7-safety-history-reason="차단 이유" / data-r7-safety-history-reason="허용 이유" / data-r7-safety-history-reason="센서 stale 이력" / data-r7-safety-history-reason="오류/Traceback/통신 장애" / data-r7-safety-history-timeline-item="수동 조작 이력" / data-r7-safety-history-timeline-item="기본 자동제어 이력" / data-r7-safety-history-timeline-item="AI 추천 이력" / data-r7-safety-history-timeline-item="AI 적용/미적용 이력" / data-r7-safety-history-timeline-item="장치 명령 후보 이력" / data-r7-safety-history-timeline-item="실제 실행 이력, later only".
-// R7-002 historical sidebar label order compatibility: 운영 홈 → 작물 중심 운영 → 현장 상태 → 추천·실행 검토 → 설정·관리.
+// R7-002 historical sidebar label order compatibility: 운영 홈 → 작물 중심 운영 → 현장 상태 → 추천·실행 검토 → 설정.
 // RS-002/RS-005 historical source-copy compatibility only, not current operator copy: 작물이 먼저이고 제어는 그 다음입니다 / 추천은 실행 전 승인과 안전검사를 거칩니다 / 구역별 추천·실행 검토 / 실행 전 승인과 안전검사.
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
 // R7 adapter evidence links: sourceMonitoringReadOnlyAdapter / sourceSafetyInterlockReadOnlyAdapter.
@@ -53,14 +53,14 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.73";
+const REBUILD_VERSION = "1.12.74";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
   { key: "growth-goal", label: "생육목표", description: "오늘 작물이 가야 할 목표를 정리합니다." },
   { key: "influence-map", label: "영향지도", description: "환경·관수·장치가 작물에 주는 영향을 봅니다." },
-  { key: "recommend-act", label: "추천·자동화", description: "수동 기준 대비 AI/자동화 보조 차이를 검토합니다." },
+  { key: "recommend-act", label: "자동화 제어", description: "수동 기준 대비 AI/자동화 보조 차이를 검토합니다." },
 ]);
 
 const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
@@ -68,7 +68,7 @@ const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
   { key: "crop-centered", label: "작물 중심 운영", replacement: "crop-operations" },
   { key: "field-status", label: "현장 상태", replacement: "environment-control + irrigation-fertigation + device-control" },
   { key: "recommendation-review", label: "추천·실행 검토", replacement: "recommendation-automation" },
-  { key: "settings-admin", label: "설정·관리", replacement: "settings-admin" },
+  { key: "settings-admin", label: "설정", replacement: "settings-admin" },
 ]);
 
 const R7_GREEN_ACCENT = "#43ad5e";
@@ -93,11 +93,11 @@ const R7_SIDEBAR_GROUPS = Object.freeze([
   { key: "operations-home", label: "운영 홈", summary: "오늘 운영 상태·fallback·우선 확인", target: "operations-home" },
   { key: "crop-operations", label: "작물 운영", summary: "currentCrop·crop_cycle·생육목표", target: "crop-operations" },
   { key: "environment-control", label: "환경 제어", summary: "온도·습도·VPD·CO₂ 수동 기준", target: "environment-control" },
-  { key: "irrigation-fertigation", label: "관수·양액", summary: "관수·EC/pH·배액·드라이백 기준", target: "irrigation-fertigation" },
+  { key: "irrigation-fertigation", label: "관수 제어", summary: "관수·EC/pH·배액·드라이백 기준", target: "irrigation-fertigation" },
   { key: "device-control", label: "장치 제어", summary: "수동/자동 모드·장치 매핑·인터록", target: "device-control" },
-  { key: "recommendation-automation", label: "추천·자동화", summary: "AI 보조·자동화 차이·fallback", target: "recommendation-automation" },
-  { key: "safety-history", label: "안전·이력", summary: "Safety·Interlock·Fail Safe·감사", target: "safety-history" },
-  { key: "settings-admin", label: "설정·관리", summary: "RBAC·HA 매핑·진단·secret redaction", target: "settings-admin" },
+  { key: "recommendation-automation", label: "자동화 제어", summary: "AI 보조·자동화 차이·fallback", target: "recommendation-automation" },
+  { key: "safety-history", label: "안전 제어", summary: "Safety·Interlock·Fail Safe·감사", target: "safety-history" },
+  { key: "settings-admin", label: "설정", summary: "RBAC·HA 매핑·진단·secret redaction", target: "settings-admin" },
 ]);
 
 const R7_MAIN_SIDEBAR_GROUPS = Object.freeze(R7_SIDEBAR_GROUPS.filter((group) => group.key !== "settings-admin"));
@@ -106,11 +106,11 @@ const R7_DETAIL_SUBPAGES = Object.freeze([
   { key: "operations-home", label: "운영 홈", summary: "오늘의 운영 모드, AI fallback, 우선 확인 구역을 읽기 전용으로 요약합니다.", manualBase: "현재 수동/자동 운영 기준과 fallback 기준", automation: "도메인별 정상/주의 상태 요약", aiAssist: "AI 사용 가능 여부와 보조 적용 상태", safety: "차단 알람과 Fail Safe 상태 우선 표시", source: "currentCropAssignment + dataAvailability + domainHealthSummary", zoneScope: "전체 구역 우선, 필요한 구역은 각 도메인에서 확인" },
   { key: "crop-operations", label: "작물 운영", summary: "currentCrop, crop_cycle, 생육목표, 작물 기록을 운영 기준으로 정리합니다.", manualBase: "작물별 기준 범위와 생육목표", automation: "작기 상태/기록 기반 read-only workflow", aiAssist: "생육단계·상태·위험·진단·조치 추천 evidence", safety: "작물 운영은 환경/관수/장치 명령을 직접 실행하지 않음", source: "currentCropAssignment + growthTargetProjection + crop model evidence", zoneScope: "zone parent + currentCrop attached" },
   { key: "environment-control", label: "환경 제어", summary: "온도, 습도, VPD, CO₂, 광, 환기, 난방, 냉방의 수동 기준과 자동화 후보를 분리합니다.", manualBase: "manualEnvironmentSettings", automation: "ruleScheduleEnvironmentAutomation", aiAssist: "aiEnvironmentCorrection if enabled and healthy", safety: "environmentSafetyLimits / deviceInterlock clamp", source: "monitoringReadOnlyAdapter + environmentImpactProjection", zoneScope: "구역별 환경 상태와 freshness evidence" },
-  { key: "irrigation-fertigation", label: "관수·양액", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준을 관리합니다.", manualBase: "baseIrrigationSettings", automation: "ruleScheduleIrrigationAutomation", aiAssist: "aiIrrigationCorrection if enabled and healthy", safety: "irrigationSafetyLimits clamp", source: "irrigation settings + rootzone/water evidence", zoneScope: "구역별 관수·양액 상태와 센서 stale 여부" },
+  { key: "irrigation-fertigation", label: "관수 제어", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준을 관리합니다.", manualBase: "baseIrrigationSettings", automation: "ruleScheduleIrrigationAutomation", aiAssist: "aiIrrigationCorrection if enabled and healthy", safety: "irrigationSafetyLimits clamp", source: "irrigation settings + rootzone/water evidence", zoneScope: "구역별 관수 제어 상태와 센서 stale 여부" },
   { key: "device-control", label: "장치 제어", summary: "장치 상태, 수동/자동/잠금/점검 모드, HA entity mapping과 인터록을 분리합니다.", manualBase: "deviceMode: manual / auto / locked / maintenance", automation: "operatorRequestedAction or automationCandidate", aiAssist: "optional aiStrategyHint only", safety: "permission → Safety → Interlock → Fail Safe", source: "equipmentProfile + HA entity mapping metadata", zoneScope: "구역별 장치 profile과 통신 상태" },
-  { key: "recommendation-automation", label: "추천·자동화", summary: "수동 기준값, 기본 자동제어 후보, AI 추천/보정, fallback 값을 비교합니다.", manualBase: "Manual baseline shown first", automation: "Rule/schedule candidate", aiAssist: "AI recommendation/correction/explanation", safety: "Safety-final candidate; no final command authority", source: "recommendationReviewProjection + automationAssistProjection", zoneScope: "추천은 구역별 차이와 미적용 이유를 표시" },
-  { key: "safety-history", label: "안전·이력", summary: "Safety, Interlock, Fail Safe, 알람, 차단 이유, 수동/자동/AI 이력을 모읍니다.", manualBase: "operator-visible block reasons and logs", automation: "rule/schedule automation history", aiAssist: "AI may add evidence only", safety: "authoritative allow/block history", source: "safetyInterlockReadOnlyAdapter + audit/log evidence", zoneScope: "구역별 차단·경보·stale 이력" },
-  { key: "settings-admin", label: "설정·관리", summary: "RBAC, HA entity mapping, 시스템 설정, 진단, 백업, secret redaction을 관리합니다.", manualBase: "users, mapping, system config", automation: "configuration ownership boundary", aiAssist: "admin/model diagnostics only", safety: "admin audit/config boundary; no mutation in this slice", source: "RBAC/config documentation baseline", zoneScope: "관리 설정은 zone data를 직접 변경하지 않음" },
+  { key: "recommendation-automation", label: "자동화 제어", summary: "수동 기준값, 기본 자동제어 후보, AI 추천/보정, fallback 값을 비교합니다.", manualBase: "Manual baseline shown first", automation: "Rule/schedule candidate", aiAssist: "AI recommendation/correction/explanation", safety: "Safety-final candidate; no final command authority", source: "recommendationReviewProjection + automationAssistProjection", zoneScope: "추천은 구역별 차이와 미적용 이유를 표시" },
+  { key: "safety-history", label: "안전 제어", summary: "Safety, Interlock, Fail Safe, 알람, 차단 이유, 수동/자동/AI 이력을 모읍니다.", manualBase: "operator-visible block reasons and logs", automation: "rule/schedule automation history", aiAssist: "AI may add evidence only", safety: "authoritative allow/block history", source: "safetyInterlockReadOnlyAdapter + audit/log evidence", zoneScope: "구역별 차단·경보·stale 이력" },
+  { key: "settings-admin", label: "설정", summary: "RBAC, HA entity mapping, 시스템 설정, 진단, 백업, secret redaction을 관리합니다.", manualBase: "users, mapping, system config", automation: "configuration ownership boundary", aiAssist: "admin/model diagnostics only", safety: "admin audit/config boundary; no mutation in this slice", source: "RBAC/config documentation baseline", zoneScope: "관리 설정은 zone data를 직접 변경하지 않음" },
 ]);
 
 const REBUILD_HOME_CONTEXT = Object.freeze({
@@ -150,7 +150,7 @@ const REBUILD_STAGE_DETAILS = Object.freeze({
     metric: (zone) => zone.id === "all" ? "영향 편차" : "구역 장비 영향",
   },
   "recommend-act": {
-    title: "구역별 추천·자동화 검토",
+    title: "구역별 자동화 제어 검토",
     summary: (zone) => zone.id === "all" ? "전체 AI 보조와 자동화 후보를 수동 기준과 비교합니다." : `${zone.name} 수동 기준 대비 보조 검토`,
     detail: (zone) => zone.id === "all" ? "추천은 수동 기준값과 기본 자동제어 후보를 먼저 보여준 뒤 AI 보정 차이를 설명합니다." : `${zone.name} 추천은 실행 권한이 아니라 수동 기준 대비 보조 근거로 봅니다.`,
     metric: (zone) => zone.id === "all" ? "수동 기준 대비 차이" : "구역 보조 후보",
@@ -847,7 +847,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const items = [
       ["crop-operations", "작물", "normal", "정상"],
       ["environment-control", "환경", "attention", "주의"],
-      ["irrigation-fertigation", "관수·양액", "normal", "정상"],
+      ["irrigation-fertigation", "관수 제어", "normal", "정상"],
       ["device-control", "장치", "warning", "경고"],
       ["safety-history", "안전", "blocked", "차단"],
       ["settings-admin", "설정", "unknown", "데이터 부족"],
@@ -908,7 +908,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const domainCards = [
       ["crop-operations", "작물 상태", "normal", "정상", "작물상태/생육목표는 안정권"],
       ["environment-control", "환경 편차", "attention", "주의", "습도/VPD 편차 확인"],
-      ["irrigation-fertigation", "관수 상태", "normal", "정상", "관수/양액 기준 범위"],
+      ["irrigation-fertigation", "관수 상태", "normal", "정상", "관수 제어 기준 범위"],
       ["device-control", "장치 응답", "warning", "경고", "장치 응답 지연 1건"],
       ["safety-history", "안전 판단", "blocked", "차단", "현장 안전 상태 확인"],
     ];
@@ -1055,7 +1055,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const userRole = this._r7Text(userInfo.roleLabel);
     const userInitial = this._r7Text(this._r7UserInitials(userInfo.name));
     const exitTitle = `${userName} · ${userRole} · 로그아웃`;
-    const settingsTitle = "설정·관리";
+    const settingsTitle = "설정";
     const settingsDescription = "RBAC·HA 매핑·진단";
     const settingsUtility = referenceSlimRail
       ? `<a href="#settings-admin" data-r7-settings-admin-utility-detail="true" data-r7-sidebar-utility-domain="settings-admin" data-r7-sidebar-utility-position="second-from-bottom" data-r7-sidebar-group="settings-admin" data-r7-sidebar-target="settings-admin" aria-label="${settingsTitle} · ${settingsDescription}" title="${settingsTitle} · ${settingsDescription}" style="${buttonStyle}position:relative;">${this._r7SidebarLineIcon("settings-admin")}<span data-r7-settings-admin-utility-title style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${settingsTitle}</span><span data-r7-settings-admin-utility-description style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${settingsDescription}</span></a>`
@@ -1131,14 +1131,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ["operations-home", "운영 홈", "visibility/config summary only", "전체 상태 요약은 읽기 전용이며 설정 변경은 별도 승인 작업"],
       ["crop-operations", "작물 운영", "crop_cycle/currentCrop permission", "작물 기록/작기 권한과 currentCrop 노출 범위 evidence"],
       ["environment-control", "환경 제어", "environment settings ownership", "환경 수동 기준/자동화 후보의 설정 소유 boundary"],
-      ["irrigation-fertigation", "관수·양액", "irrigation/fertigation settings ownership", "EC/pH/관수 스케줄/레시피 설정 ownership evidence"],
-      ["device-control", "장치 제어", "HA entity mapping / device mapping ownership", "장치 상태 판단은 mapping을 쓰지만 매핑 소유권은 설정·관리"],
-      ["recommendation-automation", "추천·자동화", "recommendation/AI assist configuration", "AI 보조/자동화 후보 설정은 실행 권한과 분리"],
-      ["safety-history", "안전·이력", "audit/log visibility and backend enforcement", "allow/block/audit 노출 권한과 backend enforcement evidence"],
-      ["settings-admin", "설정·관리", "RBAC, role, mapping, config, diagnostics, backup, secret redaction", "운영 도메인이 아니라 시스템/권한/매핑 boundary"],
+      ["irrigation-fertigation", "관수 제어", "irrigation/fertigation settings ownership", "EC/pH/관수 스케줄/레시피 설정 ownership evidence"],
+      ["device-control", "장치 제어", "HA entity mapping / device mapping ownership", "장치 상태 판단은 mapping을 쓰지만 매핑 소유권은 설정"],
+      ["recommendation-automation", "자동화 제어", "recommendation/AI assist configuration", "AI 보조/자동화 후보 설정은 실행 권한과 분리"],
+      ["safety-history", "안전 제어", "audit/log visibility and backend enforcement", "allow/block/audit 노출 권한과 backend enforcement evidence"],
+      ["settings-admin", "설정", "RBAC, role, mapping, config, diagnostics, backup, secret redaction", "운영 도메인이 아니라 시스템/권한/매핑 boundary"],
     ];
     const mappingItems = [
-      ["HA entity mapping", "상태 판단 source", "장치 제어의 상태 판단에 쓰이지만 편집 권한은 설정·관리에 속함"],
+      ["HA entity mapping", "상태 판단 source", "장치 제어의 상태 판단에 쓰이지만 편집 권한은 설정에 속함"],
       ["구역/장치 매핑", "zone/device profile", "구역별 장치 profile과 운영 도메인 연결 evidence"],
       ["MQTT topic mapping later only", "later only", "실제 MQTT topic 연결/명령은 별도 승인 slice 이후"],
       ["mapping health evidence", "read-only evidence", "누락/오류/통신 상태는 read-only evidence로 표시"],
@@ -1168,7 +1168,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tabs = [["domain-ownership", "도메인 소유권"], ["role-permissions", "역할·권한"], ["mapping-devices", "매핑·장치"], ["system-security", "시스템·보안"], ["diagnostics-audit", "진단·감사"], ["rbac-policy", "RBAC 정책"]];
     const activeTab = this._activeR7DomainSubtabs["settings-admin"] || "domain-ownership";
     const panels = tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
-    return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정·관리", kicker: "Global Admin Boundary", summary: "설정·관리는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수·양액/장치/추천·자동화/안전·이력의 권한·매핑·설정 ownership을 read-only로 보여줍니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정·관리에 있습니다. edit_entity_mapping belongs to admin. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="diagnostics-audit" data-r7-settings-admin-subtab="rbac-policy" data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="diagnostics-backup-audit" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement</section></section>`;
+    return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "Global Admin Boundary", summary: "설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="diagnostics-audit" data-r7-settings-admin-subtab="rbac-policy" data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="diagnostics-backup-audit" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement</section></section>`;
   }
 
   renderR7EnvironmentControlDetail() {
@@ -1236,7 +1236,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ["급액량", "구역별 기준", "회당 급액량은 구역/배지 기준"],
       ["배액률", "배액률 20~30%", "과소/과다 배액을 safety evidence로 표시"],
       ["드라이백", "드라이백 8~12%", "야간/일출 전 근권 수분 회복 기준"],
-      ["양액 레시피", "작물별 기준", "레시피 소유는 관수·양액 도메인"],
+      ["양액 레시피", "작물별 기준", "레시피 소유는 관수 제어 도메인"],
     ];
     const automationRules = [
       ["시간 기반 관수", "운영자가 정한 시간표 기준으로 후보 표시"],
@@ -1257,7 +1257,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<section data-r7-irrigation-fertigation-detail data-r7-irrigation-readonly-boundary="true" data-r7-irrigation-control-formula="baseIrrigationSettings + ruleScheduleIrrigationAutomation + aiIrrigationCorrection → calculatedIrrigationTargets → irrigationSafetyLimits clamp → finalIrrigationTargets" style="border:1px solid #cfe3d4;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
       <header>
         <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-009 read-only irrigation/fertigation detail</p>
-        <h4 style="margin:0;color:#24323f;font-size:16px;">관수·양액 · 수동 기준 우선</h4>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">관수 제어 · 수동 기준 우선</h4>
         <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">AI 없이도 관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 양액 레시피 기준으로 운영 가능해야 합니다. R7-009는 설정 저장이나 펌프/밸브/양액기 실행 없이 read-only 구조만 표시합니다.</p>
       </header>
       <section data-r7-irrigation-manual-settings style="display:grid;gap:8px;">
@@ -1280,7 +1280,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
       <section data-r7-irrigation-fallback data-r7-irrigation-ai-fallback-to-manual="true" style="border-top:1px solid #edf4ef;padding-top:10px;">
         <strong style="color:#8a6d1d;font-size:13px;">AI 장애/fallback 원칙</strong>
-        <p style="margin:6px 0 0;color:#6b5a22;font-size:12px;line-height:1.6;">AI 상태가 disabled/unhealthy/timeout/stale이면 aiIrrigationCorrection을 제외하고 baseIrrigationSettings + ruleScheduleIrrigationAutomation 기준으로 계속 운영합니다. 관수·양액 도메인은 환경 actuator strategy를 직접 소유하지 않습니다. 센서 stale, 배액 오류, 장치 장애, 권한 제한은 AI 관수 보정보다 우선합니다.</p>
+        <p style="margin:6px 0 0;color:#6b5a22;font-size:12px;line-height:1.6;">AI 상태가 disabled/unhealthy/timeout/stale이면 aiIrrigationCorrection을 제외하고 baseIrrigationSettings + ruleScheduleIrrigationAutomation 기준으로 계속 운영합니다. 관수 제어 도메인은 환경 actuator strategy를 직접 소유하지 않습니다. 센서 stale, 배액 오류, 장치 장애, 권한 제한은 AI 관수 보정보다 우선합니다.</p>
       </section>
     </section>`;
   }
@@ -1346,7 +1346,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7RecommendationAutomationDetail() {
     const manualBaseline = [
       ["환경 수동 기준", "온도/VPD/습도/CO₂ 기준", "환경 제어 도메인의 manualEnvironmentSettings를 먼저 비교"],
-      ["관수·양액 수동 기준", "관수 스케줄/EC/pH/배액률", "baseIrrigationSettings 기준 대비 차이를 표시"],
+      ["관수 제어 수동 기준", "관수 스케줄/EC/pH/배액률", "baseIrrigationSettings 기준 대비 차이를 표시"],
       ["장치 모드 기준", "manual/auto/locked/maintenance", "장치 제어 도메인의 mode gate를 먼저 확인"],
       ["AI off fallback value", "수동+기본 자동화", "AI가 꺼져도 남는 기준값"],
     ];
@@ -1363,13 +1363,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const safetyFinal = [
       ["Safety-final candidate", "Safety/Interlock/Fail Safe 이후의 후보만 표시"],
       ["not final command", "표시 후보는 최종 명령이 아님"],
-      ["no final command authority", "추천·자동화는 final command authority를 갖지 않음"],
+      ["no final command authority", "자동화 제어는 final command authority를 갖지 않음"],
     ];
     return `<section data-r7-recommendation-automation-detail data-r7-recommendation-readonly-boundary="true" data-r7-recommendation-final-command-authority="none" data-r7-recommendation-comparison-grammar="Manual baseline → Rule/schedule candidate → AI recommendation/correction → Safety-final candidate → Fallback value when AI is off" style="border:1px solid #cfe3d4;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
       <header>
         <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-011 read-only recommendation/automation detail</p>
-        <h4 style="margin:0;color:#24323f;font-size:16px;">추천·자동화 · 수동 기준 대비 비교</h4>
-        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">추천·자동화는 실행 버튼 중심 화면이 아닙니다. 수동 기준값을 먼저 보여주고 rule/schedule 후보와 AI 추천·보정 차이를 비교합니다.</p>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">자동화 제어 · 수동 기준 대비 비교</h4>
+        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">자동화 제어는 실행 버튼 중심 화면이 아닙니다. 수동 기준값을 먼저 보여주고 rule/schedule 후보와 AI 추천·보정 차이를 비교합니다.</p>
       </header>
       <section data-r7-recommendation-manual-baseline style="display:grid;gap:8px;">
         <strong style="color:#31523b;font-size:13px;">1. Manual baseline shown first</strong>
@@ -1429,7 +1429,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
           : tabKey === "operation-history"
             ? `${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "수동 조작 이력", "작업자 기준 변경/요청 evidence", "manual operation history")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "기본 자동제어 이력", "rule/schedule 후보와 적용/미적용 evidence", "rule/schedule automation history")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "AI 추천 이력", "AI가 제안한 추천/보정 evidence", "AI evidence only")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "AI 적용/미적용 이력", "AI 후보가 제외된 이유 포함", "fallback evidence")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "장치 명령 후보 이력", "기록만 하며 실행 권한 없음", "device command candidate")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "실제 실행 이력, later only", "실제 실행 이력은 later only evidence입니다", "no mutation authority")}`
             : tabKey === "audit-evidence"
-              ? `${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "authoritative allow/block history", "read-only", "모든 도메인의 최종 allow/block evidence")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "setpoint owner", "false", "안전·이력은 일반 setpoint owner가 아닙니다")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "ack/clear", "excluded", "알람 ack/clear, 승인/override, 실행 이력 수정 제외")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "runtime boundary", "no execution", "실행·수정 권한 없음")}`
+              ? `${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "authoritative allow/block history", "read-only", "모든 도메인의 최종 allow/block evidence")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "setpoint owner", "false", "안전 제어은 일반 setpoint owner가 아닙니다")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "ack/clear", "excluded", "알람 ack/clear, 승인/override, 실행 이력 수정 제외")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "runtime boundary", "no execution", "실행·수정 권한 없음")}`
               : `${this.renderR7MiniTrendChart("Safety 추세", "최근")}${this.renderR7MiniTrendChart("Interlock 추세", "최근")}${this.renderR7MiniTrendChart("Fail Safe 추세", "최근")}${this.renderR7SafetyValueCard("data-r7-safety-trend-evidence", "데이터 근거", freshness, "safetyInterlockReadOnlyAdapter + audit/log evidence")}`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-safety-subtab="${tabKey}" data-r7-safety-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
@@ -1439,7 +1439,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tabs = [["status-summary", "현재 안전 상태"], ["block-allow", "차단·허용 이유"], ["event-history", "이벤트 이력"], ["operation-history", "운영 이력"], ["audit-evidence", "감사·근거"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["safety-history"] || "status-summary";
     const panels = tabs.map(([key]) => this.renderR7SafetySubtabPanel(key, selectedZone, activeTab)).join("");
-    return `<section data-r7-safety-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "safety-history", title: "안전·이력", kicker: "구역 기준 안전·이력", summary: "Safety, Interlock, Fail Safe, 차단·허용 이유, 수동/자동/AI 이력, audit evidence를 구역 기준으로 확인합니다.", status: "blocked", tabs, activeTab, panels })}<section style="display:none;">Safety 상태 · Interlock 상태 · Fail Safe 상태 · 차단 이유 · 허용 이유 · 센서 stale 이력 · 오류/Traceback/통신 장애 · 수동 조작 이력 · 기본 자동제어 이력 · AI 추천 이력 · AI 적용/미적용 이력 · 장치 명령 후보 이력 · 실제 실행 이력, later only · authoritative allow/block history · read-only</section></section>`;
+    return `<section data-r7-safety-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "safety-history", title: "안전 제어", kicker: "구역 기준 안전 제어", summary: "Safety, Interlock, Fail Safe, 차단·허용 이유, 수동/자동/AI 이력, audit evidence를 구역 기준으로 확인합니다.", status: "blocked", tabs, activeTab, panels })}<section style="display:none;">Safety 상태 · Interlock 상태 · Fail Safe 상태 · 차단 이유 · 허용 이유 · 센서 stale 이력 · 오류/Traceback/통신 장애 · 수동 조작 이력 · 기본 자동제어 이력 · AI 추천 이력 · AI 적용/미적용 이력 · 장치 명령 후보 이력 · 실제 실행 이력, later only · authoritative allow/block history · read-only</section></section>`;
   }
 
   _r7ZoneId(zone) {
@@ -1655,7 +1655,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const body = tabKey === "status-summary"
       ? `${this.renderR7MetricCard("EC", "2.1 dS/m", "1.8~2.4", "+0.1", "정상")}${this.renderR7MetricCard("pH", "6.0", "5.8~6.3", "0", "정상")}${this.renderR7MetricCard("배액률", "24%", "20~30%", "0", "정상")}${this.renderR7MetricCard("드라이백", "10%", "8~12%", "0", "정상")}`
       : tabKey === "base-settings"
-        ? `${settingCard("관수 스케줄", "06:00 / 10:30 / 14:30", "기본 시간 기반 관수 기준")}${settingCard("일사 누적 관수", "100~160 J/cm²", "일사량 기준 추가 관수 후보")}${settingCard("EC 목표", "EC 1.8~2.4 dS/m", "작물/생육단계별 양액 농도 기준")}${settingCard("pH 목표", "pH 5.8~6.3", "양액 흡수 안정 범위")}${settingCard("급액량", "구역별 기준", "회당 급액량은 구역/배지 기준")}${settingCard("배액률", "20~30%", "과소/과다 배액을 safety evidence로 표시")}${settingCard("드라이백", "8~12%", "야간/일출 전 근권 수분 회복 기준")}${settingCard("양액 레시피", "작물별 기준", "레시피 소유는 관수·양액 도메인")}`
+        ? `${settingCard("관수 스케줄", "06:00 / 10:30 / 14:30", "기본 시간 기반 관수 기준")}${settingCard("일사 누적 관수", "100~160 J/cm²", "일사량 기준 추가 관수 후보")}${settingCard("EC 목표", "EC 1.8~2.4 dS/m", "작물/생육단계별 양액 농도 기준")}${settingCard("pH 목표", "pH 5.8~6.3", "양액 흡수 안정 범위")}${settingCard("급액량", "구역별 기준", "회당 급액량은 구역/배지 기준")}${settingCard("배액률", "20~30%", "과소/과다 배액을 safety evidence로 표시")}${settingCard("드라이백", "8~12%", "야간/일출 전 근권 수분 회복 기준")}${settingCard("양액 레시피", "작물별 기준", "레시피 소유는 관수 제어 도메인")}`
         : tabKey === "rule-schedule"
           ? `${ruleCard("시간 기반 관수", "운영자가 정한 시간표 기준으로 후보 표시")}${ruleCard("일사 누적 관수", "누적 일사량 기준에 도달하면 추가 후보 산출")}${ruleCard("근권 수분 기준 관수", "VWC/드라이백 evidence가 충분할 때만 후보 표시")}${ruleCard("저수조/배액 재활용 점검", "저수조/배액 상태가 정상일 때만 재활용 후보 표시")}`
           : tabKey === "interlock-block"
@@ -1671,7 +1671,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["irrigation-fertigation"] || "status-summary";
     const panels = tabs.map(([key]) => this.renderR7IrrigationSubtabPanel(key, selectedZone, activeTab)).join("");
-    return `<section data-r7-irrigation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "irrigation-fertigation", title: "관수·양액", kicker: "구역별 관수·양액 상태", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">구역별 관수·양액 상태 · 현재 선택 구역 · 관수 후보 · Safety clamp 우선 · 센서 신선도</section></section>`;
+    return `<section data-r7-irrigation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "irrigation-fertigation", title: "관수 제어", kicker: "구역별 관수 제어 상태", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">구역별 관수 제어 상태 · 현재 선택 구역 · 관수 후보 · Safety clamp 우선 · 센서 신선도</section></section>`;
   }
 
   renderR7DeviceSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
@@ -1745,11 +1745,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const body = tabKey === "status-summary"
       ? `${this.renderR7MetricCard("추천 상태", "보조", "실행 권한 없음", "0", "정상")}${this.renderR7MetricCard("수동 기준", "우선", "Manual baseline", "0", "정상")}${this.renderR7MetricCard("AI 보정", "후보", "assist only", "+1", "주의")}${this.renderR7MetricCard("최종 명령", "없음", "authority none", "0", "차단")}`
       : tabKey === "base-settings"
-        ? `${settingCard("환경 수동 기준", "온도/VPD/습도/CO₂ 기준", "환경 제어 도메인의 manualEnvironmentSettings를 먼저 비교")}${settingCard("관수·양액 수동 기준", "관수 스케줄/EC/pH/배액률", "baseIrrigationSettings 기준 대비 차이를 표시")}${settingCard("장치 모드 기준", "manual/auto/locked/maintenance", "장치 제어 도메인의 mode gate를 먼저 확인")}${settingCard("AI off fallback value", "수동+기본 자동화", "AI가 꺼져도 남는 기준값")}`
+        ? `${settingCard("환경 수동 기준", "온도/VPD/습도/CO₂ 기준", "환경 제어 도메인의 manualEnvironmentSettings를 먼저 비교")}${settingCard("관수 제어 수동 기준", "관수 스케줄/EC/pH/배액률", "baseIrrigationSettings 기준 대비 차이를 표시")}${settingCard("장치 모드 기준", "manual/auto/locked/maintenance", "장치 제어 도메인의 mode gate를 먼저 확인")}${settingCard("AI off fallback value", "수동+기본 자동화", "AI가 꺼져도 남는 기준값")}`
         : tabKey === "rule-schedule"
           ? `${ruleCard("rule/schedule candidate", "시간표·일사·환경 편차 기반 기본 자동화 후보")}${ruleCard("automation eligibility", "데이터 신선도/모드/권한이 후보 표시 조건")}${ruleCard("difference from manual baseline", "수동 기준 대비 증가/감소/미적용 이유를 표시")}`
           : tabKey === "interlock-block"
-            ? `${safetyCard("Safety-final candidate", "Safety/Interlock/Fail Safe 이후의 후보만 표시")}${safetyCard("not final command", "표시 후보는 최종 명령이 아님")}${safetyCard("no final command authority", "추천·자동화는 final command authority를 갖지 않음")}`
+            ? `${safetyCard("Safety-final candidate", "Safety/Interlock/Fail Safe 이후의 후보만 표시")}${safetyCard("not final command", "표시 후보는 최종 명령이 아님")}${safetyCard("no final command authority", "자동화 제어는 final command authority를 갖지 않음")}`
             : tabKey === "assist-fallback"
               ? `${assistCard("AI recommendation/correction", "AI가 추천·보정 후보와 근거를 설명")}${assistCard("explanation", "왜 수동 기준과 다른지 구역/도메인별로 설명")}${assistCard("fallback", "AI disabled/unhealthy/timeout/stale이면 AI 후보 제외")}${assistCard("final command authority none", "Safety-final candidate도 최종 명령 권한은 없음")}`
               : `${this.renderR7MiniTrendChart("추천 변화", "최신")}${this.renderR7MiniTrendChart("수동 대비 차이", "최신")}${this.renderR7MiniTrendChart("AI 보조 이력", "후보")}${this.renderR7MiniTrendChart("미적용 이유", "누적")}`;
@@ -1761,7 +1761,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["recommendation-automation"] || "status-summary";
     const panels = tabs.map(([key]) => this.renderR7RecommendationSubtabPanel(key, selectedZone, activeTab)).join("");
-    return `<section data-r7-recommendation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "recommendation-automation", title: "추천·자동화", kicker: "구역별 추천·자동화 후보", summary: "수동 기준값, 기본 자동화 후보, AI 추천·보정, fallback, Safety-final 후보를 구역별로 비교합니다. 최종 명령 권한은 없습니다.", status: "attention", tabs, activeTab, panels })}<section style="display:none;">구역별 추천·자동화 후보 · Manual baseline · rule/schedule candidate · AI recommendation/correction · final command authority none</section></section>`;
+    return `<section data-r7-recommendation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "recommendation-automation", title: "자동화 제어", kicker: "구역별 자동화 제어 후보", summary: "수동 기준값, 기본 자동화 후보, AI 추천·보정, fallback, Safety-final 후보를 구역별로 비교합니다. 최종 명령 권한은 없습니다.", status: "attention", tabs, activeTab, panels })}<section style="display:none;">구역별 자동화 제어 후보 · Manual baseline · rule/schedule candidate · AI recommendation/correction · final command authority none</section></section>`;
   }
 
   renderR7DetailSubpage(subpage) {

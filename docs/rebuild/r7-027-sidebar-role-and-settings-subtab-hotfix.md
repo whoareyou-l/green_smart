@@ -1,12 +1,12 @@
 # R7-027 Sidebar Role Layout and Settings Subtab Hotfix
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-027 planned
-> Purpose: 사용자 QA에서 확인된 설정/관리 하위탭 미동작과 sidebar UX 요구를 수정한다.
+> Purpose: 사용자 QA에서 확인된 설정 하위탭 미동작과 sidebar UX 요구를 수정한다.
 
 ## 1. Settings/Admin subtab hotfix
 
-설정/관리 도메인의 하위탭은 다른 도메인과 동일하게 클릭 시 active tab/panel이 바뀌어야 한다.
+설정 도메인의 하위탭은 다른 도메인과 동일하게 클릭 시 active tab/panel이 바뀌어야 한다.
 
 Required tabs:
 
@@ -50,11 +50,11 @@ Green Smart logo image
 운영 홈: 🏠
 작물 운영: 🌱
 환경 제어: 🌡️
-관수·양액: 💧
+관수 제어: 💧
 장치 제어: ⚙️
-추천·자동화: 🤖
-안전·이력: 🛡️
-설정·관리: 🧩
+자동화 제어: 🤖
+안전 제어: 🛡️
+설정: 🧩
 data-r7-sidebar-collapse-toggle
 data-r7-sidebar-collapsed="false"
 data-r7-sidebar-collapsed="true"

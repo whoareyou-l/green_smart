@@ -579,7 +579,7 @@ Panel must keep irrigation/nutrient features read-only model evidence. Required 
 
 ```text
 data-crop-irrigation-nutrient-features-card
-관수/양액 feature
+관수 제어 feature
 feedEcAvg
 drainEcAvg
 ecDeltaFeedDrain

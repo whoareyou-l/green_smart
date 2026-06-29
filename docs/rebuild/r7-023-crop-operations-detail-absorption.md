@@ -1,6 +1,6 @@
 # R7-023 Crop Operations Detail Absorption
 
-> 기준 버전: v1.12.73
+> 기준 버전: v1.12.74
 > Status: planned via RED contract
 > Scope: 작물 운영 도메인을 crop-centered, zone-scoped visual 하위탭으로 전환
 
@@ -8,7 +8,7 @@
 
 The user corrected that the R7 visual-domain track must not skip **작물 운영**. The main IA remains crop-centered, and detailed domain work must still be zone-scoped.
 
-Earlier R7 absorption slices converted 환경 제어, 관수·양액, 장치 제어, and 추천·자동화 into visual sub-tabs first. R7-023 corrects that ordering gap by turning 작물 운영 into the crop-centered visual domain.
+Earlier R7 absorption slices converted 환경 제어, 관수 제어, 장치 제어, and 자동화 제어 into visual sub-tabs first. R7-023 corrects that ordering gap by turning 작물 운영 into the crop-centered visual domain.
 
 ## 2. Source inventory
 

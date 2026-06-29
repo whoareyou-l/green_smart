@@ -160,7 +160,7 @@ Run targeted tests
 
 Second selected slice: VS-N002 Crop cycle recording scaffold
 
-Status: `v1.12.73`에서 scaffold-only 계약/DTO/권한 경계 완료.
+Status: `v1.12.74`에서 scaffold-only 계약/DTO/권한 경계 완료.
 
 Reason: after VS-N001 RBAC/Admin ownership, crop-cycle recording needs a product-facing DTO/permission scaffold before monitoring and interlock slices consume crop context.
 
@@ -175,7 +175,7 @@ No DB migration in VS-N002
 
 Third selected slice: VS-N003 Real-time monitoring read-only scaffold
 
-Status: `v1.12.73`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
+Status: `v1.12.74`에서 scaffold-only monitoring DTO/권한/freshness 경계 완료.
 
 Reason: after RBAC/Admin ownership and crop-cycle context, monitoring needs a read-only DTO and freshness boundary before Interlock/Safety consumes sensor state.
 
@@ -190,7 +190,7 @@ No sensor collection/scheduler in VS-N003
 
 Fourth selected slice: VS-N004 Interlock/Safety core scaffold
 
-Status: `v1.12.73`에서 scaffold-only safety/interlock DTO/권한/state-gate 경계 완료.
+Status: `v1.12.74`에서 scaffold-only safety/interlock DTO/권한/state-gate 경계 완료.
 
 Reason: after RBAC, crop-cycle context, and monitoring read-only state, Interlock/Safety needs a read-only state-gate boundary before any future runtime adapter or approval/override release.
 
@@ -203,7 +203,7 @@ No approval/override release in VS-N004
 
 ## R5 Foundation Completion Baseline
 
-`v1.12.73`에서 R5 foundation closure를 완료했다.
+`v1.12.74`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -230,7 +230,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.12.73`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.12.74`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -258,7 +258,7 @@ question gates must use clarify tool
 
 ## R6-002 Monitoring Read-only Adapter
 
-`v1.12.73`에서 R6-002 Monitoring read-only adapter를 완료했다.
+`v1.12.74`에서 R6-002 Monitoring read-only adapter를 완료했다.
 
 Reference:
 
@@ -290,7 +290,7 @@ question gates must use clarify tool
 
 ## R6-003 Safety/Interlock Read-only Adapter
 
-`v1.12.73`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+`v1.12.74`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
 
 Reference:
 
@@ -321,7 +321,7 @@ question gates must use clarify tool
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.12.73`에서 R7-000 IA blueprint를 완료했다.
+`v1.12.74`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -346,7 +346,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.12.73`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.12.74`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -371,7 +371,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.12.73`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.12.74`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -384,7 +384,7 @@ Boundary:
 ```text
 R7-002 Sidebar Navigation + Page Shell
 implements the R7 sidebar primary groups and page shell
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 No API route change in R7-002
 No DB migration in R7-002
 No execution authority in R7-002
@@ -395,7 +395,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.12.73`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.12.74`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -408,7 +408,7 @@ Boundary:
 ```text
 R7-003 Detail/Configuration Subpages Baseline
 selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 No API route change in R7-003
 No DB migration in R7-003
 No execution authority in R7-003
@@ -420,7 +420,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.12.73`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.12.74`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 
@@ -432,7 +432,7 @@ Boundary:
 
 ```text
 R7-004 Settings/Admin Read-only Detail
-user-selected scope: 설정·관리 — RBAC/config/admin read-only detail
+user-selected scope: 설정 — RBAC/config/admin read-only detail
 No API route change in R7-004
 No DB migration in R7-004
 No execution authority in R7-004
@@ -455,12 +455,12 @@ Corrected sequence:
 
 ```text
 R7-017 환경 제어 visual rewrite with sub-tabs + zone context
-R7-018 관수·양액 visual rewrite with sub-tabs + zone context
+R7-018 관수 제어 visual rewrite with sub-tabs + zone context
 R7-019 장치 제어 visual rewrite with sub-tabs + zone context
 R7-020 작물 운영 visual rewrite with sub-tabs + zone context
-R7-021 추천·자동화 visual rewrite with sub-tabs + zone context
-R7-022 안전·이력 visual rewrite with sub-tabs + zone/event context
-R7-023 설정·관리 visual rewrite with sub-tabs + zone/global-admin boundaries
+R7-021 자동화 제어 visual rewrite with sub-tabs + zone context
+R7-022 안전 제어 visual rewrite with sub-tabs + zone/event context
+R7-023 설정 visual rewrite with sub-tabs + zone/global-admin boundaries
 R7-024 Browser QA + shared visual component correction loop
 ```
 
@@ -469,7 +469,7 @@ Required direction:
 ```text
 Main IA remains crop-centered.
 Detail work must be zone-scoped.
-Every domain page from 작물 운영 through 설정·관리 must use sub-tabs.
+Every domain page from 작물 운영 through 설정 must use sub-tabs.
 Do not stack all domain content into one long vertical page.
 R7-024 Browser QA may modify shared visual components based on actual rendered screen evidence.
 ```

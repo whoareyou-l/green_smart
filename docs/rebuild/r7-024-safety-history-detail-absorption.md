@@ -1,12 +1,12 @@
 # R7-024 Safety/History Detail Absorption
 
-> 기준 버전: v1.12.73
+> 기준 버전: v1.12.74
 > Status: planned via RED contract
-> Scope: 안전·이력 도메인을 zone-scoped visual 하위탭으로 전환
+> Scope: 안전 제어 도메인을 zone-scoped visual 하위탭으로 전환
 
 ## 1. Why this slice exists
 
-After 작물 운영 was corrected in R7-023, the next remaining R7 domain detail card is `안전·이력`. R7-024 absorbs the old R7-012 read-only safety/history detail into visual sub-tabs while preserving its authoritative allow/block evidence boundary.
+After 작물 운영 was corrected in R7-023, the next remaining R7 domain detail card is `안전 제어`. R7-024 absorbs the old R7-012 read-only safety/history detail into visual sub-tabs while preserving its authoritative allow/block evidence boundary.
 
 ## 2. Source inventory
 

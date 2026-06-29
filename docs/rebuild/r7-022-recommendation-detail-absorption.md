@@ -1,6 +1,6 @@
 # R7-022 Recommendation/Automation Detail Absorption
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-022 planned/contracted
 > Purpose: Remove the rendered Recommendation/Automation read-only detail card and absorb its content into the zone-scoped visual tabs.
 
@@ -20,7 +20,7 @@ Docs/tests = mapping and regression evidence
 
 | Old detail section | Items | New visual location |
 |---|---|---|
-| Manual baseline shown first | 환경 수동 기준, 관수·양액 수동 기준, 장치 모드 기준, AI off fallback value | 설정값 tab cards |
+| Manual baseline shown first | 환경 수동 기준, 관수 제어 수동 기준, 장치 모드 기준, AI off fallback value | 설정값 tab cards |
 | Rule/Schedule candidate | rule/schedule candidate, automation eligibility, difference from manual baseline | 일정·규칙 tab cards |
 | AI recommendation / correction / explanation | AI recommendation/correction, explanation, fallback | 추천·보조 tab cards |
 | Safety-final candidate | Safety-final candidate, not final command, no final command authority | 인터록·차단 tab cards |
@@ -57,7 +57,7 @@ The old items must still be visible through the new visual tabs:
 
 ```text
 환경 수동 기준
-관수·양액 수동 기준
+관수 제어 수동 기준
 장치 모드 기준
 AI off fallback value
 rule/schedule candidate
@@ -94,5 +94,5 @@ All old detail content is mapped to visual tabs/cards
 Existing R7 routing/sidebar contracts still pass
 Full pytest passes
 node --check passes
-Prod static/render smoke verifies v1.12.73 and R7-022 markers
+Prod static/render smoke verifies v1.12.74 and R7-022 markers
 ```

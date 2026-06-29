@@ -46,10 +46,10 @@ def _visible_text(html: str) -> str:
 
 
 def test_r7_022_version_surfaces_are_1_12_56():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_022_doc_records_recommendation_detail_inventory_and_mapping():
@@ -59,7 +59,7 @@ def test_r7_022_doc_records_recommendation_detail_inventory_and_mapping():
         "Old detail card = source design inventory",
         "New visual tabs = final product UI",
         "환경 수동 기준",
-        "관수·양액 수동 기준",
+        "관수 제어 수동 기준",
         "장치 모드 기준",
         "AI off fallback value",
         "rule/schedule candidate",
@@ -112,7 +112,7 @@ def test_r7_022_recommendation_visual_tabs_absorb_detail_content():
         assert marker in html
     for label in (
         "환경 수동 기준",
-        "관수·양액 수동 기준",
+        "관수 제어 수동 기준",
         "장치 모드 기준",
         "AI off fallback value",
         "rule/schedule candidate",

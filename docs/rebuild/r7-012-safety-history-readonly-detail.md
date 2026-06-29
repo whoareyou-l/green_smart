@@ -1,8 +1,8 @@
 # R7-012 Safety/History Read-only Detail
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-012 complete
-> Purpose: `안전·이력` 도메인을 authoritative allow/block evidence와 감사 이력 read-only 구조로 구체화한다.
+> Purpose: `안전 제어` 도메인을 authoritative allow/block evidence와 감사 이력 read-only 구조로 구체화한다.
 
 ## 1. Scope
 
@@ -70,7 +70,7 @@ data-r7-safety-history-setpoint-owner="false"
 The detail must state:
 
 ```text
-안전·이력은 일반 setpoint owner가 아닙니다.
+안전 제어은 일반 setpoint owner가 아닙니다.
 모든 도메인의 최종 allow/block evidence를 read-only로 모읍니다.
 알람 ack/clear, 승인/override, 실행 이력 수정은 R7-012에 포함하지 않습니다.
 실제 실행 이력은 later only evidence입니다.

@@ -15,10 +15,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_013_version_surfaces_are_1_12_45():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_013_doc_declares_manual_first_settings_admin_realignment():
@@ -26,15 +26,15 @@ def test_r7_013_doc_declares_manual_first_settings_admin_realignment():
     required = [
         "# R7-013 Settings/Admin Manual-first Realignment",
         "Status: R7-013 complete",
-        "R7-004 `설정·관리` detail을 R7-005~R7-012 이후의 8도메인 manual-first 구조에 맞게 재보정한다",
+        "R7-004 `설정` detail을 R7-005~R7-012 이후의 8도메인 manual-first 구조에 맞게 재보정한다",
         "운영 홈 → visibility/config summary only",
         "작물 운영 → crop_cycle/currentCrop permission and record ownership evidence",
         "환경 제어 → environment settings ownership boundary",
-        "관수·양액 → irrigation/fertigation settings ownership boundary",
+        "관수 제어 → irrigation/fertigation settings ownership boundary",
         "장치 제어 → HA entity mapping / device mapping ownership boundary",
-        "추천·자동화 → recommendation/AI assist configuration boundary",
-        "안전·이력 → audit/log visibility and backend enforcement boundary",
-        "설정·관리 → RBAC, role, mapping, config, diagnostics, backup, secret redaction",
+        "자동화 제어 → recommendation/AI assist configuration boundary",
+        "안전 제어 → audit/log visibility and backend enforcement boundary",
+        "설정 → RBAC, role, mapping, config, diagnostics, backup, secret redaction",
         "No API route change in R7-013",
         "No DB migration in R7-013",
         "No HA service call in R7-013",
@@ -55,9 +55,9 @@ def test_r7_013_panel_has_manual_first_realignment_markers():
         "data-r7-settings-admin-domain-ownership",
         "data-r7-settings-admin-mapping-boundary",
         "data-r7-settings-admin-system-boundary",
-        "설정·관리는 daily grower workflow가 아닙니다",
-        "운영 홈/작물/환경/관수·양액/장치/추천·자동화/안전·이력의 권한·매핑·설정 ownership을 read-only로 보여줍니다",
-        "HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정·관리에 있습니다",
+        "설정는 daily grower workflow가 아닙니다",
+        "운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다",
+        "HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다",
         "Role/settings mutation remains separately approved work",
     ]
     for marker in required:
@@ -178,7 +178,7 @@ def test_r7_013_node_smoke_renders_realigned_settings_admin_detail():
         'data-r7-settings-admin-domain="device-control"',
         'data-r7-settings-admin-mapping-boundary',
         'data-r7-settings-admin-system-boundary',
-        '설정·관리는 daily grower workflow가 아닙니다',
+        '설정는 daily grower workflow가 아닙니다',
         'Secret values render as [REDACTED] only'
       ];
       for (const item of required) {{
@@ -194,7 +194,7 @@ def test_r7_013_spec_and_r7_004_doc_record_keep_adapt_context():
     spec = _read(SPEC)
     r7_004 = _read(R7_004_DOC)
     for phrase in (
-        "설정·관리는 daily grower workflow가 아니다",
+        "설정는 daily grower workflow가 아니다",
         "Secret values render as [REDACTED] only",
         "Role/settings mutation remains separately approved work",
     ):

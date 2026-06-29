@@ -1,6 +1,6 @@
 # R7-038 HA MDI Sidebar Icons
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-038 planned
 > Purpose: 사이드바 로고와 도메인 아이콘을 사용자가 지정한 Home Assistant `ha-icon`/MDI 아이콘으로 교체한다.
 
@@ -11,11 +11,11 @@
 운영 홈: ha-icon icon="mdi:home-variant"
 작물 운영: ha-icon icon="mdi:sprout"
 환경 제어: ha-icon icon="mdi:thermometer-lines"
-관수/양액: ha-icon icon="mdi:water"
+관수 제어: ha-icon icon="mdi:water"
 장치 제어: ha-icon icon="mdi:cog-box"
-추천/자동화: ha-icon icon="mdi:robot-outline"
-안전/이력: ha-icon icon="mdi:shield-check-outline"
-설정/관리: ha-icon icon="mdi:cog"
+자동화 제어: ha-icon icon="mdi:robot-outline"
+안전 제어: ha-icon icon="mdi:shield-check-outline"
+설정: ha-icon icon="mdi:cog"
 ```
 
 ## Required mapping

@@ -1,8 +1,8 @@
 # R7-013 Settings/Admin Manual-first Realignment
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-013 complete
-> Purpose: R7-004 `설정·관리` detail을 R7-005~R7-012 이후의 8도메인 manual-first 구조에 맞게 재보정한다.
+> Purpose: R7-004 `설정` detail을 R7-005~R7-012 이후의 8도메인 manual-first 구조에 맞게 재보정한다.
 
 ## 1. Scope
 
@@ -11,7 +11,7 @@ R7-013 keeps the R7-004 Settings/Admin read-only detail and adds the missing man
 It answers the operator question:
 
 ```text
-설정·관리는 어떤 운영 도메인을 직접 운영하지 않고,
+설정는 어떤 운영 도메인을 직접 운영하지 않고,
 어떤 권한/매핑/설정/감사 boundary로 각 도메인을 제한하는가?
 ```
 
@@ -23,11 +23,11 @@ R7-013 maps Settings/Admin ownership to all active R7 domains:
 운영 홈 → visibility/config summary only
 작물 운영 → crop_cycle/currentCrop permission and record ownership evidence
 환경 제어 → environment settings ownership boundary
-관수·양액 → irrigation/fertigation settings ownership boundary
+관수 제어 → irrigation/fertigation settings ownership boundary
 장치 제어 → HA entity mapping / device mapping ownership boundary
-추천·자동화 → recommendation/AI assist configuration boundary
-안전·이력 → audit/log visibility and backend enforcement boundary
-설정·관리 → RBAC, role, mapping, config, diagnostics, backup, secret redaction
+자동화 제어 → recommendation/AI assist configuration boundary
+안전 제어 → audit/log visibility and backend enforcement boundary
+설정 → RBAC, role, mapping, config, diagnostics, backup, secret redaction
 ```
 
 ## 3. Rendered markers
@@ -76,9 +76,9 @@ data-r7-settings-admin-backend-enforcement
 The detail must state:
 
 ```text
-설정·관리는 daily grower workflow가 아닙니다.
-운영 홈/작물/환경/관수·양액/장치/추천·자동화/안전·이력의 권한·매핑·설정 ownership을 read-only로 보여줍니다.
-HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정·관리에 있습니다.
+설정는 daily grower workflow가 아닙니다.
+운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다.
+HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다.
 Secret values render as [REDACTED] only.
 Role/settings mutation remains separately approved work.
 ```

@@ -70,7 +70,7 @@ Latest audit scan:
 | Compatibility adapters | `current-crop-adapter.js`, `compatibilityAliases`, crop cycle aliases | ADAPT; acceptable only behind product DTO boundary |
 | Old R7 IA labels | `현장 상태`, `추천·실행 검토`, `작물 중심 운영` | REPLAN; too abstract / AI-execution leaning |
 | Old R7 keys | `field-status`, `recommendation-review`, `crop-centered` | ADAPT/DEPRECATE after target IA is confirmed |
-| Existing settings/admin detail | R7-004 Settings/Admin read-only detail | KEEP/ADAPT; likely still valid under `설정·관리` |
+| Existing settings/admin detail | R7-004 Settings/Admin read-only detail | KEEP/ADAPT; likely still valid under `설정` |
 | Tests locking old groups | `test_r7_003_*`, R7 docs/contracts | REWRITE when R7-008 shell rework begins |
 | Operator-facing legacy wording | legacy/rebuild/developer phrases in UI | FORBID in active UI |
 
@@ -119,11 +119,11 @@ Target domain candidates after research synthesis:
 운영 홈
 작물 운영
 환경 제어
-관수·양액
+관수 제어
 장치 제어
-추천·자동화
-안전·이력
-설정·관리
+자동화 제어
+안전 제어
+설정
 ```
 
 ### 5.2 Domain responsibilities
@@ -133,11 +133,11 @@ Target domain candidates after research synthesis:
 | 운영 홈 | today overview | show current operating mode and fallback status | summarize optional AI assist state | show blocking alarms/fail-safe status |
 | 작물 운영 | current crop/crop_cycle/growth target | crop-specific target ranges and records | stage/state/risk/diagnosis/recommendation evidence | no direct execution |
 | 환경 제어 | climate/environment setpoints | temperature, humidity, VPD, CO2, light/DLI, ventilation/heating/cooling targets | optional correction/recommendation | clamp by safety/interlock/fail-safe |
-| 관수·양액 | irrigation/fertigation/water/rootzone | irrigation schedule, EC/pH, drain/dryback, reservoir/recipe settings | optional irrigation/nutrient correction | irrigation safety limits/fallback |
+| 관수 제어 | irrigation/fertigation/water/rootzone | irrigation schedule, EC/pH, drain/dryback, reservoir/recipe settings | optional irrigation/nutrient correction | irrigation safety limits/fallback |
 | 장치 제어 | devices/actuators/technical rooms | manual/auto mode, device mapping, device state | optional strategy hint only | interlock/fail-safe decides allowed command |
-| 추천·자동화 | AI/rule automation review | compare against manual/base settings | recommendation, correction, explanation | no direct authority; fallback shown |
-| 안전·이력 | alarms/audit/interlock/fail-safe | operator-visible block reasons and logs | AI may add evidence only | authoritative protection layer |
-| 설정·관리 | RBAC/config/admin/diagnostics | users, mapping, system config, redaction | none or admin diagnostics only | admin audit/config boundary |
+| 자동화 제어 | AI/rule automation review | compare against manual/base settings | recommendation, correction, explanation | no direct authority; fallback shown |
+| 안전 제어 | alarms/audit/interlock/fail-safe | operator-visible block reasons and logs | AI may add evidence only | authoritative protection layer |
+| 설정 | RBAC/config/admin/diagnostics | users, mapping, system config, redaction | none or admin diagnostics only | admin audit/config boundary |
 
 ## 6. Four-layer control grammar
 
@@ -179,9 +179,9 @@ When AI is disabled, unhealthy, timed out, stale, or rejected:
 | R7-001 crop-centered main dashboard | ADAPT | keep crop-centered overview idea, but align it under manual-first environment-control domains |
 | R7-002 sidebar/page shell | ADAPT | keep shell mechanics, replace old five-group IA after target contract |
 | R7-003 five placeholder subpages | DEPRECATE/REWRITE | old placeholders reflect old five-group model |
-| R7-004 settings/admin read-only detail | KEEP/ADAPT | remains useful under `설정·관리`; preserve no-mutation/redaction boundary |
-| `field-status` / `현장 상태` | DEPRECATE | split into `환경 제어`, `관수·양액`, `장치 제어` |
-| `recommendation-review` / `추천·실행 검토` | ADAPT/DEPRECATE | replace with `추천·자동화`; remove execution-first implication |
+| R7-004 settings/admin read-only detail | KEEP/ADAPT | remains useful under `설정`; preserve no-mutation/redaction boundary |
+| `field-status` / `현장 상태` | DEPRECATE | split into `환경 제어`, `관수 제어`, `장치 제어` |
+| `recommendation-review` / `추천·실행 검토` | ADAPT/DEPRECATE | replace with `자동화 제어`; remove execution-first implication |
 | legacy panel | LEGACY | reference/compatibility only |
 | adapters and aliases | ADAPT | keep behind DTO compatibility boundaries; do not shape product IA from them |
 

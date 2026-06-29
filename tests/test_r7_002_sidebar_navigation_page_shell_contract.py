@@ -18,11 +18,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_002_version_surfaces_are_1_12_36():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_001_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.73" in _read(path)
+        assert "v1.12.74" in _read(path)
 
 
 def test_r7_002_doc_declares_shell_scope_and_boundaries():
@@ -35,7 +35,7 @@ def test_r7_002_doc_declares_shell_scope_and_boundaries():
         "작물 중심 운영",
         "현장 상태",
         "추천·실행 검토",
-        "설정·관리",
+        "설정",
         "No API route change in R7-002",
         "No DB migration in R7-002",
         "No execution authority in R7-002",
@@ -62,7 +62,13 @@ def test_r7_002_panel_has_sidebar_page_shell_markers_and_group_order():
         "data-r7-page-workspace",
     ):
         assert marker in text
-    labels = ["운영 홈", "작물 중심 운영", "현장 상태", "추천·실행 검토", "설정·관리"]
+    labels = [
+        'key: "operations-home", label: "운영 홈"',
+        'key: "crop-centered", label: "작물 중심 운영"',
+        'key: "field-status", label: "현장 상태"',
+        'key: "recommendation-review", label: "추천·실행 검토"',
+        'key: "settings-admin", label: "설정"',
+    ]
     positions = [text.index(label) for label in labels]
     assert positions == sorted(positions)
 

@@ -1,8 +1,8 @@
 # R7-011 Recommendation/Automation Manual-baseline Read-only Detail
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-011 complete
-> Purpose: `추천·자동화` 도메인을 manual-baseline-first 비교 구조로 구체화한다.
+> Purpose: `자동화 제어` 도메인을 manual-baseline-first 비교 구조로 구체화한다.
 
 ## 1. Scope
 
@@ -41,7 +41,7 @@ data-r7-recommendation-comparison-grammar
 
 data-r7-recommendation-manual-baseline
  data-r7-recommendation-manual-item="환경 수동 기준"
- data-r7-recommendation-manual-item="관수·양액 수동 기준"
+ data-r7-recommendation-manual-item="관수 제어 수동 기준"
  data-r7-recommendation-manual-item="장치 모드 기준"
  data-r7-recommendation-manual-item="AI off fallback value"
 
@@ -62,7 +62,7 @@ data-r7-recommendation-final-command-authority="none"
 The detail must state:
 
 ```text
-추천·자동화는 실행 버튼 중심 화면이 아닙니다.
+자동화 제어는 실행 버튼 중심 화면이 아닙니다.
 수동 기준값을 먼저 보여주고 rule/schedule 후보와 AI 추천·보정 차이를 비교합니다.
 AI 상태가 disabled/unhealthy/timeout/stale이면 AI recommendation/correction을 제외하고 fallback value를 표시합니다.
 Safety-final candidate는 최종 명령이 아니며 final command authority를 갖지 않습니다.

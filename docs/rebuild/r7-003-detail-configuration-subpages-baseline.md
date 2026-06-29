@@ -1,6 +1,6 @@
 # R7-003 Detail/Configuration Subpages Baseline
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > Status: R7-003 complete
 > selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
 > 목적: all five R7 sidebar groups receive read-only detail/config placeholder baselines.
@@ -16,7 +16,7 @@ R7-003 creates the first baseline for R7 detail/configuration subpages across th
 작물 중심 운영
 현장 상태
 추천·실행 검토
-설정·관리
+설정
 ```
 
 This is not yet a deep implementation of one subpage. It is the page-slot baseline that lets later R7-004+ slices replace placeholders one group at a time without changing shell grammar.
@@ -74,7 +74,7 @@ This keeps the operator summary first and pushes technical details behind an int
 | 작물 중심 운영 | crop status/growth target detail slot | currentCropAssignment + growthTargetProjection |
 | 현장 상태 | environment/irrigation/device effect slot | monitoringReadOnlyAdapter + environmentImpactProjection |
 | 추천·실행 검토 | recommendation/safety/rehearsal review slot | recommendationReviewProjection + safetyInterlockReadOnlyAdapter + virtualExecutionRehearsalScaffold |
-| 설정·관리 | Admin/System, device mapping, RBAC/config slot | RBAC/config documentation baseline |
+| 설정 | Admin/System, device mapping, RBAC/config slot | RBAC/config documentation baseline |
 
 ## 6. Boundaries
 
@@ -101,7 +101,7 @@ R7-004 should choose one group to replace its placeholder with a deeper read-onl
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.12.73`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.12.74`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 
@@ -113,7 +113,7 @@ Boundary:
 
 ```text
 R7-004 Settings/Admin Read-only Detail
-user-selected scope: 설정·관리 — RBAC/config/admin read-only detail
+user-selected scope: 설정 — RBAC/config/admin read-only detail
 No API route change in R7-004
 No DB migration in R7-004
 No execution authority in R7-004

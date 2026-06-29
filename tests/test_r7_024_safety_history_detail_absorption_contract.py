@@ -14,17 +14,17 @@ def _read(path: Path) -> str:
 
 
 def test_r7_024_version_surfaces_are_1_12_58():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_024_doc_records_safety_history_inventory_and_boundaries():
     text = _read(DOC)
     for phrase in (
         "# R7-024 Safety/History Detail Absorption",
-        "안전·이력 도메인을 zone-scoped visual 하위탭으로 전환",
+        "안전 제어 도메인을 zone-scoped visual 하위탭으로 전환",
         "renderR7SafetyHistoryDetail()",
         "Safety / Interlock / Fail Safe / alarm status",
         "block/allow reasons, stale/errors",
@@ -38,7 +38,7 @@ def test_r7_024_doc_records_safety_history_inventory_and_boundaries():
     ):
         assert phrase in text
     plan = _read(PLAN)
-    assert "R7-024 | 안전·이력" in plan
+    assert "R7-024 | 안전 제어" in plan
 
 
 def _render_safety_page() -> str:
@@ -88,8 +88,8 @@ def test_r7_024_safety_visual_tabs_absorb_old_detail_content():
     ):
         assert marker in html
     for phrase in (
-        "안전·이력",
-        "구역 기준 안전·이력",
+        "안전 제어",
+        "구역 기준 안전 제어",
         "1구역 · 토마토",
         "Safety 상태",
         "Interlock 상태",

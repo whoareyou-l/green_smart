@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_009_version_surfaces_are_1_12_41():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_009_doc_records_irrigation_formula_and_boundaries():
@@ -173,7 +173,7 @@ def test_r7_009_node_smoke_renders_irrigation_visual_absorbed_detail_items():
 def test_r7_009_spec_still_defines_irrigation_domain_source_formula():
     text = _read(SPEC)
     for phrase in (
-        "## 5.4 관수·양액",
+        "## 5.4 관수 제어",
         "baseIrrigationSettings",
         "ruleScheduleIrrigationAutomation",
         "aiIrrigationCorrection",

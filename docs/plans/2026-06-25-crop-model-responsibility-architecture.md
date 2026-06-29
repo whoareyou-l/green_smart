@@ -65,11 +65,11 @@ are **not** direct outputs of the crop state prediction model. They belong to th
 | Layer | Korean name | Core question | Primary inputs | Primary outputs | Must not do |
 |---|---|---|---|---|---|
 | 1 | 생육단계 예측 모델 | 지금 어느 생육단계이고 7일 뒤 어느 단계일까? | 작기, 생육조사, G/L index, feature snapshot | `currentStage`, `predictedStage7d`, `transitionWindow`, confidence | 생육부진/회복/악화 진단, 조치 추천, 제어 |
-| 2 | 생육상태 예측 모델 | 영양/생식 균형에 영향을 주는 모든 데이터를 보면 현재와 미래 방향은 어디인가? | 생육조사, 단계 예측, 환경, 관수/양액, 작업, 병해충, safety/interlock | `balanceScore`, `directionCode`, `magnitudeBandCode`, `driverContributions`, numeric confidence | 과실부하/잎부하 최종 진단, 하엽작업 지시, 환경값 계산 |
+| 2 | 생육상태 예측 모델 | 영양/생식 균형에 영향을 주는 모든 데이터를 보면 현재와 미래 방향은 어디인가? | 생육조사, 단계 예측, 환경, 관수 제어, 작업, 병해충, safety/interlock | `balanceScore`, `directionCode`, `magnitudeBandCode`, `driverContributions`, numeric confidence | 과실부하/잎부하 최종 진단, 하엽작업 지시, 환경값 계산 |
 | 3 | 위험요소 예측 모델 | 구체 위험요소별 스트레스/위험 강도는 얼마인가? | 환경, 양액, 병해충, 작업, 센서/인터락 | 고온/저온/급격한 온도변화/VPD/습도/CO2/광량/EC/pH/병해충/작업 위험의 수치 score와 trend | 원인 확정, 조치 결정, 실행 차단 |
 | 4 | 통합 작물 진단 모델 | 단계/상태/위험/생육조사/환경/병해충을 종합하면 어떤 문제 흐름이고 어떤 signal이 필요한가? | stage prediction, state prediction, detailed risk predictions, crop, stage, environment, growth survey, pest/disease/control history | fruit load, leaf load, assimilate production/demand, source-sink balance, pest/disease diagnosis candidate, environment/nutrient/control/work action signals | 직접 제어, 직접 ADT/VPD 계산, 직접 방제 실행, safety 우회 |
 | 5 | 조치 추천 모델 | 진단 signal을 어떤 작업/모델 요청으로 바꿀 것인가? | integrated diagnosis, policy, work history, operator role | work recommendation, environment model request, irrigation model request | 직접 실행, 직접 target 계산, interlock 우회 |
-| 6 | 환경/관수/양액/장치 모델 | 요청된 crop effect를 만족할 목표 후보는 무엇인가? | action request, current environment, irrigation/nutrient state, constraints | ADT/VPD/DIF/DLI/CO2, EC/pH/irrigation target candidates | 승인 없는 실행, crop diagnosis 대체 |
+| 6 | 환경/관수 제어/장치 모델 | 요청된 crop effect를 만족할 목표 후보는 무엇인가? | action request, current environment, irrigation/nutrient state, constraints | ADT/VPD/DIF/DLI/CO2, EC/pH/irrigation target candidates | 승인 없는 실행, crop diagnosis 대체 |
 | 7 | Safety / Interlock / Approval | 목표 후보가 안전하고 실행 가능한가? | target candidates, sensor/device state, policies, approvals | allow/block/approval_required, reasons, audit | 예측/진단 생성 |
 | 8 | 실행 계층 | 승인된 명령을 실제 반영할 것인가? | approved command | execution result, failure log, audit | 승인 없는 실행, 모델 판단 직접 실행 |
 

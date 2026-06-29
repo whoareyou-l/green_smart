@@ -39,12 +39,12 @@ def test_r7_017_024_domain_sequence_requires_subtabs_and_zone_context():
         assert marker in text
     for row in (
         "R7-017 | 환경 제어",
-        "R7-020 | 관수·양액",
+        "R7-020 | 관수 제어",
         "R7-021 | 장치 제어",
-        "R7-022 | 추천·자동화",
+        "R7-022 | 자동화 제어",
         "R7-023 | 작물 운영",
-        "R7-024 | 안전·이력",
-        "R7-025 | 설정·관리",
+        "R7-024 | 안전 제어",
+        "R7-025 | 설정",
         "R7-026 | Browser QA + visual component correction",
     ):
         assert row in text
@@ -72,7 +72,7 @@ def test_execution_plan_points_to_corrected_r7_017_024_plan():
         "docs/rebuild/r7-017-024-domain-tabs-zone-qa-plan.md",
         "R7-017 환경 제어 visual rewrite with sub-tabs + zone context",
         "R7-024 Browser QA + shared visual component correction loop",
-        "Every domain page from 작물 운영 through 설정·관리 must use sub-tabs.",
+        "Every domain page from 작물 운영 through 설정 must use sub-tabs.",
         "Detail work must be zone-scoped.",
     ):
         assert phrase in text

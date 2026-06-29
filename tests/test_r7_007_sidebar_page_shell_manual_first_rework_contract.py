@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_007_version_surfaces_are_1_12_39():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
     for path in (DOC, SPEC, PLAN):
         assert "R7-007" in _read(path) or path == SPEC
 
@@ -27,7 +27,7 @@ def test_r7_007_doc_declares_manual_first_shell_scope_and_boundaries():
     required = [
         "# R7-007 Sidebar/Page Shell Manual-first Rework",
         "Status: R7-007 complete",
-        "운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리",
+        "운영 홈 / 작물 운영 / 환경 제어 / 관수 제어 / 장치 제어 / 자동화 제어 / 안전 제어 / 설정",
         "Green Smart = 수동 운영 가능한 환경제어 OS",
         "AI = 보조/추천/최적화 레이어",
         "No API route change in R7-007",
@@ -68,7 +68,7 @@ def test_r7_007_panel_renders_target_manual_first_sidebar_groups():
     ]
     positions = [active_section.index(marker) for marker in key_order]
     assert positions == sorted(positions)
-    labels = ["운영 홈", "작물 운영", "환경 제어", "관수·양액", "장치 제어", "추천·자동화", "안전·이력", "설정·관리"]
+    labels = ["운영 홈", "작물 운영", "환경 제어", "관수 제어", "장치 제어", "자동화 제어", "안전 제어", "설정"]
     label_positions = [active_section.index(label) for label in labels]
     assert label_positions == sorted(label_positions)
     assert 'data-r7-manual-first-sidebar="true"' in text

@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_034_version_surfaces_are_1_12_68():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_034_doc_records_settings_title_and_profile_logout_layout():
@@ -78,7 +78,7 @@ def test_r7_034_render_smoke_expanded_settings_utility_has_title_and_logout_has_
       const required = [
         'data-r7-settings-admin-utility-detail="true"',
         'data-r7-settings-admin-utility-title',
-        '설정·관리',
+        '설정',
         'data-r7-settings-admin-utility-description',
         'RBAC·HA 매핑·진단',
         'data-r7-sidebar-user-profile-layout="avatar-info-logout"',

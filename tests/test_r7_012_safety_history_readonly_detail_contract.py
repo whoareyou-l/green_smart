@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_012_version_surfaces_are_1_12_44():
-    assert '"version": "1.12.73"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
-    assert "v1.12.73" in _read(DOC)
+    assert '"version": "1.12.74"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.74"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.74"' in _read(REBUILD_PANEL)
+    assert "v1.12.74" in _read(DOC)
 
 
 def test_r7_012_doc_records_safety_history_grammar_and_boundaries():
@@ -140,7 +140,7 @@ def test_r7_012_node_smoke_renders_safety_history_visual_absorbed_detail_items()
         'data-r7-safety-reason-card',
         'data-r7-safety-operation-card',
         'data-r7-safety-audit-card',
-        '안전·이력은 일반 setpoint owner가 아닙니다',
+        '안전 제어은 일반 setpoint owner가 아닙니다',
         'authoritative allow/block history'
       ];
       for (const item of required) {{
@@ -156,7 +156,7 @@ def test_r7_012_node_smoke_renders_safety_history_visual_absorbed_detail_items()
 def test_r7_012_spec_still_defines_safety_history_domain_source_boundary():
     text = _read(SPEC)
     for phrase in (
-        "## 5.7 안전·이력",
+        "## 5.7 안전 제어",
         "Safety 상태",
         "Interlock 상태",
         "Fail Safe 상태",
@@ -164,7 +164,7 @@ def test_r7_012_spec_still_defines_safety_history_domain_source_boundary():
         "수동 조작 이력",
         "AI 추천 이력",
         "실제 실행 이력, later only",
-        "안전·이력은 일반 setpoint owner가 아니다",
+        "안전 제어은 일반 setpoint owner가 아니다",
         "모든 도메인의 최종 allow/block evidence를 모아야 한다",
     ):
         assert phrase in text

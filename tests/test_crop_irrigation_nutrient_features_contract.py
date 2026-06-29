@@ -102,7 +102,7 @@ def test_v1963_panel_irrigation_feature_evidence_is_read_only_contract():
     panel = PANEL.read_text(encoding="utf-8")
     for marker in (
         "data-crop-irrigation-nutrient-features-card",
-        "관수/양액 feature",
+        "관수 제어 feature",
         "irrigationNutrientSummary7d",
         "feedEcAvg",
         "drainEcAvg",
@@ -124,7 +124,7 @@ def test_v1963_version_markers_contract():
     manifest = MANIFEST.read_text(encoding="utf-8")
     panel = PANEL.read_text(encoding="utf-8")
     central = CENTRAL.read_text(encoding="utf-8")
-    assert '"version": "1.12.73"' in manifest
-    assert 'const VERSION = "1.12.73"' in panel
-    assert "v1.12.73" in panel[:200]
+    assert '"version": "1.12.74"' in manifest
+    assert 'const VERSION = "1.12.74"' in panel
+    assert "v1.12.74" in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central

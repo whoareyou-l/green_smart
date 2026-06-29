@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.12.73`
+> 기준 버전: `v1.12.74`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 상태: `reference/evidence only after direction correction`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
@@ -389,7 +389,7 @@ pytest -q
 
 ## R7-005+ Manual-first domain reset notice
 
-`v1.12.73`까지의 R7-000~R7-004 기록은 완료된 historical/compatibility evidence로 보존한다. 그러나 R7-005 이후의 현재 제품 방향은 `docs/rebuild/r7-005-legacy-audit-domain-research-manual-first-plan.md`와 `docs/rebuild/r7-006-manual-first-target-domain-spec.md`가 우선한다.
+`v1.12.74`까지의 R7-000~R7-004 기록은 완료된 historical/compatibility evidence로 보존한다. 그러나 R7-005 이후의 현재 제품 방향은 `docs/rebuild/r7-005-legacy-audit-domain-research-manual-first-plan.md`와 `docs/rebuild/r7-006-manual-first-target-domain-spec.md`가 우선한다.
 
 Current target:
 
@@ -402,7 +402,7 @@ Safety / Interlock / Fail Safe = 최종 허용/차단 권한
 Target domains:
 
 ```text
-운영 홈 / 작물 운영 / 환경 제어 / 관수·양액 / 장치 제어 / 추천·자동화 / 안전·이력 / 설정·관리
+운영 홈 / 작물 운영 / 환경 제어 / 관수 제어 / 장치 제어 / 자동화 제어 / 안전 제어 / 설정
 ```
 
 Old R7 groups such as `현장 상태`, `추천·실행 검토`, `field-status`, and `recommendation-review` must not be extended as the future product IA. They are adaptation/deprecation inputs for the R7-006/R7-007 shell rework.
@@ -410,7 +410,7 @@ Old R7 groups such as `현장 상태`, `추천·실행 검토`, `field-status`, 
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.12.73`에서 R7-000 IA blueprint를 완료했다.
+`v1.12.74`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -435,7 +435,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.12.73`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.12.74`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -460,7 +460,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.12.73`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.12.74`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -473,7 +473,7 @@ Boundary:
 ```text
 R7-002 Sidebar Navigation + Page Shell
 implements the R7 sidebar primary groups and page shell
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 No API route change in R7-002
 No DB migration in R7-002
 No execution authority in R7-002
@@ -484,7 +484,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.12.73`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.12.74`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -497,7 +497,7 @@ Boundary:
 ```text
 R7-003 Detail/Configuration Subpages Baseline
 selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
-운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정·관리
+운영 홈 / 작물 중심 운영 / 현장 상태 / 추천·실행 검토 / 설정
 No API route change in R7-003
 No DB migration in R7-003
 No execution authority in R7-003
@@ -509,7 +509,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.12.73`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.12.74`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 
@@ -521,7 +521,7 @@ Boundary:
 
 ```text
 R7-004 Settings/Admin Read-only Detail
-user-selected scope: 설정·관리 — RBAC/config/admin read-only detail
+user-selected scope: 설정 — RBAC/config/admin read-only detail
 No API route change in R7-004
 No DB migration in R7-004
 No execution authority in R7-004
