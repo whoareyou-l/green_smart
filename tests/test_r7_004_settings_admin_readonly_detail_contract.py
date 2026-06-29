@@ -19,11 +19,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_004_version_surfaces_are_1_12_38():
-    assert '"version": "1.12.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.58"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_003_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.58" in _read(path)
+        assert "v1.12.59" in _read(path)
 
 
 def test_r7_004_doc_declares_user_selected_settings_admin_scope_and_boundaries():
@@ -47,12 +47,14 @@ def test_r7_004_doc_declares_user_selected_settings_admin_scope_and_boundaries()
         assert marker in text
 
 
-def test_r7_004_panel_has_settings_admin_detail_markers():
+def test_r7_004_panel_has_settings_admin_visual_absorbed_markers():
     text = _read(REBUILD_PANEL)
     for marker in (
         "R7-004 Settings/Admin read-only detail",
-        "renderR7SettingsAdminDetail",
-        "data-r7-settings-admin-detail",
+        "renderR7SettingsAdminZoneVisual",
+        "data-r7-settings-admin-zone-visual=\"true\"",
+        "data-r7-settings-admin-global-boundary=\"true\"",
+        "data-r7-settings-admin-detail-absorbed=\"true\"",
         "data-r7-settings-admin-readonly-boundary=\"true\"",
         "data-r7-settings-admin-role-ownership",
         "data-r7-settings-admin-permission-buckets",
@@ -64,6 +66,11 @@ def test_r7_004_panel_has_settings_admin_detail_markers():
         "data-r7-settings-admin-farm-owner-staff-scope",
         "data-r7-settings-admin-secret-redaction",
         "data-r7-settings-admin-backend-enforcement",
+        "data-r7-settings-domain-card",
+        "data-r7-settings-role-card",
+        "data-r7-settings-mapping-card",
+        "data-r7-settings-system-card",
+        "data-r7-settings-rbac-card",
     ):
         assert marker in text
 
@@ -71,9 +78,9 @@ def test_r7_004_panel_has_settings_admin_detail_markers():
 def test_r7_004_settings_admin_replaces_placeholder_with_deeper_readonly_detail_only_for_settings_group():
     text = _read(REBUILD_PANEL)
     assert "data-r7-detail-subpage=\"settings-admin\"" in text
-    assert "data-r7-settings-admin-detail" in text
+    assert "data-r7-settings-admin-zone-visual" in text
     settings_pos = text.index("data-r7-detail-subpage=\"settings-admin\"")
-    detail_pos = text.index("data-r7-settings-admin-detail")
+    detail_pos = text.index("data-r7-settings-admin-zone-visual")
     assert settings_pos < detail_pos
     for group in (
         "operations-home",

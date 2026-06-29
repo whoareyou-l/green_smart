@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_008_version_surfaces_are_1_12_40():
-    assert '"version": "1.12.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.58"' in _read(REBUILD_PANEL)
-    assert "v1.12.58" in _read(DOC)
+    assert '"version": "1.12.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
+    assert "v1.12.59" in _read(DOC)
 
 
 def test_r7_008_doc_records_environment_formula_and_boundaries():
@@ -105,7 +105,7 @@ def test_r7_008_environment_detail_names_rule_ai_safety_and_fallback_items():
 def test_r7_008_environment_detail_is_absorbed_into_environment_visual_domain():
     text = _read(REBUILD_PANEL)
     assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""' in text
-    assert 'subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""' in text
+    assert 'subpage.key === "settings-admin" ? this.renderR7SettingsAdminZoneVisual() : ""' in text
     assert 'data-r7-environment-detail-absorbed="true"' in text
 
 

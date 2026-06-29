@@ -15,10 +15,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_013_version_surfaces_are_1_12_45():
-    assert '"version": "1.12.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.58"' in _read(REBUILD_PANEL)
-    assert "v1.12.58" in _read(DOC)
+    assert '"version": "1.12.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
+    assert "v1.12.59" in _read(DOC)
 
 
 def test_r7_013_doc_declares_manual_first_settings_admin_realignment():
@@ -109,11 +109,13 @@ def test_r7_013_panel_names_mapping_and_system_boundary_items():
         assert marker in text
 
 
-def test_r7_013_preserves_r7_004_settings_admin_compatibility_markers():
+def test_r7_013_preserves_r7_004_settings_admin_visual_compatibility_markers():
     text = _read(REBUILD_PANEL)
     for marker in (
-        "renderR7SettingsAdminDetail",
-        "data-r7-settings-admin-detail",
+        "renderR7SettingsAdminZoneVisual",
+        'data-r7-settings-admin-zone-visual="true"',
+        'data-r7-settings-admin-global-boundary="true"',
+        'data-r7-settings-admin-detail-absorbed="true"',
         'data-r7-settings-admin-readonly-boundary="true"',
         "data-r7-settings-admin-role-ownership",
         "data-r7-settings-admin-permission-buckets",
@@ -126,6 +128,11 @@ def test_r7_013_preserves_r7_004_settings_admin_compatibility_markers():
         "data-r7-settings-admin-secret-redaction",
         "data-r7-settings-admin-backend-enforcement",
         "[REDACTED]",
+        "data-r7-settings-domain-card",
+        "data-r7-settings-role-card",
+        "data-r7-settings-mapping-card",
+        "data-r7-settings-system-card",
+        "data-r7-settings-rbac-card",
     ):
         assert marker in text
 

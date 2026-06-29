@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_009_version_surfaces_are_1_12_41():
-    assert '"version": "1.12.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.58"' in _read(REBUILD_PANEL)
-    assert "v1.12.58" in _read(DOC)
+    assert '"version": "1.12.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
+    assert "v1.12.59" in _read(DOC)
 
 
 def test_r7_009_doc_records_irrigation_formula_and_boundaries():
@@ -110,7 +110,7 @@ def test_r7_009_irrigation_detail_is_absorbed_into_visual_domain():
     text = _read(REBUILD_PANEL)
     assert 'subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""' in text
     assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""' in text
-    assert 'subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""' in text
+    assert 'subpage.key === "settings-admin" ? this.renderR7SettingsAdminZoneVisual() : ""' in text
     assert 'data-r7-irrigation-detail-absorbed="true"' in text
 
 

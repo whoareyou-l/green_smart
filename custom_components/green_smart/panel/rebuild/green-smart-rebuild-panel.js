@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.58";
+const REBUILD_VERSION = "1.12.59";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -920,7 +920,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </nav>`;
   }
 
-  renderR7SettingsAdminDetail() {
+  renderR7SettingsAdminCard(marker, title, value, note, extraAttrs = "") {
+    return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:14px;font-weight:1000;line-height:1.4;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
+  }
+
+  renderR7SettingsAdminSubtabPanel(tabKey, activeTab = "domain-ownership") {
+    const active = tabKey === activeTab;
+    const display = active ? "grid" : "none";
+    const labels = {
+      "domain-ownership": "도메인 소유권",
+      "role-permissions": "역할·권한",
+      "mapping-devices": "매핑·장치",
+      "system-security": "시스템·보안",
+      "diagnostics-audit": "진단·감사",
+      "rbac-policy": "RBAC 정책",
+    };
     const domainOwnership = [
       ["operations-home", "운영 홈", "visibility/config summary only", "전체 상태 요약은 읽기 전용이며 설정 변경은 별도 승인 작업"],
       ["crop-operations", "작물 운영", "crop_cycle/currentCrop permission", "작물 기록/작기 권한과 currentCrop 노출 범위 evidence"],
@@ -932,69 +946,37 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ["settings-admin", "설정·관리", "RBAC, role, mapping, config, diagnostics, backup, secret redaction", "운영 도메인이 아니라 시스템/권한/매핑 boundary"],
     ];
     const mappingItems = [
-      ["HA entity mapping", "장치 제어의 상태 판단에 쓰이지만 편집 권한은 설정·관리에 속함"],
-      ["구역/장치 매핑", "구역별 장치 profile과 운영 도메인 연결 evidence"],
-      ["MQTT topic mapping later only", "실제 MQTT topic 연결/명령은 별도 승인 slice 이후"],
-      ["mapping health evidence", "누락/오류/통신 상태는 read-only evidence로 표시"],
+      ["HA entity mapping", "상태 판단 source", "장치 제어의 상태 판단에 쓰이지만 편집 권한은 설정·관리에 속함"],
+      ["구역/장치 매핑", "zone/device profile", "구역별 장치 profile과 운영 도메인 연결 evidence"],
+      ["MQTT topic mapping later only", "later only", "실제 MQTT topic 연결/명령은 별도 승인 slice 이후"],
+      ["mapping health evidence", "read-only evidence", "누락/오류/통신 상태는 read-only evidence로 표시"],
     ];
     const systemItems = [
       ["RBAC", "admin/farm_owner/farm_staff 역할 경계"],
       ["사용자 역할", "role assignment mutation은 별도 승인 작업"],
       ["권한 정책", "조회 · 기록 · 전략 · 실행 · 안전 · 고급설정 bucket"],
       ["시스템 설정", "system_settings evidence only"],
-      ["진단", "diagnostics ownership evidence"],
-      ["백업", "backup metadata only"],
       ["secret redaction", "Secret values render as [REDACTED] only"],
-      ["감사 설정", "view_audit_logs / backend enforcement evidence"],
     ];
-    return `<section data-r7-settings-admin-detail data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="border:1px solid #d7e8db;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
-      <header>
-        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-013 manual-first admin boundary</p>
-        <h4 style="margin:0;color:#24323f;font-size:16px;">설정·관리 · 권한/매핑/시스템 boundary</h4>
-        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">설정·관리는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수·양액/장치/추천·자동화/안전·이력의 권한·매핑·설정 ownership을 read-only로 보여줍니다.</p>
-      </header>
-      <section data-r7-settings-admin-domain-ownership style="display:grid;gap:8px;">
-        <strong style="color:#31523b;font-size:13px;">Active 8-domain ownership matrix</strong>
-        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
-          ${domainOwnership.map(([key, label, owner, note]) => `<p data-r7-settings-admin-domain="${key}" style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>${label}</b><br><span style="font-size:13px;color:#24323f;font-weight:900;">${owner}</span><br><span style="color:#78927f;">${note}</span></p>`).join("")}
-        </div>
-      </section>
-      <section data-r7-settings-admin-role-ownership style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">Role ownership matrix</strong>
-        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
-          <p style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>admin</b><br>system_settings · HA mapping · RBAC · diagnostics · config metadata</p>
-          <p style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>farm_owner</b><br>approvals · strategy review · high impact review · manage_farm_staff_roles</p>
-          <p style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>farm_staff</b><br>daily records · routine monitoring · allowed routine actions</p>
-        </div>
-      </section>
-      <section data-r7-settings-admin-permission-buckets style="display:grid;gap:8px;">
-        <strong style="color:#31523b;font-size:13px;">Permission bucket matrix</strong>
-        <p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.6;">조회 · 기록 · 전략 · 실행 · 안전 · 고급설정</p>
-        <p style="margin:0;color:#78927f;font-size:12px;line-height:1.6;">RBAC_ROLE_OWNERSHIP, RBAC_PERMISSION_BUCKETS, RBAC_ADMIN_OWNERSHIP, RBAC_BACKEND_ENFORCED_ACTION_CLASSES를 운영자가 읽을 수 있는 근거로만 표시합니다. system_settings · edit_entity_mapping · view_audit_logs are admin/system evidence; write actions remain backend-enforced.</p>
-      </section>
-      <section data-r7-settings-admin-mapping-boundary data-r7-settings-admin-area="ha-entity-mapping" style="border-top:1px solid #edf4ef;padding-top:10px;display:grid;gap:8px;">
-        <strong style="color:#31523b;font-size:13px;">Mapping ownership boundary</strong>
-        <p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.6;">HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정·관리에 있습니다. edit_entity_mapping belongs to admin. This page shows mapping ownership only and does not edit entities.</p>
-        ${mappingItems.map(([label, note]) => `<p data-r7-settings-admin-mapping-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
-      </section>
-      <section data-r7-settings-admin-system-boundary data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-secret-redaction style="border-top:1px solid #edf4ef;padding-top:10px;display:grid;gap:8px;">
-        <strong style="color:#31523b;font-size:13px;">System/config/admin boundary</strong>
-        ${systemItems.map(([label, note]) => `<p data-r7-settings-admin-system-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
-        <p style="margin:0;color:#78927f;font-size:12px;line-height:1.6;">Raw secret material is never rendered. Stored secret fields are displayed only as [REDACTED]. Secret values render as [REDACTED] only. Role/settings mutation remains separately approved work.</p>
-      </section>
-      <section data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-farm-owner-staff-scope style="border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">User/role mapping</strong>
-        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">admin owns all role mapping. farm_owner scope is limited to farm_staff assignment evidence only; R7-013 does not mutate roles.</p>
-      </section>
-      <section data-r7-settings-admin-area="diagnostics-backup-audit" style="border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">Diagnostics/backup/audit export metadata</strong>
-        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">Diagnostics and audit export ownership belongs to admin; farm_owner may receive summary-only review later by a separate slice.</p>
-      </section>
-      <section data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-backend-enforcement style="border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">RBAC policy contract</strong>
-        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">RBAC_BACKEND_ENFORCED_ACTION_CLASSES = write / execute / save / delete / ack / clear / apply. UI visibility is presentation only.</p>
-      </section>
-    </section>`;
+    const body = tabKey === "domain-ownership"
+      ? domainOwnership.map(([key, label, owner, note]) => this.renderR7SettingsAdminCard("data-r7-settings-domain-card", label, owner, note, `data-r7-settings-admin-domain="${key}"`)).join("")
+      : tabKey === "role-permissions"
+        ? `${this.renderR7SettingsAdminCard("data-r7-settings-role-card", "admin", "system_settings · HA mapping · RBAC · diagnostics · config metadata", "admin owns all role mapping")}${this.renderR7SettingsAdminCard("data-r7-settings-role-card", "farm_owner", "approvals · strategy review · high impact review · manage_farm_staff_roles", "farm_owner scope is limited to farm_staff assignment evidence only")}${this.renderR7SettingsAdminCard("data-r7-settings-role-card", "farm_staff", "daily records · routine monitoring · allowed routine actions", "routine grower workflow only")}${this.renderR7SettingsAdminCard("data-r7-settings-permission-card", "Permission bucket matrix", "조회 · 기록 · 전략 · 실행 · 안전 · 고급설정", "RBAC_ROLE_OWNERSHIP, RBAC_PERMISSION_BUCKETS, RBAC_ADMIN_OWNERSHIP")}`
+        : tabKey === "mapping-devices"
+          ? mappingItems.map(([label, value, note]) => this.renderR7SettingsAdminCard("data-r7-settings-mapping-card", label, value, note, `data-r7-settings-admin-mapping-item="${label}"`)).join("")
+          : tabKey === "system-security"
+            ? `${systemItems.map(([label, note]) => this.renderR7SettingsAdminCard("data-r7-settings-system-card", label, "system/config/admin boundary", note, `data-r7-settings-admin-system-item="${label}"`)).join("")}${this.renderR7SettingsAdminCard("data-r7-settings-system-card", "Raw secret material", "[REDACTED] only", "Raw secret material is never rendered. Stored secret fields are displayed only as [REDACTED]. Secret values render as [REDACTED] only.")}`
+            : tabKey === "diagnostics-audit"
+              ? `${this.renderR7SettingsAdminCard("data-r7-settings-diagnostics-card", "진단", "diagnostics ownership evidence", "admin-owned diagnostics evidence")}${this.renderR7SettingsAdminCard("data-r7-settings-diagnostics-card", "백업", "backup metadata only", "backup metadata, no restore/apply authority")}${this.renderR7SettingsAdminCard("data-r7-settings-diagnostics-card", "감사 설정", "view_audit_logs / backend enforcement evidence", "audit export ownership belongs to admin")}`
+              : `${this.renderR7SettingsAdminCard("data-r7-settings-rbac-card", "RBAC policy contract", "write / execute / save / delete / ack / clear / apply", "RBAC_BACKEND_ENFORCED_ACTION_CLASSES are backend-enforced")}${this.renderR7SettingsAdminCard("data-r7-settings-rbac-card", "UI visibility", "presentation only", "UI visibility is presentation only; write actions remain backend-enforced")}${this.renderR7SettingsAdminCard("data-r7-settings-rbac-card", "Mutation boundary", "Role/settings mutation remains separately approved work", "No settings save/delete, no role assignment mutation, no mapping edit")}`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-settings-admin-subtab="${tabKey}" data-r7-settings-admin-detail-absorbed="true" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">global admin boundary · read-only</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${body}</div></section>`;
+  }
+
+  renderR7SettingsAdminZoneVisual() {
+    const tabs = [["domain-ownership", "도메인 소유권"], ["role-permissions", "역할·권한"], ["mapping-devices", "매핑·장치"], ["system-security", "시스템·보안"], ["diagnostics-audit", "진단·감사"], ["rbac-policy", "RBAC 정책"]];
+    const activeTab = this._activeR7DomainSubtabs["settings-admin"] || "domain-ownership";
+    const panels = tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
+    return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정·관리", kicker: "Global Admin Boundary", summary: "설정·관리는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수·양액/장치/추천·자동화/안전·이력의 권한·매핑·설정 ownership을 read-only로 보여줍니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정·관리에 있습니다. edit_entity_mapping belongs to admin. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="diagnostics-audit" data-r7-settings-admin-subtab="rbac-policy" data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="diagnostics-backup-audit" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement</section></section>`;
   }
 
   renderR7EnvironmentControlDetail() {
@@ -1601,7 +1583,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""}
       ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationZoneVisual() : ""}
       ${subpage.key === "safety-history" ? this.renderR7SafetyHistoryZoneVisual() : ""}
-      ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
+      ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminZoneVisual() : ""}
       <details style="border-top:1px solid #edf4ef;padding-top:8px;">
         <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
         <p style="margin:8px 0 0;color:#78927f;font-size:12px;line-height:1.5;">operator summary → source freshness → zone-scoped evidence → safety/interlock boundary → optional technical details</p>

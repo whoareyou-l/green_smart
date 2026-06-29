@@ -1,6 +1,6 @@
 # RS-012 Rebuild currentCrop/crop_cycle Adapter
 
-> 기준 버전: `v1.12.58`
+> 기준 버전: `v1.12.59`
 > Status: active frontend adapter boundary
 > 목적: rebuild frontend가 legacy fixture/API shape에 직접 묶이지 않도록 `currentCrop` + `crop_cycle` product DTO adapter를 분리한다.
 
