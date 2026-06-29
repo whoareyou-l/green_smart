@@ -28,6 +28,8 @@
 // R7-009 irrigation literal marker manifest: data-r7-irrigation-manual-setting="관수 스케줄" / data-r7-irrigation-manual-setting="일사 누적 관수" / data-r7-irrigation-manual-setting="EC 목표" / data-r7-irrigation-manual-setting="pH 목표" / data-r7-irrigation-manual-setting="급액량" / data-r7-irrigation-manual-setting="배액률" / data-r7-irrigation-manual-setting="드라이백" / data-r7-irrigation-manual-setting="양액 레시피" / data-r7-irrigation-rule="시간 기반 관수" / data-r7-irrigation-rule="일사 누적 관수" / data-r7-irrigation-rule="근권 수분 기준 관수" / data-r7-irrigation-rule="저수조/배액 재활용 점검" / data-r7-irrigation-ai-item="aiIrrigationCorrection" / data-r7-irrigation-ai-item="수동 기준 대비 차이" / data-r7-irrigation-ai-item="fallback" / data-r7-irrigation-safety-item="irrigationSafetyLimits" / data-r7-irrigation-safety-item="sensorFreshness" / data-r7-irrigation-safety-item="finalIrrigationTargets".
 // R7-010 device detail markers: data-r7-device-control-detail / data-r7-device-manual-settings / data-r7-device-rule-schedule / data-r7-device-ai-assist / data-r7-device-safety-final / data-r7-device-fallback.
 // R7-010 device literal marker manifest: data-r7-device-manual-setting="manual" / data-r7-device-manual-setting="auto" / data-r7-device-manual-setting="locked" / data-r7-device-manual-setting="maintenance" / data-r7-device-manual-setting="HA entity mapping" / data-r7-device-manual-setting="MQTT topic mapping later only" / data-r7-device-rule="operatorRequestedAction" / data-r7-device-rule="automationCandidate" / data-r7-device-rule="mode gate" / data-r7-device-rule="mapping health" / data-r7-device-ai-item="optional aiStrategyHint" / data-r7-device-ai-item="hint only" / data-r7-device-ai-item="fallback" / data-r7-device-safety-item="permission check" / data-r7-device-safety-item="Safety check" / data-r7-device-safety-item="Interlock check" / data-r7-device-safety-item="Fail Safe check" / data-r7-device-safety-item="HA/MQTT status".
+// R7-011 recommendation detail markers: data-r7-recommendation-automation-detail / data-r7-recommendation-manual-baseline / data-r7-recommendation-rule-candidate / data-r7-recommendation-ai-assist / data-r7-recommendation-safety-final / data-r7-recommendation-fallback.
+// R7-011 recommendation literal marker manifest: data-r7-recommendation-manual-item="환경 수동 기준" / data-r7-recommendation-manual-item="관수·양액 수동 기준" / data-r7-recommendation-manual-item="장치 모드 기준" / data-r7-recommendation-manual-item="AI off fallback value" / data-r7-recommendation-rule="rule/schedule candidate" / data-r7-recommendation-rule="automation eligibility" / data-r7-recommendation-rule="difference from manual baseline" / data-r7-recommendation-ai-item="AI recommendation/correction" / data-r7-recommendation-ai-item="explanation" / data-r7-recommendation-ai-item="fallback" / data-r7-recommendation-safety-item="Safety-final candidate" / data-r7-recommendation-safety-item="not final command" / data-r7-recommendation-safety-item="no final command authority".
 // R7-002 historical sidebar label order compatibility: 운영 홈 → 작물 중심 운영 → 현장 상태 → 추천·실행 검토 → 설정·관리.
 // RS-002/RS-005 historical source-copy compatibility only, not current operator copy: 작물이 먼저이고 제어는 그 다음입니다 / 추천은 실행 전 승인과 안전검사를 거칩니다 / 구역별 추천·실행 검토 / 실행 전 승인과 안전검사.
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
@@ -39,7 +41,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.42";
+const REBUILD_VERSION = "1.12.43";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -943,6 +945,59 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+  renderR7RecommendationAutomationDetail() {
+    const manualBaseline = [
+      ["환경 수동 기준", "온도/VPD/습도/CO₂ 기준", "환경 제어 도메인의 manualEnvironmentSettings를 먼저 비교"],
+      ["관수·양액 수동 기준", "관수 스케줄/EC/pH/배액률", "baseIrrigationSettings 기준 대비 차이를 표시"],
+      ["장치 모드 기준", "manual/auto/locked/maintenance", "장치 제어 도메인의 mode gate를 먼저 확인"],
+      ["AI off fallback value", "수동+기본 자동화", "AI가 꺼져도 남는 기준값"],
+    ];
+    const ruleCandidates = [
+      ["rule/schedule candidate", "시간표·일사·환경 편차 기반 기본 자동화 후보"],
+      ["automation eligibility", "데이터 신선도/모드/권한이 후보 표시 조건"],
+      ["difference from manual baseline", "수동 기준 대비 증가/감소/미적용 이유를 표시"],
+    ];
+    const aiAssist = [
+      ["AI recommendation/correction", "AI가 추천·보정 후보와 근거를 설명"],
+      ["explanation", "왜 수동 기준과 다른지 구역/도메인별로 설명"],
+      ["fallback", "AI disabled/unhealthy/timeout/stale이면 AI 후보 제외"],
+    ];
+    const safetyFinal = [
+      ["Safety-final candidate", "Safety/Interlock/Fail Safe 이후의 후보만 표시"],
+      ["not final command", "표시 후보는 최종 명령이 아님"],
+      ["no final command authority", "추천·자동화는 final command authority를 갖지 않음"],
+    ];
+    return `<section data-r7-recommendation-automation-detail data-r7-recommendation-readonly-boundary="true" data-r7-recommendation-final-command-authority="none" data-r7-recommendation-comparison-grammar="Manual baseline → Rule/schedule candidate → AI recommendation/correction → Safety-final candidate → Fallback value when AI is off" style="border:1px solid #cfe3d4;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
+      <header>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-011 read-only recommendation/automation detail</p>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">추천·자동화 · 수동 기준 대비 비교</h4>
+        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">추천·자동화는 실행 버튼 중심 화면이 아닙니다. 수동 기준값을 먼저 보여주고 rule/schedule 후보와 AI 추천·보정 차이를 비교합니다.</p>
+      </header>
+      <section data-r7-recommendation-manual-baseline style="display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">1. Manual baseline shown first</strong>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;">
+          ${manualBaseline.map(([label, value, note]) => `<p data-r7-recommendation-manual-item="${label}" style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>${label}</b><br><span style="font-size:13px;color:#24323f;font-weight:900;">${value}</span><br><span style="color:#78927f;">${note}</span></p>`).join("")}
+        </div>
+      </section>
+      <section data-r7-recommendation-rule-candidate style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">2. Rule/Schedule candidate</strong>
+        ${ruleCandidates.map(([label, note]) => `<p data-r7-recommendation-rule="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-recommendation-ai-assist data-r7-recommendation-ai-authority="assist-only" style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">3. AI recommendation / correction / explanation</strong>
+        ${aiAssist.map(([label, note]) => `<p data-r7-recommendation-ai-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-recommendation-safety-final style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">4. Safety-final candidate</strong>
+        ${safetyFinal.map(([label, note]) => `<p data-r7-recommendation-safety-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-recommendation-fallback style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#8a6d1d;font-size:13px;">AI off / fallback 원칙</strong>
+        <p style="margin:6px 0 0;color:#6b5a22;font-size:12px;line-height:1.6;">AI 상태가 disabled/unhealthy/timeout/stale이면 AI recommendation/correction을 제외하고 fallback value를 표시합니다. Safety-final candidate는 최종 명령이 아니며 final command authority를 갖지 않습니다.</p>
+      </section>
+    </section>`;
+  }
+
   renderR7DetailSubpage(subpage) {
     return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
@@ -962,6 +1017,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${subpage.key === "environment-control" ? this.renderR7EnvironmentControlDetail() : ""}
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""}
       ${subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""}
+      ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationAutomationDetail() : ""}
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
       <details style="border-top:1px solid #edf4ef;padding-top:8px;">
         <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
@@ -979,7 +1035,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7PageShell() {
     return `<section data-r7-page-shell style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-010 Device Control Detail</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-011 Recommendation/Automation Detail</p>
         <h2 style="margin:0;color:#24323f;font-size:22px;">수동 설정 우선 환경제어 작업공간</h2>
         <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 홈, 작물, 환경, 관수·양액, 장치, 추천·자동화, 안전·이력, 설정·관리로 재정렬합니다. 실행 권한은 추가하지 않습니다.</p>
       </header>
