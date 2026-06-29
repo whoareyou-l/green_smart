@@ -18,11 +18,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_002_version_surfaces_are_1_12_36():
-    assert '"version": "1.12.59"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.60"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.60"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.60"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_001_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.59" in _read(path)
+        assert "v1.12.60" in _read(path)
 
 
 def test_r7_002_doc_declares_shell_scope_and_boundaries():
@@ -59,9 +59,7 @@ def test_r7_002_panel_has_sidebar_page_shell_markers_and_group_order():
         "data-r7-sidebar-group=\"recommendation-review\"",
         "data-r7-sidebar-group=\"settings-admin\"",
         "data-r7-page-shell",
-        "data-r7-page-header",
         "data-r7-page-workspace",
-        "data-r7-mobile-nav",
     ):
         assert marker in text
     labels = ["운영 홈", "작물 중심 운영", "현장 상태", "추천·실행 검토", "설정·관리"]
@@ -72,7 +70,7 @@ def test_r7_002_panel_has_sidebar_page_shell_markers_and_group_order():
 def test_r7_002_page_shell_wraps_existing_crop_centered_dashboard_without_standalone_zone_section():
     text = _read(REBUILD_PANEL)
     assert "renderR7Sidebar" in text
-    assert "renderR7MobileNav" in text
+    assert "renderR7MobileNav" not in text
     assert "renderR7PageShell" in text
     assert "this.renderOperatingHome()" in text
     assert "data-r7-main-dashboard" in text

@@ -21,7 +21,7 @@
 // R7-013 Settings/Admin manual-first realignment markers: data-r7-settings-admin-manual-first-realigned="true" / data-r7-settings-admin-domain-ownership / data-r7-settings-admin-mapping-boundary / data-r7-settings-admin-system-boundary.
 // R7-013 Settings/Admin domain ownership markers: data-r7-settings-admin-domain="operations-home" / data-r7-settings-admin-domain="crop-operations" / data-r7-settings-admin-domain="environment-control" / data-r7-settings-admin-domain="irrigation-fertigation" / data-r7-settings-admin-domain="device-control" / data-r7-settings-admin-domain="recommendation-automation" / data-r7-settings-admin-domain="safety-history" / data-r7-settings-admin-domain="settings-admin".
 // R7-013 Settings/Admin mapping/system markers: data-r7-settings-admin-mapping-item="HA entity mapping" / data-r7-settings-admin-mapping-item="구역/장치 매핑" / data-r7-settings-admin-mapping-item="MQTT topic mapping later only" / data-r7-settings-admin-mapping-item="mapping health evidence" / data-r7-settings-admin-system-item="RBAC" / data-r7-settings-admin-system-item="사용자 역할" / data-r7-settings-admin-system-item="권한 정책" / data-r7-settings-admin-system-item="시스템 설정" / data-r7-settings-admin-system-item="진단" / data-r7-settings-admin-system-item="백업" / data-r7-settings-admin-system-item="secret redaction" / data-r7-settings-admin-system-item="감사 설정".
-// R7-014 Domain page routing markers: data-r7-domain-page-router="true" / data-r7-active-domain / data-r7-domain-page-shell / data-r7-domain-page-active="true" / data-r7-domain-page-hidden="true" / data-r7-sidebar-active="true" / data-r7-mobile-nav-active="true" / aria-current="page".
+// R7-014 Domain page routing markers: data-r7-domain-page-router="true" / data-r7-active-domain / data-r7-domain-page-shell / data-r7-domain-page-active="true" / data-r7-domain-page-hidden="true" / data-r7-sidebar-active="true" / aria-current="page".
 // R7-014 domain page registry: data-r7-domain-page="operations-home" / data-r7-domain-page="crop-operations" / data-r7-domain-page="environment-control" / data-r7-domain-page="irrigation-fertigation" / data-r7-domain-page="device-control" / data-r7-domain-page="recommendation-automation" / data-r7-domain-page="safety-history" / data-r7-domain-page="settings-admin".
 // R7-014 nav target registry: data-r7-sidebar-target="operations-home" / data-r7-sidebar-target="crop-operations" / data-r7-sidebar-target="environment-control" / data-r7-sidebar-target="irrigation-fertigation" / data-r7-sidebar-target="device-control" / data-r7-sidebar-target="recommendation-automation" / data-r7-sidebar-target="safety-history" / data-r7-sidebar-target="settings-admin".
 // R7-015 Common visual UI system markers: data-r7-visual-system="true" / data-r7-dashboard-visual-hero / data-r7-status-badge / data-r7-status="normal" / data-r7-status="attention" / data-r7-status="warning" / data-r7-status="blocked" / data-r7-status="unknown" / data-r7-severity-card / data-r7-severity="green" / data-r7-severity="yellow" / data-r7-severity="orange" / data-r7-severity="red" / data-r7-severity="gray" / data-r7-freshness-pill / data-r7-metric-card / data-r7-domain-health-strip / data-r7-domain-health-item / data-r7-alert-banner / data-r7-mini-trend-chart.
@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.59";
+const REBUILD_VERSION = "1.12.60";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -659,10 +659,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _bindR7DomainNavigation() {
-    this.querySelectorAll("[data-r7-sidebar-target], [data-r7-mobile-nav-target]").forEach((link) => {
+    this.querySelectorAll("[data-r7-sidebar-target]").forEach((link) => {
       link.addEventListener("click", (event) => {
         event.preventDefault();
-        this.setR7ActiveDomain(link.dataset.r7SidebarTarget || link.dataset.r7MobileNavTarget);
+        this.setR7ActiveDomain(link.dataset.r7SidebarTarget);
       });
     });
   }
@@ -909,15 +909,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
         return `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" style="display:block;border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:14px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;text-decoration:none;padding:11px 12px;"><strong style="display:block;font-size:14px;">${group.label}</strong><span style="display:block;margin-top:4px;color:#78927f;font-size:11px;line-height:1.4;">${group.summary}</span></a>`;
       }).join("")}
     </aside>`;
-  }
-
-  renderR7MobileNav() {
-    return `<nav data-r7-mobile-nav style="display:flex;gap:8px;overflow:auto;border:1px solid #dcebe0;border-radius:16px;background:#fff;padding:10px;">
-      ${R7_SIDEBAR_GROUPS.map((group) => {
-        const active = this._activeR7Domain === group.key;
-        return `<a href="#${group.target}" data-r7-mobile-nav-item="${group.key}" data-r7-mobile-nav-target="${group.target}" data-r7-mobile-nav-active="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" style="white-space:nowrap;border-radius:999px;background:${active ? "#e3f4e6" : "#eef7f0"};color:#31523b;text-decoration:none;padding:8px 10px;font-size:12px;font-weight:900;">${group.label}</a>`;
-      }).join("")}
-    </nav>`;
   }
 
   renderR7SettingsAdminCard(marker, title, value, note, extraAttrs = "") {
@@ -1562,21 +1553,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7DetailSubpage(subpage) {
-    return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
-      <header>
-        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">manual-first read-only domain</p>
-        <h3 style="margin:0;color:#24323f;font-size:18px;">${subpage.label}</h3>
-      </header>
-      <p data-r7-subpage-evidence-summary style="margin:0;color:#5d6f62;line-height:1.6;">${subpage.summary}</p>
-      <dl data-r7-domain-layer-summary style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;color:#31523b;font-size:12px;">
-        <dt style="font-weight:900;">Manual/Base</dt><dd data-r7-manual-base-settings style="margin:0;">${subpage.manualBase}</dd>
-        <dt style="font-weight:900;">Rule/Schedule</dt><dd data-r7-rule-schedule-automation style="margin:0;">${subpage.automation}</dd>
-        <dt style="font-weight:900;">AI Assist</dt><dd data-r7-ai-assist-layer style="margin:0;">${subpage.aiAssist}</dd>
-        <dt style="font-weight:900;">Safety Final</dt><dd data-r7-safety-finalization style="margin:0;">${subpage.safety}</dd>
-      </dl>
-      <p data-r7-subpage-source-freshness style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">Source freshness: ${subpage.source}</p>
-      <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
-      <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
+    return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder style="display:grid;gap:10px;">
       ${subpage.key === "crop-operations" ? this.renderR7CropOperationsZoneVisual() : ""}
       ${subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""}
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""}
@@ -1584,20 +1561,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationZoneVisual() : ""}
       ${subpage.key === "safety-history" ? this.renderR7SafetyHistoryZoneVisual() : ""}
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminZoneVisual() : ""}
-      <details style="border-top:1px solid #edf4ef;padding-top:8px;">
-        <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
-        <p style="margin:8px 0 0;color:#78927f;font-size:12px;line-height:1.5;">operator summary → source freshness → zone-scoped evidence → safety/interlock boundary → optional technical details</p>
-      </details>
     </article>`;
   }
 
   renderR7DomainPageShell(subpage, body) {
     return `<section data-r7-domain-page-shell data-r7-domain-page="${subpage.key}" data-r7-domain-page-active="true" data-r7-domain-page-hidden="false" style="display:grid;gap:14px;">
-      <header style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:16px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">현재 화면</p>
-        <h3 style="margin:0;color:#24323f;font-size:20px;">${subpage.label}</h3>
-        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${subpage.summary}</p>
-      </header>
       ${body}
     </section>`;
   }
@@ -1623,11 +1591,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7PageShell() {
     return `<section data-r7-page-shell data-r7-domain-page-router="true" data-r7-active-domain="${this._activeR7Domain}" style="display:grid;gap:16px;">
-      <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Green Smart 운영 화면</p>
-        <h2 style="margin:0;color:#24323f;font-size:22px;">오늘 상태를 확인하고 필요한 구역으로 이동합니다</h2>
-        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">왼쪽 메뉴에서 작물, 환경, 관수, 장치, 안전 상태를 구역별로 확인합니다.</p>
-      </header>
       <div data-r7-page-workspace style="display:grid;gap:16px;">
         ${this.renderR7ActiveDomainPage()}
       </div>
@@ -1635,17 +1598,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   render() {
-    const nav = REBUILD_PAGES.map((page) => `<a href="#${page.key}" data-rebuild-nav-key="${page.key}" style="display:inline-flex;padding:8px 10px;border-radius:999px;background:#eef7f0;color:#31523b;text-decoration:none;font-size:13px;font-weight:700;">${page.label}</a>`).join("");
     this.innerHTML = `
       <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell style="min-height:100vh;padding:24px;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
         <div style="max-width:1280px;margin:0 auto;display:grid;gap:14px;">
-          ${this.renderR7MobileNav()}
-          <section data-rebuild-empty-shell style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:18px;">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5d7d64;">Green Smart</p>
-            <h2 style="margin:0 0 10px;font-size:22px;color:#24323f;">오늘의 작물 운영을 먼저 확인합니다</h2>
-            <p style="margin:0;color:#5d6f62;line-height:1.6;">작물 상태와 목표를 기준으로 환경·관수·장치 영향을 함께 보고, 구역별 상세는 각 단계 안에서 확인합니다.</p>
-            <nav data-rebuild-shell-nav style="display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;">${nav}</nav>
-          </section>
           <section style="display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:18px;align-items:start;">
             ${this.renderR7Sidebar()}
             <section data-rebuild-shell-main>${this.renderR7PageShell()}</section>

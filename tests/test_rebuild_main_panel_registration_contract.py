@@ -50,8 +50,9 @@ def test_rebuild_panel_is_now_the_main_product_surface():
     source = _read(REBUILD_PANEL)
     assert "green-smart-rebuild-panel" in source
     assert "data-rebuild-root" in source
-    assert "오늘의 작물 운영을 먼저 확인합니다" in source
-    assert "작물 상태와 목표를 기준으로" in source
+    assert "data-r7-sidebar" in source
+    assert "data-r7-page-workspace" in source
+    assert "data-r7-domain-visual-frame" in source
     assert "Start from blank page/scaffold." not in source
     assert "No legacy panel module imports." not in source
 

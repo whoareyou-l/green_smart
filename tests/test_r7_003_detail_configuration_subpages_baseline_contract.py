@@ -18,11 +18,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_003_version_surfaces_are_1_12_37():
-    assert '"version": "1.12.59"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.60"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.60"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.60"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_002_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.59" in _read(path)
+        assert "v1.12.60" in _read(path)
 
 
 def test_r7_003_doc_declares_selected_scope_and_boundaries():
@@ -61,10 +61,8 @@ def test_r7_003_panel_declares_detail_subpage_registry_for_all_sidebar_groups():
         "data-r7-detail-subpage=\"settings-admin\"",
         "data-r7-subpage-readonly-boundary=\"true\"",
         "data-r7-subpage-config-placeholder",
-        "data-r7-subpage-evidence-summary",
-        "data-r7-subpage-source-freshness",
-        "data-r7-subpage-zone-scope",
-        "data-r7-subpage-safety-boundary",
+        "data-r7-domain-visual-frame",
+        "data-r7-domain-subtabs",
     ):
         assert marker in text
 
@@ -80,9 +78,12 @@ def test_r7_003_subpage_grammar_is_operator_summary_first_and_group_ordered():
     ]
     positions = [text.index(marker) for marker in expected_order]
     assert positions == sorted(positions)
-    grammar = "operator summary → source freshness → zone-scoped evidence → safety/interlock boundary → optional technical details"
-    assert grammar in text
-    assert text.index("data-r7-subpage-evidence-summary") < text.index("data-r7-subpage-source-freshness") < text.index("data-r7-subpage-zone-scope") < text.index("data-r7-subpage-safety-boundary")
+    assert "operator summary → source freshness → zone-scoped evidence → safety/interlock boundary → optional technical details" not in text
+    assert "manual-first read-only domain" not in text
+    assert "data-r7-subpage-evidence-summary" not in text
+    assert "data-r7-subpage-source-freshness" not in text
+    assert "data-r7-subpage-zone-scope" not in text
+    assert "data-r7-subpage-safety-boundary" not in text
 
 
 def test_r7_003_placeholder_baseline_keeps_dashboard_and_sidebar_without_legacy_zone_drift():

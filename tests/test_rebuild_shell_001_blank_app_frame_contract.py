@@ -17,8 +17,8 @@ def test_rs001_rebuild_panel_declares_crop_centered_shell_sections():
         'key: "growth-goal"',
         'key: "influence-map"',
         'key: "recommend-act"',
-        "data-rebuild-shell-nav",
         "data-rebuild-shell-main",
+        "data-r7-sidebar",
     ):
         assert marker in source
 

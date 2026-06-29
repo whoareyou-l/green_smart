@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_007_version_surfaces_are_1_12_39():
-    assert '"version": "1.12.59"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.60"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.60"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.60"' in _read(REBUILD_PANEL)
     for path in (DOC, SPEC, PLAN):
         assert "R7-007" in _read(path) or path == SPEC
 
@@ -99,21 +99,21 @@ def test_r7_007_detail_placeholders_render_eight_manual_first_domains_with_layer
         'data-r7-detail-subpage="settings-admin"',
         'data-r7-domain-page-router="true"',
         'data-r7-domain-page-shell',
-        'data-r7-manual-base-settings',
-        'data-r7-rule-schedule-automation',
-        'data-r7-ai-assist-layer',
-        'data-r7-safety-finalization',
+        'data-r7-domain-visual-frame',
+        'data-r7-domain-subtabs',
+        'data-r7-domain-subtab-panel',
     ):
         assert marker in text
-    assert "Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" in text
+    assert "Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" not in text
+    assert "manual-first read-only domain" not in text
 
 
 def test_r7_007_visible_copy_is_manual_first_and_ai_assist_not_execution_first():
     text = _read(REBUILD_PANEL)
     required = [
         "작물·구역·경보 중심 운영 화면",
-        "오늘 상태를 확인하고 필요한 구역으로 이동합니다",
-        "오늘의 작물 운영",
+        "data-r7-page-workspace",
+        "data-r7-sidebar",
         "현재 선택 구역",
         "우선 확인",
         "4. 추천·확인",
@@ -163,7 +163,7 @@ def test_r7_007_node_smoke_renders_new_sidebar_and_domain_placeholders():
         'data-r7-domain-page-router="true"',
         'data-r7-active-domain="operations-home"',
         'data-r7-domain-page="operations-home"',
-        '오늘 상태를 확인하고 필요한 구역으로 이동합니다',
+        'data-r7-page-workspace',
         '추천·확인'
       ];
       for (const item of required) {{
@@ -171,7 +171,7 @@ def test_r7_007_node_smoke_renders_new_sidebar_and_domain_placeholders():
       }}
       panel.setR7ActiveDomain('environment-control');
       const envHtml = panel.innerHTML;
-      for (const item of ['data-r7-active-domain="environment-control"', 'data-r7-manual-base-settings', 'data-r7-ai-assist-layer', 'data-r7-environment-zone-visual="true"', 'data-r7-environment-detail-absorbed="true"']) {{
+      for (const item of ['data-r7-active-domain="environment-control"', 'data-r7-domain-subtabs', 'data-r7-domain-subtab-panel', 'data-r7-environment-zone-visual="true"', 'data-r7-environment-detail-absorbed="true"']) {{
         if (!envHtml.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
       if (envHtml.includes('data-r7-sidebar-execute')) process.exit(2);

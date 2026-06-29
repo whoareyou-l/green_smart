@@ -1,6 +1,6 @@
 # R7-013 Settings/Admin Manual-first Realignment
 
-> 기준 버전: `v1.12.59`
+> 기준 버전: `v1.12.60`
 > Status: R7-013 complete
 > Purpose: R7-004 `설정·관리` detail을 R7-005~R7-012 이후의 8도메인 manual-first 구조에 맞게 재보정한다.
 

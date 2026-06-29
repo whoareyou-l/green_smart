@@ -27,11 +27,11 @@ def _load_service():
 
 
 def test_rs022_version_surfaces_are_aligned_to_1_12_21():
-    assert '"version": "1.12.59"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.59"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.59"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.60"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.60"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.60"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.59" in _read(path)
+        assert "v1.12.60" in _read(path)
 
 
 def test_rs022_document_records_safety_interlock_preflight_boundary():
@@ -122,7 +122,7 @@ def test_docs_specs_plan_and_inventory_record_rs022_and_next_step():
     inventory = _read(LEGACY_INVENTORY)
     for marker in ("Safety/Interlock preflight projection", "safetyInterlockPreflightProjection", "operatorApprovalScaffold → safetyInterlockPreflightProjection", "Safety / Interlock / Fail Safe 사전검증", "No write/mutation in RS-022"):
         assert marker in spec
-    for marker in ("Phase R4.18 — Safety/Interlock preflight projection", "Status:** `v1.12.59`에서 Safety/Interlock preflight projection 완료", "No production route removal in RS-022", "No DB migration in RS-022", "No write/mutation in RS-022"):
+    for marker in ("Phase R4.18 — Safety/Interlock preflight projection", "Status:** `v1.12.60`에서 Safety/Interlock preflight projection 완료", "No production route removal in RS-022", "No DB migration in RS-022", "No write/mutation in RS-022"):
         assert marker in plan
     assert "RS-022" in inventory
     assert "Safety/Interlock preflight projection completed" in inventory

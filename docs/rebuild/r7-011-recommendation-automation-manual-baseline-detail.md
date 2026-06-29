@@ -1,6 +1,6 @@
 # R7-011 Recommendation/Automation Manual-baseline Read-only Detail
 
-> 기준 버전: `v1.12.59`
+> 기준 버전: `v1.12.60`
 > Status: R7-011 complete
 > Purpose: `추천·자동화` 도메인을 manual-baseline-first 비교 구조로 구체화한다.
 

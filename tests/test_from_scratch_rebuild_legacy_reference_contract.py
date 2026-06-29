@@ -37,10 +37,9 @@ def test_from_scratch_rebuild_panel_exists_as_new_main_surface():
     for marker in (
         "green-smart-rebuild-panel",
         "data-rebuild-root",
-        "data-rebuild-empty-shell",
-        "작물 상태를 먼저 확인합니다",
-        "오늘의 작물 운영을 먼저 확인합니다",
-        "구역별 세부 정보는 각 단계 안에서",
+        "data-r7-app-shell",
+        "data-r7-sidebar",
+        "data-r7-page-workspace",
     ):
         assert marker in source
 
