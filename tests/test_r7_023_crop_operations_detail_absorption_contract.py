@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_023_version_surfaces_are_1_12_57():
-    assert '"version": "1.12.76"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.76"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.76"' in _read(REBUILD_PANEL)
-    assert "v1.12.76" in _read(DOC)
+    assert '"version": "1.12.77"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.77"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.77"' in _read(REBUILD_PANEL)
+    assert "v1.12.77" in _read(DOC)
 
 
 def test_r7_023_doc_records_crop_operations_inventory_and_forward_plan():
@@ -123,7 +123,11 @@ def test_r7_023_crop_operations_subtabs_switch_visible_panel_on_click():
       const html = panel.innerHTML;
       if (clicked !== true) process.exit(1);
       if (!html.includes('data-r7-crop-subtab="records-workflow" role="tab" aria-selected="true"')) process.exit(2);
-      if (!html.includes('data-r7-domain-subtab-panel-key="records-workflow" data-r7-crop-subtab="records-workflow" data-r7-crop-detail-absorbed="true" data-r7-crop-record-workflow-grid style="display:grid')) process.exit(3);
+      const panelStart = html.indexOf('data-r7-domain-subtab-panel-key="records-workflow"');
+      const sectionOpen = panelStart >= 0 ? html.lastIndexOf('<section', panelStart) : -1;
+      const sectionClose = sectionOpen >= 0 ? html.indexOf('</section>', sectionOpen) : -1;
+      const section = sectionOpen >= 0 && sectionClose >= 0 ? html.slice(sectionOpen, sectionClose + 10) : '';
+      if (!section.includes('data-r7-crop-detail-absorbed="true"') || !section.includes('data-r7-crop-record-workflow-grid') || !section.includes('style="display:grid')) process.exit(3);
       if (!html.includes('생육조사') || !html.includes('병해충 예찰') || !html.includes('방제 기록')) process.exit(4);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)

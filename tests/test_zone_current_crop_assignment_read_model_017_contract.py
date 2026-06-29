@@ -28,11 +28,11 @@ def _load_service():
 
 
 def test_rs017_version_surfaces_are_aligned_to_1_12_16():
-    assert '"version": "1.12.76"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.76"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.76"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.77"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.77"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.77"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, DB_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.76" in _read(path)
+        assert "v1.12.77" in _read(path)
 
 
 def test_rs017_document_records_assignment_read_model_boundary():
@@ -189,7 +189,7 @@ def test_docs_specs_plan_and_inventory_record_rs017_and_next_step():
         assert marker in db_spec
     for marker in (
         "Phase R4.13 — Zone current crop assignment read model",
-        "Status:** `v1.12.76`에서 구역별 currentCrop 배정 read model 완료",
+        "Status:** `v1.12.77`에서 구역별 currentCrop 배정 read model 완료",
         "No production route removal in RS-017",
         "No DB migration in RS-017",
         "No write/mutation in RS-017",

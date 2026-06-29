@@ -86,4 +86,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-035 adds the reference leaf logo and sage icon helpers from the supplied sidebar image.
     # R7-038 supersedes the active sidebar logo/icon rendering with HA `ha-icon` MDI icons.
     # R7-040 adds the shared domain subtab HA-icon top-navbar mapping while keeping the rebuild surface bounded.
-    assert len(rebuild.splitlines()) < 1885
+    # R7-042 adds third-party-informed Crop Operations detail markers/operator questions while keeping the surface bounded.
+    assert len(rebuild.splitlines()) < 1905

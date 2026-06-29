@@ -1,0 +1,86 @@
+{
+  "served": {
+    "missing": [],
+    "length": 183298
+  },
+  "render": [
+    {
+      "tab": "status-summary",
+      "thirdParty": true,
+      "question": true,
+      "attention": true,
+      "influence": true,
+      "registration": true,
+      "targetGap": true,
+      "workQueue": true,
+      "modelReview": true,
+      "seasonReview": true,
+      "forbidden": false
+    },
+    {
+      "tab": "crop-cycle",
+      "thirdParty": true,
+      "question": true,
+      "attention": true,
+      "influence": true,
+      "registration": true,
+      "targetGap": true,
+      "workQueue": true,
+      "modelReview": true,
+      "seasonReview": true,
+      "forbidden": false
+    },
+    {
+      "tab": "growth-target",
+      "thirdParty": true,
+      "question": true,
+      "attention": true,
+      "influence": true,
+      "registration": true,
+      "targetGap": true,
+      "workQueue": true,
+      "modelReview": true,
+      "seasonReview": true,
+      "forbidden": false
+    },
+    {
+      "tab": "records-workflow",
+      "thirdParty": true,
+      "question": true,
+      "attention": true,
+      "influence": true,
+      "registration": true,
+      "targetGap": true,
+      "workQueue": true,
+      "modelReview": true,
+      "seasonReview": true,
+      "forbidden": false
+    },
+    {
+      "tab": "model-assist",
+      "thirdParty": true,
+      "question": true,
+      "attention": true,
+      "influence": true,
+      "registration": true,
+      "targetGap": true,
+      "workQueue": true,
+      "modelReview": true,
+      "seasonReview": true,
+      "forbidden": false
+    },
+    {
+      "tab": "trend-evidence",
+      "thirdParty": true,
+      "question": true,
+      "attention": true,
+      "influence": true,
+      "registration": true,
+      "targetGap": true,
+      "workQueue": true,
+      "modelReview": true,
+      "seasonReview": true,
+      "forbidden": false
+    }
+  ]
+}

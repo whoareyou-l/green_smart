@@ -1,7 +1,7 @@
 # 3. DB 구상도 — RBAC-first Target Database Schema
 
 > 기준일: `2026-06-28`
-> 기준 버전: `v1.12.76`
+> 기준 버전: `v1.12.77`
 > 문서 목적: Green Smart rebuild의 DB를 **RBAC-first target schema**로 새로 정의한다. 기존 legacy physical schema is adapter-only이며, 제품/API/문서 방향은 이 문서를 기준으로 한다.
 
 ## 0. 중요한 범위 선언
@@ -23,7 +23,7 @@
 5. raw sensor 장기 시계열은 외부 저장소와 병행할 수 있으나, 운영 판단 snapshot은 RDB에 재현 가능하게 저장한다.
 6. DB field는 snake_case를 사용한다. Frontend camelCase는 adapter에서만 허용한다.
 7. `read_only`, `execution_enabled`는 API/context 수준에서 명시한다.
-8. `v1.12.76` RS-017의 `currentCropAssignment`는 DB table이 아니라 read model projection이다. legacy physical schema is adapter-only이며 `sourceRowId`는 legacy row evidence로만 보존한다. No DB migration in RS-017.
+8. `v1.12.77` RS-017의 `currentCropAssignment`는 DB table이 아니라 read model projection이다. legacy physical schema is adapter-only이며 `sourceRowId`는 legacy row evidence로만 보존한다. No DB migration in RS-017.
 
 ---
 
