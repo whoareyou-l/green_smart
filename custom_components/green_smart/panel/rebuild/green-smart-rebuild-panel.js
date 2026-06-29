@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.57";
+const REBUILD_VERSION = "1.12.58";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -144,7 +144,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadError = null;
     this._contextRequestId = 0;
     this._activeR7Domain = "operations-home";
-    this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary" };
+    this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary", "safety-history": "status-summary" };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -639,8 +639,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const domain = this._normalizeR7Domain(domainKey);
     const commonTabs = ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"];
     const cropTabs = ["status-summary", "crop-cycle", "growth-target", "records-workflow", "model-assist", "trend-evidence"];
+    const safetyTabs = ["status-summary", "block-allow", "event-history", "operation-history", "audit-evidence", "trend-evidence"];
     const tabDomains = ["environment-control", "irrigation-fertigation", "device-control", "recommendation-automation"];
-    const allowed = domain === "crop-operations" ? cropTabs : tabDomains.includes(domain) ? commonTabs : [];
+    const allowed = domain === "crop-operations" ? cropTabs : domain === "safety-history" ? safetyTabs : tabDomains.includes(domain) ? commonTabs : [];
     if (!allowed.includes(tabKey)) return false;
     if (this._activeR7DomainSubtabs[domain] === tabKey) return true;
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, [domain]: tabKey };
@@ -1221,52 +1222,50 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
-  renderR7SafetyHistoryDetail() {
-    const statusItems = [
-      ["Safety 상태", "정상/주의/차단", "도메인별 Safety 최종 상태"],
-      ["Interlock 상태", "허용/차단", "강풍·비·저온·센서 stale 등 인터록 결과"],
-      ["Fail Safe 상태", "safe state 유지", "통신 장애·비정상 상태 시 보수적 fallback"],
-      ["알람", "확인 필요", "알람은 표시만 하며 ack/clear는 제외"],
-    ];
-    const reasons = [
-      ["차단 이유", "왜 block 되었는지 도메인/구역별 evidence 표시"],
-      ["허용 이유", "왜 allow 되었는지 safety gate 통과 evidence 표시"],
-      ["센서 stale 이력", "stale data가 후보 제한에 미친 영향"],
-      ["오류/Traceback/통신 장애", "운영자가 확인해야 할 장애 evidence"],
-    ];
-    const timeline = [
-      ["수동 조작 이력", "작업자 기준 변경/요청 evidence"],
-      ["기본 자동제어 이력", "rule/schedule 후보와 적용/미적용 evidence"],
-      ["AI 추천 이력", "AI가 제안한 추천/보정 evidence"],
-      ["AI 적용/미적용 이력", "AI 후보가 제외된 이유 포함"],
-      ["장치 명령 후보 이력", "명령 후보는 기록만 하며 실행 권한 없음"],
-      ["실제 실행 이력, later only", "실제 실행 이력은 later only evidence입니다"],
-    ];
-    return `<section data-r7-safety-history-detail data-r7-safety-history-readonly-boundary="true" data-r7-safety-history-authoritative-evidence="true" data-r7-safety-history-setpoint-owner="false" data-r7-safety-history-grammar="Safety status + Interlock status + Fail Safe status + block/allow reasons + manual/rule/AI history + audit evidence = authoritative allow/block history, read-only" style="border:1px solid #cfe3d4;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
-      <header>
-        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-012 read-only safety/history detail</p>
-        <h4 style="margin:0;color:#24323f;font-size:16px;">안전·이력 · allow/block evidence</h4>
-        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">안전·이력은 일반 setpoint owner가 아닙니다. 모든 도메인의 최종 allow/block evidence를 read-only로 모읍니다.</p>
-      </header>
-      <section data-r7-safety-history-status style="display:grid;gap:8px;">
-        <strong style="color:#31523b;font-size:13px;">1. Safety / Interlock / Fail Safe status</strong>
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;">
-          ${statusItems.map(([label, value, note]) => `<p data-r7-safety-history-status-item="${label}" style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>${label}</b><br><span style="font-size:13px;color:#24323f;font-weight:900;">${value}</span><br><span style="color:#78927f;">${note}</span></p>`).join("")}
-        </div>
-      </section>
-      <section data-r7-safety-history-reasons style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">2. Block / allow reasons</strong>
-        ${reasons.map(([label, note]) => `<p data-r7-safety-history-reason="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
-      </section>
-      <section data-r7-safety-history-timeline style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">3. Manual / rule / AI history</strong>
-        ${timeline.map(([label, note]) => `<p data-r7-safety-history-timeline-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
-      </section>
-      <section data-r7-safety-history-audit style="border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#8a6d1d;font-size:13px;">Audit/read-only boundary</strong>
-        <p style="margin:6px 0 0;color:#6b5a22;font-size:12px;line-height:1.6;">알람 ack/clear, 승인/override, 실행 이력 수정은 R7-012에 포함하지 않습니다. 실제 실행 이력은 later only evidence입니다. 이 화면은 authoritative allow/block history를 보여주지만 실행·수정 권한을 갖지 않습니다.</p>
-      </section>
-    </section>`;
+  renderR7SafetyValueCard(marker, title, value, note, extraAttrs = "") {
+    return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:15px;font-weight:1000;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
+  }
+
+  renderR7SafetySubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
+    const active = tabKey === activeTab;
+    const display = active ? "grid" : "none";
+    const freshness = selectedZone.dataAvailability?.state || "fresh";
+    const labels = {
+      "status-summary": "현재 안전 상태",
+      "block-allow": "차단·허용 이유",
+      "event-history": "이벤트 이력",
+      "operation-history": "운영 이력",
+      "audit-evidence": "감사·근거",
+      "trend-evidence": "추세·근거",
+    };
+    const markers = {
+      "status-summary": "data-r7-safety-status-summary-grid",
+      "block-allow": "data-r7-safety-block-allow-grid",
+      "event-history": "data-r7-safety-event-history-grid",
+      "operation-history": "data-r7-safety-operation-history-grid",
+      "audit-evidence": "data-r7-safety-audit-evidence-grid",
+      "trend-evidence": "data-r7-safety-trend-evidence",
+    };
+    const body = tabKey === "status-summary"
+      ? `${this.renderR7SafetyValueCard("data-r7-safety-status-card", "Safety 상태", "정상/주의/차단", "도메인별 Safety 최종 상태")}${this.renderR7SafetyValueCard("data-r7-safety-status-card", "Interlock 상태", "허용/차단", "강풍·비·저온·센서 stale 등 인터록 결과")}${this.renderR7SafetyValueCard("data-r7-safety-status-card", "Fail Safe 상태", "safe state 유지", "통신 장애·비정상 상태 시 보수적 fallback")}${this.renderR7SafetyValueCard("data-r7-safety-status-card", "알람", "확인 필요", "알람은 표시만 하며 ack/clear는 제외")}`
+      : tabKey === "block-allow"
+        ? `${this.renderR7SafetyValueCard("data-r7-safety-reason-card", "차단 이유", "block evidence", "왜 block 되었는지 도메인/구역별 evidence 표시")}${this.renderR7SafetyValueCard("data-r7-safety-reason-card", "허용 이유", "allow evidence", "왜 allow 되었는지 safety gate 통과 evidence 표시")}${this.renderR7SafetyValueCard("data-r7-safety-reason-card", "센서 stale 이력", freshness, "stale data가 후보 제한에 미친 영향")}${this.renderR7SafetyValueCard("data-r7-safety-reason-card", "오류/Traceback/통신 장애", "운영자 확인", "장애 evidence")}`
+        : tabKey === "event-history"
+          ? `${this.renderR7SafetyValueCard("data-r7-safety-event-card", "Safety event", "event evidence", "Safety/Interlock/Fail Safe 이벤트")}${this.renderR7SafetyValueCard("data-r7-safety-event-card", "stale/error event", "센서 stale 이력", "센서 stale/오류/Traceback/통신 장애")}${this.renderR7SafetyValueCard("data-r7-safety-event-card", "알람 evidence", "확인 필요", "ack/clear 없이 read-only 표시")}`
+          : tabKey === "operation-history"
+            ? `${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "수동 조작 이력", "작업자 기준 변경/요청 evidence", "manual operation history")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "기본 자동제어 이력", "rule/schedule 후보와 적용/미적용 evidence", "rule/schedule automation history")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "AI 추천 이력", "AI가 제안한 추천/보정 evidence", "AI evidence only")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "AI 적용/미적용 이력", "AI 후보가 제외된 이유 포함", "fallback evidence")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "장치 명령 후보 이력", "기록만 하며 실행 권한 없음", "device command candidate")}${this.renderR7SafetyValueCard("data-r7-safety-operation-card", "실제 실행 이력, later only", "실제 실행 이력은 later only evidence입니다", "no mutation authority")}`
+            : tabKey === "audit-evidence"
+              ? `${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "authoritative allow/block history", "read-only", "모든 도메인의 최종 allow/block evidence")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "setpoint owner", "false", "안전·이력은 일반 setpoint owner가 아닙니다")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "ack/clear", "excluded", "알람 ack/clear, 승인/override, 실행 이력 수정 제외")}${this.renderR7SafetyValueCard("data-r7-safety-audit-card", "runtime boundary", "no execution", "실행·수정 권한 없음")}`
+              : `${this.renderR7MiniTrendChart("Safety 추세", "최근")}${this.renderR7MiniTrendChart("Interlock 추세", "최근")}${this.renderR7MiniTrendChart("Fail Safe 추세", "최근")}${this.renderR7SafetyValueCard("data-r7-safety-trend-evidence", "데이터 근거", freshness, "safetyInterlockReadOnlyAdapter + audit/log evidence")}`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-safety-subtab="${tabKey}" data-r7-safety-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
+  }
+
+  renderR7SafetyHistoryZoneVisual() {
+    const selectedZone = this._r7PrimaryZoneForDomain();
+    const tabs = [["status-summary", "현재 안전 상태"], ["block-allow", "차단·허용 이유"], ["event-history", "이벤트 이력"], ["operation-history", "운영 이력"], ["audit-evidence", "감사·근거"], ["trend-evidence", "추세·근거"]];
+    const activeTab = this._activeR7DomainSubtabs["safety-history"] || "status-summary";
+    const panels = tabs.map(([key]) => this.renderR7SafetySubtabPanel(key, selectedZone, activeTab)).join("");
+    return `<section data-r7-safety-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "safety-history", title: "안전·이력", kicker: "구역 기준 안전·이력", summary: "Safety, Interlock, Fail Safe, 차단·허용 이유, 수동/자동/AI 이력, audit evidence를 구역 기준으로 확인합니다.", status: "blocked", tabs, activeTab, panels })}<section style="display:none;">Safety 상태 · Interlock 상태 · Fail Safe 상태 · 차단 이유 · 허용 이유 · 센서 stale 이력 · 오류/Traceback/통신 장애 · 수동 조작 이력 · 기본 자동제어 이력 · AI 추천 이력 · AI 적용/미적용 이력 · 장치 명령 후보 이력 · 실제 실행 이력, later only · authoritative allow/block history · read-only</section></section>`;
   }
 
   _r7ZoneId(zone) {
@@ -1325,7 +1324,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7DomainSubtabs(domainKey, tabs, activeKey) {
     return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" role="tablist" style="display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;">${tabs.map(([key, label]) => {
       const active = key === activeKey;
-      const domainSubtabMarker = domainKey === "crop-operations" ? `data-r7-crop-subtab="${key}"` : domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : domainKey === "recommendation-automation" ? `data-r7-recommendation-subtab="${key}"` : "";
+      const domainSubtabMarker = domainKey === "crop-operations" ? `data-r7-crop-subtab="${key}"` : domainKey === "safety-history" ? `data-r7-safety-subtab="${key}"` : domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : domainKey === "recommendation-automation" ? `data-r7-recommendation-subtab="${key}"` : "";
       return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;cursor:pointer;">${label}</button>`;
     }).join("")}</nav>`;
   }
@@ -1601,7 +1600,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""}
       ${subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""}
       ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationZoneVisual() : ""}
-      ${subpage.key === "safety-history" ? this.renderR7SafetyHistoryDetail() : ""}
+      ${subpage.key === "safety-history" ? this.renderR7SafetyHistoryZoneVisual() : ""}
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
       <details style="border-top:1px solid #edf4ef;padding-top:8px;">
         <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>

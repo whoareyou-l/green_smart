@@ -1,6 +1,6 @@
 # VS-N003 Real-time Monitoring Read-only Scaffold
 
-> 기준 버전: `v1.12.57`
+> 기준 버전: `v1.12.58`
 > Status: R5 real-time monitoring read-only scaffold
 > 범위 확정: read-only monitoring DTO/권한/상태 scaffold만 추가하고 DB/API/센서수집/Panel 표시 변경은 하지 않는다.
 

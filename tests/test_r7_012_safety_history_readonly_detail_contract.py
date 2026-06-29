@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_012_version_surfaces_are_1_12_44():
-    assert '"version": "1.12.57"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.57"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.57"' in _read(REBUILD_PANEL)
-    assert "v1.12.57" in _read(DOC)
+    assert '"version": "1.12.58"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.58"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.58"' in _read(REBUILD_PANEL)
+    assert "v1.12.58" in _read(DOC)
 
 
 def test_r7_012_doc_records_safety_history_grammar_and_boundaries():
@@ -45,19 +45,19 @@ def test_r7_012_doc_records_safety_history_grammar_and_boundaries():
         assert phrase in text
 
 
-def test_r7_012_panel_contains_safety_history_detail_markers_and_layers():
+def test_r7_012_panel_contains_safety_history_visual_absorbed_markers_and_layers():
     text = _read(REBUILD_PANEL)
     required = [
-        "renderR7SafetyHistoryDetail",
-        "data-r7-safety-history-detail",
-        'data-r7-safety-history-readonly-boundary="true"',
-        'data-r7-safety-history-authoritative-evidence="true"',
-        "data-r7-safety-history-status",
-        "data-r7-safety-history-reasons",
-        "data-r7-safety-history-timeline",
-        "data-r7-safety-history-audit",
-        'data-r7-safety-history-setpoint-owner="false"',
-        "Safety status + Interlock status + Fail Safe status + block/allow reasons + manual/rule/AI history + audit evidence = authoritative allow/block history, read-only",
+        "renderR7SafetyHistoryZoneVisual",
+        'data-r7-safety-zone-visual="true"',
+        'data-r7-safety-detail-absorbed="true"',
+        "data-r7-safety-status-card",
+        "data-r7-safety-reason-card",
+        "data-r7-safety-event-card",
+        "data-r7-safety-operation-card",
+        "data-r7-safety-audit-card",
+        "authoritative allow/block history",
+        "read-only",
     ]
     for marker in required:
         assert marker in text
@@ -81,13 +81,13 @@ def test_r7_012_safety_history_status_and_reason_items_are_named():
 def test_r7_012_safety_history_timeline_and_audit_items_are_named():
     text = _read(REBUILD_PANEL)
     for marker in (
-        'data-r7-safety-history-timeline-item="수동 조작 이력"',
-        'data-r7-safety-history-timeline-item="기본 자동제어 이력"',
-        'data-r7-safety-history-timeline-item="AI 추천 이력"',
-        'data-r7-safety-history-timeline-item="AI 적용/미적용 이력"',
-        'data-r7-safety-history-timeline-item="장치 명령 후보 이력"',
-        'data-r7-safety-history-timeline-item="실제 실행 이력, later only"',
-        "알람 ack/clear, 승인/override, 실행 이력 수정은 R7-012에 포함하지 않습니다",
+        "수동 조작 이력",
+        "기본 자동제어 이력",
+        "AI 추천 이력",
+        "AI 적용/미적용 이력",
+        "장치 명령 후보 이력",
+        "실제 실행 이력, later only",
+        "알람 ack/clear, 승인/override, 실행 이력 수정 제외",
         "실제 실행 이력은 later only evidence입니다",
     ):
         assert marker in text
@@ -95,7 +95,7 @@ def test_r7_012_safety_history_timeline_and_audit_items_are_named():
 
 def test_r7_012_safety_history_detail_is_only_attached_to_safety_history_domain():
     text = _read(REBUILD_PANEL)
-    assert 'subpage.key === "safety-history" ? this.renderR7SafetyHistoryDetail() : ""' in text
+    assert 'subpage.key === "safety-history" ? this.renderR7SafetyHistoryZoneVisual() : ""' in text
     assert 'subpage.key === "recommendation-automation" ? this.renderR7RecommendationZoneVisual() : ""' in text
     assert 'subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""' in text
 
@@ -120,7 +120,7 @@ def test_r7_012_does_not_add_ack_clear_override_or_execution_authority():
         assert marker not in text
 
 
-def test_r7_012_node_smoke_renders_safety_history_detail():
+def test_r7_012_node_smoke_renders_safety_history_visual_absorbed_detail_items():
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
@@ -134,17 +134,19 @@ def test_r7_012_node_smoke_renders_safety_history_detail():
       const html = panel.innerHTML;
       const required = [
         'data-r7-detail-subpage="safety-history"',
-        'data-r7-safety-history-detail',
-        'data-r7-safety-history-status',
-        'data-r7-safety-history-reasons',
-        'data-r7-safety-history-timeline',
-        'data-r7-safety-history-audit',
+        'data-r7-safety-zone-visual="true"',
+        'data-r7-safety-detail-absorbed="true"',
+        'data-r7-safety-status-card',
+        'data-r7-safety-reason-card',
+        'data-r7-safety-operation-card',
+        'data-r7-safety-audit-card',
         '안전·이력은 일반 setpoint owner가 아닙니다',
-        '모든 도메인의 최종 allow/block evidence를 read-only로 모읍니다'
+        'authoritative allow/block history'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
+      if (html.includes('data-r7-safety-history-detail')) process.exit(3);
       if (html.includes('data-r7-safety-history-override')) process.exit(2);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
