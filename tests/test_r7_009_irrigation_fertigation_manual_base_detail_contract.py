@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_009_version_surfaces_are_1_12_41():
-    assert '"version": "1.12.53"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.53"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.53"' in _read(REBUILD_PANEL)
-    assert "v1.12.53" in _read(DOC)
+    assert '"version": "1.12.54"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.54"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.54"' in _read(REBUILD_PANEL)
+    assert "v1.12.54" in _read(DOC)
 
 
 def test_r7_009_doc_records_irrigation_formula_and_boundaries():
@@ -106,11 +106,12 @@ def test_r7_009_irrigation_detail_names_rule_ai_safety_and_fallback_items():
         assert marker in text
 
 
-def test_r7_009_irrigation_detail_is_only_attached_to_irrigation_domain():
+def test_r7_009_irrigation_detail_is_absorbed_into_visual_domain():
     text = _read(REBUILD_PANEL)
-    assert 'subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""' in text
+    assert 'subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""' in text
     assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""' in text
     assert 'subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""' in text
+    assert 'data-r7-irrigation-detail-absorbed="true"' in text
 
 
 def test_r7_009_does_not_add_irrigation_execution_or_write_authority():
@@ -134,32 +135,35 @@ def test_r7_009_does_not_add_irrigation_execution_or_write_authority():
         assert marker not in text
 
 
-def test_r7_009_node_smoke_renders_irrigation_detail():
+def test_r7_009_node_smoke_renders_irrigation_visual_absorbed_detail_items():
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
       globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
-      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-009-readonly-smoke', zones: [] }}) }};
+      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-009-absorbed-visual-smoke', zones: [] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
       panel.setR7ActiveDomain('irrigation-fertigation');
       const html = panel.innerHTML;
       const required = [
         'data-r7-detail-subpage="irrigation-fertigation"',
-        'data-r7-irrigation-fertigation-detail',
-        'data-r7-irrigation-manual-settings',
-        'data-r7-irrigation-rule-schedule',
-        'data-r7-irrigation-ai-assist',
-        'data-r7-irrigation-safety-final',
-        'data-r7-irrigation-fallback',
-        'AI 없이도 관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 양액 레시피 기준으로 운영 가능해야 합니다',
-        '관수·양액 도메인은 환경 actuator strategy를 직접 소유하지 않습니다'
+        'data-r7-irrigation-zone-visual="true"',
+        'data-r7-irrigation-detail-absorbed="true"',
+        'data-r7-irrigation-setting-card',
+        'data-r7-irrigation-rule-card',
+        'data-r7-irrigation-assist-card',
+        'data-r7-irrigation-safety-card',
+        '관수 스케줄', '일사 누적 관수', 'EC 목표', 'pH 목표', '급액량', '배액률', '드라이백', '양액 레시피',
+        '시간 기반 관수', '근권 수분 기준 관수', '저수조/배액 재활용 점검',
+        'aiIrrigationCorrection', '수동 기준 대비 차이', 'fallback',
+        '관수 한계', '센서 신선도', '최종 관수 후보'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
+      if (html.includes('data-r7-irrigation-fertigation-detail')) process.exit(3);
       if (html.includes('data-r7-irrigation-execute')) process.exit(2);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)

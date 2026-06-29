@@ -78,6 +78,8 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     rebuild = _read(REBUILD_PANEL)
     assert "Green Smart — Modern SaaS greenhouse dashboard" in legacy
     assert "green-smart-rebuild-panel" in rebuild
-    # RS-003~RS-027 and R7-001~R7-017 add real CBA interactions, API loading, crop_cycle cards, assignment read models, read-only projections,
-    # virtual runner contract/result adapters, the R7 manual-first sidebar shell, domain placeholders, settings/admin realignment, environment/irrigation/device details, recommendation/automation detail, safety/history detail, domain-page routing, common visual UI, operations dashboard rewrite, and the first shared domain visual frame while keeping the rebuild surface far below the legacy panel scale.
-    assert len(rebuild.splitlines()) < 1500
+    # RS-003~RS-027 and R7-001~R7-020 add real CBA interactions, API loading, crop_cycle cards, assignment read models, read-only projections,
+    # virtual runner contract/result adapters, the R7 manual-first sidebar shell, domain placeholders, settings/admin realignment, environment/irrigation/device details,
+    # recommendation/automation detail, safety/history detail, domain-page routing, common visual UI, operations dashboard rewrite, shared domain visual frames,
+    # and detail-card absorption for environment + irrigation while keeping the rebuild surface far below the legacy panel scale.
+    assert len(rebuild.splitlines()) < 1700
