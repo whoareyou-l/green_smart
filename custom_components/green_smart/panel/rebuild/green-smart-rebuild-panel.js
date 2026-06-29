@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.71";
+const REBUILD_VERSION = "1.12.72";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1476,11 +1476,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return this._r7DefaultZoneForDomain();
   }
 
-  renderR7DomainZoneContextBar(domainKey) {
+  renderR7DomainZoneContextBar(domainKey, embedded = false) {
     const zones = this._r7SortedZonesForDomain();
     const selectedZone = this._r7DefaultZoneForDomain();
     const selectedId = this._r7ZoneId(selectedZone);
-    return `<section data-r7-zone-context-bar data-r7-zone-context-domain="${domainKey}" data-r7-zone-context-default="${selectedId}" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;">
+    const shellStyle = embedded
+      ? "border:0;border-top:1px solid #e5f0e8;border-radius:0;background:transparent;padding:14px 0 0;display:grid;gap:12px;"
+      : "border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;";
+    return `<section data-r7-zone-context-bar data-r7-zone-context-domain="${domainKey}" data-r7-zone-context-default="${selectedId}" data-r7-zone-context-embedded="${embedded ? "true" : "false"}" style="${shellStyle}">
       <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><strong style="color:#24323f;font-size:15px;">현재 선택 구역</strong><button type="button" data-r7-zone-sync-button data-r7-zone-sync-domain="${domainKey}" style="border:1px solid #cfe3d4;border-radius:999px;background:#f8fcf9;color:#31523b;padding:5px 9px;font-size:11px;font-weight:1000;cursor:pointer;">동기화</button></div><p data-r7-active-zone="${selectedId}" style="margin:5px 0 0;color:#5d6f62;font-size:13px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</p></div>${this.renderR7FreshnessPill("fresh", "센서 freshness")}</div>
       <div data-r7-zone-selector style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">${(zones.length ? zones : [selectedZone]).map((zone) => {
         const zoneId = this._r7ZoneId(zone);
@@ -1490,20 +1493,29 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
-  renderR7DomainSubtabs(domainKey, tabs, activeKey) {
-    return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" role="tablist" style="display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;">${tabs.map(([key, label]) => {
+  renderR7DomainSubtabs(domainKey, tabs, activeKey, embedded = false) {
+    const shellStyle = embedded
+      ? "display:flex;flex-wrap:wrap;gap:8px;border:0;border-radius:0;background:transparent;padding:0;"
+      : "display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;";
+    return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" data-r7-domain-subtabs-embedded="${embedded ? "true" : "false"}" role="tablist" style="${shellStyle}">${tabs.map(([key, label]) => {
       const active = key === activeKey;
       const domainSubtabMarker = domainKey === "crop-operations" ? `data-r7-crop-subtab="${key}"` : domainKey === "safety-history" ? `data-r7-safety-subtab="${key}"` : domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : domainKey === "recommendation-automation" ? `data-r7-recommendation-subtab="${key}"` : "";
       return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;cursor:pointer;">${label}</button>`;
     }).join("")}</nav>`;
   }
 
+  renderR7UnifiedDomainContentCard(domainKey, tabs, activeTab, panels) {
+    return `<section data-r7-domain-content-card="tabs-zone-content" data-r7-domain-content-card-unified="true" data-r7-domain-content-card-domain="${domainKey}" style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:14px;box-shadow:0 8px 24px rgba(49,82,59,.05);">
+      <div data-r7-domain-content-card-section="subtabs">${this.renderR7DomainSubtabs(domainKey, tabs, activeTab, true)}</div>
+      <div data-r7-domain-content-card-section="zone">${this.renderR7DomainZoneContextBar(domainKey, true)}</div>
+      <div data-r7-domain-content-card-section="panel" style="border-top:1px solid #e5f0e8;padding-top:14px;display:grid;gap:10px;">${panels}</div>
+    </section>`;
+  }
+
   renderR7DomainVisualFrame({ domainKey, title, kicker, summary, status, tabs, activeTab, panels }) {
-    return `<section data-r7-domain-visual-frame data-r7-domain-visual-frame-version="1" data-r7-domain-visual-frame-domain="${domainKey}" data-r7-domain-frame-order="title-subtabs-zone-content" data-r7-domain-top-env-metrics="removed" style="display:grid;gap:14px;">
+    return `<section data-r7-domain-visual-frame data-r7-domain-visual-frame-version="1" data-r7-domain-visual-frame-domain="${domainKey}" data-r7-domain-frame-order="title-unified-card" data-r7-domain-previous-frame-order="title-subtabs-zone-content" data-r7-domain-top-env-metrics="removed" style="display:grid;gap:14px;">
       <section data-r7-domain-visual-hero style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#ffffff,#eaf6ee);padding:18px;display:grid;gap:12px;"><div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">${kicker}</p><h3 style="margin:6px 0 0;color:#24323f;font-size:24px;">${title}</h3><p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${summary}</p></div>${this.renderR7StatusBadge(status || "attention", status === "normal" ? "정상" : "주의")}</div></section>
-      ${this.renderR7DomainSubtabs(domainKey, tabs, activeTab)}
-      ${this.renderR7DomainZoneContextBar(domainKey)}
-      ${panels}
+      ${this.renderR7UnifiedDomainContentCard(domainKey, tabs, activeTab, panels)}
     </section>`;
   }
 

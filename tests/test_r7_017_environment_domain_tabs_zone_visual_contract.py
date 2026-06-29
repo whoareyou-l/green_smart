@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_017_version_surfaces_are_1_12_49():
-    assert '"version": "1.12.71"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.71"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.71"' in _read(REBUILD_PANEL)
-    assert "v1.12.71" in _read(DOC)
+    assert '"version": "1.12.72"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.72"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.72"' in _read(REBUILD_PANEL)
+    assert "v1.12.72" in _read(DOC)
 
 
 def test_r7_017_doc_defines_shared_domain_visual_frame_and_runtime_boundaries():
@@ -52,7 +52,8 @@ def test_r7_017_panel_declares_shared_visual_helpers_and_markers():
         "data-r7-domain-visual-frame",
         'data-r7-domain-visual-frame-version="1"',
         "data-r7-domain-visual-hero",
-        'data-r7-domain-frame-order="title-subtabs-zone-content"',
+        'data-r7-domain-frame-order="title-unified-card"',
+        'data-r7-domain-content-card="tabs-zone-content"',
         'data-r7-domain-top-env-metrics="removed"',
         "data-r7-domain-subtabs",
         "data-r7-domain-subtab",
@@ -92,7 +93,8 @@ def test_r7_017_environment_page_renders_zone_scoped_subtab_visual_frame():
         'data-r7-domain-visual-frame',
         'data-r7-domain-visual-frame-version="1"',
         'data-r7-domain-visual-hero',
-        'data-r7-domain-frame-order="title-subtabs-zone-content"',
+        'data-r7-domain-frame-order="title-unified-card"',
+        'data-r7-domain-content-card="tabs-zone-content"',
         'data-r7-domain-top-env-metrics="removed"',
         'data-r7-zone-context-bar',
         'data-r7-zone-selector',

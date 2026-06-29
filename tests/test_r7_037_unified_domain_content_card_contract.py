@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
-DOC = ROOT / "docs/rebuild/r7-036-domain-header-card-order-cleanup.md"
+DOC = ROOT / "docs/rebuild/r7-037-unified-domain-content-card.md"
 
 DOMAINS = [
     "crop-operations",
@@ -22,38 +22,44 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_036_version_surfaces_are_1_12_71():
+def test_r7_037_version_surfaces_are_1_12_72():
     assert '"version": "1.12.72"' in _read(MANIFEST)
     assert 'const VERSION = "1.12.72"' in _read(LEGACY_PANEL)
     assert 'REBUILD_VERSION = "1.12.72"' in _read(REBUILD_PANEL)
     assert "v1.12.72" in _read(DOC)
 
 
-def test_r7_036_doc_records_requested_domain_order_and_removed_metric_grid():
+def test_r7_037_doc_records_unified_card_request_and_boundary():
     text = _read(DOC)
     for phrase in (
-        "title / hero card",
+        "one unified content card",
         "domain sub-tabs",
         "selected zone / zone selector",
-        "active sub-tab content card",
-        'data-r7-domain-frame-order="title-subtabs-zone-content"',
-        'data-r7-domain-top-env-metrics="removed"',
-        "No API route change in R7-036",
+        "active sub-tab content",
+        'data-r7-domain-frame-order="title-unified-card"',
+        'data-r7-domain-content-card="tabs-zone-content"',
+        'data-r7-domain-content-card-unified="true"',
+        "No API route change in R7-037",
     ):
         assert phrase in text
 
 
-def test_r7_036_source_removes_top_env_metric_summary_grid_and_marks_new_order():
+def test_r7_037_source_defines_unified_domain_content_shell():
     text = _read(REBUILD_PANEL)
-    assert 'data-r7-domain-previous-frame-order="title-subtabs-zone-content"' in text
-    assert 'data-r7-domain-frame-order="title-unified-card"' in text
-    assert 'data-r7-domain-top-env-metrics="removed"' in text
-    assert "renderR7DomainTopEnvMetrics" not in text
-    forbidden = 'data-r7-domain-visual-summary-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;">${this.renderR7MetricCard("온도", "24.1℃", "23~25℃", "+0.4℃", "정상")}${this.renderR7MetricCard("습도", "82%", "70~78%", "+4%", "주의")}${this.renderR7MetricCard("VPD", "0.72 kPa", "0.8~1.2", "-0.08", "주의")}${this.renderR7MetricCard("CO₂", "720 ppm", "600~900", "0", "정상")}</section>'
-    assert forbidden not in text
+    for marker in (
+        "renderR7UnifiedDomainContentCard",
+        'data-r7-domain-frame-order="title-unified-card"',
+        'data-r7-domain-content-card="tabs-zone-content"',
+        'data-r7-domain-content-card-unified="true"',
+        'data-r7-domain-content-card-domain="${domainKey}"',
+        'data-r7-domain-content-card-section="subtabs"',
+        'data-r7-domain-content-card-section="zone"',
+        'data-r7-domain-content-card-section="panel"',
+    ):
+        assert marker in text
 
 
-def test_r7_036_render_smoke_domain_order_and_no_top_metric_grid():
+def test_r7_037_render_smoke_tabs_zone_panel_are_inside_one_card():
     script = f"""
       const classSet = new Set();
       globalThis.location = {{ pathname: '/green_smart', search: '', hash: '' }};
@@ -78,27 +84,28 @@ def test_r7_036_render_smoke_domain_order_and_no_top_metric_grid():
         const frameStart = html.indexOf(`data-r7-domain-visual-frame-domain="${{domain}}"`);
         const nextPage = frameStart >= 0 ? html.indexOf('data-r7-domain-page="', frameStart + 1) : -1;
         const frame = frameStart >= 0 ? html.slice(frameStart, nextPage > frameStart ? nextPage : undefined) : '';
+        const cardStart = frame.indexOf(`data-r7-domain-content-card-domain="${{domain}}"`);
+        const card = cardStart >= 0 ? frame.slice(cardStart) : '';
+        const hero = frame.indexOf('data-r7-domain-visual-hero');
+        const cardIndex = frame.indexOf('data-r7-domain-content-card="tabs-zone-content"');
+        const tabs = card.indexOf('data-r7-domain-subtabs');
+        const zone = card.indexOf('data-r7-zone-context-bar');
+        const subpanel = card.indexOf('data-r7-domain-subtab-panel');
         const required = [
           'data-r7-domain-frame-order="title-unified-card"',
-          'data-r7-domain-previous-frame-order="title-subtabs-zone-content"',
-          'data-r7-domain-top-env-metrics="removed"',
-          'data-r7-domain-visual-hero',
           'data-r7-domain-content-card="tabs-zone-content"',
-          'data-r7-domain-subtabs',
-          'data-r7-zone-context-bar',
-          'data-r7-domain-subtab-panel',
+          'data-r7-domain-content-card-unified="true"',
+          `data-r7-domain-content-card-domain="${{domain}}"`,
+          'data-r7-domain-content-card-section="subtabs"',
+          'data-r7-domain-content-card-section="zone"',
+          'data-r7-domain-content-card-section="panel"',
+          'data-r7-domain-top-env-metrics="removed"',
         ];
         const missing = required.filter((item)=>!frame.includes(item));
-        const hero = frame.indexOf('data-r7-domain-visual-hero');
-        const card = frame.indexOf('data-r7-domain-content-card="tabs-zone-content"');
-        const tabs = frame.indexOf('data-r7-domain-subtabs');
-        const zone = frame.indexOf('data-r7-zone-context-bar');
-        const panelIndex = frame.indexOf('data-r7-domain-subtab-panel');
-        const orderOk = hero >= 0 && card > hero && tabs > card && zone > tabs && panelIndex > zone;
-        const beforeTabs = tabs >= 0 ? frame.slice(hero, tabs) : frame;
-        const forbiddenTopGrid = beforeTabs.includes('data-r7-domain-visual-summary-grid') || beforeTabs.includes('24.1℃') || beforeTabs.includes('0.72 kPa') || beforeTabs.includes('720 ppm');
-        if (missing.length || !orderOk || forbiddenTopGrid) {{
-          console.error(JSON.stringify({{domain, missing, order: {{hero, tabs, zone, panelIndex}}, forbiddenTopGrid, frame: frame.slice(0, 2400)}}));
+        const orderOk = hero >= 0 && cardIndex > hero && tabs >= 0 && zone > tabs && subpanel > zone;
+        const separateSiblingOrder = frame.indexOf('data-r7-domain-subtabs') >= 0 && frame.indexOf('data-r7-domain-subtabs') < cardIndex;
+        if (missing.length || !orderOk || separateSiblingOrder) {{
+          console.error(JSON.stringify({{domain, missing, order: {{hero, cardIndex, tabs, zone, subpanel}}, separateSiblingOrder, frame: frame.slice(0, 2600)}}));
           process.exit(1);
         }}
       }}

@@ -29,11 +29,11 @@ def _load_module(path: Path, name: str):
 
 
 def test_vs_n002_version_surfaces_are_aligned_to_1_12_27():
-    assert '"version": "1.12.71"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.71"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.71"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.72"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.72"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.72"' in _read(REBUILD_PANEL)
     for path in (DOC, PRODUCT_PLAN, EXEC_PLAN, TARGET_ARCH, MASTER_UI, INTERFACE_SPEC, DB_SPEC):
-        assert "v1.12.71" in _read(path)
+        assert "v1.12.72" in _read(path)
 
 
 def test_vs_n002_document_records_scope_and_non_goals():
