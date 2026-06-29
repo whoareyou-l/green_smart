@@ -82,4 +82,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # recommendation/automation detail, safety/history detail, domain-page routing, common visual UI, operations dashboard rewrite, shared domain visual frames,
     # and detail-card absorption for environment + irrigation while keeping the rebuild surface far below the legacy panel scale.
     # R7-032 adds inline line-icon SVG paths for the HA-adjacent green sidebar; keep the guard tight but allow that explicit UI slice.
-    assert len(rebuild.splitlines()) < 1785
+    # R7-033 adds user-info/logout utility helpers while removing settings-admin from the main nav; still keep the rebuild surface bounded.
+    assert len(rebuild.splitlines()) < 1815
