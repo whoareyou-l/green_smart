@@ -5,60 +5,53 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
-DOC = ROOT / "docs/rebuild/r7-029-fixed-full-height-sidebar.md"
+DOC = ROOT / "docs/rebuild/r7-030-sticky-full-height-sidebar-repair.md"
 
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_029_version_surfaces_are_1_12_63():
+def test_r7_030_version_surfaces_are_1_12_64():
     assert '"version": "1.12.64"' in _read(MANIFEST)
     assert 'const VERSION = "1.12.64"' in _read(LEGACY_PANEL)
     assert 'REBUILD_VERSION = "1.12.64"' in _read(REBUILD_PANEL)
     assert "v1.12.64" in _read(DOC)
 
 
-def test_r7_029_doc_records_fixed_full_height_policy():
+def test_r7_030_doc_records_fixed_left_root_cause_and_sticky_fix():
     text = _read(DOC)
     for phrase in (
+        "position:fixed; left:0",
+        "grid layout에서 빼내 viewport 왼쪽에 강제로 붙인다",
+        "position:sticky",
         "height:100vh",
         "max-height:100vh",
-        "position:fixed",
-        "top:0",
-        "bottom:0",
         "overflow-y:auto",
-        'data-r7-sidebar-fixed-viewport="true"',
-        'data-r7-sidebar-height-policy="100vh-fixed"',
-        'data-r7-sidebar-scroll-policy="internal-auto"',
-        "operator compact reference rail",
-        "operator detailed sidebar",
-        "non-operator compact sidebar",
-        "non-operator detailed sidebar",
-        "No API route change in R7-029",
+        'data-r7-sidebar-height-policy="100vh-sticky"',
+        'data-r7-sidebar-position-policy="sticky-grid-safe"',
+        "No API route change in R7-030",
     ):
         assert phrase in text
 
 
-def test_r7_029_source_has_fixed_viewport_sidebar_policy_for_all_render_paths():
+def test_r7_030_source_uses_sticky_grid_safe_policy_not_fixed_left():
     text = _read(REBUILD_PANEL)
-    for marker in (
-        "_r7SidebarFixedViewportAttrs",
-        "_r7SidebarFixedViewportStyle",
-        'data-r7-sidebar-fixed-viewport="true"',
-        'data-r7-sidebar-height-policy="100vh-sticky"',
-        'data-r7-sidebar-scroll-policy="internal-auto"',
-        'data-r7-sidebar-position-policy="sticky-grid-safe"',
-        "height:100vh",
-        "max-height:100vh",
-        "position:sticky",
-        "top:0",
-        "overflow-y:auto",
-    ):
-        assert marker in text
+    assert 'data-r7-sidebar-height-policy="100vh-sticky"' in text
+    assert 'data-r7-sidebar-position-policy="sticky-grid-safe"' in text
+    assert "position:sticky" in text
+    assert "height:100vh" in text
+    assert "max-height:100vh" in text
+    assert "overflow-y:auto" in text
+    helper_start = text.index("  _r7SidebarFixedViewportStyle() {")
+    helper_end = text.index("  renderR7SidebarUtilityGroup", helper_start)
+    helper = text[helper_start:helper_end]
+    assert "position:fixed" not in helper
+    assert "left:0" not in helper
+    assert 'data-r7-sidebar-height-policy="100vh-fixed"' not in text
 
 
-def test_r7_029_node_smoke_all_sidebar_modes_are_fixed_full_height():
+def test_r7_030_node_smoke_sidebar_modes_stay_in_grid_with_sticky_100vh():
     script = f"""
       const classSet = new Set();
       globalThis.document = {{
@@ -95,7 +88,9 @@ def test_r7_029_node_smoke_all_sidebar_modes_are_fixed_full_height():
           'overflow-y:auto'
         ];
         const missing = required.filter((item) => !html.includes(item));
-        if (missing.length) {{ console.error(JSON.stringify({{label, missing}})); process.exit(1); }}
+        const aside = html.match(/<aside[\\s\\S]*?<\\/aside>/)?.[0] || '';
+        const forbidden = ['position:fixed', 'left:0', 'data-r7-sidebar-height-policy="100vh-fixed"'].filter((item) => aside.includes(item));
+        if (missing.length || forbidden.length) {{ console.error(JSON.stringify({{label, missing, forbidden}})); process.exit(1); }}
       }}
       console.log(JSON.stringify({{ok:true}}));
     """
