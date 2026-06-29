@@ -1,6 +1,6 @@
 # Green Smart Target Architecture — From-Scratch Rebuild Baseline
 
-> 기준 버전: `v1.12.62`
+> 기준 버전: `v1.12.63`
 > 상태: 방향 전환 기준선
 > 목적: 기존 RB 산출물을 이어서 계속 패치하지 않고, 이전 작업을 reference/evidence로 삼아 새 제품 구조를 설계한 뒤 새 vertical rebuild slice로 구현한다.
 
@@ -256,7 +256,7 @@ The chosen slice must define UI → frontend service → backend route/service �
 
 ## 14. VS-N002 Crop cycle recording scaffold
 
-`v1.12.62` adds the second R5 scaffold slice:
+`v1.12.63` adds the second R5 scaffold slice:
 
 ```text
 VS-N002 Crop cycle recording scaffold
@@ -272,7 +272,7 @@ This slice is scaffold-only. It does not change existing crop season save behavi
 
 ## 15. VS-N003 Real-time monitoring read-only scaffold
 
-`v1.12.62` adds the third R5 scaffold slice:
+`v1.12.63` adds the third R5 scaffold slice:
 
 ```text
 VS-N003 Real-time monitoring read-only scaffold
@@ -289,7 +289,7 @@ This slice is scaffold-only. It does not query `sensor_readings`, read HA entiti
 
 ## 16. VS-N004 Interlock/Safety core scaffold
 
-`v1.12.62` adds the fourth R5 scaffold slice:
+`v1.12.63` adds the fourth R5 scaffold slice:
 
 ```text
 VS-N004 Interlock/Safety core scaffold
@@ -306,7 +306,7 @@ This slice is scaffold-only. It does not change existing SafetyGuard/Interlock r
 
 ## R5 Foundation Completion Baseline
 
-`v1.12.62`에서 R5 foundation closure를 완료했다.
+`v1.12.63`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -333,7 +333,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.12.62`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.12.63`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -361,7 +361,7 @@ question gates must use clarify tool
 
 ## R6-002 Monitoring Read-only Adapter
 
-`v1.12.62`에서 R6-002 Monitoring read-only adapter를 완료했다.
+`v1.12.63`에서 R6-002 Monitoring read-only adapter를 완료했다.
 
 Reference:
 
@@ -393,7 +393,7 @@ question gates must use clarify tool
 
 ## R6-003 Safety/Interlock Read-only Adapter
 
-`v1.12.62`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+`v1.12.63`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
 
 Reference:
 
@@ -424,7 +424,7 @@ question gates must use clarify tool
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.12.62`에서 R7-000 IA blueprint를 완료했다.
+`v1.12.63`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -449,7 +449,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.12.62`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.12.63`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -474,7 +474,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.12.62`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.12.63`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -498,7 +498,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.12.62`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.12.63`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -523,7 +523,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.12.62`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.12.63`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 
