@@ -13,23 +13,23 @@ def _read(path: Path) -> str:
 
 
 def test_r7_046_version_surfaces_are_1_12_81():
-    assert '"version": "1.12.81"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.81"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.81"' in _read(REBUILD_PANEL)
-    assert "v1.12.81" in _read(DOC)
+    assert '"version": "1.12.82"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.82"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.82"' in _read(REBUILD_PANEL)
+    assert "v1.12.82" in _read(DOC)
 
 
 def test_r7_046_plan_documents_full_replacement_direction():
     text = _read(DOC)
     for phrase in [
-        "The previous card contents may be used only as design input",
-        "The old card labels/content are reference only",
-        "ProductScreen",
-        "ScreenHeader",
-        "PrimaryPanel",
-        "EvidenceRail",
-        "ActionBar",
-        "All six Crop Operations subtabs render product screens",
+        "Do not wrap `기록·작업` inside another visible title",
+        "subtab → product cards",
+        "Shared card grammar",
+        "오늘 할 일",
+        "생육조사",
+        "병해충 예찰",
+        "방제",
+        "기록 원천",
     ]:
         assert phrase in text
 
@@ -88,12 +88,12 @@ def test_r7_046_all_crop_subtabs_render_product_screens_with_context_values():
       panel._homeContext = {{ actorRole: 'operator', zones: [zone] }};
       const tabs = ['status-summary','crop-cycle','growth-target','records-workflow','model-assist','trend-evidence'];
       const requiredByTab = {{
-        'status-summary': ['data-r7-product-screen-kind="status-summary"','상태 요약 운영 화면','병해충 예찰 재확인'],
-        'crop-cycle': ['data-r7-product-screen-kind="crop-cycle"','작기 운영 화면','cycle-1','청치마','2026-06-01'],
-        'growth-target': ['data-r7-product-screen-kind="growth-target"','생육목표 운영 화면','활착기 → 엽수 확대','초기 활착 안정'],
-        'records-workflow': ['data-r7-product-screen-kind="records-workflow"','기록·작업 운영 화면','2026-06-28 · 초장 18.4cm · 엽수 9','2026-06-29 · 진딧물 · low','친환경유제'],
-        'model-assist': ['data-r7-product-screen-kind="model-assist"','모델·추천 운영 화면','관수 지연 검토 · 환기 후보 확인','승인 검토 필요'],
-        'trend-evidence': ['data-r7-product-screen-kind="trend-evidence"','추세·근거 운영 화면','2회 생육조사','1회 예찰','1회 방제']
+        'status-summary': ['data-r7-product-screen-kind="status-summary"','현재 작물','우선 확인','기록 상태','영향 요인','추천 검토','병해충 예찰 재확인'],
+        'crop-cycle': ['data-r7-product-screen-kind="crop-cycle"','작기 연결','작물 프로필','운영 경계','구역 배정 근거','cycle-1','청치마','2026-06-01'],
+        'growth-target': ['data-r7-product-screen-kind="growth-target"','현재 → 목표','관찰 포인트','환경 영향','기록 확인','활착기 → 엽수 확대','초기 활착 안정'],
+        'records-workflow': ['data-r7-product-screen-kind="records-workflow"','오늘 할 일','생육조사','병해충 예찰','방제','기록 원천','2026-06-28 · 초장 18.4cm · 엽수 9','2026-06-29 · 진딧물 · low','친환경유제'],
+        'model-assist': ['data-r7-product-screen-kind="model-assist"','추천 요약','근거 요인','승인/실행 경계','관수 지연 검토 · 환기 후보 확인','승인 검토 필요'],
+        'trend-evidence': ['data-r7-product-screen-kind="trend-evidence"','시즌 근거 요약','생육 흐름','영향 흐름','데이터 충분성','2회 생육조사','1회 예찰','1회 방제']
       }};
       const failed = [];
       for (const tab of tabs) {{

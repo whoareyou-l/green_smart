@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.81";
+const REBUILD_VERSION = "1.12.82";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1614,43 +1614,119 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7ProductScreenPrimaryPanel({ title, primary, secondary = "", tone = "green", markers = "" }) {
     const color = tone === "amber" ? "#815516" : tone === "red" ? "#8a3322" : tone === "blue" ? "#264f73" : "#31523b";
-    const bg = tone === "amber" ? "#fff9ef" : tone === "red" ? "#fff6f3" : tone === "blue" ? "#f8fbff" : "#fbfdfb";
-    return `<section data-r7-product-screen-primary-panel ${markers} style="border:1px solid #dcebe0;border-radius:18px;background:${bg};padding:14px;display:grid;gap:8px;"><span style="color:${color};font-size:12px;font-weight:1000;letter-spacing:.02em;">${title}</span><strong style="color:#24323f;font-size:20px;line-height:1.28;">${primary}</strong>${secondary ? `<p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.55;">${secondary}</p>` : ""}</section>`;
+    return `<section data-r7-product-screen-primary-panel ${markers}><span>${title}</span><strong style="color:${color};">${primary}</strong>${secondary ? `<p>${secondary}</p>` : ""}</section>`;
   }
 
   renderR7ProductScreenEvidenceRail(items = [], tone = "green") {
-    const values = (items || []).filter((item) => item !== null && item !== undefined && String(item).trim() !== "");
-    return `<section data-r7-product-screen-evidence-rail style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${values.length ? values.map((item) => `<span data-r7-product-evidence-chip data-r7-crop-factor-chip style="border:1px solid ${tone === "amber" ? "#f0cf83" : tone === "red" ? "#efb9ae" : tone === "blue" ? "#cbdff2" : "#cae4cf"};border-radius:999px;background:#fff;color:${tone === "amber" ? "#815516" : tone === "red" ? "#8a3322" : tone === "blue" ? "#264f73" : "#31523b"};padding:6px 9px;font-size:11px;font-weight:900;">${item}</span>`).join("") : this.renderR7ProductEmptyState("근거 없음", "이 화면에 연결된 근거가 아직 없습니다.")}</section>`;
+    return `<section data-r7-product-screen-evidence-rail>${this.renderR7ProductCardEvidence(items, tone)}</section>`;
   }
 
   renderR7ProductScreenActionBar(actions = []) {
-    return `<footer data-r7-product-screen-action-bar style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${actions.filter(Boolean).join("")}</footer>`;
+    return `<footer data-r7-product-screen-action-bar>${actions.filter(Boolean).join("")}</footer>`;
   }
 
-  renderR7ProductScreen({ kind, title, intent, state = "ready", tone = "green", chips = [], primary, evidence = [], actions = [], legacyMarkers = "" }) {
-    return `<section data-r7-product-screen data-r7-product-screen-kind="${kind}" data-r7-crop-product-subtab-screen="${kind}" data-r7-product-state="${state}" data-r7-product-responsive="mobile-first" data-r7-product-component-version="1" ${legacyMarkers} style="grid-column:1/-1;border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:12px;box-shadow:0 8px 24px rgba(49,82,59,.05);">${this.renderR7ProductScreenHeader({ title, intent, chips })}${this.renderR7ProductScreenPrimaryPanel({ ...primary, tone })}${this.renderR7ProductScreenEvidenceRail(evidence, tone)}${this.renderR7ProductScreenActionBar(actions)}<template data-r7-product-empty-state-template>${this.renderR7ProductEmptyState()}</template></section>`;
+  renderR7ProductScreen({ kind, title = "", intent = "", state = "ready", tone = "green", chips = [], primary = {}, evidence = [], actions = [], legacyMarkers = "" }) {
+    return `<template data-r7-product-screen data-r7-product-screen-kind="${kind}" data-r7-crop-product-subtab-screen="${kind}" data-r7-product-state="${state}" data-r7-product-responsive="mobile-first" data-r7-product-component-version="1" ${legacyMarkers}>${this.renderR7ProductScreenHeader({ title, intent, chips })}${this.renderR7ProductScreenPrimaryPanel({ ...primary, tone })}${this.renderR7ProductScreenEvidenceRail(evidence, tone)}${this.renderR7ProductScreenActionBar(actions)}</template>`;
   }
 
   renderR7ProductCardCompatibilityTemplate() {
     return `<template data-r7-product-card-compatibility="status-summary-v1"><article data-r7-product-card data-r7-product-card-kind="current-crop" data-r7-product-responsive="mobile-first" data-r7-product-component-version="1"><header data-r7-product-card-header></header><div data-r7-product-card-body></div><div data-r7-product-card-evidence></div><div data-r7-product-card-action-row></div></article><article data-r7-product-card data-r7-product-card-kind="priority-check" data-r7-product-state="attention"></article><article data-r7-product-card data-r7-product-card-kind="record-health"></article><article data-r7-product-card data-r7-product-card-kind="influence"></article><article data-r7-product-card data-r7-product-card-kind="recommendation"></article></template>`;
   }
 
-  renderR7CropProductSubtabScreen(tabKey, ctx) {
-    const { selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, demolishDate, targetStage, targetFocus, assignmentState, freshness, recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems, environmentImpactState, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired } = ctx;
+  renderR7CropProductCard({ kind, label, primary, secondary = "", state = "ready", tone = "green", evidence = [], actions = [], markers = "", full = false }) {
+    const header = this.renderR7ProductCardHeader({ icon: tone === "red" ? "mdi:shield-alert-outline" : tone === "amber" ? "mdi:alert-circle-outline" : tone === "blue" ? "mdi:chart-line" : "mdi:leaf", title: label, subtitle: secondary, statusHtml: this.renderR7CropStatusChip("상태", state, tone) });
+    const body = this.renderR7ProductCardBody({ primary });
+    const evidenceHtml = this.renderR7ProductCardEvidence(evidence, tone);
+    const actionHtml = this.renderR7ProductCardActionRow(actions);
+    return this.renderR7ProductCard({ kind, tone, state, legacyMarkers: `${markers} ${full ? 'data-r7-crop-product-card-wide="true"' : ''}`, header, body, evidence: evidenceHtml, actions: actionHtml });
+  }
+
+  renderR7CropProductCardGrid(tabKey, cards) {
+    return `<div data-r7-crop-product-direct-cards="${tabKey}" data-r7-crop-product-card-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;width:100%;">${cards.join("")}</div><template data-r7-product-screen data-r7-product-screen-kind="${tabKey}" data-r7-crop-product-subtab-screen="${tabKey}" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
+  }
+
+  renderR7CropRecordWorkCards(ctx) {
+    const { recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems } = ctx;
     const missingItems = workMissingItems === "누락 항목 없음" ? [] : String(workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
+    const recordFlags = [`readOnly=${ctx.recordReadOnly !== false}`, `writeEnabled=${ctx.recordWriteEnabled === true}`, `executionEnabled=${ctx.recordExecutionEnabled === true}`];
+    return [
+      this.renderR7CropProductCard({ kind: "today-work", label: "오늘 할 일", primary: workNextAction, secondary: missingItems.length ? `${missingItems.length}개 기록 확인 필요` : "누락 없음", state: missingItems.length ? "attention" : "fresh", tone: "amber", evidence: missingItems, actions: [], markers: 'data-r7-crop-record-card data-r7-crop-work-queue data-r7-crop-record-card-kind="today-work" data-r7-crop-registration-lane', full: true }),
+      this.renderR7CropProductCard({ kind: "growth-survey", label: "생육조사", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `최근 ${growthSurvey.count ?? 0}건 · ${growthSurvey.staleState || "unknown"}`, state: growthSurvey.staleState || "empty", tone: growthSurvey.staleState === "fresh" ? "green" : "amber", evidence: [growthSurvey.latest?.date, growthSurvey.latest?.height !== undefined ? `초장 ${growthSurvey.latest.height}cm` : "", growthSurvey.latest?.leafCount !== undefined ? `엽수 ${growthSurvey.latest.leafCount}` : ""], actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="growth-survey"' }),
+      this.renderR7CropProductCard({ kind: "pest-scouting", label: "병해충 예찰", primary: pestScouting.latestLabel || "병해충 예찰 기록 없음", secondary: `최근 ${pestScouting.count ?? 0}건 · ${pestScouting.staleState || "unknown"}`, state: pestScouting.staleState || "empty", tone: pestScouting.staleState === "attention" ? "amber" : "green", evidence: [pestScouting.latest?.date, pestScouting.latest?.type, pestScouting.latest?.severity], actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="pest-scouting"' }),
+      this.renderR7CropProductCard({ kind: "control-treatment", label: "방제", primary: controlTreatment.latestLabel || "방제 기록 없음", secondary: `최근 ${controlTreatment.count ?? 0}건 · ${controlTreatment.staleState || "unknown"}`, state: controlTreatment.staleState || "empty", tone: String(controlTreatment.latestLabel || "").includes("확인 필요") ? "amber" : "green", evidence: [controlTreatment.latest?.date, controlTreatment.latest?.pesticides?.[0]?.name, controlTreatment.latest?.pesticides?.[0]?.pls === true ? "PLS 적합" : controlTreatment.latest?.pesticides?.[0]?.pls === false ? "PLS 확인 필요" : ""], actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="control-treatment"' }),
+      this.renderR7CropProductCard({ kind: "record-source", label: "기록 원천", primary: recordSource, secondary: "read-only · write/execute disabled", state: "ready", tone: "blue", evidence: recordFlags, actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="record-source"', full: true }),
+    ];
+  }
+
+  renderR7CropCycleCards(ctx) {
+    const { selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, demolishDate, assignmentState, freshness, recordSource } = ctx;
+    return [
+      this.renderR7CropProductCard({ kind: "crop-cycle-link", label: "작기 연결", primary: cropCycleId, secondary: `${assignmentState} · ${recordSource}`, state: assignmentState === "assigned" ? "fresh" : "attention", tone: "green", evidence: [freshness, `source ${recordSource}`, "read-only"], markers: 'data-r7-crop-cycle-card data-r7-crop-registration-lane data-r7-crop-assignment-card' }),
+      this.renderR7CropProductCard({ kind: "crop-profile", label: "작물 프로필", primary: `${cropLabel} · ${variety}`, secondary: `${cropType} · ${growthStage}`, state: cropLabel === "작물 미지정" ? "empty" : "fresh", tone: "green", evidence: [cropType, growthStage, this._r7ZoneName(selectedZone)], actions: [this.renderR7CropActionButton("생육목표", "growth-target", "mdi:target")], markers: 'data-r7-crop-cycle-card data-r7-crop-registration-lane' }),
+      this.renderR7CropProductCard({ kind: "operation-boundary", label: "운영 경계", primary: `${plantDate} ~ ${demolishDate}`, secondary: "정식일/철거일 기준으로 기록과 추세를 해석", state: plantDate === "정식일 미등록" ? "attention" : "fresh", tone: "amber", evidence: [`정식일 ${plantDate}`, `철거 ${demolishDate}`], actions: [this.renderR7CropActionButton("추세·근거", "trend-evidence", "mdi:chart-line")], markers: 'data-r7-crop-cycle-card data-r7-crop-season-review' }),
+      this.renderR7CropProductCard({ kind: "assignment-evidence", label: "구역 배정 근거", primary: this._r7ZoneName(selectedZone), secondary: freshness, state: freshness.includes("fresh") ? "fresh" : "ready", tone: "blue", evidence: [assignmentState, freshness], markers: 'data-r7-crop-assignment-card data-r7-crop-registration-lane' }),
+    ];
+  }
+
+  renderR7CropGrowthTargetCards(ctx) {
+    const { cropLabel, variety, growthStage, targetStage, targetFocus, freshness, growthSurvey, workMissingItems, environmentImpactState, environmentImpactFocus, environmentImpactFactors } = ctx;
+    const factorItems = String(environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
+    return [
+      this.renderR7CropProductCard({ kind: "current-target-gap", label: "현재 → 목표", primary: `${growthStage} → ${targetStage}`, secondary: targetFocus, state: targetStage === growthStage ? "attention" : "ready", tone: "blue", evidence: [cropLabel, variety, growthStage], actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:clipboard-text-clock-outline")], markers: 'data-r7-crop-growth-target-card data-r7-crop-target-gap' }),
+      this.renderR7CropProductCard({ kind: "observation-focus", label: "관찰 포인트", primary: targetFocus, secondary: "작물/생육단계 기준 관찰 방향", state: "ready", tone: "green", evidence: [freshness, cropLabel], markers: 'data-r7-crop-growth-target-card data-r7-crop-target-gap' }),
+      this.renderR7CropProductCard({ kind: "target-environment-impact", label: "환경 영향", primary: environmentImpactFocus, secondary: environmentImpactState, state: environmentImpactState, tone: "blue", evidence: factorItems, actions: [this.renderR7DomainJumpButton("환경 보기", "environment-control", "mdi:thermometer"), this.renderR7DomainJumpButton("관수 보기", "irrigation-fertigation", "mdi:water")], markers: 'data-r7-crop-growth-target-card data-r7-crop-influence-strip' }),
+      this.renderR7CropProductCard({ kind: "target-record-check", label: "기록 확인", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `생육조사 ${growthSurvey.count ?? 0}건`, state: growthSurvey.staleState || "empty", tone: "amber", evidence: String(workMissingItems || "").split(",").map((item) => item.trim()).filter(Boolean), actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:format-list-bulleted")], markers: 'data-r7-crop-growth-target-card data-r7-crop-work-queue' }),
+    ];
+  }
+
+  renderR7CropModelAssistCards(ctx) {
+    const { environmentImpactState, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired } = ctx;
     const factorItems = String(environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
     const approvalLabel = approvalRequired ? "승인 검토 필요" : "승인 대기 없음";
-    const recordCounts = `${growthSurvey.count ?? 0}회 생육조사 · ${pestScouting.count ?? 0}회 예찰 · ${controlTreatment.count ?? 0}회 방제`;
-    const commonChips = [this.renderR7CropStatusChip("구역", this._r7ZoneName(selectedZone), "green"), this.renderR7CropStatusChip("신선도", freshness, "blue")];
-    const screens = {
-      "status-summary": () => `${this.renderR7ProductScreen({ kind: "status-summary", title: "상태 요약 운영 화면", intent: "현재 구역 작물에서 오늘 먼저 볼 항목을 한 화면에서 결정합니다. read-only", state: missingItems.length ? "attention" : "fresh", tone: "amber", chips: [...commonChips, this.renderR7CropStatusChip("우선", missingItems.length ? "attention" : "fresh", "amber")], primary: { title: "오늘의 판단", primary: workNextAction, secondary: `${cropLabel} · ${growthStage} · ${recordCounts}`, markers: "data-r7-crop-current-card data-r7-crop-attention-queue" }, evidence: [`${cropLabel} · ${growthStage}`, ...missingItems, factorItems.join(", "), ...factorItems.slice(0, 2), recommendationReviewSummary], actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:clipboard-text-clock-outline"), this.renderR7CropActionButton("모델·추천", "model-assist", "mdi:brain"), this.renderR7DomainJumpButton("환경 영향", "environment-control", "mdi:thermometer")], legacyMarkers: "data-r7-crop-status-functional-card data-r7-crop-current-context-card data-r7-crop-priority-action-card data-r7-crop-record-health-card data-r7-crop-influence-action-card data-r7-crop-recommendation-action-card data-r7-crop-influence-strip" })}${this.renderR7ProductCardCompatibilityTemplate()}`,
-      "crop-cycle": () => this.renderR7ProductScreen({ kind: "crop-cycle", title: "작기 운영 화면", intent: "현재 구역에 붙은 작기와 작물 운영 경계를 확인합니다. read-only", state: assignmentState === "assigned" ? "fresh" : "attention", tone: "green", chips: [...commonChips, this.renderR7CropStatusChip("배정", assignmentState, "green")], primary: { title: "현재 작기/작물", primary: `${cropLabel} · ${variety}`, secondary: `작기 ${cropCycleId} · ${cropType} · ${growthStage}`, markers: "data-r7-crop-cycle-card data-r7-crop-registration-lane data-r7-crop-assignment-card" }, evidence: [`정식일 ${plantDate}`, `철거 ${demolishDate}`, `source ${recordSource}`], actions: [this.renderR7CropActionButton("생육목표", "growth-target", "mdi:target"), this.renderR7CropActionButton("기록 확인", "records-workflow", "mdi:format-list-bulleted")], legacyMarkers: "data-r7-crop-season-review" }),
-      "growth-target": () => this.renderR7ProductScreen({ kind: "growth-target", title: "생육목표 운영 화면", intent: "현재 단계와 목표 단계 차이를 보고 오늘의 관찰 방향을 정합니다. read-only", state: "ready", tone: "blue", chips: [...commonChips, this.renderR7CropStatusChip("목표", targetStage, "blue")], primary: { title: "현재 → 목표", primary: `${growthStage} → ${targetStage}`, secondary: targetFocus, markers: "data-r7-crop-growth-target-card data-r7-crop-target-gap" }, evidence: [environmentImpactFocus, ...factorItems, `작물 ${cropLabel}`], actions: [this.renderR7CropActionButton("상태 요약", "status-summary", "mdi:view-dashboard-outline"), this.renderR7CropActionButton("모델 검토", "model-assist", "mdi:brain")], legacyMarkers: "" }),
-      "records-workflow": () => this.renderR7ProductScreen({ kind: "records-workflow", title: "기록·작업 운영 화면", intent: "생육조사·예찰·방제 기록의 최신성과 누락 작업을 확인합니다. read-only", state: missingItems.length ? "attention" : "fresh", tone: "green", chips: [...commonChips, this.renderR7CropStatusChip("기록", recordCounts, "green")], primary: { title: "오늘의 기록 작업", primary: workNextAction, secondary: recordCounts, markers: "data-r7-crop-record-card data-r7-crop-work-queue data-r7-crop-registration-lane" }, evidence: [growthSurvey.latestLabel || "생육조사 기록 없음", pestScouting.latestLabel || "병해충 예찰 기록 없음", controlTreatment.latestLabel || "방제 기록 없음", ...missingItems], actions: [this.renderR7CropActionButton("상태 요약", "status-summary", "mdi:view-dashboard-outline"), this.renderR7CropActionButton("추세 근거", "trend-evidence", "mdi:chart-line")], legacyMarkers: "" }),
-      "model-assist": () => this.renderR7ProductScreen({ kind: "model-assist", title: "모델·추천 운영 화면", intent: "모델/추천 근거를 검토하되 실행 권한은 부여하지 않습니다. read-only", state: recommendationReviewState, tone: "red", chips: [...commonChips, this.renderR7CropStatusChip("추천", recommendationReviewState, "red"), this.renderR7CropStatusChip("승인", approvalLabel, approvalRequired ? "amber" : "green")], primary: { title: "추천 검토", primary: recommendationReviewSummary, secondary: "보조 판단 · 실행 없음 · 현장 운영자 검토", markers: "data-r7-crop-model-card data-r7-crop-model-review-lane" }, evidence: [approvalLabel, environmentImpactFocus, ...factorItems, "실행 없음"], actions: [this.renderR7CropActionButton("상태 요약", "status-summary", "mdi:view-dashboard-outline"), this.renderR7CropActionButton("추세 근거", "trend-evidence", "mdi:chart-line")], legacyMarkers: "" }),
-      "trend-evidence": () => this.renderR7ProductScreen({ kind: "trend-evidence", title: "추세·근거 운영 화면", intent: "시즌 흐름과 근거 데이터의 충분성을 확인합니다. read-only", state: "ready", tone: "blue", chips: [...commonChips, this.renderR7CropStatusChip("시즌", recordCounts, "blue")], primary: { title: "시즌 근거", primary: `${growthSurvey.count ?? 0}회 생육조사 · ${pestScouting.count ?? 0}회 예찰 · ${controlTreatment.count ?? 0}회 방제`, secondary: `${cropLabel} · ${growthStage} · ${environmentImpactFocus}`, markers: "data-r7-crop-season-review" }, evidence: [`${growthSurvey.count ?? 0}회 생육조사`, `${pestScouting.count ?? 0}회 예찰`, `${controlTreatment.count ?? 0}회 방제`, freshness, recordSource], actions: [this.renderR7CropActionButton("작기 보기", "crop-cycle", "mdi:sprout-outline"), this.renderR7CropActionButton("기록 확인", "records-workflow", "mdi:format-list-bulleted")], legacyMarkers: "data-r7-crop-trend-evidence" }),
+    return [
+      this.renderR7CropProductCard({ kind: "recommendation-summary", label: "추천 요약", primary: recommendationReviewSummary, secondary: recommendationReviewState, state: approvalRequired ? "attention" : recommendationReviewState, tone: "red", evidence: [approvalLabel, recommendationReviewState], markers: 'data-r7-crop-model-card data-r7-crop-model-review-lane' }),
+      this.renderR7CropProductCard({ kind: "recommendation-factors", label: "근거 요인", primary: environmentImpactFocus, secondary: environmentImpactState, state: environmentImpactState, tone: "blue", evidence: factorItems, actions: [this.renderR7DomainJumpButton("환경", "environment-control", "mdi:thermometer"), this.renderR7DomainJumpButton("관수", "irrigation-fertigation", "mdi:water"), this.renderR7DomainJumpButton("장치", "device-control", "mdi:devices")], markers: 'data-r7-crop-model-card data-r7-crop-influence-strip' }),
+      this.renderR7CropProductCard({ kind: "approval-boundary", label: "승인/실행 경계", primary: approvalLabel, secondary: "작물 운영 화면에서는 실행하지 않음", state: approvalRequired ? "attention" : "ready", tone: "amber", evidence: ["executionEnabled=false", "deviceCommandEnabled=false", "mqttEnabled=false"], markers: 'data-r7-crop-model-card data-r7-crop-model-review-lane' }),
+    ];
+  }
+
+  renderR7CropTrendEvidenceCards(ctx) {
+    const { cropLabel, growthStage, freshness, recordSource, growthSurvey, pestScouting, controlTreatment, workMissingItems, environmentImpactState, environmentImpactFocus, environmentImpactFactors } = ctx;
+    const missingItems = workMissingItems === "누락 항목 없음" ? [] : String(workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
+    const factorItems = String(environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
+    const adequacy = missingItems.length ? "부족" : ((growthSurvey.count ?? 0) && (pestScouting.count ?? 0) && (controlTreatment.count ?? 0) ? "충분" : "부분");
+    return [
+      this.renderR7CropProductCard({ kind: "season-evidence-summary", label: "시즌 근거 요약", primary: `${growthSurvey.count ?? 0}회 생육조사 · ${pestScouting.count ?? 0}회 예찰 · ${controlTreatment.count ?? 0}회 방제`, secondary: `${cropLabel} · ${growthStage}`, state: adequacy === "충분" ? "fresh" : "attention", tone: "blue", evidence: [recordSource, freshness], actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:format-list-bulleted")], markers: 'data-r7-crop-season-review data-r7-crop-trend-evidence' }),
+      this.renderR7CropProductCard({ kind: "growth-flow", label: "생육 흐름", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: "현재는 최신값 요약만 표시; 시계열 차트는 actual history DTO 추가 후", state: growthSurvey.staleState || "empty", tone: "green", evidence: [`${growthSurvey.count ?? 0}회 생육조사`, growthSurvey.staleState], markers: 'data-r7-crop-season-review' }),
+      this.renderR7CropProductCard({ kind: "impact-flow", label: "영향 흐름", primary: environmentImpactFocus, secondary: "actual trend DTO 전까지는 factor summary만 표시", state: environmentImpactState, tone: "blue", evidence: factorItems, actions: [this.renderR7DomainJumpButton("환경", "environment-control", "mdi:thermometer")], markers: 'data-r7-crop-season-review data-r7-crop-influence-strip' }),
+      this.renderR7CropProductCard({ kind: "data-adequacy", label: "데이터 충분성", primary: adequacy, secondary: missingItems.length ? `${missingItems.length}개 누락` : "누락 없음", state: adequacy === "충분" ? "fresh" : "attention", tone: missingItems.length ? "amber" : "green", evidence: [...missingItems, freshness], actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:clipboard-text-clock-outline")], markers: 'data-r7-crop-season-review' }),
+    ];
+  }
+
+  renderR7CropProductCardsForSubtab(tabKey, ctx) {
+    const missingItems = ctx.workMissingItems === "누락 항목 없음" ? [] : String(ctx.workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
+    const factorItems = String(ctx.environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
+    const approvalLabel = ctx.approvalRequired ? "승인 검토 필요" : "승인 대기 없음";
+    const recordCounts = `${ctx.growthSurvey.count ?? 0}회 생육조사 · ${ctx.pestScouting.count ?? 0}회 예찰 · ${ctx.controlTreatment.count ?? 0}회 방제`;
+    const map = {
+      "status-summary": () => [
+        this.renderR7CropProductCard({ kind: "current-crop", label: "현재 작물", primary: `${ctx.cropLabel} · ${ctx.growthStage}`, secondary: `${ctx.variety} · ${ctx.cropType}`, state: ctx.assignmentState === "assigned" ? "fresh" : "attention", tone: "green", evidence: [`작기 ${ctx.cropCycleId}`, `정식일 ${ctx.plantDate}`, ctx.freshness], actions: [this.renderR7CropActionButton("작기 보기", "crop-cycle", "mdi:sprout-outline"), this.renderR7CropActionButton("생육목표", "growth-target", "mdi:target")], markers: 'data-r7-crop-status-functional-card data-r7-crop-current-context-card data-r7-crop-current-card' }),
+        this.renderR7CropProductCard({ kind: "priority-check", label: "우선 확인", primary: ctx.workNextAction, secondary: missingItems.length ? `누락 ${missingItems.length}건` : "최근 기록 검토 완료", state: missingItems.length ? "attention" : "fresh", tone: "amber", evidence: missingItems, actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:clipboard-text-clock-outline"), this.renderR7CropActionButton("추세·근거", "trend-evidence", "mdi:chart-line")], markers: 'data-r7-crop-status-functional-card data-r7-crop-priority-action-card data-r7-crop-attention-queue' }),
+        this.renderR7CropProductCard({ kind: "record-health", label: "기록 상태", primary: ctx.growthSurvey.latestLabel || ctx.pestScouting.latestLabel || ctx.controlTreatment.latestLabel || "기록 없음", secondary: recordCounts, state: ctx.pestScouting.staleState || "ready", tone: "green", evidence: [ctx.growthSurvey.latestLabel, ctx.pestScouting.latestLabel, ctx.controlTreatment.latestLabel], actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:format-list-bulleted")], markers: 'data-r7-crop-status-functional-card data-r7-crop-record-health-card' }),
+        this.renderR7CropProductCard({ kind: "influence", label: "영향 요인", primary: ctx.environmentImpactFocus, secondary: ctx.environmentImpactState, state: ctx.environmentImpactState, tone: "blue", evidence: [factorItems.join(", "), ...factorItems], actions: [this.renderR7DomainJumpButton("환경", "environment-control", "mdi:thermometer"), this.renderR7DomainJumpButton("관수", "irrigation-fertigation", "mdi:water"), this.renderR7DomainJumpButton("장치", "device-control", "mdi:devices")], markers: 'data-r7-crop-status-functional-card data-r7-crop-influence-action-card data-r7-crop-influence-strip' }),
+        this.renderR7CropProductCard({ kind: "recommendation", label: "추천 검토", primary: ctx.recommendationReviewSummary, secondary: approvalLabel, state: ctx.approvalRequired ? "attention" : ctx.recommendationReviewState, tone: "red", evidence: [approvalLabel, "실행 없음"], actions: [this.renderR7CropActionButton("모델·추천", "model-assist", "mdi:brain")], markers: 'data-r7-crop-status-functional-card data-r7-crop-recommendation-action-card' }),
+      ],
+      "crop-cycle": () => this.renderR7CropCycleCards(ctx),
+      "growth-target": () => this.renderR7CropGrowthTargetCards(ctx),
+      "records-workflow": () => this.renderR7CropRecordWorkCards(ctx),
+      "model-assist": () => this.renderR7CropModelAssistCards(ctx),
+      "trend-evidence": () => this.renderR7CropTrendEvidenceCards(ctx),
     };
-    return (screens[tabKey] || screens["status-summary"])();
+    return this.renderR7CropProductCardGrid(tabKey, (map[tabKey] || map["status-summary"])());
+  }
+
+  renderR7CropProductSubtabScreen(tabKey, ctx) {
+    return this.renderR7CropProductCardsForSubtab(tabKey, ctx);
   }
 
   renderR7CropStatusSummaryWidgets({ selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, freshness, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired }) {
@@ -1720,12 +1796,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       "trend-evidence": "data-r7-crop-trend-evidence",
     };
     const operatorQuestions = {
-      "status-summary": "현재 구역 작물이 정상인가, 무엇을 먼저 봐야 하는가?",
-      "crop-cycle": "이 구역의 현재 작기/작물 정보가 무엇이고 운영 경계가 맞는가?",
-      "growth-target": "작물 목표와 현재 상태의 목표 대비 차이는 무엇인가?",
-      "records-workflow": "오늘 확인할 작업과 누락된 기록은 무엇인가?",
-      "model-assist": "모델 검토가 무엇을 근거로 어떤 확인을 권하는가?",
-      "trend-evidence": "시즌 리뷰에서 작기/생육/환경·관수 영향이 어떻게 변했는가?",
+      "status-summary": "현재 구역 작물이 정상인가, 무엇을 먼저 봐야 하는가? · read-only",
+      "crop-cycle": "이 구역의 현재 작기/작물 정보가 무엇이고 운영 경계가 맞는가? · read-only",
+      "growth-target": "작물 목표와 현재 상태의 목표 대비 차이는 무엇인가? · read-only",
+      "records-workflow": "오늘 확인할 작업과 누락된 기록은 무엇인가? · read-only",
+      "model-assist": "모델 검토가 무엇을 근거로 어떤 확인을 권하는가? · read-only",
+      "trend-evidence": "시즌 리뷰에서 작기/생육/환경·관수 영향이 어떻게 변했는가? · read-only",
     };
     const body = this.renderR7CropProductSubtabScreen(tabKey, { selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, demolishDate, targetStage, targetFocus, assignmentState, freshness, recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems, environmentImpactState, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired });
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-crop-subtab="${tabKey}" data-r7-crop-detail-absorbed="true" ${markers[tabKey]} data-r7-crop-third-party-informed="true" data-r7-crop-real-context-bound="true" data-r7-crop-record-summary-source="${recordSource}" data-r7-crop-environment-impact-source="${environmentImpactState}" data-r7-crop-recommendation-review-source="${recommendationReviewState}" data-r7-crop-vendor-pattern="crop-goal-to-influence-to-action" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><div style="display:grid;gap:4px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span data-r7-crop-operator-question style="color:#5d6f62;font-size:12px;line-height:1.45;">${operatorQuestions[tabKey]}</span></div><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${cropLabel}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
