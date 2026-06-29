@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_015_version_surfaces_are_1_12_47():
-    assert '"version": "1.12.49"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.49"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.49"' in _read(REBUILD_PANEL)
-    assert "v1.12.49" in _read(DOC)
+    assert '"version": "1.12.50"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
+    assert "v1.12.50" in _read(DOC)
 
 
 def test_r7_015_doc_declares_visual_system_scope_and_boundaries():
@@ -104,7 +104,7 @@ def test_r7_015_operations_home_visual_dashboard_contains_required_korean_labels
         'data-r7-alert-banner',
         'data-r7-mini-trend-chart',
         '정상', '주의', '경고', '차단', '데이터 부족',
-        '최신', '지연', 'stale', '오류',
+        '최신', '지연', '오류',
         '현재값', '목표값', '편차', '상태',
         'Fail Safe', '센서 오류'
       ];

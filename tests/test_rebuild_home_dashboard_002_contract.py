@@ -25,14 +25,14 @@ def test_rs002_home_dashboard_uses_crop_centered_os_flow():
 def test_rs002_home_dashboard_labels_are_crop_first_not_function_first():
     source = _read(REBUILD_PANEL)
     for label in (
-        "작물 중심 운영체계",
+        "작물 상태를 먼저 확인합니다",
         "작물상태",
-        "생육목표",
+        "생육 목표",
         "환경·관수·장치 영향",
-        "추천·실행",
-        "작물이 먼저이고 제어는 그 다음입니다",
+        "추천·확인",
+        "오늘의 작물 운영",
         "구역별 세부 정보는 각 단계 안에서",
-        "추천은 실행 전 승인과 안전검사를 거칩니다",
+        "우선 확인",
     ):
         assert label in source
 
@@ -72,13 +72,15 @@ def test_rs002_zone_context_keeps_crop_as_main_frame_but_zones_as_detail_frame()
     assert "구역별" in source
     assert "data-crop-os-zone-contexts" not in source
     assert "구역별 작물 운영" not in source
-    for call in (
-        'this.renderZoneDrilldown("crop-status")',
-        'this.renderZoneDrilldown("growth-goal")',
-        'this.renderZoneDrilldown("environment-impact")',
-        'this.renderZoneDrilldown("recommend-act")',
+    for marker in (
+        "renderZoneDrilldown(stageKey)",
+        "renderZoneTabs(stageKey)",
+        "renderZonePanel(stageKey)",
+        "data-zone-detail-stage",
+        "data-zone-tab-id",
+        "data-zone-panel-id",
     ):
-        assert call in source
+        assert marker in source
 
 
 def test_rs002_frontend_does_not_show_developer_rebuild_or_legacy_transition_copy():

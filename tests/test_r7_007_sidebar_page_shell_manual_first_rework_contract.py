@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_007_version_surfaces_are_1_12_39():
-    assert '"version": "1.12.49"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.49"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.49"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.50"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
     for path in (DOC, SPEC, PLAN):
         assert "R7-007" in _read(path) or path == SPEC
 
@@ -111,12 +111,12 @@ def test_r7_007_detail_placeholders_render_eight_manual_first_domains_with_layer
 def test_r7_007_visible_copy_is_manual_first_and_ai_assist_not_execution_first():
     text = _read(REBUILD_PANEL)
     required = [
-        "수동 설정 우선 환경제어 shell",
-        "수동 설정 우선 환경제어 작업공간",
-        "수동 설정 → 기본 자동제어 → AI 보조 → Safety/Interlock/Fail Safe",
-        "AI가 없어도 수동 기준과 기본 자동제어로 운영 가능해야 합니다",
-        "AI 추천은 수동 기준과 기본 자동제어를 보조하며 Safety/Interlock/Fail Safe를 우회하지 않습니다.",
-        "4. 추천·자동화",
+        "작물·구역·경보 중심 운영 화면",
+        "오늘 상태를 확인하고 필요한 구역으로 이동합니다",
+        "오늘의 작물 운영",
+        "현재 선택 구역",
+        "우선 확인",
+        "4. 추천·확인",
     ]
     for phrase in required:
         assert phrase in text
@@ -163,8 +163,8 @@ def test_r7_007_node_smoke_renders_new_sidebar_and_domain_placeholders():
         'data-r7-domain-page-router="true"',
         'data-r7-active-domain="operations-home"',
         'data-r7-domain-page="operations-home"',
-        '수동 설정 우선 환경제어 작업공간',
-        '추천·자동화'
+        '오늘 상태를 확인하고 필요한 구역으로 이동합니다',
+        '추천·확인'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}

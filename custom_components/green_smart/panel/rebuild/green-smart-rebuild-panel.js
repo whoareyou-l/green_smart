@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.49";
+const REBUILD_VERSION = "1.12.50";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -761,7 +761,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7MiniTrendChart(label, stateLabel) {
-    return `<article data-r7-mini-trend-chart style="border:1px solid #dcebe0;border-radius:16px;background:linear-gradient(180deg,#fff,#f8fcf9);padding:14px;display:grid;gap:10px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:13px;">${label}</strong>${this.renderR7FreshnessPill("fresh", stateLabel)}</div><svg viewBox="0 0 180 54" role="img" aria-label="${label} trend placeholder" style="width:100%;height:54px;"><polyline points="4,42 36,34 68,38 100,24 132,28 176,14" fill="none" stroke="#78a87e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline><line x1="4" y1="44" x2="176" y2="44" stroke="#dcebe0" stroke-width="2"></line></svg><span style="color:#78927f;font-size:11px;">실제 chart API 연결 전 placeholder · read-only</span></article>`;
+    return `<article data-r7-mini-trend-chart style="border:1px solid #dcebe0;border-radius:16px;background:linear-gradient(180deg,#fff,#f8fcf9);padding:14px;display:grid;gap:10px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:13px;">${label}</strong>${this.renderR7FreshnessPill("fresh", stateLabel)}</div><svg viewBox="0 0 180 54" role="img" aria-label="${label} trend placeholder" style="width:100%;height:54px;"><polyline points="4,42 36,34 68,38 100,24 132,28 176,14" fill="none" stroke="#78a87e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline><line x1="4" y1="44" x2="176" y2="44" stroke="#dcebe0" stroke-width="2"></line></svg><span style="color:#78927f;font-size:11px;">최근 추세를 간단히 표시합니다</span></article>`;
   }
 
   renderR7VisualDashboard() {
@@ -779,18 +779,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7TrendBoard() {
-    return `<section data-r7-trend-board style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;"><strong style="color:#24323f;font-size:15px;">추세 보드</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("관수 추세", "최신")}</div></section>`;
+    return `<section data-r7-trend-board data-r7-main-trends style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;"><strong style="color:#24323f;font-size:15px;">추세</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("관수 추세", "최신")}</div></section>`;
   }
 
   renderR7CommandCenterHero() {
-    return `<section data-r7-command-center-hero style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#f8fffa,#e5f4eb);padding:20px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.9fr);gap:16px;align-items:stretch;">
-      <div style="display:grid;gap:12px;align-content:start;"><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">운영 지휘판</p><h2 style="margin:0;color:#24323f;font-size:28px;line-height:1.18;">전체 상태를 먼저 보고, 오늘 우선 확인 사항으로 바로 이동합니다</h2><div style="display:flex;flex-wrap:wrap;gap:8px;">${this.renderR7StatusBadge("attention", "전체 상태 · 주의")}${this.renderR7FreshnessPill("fresh", "최신")}${this.renderR7FreshnessPill("delay", "지연")}${this.renderR7FreshnessPill("stale", "stale")}${this.renderR7FreshnessPill("error", "오류")}${this.renderR7StatusBadge("unknown", "데이터 부족")}${this.renderR7StatusBadge("blocked", "차단 evidence")}</div></div>
-      <aside style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:14px;">최우선 조치</strong><span style="color:#5d6f62;font-size:13px;line-height:1.55;">안전 판단 차단과 장치 응답 지연을 먼저 확인하고, 작물/환경 상태는 read-only dashboard evidence로 검토합니다.</span>${this.renderR7StatusBadge("warning", "장치 응답 확인")}</aside>
+    const selectedZone = this._r7PrimaryZoneForDomain();
+    return `<section data-r7-command-center-hero data-r7-main-product-hero style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#f8fffa,#e5f4eb);padding:20px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.9fr);gap:16px;align-items:stretch;">
+      <div style="display:grid;gap:12px;align-content:start;"><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">오늘의 작물 운영</p><h2 style="margin:0;color:#24323f;font-size:28px;line-height:1.18;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)} 상태를 먼저 확인하세요</h2><div style="display:flex;flex-wrap:wrap;gap:8px;">${this.renderR7StatusBadge("attention", "전체 상태 · 주의")}${this.renderR7FreshnessPill("fresh", "최신")}${this.renderR7FreshnessPill("delay", "지연")}${this.renderR7StatusBadge("unknown", "데이터 부족")}${this.renderR7StatusBadge("blocked", "차단")}</div></div>
+      <aside data-r7-main-zone-focus style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:14px;">현재 선택 구역</strong><span style="color:#5d6f62;font-size:13px;line-height:1.55;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span>${this.renderR7StatusBadge("warning", "장치 응답 확인")}</aside>
     </section>`;
   }
 
   renderR7TodayPriorityPanel() {
-    return `<section data-r7-today-priority-panel style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:10px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">오늘 우선 확인</strong>${this.renderR7StatusBadge("attention", "주의")}</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SeverityCard("red", "안전 판단", "차단", "Fail Safe/인터록 evidence 먼저 확인")}${this.renderR7SeverityCard("orange", "장치 응답", "경고", "창/팬 응답 지연 표시")}${this.renderR7SeverityCard("yellow", "환경 편차", "주의", "야간 습도와 VPD 확인")}</div></section>`;
+    return `<section data-r7-today-priority-panel data-r7-main-priority-checks style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:10px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">우선 확인</strong>${this.renderR7StatusBadge("attention", "주의")}</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SeverityCard("red", "안전 판단", "차단", "현장 안전 상태 확인")}${this.renderR7SeverityCard("orange", "장치 응답", "경고", "창/팬 응답 지연")}${this.renderR7SeverityCard("yellow", "환경 편차", "주의", "야간 습도와 VPD 확인")}</div></section>`;
   }
 
   renderR7KpiRail() {
@@ -801,26 +802,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ["관수 상태", "정상", "2회 / 목표 2~3회"],
       ["장치 응답", "경고", "1개 지연"],
     ];
-    return `<section data-r7-kpi-rail style="display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">핵심 KPI</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">${items.map(([label, value, note]) => `<article data-r7-kpi-rail-item data-r7-metric-card style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:13px;display:grid;gap:7px;"><span style="color:#78927f;font-size:11px;font-weight:1000;">${label}</span><strong style="color:#24323f;font-size:20px;">${value}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.45;">${note}</span><small style="color:#78927f;font-size:11px;">현재값 · 목표값 · 편차 · 상태</small></article>`).join("")}</div></section>`;
+    return `<section data-r7-kpi-rail data-r7-main-kpi-grid style="display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">핵심 지표</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">${items.map(([label, value, note]) => `<article data-r7-kpi-rail-item data-r7-metric-card style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:13px;display:grid;gap:7px;"><span style="color:#78927f;font-size:11px;font-weight:1000;">${label}</span><strong style="color:#24323f;font-size:20px;">${value}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.45;">${note}</span><small style="color:#78927f;font-size:11px;">현재값 · 목표값 · 편차 · 상태</small></article>`).join("")}</div></section>`;
   }
 
   renderR7DomainBoard() {
-    const cards = [
+    const domainCards = [
       ["crop-operations", "작물 상태", "normal", "정상", "작물상태/생육목표는 안정권"],
       ["environment-control", "환경 편차", "attention", "주의", "습도/VPD 편차 확인"],
       ["irrigation-fertigation", "관수 상태", "normal", "정상", "관수/양액 기준 범위"],
       ["device-control", "장치 응답", "warning", "경고", "장치 응답 지연 1건"],
-      ["safety-history", "안전 판단", "blocked", "차단", "Fail Safe evidence 검토"],
+      ["safety-history", "안전 판단", "blocked", "차단", "현장 안전 상태 확인"],
     ];
-    return `<section data-r7-domain-board data-r7-domain-health-strip style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;"><strong style="color:#24323f;font-size:15px;">도메인 보드</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">${cards.map(([key, title, status, label, note]) => `<article data-r7-domain-board-card="${key}" data-r7-domain-health-item="${key}" style="border:1px solid #edf4ef;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:8px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong style="color:#31523b;font-size:13px;">${title}</strong>${this.renderR7StatusBadge(status, label)}</div><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${note}</span></article>`).join("")}</div></section>`;
+    const zones = this._zonesForRender().filter((zone) => this._r7ZoneId(zone) !== "all");
+    const zoneCards = (zones.length ? zones : [this._r7PrimaryZoneForDomain()]).map((zone, index) => {
+      const status = index === 0 ? "attention" : "normal";
+      const label = index === 0 ? "주의" : "정상";
+      return `<article data-r7-domain-board-card="zone-${this._r7ZoneId(zone)}" data-r7-zone-card-id="${this._r7ZoneId(zone)}" style="border:1px solid #edf4ef;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:8px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong style="color:#31523b;font-size:13px;">${this._r7ZoneName(zone)} · ${this._r7ZoneCropLabel(zone)}</strong>${this.renderR7StatusBadge(status, label)}</div><span style="color:#5d6f62;font-size:12px;line-height:1.5;">환경·관수·장치 상태 확인</span></article>`;
+    }).join("");
+    return `<section data-r7-domain-board data-r7-domain-health-strip data-r7-main-zone-status-grid style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;"><strong style="color:#24323f;font-size:15px;">구역별 상태</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">${zoneCards}${domainCards.map(([key, title, status, label, note]) => `<article data-r7-domain-board-card="${key}" data-r7-domain-health-item="${key}" style="border:1px solid #edf4ef;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:8px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong style="color:#31523b;font-size:13px;">${title}</strong>${this.renderR7StatusBadge(status, label)}</div><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${note}</span></article>`).join("")}</div></section>`;
   }
 
   renderR7AlertStack() {
-    return `<section data-r7-alert-stack style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">경보 스택</strong>${this.renderR7AlertBanner("red", "Fail Safe", "차단 상태는 실행 권한이 아니라 read-only evidence로만 표시합니다.")}${this.renderR7AlertBanner("orange", "센서 오류", "센서 오류/지연은 운영자가 먼저 확인해야 할 시각 경고로 표시합니다.")}${this.renderR7AlertBanner("yellow", "인터록 확인", "인터록/안전 판단은 현장 Edge가 최종 판단합니다.")}</section>`;
+    return `<section data-r7-alert-stack data-r7-main-alerts style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">경보</strong>${this.renderR7AlertBanner("red", "차단", "현장 안전 상태를 먼저 확인하세요.")}${this.renderR7AlertBanner("orange", "센서 오류", "센서 오류와 지연은 운영자가 먼저 확인해야 합니다.")}${this.renderR7AlertBanner("yellow", "인터록 확인", "인터록 상태와 현장 알람을 함께 확인하세요.")}</section>`;
   }
 
   renderR7OperationsDashboardRewrite() {
-    return `<section data-r7-operations-dashboard-rewrite="true" data-r7-visual-system="true" data-r7-dashboard-visual-hero style="display:grid;gap:14px;">
+    return `<section data-r7-operations-dashboard-rewrite="true" data-r7-main-product-dashboard="true" data-r7-visual-system="true" data-r7-dashboard-visual-hero style="display:grid;gap:14px;">
       ${this.renderR7CommandCenterHero()}
       ${this.renderR7TodayPriorityPanel()}
       ${this.renderR7KpiRail()}
@@ -836,19 +843,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
         ${this.renderContextLoadNotice()}
         ${this.renderR7OperationsDashboardRewrite()}
         <section data-r7-secondary-stage-flow style="display:grid;gap:14px;">
-        <header style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:14px;"><strong style="color:#24323f;font-size:15px;">보조 CBA 단계 흐름</strong><p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.5;">운영 지휘판 아래에서 작물 중심 단계별 세부 흐름을 보조 정보로 확인합니다.</p></header>
+        <header style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:14px;"><strong style="color:#24323f;font-size:15px;">작물 운영 흐름</strong><p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.5;">작물 상태부터 추천 확인까지 오늘 필요한 흐름만 간단히 확인합니다.</p></header>
         <article data-r7-dashboard-hero style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f0f8f2);padding:24px;">
-          <p style="margin:0 0 8px;font-size:12px;font-weight:800;color:#5d7d64;letter-spacing:.08em;text-transform:uppercase;">Crop-centered OS</p>
-          <h1 style="margin:0 0 12px;font-size:30px;line-height:1.2;color:#24323f;">작물 중심 운영체계</h1>
-          <p style="margin:0;color:#5d6f62;line-height:1.7;">작물이 먼저이고 제어는 manual/base settings에서 시작합니다. 수동 설정 → 기본 자동제어 → AI 보조 → Safety/Interlock/Fail Safe 순서로 오늘의 운영 판단을 정리합니다.</p>
-          <p style="margin:14px 0 0;font-size:13px;color:#78927f;">구역별 세부 정보는 각 단계 안에서 탭으로 필요한 구역만 선택해 확인합니다 · AI가 없어도 수동 기준과 기본 자동제어로 운영 가능해야 합니다</p>
+          <p style="margin:0 0 8px;font-size:12px;font-weight:800;color:#5d7d64;letter-spacing:.08em;text-transform:uppercase;">오늘의 작물 운영</p>
+          <h1 style="margin:0 0 12px;font-size:30px;line-height:1.2;color:#24323f;">작물 상태를 먼저 확인합니다</h1>
+          <p style="margin:0;color:#5d6f62;line-height:1.7;">작물 상태, 생육 목표, 환경·관수·장치 영향을 한 화면에서 보고 오늘의 우선 확인 항목을 정리합니다.</p>
+          <p style="margin:14px 0 0;font-size:13px;color:#78927f;">구역별 세부 정보는 각 단계 안에서 필요한 구역만 선택해 확인합니다.</p>
         </article>
-        ${this.renderR7SourceShapesSummary()}
         <section data-crop-os-flow-stages data-r7-stage-grid data-cba-layout="single-column-stage-flow" style="display:grid;grid-template-columns:1fr;gap:18px;">
-          <article data-r7-stage-card="crop-status" data-stage-card-shell data-crop-os-stage="crop-status" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">1. 작물상태</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">작물의 현재 생육 상태, 이상 징후, 관찰 필요 지점을 먼저 보여줍니다.</p>${this.renderZoneDrilldown("crop-status")}</article>
-          <article data-r7-stage-card="growth-goal" data-stage-card-shell data-crop-os-stage="growth-goal" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">2. 생육목표</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">오늘 목표 생육 방향과 우선순위를 운영자가 이해할 수 있게 정리합니다.</p>${this.renderZoneDrilldown("growth-goal")}</article>
-          <article data-r7-stage-card="environment-impact" data-stage-card-shell data-crop-os-stage="environment-impact" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">3. 환경·관수·장치 영향</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">온도, 습도, 광, 관수, 장치 상태를 작물 영향 관점으로 묶어 보여줍니다.</p>${this.renderZoneDrilldown("environment-impact")}</article>
-          <article data-r7-stage-card="recommend-act" data-stage-card-shell data-crop-os-stage="recommend-act" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">4. 추천·자동화</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">수동 기준값과 기본 자동제어 후보를 먼저 보고, AI 보조 차이와 fallback 값을 검토합니다.</p>${this.renderZoneDrilldown("recommend-act")}</article>
+          <article data-r7-stage-card="crop-status" data-stage-card-shell data-crop-os-stage="crop-status" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">1. 작물상태</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">작물의 현재 생육 상태, 이상 징후, 관찰 필요 지점을 먼저 보여줍니다.</p></article>
+          <article data-r7-stage-card="growth-goal" data-stage-card-shell data-crop-os-stage="growth-goal" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">2. 생육 목표</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">오늘 목표 생육 방향과 우선순위를 운영자가 이해할 수 있게 정리합니다.</p></article>
+          <article data-r7-stage-card="environment-impact" data-stage-card-shell data-crop-os-stage="environment-impact" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">3. 환경·관수·장치 영향</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">온도, 습도, 광, 관수, 장치 상태를 작물 영향 관점으로 묶어 보여줍니다.</p></article>
+          <article data-r7-stage-card="recommend-act" data-stage-card-shell data-crop-os-stage="recommend-act" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:20px;box-shadow:0 8px 24px rgba(49,82,59,.06);"><strong style="font-size:18px;color:#24323f;">4. 추천·확인</strong><p style="margin:8px 0 0;color:#6b7f70;line-height:1.6;">추천 내용과 확인이 필요한 차이를 간단히 검토합니다.</p></article>
         </section>
         </section>
       </section>
@@ -872,7 +878,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7Sidebar() {
     return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:16px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
       <div style="font-weight:1000;color:#24323f;font-size:18px;">Green Smart</div>
-      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">수동 설정 우선 환경제어 shell · read-only</p>
+      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">작물·구역·경보 중심 운영 화면</p>
       <template data-r7-deprecated-sidebar-groups>${R7_DEPRECATED_SIDEBAR_GROUPS.map((group) => `data-r7-sidebar-group="${group.key}" ${group.label} → ${group.replacement}`).join(" | ")}</template>
       ${R7_SIDEBAR_GROUPS.map((group) => {
         const active = this._activeR7Domain === group.key;
@@ -1352,7 +1358,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7DomainPageShell(subpage, body) {
     return `<section data-r7-domain-page-shell data-r7-domain-page="${subpage.key}" data-r7-domain-page-active="true" data-r7-domain-page-hidden="false" style="display:grid;gap:14px;">
       <header style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:16px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Selected domain page</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">현재 화면</p>
         <h3 style="margin:0;color:#24323f;font-size:20px;">${subpage.label}</h3>
         <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${subpage.summary}</p>
       </header>
@@ -1382,9 +1388,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7PageShell() {
     return `<section data-r7-page-shell data-r7-domain-page-router="true" data-r7-active-domain="${this._activeR7Domain}" style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-014 Domain Page Routing</p>
-        <h2 style="margin:0;color:#24323f;font-size:22px;">수동 설정 우선 환경제어 작업공간</h2>
-        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바에서 선택한 도메인만 중심 화면에 표시합니다. 운영 홈은 summary dashboard이고, 각 도메인은 독립 page/detail view로 전환됩니다.</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Green Smart 운영 화면</p>
+        <h2 style="margin:0;color:#24323f;font-size:22px;">오늘 상태를 확인하고 필요한 구역으로 이동합니다</h2>
+        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">왼쪽 메뉴에서 작물, 환경, 관수, 장치, 안전 상태를 구역별로 확인합니다.</p>
       </header>
       <div data-r7-page-workspace style="display:grid;gap:16px;">
         ${this.renderR7ActiveDomainPage()}

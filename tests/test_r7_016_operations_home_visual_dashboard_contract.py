@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_016_version_surfaces_are_1_12_48():
-    assert '"version": "1.12.49"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.49"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.49"' in _read(REBUILD_PANEL)
-    assert "v1.12.49" in _read(DOC)
+    assert '"version": "1.12.50"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
+    assert "v1.12.50" in _read(DOC)
 
 
 def test_r7_016_doc_declares_dashboard_rewrite_scope_and_boundaries():
@@ -94,8 +94,8 @@ def test_r7_016_operations_home_renders_new_dashboard_before_secondary_stage_flo
         'data-r7-metric-card',
         'data-r7-alert-banner',
         'data-r7-mini-trend-chart',
-        '운영 지휘판', '오늘 우선 확인', '핵심 KPI', '도메인 보드', '경보 스택', '추세 보드', '보조 CBA 단계 흐름',
-        '전체 상태', '작물 상태', '환경 편차', '관수 상태', '장치 응답', '안전 판단', '최우선 조치'
+        '오늘의 작물 운영', '우선 확인', '핵심 지표', '구역별 상태', '경보', '추세', '작물 운영 흐름',
+        '전체 상태', '작물 상태', '환경 편차', '관수 상태', '장치 응답', '안전 판단', '현재 선택 구역'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}

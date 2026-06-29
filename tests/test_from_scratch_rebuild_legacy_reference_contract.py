@@ -38,7 +38,7 @@ def test_from_scratch_rebuild_panel_exists_as_new_main_surface():
         "green-smart-rebuild-panel",
         "data-rebuild-root",
         "data-rebuild-empty-shell",
-        "작물 중심 운영체계",
+        "작물 상태를 먼저 확인합니다",
         "오늘의 작물 운영을 먼저 확인합니다",
         "구역별 세부 정보는 각 단계 안에서",
     ):

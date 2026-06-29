@@ -44,16 +44,20 @@ def test_rs003_zone_detail_uses_tabs_not_horizontal_card_scroll_as_primary_ui():
 
 def test_rs003_each_crop_os_stage_uses_the_same_zone_tab_component():
     source = _read(REBUILD_PANEL)
+    for marker in (
+        "renderZoneDrilldown(stageKey)",
+        "renderZoneTabs(stageKey)",
+        "renderZonePanel(stageKey)",
+        'data-zone-detail-stage="${stageKey}"',
+    ):
+        assert marker in source
     for stage_key in (
         "crop-status",
         "growth-goal",
         "environment-impact",
         "recommend-act",
     ):
-        assert f'this.renderZoneDrilldown("{stage_key}")' in source
-    assert "${this.renderZoneTabs(stageKey)}" in source
-    assert "${this.renderZonePanel(stageKey)}" in source
-    assert 'data-zone-detail-stage="${stageKey}"' in source
+        assert f'data-r7-stage-card="{stage_key}"' in source
 
 
 def test_rs003_zone_tab_clicks_update_visible_panel_without_rendering_all_zone_content():
