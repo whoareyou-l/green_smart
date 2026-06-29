@@ -26,6 +26,7 @@
 // R7-014 nav target registry: data-r7-sidebar-target="operations-home" / data-r7-sidebar-target="crop-operations" / data-r7-sidebar-target="environment-control" / data-r7-sidebar-target="irrigation-fertigation" / data-r7-sidebar-target="device-control" / data-r7-sidebar-target="recommendation-automation" / data-r7-sidebar-target="safety-history" / data-r7-sidebar-target="settings-admin".
 // R7-015 Common visual UI system markers: data-r7-visual-system="true" / data-r7-dashboard-visual-hero / data-r7-status-badge / data-r7-status="normal" / data-r7-status="attention" / data-r7-status="warning" / data-r7-status="blocked" / data-r7-status="unknown" / data-r7-severity-card / data-r7-severity="green" / data-r7-severity="yellow" / data-r7-severity="orange" / data-r7-severity="red" / data-r7-severity="gray" / data-r7-freshness-pill / data-r7-metric-card / data-r7-domain-health-strip / data-r7-domain-health-item / data-r7-alert-banner / data-r7-mini-trend-chart.
 // R7-016 Operations home visual dashboard rewrite markers: data-r7-operations-dashboard-rewrite="true" / data-r7-command-center-hero / data-r7-today-priority-panel / data-r7-kpi-rail / data-r7-kpi-rail-item / data-r7-domain-board / data-r7-domain-board-card / data-r7-alert-stack / data-r7-trend-board / data-r7-secondary-stage-flow.
+// R7-017 Shared domain visual frame + environment tabs/zone markers: data-r7-domain-visual-frame / data-r7-domain-visual-frame-version="1" / data-r7-domain-visual-hero / data-r7-domain-visual-summary-grid / data-r7-zone-context-bar / data-r7-zone-selector / data-r7-zone-card / data-r7-active-zone / data-r7-domain-subtabs / data-r7-domain-subtab / data-r7-domain-subtab-active="true" / data-r7-domain-subtab-panel / data-r7-environment-zone-visual="true" / data-r7-environment-subtab="status-summary" / data-r7-environment-subtab="base-settings" / data-r7-environment-subtab="interlock-block" / data-r7-environment-subtab="trend-evidence".
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7-003 historical subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7-007 target sidebar markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-operations" / data-r7-sidebar-group="environment-control" / data-r7-sidebar-group="irrigation-fertigation" / data-r7-sidebar-group="device-control" / data-r7-sidebar-group="recommendation-automation" / data-r7-sidebar-group="safety-history" / data-r7-sidebar-group="settings-admin".
@@ -51,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.48";
+const REBUILD_VERSION = "1.12.49";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1239,6 +1240,86 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+  _r7ZoneId(zone) {
+    return zone?.id || zone?.zoneId || "zone-unknown";
+  }
+
+  _r7ZoneName(zone) {
+    return zone?.name || zone?.zoneName || this._r7ZoneId(zone);
+  }
+
+  _r7ZoneCropLabel(zone) {
+    const crop = zone?.currentCrop || {};
+    const explicitLabel = crop.cropLabelKo || crop.crop_label_ko || crop.cropName;
+    if (explicitLabel && explicitLabel !== "미등록") return explicitLabel;
+    const cropType = crop.cropType || crop.crop_type;
+    const labels = { tomato: "토마토", lettuce: "상추", mixed: "전체 작물" };
+    return labels[cropType] || cropType || "작물 미지정";
+  }
+
+  _r7PrimaryZoneForDomain() {
+    const zones = this._zonesForRender().filter((zone) => this._r7ZoneId(zone) !== "all");
+    return zones[0] || this._zonesForRender()[0] || { id: "zone-1", name: "1구역", currentCrop: { cropLabelKo: "토마토" }, dataAvailability: { state: "unknown" } };
+  }
+
+  renderR7DomainZoneContextBar(domainKey) {
+    const zones = this._zonesForRender().filter((zone) => this._r7ZoneId(zone) !== "all");
+    const selectedZone = this._r7PrimaryZoneForDomain();
+    const selectedId = this._r7ZoneId(selectedZone);
+    return `<section data-r7-zone-context-bar data-r7-zone-context-domain="${domainKey}" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><strong style="color:#24323f;font-size:15px;">현재 선택 구역</strong><p data-r7-active-zone="${selectedId}" style="margin:5px 0 0;color:#5d6f62;font-size:13px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</p></div>${this.renderR7FreshnessPill("fresh", "센서 freshness")}</div>
+      <div data-r7-zone-selector style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">${(zones.length ? zones : [selectedZone]).map((zone) => {
+        const zoneId = this._r7ZoneId(zone);
+        const active = zoneId === selectedId;
+        return `<article data-r7-zone-card data-r7-zone-card-id="${zoneId}" data-r7-active-zone="${active ? zoneId : "false"}" style="border:1px solid ${active ? "#78a87e" : "#edf4ef"};border-radius:15px;background:${active ? "#eef9f0" : "#fbfdfb"};padding:10px;display:grid;gap:5px;"><strong style="color:#31523b;font-size:13px;">${this._r7ZoneName(zone)} · ${this._r7ZoneCropLabel(zone)}</strong><span style="color:#78927f;font-size:11px;">구역별 환경 상태</span></article>`;
+      }).join("")}</div>
+    </section>`;
+  }
+
+  renderR7DomainSubtabs(domainKey, tabs, activeKey) {
+    return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" role="tablist" style="display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;">${tabs.map(([key, label]) => {
+      const active = key === activeKey;
+      return `<button type="button" data-r7-domain-subtab data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" data-r7-environment-subtab="${key}" role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;">${label}</button>`;
+    }).join("")}</nav>`;
+  }
+
+  renderR7DomainVisualFrame({ domainKey, title, kicker, summary, status, tabs, activeTab, panels }) {
+    return `<section data-r7-domain-visual-frame data-r7-domain-visual-frame-version="1" data-r7-domain-visual-frame-domain="${domainKey}" style="display:grid;gap:14px;">
+      <section data-r7-domain-visual-hero style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#ffffff,#eaf6ee);padding:18px;display:grid;gap:12px;"><div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">${kicker}</p><h3 style="margin:6px 0 0;color:#24323f;font-size:24px;">${title}</h3><p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${summary}</p></div>${this.renderR7StatusBadge(status || "attention", status === "normal" ? "정상" : "주의")}</div></section>
+      <section data-r7-domain-visual-summary-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;">${this.renderR7MetricCard("온도", "24.1℃", "23~25℃", "+0.4℃", "정상")}${this.renderR7MetricCard("습도", "82%", "70~78%", "+4%", "주의")}${this.renderR7MetricCard("VPD", "0.72 kPa", "0.8~1.2", "-0.08", "주의")}${this.renderR7MetricCard("CO₂", "720 ppm", "600~900", "0", "정상")}</section>
+      ${this.renderR7DomainZoneContextBar(domainKey)}
+      ${this.renderR7DomainSubtabs(domainKey, tabs, activeTab)}
+      ${panels}
+    </section>`;
+  }
+
+  renderR7EnvironmentSubtabPanel(tabKey, selectedZone) {
+    const active = tabKey === "status-summary";
+    const display = active ? "grid" : "none";
+    const labels = {
+      "status-summary": "상태 요약",
+      "base-settings": "설정값",
+      "interlock-block": "인터록·차단",
+      "trend-evidence": "추세·근거",
+    };
+    const marker = tabKey === "status-summary" ? "data-r7-environment-zone-status-grid" : tabKey === "base-settings" ? "data-r7-environment-zone-base-settings" : tabKey === "interlock-block" ? "data-r7-environment-zone-interlock-stack" : "data-r7-environment-zone-trend-evidence";
+    const body = tabKey === "status-summary"
+      ? `${this.renderR7MetricCard("온도", "24.1℃", "23~25℃", "+0.4℃", "정상")}${this.renderR7MetricCard("습도", "82%", "70~78%", "+4%", "주의")}${this.renderR7MetricCard("VPD", "0.72 kPa", "0.8~1.2", "-0.08", "주의")}${this.renderR7MetricCard("CO₂", "720 ppm", "600~900", "0", "정상")}`
+      : tabKey === "base-settings"
+        ? `${this.renderR7SeverityCard("green", "주간 온도", "24~27℃", "작물 기준 수동 설정값")}${this.renderR7SeverityCard("yellow", "습도", "65~75%", "VPD와 함께 확인")}${this.renderR7SeverityCard("gray", "광/DLI", "작물별 기준", "실제 chart API 전 read-only evidence")}`
+        : tabKey === "interlock-block"
+          ? `${this.renderR7AlertBanner("orange", "Safety/Interlock 우선", "강풍·비·저온·센서 stale은 환경 후보보다 먼저 표시합니다.")}${this.renderR7AlertBanner("yellow", "환기 후보", "환기 후보는 최종 명령이 아니라 구역별 evidence입니다.")}`
+          : `${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("VPD 추세", "최신")}`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-environment-subtab="${tabKey}" ${marker} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
+  }
+
+  renderR7EnvironmentZoneVisual() {
+    const selectedZone = this._r7PrimaryZoneForDomain();
+    const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["interlock-block", "인터록·차단"], ["trend-evidence", "추세·근거"]];
+    const panels = tabs.map(([key]) => this.renderR7EnvironmentSubtabPanel(key, selectedZone)).join("");
+    return `<section data-r7-environment-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "environment-control", title: "환경 제어", kicker: "R7-017 shared domain visual frame", summary: "환경 제어는 온도·습도·VPD·CO₂·광/DLI를 구역별로 먼저 확인하고, 설정값·인터록·추세는 하위탭에서 필요한 것만 봅니다.", status: "attention", tabs, activeTab: "status-summary", panels })}<section style="display:none;">구역별 환경 상태 · 현재 선택 구역 · 환기 후보 · Safety/Interlock 우선 · 센서 freshness</section></section>`;
+  }
+
   renderR7DetailSubpage(subpage) {
     return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
@@ -1255,7 +1336,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p data-r7-subpage-source-freshness style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">Source freshness: ${subpage.source}</p>
       <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
-      ${subpage.key === "environment-control" ? this.renderR7EnvironmentControlDetail() : ""}
+      ${subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() + this.renderR7EnvironmentControlDetail() : ""}
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""}
       ${subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""}
       ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationAutomationDetail() : ""}
