@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.67";
+const REBUILD_VERSION = "1.12.68";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1023,6 +1023,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return { name, role, roleLabel: `${adminLabel} · ${role}` };
   }
 
+  _r7UserInitials(name) {
+    const text = String(name || "U").trim();
+    return (text[0] || "U").toUpperCase();
+  }
+
   _r7LogoutHref() {
     return "/auth/logout";
   }
@@ -1032,14 +1037,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const userInfo = this._r7CurrentUserInfo();
     const userName = this._r7Text(userInfo.name);
     const userRole = this._r7Text(userInfo.roleLabel);
+    const userInitial = this._r7Text(this._r7UserInitials(userInfo.name));
     const exitTitle = `${userName} · ${userRole} · 로그아웃`;
+    const settingsTitle = "설정·관리";
+    const settingsDescription = "RBAC·HA 매핑·진단";
+    const settingsUtility = referenceSlimRail
+      ? `<a href="#settings-admin" data-r7-settings-admin-utility-detail="true" data-r7-sidebar-utility-domain="settings-admin" data-r7-sidebar-utility-position="second-from-bottom" data-r7-sidebar-group="settings-admin" data-r7-sidebar-target="settings-admin" aria-label="${settingsTitle} · ${settingsDescription}" title="${settingsTitle} · ${settingsDescription}" style="${buttonStyle}position:relative;">${this._r7SidebarLineIcon("settings-admin")}<span data-r7-settings-admin-utility-title style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${settingsTitle}</span><span data-r7-settings-admin-utility-description style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${settingsDescription}</span></a>`
+      : `<a href="#settings-admin" data-r7-settings-admin-utility-detail="true" data-r7-sidebar-utility-domain="settings-admin" data-r7-sidebar-utility-position="second-from-bottom" data-r7-sidebar-group="settings-admin" data-r7-sidebar-target="settings-admin" aria-label="${settingsTitle} · ${settingsDescription}" title="${settingsTitle} · ${settingsDescription}" style="width:100%;min-height:50px;border:0;border-radius:12px;background:${this._activeR7Domain === "settings-admin" ? R7_GREEN_ACTIVE_BG : "transparent"};color:${this._activeR7Domain === "settings-admin" ? R7_GREEN_ACCENT : R7_GREEN_TEXT};display:flex;align-items:center;gap:10px;text-decoration:none;cursor:pointer;padding:0 10px;box-sizing:border-box;">${this._r7SidebarLineIcon("settings-admin")}<span style="display:grid;gap:2px;min-width:0;text-align:left;"><strong data-r7-settings-admin-utility-title style="font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${settingsTitle}</strong><small data-r7-settings-admin-utility-description style="font-size:11px;line-height:1.25;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${settingsDescription}</small></span></a>`;
     const exitInner = referenceSlimRail
-      ? `<svg data-r7-sidebar-line-icon="exit" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 17l-5-5 5-5"/><path d="M5 12h13"/><path d="M14 5h5v14h-5"/></svg><span data-r7-sidebar-user-name style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userName}</span><span data-r7-sidebar-user-role style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userRole}</span>`
-      : `<span style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;"><svg data-r7-sidebar-line-icon="exit" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 17l-5-5 5-5"/><path d="M5 12h13"/><path d="M14 5h5v14h-5"/></svg></span><span style="display:grid;gap:1px;min-width:0;text-align:left;"><strong data-r7-sidebar-user-name style="font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userName}</strong><small data-r7-sidebar-user-role style="font-size:10px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userRole}</small></span>`;
-    const exitStyle = referenceSlimRail ? `${buttonStyle}position:relative;` : `min-height:44px;width:100%;border:0;border-radius:10px;background:#f7fbf8;color:${R7_GREEN_TEXT};display:flex;align-items:center;justify-content:flex-start;gap:8px;text-decoration:none;cursor:pointer;padding:0 10px;box-sizing:border-box;`;
+      ? `<span data-r7-sidebar-user-avatar style="width:32px;height:32px;border-radius:999px;background:${R7_GREEN_ACCENT};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:1000;font-size:13px;">${userInitial}</span><span data-r7-sidebar-user-name style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userName}</span><span data-r7-sidebar-user-role style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userRole}</span>`
+      : `<span data-r7-sidebar-user-avatar style="width:36px;height:36px;border-radius:999px;background:${R7_GREEN_ACCENT};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:1000;font-size:14px;flex:0 0 36px;">${userInitial}</span><span data-r7-sidebar-user-info style="display:grid;gap:1px;min-width:0;text-align:left;flex:1 1 auto;"><strong data-r7-sidebar-user-name style="font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userName}</strong><small data-r7-sidebar-user-role style="font-size:10px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userRole}</small></span><span data-r7-sidebar-logout-button style="width:34px;height:34px;border-radius:10px;background:#ffffff;border:1px solid #dcebe0;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px;"><svg data-r7-sidebar-line-icon="exit" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 17l-5-5 5-5"/><path d="M5 12h13"/><path d="M14 5h5v14h-5"/></svg><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">로그아웃</span></span>`;
+    const exitStyle = referenceSlimRail ? `${buttonStyle}position:relative;` : `min-height:54px;width:100%;border:0;border-radius:14px;background:#f7fbf8;color:${R7_GREEN_TEXT};display:grid;grid-template-columns:36px minmax(0,1fr) 34px;align-items:center;gap:8px;text-decoration:none;cursor:pointer;padding:0 8px;box-sizing:border-box;`;
     return `<div data-r7-sidebar-utility-group style="display:grid;gap:4px;justify-items:center;margin-top:auto;padding-top:8px;border-top:1px solid #eef1f4;">
-      <a href="#settings-admin" data-r7-sidebar-utility-domain="settings-admin" data-r7-sidebar-utility-position="second-from-bottom" data-r7-sidebar-group="settings-admin" data-r7-sidebar-target="settings-admin" aria-label="설정·관리" title="설정·관리" style="${buttonStyle}">${this._r7SidebarLineIcon("settings-admin")}</a>
-      <a href="${this._r7LogoutHref()}" data-r7-sidebar-user-exit="true" data-r7-sidebar-utility="exit" data-r7-sidebar-logout-action="preserved" aria-label="${exitTitle}" title="${exitTitle}" style="${exitStyle}">${exitInner}</a>
+      ${settingsUtility}
+      <a href="${this._r7LogoutHref()}" data-r7-sidebar-user-exit="true" data-r7-sidebar-user-profile-layout="avatar-info-logout" data-r7-sidebar-utility="exit" data-r7-sidebar-logout-action="preserved" aria-label="${exitTitle}" title="${exitTitle}" style="${exitStyle}">${exitInner}</a>
     </div>`;
   }
 
