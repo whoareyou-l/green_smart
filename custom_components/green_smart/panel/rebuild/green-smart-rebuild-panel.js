@@ -24,6 +24,7 @@
 // R7-014 Domain page routing markers: data-r7-domain-page-router="true" / data-r7-active-domain / data-r7-domain-page-shell / data-r7-domain-page-active="true" / data-r7-domain-page-hidden="true" / data-r7-sidebar-active="true" / data-r7-mobile-nav-active="true" / aria-current="page".
 // R7-014 domain page registry: data-r7-domain-page="operations-home" / data-r7-domain-page="crop-operations" / data-r7-domain-page="environment-control" / data-r7-domain-page="irrigation-fertigation" / data-r7-domain-page="device-control" / data-r7-domain-page="recommendation-automation" / data-r7-domain-page="safety-history" / data-r7-domain-page="settings-admin".
 // R7-014 nav target registry: data-r7-sidebar-target="operations-home" / data-r7-sidebar-target="crop-operations" / data-r7-sidebar-target="environment-control" / data-r7-sidebar-target="irrigation-fertigation" / data-r7-sidebar-target="device-control" / data-r7-sidebar-target="recommendation-automation" / data-r7-sidebar-target="safety-history" / data-r7-sidebar-target="settings-admin".
+// R7-015 Common visual UI system markers: data-r7-visual-system="true" / data-r7-dashboard-visual-hero / data-r7-status-badge / data-r7-status="normal" / data-r7-status="attention" / data-r7-status="warning" / data-r7-status="blocked" / data-r7-status="unknown" / data-r7-severity-card / data-r7-severity="green" / data-r7-severity="yellow" / data-r7-severity="orange" / data-r7-severity="red" / data-r7-severity="gray" / data-r7-freshness-pill / data-r7-metric-card / data-r7-domain-health-strip / data-r7-domain-health-item / data-r7-alert-banner / data-r7-mini-trend-chart.
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7-003 historical subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7-007 target sidebar markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-operations" / data-r7-sidebar-group="environment-control" / data-r7-sidebar-group="irrigation-fertigation" / data-r7-sidebar-group="device-control" / data-r7-sidebar-group="recommendation-automation" / data-r7-sidebar-group="safety-history" / data-r7-sidebar-group="settings-admin".
@@ -49,7 +50,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.46";
+const REBUILD_VERSION = "1.12.47";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -708,11 +709,79 @@ class GreenSmartRebuildPanel extends HTMLElement {
     document.body.classList.remove("gs-modal-open");
   }
 
+  renderR7StatusBadge(status, label) {
+    const palette = {
+      normal: ["#e5f6e8", "#21653a"],
+      attention: ["#fff6d8", "#8a5a00"],
+      warning: ["#ffe9d6", "#a54600"],
+      blocked: ["#ffe0e0", "#a51f2b"],
+      unknown: ["#eef1f4", "#52616b"],
+    };
+    const [background, color] = palette[status] || palette.unknown;
+    return `<span data-r7-status-badge data-r7-status="${status}" style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:${background};color:${color};padding:6px 10px;font-size:12px;font-weight:1000;">${label}</span>`;
+  }
+
+  renderR7FreshnessPill(state, label) {
+    const color = state === "fresh" ? "#21653a" : state === "delay" ? "#8a5a00" : state === "stale" ? "#a54600" : "#a51f2b";
+    return `<span data-r7-freshness-pill data-r7-freshness="${state}" style="display:inline-flex;border:1px solid #dcebe0;border-radius:999px;background:#fff;color:${color};padding:5px 9px;font-size:11px;font-weight:900;">${label}</span>`;
+  }
+
+  renderR7SeverityCard(severity, title, value, note) {
+    const palette = {
+      green: ["#e8f6ea", "#78a87e"],
+      yellow: ["#fff7df", "#e3b341"],
+      orange: ["#ffeddc", "#e28534"],
+      red: ["#ffe3e3", "#d35151"],
+      gray: ["#f1f4f2", "#9aa7a0"],
+    };
+    const [background, border] = palette[severity] || palette.gray;
+    return `<article data-r7-severity-card data-r7-severity="${severity}" style="border:1px solid ${border};border-radius:18px;background:${background};padding:14px;box-shadow:0 10px 26px rgba(49,82,59,.08);"><p style="margin:0;color:#5d6f62;font-size:12px;font-weight:900;">${title}</p><strong style="display:block;margin-top:8px;color:#24323f;font-size:22px;">${value}</strong><span style="display:block;margin-top:6px;color:#5d6f62;font-size:12px;line-height:1.5;">${note}</span></article>`;
+  }
+
+  renderR7MetricCard(label, currentValue, targetValue, delta, statusLabel) {
+    return `<article data-r7-metric-card style="border:1px solid #dcebe0;border-radius:16px;background:#fff;padding:14px;display:grid;gap:8px;"><strong style="color:#24323f;font-size:14px;">${label}</strong><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;"><span><b style="display:block;color:#78927f;font-size:11px;">현재값</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${currentValue}</em></span><span><b style="display:block;color:#78927f;font-size:11px;">목표값</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${targetValue}</em></span><span><b style="display:block;color:#78927f;font-size:11px;">편차</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${delta}</em></span><span><b style="display:block;color:#78927f;font-size:11px;">상태</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${statusLabel}</em></span></div></article>`;
+  }
+
+  renderR7DomainHealthStrip() {
+    const items = [
+      ["crop-operations", "작물", "normal", "정상"],
+      ["environment-control", "환경", "attention", "주의"],
+      ["irrigation-fertigation", "관수·양액", "normal", "정상"],
+      ["device-control", "장치", "warning", "경고"],
+      ["safety-history", "안전", "blocked", "차단"],
+      ["settings-admin", "설정", "unknown", "데이터 부족"],
+    ];
+    return `<section data-r7-domain-health-strip style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">도메인 상태 스트립</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;">${items.map(([key, label, status, text]) => `<div data-r7-domain-health-item="${key}" style="border:1px solid #edf4ef;border-radius:14px;background:#fbfdfb;padding:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="font-weight:900;color:#31523b;font-size:12px;">${label}</span>${this.renderR7StatusBadge(status, text)}</div>`).join("")}</div></section>`;
+  }
+
+  renderR7AlertBanner(severity, title, body) {
+    return `<article data-r7-alert-banner data-r7-severity="${severity}" style="border:1px solid ${severity === "red" ? "#d35151" : severity === "orange" ? "#e28534" : "#e3b341"};border-radius:16px;background:${severity === "red" ? "#fff0f0" : severity === "orange" ? "#fff4e9" : "#fff9e8"};padding:13px;display:grid;gap:4px;"><strong style="color:#24323f;font-size:14px;">${title}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${body}</span></article>`;
+  }
+
+  renderR7MiniTrendChart(label, stateLabel) {
+    return `<article data-r7-mini-trend-chart style="border:1px solid #dcebe0;border-radius:16px;background:linear-gradient(180deg,#fff,#f8fcf9);padding:14px;display:grid;gap:10px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:13px;">${label}</strong>${this.renderR7FreshnessPill("fresh", stateLabel)}</div><svg viewBox="0 0 180 54" role="img" aria-label="${label} trend placeholder" style="width:100%;height:54px;"><polyline points="4,42 36,34 68,38 100,24 132,28 176,14" fill="none" stroke="#78a87e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline><line x1="4" y1="44" x2="176" y2="44" stroke="#dcebe0" stroke-width="2"></line></svg><span style="color:#78927f;font-size:11px;">실제 chart API 연결 전 placeholder · read-only</span></article>`;
+  }
+
+  renderR7VisualDashboard() {
+    return `<section data-r7-visual-system="true" style="display:grid;gap:14px;">
+      <section data-r7-dashboard-visual-hero style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#f8fffa,#e9f6ed);padding:18px;display:grid;gap:14px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-015 visual control-room</p><h2 style="margin:6px 0 0;color:#24323f;font-size:24px;">오늘 운영 상태를 색상·배지·수치로 먼저 확인</h2></div><div style="display:flex;flex-wrap:wrap;gap:8px;">${this.renderR7StatusBadge("normal", "정상")}${this.renderR7StatusBadge("attention", "주의")}${this.renderR7StatusBadge("warning", "경고")}${this.renderR7StatusBadge("blocked", "차단")}${this.renderR7StatusBadge("unknown", "데이터 부족")}</div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">${this.renderR7FreshnessPill("fresh", "최신")}${this.renderR7FreshnessPill("delay", "지연")}${this.renderR7FreshnessPill("stale", "stale")}${this.renderR7FreshnessPill("error", "오류")}</div>
+      </section>
+      <section style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">${this.renderR7SeverityCard("green", "작물 상태", "정상", "생육 관찰값 안정")}${this.renderR7SeverityCard("yellow", "환경 편차", "주의", "야간 습도 확인")}${this.renderR7SeverityCard("orange", "장치 응답", "경고", "창/팬 응답 지연")}${this.renderR7SeverityCard("red", "안전 판단", "차단", "Fail Safe 확인 필요")}${this.renderR7SeverityCard("gray", "센서 커버리지", "데이터 부족", "센서 오류 또는 지연")}</section>
+      <section style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">${this.renderR7MetricCard("온도", "24.1℃", "23~25℃", "+0.4℃", "정상")}${this.renderR7MetricCard("습도", "82%", "70~78%", "+4%", "주의")}${this.renderR7MetricCard("관수", "2회", "2~3회", "0", "정상")}${this.renderR7MetricCard("장치", "1 지연", "0 지연", "+1", "경고")}</section>
+      ${this.renderR7DomainHealthStrip()}
+      <section style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">${this.renderR7AlertBanner("red", "Fail Safe", "차단 상태는 실행 권한이 아니라 read-only evidence로만 표시합니다.")}${this.renderR7AlertBanner("orange", "센서 오류", "센서 오류/지연은 운영자가 먼저 확인해야 할 시각 경고로 표시합니다.")}</section>
+      <section style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("관수 추세", "최신")}</section>
+    </section>`;
+  }
+
   renderOperatingHome() {
     const contextMeta = this._contextMetaForRender();
     return `
       <section data-cba-page="PAGE-CropCenteredHome" data-r7-main-dashboard data-crop-os-home data-rebuild-context-source="${contextMeta.contextSource}" data-rebuild-context-load-state="${this._contextLoadState}" data-rebuild-greenhouse-id="${contextMeta.greenhouseId}" data-rebuild-context-generated-at="${contextMeta.generatedAt}" style="display:grid;gap:14px;">
         ${this.renderContextLoadNotice()}
+        ${this.renderR7VisualDashboard()}
         <article data-r7-dashboard-hero style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f0f8f2);padding:24px;">
           <p style="margin:0 0 8px;font-size:12px;font-weight:800;color:#5d7d64;letter-spacing:.08em;text-transform:uppercase;">Crop-centered OS</p>
           <h1 style="margin:0 0 12px;font-size:30px;line-height:1.2;color:#24323f;">작물 중심 운영체계</h1>
