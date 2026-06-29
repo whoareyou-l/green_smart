@@ -1,6 +1,6 @@
 # Green Smart DB/Schema Rationalization Plan
 
-> 기준 버전: `v1.12.74`
+> 기준 버전: `v1.12.75`
 > 리빌딩 단계: `RS-008 — RBAC-first target schema rewrite`
 > 목적: legacy physical schema를 제품 방향으로 간주하지 않고, 새 Green Smart rebuild의 target schema를 RBAC-first / crop_cycle-first / adapter-boundary 방식으로 재정의한다.
 

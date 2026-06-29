@@ -33,8 +33,9 @@ def test_rs003_zone_detail_uses_tabs_not_horizontal_card_scroll_as_primary_ui():
         assert marker in source
 
     # If zone tabs exist, do not render every zone as a persistent horizontal card rail.
+    # R7-040 legitimately uses horizontal overflow for the domain subtab top navbar;
+    # keep this RS003 guard scoped to the old zone-detail card-rail markers.
     for forbidden in (
-        "overflow-x:auto",
         "data-zone-detail-tabs",
         "data-zone-context-card",
         "flex:0 0 210px",

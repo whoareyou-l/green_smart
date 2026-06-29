@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.74";
+const REBUILD_VERSION = "1.12.75";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -87,6 +87,39 @@ const R7_HA_MDI_ICONS = Object.freeze({
   "recommendation-automation": "mdi:robot-outline",
   "safety-history": "mdi:shield-check-outline",
   "settings-admin": "mdi:cog",
+});
+
+const R7_DOMAIN_SUBTAB_ICONS = Object.freeze({
+  "status-summary": "mdi:view-dashboard-outline",
+  "crop-cycle": "mdi:sprout-outline",
+  "growth-target": "mdi:target",
+  "records-workflow": "mdi:clipboard-text-clock-outline",
+  "model-assist": "mdi:brain",
+  "trend-evidence": "mdi:chart-line",
+  "base-settings": "mdi:tune-variant",
+  "rule-schedule": "mdi:calendar-clock",
+  "interlock-block": "mdi:lock-alert-outline",
+  "assist-fallback": "mdi:robot-outline",
+  "water-nutrient": "mdi:water-pump",
+  "recipe-drainage": "mdi:flask-outline",
+  "device-map": "mdi:devices",
+  "mode-control": "mdi:toggle-switch-outline",
+  "manual-action": "mdi:hand-back-right-outline",
+  "source-health": "mdi:access-point-check",
+  "manual-baseline": "mdi:clipboard-check-outline",
+  "automation-candidate": "mdi:auto-mode",
+  "ai-recommendation": "mdi:robot-outline",
+  "safety-final": "mdi:shield-check-outline",
+  "block-allow": "mdi:shield-alert-outline",
+  "event-history": "mdi:history",
+  "operation-history": "mdi:timeline-clock-outline",
+  "audit-evidence": "mdi:file-check-outline",
+  "domain-ownership": "mdi:folder-key-outline",
+  "role-permissions": "mdi:account-key-outline",
+  "mapping-devices": "mdi:devices",
+  "system-security": "mdi:security",
+  "diagnostics-audit": "mdi:stethoscope",
+  "rbac-policy": "mdi:shield-account-outline",
 });
 
 const R7_SIDEBAR_GROUPS = Object.freeze([
@@ -1498,14 +1531,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+  _r7DomainSubtabIcon(domainKey, tabKey) {
+    return R7_DOMAIN_SUBTAB_ICONS[tabKey] || R7_HA_MDI_ICONS[domainKey] || "mdi:tab";
+  }
+
   renderR7DomainSubtabs(domainKey, tabs, activeKey, embedded = false) {
     const shellStyle = embedded
-      ? "display:flex;flex-wrap:wrap;gap:8px;border:0;border-radius:0;background:transparent;padding:0;"
-      : "display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;";
-    return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" data-r7-domain-subtabs-embedded="${embedded ? "true" : "false"}" role="tablist" style="${shellStyle}">${tabs.map(([key, label]) => {
+      ? "display:flex;align-items:stretch;gap:0;border:0;border-bottom:1px solid #dcebe0;background:#fff;padding:0;overflow-x:auto;scrollbar-width:thin;"
+      : "display:flex;align-items:stretch;gap:0;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:0;overflow-x:auto;scrollbar-width:thin;";
+    return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" data-r7-domain-subtabs-embedded="${embedded ? "true" : "false"}" data-r7-domain-subtabs-visual-style="top-navbar" data-r7-domain-subtabs-old-style="pill-cluster" role="tablist" aria-label="${domainKey} 하위 네비게이션" style="${shellStyle}">${tabs.map(([key, label]) => {
       const active = key === activeKey;
+      const icon = this._r7DomainSubtabIcon(domainKey, key);
       const domainSubtabMarker = domainKey === "crop-operations" ? `data-r7-crop-subtab="${key}"` : domainKey === "safety-history" ? `data-r7-safety-subtab="${key}"` : domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : domainKey === "recommendation-automation" ? `data-r7-recommendation-subtab="${key}"` : "";
-      return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;cursor:pointer;">${label}</button>`;
+      return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-layout="nav-item" data-r7-domain-subtab-icon="ha-mdi" data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" title="${label}" style="border:0;border-bottom:${active ? "3px solid #43ad5e" : "3px solid transparent"};background:${active ? "#f2faf3" : "#ffffff"};color:${active ? "#31523b" : "#5d6f62"};padding:11px 14px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:max-content;white-space:nowrap;box-shadow:${active ? "inset 0 -1px 0 #43ad5e" : "none"};"><ha-icon icon="${icon}" data-r7-domain-subtab-ha-icon="${key}" style="--mdc-icon-size:18px;width:18px;height:18px;color:${active ? "#43ad5e" : "#78927f"};"></ha-icon><span data-r7-domain-subtab-title>${label}</span></button>`;
     }).join("")}</nav>`;
   }
 
