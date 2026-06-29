@@ -88,4 +88,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-040 adds the shared domain subtab HA-icon top-navbar mapping while keeping the rebuild surface bounded.
     # R7-042 adds third-party-informed Crop Operations detail markers/operator questions while keeping the surface bounded.
     # R7-043 binds Crop Operations cards to real home-context record/impact/recommendation summaries while keeping the surface bounded.
-    assert len(rebuild.splitlines()) < 1925
+    # R7-044 turns Crop Operations status-summary content cards into functional operator widgets while preserving no-execution boundaries.
+    assert len(rebuild.splitlines()) < 1995

@@ -1,6 +1,6 @@
 # Green Smart Backend/API Decomposition Plan
 
-> 기준 버전: `v1.12.78`
+> 기준 버전: `v1.12.79`
 > 리빌딩 단계: `R3 — Backend/API decomposition plan`
 > 목적: `crop_views.py`와 `zone_control_views.py`를 즉시 분리하지 않고, 기존 HTTP route compatibility를 유지하는 adapter-first backend 구조, service/repository 경계, 첫 extraction slice를 문서/계약으로 고정한다.
 
