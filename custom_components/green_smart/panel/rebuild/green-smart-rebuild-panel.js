@@ -27,7 +27,7 @@
 // R7-015 Common visual UI system markers: data-r7-visual-system="true" / data-r7-dashboard-visual-hero / data-r7-status-badge / data-r7-status="normal" / data-r7-status="attention" / data-r7-status="warning" / data-r7-status="blocked" / data-r7-status="unknown" / data-r7-severity-card / data-r7-severity="green" / data-r7-severity="yellow" / data-r7-severity="orange" / data-r7-severity="red" / data-r7-severity="gray" / data-r7-freshness-pill / data-r7-metric-card / data-r7-domain-health-strip / data-r7-domain-health-item / data-r7-alert-banner / data-r7-mini-trend-chart.
 // R7-016 Operations home visual dashboard rewrite markers: data-r7-operations-dashboard-rewrite="true" / data-r7-command-center-hero / data-r7-today-priority-panel / data-r7-kpi-rail / data-r7-kpi-rail-item / data-r7-domain-board / data-r7-domain-board-card / data-r7-alert-stack / data-r7-trend-board / data-r7-secondary-stage-flow.
 // R7-017 Shared domain visual frame + environment tabs/zone markers: data-r7-domain-visual-frame / data-r7-domain-visual-frame-version="1" / data-r7-domain-visual-hero / data-r7-domain-visual-summary-grid / data-r7-zone-context-bar / data-r7-zone-selector / data-r7-zone-card / data-r7-active-zone / data-r7-domain-subtabs / data-r7-domain-subtab / data-r7-domain-subtab-active="true" / data-r7-domain-subtab-panel / data-r7-environment-zone-visual="true" / data-r7-environment-subtab="status-summary" / data-r7-environment-subtab="base-settings" / data-r7-environment-subtab="interlock-block" / data-r7-environment-subtab="trend-evidence".
-// R7-028 reference slim operator rail markers: data-r7-sidebar-rail-style="reference-slim-operator" / data-r7-sidebar-compact-rail="true" / data-r7-sidebar-rail-width="68" / data-r7-sidebar-active-icon-tile="true" / data-r7-sidebar-utility="settings" / data-r7-sidebar-utility="exit".
+// R7-028 reference slim operator rail markers: data-r7-sidebar-rail-style="reference-slim-operator" / data-r7-sidebar-compact-rail="true" / data-r7-sidebar-rail-width="64" / data-r7-sidebar-active-icon-tile="true" / data-r7-sidebar-utility="settings" / data-r7-sidebar-utility="exit".
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7-003 historical subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7-007 target sidebar markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-operations" / data-r7-sidebar-group="environment-control" / data-r7-sidebar-group="irrigation-fertigation" / data-r7-sidebar-group="device-control" / data-r7-sidebar-group="recommendation-automation" / data-r7-sidebar-group="safety-history" / data-r7-sidebar-group="settings-admin".
@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.65";
+const REBUILD_VERSION = "1.12.66";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -71,15 +71,18 @@ const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
   { key: "settings-admin", label: "설정·관리", replacement: "settings-admin" },
 ]);
 
-const R7_DOMAIN_ICONS = Object.freeze({
-  "operations-home": "🏠",
-  "crop-operations": "🌱",
-  "environment-control": "🌡️",
-  "irrigation-fertigation": "💧",
-  "device-control": "⚙️",
-  "recommendation-automation": "🤖",
-  "safety-history": "🛡️",
-  "settings-admin": "🧩",
+const R7_GREEN_ACCENT = "#43ad5e";
+const R7_GREEN_ACTIVE_BG = "#e3f4e6";
+const R7_GREEN_TEXT = "#31523b";
+const R7_LINE_ICONS = Object.freeze({
+  "operations-home": '<path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10.5V20h11v-9.5"/><path d="M10 20v-5h4v5"/>',
+  "crop-operations": '<path d="M12 20V9"/><path d="M12 9c-4 0-6-2.5-7-5 4 0 6 2.5 7 5Z"/><path d="M12 12c4 0 6-2.5 7-5-4 0-6 2.5-7 5Z"/>',
+  "environment-control": '<path d="M14 14.5V5a2 2 0 0 0-4 0v9.5"/><path d="M8 17a4 4 0 1 0 8 0 4 4 0 0 0-8 0Z"/><path d="M12 14v4"/>',
+  "irrigation-fertigation": '<path d="M12 3s6 6.2 6 11a6 6 0 0 1-12 0c0-4.8 6-11 6-11Z"/><path d="M9 15a3 3 0 0 0 3 3"/>',
+  "device-control": '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+  "recommendation-automation": '<path d="M12 3v3"/><rect x="5" y="6" width="14" height="11" rx="3"/><path d="M9 11h.01M15 11h.01M9 15h6"/><path d="M7 20h10"/>',
+  "safety-history": '<path d="M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/>',
+  "settings-admin": '<circle cx="12" cy="12" r="3"/><path d="M19 12a7.5 7.5 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.3 3.1a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.5 7.5 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 3.1h5l.3-3.1a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z"/>',
 });
 
 const R7_SIDEBAR_GROUPS = Object.freeze([
@@ -981,23 +984,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `data-r7-sidebar-visual-style="ha-like" data-r7-sidebar-surface="vertical-rail" data-r7-sidebar-compact-width="64" data-r7-sidebar-expanded-width="256" data-r7-sidebar-active-indicator="left-bar" data-r7-sidebar-visual-density="${collapsed ? "compact" : "expanded"}"`;
   }
 
+  _r7SidebarPlacementAttrs() {
+    return 'data-r7-ha-adjacent-placement="right-of-ha-sidebar" data-r7-sidebar-adjacent-gap="0" data-r7-sidebar-main-color="green" data-r7-sidebar-accent-color="#43ad5e" data-r7-sidebar-icon-style="line"';
+  }
+
   _r7SidebarBaseStyle(width) {
-    return `width:${width};min-height:100vh;${this._r7SidebarFixedViewportStyle()}border:0;border-right:1px solid #e1e5ea;border-radius:0;box-shadow:none;background:#ffffff;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-self:stretch;box-sizing:border-box;`;
+    return `width:${width};min-height:100vh;${this._r7SidebarFixedViewportStyle()}margin-left:0;border:0;border-left:0;border-right:1px solid #e1e5ea;border-radius:0;box-shadow:none;background:#ffffff;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-self:stretch;box-sizing:border-box;`;
   }
 
   _r7SidebarNavItemStyle(active, collapsed) {
-    return `position:relative;display:flex;align-items:center;gap:12px;justify-content:${collapsed ? "center" : "flex-start"};min-height:44px;border:0;border-radius:10px;background:${active ? "#e8f3ff" : "transparent"};color:${active ? "#03a9f4" : "#3f4b57"};text-decoration:none;padding:${collapsed ? "0" : "0 12px 0 14px"};font-weight:${active ? "800" : "600"};box-sizing:border-box;`;
+    return `position:relative;display:flex;align-items:center;gap:12px;justify-content:${collapsed ? "center" : "flex-start"};min-height:44px;border:0;border-radius:10px;background:${active ? R7_GREEN_ACTIVE_BG : "transparent"};color:${active ? R7_GREEN_ACCENT : R7_GREEN_TEXT};text-decoration:none;padding:${collapsed ? "0" : "0 12px 0 14px"};font-weight:${active ? "800" : "600"};box-sizing:border-box;`;
   }
 
   _r7SidebarActiveIndicator(active) {
-    return active ? '<span data-r7-sidebar-active-left-bar aria-hidden="true" style="position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 999px 999px 0;background:#03a9f4;"></span>' : "";
+    return active ? `<span data-r7-sidebar-active-left-bar aria-hidden="true" style="position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 999px 999px 0;background:${R7_GREEN_ACCENT};"></span>` : "";
+  }
+
+  _r7SidebarLineIcon(key) {
+    const paths = R7_LINE_ICONS[key] || R7_LINE_ICONS["operations-home"];
+    return `<svg data-r7-sidebar-line-icon="${key}" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;">${paths}</svg>`;
   }
 
   renderR7SidebarUtilityGroup(referenceSlimRail) {
-    const buttonStyle = "width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:#5f6b76;display:inline-flex;align-items:center;justify-content:center;font-size:22px;text-decoration:none;cursor:pointer;";
+    const buttonStyle = `width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;`;
     return `<div data-r7-sidebar-utility-group style="display:grid;gap:4px;justify-items:center;margin-top:auto;padding-top:8px;border-top:1px solid #eef1f4;">
-      <button type="button" data-r7-sidebar-utility="settings" aria-label="설정" title="설정" style="${buttonStyle}">⚙</button>
-      <button type="button" data-r7-sidebar-utility="exit" aria-label="나가기" title="나가기" style="${buttonStyle}">↪</button>
+      <a href="#settings-admin" data-r7-sidebar-utility-domain="settings-admin" data-r7-sidebar-utility-position="second-from-bottom" data-r7-sidebar-group="settings-admin" data-r7-sidebar-target="settings-admin" aria-label="설정·관리" title="설정·관리" style="${buttonStyle}">${this._r7SidebarLineIcon("settings-admin")}</a>
+      <button type="button" data-r7-sidebar-utility="exit" aria-label="나가기" title="나가기" style="${buttonStyle}"><svg data-r7-sidebar-line-icon="exit" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 17l-5-5 5-5"/><path d="M5 12h13"/><path d="M14 5h5v14h-5"/></svg></button>
     </div>`;
   }
 
@@ -1010,24 +1022,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const railAttrs = referenceSlimRail ? 'data-r7-sidebar-rail-style="reference-slim-operator" data-r7-sidebar-compact-rail="true" data-r7-sidebar-rail-width="64"' : 'data-r7-sidebar-rail-style="standard"';
     const fixedAttrs = this._r7SidebarFixedViewportAttrs();
     const visualAttrs = this._r7SidebarVisualAttrs(collapsed);
+    const placementAttrs = this._r7SidebarPlacementAttrs();
     const baseStyle = this._r7SidebarBaseStyle(width);
     if (referenceSlimRail) {
-      return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="true" ${railAttrs} ${fixedAttrs} ${visualAttrs} style="${baseStyle}">
-        <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-logo-tile aria-label="Green Smart 상세형" title="Green Smart" style="width:44px;height:44px;border:0;border-radius:10px;background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto 4px;"><img data-r7-sidebar-logo-image alt="Green Smart 로고" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%2303a9f4'/%3E%3Cpath d='M24 37c-7-5-11-11-11-18 0-6 5-10 11-10s11 4 11 10c0 7-4 13-11 18Z' fill='%23ffffff'/%3E%3Cpath d='M17 23c6 0 11-3 15-8-1 8-5 13-12 15' fill='none' stroke='%2303a9f4' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" style="width:36px;height:36px;border-radius:10px;" /></button>
+      return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="true" ${railAttrs} ${fixedAttrs} ${visualAttrs} ${placementAttrs} style="${baseStyle}">
+        <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-logo-tile aria-label="Green Smart 상세형" title="Green Smart" style="width:44px;height:44px;border:0;border-radius:10px;background:${R7_GREEN_ACCENT};color:#ffffff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto 4px;">${this._r7SidebarLineIcon("crop-operations")}</button>
         <nav data-r7-sidebar-nav-list aria-label="Green Smart compact navigation" style="display:grid;gap:4px;justify-items:stretch;">
           ${R7_SIDEBAR_GROUPS.map((group) => {
             const active = this._activeR7Domain === group.key;
-            const icon = R7_DOMAIN_ICONS[group.key] || "•";
-            return `<a href="#${group.target}" data-r7-sidebar-nav-icon-button data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" data-r7-sidebar-active-icon-tile="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" aria-label="${group.label}" title="${group.label}" style="${this._r7SidebarNavItemStyle(active, true)}">${this._r7SidebarActiveIndicator(active)}<span data-r7-sidebar-icon="${icon}" aria-hidden="true" style="font-size:22px;line-height:1;">${icon}</span></a>`;
+            return `<a href="#${group.target}" data-r7-sidebar-nav-icon-button data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" data-r7-sidebar-active-icon-tile="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" aria-label="${group.label}" title="${group.label}" style="${this._r7SidebarNavItemStyle(active, true)}">${this._r7SidebarActiveIndicator(active)}${this._r7SidebarLineIcon(group.key)}</a>`;
           }).join("")}
         </nav>
         ${this.renderR7SidebarUtilityGroup(true)}
       </aside>`;
     }
-    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" ${railAttrs} ${fixedAttrs} ${visualAttrs} style="${baseStyle}">
+    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" ${railAttrs} ${fixedAttrs} ${visualAttrs} ${placementAttrs} style="${baseStyle}">
       <div data-r7-sidebar-brand style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};min-height:48px;padding:0 ${collapsed ? "0" : "8px"};">
         <div style="display:flex;align-items:center;gap:9px;min-width:0;">
-          <img data-r7-sidebar-logo-image alt="Green Smart 로고" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%2303a9f4'/%3E%3Cpath d='M24 39c-7-5-12-12-12-20 0-6 5-10 12-10s12 4 12 10c0 8-5 15-12 20Z' fill='%23fff'/%3E%3Cpath d='M24 35V15m0 10c-5-1-8-4-9-8m9 10c5-1 8-4 9-8' stroke='%2303a9f4' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" style="width:36px;height:36px;border-radius:10px;flex:0 0 auto;" />
+          <span data-r7-sidebar-logo-image aria-label="Green Smart 로고" style="width:36px;height:36px;border-radius:10px;flex:0 0 auto;background:${R7_GREEN_ACCENT};color:#ffffff;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarLineIcon("crop-operations")}</span>
           ${collapsed ? "" : `<div style="min-width:0;"><div style="font-weight:700;color:#202124;font-size:16px;line-height:1;">Green Smart</div><p style="margin:4px 0 0;color:#6f7782;font-size:12px;line-height:1.35;">작물·구역·경보 중심</p></div>`}
         </div>
         <button type="button" data-r7-sidebar-collapse-toggle aria-label="${collapsed ? "사이드바 상세형" : "사이드바 간략형"}" title="${collapsed ? "상세형" : "간략형"}" style="border:0;border-radius:10px;background:transparent;color:#5f6b76;width:36px;height:36px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:20px;">${collapsed ? "☰" : "☰"}</button>
@@ -1036,8 +1048,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <nav data-r7-sidebar-nav-list style="display:grid;gap:4px;">
       ${R7_SIDEBAR_GROUPS.map((group) => {
         const active = this._activeR7Domain === group.key;
-        const icon = R7_DOMAIN_ICONS[group.key] || "•";
-        return `<a href="#${group.target}" data-r7-sidebar-nav-icon-button data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" data-r7-sidebar-active-icon-tile="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" title="${group.label}" style="${this._r7SidebarNavItemStyle(active, collapsed)}">${this._r7SidebarActiveIndicator(active)}<span data-r7-sidebar-icon="${icon}" aria-hidden="true" style="font-size:22px;line-height:1;flex:0 0 32px;text-align:center;">${icon}</span>${collapsed ? "" : `<span style="display:grid;gap:2px;min-width:0;"><strong style="display:block;font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${group.label}</strong><span data-r7-sidebar-summary style="display:block;color:#6f7782;font-size:11px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${group.summary}</span></span>`}</a>`;
+        return `<a href="#${group.target}" data-r7-sidebar-nav-icon-button data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" data-r7-sidebar-active-icon-tile="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" title="${group.label}" style="${this._r7SidebarNavItemStyle(active, collapsed)}">${this._r7SidebarActiveIndicator(active)}<span data-r7-sidebar-icon-shell style="flex:0 0 32px;display:inline-flex;justify-content:center;">${this._r7SidebarLineIcon(group.key)}</span>${collapsed ? "" : `<span style="display:grid;gap:2px;min-width:0;"><strong style="display:block;font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${group.label}</strong><span data-r7-sidebar-summary style="display:block;color:#6f7782;font-size:11px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${group.summary}</span></span>`}</a>`;
       }).join("")}
       </nav>
       ${this.renderR7SidebarUtilityGroup(false)}
@@ -1732,14 +1743,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   render() {
     this._applyR7HASidebarPolicy();
-    const sidebarTrack = this._r7SidebarCollapsed ? "minmax(76px,92px)" : "minmax(220px,280px)";
+    const sidebarTrack = this._r7SidebarCollapsed ? "64px" : "256px";
     const layoutMode = this._r7SidebarLayoutMode();
     this.innerHTML = `
-      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:24px;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-        <div style="max-width:1280px;margin:0 auto;display:grid;gap:14px;">
-          <section style="display:grid;grid-template-columns:${sidebarTrack} minmax(0,1fr);gap:18px;align-items:start;">
+      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:0;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+        <div style="max-width:none;margin:0;display:grid;gap:0;">
+          <section data-r7-ha-adjacent-layout="true" style="display:grid;grid-template-columns:${sidebarTrack} minmax(0,1fr);column-gap:0;gap:0;align-items:start;">
             ${this.renderR7Sidebar()}
-            <section data-rebuild-shell-main>${this.renderR7PageShell()}</section>
+            <section data-rebuild-shell-main style="padding:24px;">${this.renderR7PageShell()}</section>
           </section>
           <div data-rebuild-version="${REBUILD_VERSION}" style="font-size:12px;color:#78927f;">Green Smart ${REBUILD_VERSION}</div>
         </div>

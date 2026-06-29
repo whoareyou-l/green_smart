@@ -81,4 +81,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # virtual runner contract/result adapters, the R7 manual-first sidebar shell, domain placeholders, settings/admin realignment, environment/irrigation/device details,
     # recommendation/automation detail, safety/history detail, domain-page routing, common visual UI, operations dashboard rewrite, shared domain visual frames,
     # and detail-card absorption for environment + irrigation while keeping the rebuild surface far below the legacy panel scale.
-    assert len(rebuild.splitlines()) < 1760
+    # R7-032 adds inline line-icon SVG paths for the HA-adjacent green sidebar; keep the guard tight but allow that explicit UI slice.
+    assert len(rebuild.splitlines()) < 1785
