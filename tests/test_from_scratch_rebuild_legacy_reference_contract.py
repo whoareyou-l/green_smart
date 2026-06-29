@@ -84,4 +84,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-032 adds inline line-icon SVG paths for the HA-adjacent green sidebar; keep the guard tight but allow that explicit UI slice.
     # R7-033 adds user-info/logout utility helpers while removing settings-admin from the main nav; still keep the rebuild surface bounded.
     # R7-035 adds the reference leaf logo and sage icon helpers from the supplied sidebar image.
-    assert len(rebuild.splitlines()) < 1835
+    # R7-038 supersedes the active sidebar logo/icon rendering with HA `ha-icon` MDI icons.
+    assert len(rebuild.splitlines()) < 1845

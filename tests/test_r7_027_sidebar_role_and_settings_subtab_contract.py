@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_027_version_surfaces_are_1_12_61():
-    assert '"version": "1.12.72"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.72"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.72"' in _read(REBUILD_PANEL)
-    assert "v1.12.72" in _read(DOC)
+    assert '"version": "1.12.73"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
+    assert "v1.12.73" in _read(DOC)
 
 
 def test_r7_027_doc_records_sidebar_and_settings_subtab_requirements():
@@ -62,7 +62,8 @@ def test_r7_027_source_allows_settings_admin_subtabs_and_sidebar_role_layout():
         "data-r7-sidebar-logo-image",
         "data-r7-sidebar-collapse-toggle",
         "data-r7-sidebar-collapsed",
-        "R7_LINE_ICONS",
+        "R7_HA_MDI_ICONS",
+        "_r7SidebarHaIcon",
     ):
         assert marker in text
 
@@ -90,7 +91,8 @@ def test_r7_027_node_smoke_settings_admin_subtabs_and_sidebar_toggle_work():
         'data-r7-ha-sidebar-policy="hide"',
         'data-r7-sidebar-logo-image',
         'data-r7-sidebar-collapse-toggle',
-        'data-r7-sidebar-line-icon="settings-admin"',
+        'data-r7-sidebar-ha-icon="settings-admin"',
+        'ha-icon icon="mdi:cog"',
         'data-r7-settings-admin-subtab="domain-ownership"',
         'data-r7-settings-admin-subtab="rbac-policy"'
       ];

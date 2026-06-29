@@ -13,66 +13,34 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_035_version_surfaces_are_1_12_70():
-    assert '"version": "1.12.72"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.72"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.72"' in _read(REBUILD_PANEL)
-    assert "v1.12.72" in _read(DOC)
+def test_r7_035_version_surfaces_are_current_after_mdi_supersession():
+    assert '"version": "1.12.73"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
+    assert "v1.12.73" in _read(DOC)
 
 
-def test_r7_035_uses_actual_attached_reference_logo_asset():
+def test_r7_035_reference_asset_remains_historical_but_not_active_sidebar_logo():
     assert LOGO_ASSET.exists()
     assert LOGO_ASSET.stat().st_size > 500
     text = _read(REBUILD_PANEL)
-    assert "r7-reference-green-smart-logo.png" in text
-    assert "<img" in text
-    assert "Green Smart reference logo" in text
+    assert "r7-reference-green-smart-logo.png" not in text
+    assert 'data-r7-sidebar-logo-style="ha-mdi-leaf"' in text
+    assert 'ha-icon icon="mdi:leaf"' in text
 
 
-def test_r7_035_doc_records_reference_logo_and_sage_icon_style():
+def test_r7_035_doc_still_records_historical_reference_slice():
     text = _read(DOC)
     for phrase in (
         "green rounded square tile with white leaf mark",
         "muted sage green",
         "pale mint rounded square tile",
-        'data-r7-sidebar-logo-style="reference-leaf-tile"',
-        'data-r7-sidebar-logo-source="attached-reference"',
-        'data-r7-sidebar-logo-leaf="true"',
-        'data-r7-sidebar-icon-reference-style="soft-sage-filled"',
-        'data-r7-sidebar-icon-palette="reference-sage"',
-        'data-r7-sidebar-active-icon-tile="soft-mint"',
-        'data-r7-sidebar-icon-tone="#6f8d7b"',
-        'data-r7-sidebar-active-icon-bg="#eef8ee"',
         "No API route change in R7-035",
     ):
         assert phrase in text
 
 
-def test_r7_035_source_defines_reference_logo_and_sage_icon_helpers():
-    text = _read(REBUILD_PANEL)
-    for marker in (
-        "R7_REFERENCE_SAGE_ICON",
-        "R7_REFERENCE_ACTIVE_ICON_BG",
-        "R7_REFERENCE_LOGO_TILE",
-        "_r7SidebarReferenceLogo",
-        "_r7SidebarReferenceIcon",
-        "r7-reference-green-smart-logo.png",
-        'data-r7-sidebar-logo-style="reference-leaf-tile"',
-        'data-r7-sidebar-logo-source="attached-reference"',
-        'data-r7-sidebar-logo-leaf="true"',
-        'data-r7-sidebar-icon-reference-style="soft-sage-filled"',
-        'data-r7-sidebar-icon-palette="reference-sage"',
-        'data-r7-sidebar-active-icon-tile="soft-mint"',
-        'data-r7-sidebar-icon-tone="#6f8d7b"',
-        'data-r7-sidebar-active-icon-bg="#eef8ee"',
-        "#43ad5e",
-        "#6f8d7b",
-        "#eef8ee",
-    ):
-        assert marker in text
-
-
-def test_r7_035_render_smoke_logo_and_icons_match_reference_style():
+def test_r7_035_render_smoke_uses_r7_038_mdi_superseding_logo_and_icons():
     script = f"""
       const classSet = new Set();
       globalThis.location = {{ pathname: '/green_smart', search: '', hash: '' }};
@@ -92,28 +60,10 @@ def test_r7_035_render_smoke_logo_and_icons_match_reference_style():
         panel._r7SidebarCollapsed = collapsed;
         panel._activeR7Domain = 'operations-home';
         panel.render();
-        const html = panel.innerHTML;
-        const aside = html.match(/<aside[\\s\\S]*?<\\/aside>/)?.[0] || '';
-        const required = [
-          'data-r7-sidebar-logo-style="reference-leaf-tile"',
-          'data-r7-sidebar-logo-source="attached-reference"',
-          'data-r7-sidebar-logo-leaf="true"',
-          '<img',
-          'r7-reference-green-smart-logo.png',
-          '#43ad5e',
-          'Green Smart reference logo',
-          'data-r7-sidebar-icon-reference-style="soft-sage-filled"',
-          'data-r7-sidebar-icon-palette="reference-sage"',
-          'data-r7-sidebar-active-icon-tile="soft-mint"',
-          'data-r7-sidebar-icon-tone="#6f8d7b"',
-          'data-r7-sidebar-active-icon-bg="#eef8ee"',
-          '#6f8d7b',
-          '#eef8ee',
-          'fill="currentColor"',
-          'data-r7-sidebar-line-icon="operations-home"'
-        ];
+        const aside = panel.innerHTML.match(/<aside[\\s\\S]*?<\\/aside>/)?.[0] || '';
+        const required = ['data-r7-sidebar-logo-style="ha-mdi-leaf"', '<ha-icon icon="mdi:leaf"', 'data-r7-sidebar-icon-style="ha-mdi"', 'ha-icon icon="mdi:home-variant"'];
         const missing = required.filter((item) => !aside.includes(item));
-        const forbidden = ['🏠','🌱','🌡️','💧','⚙️','🤖','🛡️','🧩','#03a9f4'].filter((item) => aside.includes(item));
+        const forbidden = ['r7-reference-green-smart-logo.png', 'data-r7-sidebar-logo-source="attached-reference"', 'data-r7-sidebar-icon-reference-style="soft-sage-filled"', '🏠','🌱','🌡️','💧','⚙️','🤖','🛡️','🧩','#03a9f4'].filter((item) => aside.includes(item));
         if (missing.length || forbidden.length) {{
           console.error(JSON.stringify({{collapsed, missing, forbidden, aside: aside.slice(0, 1600)}}));
           process.exit(1);

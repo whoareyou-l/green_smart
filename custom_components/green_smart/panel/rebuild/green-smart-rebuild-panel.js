@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.72";
+const REBUILD_VERSION = "1.12.73";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -77,15 +77,16 @@ const R7_GREEN_TEXT = "#31523b";
 const R7_REFERENCE_LOGO_TILE = "#43ad5e";
 const R7_REFERENCE_SAGE_ICON = "#6f8d7b";
 const R7_REFERENCE_ACTIVE_ICON_BG = "#eef8ee";
-const R7_LINE_ICONS = Object.freeze({
-  "operations-home": '<path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10.5V20h11v-9.5"/><path d="M10 20v-5h4v5"/>',
-  "crop-operations": '<path d="M12 20V9"/><path d="M12 9c-4 0-6-2.5-7-5 4 0 6 2.5 7 5Z"/><path d="M12 12c4 0 6-2.5 7-5-4 0-6 2.5-7 5Z"/>',
-  "environment-control": '<path d="M14 14.5V5a2 2 0 0 0-4 0v9.5"/><path d="M8 17a4 4 0 1 0 8 0 4 4 0 0 0-8 0Z"/><path d="M12 14v4"/>',
-  "irrigation-fertigation": '<path d="M12 3s6 6.2 6 11a6 6 0 0 1-12 0c0-4.8 6-11 6-11Z"/><path d="M9 15a3 3 0 0 0 3 3"/>',
-  "device-control": '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
-  "recommendation-automation": '<path d="M12 3v3"/><rect x="5" y="6" width="14" height="11" rx="3"/><path d="M9 11h.01M15 11h.01M9 15h6"/><path d="M7 20h10"/>',
-  "safety-history": '<path d="M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/>',
-  "settings-admin": '<circle cx="12" cy="12" r="3"/><path d="M19 12a7.5 7.5 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.3 3.1a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.5 7.5 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 3.1h5l.3-3.1a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z"/>',
+const R7_HA_MDI_ICONS = Object.freeze({
+  logo: "mdi:leaf",
+  "operations-home": "mdi:home-variant",
+  "crop-operations": "mdi:sprout",
+  "environment-control": "mdi:thermometer-lines",
+  "irrigation-fertigation": "mdi:water",
+  "device-control": "mdi:cog-box",
+  "recommendation-automation": "mdi:robot-outline",
+  "safety-history": "mdi:shield-check-outline",
+  "settings-admin": "mdi:cog",
 });
 
 const R7_SIDEBAR_GROUPS = Object.freeze([
@@ -986,11 +987,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SidebarVisualAttrs(collapsed) {
-    return `data-r7-sidebar-visual-style="ha-like" data-r7-sidebar-surface="vertical-rail" data-r7-sidebar-compact-width="64" data-r7-sidebar-expanded-width="256" data-r7-sidebar-active-indicator="left-bar" data-r7-sidebar-active-icon-tile="soft-mint" data-r7-sidebar-active-icon-bg="#eef8ee" data-r7-sidebar-legacy-active-bg="#e3f4e6" data-r7-sidebar-icon-reference-style="soft-sage-filled" data-r7-sidebar-icon-palette="reference-sage" data-r7-sidebar-icon-tone="#6f8d7b" data-r7-sidebar-visual-density="${collapsed ? "compact" : "expanded"}"`;
+    return `data-r7-sidebar-visual-style="ha-like" data-r7-sidebar-surface="vertical-rail" data-r7-sidebar-compact-width="64" data-r7-sidebar-expanded-width="256" data-r7-sidebar-active-indicator="left-bar" data-r7-sidebar-active-icon-tile="soft-mint" data-r7-sidebar-active-icon-bg="#eef8ee" data-r7-sidebar-icon-style="ha-mdi" data-r7-sidebar-visual-density="${collapsed ? "compact" : "expanded"}"`;
   }
 
   _r7SidebarPlacementAttrs() {
-    return 'data-r7-ha-adjacent-placement="right-of-ha-sidebar" data-r7-sidebar-adjacent-gap="0" data-r7-sidebar-main-color="green" data-r7-sidebar-accent-color="#43ad5e" data-r7-sidebar-icon-style="line"';
+    return 'data-r7-ha-adjacent-placement="right-of-ha-sidebar" data-r7-sidebar-adjacent-gap="0" data-r7-sidebar-main-color="green" data-r7-sidebar-accent-color="#43ad5e"';
   }
 
   _r7SidebarBaseStyle(width) {
@@ -1006,12 +1007,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SidebarReferenceLogo() {
-    return `<img data-r7-sidebar-logo-style="reference-leaf-tile" data-r7-sidebar-logo-source="attached-reference" data-r7-sidebar-logo-leaf="true" src="/green_smart_panel/rebuild/assets/r7-reference-green-smart-logo.png?v=${REBUILD_VERSION}" alt="Green Smart reference logo" aria-label="Green Smart reference logo" width="40" height="40" style="display:block;width:40px;height:40px;border-radius:12px;object-fit:contain;background:${R7_REFERENCE_LOGO_TILE};" />`;
+    return `<span data-r7-sidebar-logo-style="ha-mdi-leaf" data-r7-sidebar-logo-leaf="true" aria-label="Green Smart 로고" title="Green Smart" style="width:40px;height:40px;border-radius:12px;background:${R7_REFERENCE_LOGO_TILE};color:#ffffff;display:inline-flex;align-items:center;justify-content:center;"><ha-icon icon="mdi:leaf" style="--mdc-icon-size:26px;width:26px;height:26px;"></ha-icon></span>`;
+  }
+
+  _r7SidebarHaIcon(key) {
+    const icon = R7_HA_MDI_ICONS[key] || R7_HA_MDI_ICONS["operations-home"];
+    return `<ha-icon icon="${icon}" data-r7-sidebar-ha-icon="${key}" data-r7-sidebar-icon-style="ha-mdi" aria-hidden="true" style="--mdc-icon-size:22px;width:22px;height:22px;color:${R7_REFERENCE_SAGE_ICON};display:inline-flex;align-items:center;justify-content:center;"></ha-icon>`;
   }
 
   _r7SidebarReferenceIcon(key) {
-    const paths = R7_LINE_ICONS[key] || R7_LINE_ICONS["operations-home"];
-    return `<svg data-r7-sidebar-line-icon="${key}" data-r7-sidebar-icon-reference-style="soft-sage-filled" data-r7-sidebar-icon-palette="reference-sage" data-r7-sidebar-icon-tone="#6f8d7b" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="none" style="display:block;color:${R7_REFERENCE_SAGE_ICON};"><g fill="none" stroke="currentColor" style="display:none;"></g>${paths}</svg>`;
+    return this._r7SidebarHaIcon(key);
   }
 
   _r7SidebarLineIcon(key) {

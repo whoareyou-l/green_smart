@@ -1,6 +1,6 @@
 # R7-037 Unified Domain Content Card
 
-> 기준 버전: `v1.12.72`
+> 기준 버전: `v1.12.73`
 > Status: R7-037 planned
 > Purpose: 작물 운영부터 설정·관리까지 도메인 페이지에서 하위탭, 선택 구역, 내용 영역을 하나의 카드로 통합한다.
 

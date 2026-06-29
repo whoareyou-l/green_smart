@@ -18,11 +18,11 @@ def _read(path: Path) -> str:
 
 
 def test_rs012_version_surfaces_are_aligned_to_1_12_11():
-    assert '"version": "1.12.72"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.72"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.72"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.73"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.73"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.73"' in _read(REBUILD_PANEL)
     for path in (INTERFACE_SPEC, LEGACY_INVENTORY, PRODUCT_PLAN, ADAPTER_DOC):
-        assert "v1.12.72" in _read(path)
+        assert "v1.12.73" in _read(path)
 
 
 def test_current_crop_adapter_module_exists_and_exports_product_dto_helpers():
@@ -123,7 +123,7 @@ def test_legacy_inventory_and_product_plan_promote_rs012_completion():
 
     for marker in (
         "Phase R4.8 — Rebuild currentCrop/crop_cycle adapter",
-        "Status:** `v1.12.72`에서 rebuild currentCrop/crop_cycle service adapter 완료",
+        "Status:** `v1.12.73`에서 rebuild currentCrop/crop_cycle service adapter 완료",
         "legacy fixture shape may contain cropSeasonId",
         "product-facing rebuild DTO uses crop_cycle/currentCrop",
         "No production route removal in RS-012",
