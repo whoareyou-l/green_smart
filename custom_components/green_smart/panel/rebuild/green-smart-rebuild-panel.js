@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.69";
+const REBUILD_VERSION = "1.12.70";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1006,7 +1006,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SidebarReferenceLogo() {
-    return `<svg data-r7-sidebar-logo-style="reference-leaf-tile" data-r7-sidebar-logo-source="attached-reference" data-r7-sidebar-logo-leaf="true" aria-hidden="true" viewBox="0 0 48 48" width="40" height="40" style="display:block;border-radius:12px;"><rect x="4" y="4" width="40" height="40" rx="10" fill="${R7_REFERENCE_LOGO_TILE}"/><path fill="#ffffff" d="M33.7 13.8c-8.9.5-15.8 4.7-18.6 11.1-1.7 3.9-1.2 7.6.9 10.7 6.9-.7 13.6-4.7 16.5-11.3 1.4-3.2 1.7-6.7 1.2-10.5Z"/><path fill="#dff5e6" d="M18 33.5c3.8-6.5 8.4-10.8 14.1-13.4-4.6 3.7-8.2 8.3-10.7 14.4-.9.1-2.1-.2-3.4-1Z"/></svg>`;
+    return `<img data-r7-sidebar-logo-style="reference-leaf-tile" data-r7-sidebar-logo-source="attached-reference" data-r7-sidebar-logo-leaf="true" src="/green_smart_panel/rebuild/assets/r7-reference-green-smart-logo.png?v=${REBUILD_VERSION}" alt="Green Smart reference logo" aria-label="Green Smart reference logo" width="40" height="40" style="display:block;width:40px;height:40px;border-radius:12px;object-fit:contain;background:${R7_REFERENCE_LOGO_TILE};" />`;
   }
 
   _r7SidebarReferenceIcon(key) {

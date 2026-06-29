@@ -6,17 +6,27 @@ MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
 DOC = ROOT / "docs/rebuild/r7-035-reference-logo-sage-icons.md"
+LOGO_ASSET = ROOT / "custom_components/green_smart/panel/rebuild/assets/r7-reference-green-smart-logo.png"
 
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_035_version_surfaces_are_1_12_69():
-    assert '"version": "1.12.69"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.69"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.69"' in _read(REBUILD_PANEL)
-    assert "v1.12.69" in _read(DOC)
+def test_r7_035_version_surfaces_are_1_12_70():
+    assert '"version": "1.12.70"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.70"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.70"' in _read(REBUILD_PANEL)
+    assert "v1.12.70" in _read(DOC)
+
+
+def test_r7_035_uses_actual_attached_reference_logo_asset():
+    assert LOGO_ASSET.exists()
+    assert LOGO_ASSET.stat().st_size > 500
+    text = _read(REBUILD_PANEL)
+    assert "r7-reference-green-smart-logo.png" in text
+    assert "<img" in text
+    assert "Green Smart reference logo" in text
 
 
 def test_r7_035_doc_records_reference_logo_and_sage_icon_style():
@@ -46,6 +56,7 @@ def test_r7_035_source_defines_reference_logo_and_sage_icon_helpers():
         "R7_REFERENCE_LOGO_TILE",
         "_r7SidebarReferenceLogo",
         "_r7SidebarReferenceIcon",
+        "r7-reference-green-smart-logo.png",
         'data-r7-sidebar-logo-style="reference-leaf-tile"',
         'data-r7-sidebar-logo-source="attached-reference"',
         'data-r7-sidebar-logo-leaf="true"',
@@ -87,9 +98,10 @@ def test_r7_035_render_smoke_logo_and_icons_match_reference_style():
           'data-r7-sidebar-logo-style="reference-leaf-tile"',
           'data-r7-sidebar-logo-source="attached-reference"',
           'data-r7-sidebar-logo-leaf="true"',
-          'viewBox="0 0 48 48"',
+          '<img',
+          'r7-reference-green-smart-logo.png',
           '#43ad5e',
-          'fill="#ffffff"',
+          'Green Smart reference logo',
           'data-r7-sidebar-icon-reference-style="soft-sage-filled"',
           'data-r7-sidebar-icon-palette="reference-sage"',
           'data-r7-sidebar-active-icon-tile="soft-mint"',
