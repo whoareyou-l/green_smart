@@ -1,6 +1,6 @@
 # R7-034 Settings Utility Title + Profile Logout Layout
 
-> 기준 버전: `v1.12.77`
+> 기준 버전: `v1.12.78`
 > Status: R7-034 planned
 > Purpose: 하단으로 이동한 설정 utility가 상세형 사이드바에서도 제목/설명을 갖도록 보정하고, 로그아웃 영역을 프로필 이미지 · 유저 정보 · 로그아웃 버튼 3분할 구조로 배치한다.
 

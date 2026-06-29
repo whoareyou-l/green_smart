@@ -1,6 +1,6 @@
 # R7-019 Environment Detail Absorption
 
-> 기준 버전: `v1.12.77`
+> 기준 버전: `v1.12.78`
 > Status: R7-019 complete
 > Purpose: Remove the rendered Environment Control read-only detail card and absorb its content into the zone-scoped visual tabs.
 
@@ -96,5 +96,5 @@ All old detail content is mapped to visual tabs/cards
 R7-017 environment visual contract still passes
 Full pytest passes
 node --check passes
-Prod static smoke verifies v1.12.77 and R7-019 markers
+Prod static smoke verifies v1.12.78 and R7-019 markers
 ```

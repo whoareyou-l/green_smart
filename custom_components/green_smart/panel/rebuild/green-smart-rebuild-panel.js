@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.77";
+const REBUILD_VERSION = "1.12.78";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1584,6 +1584,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const targetFocus = growthTarget.targetFocus || "생육 균형 유지";
     const assignmentState = assignment.assignmentState || (cropCycleId !== "unassigned" ? "assigned" : "unassigned");
     const freshness = `${availability.state || selectedZone.dataAvailability?.state || "unknown"} · ${availability.source || selectedZone.dataAvailability?.source || "crop evidence"}`;
+    const recordSummary = selectedZone.cropRecordSummary || {};
+    const growthSurvey = recordSummary.growthSurvey || {};
+    const pestScouting = recordSummary.pestScouting || {};
+    const controlTreatment = recordSummary.controlTreatment || {};
+    const workQueue = recordSummary.workQueue || {};
+    const recordSource = recordSummary.recordSummarySource || "crop_record_summary_unavailable";
+    const environmentImpact = selectedZone.environmentImpactProjection || {};
+    const environmentImpactState = environmentImpact.impactState || "unknown";
+    const environmentImpactFocus = environmentImpact.impactFocus || "환경·관수·장치 영향 근거 없음";
+    const environmentImpactFactors = Array.isArray(environmentImpact.impactFactors) ? environmentImpact.impactFactors.join(", ") : (environmentImpact.impactFactors || environmentImpact.freshnessLabel || "영향 factor 없음");
+    const recommendationReview = selectedZone.recommendationReviewProjection || {};
+    const recommendationReviewState = recommendationReview.reviewState || "unknown";
+    const recommendationReviewSummary = recommendationReview.reviewSummary || "추천 검토 근거 없음";
+    const growthSurveyLabel = growthSurvey.latestLabel || "생육조사 기록 없음";
+    const pestScoutingLabel = pestScouting.latestLabel || "병해충 예찰 기록 없음";
+    const controlTreatmentLabel = controlTreatment.latestLabel || "방제 기록 없음";
+    const workNextAction = workQueue.nextAction || "최근 기록 확인 필요";
+    const workMissingItems = Array.isArray(workQueue.missingItems) && workQueue.missingItems.length ? workQueue.missingItems.join(", ") : "누락 항목 없음";
     const labels = {
       "status-summary": "상태 요약",
       "crop-cycle": "작기·현재작물",
@@ -1619,17 +1637,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
       return `<article ${marker} style="border:1px solid ${palette[0]};border-radius:16px;background:${palette[1]};padding:12px;display:grid;gap:6px;"><strong style="color:${palette[2]};font-size:13px;">${title}</strong><span style="color:#24323f;font-size:15px;font-weight:1000;line-height:1.35;">${value}</span><small style="color:#6f8576;font-size:11px;line-height:1.45;">${note}</small></article>`;
     };
     const body = tabKey === "status-summary"
-      ? `${insightCard("data-r7-crop-current-card", "현재 작물", `${cropLabel} · ${growthStage}`, `${this._r7ZoneName(selectedZone)}의 currentCrop 기준 상태 · read-only`, "green")}${insightCard("data-r7-crop-attention-queue", "우선 확인", "작물 균형·신선도·위험 신호", "Priva/Argus식 핵심 attention queue — 실행 없이 확인만", "amber")}${insightCard("data-r7-crop-influence-strip", "환경·관수·장치 영향", "기후·급액·장치 상태를 작물 맥락으로 확인", "IIVO/30MHz처럼 작물 상태와 외부 영향 근거를 함께 표시", "blue")}${insightCard("data-r7-crop-current-card", "데이터 신선도", freshness, "currentCropAssignment + growthTargetProjection evidence")}`
+      ? `${insightCard("data-r7-crop-current-card", "현재 작물", `${cropLabel} · ${growthStage}`, `${this._r7ZoneName(selectedZone)}의 currentCrop 기준 상태 · read-only`, "green")}${insightCard("data-r7-crop-attention-queue", "우선 확인", workNextAction, `${workMissingItems} · recordSummary=${recordSource}`, "amber")}${insightCard("data-r7-crop-influence-strip", "환경·관수·장치 영향", environmentImpactFocus, environmentImpactFactors, "blue")}${insightCard("data-r7-crop-current-card", "데이터 신선도", freshness, "currentCropAssignment + growthTargetProjection evidence")}`
       : tabKey === "crop-cycle"
         ? `${insightCard("data-r7-crop-cycle-card data-r7-crop-registration-lane", "작기 ID", cropCycleId, "crop_cycle/currentCrop 읽기 전용", "green")}${insightCard("data-r7-crop-cycle-card data-r7-crop-registration-lane", "작물 프로필", `${cropLabel} (${cropType}) · ${variety}`, "LetsGrow crop registration처럼 작물/품종/구역을 먼저 고정", "green")}${insightCard("data-r7-crop-cycle-card data-r7-crop-registration-lane", "정식·철거 경계", `${plantDate} / ${demolishDate}`, "정식일과 철거일은 작기 운영 경계 evidence", "amber")}${insightCard("data-r7-crop-assignment-card data-r7-crop-season-review", "시즌 리뷰 준비", assignmentState, `원천 행 ${assignment.sourceRowId || cropCycleId} · read-only`)}`
         : tabKey === "growth-target"
           ? `${insightCard("data-r7-crop-growth-target-card data-r7-crop-target-gap", "목표 단계", targetStage, "growthTargetProjection.targetStageLabel", "green")}${insightCard("data-r7-crop-growth-target-card data-r7-crop-target-gap", "목표 대비 차이", `${growthStage} → ${targetStage}`, "현재 단계와 목표 단계의 비교를 먼저 표시", "amber")}${insightCard("data-r7-crop-growth-target-card data-r7-crop-target-gap", "목표 초점", targetFocus, "Plant Empowerment식 에너지·수분·동화산물 균형 관점", "blue")}${insightCard("data-r7-crop-growth-target-card data-r7-crop-target-gap", "수정 권한", "read-only", "목표 수정·저장·실행은 이 slice 범위 밖")}`
           : tabKey === "records-workflow"
-            ? `${insightCard("data-r7-crop-record-card data-r7-crop-work-queue data-r7-crop-registration-lane", "생육조사", "초장·엽수·줄기굵기 확인", "LetsGrow crop registration app 패턴: 현장 기록 누락 여부 확인", "green")}${insightCard("data-r7-crop-record-card data-r7-crop-work-queue", "병해충 예찰", "위험/관찰 요약", "예찰 record evidence · read-only", "amber")}${insightCard("data-r7-crop-record-card data-r7-crop-work-queue", "방제 기록", "약제·PLS·혼용 evidence", "방제 기록은 검토만, 실행/자동 방제 없음", "red")}${insightCard("data-r7-crop-record-card data-r7-crop-work-queue", "오늘 확인할 작업", "기록 확인 → 누락 보완 → 다음 검토", "저장/삭제/철거 버튼은 기존 작물 설정 흐름에만 유지")}`
+            ? `${insightCard("data-r7-crop-record-card data-r7-crop-work-queue data-r7-crop-registration-lane", "생육조사", growthSurveyLabel, `최근 ${growthSurvey.count ?? 0}건 · LetsGrow crop registration app 패턴 · ${recordSource}`, "green")}${insightCard("data-r7-crop-record-card data-r7-crop-work-queue", "병해충 예찰", pestScoutingLabel, `최근 ${pestScouting.count ?? 0}건 · 예찰 record evidence · read-only`, "amber")}${insightCard("data-r7-crop-record-card data-r7-crop-work-queue", "방제 기록", controlTreatmentLabel, `최근 ${controlTreatment.count ?? 0}건 · 방제 기록은 검토만, 실행/자동 방제 없음`, "red")}${insightCard("data-r7-crop-record-card data-r7-crop-work-queue", "오늘 확인할 작업", workNextAction, `${workMissingItems} · 저장/삭제/철거 버튼은 기존 작물 설정 흐름에만 유지`)}`
             : tabKey === "model-assist"
-              ? `${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "모델 검토", "생육단계·상태·위험 근거", "Source.ag식 crop-specific assist, 실행 권한 없음", "blue")}${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "추천 관점", "기후·관수·수확/작업 타이밍 힌트", "작물 유형·생육단계·환경 조건 기반 확인 항목", "green")}${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "작물 안전 경계", "환경/관수/장치 명령 직접 실행 없음", "작물 운영은 제어 명령 source가 아님", "red")}${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "fallback", "AI off 가능", "AI 비활성/오류 시 수동 작기·기록 evidence 유지 · read-only")}`
-              : `${this.renderR7MiniTrendChart("생육 변화", "최근")}${this.renderR7MiniTrendChart("환경·관수 영향", "최근")}${insightCard("data-r7-crop-season-review", "시즌 리뷰", "목표값 대비 결과·KPI·추세", "LetsGrow season review / 30MHz dashboard pattern", "blue")}${insightCard("data-r7-crop-season-review", "데이터 근거", freshness, "currentCropAssignment + growthTargetProjection + crop model evidence · read-only")}`;
-    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-crop-subtab="${tabKey}" data-r7-crop-detail-absorbed="true" ${markers[tabKey]} data-r7-crop-third-party-informed="true" data-r7-crop-vendor-pattern="crop-goal-to-influence-to-action" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><div style="display:grid;gap:4px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span data-r7-crop-operator-question style="color:#5d6f62;font-size:12px;line-height:1.45;">${operatorQuestions[tabKey]}</span></div><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${cropLabel}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
+              ? `${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "모델 검토", recommendationReviewSummary, `recommendationReviewProjection.${recommendationReviewState} · Source.ag식 crop-specific assist, 실행 권한 없음`, "blue")}${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "추천 관점", environmentImpactFocus, `영향 factor: ${environmentImpactFactors}`, "green")}${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "작물 안전 경계", "환경/관수/장치 명령 직접 실행 없음", "작물 운영은 제어 명령 source가 아님", "red")}${insightCard("data-r7-crop-model-card data-r7-crop-model-review-lane", "fallback", "AI off 가능", "AI 비활성/오류 시 수동 작기·기록 evidence 유지 · read-only")}`
+              : `${this.renderR7MiniTrendChart("생육 변화", "최근")}${this.renderR7MiniTrendChart("환경·관수 영향", "최근")}${insightCard("data-r7-crop-season-review", "시즌 리뷰", `${growthSurvey.count ?? 0}회 조사 · ${pestScouting.count ?? 0}회 예찰 · ${controlTreatment.count ?? 0}회 방제`, "LetsGrow season review / 30MHz dashboard pattern", "blue")}${insightCard("data-r7-crop-season-review", "데이터 근거", freshness, `recordSummary=${recordSource} · impact=${environmentImpactState} · recommendation=${recommendationReviewState} · read-only`)}`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-crop-subtab="${tabKey}" data-r7-crop-detail-absorbed="true" ${markers[tabKey]} data-r7-crop-third-party-informed="true" data-r7-crop-real-context-bound="true" data-r7-crop-record-summary-source="${recordSource}" data-r7-crop-environment-impact-source="${environmentImpactState}" data-r7-crop-recommendation-review-source="${recommendationReviewState}" data-r7-crop-vendor-pattern="crop-goal-to-influence-to-action" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><div style="display:grid;gap:4px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span data-r7-crop-operator-question style="color:#5d6f62;font-size:12px;line-height:1.45;">${operatorQuestions[tabKey]}</span></div><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${cropLabel}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
 
   renderR7CropOperationsZoneVisual() {

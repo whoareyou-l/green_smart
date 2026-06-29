@@ -19,8 +19,9 @@ from __future__ import annotations
 from typing import Any
 
 try:  # package import in Home Assistant runtime
-    from ..repositories import rebuild_crop_context_repo
+    from ..repositories import crop_repo, rebuild_crop_context_repo
 except Exception:  # direct importlib contract tests load this file outside a package
+    crop_repo = None  # type: ignore[assignment]
     rebuild_crop_context_repo = None  # type: ignore[assignment]
 
 CROP_LABELS_KO = {
@@ -70,6 +71,95 @@ def _freshness_label(freshness_minutes: Any) -> str:
     if isinstance(freshness_minutes, (int, float)):
         return f"{int(freshness_minutes)}분 전 갱신"
     return "갱신 시각 없음"
+
+
+def _first_record(records: list[dict[str, Any]] | None) -> dict[str, Any]:
+    return dict((records or [{}])[0] or {})
+
+
+def _date_text(value: Any) -> str:
+    return str(value or "날짜 없음")
+
+
+def normalize_crop_operations_record_summary(
+    *,
+    growth_records: list[dict[str, Any]] | None = None,
+    pest_records: list[dict[str, Any]] | None = None,
+    control_records: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Return a read-only Crop Operations recent-record summary.
+
+    R7-043 binds the Crop Operations detail cards to actual read-only context
+    data instead of fixed descriptive copy. This function only summarizes rows
+    already read by the crop repository; it does not write records, create work
+    orders, call Home Assistant services, or issue MQTT/device commands.
+    """
+
+    growth = list(growth_records or [])
+    pest = list(pest_records or [])
+    controls = list(control_records or [])
+    latest_growth = _first_record(growth)
+    latest_pest = _first_record(pest)
+    latest_control = _first_record(controls)
+    pesticides = list(latest_control.get("pesticides") or [])
+    first_pesticide = dict(pesticides[0] if pesticides else {})
+    height = latest_growth.get("height")
+    leaf_count = latest_growth.get("leafCount")
+    growth_parts = [_date_text(latest_growth.get("date"))]
+    if height is not None:
+        growth_parts.append(f"초장 {height}cm")
+    if leaf_count is not None:
+        growth_parts.append(f"엽수 {leaf_count}")
+    pest_parts = [_date_text(latest_pest.get("date"))]
+    if latest_pest.get("type"):
+        pest_parts.append(str(latest_pest.get("type")))
+    if latest_pest.get("severity"):
+        pest_parts.append(str(latest_pest.get("severity")))
+    control_parts = [_date_text(latest_control.get("date"))]
+    if first_pesticide.get("name"):
+        control_parts.append(str(first_pesticide.get("name")))
+    if first_pesticide.get("pls") is True:
+        control_parts.append("PLS 적합")
+    elif first_pesticide.get("pls") is False:
+        control_parts.append("PLS 확인 필요")
+    missing_items = []
+    if not growth:
+        missing_items.append("생육조사 없음")
+    if not pest:
+        missing_items.append("병해충 예찰 없음")
+    if not controls:
+        missing_items.append("방제 기록 없음")
+    next_action = "누락 기록 확인" if missing_items else "최근 기록 검토 완료"
+    return {
+        "recordSummarySource": "crop_repo_recent_records_readonly",
+        "growthSurvey": {
+            "count": len(growth),
+            "latest": latest_growth,
+            "latestLabel": " · ".join(growth_parts) if latest_growth else "생육조사 기록 없음",
+            "staleState": "empty" if not growth else "fresh",
+        },
+        "pestScouting": {
+            "count": len(pest),
+            "latest": latest_pest,
+            "latestLabel": " · ".join(pest_parts) if latest_pest else "병해충 예찰 기록 없음",
+            "staleState": "empty" if not pest else "attention",
+        },
+        "controlTreatment": {
+            "count": len(controls),
+            "latest": latest_control,
+            "latestLabel": " · ".join(control_parts) if latest_control else "방제 기록 없음",
+            "staleState": "empty" if not controls else "fresh",
+        },
+        "workQueue": {
+            "nextAction": next_action,
+            "missingItems": missing_items,
+        },
+        "readOnly": True,
+        "executionEnabled": False,
+        "writeEnabled": False,
+        "deviceCommandEnabled": False,
+        "mqttEnabled": False,
+    }
 
 
 def normalize_monitoring_readonly_adapter(
@@ -397,4 +487,24 @@ async def get_rebuild_home_context_from_legacy_db(hass, *, greenhouse_id: str = 
     if rebuild_crop_context_repo is None:
         raise RuntimeError("rebuild_crop_context_repo unavailable outside package runtime")
     rows = await rebuild_crop_context_repo.list_current_crop_cycle_rows(hass)
-    return rebuild_home_context_from_rows(rows, greenhouse_id=greenhouse_id)
+    context = rebuild_home_context_from_rows(rows, greenhouse_id=greenhouse_id)
+    if crop_repo is None:
+        for zone in context["zones"]:
+            zone["cropRecordSummary"] = normalize_crop_operations_record_summary()
+        return context
+    for zone in context["zones"]:
+        crop_cycle_id = zone.get("activeCropCycleId") or zone.get("crop_cycle")
+        try:
+            season_id = int(crop_cycle_id)
+        except (TypeError, ValueError):
+            zone["cropRecordSummary"] = normalize_crop_operations_record_summary()
+            continue
+        growth_records = await crop_repo.list_growth_records(hass, season_id)
+        pest_records = await crop_repo.list_pest_records(hass, season_id)
+        control_records = await crop_repo.list_control_records(hass, season_id)
+        zone["cropRecordSummary"] = normalize_crop_operations_record_summary(
+            growth_records=growth_records,
+            pest_records=pest_records,
+            control_records=control_records,
+        )
+    return context
