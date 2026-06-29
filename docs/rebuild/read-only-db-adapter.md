@@ -1,6 +1,6 @@
 # RS-013 Read-only DB Adapter
 
-> 기준 버전: `v1.12.47`
+> 기준 버전: `v1.12.48`
 > Status: active read-only backend adapter boundary
 > 목적: legacy physical schema를 제품 방향으로 노출하지 않고, read-only repository/service boundary에서 `crop_cycle/currentCrop` target DTO로 변환한다.
 
