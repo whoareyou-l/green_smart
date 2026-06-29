@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_028_version_surfaces_are_1_12_62():
-    assert '"version": "1.12.64"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.64"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.64"' in _read(REBUILD_PANEL)
-    assert "v1.12.64" in _read(DOC)
+    assert '"version": "1.12.65"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.65"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.65"' in _read(REBUILD_PANEL)
+    assert "v1.12.65" in _read(DOC)
 
 
 def test_r7_028_doc_records_reference_slim_operator_rail():
@@ -25,7 +25,7 @@ def test_r7_028_doc_records_reference_slim_operator_rail():
         "[HA sidebar ~48px] [Green Smart compact rail ~68px] [content]",
         'data-r7-sidebar-rail-style="reference-slim-operator"',
         'data-r7-sidebar-compact-rail="true"',
-        'data-r7-sidebar-rail-width="68"',
+        'data-r7-sidebar-rail-width="64"',
         "data-r7-sidebar-logo-tile",
         "data-r7-sidebar-nav-icon-button",
         'data-r7-sidebar-active-icon-tile="true"',
@@ -45,7 +45,7 @@ def test_r7_028_source_contains_reference_slim_rail_markers():
         "_isR7ReferenceSlimRail",
         'data-r7-sidebar-rail-style="reference-slim-operator"',
         'data-r7-sidebar-compact-rail="true"',
-        'data-r7-sidebar-rail-width="68"',
+        'data-r7-sidebar-rail-width="64"',
         "data-r7-sidebar-logo-tile",
         "data-r7-sidebar-nav-list",
         "data-r7-sidebar-nav-icon-button",
@@ -80,7 +80,10 @@ def test_r7_028_node_smoke_operator_compact_matches_reference_rail():
         'data-r7-ha-sidebar-policy="keep"',
         'data-r7-sidebar-rail-style="reference-slim-operator"',
         'data-r7-sidebar-compact-rail="true"',
-        'data-r7-sidebar-rail-width="68"',
+        'data-r7-sidebar-rail-width="64"',
+        'data-r7-sidebar-visual-style="ha-like"',
+        'data-r7-sidebar-surface="vertical-rail"',
+        'data-r7-sidebar-active-indicator="left-bar"',
         'data-r7-sidebar-logo-tile',
         'data-r7-sidebar-nav-list',
         'data-r7-sidebar-nav-icon-button',
@@ -93,7 +96,7 @@ def test_r7_028_node_smoke_operator_compact_matches_reference_rail():
       const missing = required.filter((item) => !html.includes(item));
       const forbidden = ['data-r7-sidebar-summary', '>Green Smart<', '작물·구역·경보 중심'];
       const bad = forbidden.filter((item) => html.includes(item));
-      const styleOk = html.includes('width:68px') && html.includes('border-radius:22px') && html.includes('box-shadow:') && html.includes('background:#ffffff');
+      const styleOk = html.includes('width:64px') && html.includes('border-radius:0') && html.includes('box-shadow:none') && html.includes('border-right:1px solid #e1e5ea') && html.includes('background:#ffffff');
       if (missing.length || bad.length || !styleOk || !classSet.has('green-smart-operator-ha-sidebar-adjacent') || classSet.has('green-smart-hide-ha-sidebar')) {{
         console.error(JSON.stringify({{missing, bad, styleOk, classes:[...classSet]}}));
         process.exit(1);
