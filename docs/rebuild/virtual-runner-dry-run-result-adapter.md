@@ -1,6 +1,6 @@
 # RS-026 Virtual Runner Dry-run Result Adapter
 
-> 기준 버전: `v1.12.80`
+> 기준 버전: `v1.12.81`
 > Status: virtual runner dry-run result adapter
 > 목적: `가상 러너 입력 계약` 다음 단계로, 향후 virtual runner 결과를 받을 UI/API shape를 read-only dry-run result adapter로 고정한다.
 

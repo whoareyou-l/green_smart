@@ -1,6 +1,6 @@
 # R7-040 Domain Subtab Top Navbar
 
-> 기준 버전: `v1.12.80`
+> 기준 버전: `v1.12.81`
 > Status: R7-040 planned
 > Purpose: 작물 운영~설정 도메인의 하위탭을 버튼 묶음이 아니라 상단 네비게이션바 느낌으로 바꾸고, 각 탭에 HA `ha-icon`과 제목을 표시한다.
 

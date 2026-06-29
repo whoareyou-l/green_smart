@@ -1,6 +1,6 @@
 # R7-026 Browser QA Visual Cleanup
 
-> 기준 버전: `v1.12.80`
+> 기준 버전: `v1.12.81`
 > Status: R7-026 planned
 > Purpose: 실제 화면 QA에서 확인된 중복 navigation/header/documentation-style UI를 제품 화면에서 제거한다.
 
