@@ -18,6 +18,9 @@
 // R7-002 Sidebar navigation + page shell: R7 sidebar primary groups wrap the crop-centered workspace without adding execution authority.
 // R7-003 Detail/configuration subpages baseline: all five sidebar groups receive read-only placeholder subpages.
 // R7-004 Settings/Admin read-only detail: Settings/Admin renders RBAC/config/admin evidence without mutation authority.
+// R7-013 Settings/Admin manual-first realignment markers: data-r7-settings-admin-manual-first-realigned="true" / data-r7-settings-admin-domain-ownership / data-r7-settings-admin-mapping-boundary / data-r7-settings-admin-system-boundary.
+// R7-013 Settings/Admin domain ownership markers: data-r7-settings-admin-domain="operations-home" / data-r7-settings-admin-domain="crop-operations" / data-r7-settings-admin-domain="environment-control" / data-r7-settings-admin-domain="irrigation-fertigation" / data-r7-settings-admin-domain="device-control" / data-r7-settings-admin-domain="recommendation-automation" / data-r7-settings-admin-domain="safety-history" / data-r7-settings-admin-domain="settings-admin".
+// R7-013 Settings/Admin mapping/system markers: data-r7-settings-admin-mapping-item="HA entity mapping" / data-r7-settings-admin-mapping-item="구역/장치 매핑" / data-r7-settings-admin-mapping-item="MQTT topic mapping later only" / data-r7-settings-admin-mapping-item="mapping health evidence" / data-r7-settings-admin-system-item="RBAC" / data-r7-settings-admin-system-item="사용자 역할" / data-r7-settings-admin-system-item="권한 정책" / data-r7-settings-admin-system-item="시스템 설정" / data-r7-settings-admin-system-item="진단" / data-r7-settings-admin-system-item="백업" / data-r7-settings-admin-system-item="secret redaction" / data-r7-settings-admin-system-item="감사 설정".
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7-003 historical subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7-007 target sidebar markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-operations" / data-r7-sidebar-group="environment-control" / data-r7-sidebar-group="irrigation-fertigation" / data-r7-sidebar-group="device-control" / data-r7-sidebar-group="recommendation-automation" / data-r7-sidebar-group="safety-history" / data-r7-sidebar-group="settings-admin".
@@ -43,7 +46,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.44";
+const REBUILD_VERSION = "1.12.45";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -733,13 +736,45 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7SettingsAdminDetail() {
-    return `<section data-r7-settings-admin-detail data-r7-settings-admin-readonly-boundary="true" style="border:1px solid #d7e8db;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
+    const domainOwnership = [
+      ["operations-home", "운영 홈", "visibility/config summary only", "전체 상태 요약은 읽기 전용이며 설정 변경은 별도 승인 작업"],
+      ["crop-operations", "작물 운영", "crop_cycle/currentCrop permission", "작물 기록/작기 권한과 currentCrop 노출 범위 evidence"],
+      ["environment-control", "환경 제어", "environment settings ownership", "환경 수동 기준/자동화 후보의 설정 소유 boundary"],
+      ["irrigation-fertigation", "관수·양액", "irrigation/fertigation settings ownership", "EC/pH/관수 스케줄/레시피 설정 ownership evidence"],
+      ["device-control", "장치 제어", "HA entity mapping / device mapping ownership", "장치 상태 판단은 mapping을 쓰지만 매핑 소유권은 설정·관리"],
+      ["recommendation-automation", "추천·자동화", "recommendation/AI assist configuration", "AI 보조/자동화 후보 설정은 실행 권한과 분리"],
+      ["safety-history", "안전·이력", "audit/log visibility and backend enforcement", "allow/block/audit 노출 권한과 backend enforcement evidence"],
+      ["settings-admin", "설정·관리", "RBAC, role, mapping, config, diagnostics, backup, secret redaction", "운영 도메인이 아니라 시스템/권한/매핑 boundary"],
+    ];
+    const mappingItems = [
+      ["HA entity mapping", "장치 제어의 상태 판단에 쓰이지만 편집 권한은 설정·관리에 속함"],
+      ["구역/장치 매핑", "구역별 장치 profile과 운영 도메인 연결 evidence"],
+      ["MQTT topic mapping later only", "실제 MQTT topic 연결/명령은 별도 승인 slice 이후"],
+      ["mapping health evidence", "누락/오류/통신 상태는 read-only evidence로 표시"],
+    ];
+    const systemItems = [
+      ["RBAC", "admin/farm_owner/farm_staff 역할 경계"],
+      ["사용자 역할", "role assignment mutation은 별도 승인 작업"],
+      ["권한 정책", "조회 · 기록 · 전략 · 실행 · 안전 · 고급설정 bucket"],
+      ["시스템 설정", "system_settings evidence only"],
+      ["진단", "diagnostics ownership evidence"],
+      ["백업", "backup metadata only"],
+      ["secret redaction", "Secret values render as [REDACTED] only"],
+      ["감사 설정", "view_audit_logs / backend enforcement evidence"],
+    ];
+    return `<section data-r7-settings-admin-detail data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="border:1px solid #d7e8db;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
       <header>
-        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-004 read-only admin detail</p>
-        <h4 style="margin:0;color:#24323f;font-size:16px;">설정·관리 · RBAC/config/admin 근거</h4>
-        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">RBAC_ROLE_OWNERSHIP, RBAC_PERMISSION_BUCKETS, RBAC_ADMIN_OWNERSHIP, RBAC_BACKEND_ENFORCED_ACTION_CLASSES를 운영자가 읽을 수 있는 근거로만 표시합니다.</p>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-013 manual-first admin boundary</p>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">설정·관리 · 권한/매핑/시스템 boundary</h4>
+        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">설정·관리는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수·양액/장치/추천·자동화/안전·이력의 권한·매핑·설정 ownership을 read-only로 보여줍니다.</p>
       </header>
-      <section data-r7-settings-admin-role-ownership style="display:grid;gap:8px;">
+      <section data-r7-settings-admin-domain-ownership style="display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">Active 8-domain ownership matrix</strong>
+        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+          ${domainOwnership.map(([key, label, owner, note]) => `<p data-r7-settings-admin-domain="${key}" style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>${label}</b><br><span style="font-size:13px;color:#24323f;font-weight:900;">${owner}</span><br><span style="color:#78927f;">${note}</span></p>`).join("")}
+        </div>
+      </section>
+      <section data-r7-settings-admin-role-ownership style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
         <strong style="color:#31523b;font-size:13px;">Role ownership matrix</strong>
         <div style="display:grid;grid-template-columns:1fr;gap:8px;">
           <p style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>admin</b><br>system_settings · HA mapping · RBAC · diagnostics · config metadata</p>
@@ -750,19 +785,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <section data-r7-settings-admin-permission-buckets style="display:grid;gap:8px;">
         <strong style="color:#31523b;font-size:13px;">Permission bucket matrix</strong>
         <p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.6;">조회 · 기록 · 전략 · 실행 · 안전 · 고급설정</p>
-        <p style="margin:0;color:#78927f;font-size:12px;line-height:1.6;">system_settings · edit_entity_mapping · view_audit_logs are admin/system evidence; write actions remain backend-enforced.</p>
+        <p style="margin:0;color:#78927f;font-size:12px;line-height:1.6;">RBAC_ROLE_OWNERSHIP, RBAC_PERMISSION_BUCKETS, RBAC_ADMIN_OWNERSHIP, RBAC_BACKEND_ENFORCED_ACTION_CLASSES를 운영자가 읽을 수 있는 근거로만 표시합니다. system_settings · edit_entity_mapping · view_audit_logs are admin/system evidence; write actions remain backend-enforced.</p>
+      </section>
+      <section data-r7-settings-admin-mapping-boundary data-r7-settings-admin-area="ha-entity-mapping" style="border-top:1px solid #edf4ef;padding-top:10px;display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">Mapping ownership boundary</strong>
+        <p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.6;">HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정·관리에 있습니다. edit_entity_mapping belongs to admin. This page shows mapping ownership only and does not edit entities.</p>
+        ${mappingItems.map(([label, note]) => `<p data-r7-settings-admin-mapping-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-settings-admin-system-boundary data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-secret-redaction style="border-top:1px solid #edf4ef;padding-top:10px;display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">System/config/admin boundary</strong>
+        ${systemItems.map(([label, note]) => `<p data-r7-settings-admin-system-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+        <p style="margin:0;color:#78927f;font-size:12px;line-height:1.6;">Raw secret material is never rendered. Stored secret fields are displayed only as [REDACTED]. Secret values render as [REDACTED] only. Role/settings mutation remains separately approved work.</p>
       </section>
       <section data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-farm-owner-staff-scope style="border-top:1px solid #edf4ef;padding-top:10px;">
         <strong style="color:#31523b;font-size:13px;">User/role mapping</strong>
-        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">admin owns all role mapping. farm_owner scope is limited to farm_staff assignment evidence only; R7-004 does not mutate roles.</p>
-      </section>
-      <section data-r7-settings-admin-area="ha-entity-mapping" style="border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">HA entity mapping metadata</strong>
-        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">edit_entity_mapping belongs to admin. This page shows mapping ownership only and does not edit entities.</p>
-      </section>
-      <section data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-secret-redaction style="border-top:1px solid #edf4ef;padding-top:10px;">
-        <strong style="color:#31523b;font-size:13px;">System config metadata</strong>
-        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">Raw secret material is never rendered. Stored secret fields are displayed only as [REDACTED].</p>
+        <p style="margin:6px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">admin owns all role mapping. farm_owner scope is limited to farm_staff assignment evidence only; R7-013 does not mutate roles.</p>
       </section>
       <section data-r7-settings-admin-area="diagnostics-backup-audit" style="border-top:1px solid #edf4ef;padding-top:10px;">
         <strong style="color:#31523b;font-size:13px;">Diagnostics/backup/audit export metadata</strong>
