@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_015_version_surfaces_are_1_12_47():
-    assert '"version": "1.12.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
-    assert "v1.12.50" in _read(DOC)
+    assert '"version": "1.12.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.51"' in _read(REBUILD_PANEL)
+    assert "v1.12.51" in _read(DOC)
 
 
 def test_r7_015_doc_declares_visual_system_scope_and_boundaries():
@@ -134,7 +134,8 @@ def test_r7_015_domain_routing_still_changes_active_page_after_visual_system():
       const html = panel.innerHTML;
       if (!html.includes('data-r7-active-domain="environment-control"')) process.exit(1);
       if (!html.includes('data-r7-domain-page="environment-control"')) process.exit(2);
-      if (!html.includes('data-r7-environment-control-detail')) process.exit(3);
+      if (!html.includes('data-r7-environment-zone-visual="true"')) process.exit(3);
+      if (!html.includes('data-r7-environment-detail-absorbed="true"')) process.exit(5);
       if (html.includes('data-r7-domain-page="device-control" data-r7-domain-page-active="true"')) process.exit(4);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)

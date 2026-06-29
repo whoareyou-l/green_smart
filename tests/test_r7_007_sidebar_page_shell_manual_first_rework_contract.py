@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_007_version_surfaces_are_1_12_39():
-    assert '"version": "1.12.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.51"' in _read(REBUILD_PANEL)
     for path in (DOC, SPEC, PLAN):
         assert "R7-007" in _read(path) or path == SPEC
 
@@ -171,7 +171,7 @@ def test_r7_007_node_smoke_renders_new_sidebar_and_domain_placeholders():
       }}
       panel.setR7ActiveDomain('environment-control');
       const envHtml = panel.innerHTML;
-      for (const item of ['data-r7-active-domain="environment-control"', 'data-r7-manual-base-settings', 'data-r7-ai-assist-layer', 'data-r7-environment-control-detail']) {{
+      for (const item of ['data-r7-active-domain="environment-control"', 'data-r7-manual-base-settings', 'data-r7-ai-assist-layer', 'data-r7-environment-zone-visual="true"', 'data-r7-environment-detail-absorbed="true"']) {{
         if (!envHtml.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
       if (envHtml.includes('data-r7-sidebar-execute')) process.exit(2);

@@ -1,6 +1,6 @@
 # RS-010 Crop Cycle API Naming Boundary
 
-> 기준 버전: `v1.12.50`
+> 기준 버전: `v1.12.51`
 > Status: active boundary contract
 > 목적: 기존 `crop/seasons`, `season_id`, `crop_season_id`가 새 제품 방향으로 새지 않도록 compatibility adapter와 product-facing DTO/API naming 경계를 고정한다.
 

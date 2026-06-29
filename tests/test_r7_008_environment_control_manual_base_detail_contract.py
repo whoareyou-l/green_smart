@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_008_version_surfaces_are_1_12_40():
-    assert '"version": "1.12.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
-    assert "v1.12.50" in _read(DOC)
+    assert '"version": "1.12.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.51"' in _read(REBUILD_PANEL)
+    assert "v1.12.51" in _read(DOC)
 
 
 def test_r7_008_doc_records_environment_formula_and_boundaries():
@@ -102,10 +102,11 @@ def test_r7_008_environment_detail_names_rule_ai_safety_and_fallback_items():
         assert marker in text
 
 
-def test_r7_008_environment_detail_is_only_attached_to_environment_domain():
+def test_r7_008_environment_detail_is_absorbed_into_environment_visual_domain():
     text = _read(REBUILD_PANEL)
-    assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() + this.renderR7EnvironmentControlDetail() : ""' in text
+    assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""' in text
     assert 'subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""' in text
+    assert 'data-r7-environment-detail-absorbed="true"' in text
 
 
 def test_r7_008_does_not_add_execution_or_write_authority():
@@ -127,32 +128,35 @@ def test_r7_008_does_not_add_execution_or_write_authority():
         assert marker not in text
 
 
-def test_r7_008_node_smoke_renders_environment_detail():
+def test_r7_008_node_smoke_renders_environment_visual_absorbed_detail_items():
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
       globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
-      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-008-readonly-smoke', zones: [] }}) }};
+      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-008-absorbed-visual-smoke', zones: [] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
       panel.setR7ActiveDomain('environment-control');
       const html = panel.innerHTML;
       const required = [
         'data-r7-detail-subpage="environment-control"',
-        'data-r7-environment-control-detail',
-        'data-r7-environment-manual-settings',
-        'data-r7-environment-rule-schedule',
-        'data-r7-environment-ai-assist',
-        'data-r7-environment-safety-final',
-        'data-r7-environment-fallback',
-        'AI 없이도 주간/야간 온도, 습도, VPD, CO₂, 광/DLI 기준으로 운영 가능해야 합니다',
-        '환경 제어는 장치 명령을 직접 실행하지 않으며 Safety/Interlock/Fail Safe를 우회할 수 없습니다'
+        'data-r7-environment-zone-visual="true"',
+        'data-r7-environment-detail-absorbed="true"',
+        'data-r7-environment-setting-card',
+        'data-r7-environment-rule-card',
+        'data-r7-environment-assist-card',
+        'data-r7-environment-safety-card',
+        '주간 온도', '야간 온도', '습도', 'VPD', 'CO₂', '광/DLI',
+        '주야간 전환', '환기 단계', '난방 최소온도', 'CO₂ 시간대',
+        'aiEnvironmentCorrection', '수동 기준 대비 차이', 'fallback',
+        '환경 한계', '장치 인터록', '최종 환경 후보'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
+      if (html.includes('data-r7-environment-control-detail')) process.exit(3);
       if (html.includes('data-r7-environment-execute')) process.exit(2);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)

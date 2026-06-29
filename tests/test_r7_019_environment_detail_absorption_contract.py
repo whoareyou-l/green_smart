@@ -6,14 +6,14 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
-DOC = ROOT / "docs/rebuild/r7-018-main-dashboard-product-ui-cleanup.md"
+DOC = ROOT / "docs/rebuild/r7-019-environment-detail-absorption.md"
 
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render_default_home() -> str:
+def _render_environment_page() -> str:
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; this._listeners = {{}}; }}
@@ -22,7 +22,7 @@ def _render_default_home() -> str:
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
       panel.hass = {{ callApi: async () => ({{
-        contextSource: 'r7-018-product-home-smoke',
+        contextSource: 'r7-019-environment-detail-absorption-smoke',
         zones: [
           {{ zoneId: 'zone-1', zoneName: '1구역', currentCrop: {{ cropName: '토마토', cropType: 'tomato' }}, dataAvailability: {{ freshness: 'fresh' }} }},
           {{ zoneId: 'zone-2', zoneName: '2구역', currentCrop: {{ cropName: '상추', cropType: 'lettuce' }}, dataAvailability: {{ freshness: 'delay' }} }},
@@ -30,6 +30,7 @@ def _render_default_home() -> str:
       }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
+      panel.setR7ActiveDomain('environment-control');
       process.stdout.write(panel.innerHTML);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
@@ -44,91 +45,96 @@ def _visible_text(html: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
 
 
-def test_r7_018_version_surfaces_are_1_12_50():
+def test_r7_019_version_surfaces_are_1_12_51():
     assert '"version": "1.12.51"' in _read(MANIFEST)
     assert 'const VERSION = "1.12.51"' in _read(LEGACY_PANEL)
     assert 'REBUILD_VERSION = "1.12.51"' in _read(REBUILD_PANEL)
     assert "v1.12.51" in _read(DOC)
 
 
-def test_r7_018_doc_records_product_ui_rule_and_boundaries():
-    text = _read(DOC)
+def test_r7_019_doc_records_detail_inventory_and_mapping():
+    doc = _read(DOC)
     for phrase in (
-        "# R7-018 Main Dashboard Product UI Cleanup",
-        "Rendered UI must show current operating status, crop, zone, metrics, warnings, freshness, and next checks.",
-        "The rendered main dashboard must not show developer/roadmap/process terms",
-        "No API route change in R7-018",
-        "No DB migration in R7-018",
-        "No HA service call in R7-018",
-        "No MQTT/device command in R7-018",
-        "No save/apply/execute controls in R7-018",
-        "No physical device hookup in R7-018",
+        "# R7-019 Environment Detail Absorption",
+        "Old detail card = source design inventory",
+        "New visual tabs = final product UI",
+        "Manual/Base Settings",
+        "Rule/Schedule Automation",
+        "AI Assist / Optimization",
+        "Safety / Interlock / Fail Safe",
+        "The old detail card must not be rendered",
+        "No API route change in R7-019",
+        "No DB migration in R7-019",
+        "No HA service call in R7-019",
+        "No MQTT/device command in R7-019",
+        "No physical device hookup in R7-019",
     ):
-        assert phrase in text
+        assert phrase in doc
 
 
-def test_r7_018_default_home_has_product_markers_and_operator_sections():
-    html = _render_default_home()
+def test_r7_019_environment_page_removes_old_detail_card_render():
+    html = _render_environment_page()
+    assert 'data-r7-environment-control-detail' not in html
+    visible = _visible_text(html)
+    forbidden_visible = (
+        "R7-008 read-only environment control detail",
+        "Manual/Base Settings",
+        "Rule/Schedule Automation",
+        "AI Assist / Optimization",
+        "Safety / Interlock / Fail Safe Finalization",
+        "AI 장애/fallback 원칙",
+    )
+    for phrase in forbidden_visible:
+        assert phrase not in visible
+    assert 'data-r7-environment-zone-visual="true"' in html
+    assert 'data-r7-domain-visual-frame' in html
+
+
+def test_r7_019_environment_visual_tabs_absorb_detail_content():
+    html = _render_environment_page()
     for marker in (
-        'data-r7-main-product-dashboard="true"',
-        "data-r7-main-product-hero",
-        "data-r7-main-zone-focus",
-        "data-r7-main-priority-checks",
-        "data-r7-main-kpi-grid",
-        "data-r7-main-zone-status-grid",
-        "data-r7-main-alerts",
-        "data-r7-main-trends",
-        'data-r7-active-domain="operations-home"',
-        'data-r7-operations-dashboard-rewrite="true"',
+        'data-r7-environment-subtab="status-summary"',
+        'data-r7-environment-subtab="base-settings"',
+        'data-r7-environment-subtab="rule-schedule"',
+        'data-r7-environment-subtab="interlock-block"',
+        'data-r7-environment-subtab="assist-fallback"',
+        'data-r7-environment-subtab="trend-evidence"',
+        'data-r7-environment-setting-card',
+        'data-r7-environment-rule-card',
+        'data-r7-environment-assist-card',
+        'data-r7-environment-safety-card',
+        'data-r7-environment-detail-absorbed="true"',
     ):
         assert marker in html
     for label in (
-        "오늘의 작물 운영",
-        "현재 선택 구역",
-        "우선 확인",
-        "핵심 지표",
-        "구역별 상태",
-        "경보",
-        "추세",
-        "작물 상태",
-        "생육 목표",
-        "환경·관수·장치 영향",
-        "추천·확인",
+        "주간 온도",
+        "야간 온도",
+        "습도",
+        "VPD",
+        "CO₂",
+        "광/DLI",
+        "주야간 전환",
+        "환기 단계",
+        "난방 최소온도",
+        "CO₂ 시간대",
+        "aiEnvironmentCorrection",
+        "수동 기준 대비 차이",
+        "fallback",
+        "환경 한계",
+        "장치 인터록",
+        "최종 환경 후보",
         "1구역 · 토마토",
         "2구역 · 상추",
     ):
         assert label in html
 
 
-def test_r7_018_default_home_hides_development_roadmap_terms_from_rendered_ui():
-    visible = _visible_text(_render_default_home())
-    forbidden_visible_terms = (
-        "R7-",
-        "RS-",
-        "shared domain visual frame",
-        "read-only",
-        "boundary",
-        "compatibility evidence",
-        "projection",
-        "scaffold",
-        "adapter",
-        "later only",
-        "manual-first",
-        "Crop-centered OS",
-        "Developer",
-        "No API",
-        "No DB",
-    )
-    for term in forbidden_visible_terms:
-        assert term not in visible
-
-
-def test_r7_018_default_home_does_not_add_runtime_authority():
+def test_r7_019_environment_absorption_does_not_add_runtime_authority():
     text = _read(REBUILD_PANEL)
     for forbidden in (
-        "data-r7-main-execute",
-        "data-r7-main-save",
-        "data-r7-main-apply",
+        "data-r7-environment-execute",
+        "data-r7-environment-save",
+        "data-r7-environment-apply",
         "callService(",
         ".callService",
         "hass.services",

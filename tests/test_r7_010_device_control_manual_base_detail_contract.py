@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_010_version_surfaces_are_1_12_42():
-    assert '"version": "1.12.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
-    assert "v1.12.50" in _read(DOC)
+    assert '"version": "1.12.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.51"' in _read(REBUILD_PANEL)
+    assert "v1.12.51" in _read(DOC)
 
 
 def test_r7_010_doc_records_device_formula_and_boundaries():
@@ -115,7 +115,7 @@ def test_r7_010_device_detail_is_only_attached_to_device_domain():
     text = _read(REBUILD_PANEL)
     assert 'subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""' in text
     assert 'subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""' in text
-    assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() + this.renderR7EnvironmentControlDetail() : ""' in text
+    assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""' in text
 
 
 def test_r7_010_does_not_add_device_execution_or_write_authority():

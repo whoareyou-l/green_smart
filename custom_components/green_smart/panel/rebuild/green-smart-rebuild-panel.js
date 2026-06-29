@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.50";
+const REBUILD_VERSION = "1.12.51";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1305,25 +1305,42 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const labels = {
       "status-summary": "상태 요약",
       "base-settings": "설정값",
+      "rule-schedule": "일정·규칙",
       "interlock-block": "인터록·차단",
+      "assist-fallback": "추천·보조",
       "trend-evidence": "추세·근거",
     };
-    const marker = tabKey === "status-summary" ? "data-r7-environment-zone-status-grid" : tabKey === "base-settings" ? "data-r7-environment-zone-base-settings" : tabKey === "interlock-block" ? "data-r7-environment-zone-interlock-stack" : "data-r7-environment-zone-trend-evidence";
+    const markers = {
+      "status-summary": "data-r7-environment-zone-status-grid",
+      "base-settings": "data-r7-environment-zone-base-settings",
+      "rule-schedule": "data-r7-environment-rule-schedule-grid",
+      "interlock-block": "data-r7-environment-zone-interlock-stack",
+      "assist-fallback": "data-r7-environment-assist-fallback-grid",
+      "trend-evidence": "data-r7-environment-zone-trend-evidence",
+    };
+    const settingCard = (label, value, note) => `<article data-r7-environment-setting-card data-r7-environment-manual-setting="${label}" style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${label}</strong><span style="color:#24323f;font-size:18px;font-weight:1000;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
+    const ruleCard = (label, note) => `<article data-r7-environment-rule-card data-r7-environment-rule="${label}" style="border:1px solid #e2eee5;border-radius:16px;background:#fff;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${label}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${note}</span></article>`;
+    const assistCard = (label, note) => `<article data-r7-environment-assist-card data-r7-environment-ai-item="${label}" style="border:1px solid #d8e4f2;border-radius:16px;background:#f8fbff;padding:12px;display:grid;gap:6px;"><strong style="color:#264f73;font-size:13px;">${label}</strong><span style="color:#52667a;font-size:12px;line-height:1.5;">${note}</span></article>`;
+    const safetyCard = (label, note) => `<article data-r7-environment-safety-card data-r7-environment-safety-item="${label}" style="border:1px solid #f0d0b8;border-radius:16px;background:#fff8f2;padding:12px;display:grid;gap:6px;"><strong style="color:#8a4d22;font-size:13px;">${label}</strong><span style="color:#6b5a48;font-size:12px;line-height:1.5;">${note}</span></article>`;
     const body = tabKey === "status-summary"
-      ? `${this.renderR7MetricCard("온도", "24.1℃", "23~25℃", "+0.4℃", "정상")}${this.renderR7MetricCard("습도", "82%", "70~78%", "+4%", "주의")}${this.renderR7MetricCard("VPD", "0.72 kPa", "0.8~1.2", "-0.08", "주의")}${this.renderR7MetricCard("CO₂", "720 ppm", "600~900", "0", "정상")}`
+      ? `${this.renderR7MetricCard("온도", "24.1℃", "23~25℃", "+0.4℃", "정상")}${this.renderR7MetricCard("습도", "82%", "65~75%", "+7%", "주의")}${this.renderR7MetricCard("VPD", "0.72 kPa", "0.8~1.2", "-0.08", "주의")}${this.renderR7MetricCard("CO₂", "720 ppm", "600~900", "0", "정상")}`
       : tabKey === "base-settings"
-        ? `${this.renderR7SeverityCard("green", "주간 온도", "24~27℃", "작물 기준 수동 설정값")}${this.renderR7SeverityCard("yellow", "습도", "65~75%", "VPD와 함께 확인")}${this.renderR7SeverityCard("gray", "광/DLI", "작물별 기준", "실제 chart API 전 read-only evidence")}`
-        : tabKey === "interlock-block"
-          ? `${this.renderR7AlertBanner("orange", "Safety/Interlock 우선", "강풍·비·저온·센서 stale은 환경 후보보다 먼저 표시합니다.")}${this.renderR7AlertBanner("yellow", "환기 후보", "환기 후보는 최종 명령이 아니라 구역별 evidence입니다.")}`
-          : `${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("VPD 추세", "최신")}`;
-    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-environment-subtab="${tabKey}" ${marker} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
+        ? `${settingCard("주간 온도", "24~27℃", "작물 기준 범위 안에서 운영자가 조정")}${settingCard("야간 온도", "17~19℃", "저온 위험 시 안전 상태 우선")}${settingCard("습도", "65~75%", "VPD 목표와 함께 판단")}${settingCard("VPD", "0.8~1.2 kPa", "환경 제어의 핵심 기준")}${settingCard("CO₂", "600~900 ppm", "시간대/환기 상태와 함께 적용")}${settingCard("광/DLI", "작물별 기준", "DLI 부족/과다 상태 표시")}`
+        : tabKey === "rule-schedule"
+          ? `${ruleCard("주야간 전환", "일출/일몰 또는 운영 시간표 기준")}${ruleCard("환기 단계", "온도/VPD 편차가 크면 환기 후보 산출")}${ruleCard("난방 최소온도", "야간 하한 이하 후보는 난방 검토")}${ruleCard("CO₂ 시간대", "환기 제한이 없는 시간대에만 후보 표시")}`
+          : tabKey === "interlock-block"
+            ? `${safetyCard("환경 한계", "고온/저온/고습/VPD 한계로 후보 제한")}${safetyCard("장치 인터록", "강풍·비·장치 통신 장애 시 환기·스크린 후보 제한")}${safetyCard("최종 환경 후보", "안전/인터록 이후 남은 후보만 표시")}`
+            : tabKey === "assist-fallback"
+              ? `${assistCard("aiEnvironmentCorrection", "상태가 정상일 때만 보정 후보로 표시")}${assistCard("수동 기준 대비 차이", "온도/VPD/습도/CO₂별 차이를 설명")}${assistCard("fallback", "AI disabled/unhealthy/timeout/stale이면 보정 제외")}`
+              : `${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("VPD 추세", "최신")}${this.renderR7MiniTrendChart("CO₂ 추세", "최신")}`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-environment-subtab="${tabKey}" data-r7-environment-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
 
   renderR7EnvironmentZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
-    const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["interlock-block", "인터록·차단"], ["trend-evidence", "추세·근거"]];
+    const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     const panels = tabs.map(([key]) => this.renderR7EnvironmentSubtabPanel(key, selectedZone)).join("");
-    return `<section data-r7-environment-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "environment-control", title: "환경 제어", kicker: "R7-017 shared domain visual frame", summary: "환경 제어는 온도·습도·VPD·CO₂·광/DLI를 구역별로 먼저 확인하고, 설정값·인터록·추세는 하위탭에서 필요한 것만 봅니다.", status: "attention", tabs, activeTab: "status-summary", panels })}<section style="display:none;">구역별 환경 상태 · 현재 선택 구역 · 환기 후보 · Safety/Interlock 우선 · 센서 freshness</section></section>`;
+    return `<section data-r7-environment-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "environment-control", title: "환경 제어", kicker: "구역별 환경 상태", summary: "온도·습도·VPD·CO₂·광/DLI 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "attention", tabs, activeTab: "status-summary", panels })}<section style="display:none;">구역별 환경 상태 · 현재 선택 구역 · 환기 후보 · Safety/Interlock 우선 · 센서 freshness</section></section>`;
   }
 
   renderR7DetailSubpage(subpage) {
@@ -1342,7 +1359,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p data-r7-subpage-source-freshness style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">Source freshness: ${subpage.source}</p>
       <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
-      ${subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() + this.renderR7EnvironmentControlDetail() : ""}
+      ${subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""}
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""}
       ${subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""}
       ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationAutomationDetail() : ""}

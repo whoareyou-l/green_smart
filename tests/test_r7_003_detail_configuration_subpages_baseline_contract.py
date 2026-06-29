@@ -18,11 +18,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_003_version_surfaces_are_1_12_37():
-    assert '"version": "1.12.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.51"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_002_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.50" in _read(path)
+        assert "v1.12.51" in _read(path)
 
 
 def test_r7_003_doc_declares_selected_scope_and_boundaries():
@@ -147,7 +147,8 @@ def test_r7_003_node_smoke_renders_all_detail_subpage_placeholders():
         'data-r7-detail-subpage="environment-control"',
         'data-r7-subpage-readonly-boundary="true"',
         'data-r7-subpage-config-placeholder',
-        'data-r7-environment-control-detail'
+        'data-r7-environment-zone-visual="true"',
+        'data-r7-environment-detail-absorbed="true"'
       ];
       for (const item of envRequired) {{
         if (!envHtml.includes(item)) {{ console.error(item); process.exit(1); }}

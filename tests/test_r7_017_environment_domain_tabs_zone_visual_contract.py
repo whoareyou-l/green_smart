@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_017_version_surfaces_are_1_12_49():
-    assert '"version": "1.12.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.50"' in _read(REBUILD_PANEL)
-    assert "v1.12.50" in _read(DOC)
+    assert '"version": "1.12.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.51"' in _read(REBUILD_PANEL)
+    assert "v1.12.51" in _read(DOC)
 
 
 def test_r7_017_doc_defines_shared_domain_visual_frame_and_runtime_boundaries():
@@ -102,22 +102,24 @@ def test_r7_017_environment_page_renders_zone_scoped_subtab_visual_frame():
         'data-r7-domain-subtab-panel',
         'data-r7-environment-subtab="status-summary"',
         'data-r7-environment-subtab="base-settings"',
+        'data-r7-environment-subtab="rule-schedule"',
         'data-r7-environment-subtab="interlock-block"',
+        'data-r7-environment-subtab="assist-fallback"',
         'data-r7-environment-subtab="trend-evidence"',
         'data-r7-environment-zone-status-grid',
         'data-r7-environment-zone-base-settings',
         'data-r7-environment-zone-interlock-stack',
         'data-r7-environment-zone-trend-evidence',
         '환경 제어', '구역별 환경 상태', '현재 선택 구역', '1구역 · 토마토', '2구역 · 상추',
-        '상태 요약', '설정값', '인터록·차단', '추세·근거',
-        '온도', '습도', 'VPD', 'CO₂', '광/DLI', '환기 후보', 'Safety/Interlock 우선', '센서 freshness'
+        '상태 요약', '설정값', '일정·규칙', '인터록·차단', '추천·보조', '추세·근거',
+        '온도', '습도', 'VPD', 'CO₂', '광/DLI', '환기 단계', '장치 인터록', '센서 freshness'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
       const frameIndex = html.indexOf('data-r7-domain-visual-frame');
-      const legacyIndex = html.indexOf('data-r7-environment-control-detail');
-      if (frameIndex < 0 || legacyIndex < 0 || frameIndex > legacyIndex) process.exit(2);
+      if (frameIndex < 0) process.exit(2);
+      if (html.includes('data-r7-environment-control-detail')) process.exit(6);
       if (html.includes('data-r7-environment-execute')) process.exit(3);
       if (html.includes('data-r7-environment-save')) process.exit(4);
       if (html.includes('data-r7-environment-apply')) process.exit(5);
