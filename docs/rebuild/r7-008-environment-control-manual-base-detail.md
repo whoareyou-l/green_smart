@@ -1,6 +1,6 @@
 # R7-008 Environment Control Manual/Base Read-only Detail
 
-> 기준 버전: `v1.12.68`
+> 기준 버전: `v1.12.69`
 > Status: R7-008 complete
 > Purpose: `환경 제어` 도메인을 manual-first 환경제어 프로그램 구조로 구체화한다.
 

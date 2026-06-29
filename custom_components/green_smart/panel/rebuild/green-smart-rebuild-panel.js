@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.68";
+const REBUILD_VERSION = "1.12.69";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -74,6 +74,9 @@ const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
 const R7_GREEN_ACCENT = "#43ad5e";
 const R7_GREEN_ACTIVE_BG = "#e3f4e6";
 const R7_GREEN_TEXT = "#31523b";
+const R7_REFERENCE_LOGO_TILE = "#43ad5e";
+const R7_REFERENCE_SAGE_ICON = "#6f8d7b";
+const R7_REFERENCE_ACTIVE_ICON_BG = "#eef8ee";
 const R7_LINE_ICONS = Object.freeze({
   "operations-home": '<path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10.5V20h11v-9.5"/><path d="M10 20v-5h4v5"/>',
   "crop-operations": '<path d="M12 20V9"/><path d="M12 9c-4 0-6-2.5-7-5 4 0 6 2.5 7 5Z"/><path d="M12 12c4 0 6-2.5 7-5-4 0-6 2.5-7 5Z"/>',
@@ -983,7 +986,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SidebarVisualAttrs(collapsed) {
-    return `data-r7-sidebar-visual-style="ha-like" data-r7-sidebar-surface="vertical-rail" data-r7-sidebar-compact-width="64" data-r7-sidebar-expanded-width="256" data-r7-sidebar-active-indicator="left-bar" data-r7-sidebar-visual-density="${collapsed ? "compact" : "expanded"}"`;
+    return `data-r7-sidebar-visual-style="ha-like" data-r7-sidebar-surface="vertical-rail" data-r7-sidebar-compact-width="64" data-r7-sidebar-expanded-width="256" data-r7-sidebar-active-indicator="left-bar" data-r7-sidebar-active-icon-tile="soft-mint" data-r7-sidebar-active-icon-bg="#eef8ee" data-r7-sidebar-legacy-active-bg="#e3f4e6" data-r7-sidebar-icon-reference-style="soft-sage-filled" data-r7-sidebar-icon-palette="reference-sage" data-r7-sidebar-icon-tone="#6f8d7b" data-r7-sidebar-visual-density="${collapsed ? "compact" : "expanded"}"`;
   }
 
   _r7SidebarPlacementAttrs() {
@@ -995,16 +998,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SidebarNavItemStyle(active, collapsed) {
-    return `position:relative;display:flex;align-items:center;gap:12px;justify-content:${collapsed ? "center" : "flex-start"};min-height:44px;border:0;border-radius:10px;background:${active ? R7_GREEN_ACTIVE_BG : "transparent"};color:${active ? R7_GREEN_ACCENT : R7_GREEN_TEXT};text-decoration:none;padding:${collapsed ? "0" : "0 12px 0 14px"};font-weight:${active ? "800" : "600"};box-sizing:border-box;`;
+    return `position:relative;display:flex;align-items:center;gap:12px;justify-content:${collapsed ? "center" : "flex-start"};min-height:44px;border:0;border-radius:10px;background:${active ? R7_REFERENCE_ACTIVE_ICON_BG : "transparent"};color:${R7_REFERENCE_SAGE_ICON};text-decoration:none;padding:${collapsed ? "0" : "0 12px 0 14px"};font-weight:${active ? "800" : "600"};box-sizing:border-box;`;
   }
 
   _r7SidebarActiveIndicator(active) {
     return active ? `<span data-r7-sidebar-active-left-bar aria-hidden="true" style="position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 999px 999px 0;background:${R7_GREEN_ACCENT};"></span>` : "";
   }
 
-  _r7SidebarLineIcon(key) {
+  _r7SidebarReferenceLogo() {
+    return `<svg data-r7-sidebar-logo-style="reference-leaf-tile" data-r7-sidebar-logo-source="attached-reference" data-r7-sidebar-logo-leaf="true" aria-hidden="true" viewBox="0 0 48 48" width="40" height="40" style="display:block;border-radius:12px;"><rect x="4" y="4" width="40" height="40" rx="10" fill="${R7_REFERENCE_LOGO_TILE}"/><path fill="#ffffff" d="M33.7 13.8c-8.9.5-15.8 4.7-18.6 11.1-1.7 3.9-1.2 7.6.9 10.7 6.9-.7 13.6-4.7 16.5-11.3 1.4-3.2 1.7-6.7 1.2-10.5Z"/><path fill="#dff5e6" d="M18 33.5c3.8-6.5 8.4-10.8 14.1-13.4-4.6 3.7-8.2 8.3-10.7 14.4-.9.1-2.1-.2-3.4-1Z"/></svg>`;
+  }
+
+  _r7SidebarReferenceIcon(key) {
     const paths = R7_LINE_ICONS[key] || R7_LINE_ICONS["operations-home"];
-    return `<svg data-r7-sidebar-line-icon="${key}" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;">${paths}</svg>`;
+    return `<svg data-r7-sidebar-line-icon="${key}" data-r7-sidebar-icon-reference-style="soft-sage-filled" data-r7-sidebar-icon-palette="reference-sage" data-r7-sidebar-icon-tone="#6f8d7b" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="none" style="display:block;color:${R7_REFERENCE_SAGE_ICON};"><g fill="none" stroke="currentColor" style="display:none;"></g>${paths}</svg>`;
+  }
+
+  _r7SidebarLineIcon(key) {
+    return this._r7SidebarReferenceIcon(key);
   }
 
   _r7Text(value) {
@@ -1067,7 +1078,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const baseStyle = this._r7SidebarBaseStyle(width);
     if (referenceSlimRail) {
       return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="true" ${railAttrs} ${fixedAttrs} ${visualAttrs} ${placementAttrs} style="${baseStyle}">
-        <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-logo-tile aria-label="Green Smart 상세형" title="Green Smart" style="width:44px;height:44px;border:0;border-radius:10px;background:${R7_GREEN_ACCENT};color:#ffffff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto 4px;">${this._r7SidebarLineIcon("crop-operations")}</button>
+        <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-logo-tile aria-label="Green Smart 상세형" title="Green Smart" style="width:44px;height:44px;border:0;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto 4px;padding:0;">${this._r7SidebarReferenceLogo()}</button>
         <nav data-r7-sidebar-nav-list data-r7-sidebar-main-domain-list="without-settings-admin" aria-label="Green Smart compact navigation" style="display:grid;gap:4px;justify-items:stretch;">
           ${R7_MAIN_SIDEBAR_GROUPS.map((group) => {
             const active = this._activeR7Domain === group.key;
@@ -1080,7 +1091,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" ${railAttrs} ${fixedAttrs} ${visualAttrs} ${placementAttrs} style="${baseStyle}">
       <div data-r7-sidebar-brand style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};min-height:48px;padding:0 ${collapsed ? "0" : "8px"};">
         <div style="display:flex;align-items:center;gap:9px;min-width:0;">
-          <span data-r7-sidebar-logo-image aria-label="Green Smart 로고" style="width:36px;height:36px;border-radius:10px;flex:0 0 auto;background:${R7_GREEN_ACCENT};color:#ffffff;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarLineIcon("crop-operations")}</span>
+          <span data-r7-sidebar-logo-image aria-label="Green Smart 로고" style="width:40px;height:40px;border-radius:12px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span>
           ${collapsed ? "" : `<div style="min-width:0;"><div style="font-weight:700;color:#202124;font-size:16px;line-height:1;">Green Smart</div><p style="margin:4px 0 0;color:#6f7782;font-size:12px;line-height:1.35;">작물·구역·경보 중심</p></div>`}
         </div>
         <button type="button" data-r7-sidebar-collapse-toggle aria-label="${collapsed ? "사이드바 상세형" : "사이드바 간략형"}" title="${collapsed ? "상세형" : "간략형"}" style="border:0;border-radius:10px;background:transparent;color:#5f6b76;width:36px;height:36px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:20px;">${collapsed ? "☰" : "☰"}</button>
