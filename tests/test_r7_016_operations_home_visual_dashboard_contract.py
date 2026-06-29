@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_016_version_surfaces_are_1_12_48():
-    assert '"version": "1.12.54"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.54"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.54"' in _read(REBUILD_PANEL)
-    assert "v1.12.54" in _read(DOC)
+    assert '"version": "1.12.55"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.55"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.55"' in _read(REBUILD_PANEL)
+    assert "v1.12.55" in _read(DOC)
 
 
 def test_r7_016_doc_declares_dashboard_rewrite_scope_and_boundaries():
@@ -126,7 +126,8 @@ def test_r7_016_dashboard_preserves_domain_routing_to_non_home_pages():
       const html = panel.innerHTML;
       if (!html.includes('data-r7-active-domain="device-control"')) process.exit(1);
       if (!html.includes('data-r7-domain-page="device-control"')) process.exit(2);
-      if (!html.includes('data-r7-device-control-detail')) process.exit(3);
+      if (!html.includes('data-r7-device-zone-visual="true"')) process.exit(3);
+      if (!html.includes('data-r7-device-detail-absorbed="true"')) process.exit(5);
       if (html.includes('data-r7-operations-dashboard-rewrite="true"')) process.exit(4);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)

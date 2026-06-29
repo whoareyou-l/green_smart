@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_010_version_surfaces_are_1_12_42():
-    assert '"version": "1.12.54"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.54"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.54"' in _read(REBUILD_PANEL)
-    assert "v1.12.54" in _read(DOC)
+    assert '"version": "1.12.55"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.55"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.55"' in _read(REBUILD_PANEL)
+    assert "v1.12.55" in _read(DOC)
 
 
 def test_r7_010_doc_records_device_formula_and_boundaries():
@@ -111,11 +111,12 @@ def test_r7_010_device_detail_names_rule_ai_safety_and_fallback_items():
         assert marker in text
 
 
-def test_r7_010_device_detail_is_only_attached_to_device_domain():
+def test_r7_010_device_detail_is_absorbed_into_visual_domain():
     text = _read(REBUILD_PANEL)
-    assert 'subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""' in text
+    assert 'subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""' in text
     assert 'subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""' in text
     assert 'subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""' in text
+    assert 'data-r7-device-detail-absorbed="true"' in text
 
 
 def test_r7_010_does_not_add_device_execution_or_write_authority():
@@ -138,32 +139,36 @@ def test_r7_010_does_not_add_device_execution_or_write_authority():
         assert marker not in text
 
 
-def test_r7_010_node_smoke_renders_device_detail():
+def test_r7_010_node_smoke_renders_device_visual_absorbed_detail_items():
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
       globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
-      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-010-readonly-smoke', zones: [] }}) }};
+      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-010-absorbed-visual-smoke', zones: [] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
       panel.setR7ActiveDomain('device-control');
       const html = panel.innerHTML;
       const required = [
         'data-r7-detail-subpage="device-control"',
-        'data-r7-device-control-detail',
-        'data-r7-device-manual-settings',
-        'data-r7-device-rule-schedule',
-        'data-r7-device-ai-assist',
-        'data-r7-device-safety-final',
-        'data-r7-device-fallback',
-        'AI 없이도 수동/자동/잠금/점검 모드와 장치 매핑 상태를 확인할 수 있어야 합니다',
-        '장치 실행은 권한, 모드, Safety, Interlock, Fail Safe, HA/MQTT 상태를 통과해야 합니다'
+        'data-r7-device-zone-visual="true"',
+        'data-r7-device-detail-absorbed="true"',
+        'data-r7-device-setting-card',
+        'data-r7-device-rule-card',
+        'data-r7-device-assist-card',
+        'data-r7-device-safety-card',
+        '수동 모드', '자동 모드', '잠금 모드', '점검 모드',
+        'HA entity mapping', 'MQTT topic mapping later only',
+        'operatorRequestedAction', 'automationCandidate', 'mode gate', 'mapping health',
+        'optional aiStrategyHint', 'hint only', 'fallback',
+        'permission check', 'Safety check', 'Interlock check', 'Fail Safe check', 'HA/MQTT status'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
+      if (html.includes('data-r7-device-control-detail')) process.exit(3);
       if (html.includes('data-r7-device-execute')) process.exit(2);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)

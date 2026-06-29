@@ -24,10 +24,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_014_version_surfaces_are_1_12_46():
-    assert '"version": "1.12.54"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.54"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.54"' in _read(REBUILD_PANEL)
-    assert "v1.12.54" in _read(DOC)
+    assert '"version": "1.12.55"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.55"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.55"' in _read(REBUILD_PANEL)
+    assert "v1.12.55" in _read(DOC)
 
 
 def test_r7_014_doc_declares_domain_page_routing_scope_and_boundaries():
@@ -122,7 +122,8 @@ def test_r7_014_click_smoke_changes_sidebar_domain_without_reload():
       if (panel._activeR7Domain !== 'device-control') process.exit(2);
       if (!panel.innerHTML.includes('data-r7-active-domain="device-control"')) process.exit(3);
       if (!panel.innerHTML.includes('data-r7-domain-page="device-control"')) process.exit(4);
-      if (!panel.innerHTML.includes('data-r7-device-control-detail')) process.exit(5);
+      if (!panel.innerHTML.includes('data-r7-device-zone-visual="true"')) process.exit(5);
+      if (!panel.innerHTML.includes('data-r7-device-detail-absorbed="true"')) process.exit(8);
       if (panel.innerHTML.includes('data-r7-domain-page="environment-control" data-r7-domain-page-active="true"')) process.exit(6);
       panel.setR7ActiveDomain('unknown-domain');
       if (panel._activeR7Domain !== 'operations-home') process.exit(7);

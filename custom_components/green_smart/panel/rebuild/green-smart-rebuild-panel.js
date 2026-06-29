@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.54";
+const REBUILD_VERSION = "1.12.55";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -144,7 +144,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadError = null;
     this._contextRequestId = 0;
     this._activeR7Domain = "operations-home";
-    this._activeR7DomainSubtabs = { "environment-control": "status-summary", "irrigation-fertigation": "status-summary" };
+    this._activeR7DomainSubtabs = { "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary" };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -637,7 +637,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   setR7DomainSubtab(domainKey, tabKey) {
     const domain = this._normalizeR7Domain(domainKey);
-    const tabDomains = ["environment-control", "irrigation-fertigation"];
+    const tabDomains = ["environment-control", "irrigation-fertigation", "device-control"];
     const allowed = tabDomains.includes(domain) ? ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"] : [];
     if (!allowed.includes(tabKey)) return false;
     if (this._activeR7DomainSubtabs[domain] === tabKey) return true;
@@ -1323,7 +1323,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7DomainSubtabs(domainKey, tabs, activeKey) {
     return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" role="tablist" style="display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;">${tabs.map(([key, label]) => {
       const active = key === activeKey;
-      const domainSubtabMarker = domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : "";
+      const domainSubtabMarker = domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : "";
       return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;cursor:pointer;">${label}</button>`;
     }).join("")}</nav>`;
   }
@@ -1428,6 +1428,51 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<section data-r7-irrigation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "irrigation-fertigation", title: "관수·양액", kicker: "구역별 관수·양액 상태", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">구역별 관수·양액 상태 · 현재 선택 구역 · 관수 후보 · Safety clamp 우선 · 센서 신선도</section></section>`;
   }
 
+  renderR7DeviceSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
+    const active = tabKey === activeTab;
+    const display = active ? "grid" : "none";
+    const labels = {
+      "status-summary": "상태 요약",
+      "base-settings": "설정값",
+      "rule-schedule": "일정·규칙",
+      "interlock-block": "인터록·차단",
+      "assist-fallback": "추천·보조",
+      "trend-evidence": "추세·근거",
+    };
+    const markers = {
+      "status-summary": "data-r7-device-zone-status-grid",
+      "base-settings": "data-r7-device-zone-base-settings",
+      "rule-schedule": "data-r7-device-rule-schedule-grid",
+      "interlock-block": "data-r7-device-zone-interlock-stack",
+      "assist-fallback": "data-r7-device-assist-fallback-grid",
+      "trend-evidence": "data-r7-device-zone-trend-evidence",
+    };
+    const settingCard = (key, label, note) => `<article data-r7-device-setting-card data-r7-device-manual-setting="${key}" style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${label}</strong><span style="color:#24323f;font-size:15px;font-weight:1000;">${key}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
+    const ruleCard = (label, note) => `<article data-r7-device-rule-card data-r7-device-rule="${label}" style="border:1px solid #e2eee5;border-radius:16px;background:#fff;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${label}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${note}</span></article>`;
+    const assistCard = (label, note) => `<article data-r7-device-assist-card data-r7-device-ai-item="${label}" style="border:1px solid #d8e4f2;border-radius:16px;background:#f8fbff;padding:12px;display:grid;gap:6px;"><strong style="color:#264f73;font-size:13px;">${label}</strong><span style="color:#52667a;font-size:12px;line-height:1.5;">${note}</span></article>`;
+    const safetyCard = (label, note) => `<article data-r7-device-safety-card data-r7-device-safety-item="${label}" style="border:1px solid #f0d0b8;border-radius:16px;background:#fff8f2;padding:12px;display:grid;gap:6px;"><strong style="color:#8a4d22;font-size:13px;">${label}</strong><span style="color:#6b5a48;font-size:12px;line-height:1.5;">${note}</span></article>`;
+    const body = tabKey === "status-summary"
+      ? `${this.renderR7MetricCard("장치 응답", "주의", "응답 지연 1건", "+1", "경고")}${this.renderR7MetricCard("운영 모드", "manual", "수동 우선", "0", "정상")}${this.renderR7MetricCard("매핑 상태", "확인 필요", "HA/MQTT evidence", "+1", "주의")}${this.renderR7MetricCard("실행 권한", "차단", "read-only", "0", "차단")}`
+      : tabKey === "base-settings"
+        ? `${settingCard("manual", "수동 모드", "작업자가 현장 기준으로 직접 판단하는 모드 evidence")}${settingCard("auto", "자동 모드", "규칙/스케줄 후보를 허용하되 safety gate 필요")}${settingCard("locked", "잠금 모드", "권한/안전 사유로 조작 차단")}${settingCard("maintenance", "점검 모드", "정비 중에는 자동 후보를 표시만 함")}${settingCard("HA entity mapping", "HA entity mapping", "장치 상태 확인용 mapping metadata")}${settingCard("MQTT topic mapping later only", "MQTT topic mapping later only", "Physical MQTT/device hookup 전까지 실행에 사용하지 않음")}`
+        : tabKey === "rule-schedule"
+          ? `${ruleCard("operatorRequestedAction", "작업자 요청은 read-only 후보로만 표시")}${ruleCard("automationCandidate", "규칙/스케줄 자동화 후보도 mode gate를 통과해야 함")}${ruleCard("mode gate", "manual/auto/locked/maintenance 상태로 후보를 제한")}${ruleCard("mapping health", "HA/MQTT mapping 상태는 실행 허용 조건의 evidence")}`
+          : tabKey === "interlock-block"
+            ? `${safetyCard("permission check", "역할/권한이 없으면 조작 차단")}${safetyCard("Safety check", "작물/환경/관수 safety 조건을 먼저 확인")}${safetyCard("Interlock check", "강풍/비/저온/센서 stale/장치 오류 interlock")}${safetyCard("Fail Safe check", "통신 장애·비정상 상태면 safe state 유지")}${safetyCard("HA/MQTT status", "HA/MQTT 상태는 read-only evidence; 실행 권한 없음")}`
+            : tabKey === "assist-fallback"
+              ? `${assistCard("optional aiStrategyHint", "AI는 장치 전략 힌트만 제공")}${assistCard("hint only", "AI는 장치 명령을 직접 내리지 않음")}${assistCard("fallback", "AI disabled/unhealthy/timeout/stale이면 hint를 제외")}${assistCard("Physical MQTT/device hookup remains blocked", "가상 시나리오 검증 전까지 실제 장치 연결은 차단")}`
+              : `${this.renderR7MiniTrendChart("장치 응답 추세", "최신")}${this.renderR7MiniTrendChart("모드 변경 이력", "최신")}${this.renderR7MiniTrendChart("매핑 health", "확인")}${this.renderR7MiniTrendChart("차단 이유", "누적")}`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-device-subtab="${tabKey}" data-r7-device-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
+  }
+
+  renderR7DeviceZoneVisual() {
+    const selectedZone = this._r7PrimaryZoneForDomain();
+    const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
+    const activeTab = this._activeR7DomainSubtabs["device-control"] || "status-summary";
+    const panels = tabs.map(([key]) => this.renderR7DeviceSubtabPanel(key, selectedZone, activeTab)).join("");
+    return `<section data-r7-device-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "device-control", title: "장치 제어", kicker: "구역별 장치 상태", summary: "수동/자동/잠금/점검 모드, 장치 매핑, 모드 gate, 인터록, AI hint-only 상태를 구역별로 확인합니다.", status: "warning", tabs, activeTab, panels })}<section style="display:none;">구역별 장치 상태 · 현재 선택 구역 · mode gate · HA entity mapping · MQTT topic mapping later only · Physical MQTT/device hookup remains blocked</section></section>`;
+  }
+
   renderR7DetailSubpage(subpage) {
     return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
@@ -1446,7 +1491,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
       ${subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""}
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""}
-      ${subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""}
+      ${subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""}
       ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationAutomationDetail() : ""}
       ${subpage.key === "safety-history" ? this.renderR7SafetyHistoryDetail() : ""}
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
