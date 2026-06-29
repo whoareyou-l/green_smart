@@ -1,6 +1,6 @@
 # RS-020 Recommendation Review Read-only Projection
 
-> 기준 버전: `v1.12.43`
+> 기준 버전: `v1.12.44`
 > Status: recommendation review read-only projection
 > 목적: `currentCropAssignment + growthTargetProjection + environmentImpactProjection`을 기반으로 `추천·실행` 화면에 구역별 추천 검토 상태를 읽기 전용 projection으로 표시한다.
 

@@ -30,6 +30,8 @@
 // R7-010 device literal marker manifest: data-r7-device-manual-setting="manual" / data-r7-device-manual-setting="auto" / data-r7-device-manual-setting="locked" / data-r7-device-manual-setting="maintenance" / data-r7-device-manual-setting="HA entity mapping" / data-r7-device-manual-setting="MQTT topic mapping later only" / data-r7-device-rule="operatorRequestedAction" / data-r7-device-rule="automationCandidate" / data-r7-device-rule="mode gate" / data-r7-device-rule="mapping health" / data-r7-device-ai-item="optional aiStrategyHint" / data-r7-device-ai-item="hint only" / data-r7-device-ai-item="fallback" / data-r7-device-safety-item="permission check" / data-r7-device-safety-item="Safety check" / data-r7-device-safety-item="Interlock check" / data-r7-device-safety-item="Fail Safe check" / data-r7-device-safety-item="HA/MQTT status".
 // R7-011 recommendation detail markers: data-r7-recommendation-automation-detail / data-r7-recommendation-manual-baseline / data-r7-recommendation-rule-candidate / data-r7-recommendation-ai-assist / data-r7-recommendation-safety-final / data-r7-recommendation-fallback.
 // R7-011 recommendation literal marker manifest: data-r7-recommendation-manual-item="환경 수동 기준" / data-r7-recommendation-manual-item="관수·양액 수동 기준" / data-r7-recommendation-manual-item="장치 모드 기준" / data-r7-recommendation-manual-item="AI off fallback value" / data-r7-recommendation-rule="rule/schedule candidate" / data-r7-recommendation-rule="automation eligibility" / data-r7-recommendation-rule="difference from manual baseline" / data-r7-recommendation-ai-item="AI recommendation/correction" / data-r7-recommendation-ai-item="explanation" / data-r7-recommendation-ai-item="fallback" / data-r7-recommendation-safety-item="Safety-final candidate" / data-r7-recommendation-safety-item="not final command" / data-r7-recommendation-safety-item="no final command authority".
+// R7-012 safety/history detail markers: data-r7-safety-history-detail / data-r7-safety-history-status / data-r7-safety-history-reasons / data-r7-safety-history-timeline / data-r7-safety-history-audit.
+// R7-012 safety/history literal marker manifest: data-r7-safety-history-status-item="Safety 상태" / data-r7-safety-history-status-item="Interlock 상태" / data-r7-safety-history-status-item="Fail Safe 상태" / data-r7-safety-history-status-item="알람" / data-r7-safety-history-reason="차단 이유" / data-r7-safety-history-reason="허용 이유" / data-r7-safety-history-reason="센서 stale 이력" / data-r7-safety-history-reason="오류/Traceback/통신 장애" / data-r7-safety-history-timeline-item="수동 조작 이력" / data-r7-safety-history-timeline-item="기본 자동제어 이력" / data-r7-safety-history-timeline-item="AI 추천 이력" / data-r7-safety-history-timeline-item="AI 적용/미적용 이력" / data-r7-safety-history-timeline-item="장치 명령 후보 이력" / data-r7-safety-history-timeline-item="실제 실행 이력, later only".
 // R7-002 historical sidebar label order compatibility: 운영 홈 → 작물 중심 운영 → 현장 상태 → 추천·실행 검토 → 설정·관리.
 // RS-002/RS-005 historical source-copy compatibility only, not current operator copy: 작물이 먼저이고 제어는 그 다음입니다 / 추천은 실행 전 승인과 안전검사를 거칩니다 / 구역별 추천·실행 검토 / 실행 전 승인과 안전검사.
 // R7 source markers: currentCropAssignment / monitoringReadOnlyAdapter / safetyInterlockReadOnlyAdapter / environmentImpactProjection / recommendationReviewProjection / virtualExecutionRehearsalScaffold.
@@ -41,7 +43,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.43";
+const REBUILD_VERSION = "1.12.44";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -998,6 +1000,54 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+  renderR7SafetyHistoryDetail() {
+    const statusItems = [
+      ["Safety 상태", "정상/주의/차단", "도메인별 Safety 최종 상태"],
+      ["Interlock 상태", "허용/차단", "강풍·비·저온·센서 stale 등 인터록 결과"],
+      ["Fail Safe 상태", "safe state 유지", "통신 장애·비정상 상태 시 보수적 fallback"],
+      ["알람", "확인 필요", "알람은 표시만 하며 ack/clear는 제외"],
+    ];
+    const reasons = [
+      ["차단 이유", "왜 block 되었는지 도메인/구역별 evidence 표시"],
+      ["허용 이유", "왜 allow 되었는지 safety gate 통과 evidence 표시"],
+      ["센서 stale 이력", "stale data가 후보 제한에 미친 영향"],
+      ["오류/Traceback/통신 장애", "운영자가 확인해야 할 장애 evidence"],
+    ];
+    const timeline = [
+      ["수동 조작 이력", "작업자 기준 변경/요청 evidence"],
+      ["기본 자동제어 이력", "rule/schedule 후보와 적용/미적용 evidence"],
+      ["AI 추천 이력", "AI가 제안한 추천/보정 evidence"],
+      ["AI 적용/미적용 이력", "AI 후보가 제외된 이유 포함"],
+      ["장치 명령 후보 이력", "명령 후보는 기록만 하며 실행 권한 없음"],
+      ["실제 실행 이력, later only", "실제 실행 이력은 later only evidence입니다"],
+    ];
+    return `<section data-r7-safety-history-detail data-r7-safety-history-readonly-boundary="true" data-r7-safety-history-authoritative-evidence="true" data-r7-safety-history-setpoint-owner="false" data-r7-safety-history-grammar="Safety status + Interlock status + Fail Safe status + block/allow reasons + manual/rule/AI history + audit evidence = authoritative allow/block history, read-only" style="border:1px solid #cfe3d4;border-radius:16px;background:#fbfdfb;padding:14px;display:grid;gap:12px;">
+      <header>
+        <p style="margin:0 0 5px;color:#5d7d64;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">R7-012 read-only safety/history detail</p>
+        <h4 style="margin:0;color:#24323f;font-size:16px;">안전·이력 · allow/block evidence</h4>
+        <p style="margin:8px 0 0;color:#5d6f62;font-size:12px;line-height:1.6;">안전·이력은 일반 setpoint owner가 아닙니다. 모든 도메인의 최종 allow/block evidence를 read-only로 모읍니다.</p>
+      </header>
+      <section data-r7-safety-history-status style="display:grid;gap:8px;">
+        <strong style="color:#31523b;font-size:13px;">1. Safety / Interlock / Fail Safe status</strong>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;">
+          ${statusItems.map(([label, value, note]) => `<p data-r7-safety-history-status-item="${label}" style="margin:0;border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;font-size:12px;line-height:1.5;"><b>${label}</b><br><span style="font-size:13px;color:#24323f;font-weight:900;">${value}</span><br><span style="color:#78927f;">${note}</span></p>`).join("")}
+        </div>
+      </section>
+      <section data-r7-safety-history-reasons style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">2. Block / allow reasons</strong>
+        ${reasons.map(([label, note]) => `<p data-r7-safety-history-reason="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-safety-history-timeline style="display:grid;gap:8px;border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#31523b;font-size:13px;">3. Manual / rule / AI history</strong>
+        ${timeline.map(([label, note]) => `<p data-r7-safety-history-timeline-item="${label}" style="margin:0;color:#5d6f62;font-size:12px;line-height:1.5;"><b>${label}</b> — ${note}</p>`).join("")}
+      </section>
+      <section data-r7-safety-history-audit style="border-top:1px solid #edf4ef;padding-top:10px;">
+        <strong style="color:#8a6d1d;font-size:13px;">Audit/read-only boundary</strong>
+        <p style="margin:6px 0 0;color:#6b5a22;font-size:12px;line-height:1.6;">알람 ack/clear, 승인/override, 실행 이력 수정은 R7-012에 포함하지 않습니다. 실제 실행 이력은 later only evidence입니다. 이 화면은 authoritative allow/block history를 보여주지만 실행·수정 권한을 갖지 않습니다.</p>
+      </section>
+    </section>`;
+  }
+
   renderR7DetailSubpage(subpage) {
     return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder data-r7-domain-layer-grammar="Manual/Base Settings → Rule/Schedule Automation → AI Assist / Optimization → Safety/Interlock/Fail Safe Finalization" style="border:1px solid #e2eee5;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
       <header>
@@ -1018,6 +1068,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationFertigationDetail() : ""}
       ${subpage.key === "device-control" ? this.renderR7DeviceControlDetail() : ""}
       ${subpage.key === "recommendation-automation" ? this.renderR7RecommendationAutomationDetail() : ""}
+      ${subpage.key === "safety-history" ? this.renderR7SafetyHistoryDetail() : ""}
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminDetail() : ""}
       <details style="border-top:1px solid #edf4ef;padding-top:8px;">
         <summary style="cursor:pointer;color:#31523b;font-size:12px;font-weight:900;">optional technical details</summary>
@@ -1035,7 +1086,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7PageShell() {
     return `<section data-r7-page-shell style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-011 Recommendation/Automation Detail</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-012 Safety/History Detail</p>
         <h2 style="margin:0;color:#24323f;font-size:22px;">수동 설정 우선 환경제어 작업공간</h2>
         <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 홈, 작물, 환경, 관수·양액, 장치, 추천·자동화, 안전·이력, 설정·관리로 재정렬합니다. 실행 권한은 추가하지 않습니다.</p>
       </header>
