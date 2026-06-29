@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.56";
+const REBUILD_VERSION = "1.12.57";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -144,7 +144,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadError = null;
     this._contextRequestId = 0;
     this._activeR7Domain = "operations-home";
-    this._activeR7DomainSubtabs = { "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary" };
+    this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary" };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -637,8 +637,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   setR7DomainSubtab(domainKey, tabKey) {
     const domain = this._normalizeR7Domain(domainKey);
+    const commonTabs = ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"];
+    const cropTabs = ["status-summary", "crop-cycle", "growth-target", "records-workflow", "model-assist", "trend-evidence"];
     const tabDomains = ["environment-control", "irrigation-fertigation", "device-control", "recommendation-automation"];
-    const allowed = tabDomains.includes(domain) ? ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"] : [];
+    const allowed = domain === "crop-operations" ? cropTabs : tabDomains.includes(domain) ? commonTabs : [];
     if (!allowed.includes(tabKey)) return false;
     if (this._activeR7DomainSubtabs[domain] === tabKey) return true;
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, [domain]: tabKey };
@@ -1323,7 +1325,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7DomainSubtabs(domainKey, tabs, activeKey) {
     return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" role="tablist" style="display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;">${tabs.map(([key, label]) => {
       const active = key === activeKey;
-      const domainSubtabMarker = domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : domainKey === "recommendation-automation" ? `data-r7-recommendation-subtab="${key}"` : "";
+      const domainSubtabMarker = domainKey === "crop-operations" ? `data-r7-crop-subtab="${key}"` : domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : domainKey === "recommendation-automation" ? `data-r7-recommendation-subtab="${key}"` : "";
       return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;cursor:pointer;">${label}</button>`;
     }).join("")}</nav>`;
   }
@@ -1336,6 +1338,66 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7DomainSubtabs(domainKey, tabs, activeTab)}
       ${panels}
     </section>`;
+  }
+
+  renderR7CropValueCard(marker, title, value, note, extraAttrs = "") {
+    return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:15px;font-weight:1000;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
+  }
+
+  renderR7CropSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
+    const active = tabKey === activeTab;
+    const display = active ? "grid" : "none";
+    const crop = selectedZone.currentCrop || {};
+    const assignment = selectedZone.currentCropAssignment || {};
+    const growthTarget = selectedZone.growthTargetProjection || {};
+    const availability = assignment.dataAvailability || selectedZone.dataAvailability || {};
+    const cropCycleId = crop.crop_cycle_id ?? selectedZone.activeCropCycleId ?? selectedZone.crop_cycle ?? "unassigned";
+    const cropType = crop.crop_type || crop.cropType || "other";
+    const cropLabel = crop.crop_label_ko || crop.cropLabelKo || selectedZone.crop || "작물 미지정";
+    const growthStage = crop.growth_stage || crop.growthStage || selectedZone.state || "작기 정보 없음";
+    const variety = crop.variety || "품종 미등록";
+    const plantDate = crop.plant_date || crop.plantDate || "정식일 미등록";
+    const demolishDate = crop.demolish_date || crop.demolishDate || "철거일 없음";
+    const targetStage = growthTarget.targetStageLabel || growthStage;
+    const targetFocus = growthTarget.targetFocus || "생육 균형 유지";
+    const assignmentState = assignment.assignmentState || (cropCycleId !== "unassigned" ? "assigned" : "unassigned");
+    const freshness = `${availability.state || selectedZone.dataAvailability?.state || "unknown"} · ${availability.source || selectedZone.dataAvailability?.source || "crop evidence"}`;
+    const labels = {
+      "status-summary": "상태 요약",
+      "crop-cycle": "작기·현재작물",
+      "growth-target": "생육목표",
+      "records-workflow": "기록·작업",
+      "model-assist": "모델·추천",
+      "trend-evidence": "추세·근거",
+    };
+    const markers = {
+      "status-summary": "data-r7-crop-status-summary-grid",
+      "crop-cycle": "data-r7-crop-cycle-grid",
+      "growth-target": "data-r7-crop-growth-target-grid",
+      "records-workflow": "data-r7-crop-record-workflow-grid",
+      "model-assist": "data-r7-crop-model-assist-grid",
+      "trend-evidence": "data-r7-crop-trend-evidence",
+    };
+    const body = tabKey === "status-summary"
+      ? `${this.renderR7CropValueCard("data-r7-crop-current-card", "현재 작물", `${cropLabel} · ${growthStage}`, `${this._r7ZoneName(selectedZone)}의 currentCrop 기준 상태`, `data-r7-crop-cycle-id="${cropCycleId}"`)}${this.renderR7CropValueCard("data-r7-crop-assignment-card", "작기 배정", assignmentState, `원천 행 ${assignment.sourceRowId || cropCycleId}`)}${this.renderR7CropValueCard("data-r7-crop-growth-target-card", "생육목표", targetStage, targetFocus)}${this.renderR7CropValueCard("data-r7-crop-current-card", "데이터 신선도", freshness, "currentCropAssignment + growthTargetProjection evidence")}`
+      : tabKey === "crop-cycle"
+        ? `${this.renderR7CropValueCard("data-r7-crop-cycle-card", "작기 ID", cropCycleId, "crop_cycle/currentCrop 읽기 전용", `data-r7-crop-cycle-id="${cropCycleId}"`)}${this.renderR7CropValueCard("data-r7-crop-cycle-card", "작물 유형", `${cropLabel} (${cropType})`, "작물별 운영 기준의 출발점")}${this.renderR7CropValueCard("data-r7-crop-cycle-card", "품종", variety, "품종별 목표/진단 evidence")}${this.renderR7CropValueCard("data-r7-crop-cycle-card", "정식·철거", `${plantDate} / ${demolishDate}`, "정식일과 철거일은 작기 경계 evidence")}`
+        : tabKey === "growth-target"
+          ? `${this.renderR7CropValueCard("data-r7-crop-growth-target-card", "목표 단계", targetStage, "growthTargetProjection.targetStageLabel")}${this.renderR7CropValueCard("data-r7-crop-growth-target-card", "목표 초점", targetFocus, "growthTargetProjection.targetFocus")}${this.renderR7CropValueCard("data-r7-crop-growth-target-card", "기준 작기", growthTarget.targetBasis?.crop_cycle_id || cropCycleId, "target basis crop_cycle_id")}${this.renderR7CropValueCard("data-r7-crop-growth-target-card", "수정 권한", "read-only", "목표 수정·저장·실행은 이 slice 범위 밖")}`
+          : tabKey === "records-workflow"
+            ? `${this.renderR7CropValueCard("data-r7-crop-record-card", "생육조사", "최근 조사 요약", "초장·엽수·줄기굵기·품질·생리장해 read-only workflow")}${this.renderR7CropValueCard("data-r7-crop-record-card", "병해충 예찰", "위험/관찰 요약", "병해충 예찰 record evidence")}${this.renderR7CropValueCard("data-r7-crop-record-card", "방제 기록", "약제·PLS·혼용 evidence", "방제 기록 read-only workflow summary")}${this.renderR7CropValueCard("data-r7-crop-record-card", "작업 경계", "기록 확인", "저장/삭제/철거 버튼은 기존 작물 설정 흐름에만 유지")}`
+            : tabKey === "model-assist"
+              ? `${this.renderR7CropValueCard("data-r7-crop-model-card", "crop model evidence", "생육단계·상태 판단", "currentCrop + growth surveys + pest/control evidence")}${this.renderR7CropValueCard("data-r7-crop-model-card", "진단·위험·조치 추천", "보조 evidence", "AI/모델은 실행 권한 없이 추천 근거만 표시")}${this.renderR7CropValueCard("data-r7-crop-model-card", "작물 안전 경계", "환경/관수/장치 명령 직접 실행 없음", "작물 운영은 제어 명령 source가 아님")}${this.renderR7CropValueCard("data-r7-crop-model-card", "fallback", "AI off 가능", "AI 비활성/오류 시 수동 작기·기록 evidence 유지")}`
+              : `${this.renderR7MiniTrendChart("생육 변화", "최근")}${this.renderR7MiniTrendChart("조사 이력", "최근")}${this.renderR7MiniTrendChart("병해충·방제", "누적")}${this.renderR7CropValueCard("data-r7-crop-trend-evidence", "데이터 근거", freshness, "currentCropAssignment + growthTargetProjection + crop model evidence")}`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-crop-subtab="${tabKey}" data-r7-crop-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${cropLabel}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
+  }
+
+  renderR7CropOperationsZoneVisual() {
+    const selectedZone = this._r7PrimaryZoneForDomain();
+    const tabs = [["status-summary", "상태 요약"], ["crop-cycle", "작기·현재작물"], ["growth-target", "생육목표"], ["records-workflow", "기록·작업"], ["model-assist", "모델·추천"], ["trend-evidence", "추세·근거"]];
+    const activeTab = this._activeR7DomainSubtabs["crop-operations"] || "status-summary";
+    const panels = tabs.map(([key]) => this.renderR7CropSubtabPanel(key, selectedZone, activeTab)).join("");
+    return `<section data-r7-crop-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "crop-operations", title: "작물 운영", kicker: "구역 기준 작물 운영", summary: "현재 작물, 작기, 생육목표, 생육조사, 병해충 예찰, 방제 기록, crop model evidence를 구역 기준으로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">작물 운영 · currentCrop · crop_cycle · growthTargetProjection · 생육조사 · 병해충 예찰 · 방제 기록 · crop model evidence · 진단·위험·조치 추천</section></section>`;
   }
 
   renderR7EnvironmentSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
@@ -1534,6 +1596,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <p data-r7-subpage-source-freshness style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">Source freshness: ${subpage.source}</p>
       <p data-r7-subpage-zone-scope style="margin:0;color:#31523b;font-size:12px;line-height:1.5;">Zone scope: ${subpage.zoneScope}</p>
       <p data-r7-subpage-safety-boundary style="margin:0;color:#8a6d1d;font-size:12px;line-height:1.5;">Safety/interlock boundary: ${subpage.safety}</p>
+      ${subpage.key === "crop-operations" ? this.renderR7CropOperationsZoneVisual() : ""}
       ${subpage.key === "environment-control" ? this.renderR7EnvironmentZoneVisual() : ""}
       ${subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""}
       ${subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""}

@@ -39,13 +39,13 @@ def test_r7_017_024_domain_sequence_requires_subtabs_and_zone_context():
         assert marker in text
     for row in (
         "R7-017 | 환경 제어",
-        "R7-018 | 관수·양액",
-        "R7-019 | 장치 제어",
-        "R7-020 | 작물 운영",
-        "R7-021 | 추천·자동화",
-        "R7-022 | 안전·이력",
-        "R7-023 | 설정·관리",
-        "R7-024 | Browser QA + visual component correction",
+        "R7-020 | 관수·양액",
+        "R7-021 | 장치 제어",
+        "R7-022 | 추천·자동화",
+        "R7-023 | 작물 운영",
+        "R7-024 | 안전·이력",
+        "R7-025 | 설정·관리",
+        "R7-026 | Browser QA + visual component correction",
     ):
         assert row in text
 

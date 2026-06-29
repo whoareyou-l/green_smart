@@ -1,6 +1,6 @@
 # R7-017~R7-024 Domain Tabs, Zone Context, and Browser QA Plan
 
-> 기준 버전: after `v1.12.56`
+> 기준 버전: after `v1.12.57`
 > Status: corrected forward plan
 > Purpose: User-corrected R7 direction after R7-016. Domain visual rewrites must not become long one-page documents, and detailed work must be zone-scoped even though the main IA remains crop-centered.
 
@@ -79,16 +79,16 @@ Implementation note: keep only the active tab's primary content visually dominan
 
 ## 5. Planned sequence
 
-| R7 slice | Domain | Required sub-tabs | Zone rule |
-|---|---|---|---|
-| R7-017 | 환경 제어 | 상태 요약 / 설정값 / 인터록·차단 / 추세·근거 | zone-scoped required |
-| R7-018 | 관수·양액 | 상태 요약 / 관수 목표 / EC·pH·VWC / 이벤트·근거 | zone-scoped required |
-| R7-019 | 장치 제어 | 장치 상태 / 응답 지연 / 차단·인터록 / 매핑·근거 | zone-scoped required |
-| R7-020 | 작물 운영 | 작기 요약 / 생육목표 / 생육조사 / 병해충·방제 | zone-scoped required |
-| R7-021 | 추천·자동화 | 추천 요약 / 수동 기준 / 기본 자동제어 / AI 보조·fallback | zone-scoped required |
-| R7-022 | 안전·이력 | 현재 차단 / 인터록 / Fail Safe / 이벤트 이력 | zone-scoped required where event belongs to zone |
-| R7-023 | 설정·관리 | 구역·작물 / 권한 / 시스템 / 고급 설정 | zone-scoped for 구역·작물, global-admin for system/admin |
-| R7-024 | Browser QA + visual component correction | N/A | verify actual zone-centered detail flow in browser |
+| R7 slice | Domain | Required sub-tabs | Zone rule | Current status |
+|---|---|---|---|---|
+| R7-017 | 환경 제어 | 상태 요약 / 설정값 / 일정·규칙 / 인터록·차단 / 추천·보조 / 추세·근거 | zone-scoped required | complete |
+| R7-020 | 관수·양액 | 상태 요약 / 설정값 / 일정·규칙 / 인터록·차단 / 추천·보조 / 추세·근거 | zone-scoped required | complete |
+| R7-021 | 장치 제어 | 상태 요약 / 설정값 / 일정·규칙 / 인터록·차단 / 추천·보조 / 추세·근거 | zone-scoped required | complete |
+| R7-022 | 추천·자동화 | 상태 요약 / 설정값 / 일정·규칙 / 인터록·차단 / 추천·보조 / 추세·근거 | zone-scoped required | complete |
+| R7-023 | 작물 운영 | 상태 요약 / 작기·현재작물 / 생육목표 / 기록·작업 / 모델·추천 / 추세·근거 | zone-scoped required | next corrective slice |
+| R7-024 | 안전·이력 | 현재 차단 / 인터록 / Fail Safe / 이벤트 이력 / 감사·근거 / 추세·근거 | zone-scoped required where event belongs to zone | pending |
+| R7-025 | 설정·관리 | 구역·작물 / 권한 / 시스템 / 고급 설정 | zone-scoped for 구역·작물, global-admin for system/admin | pending |
+| R7-026 | Browser QA + visual component correction | N/A | verify actual zone-centered detail flow in browser | pending |
 
 ## 6. R7-024 Browser QA correction rule
 
