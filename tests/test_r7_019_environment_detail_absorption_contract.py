@@ -46,10 +46,10 @@ def _visible_text(html: str) -> str:
 
 
 def test_r7_019_version_surfaces_are_1_12_51():
-    assert '"version": "1.12.52"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.52"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.52"' in _read(REBUILD_PANEL)
-    assert "v1.12.52" in _read(DOC)
+    assert '"version": "1.12.53"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.53"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.53"' in _read(REBUILD_PANEL)
+    assert "v1.12.53" in _read(DOC)
 
 
 def test_r7_019_doc_records_detail_inventory_and_mapping():
@@ -151,6 +151,41 @@ def test_r7_019_environment_subtabs_switch_visible_panel_on_click():
       if (!after.includes('data-r7-domain-subtab-panel-key="status-summary" data-r7-environment-subtab="status-summary" data-r7-environment-detail-absorbed="true" data-r7-environment-zone-status-grid style="display:none')) process.exit(5);
       if (!after.includes('환기 단계') || !after.includes('CO₂ 시간대')) process.exit(6);
       process.stdout.write('subtab-switch-ok');
+    """
+    result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
+    assert result.returncode == 0, result.stderr + result.stdout
+
+
+def test_r7_019_environment_zone_context_defaults_to_zone_1_sorted_with_sync_button():
+    script = f"""
+      globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; this._listeners = {{}}; }}
+        querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(type, fn){{ this._listeners[type] = fn; }} }};
+      globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
+      const mod = await import({str(REBUILD_PANEL)!r});
+      const panel = new mod.GreenSmartRebuildPanel();
+      panel.hass = {{ callApi: async () => ({{
+        contextSource: 'r7-019-zone-sort-sync-smoke',
+        zones: [
+          {{ zoneId: 'zone-10', zoneName: '10구역', currentCrop: {{ cropName: '파프리카', cropType: 'paprika' }}, dataAvailability: {{ freshness: 'fresh' }} }},
+          {{ zoneId: 'zone-2', zoneName: '2구역', currentCrop: {{ cropName: '상추', cropType: 'lettuce' }}, dataAvailability: {{ freshness: 'delay' }} }},
+          {{ zoneId: 'zone-1', zoneName: '1구역', currentCrop: {{ cropName: '토마토', cropType: 'tomato' }}, dataAvailability: {{ freshness: 'fresh' }} }},
+        ]
+      }}) }};
+      panel.connectedCallback();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      panel.setR7ActiveDomain('environment-control');
+      const html = panel.innerHTML;
+      if (!html.includes('data-r7-active-zone="zone-1"')) process.exit(1);
+      if (!html.includes('data-r7-zone-sync-button')) process.exit(2);
+      if (!html.includes('동기화')) process.exit(3);
+      const idx1 = html.indexOf('data-r7-zone-card-id="zone-1"');
+      const idx2 = html.indexOf('data-r7-zone-card-id="zone-2"');
+      const idx10 = html.indexOf('data-r7-zone-card-id="zone-10"');
+      if (!(idx1 >= 0 && idx2 > idx1 && idx10 > idx2)) process.exit(4);
+      if (!html.includes('data-r7-zone-context-default="zone-1"')) process.exit(5);
+      if (html.includes('data-r7-zone-execute') || html.includes('data-r7-zone-apply') || html.includes('data-r7-zone-save')) process.exit(6);
+      process.stdout.write('zone-context-default-sort-sync-ok');
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
     assert result.returncode == 0, result.stderr + result.stdout

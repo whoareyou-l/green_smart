@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.52";
+const REBUILD_VERSION = "1.12.53";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1274,6 +1274,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return zone?.name || zone?.zoneName || this._r7ZoneId(zone);
   }
 
+  _r7ZoneSortValue(zone) {
+    const text = `${this._r7ZoneName(zone)} ${this._r7ZoneId(zone)}`;
+    const match = text.match(/(\d+)/);
+    return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+  }
+
+  _r7SortedZonesForDomain() {
+    return this._zonesForRender()
+      .filter((zone) => this._r7ZoneId(zone) !== "all")
+      .slice()
+      .sort((left, right) => this._r7ZoneSortValue(left) - this._r7ZoneSortValue(right) || this._r7ZoneName(left).localeCompare(this._r7ZoneName(right), "ko"));
+  }
+
+  _r7DefaultZoneForDomain() {
+    const zones = this._r7SortedZonesForDomain();
+    return zones.find((zone) => this._r7ZoneSortValue(zone) === 1) || zones[0] || this._zonesForRender()[0] || { id: "zone-1", name: "1구역", currentCrop: { cropLabelKo: "토마토" }, dataAvailability: { state: "unknown" } };
+  }
+
   _r7ZoneCropLabel(zone) {
     const crop = zone?.currentCrop || {};
     const explicitLabel = crop.cropLabelKo || crop.crop_label_ko || crop.cropName;
@@ -1284,20 +1302,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7PrimaryZoneForDomain() {
-    const zones = this._zonesForRender().filter((zone) => this._r7ZoneId(zone) !== "all");
-    return zones[0] || this._zonesForRender()[0] || { id: "zone-1", name: "1구역", currentCrop: { cropLabelKo: "토마토" }, dataAvailability: { state: "unknown" } };
+    return this._r7DefaultZoneForDomain();
   }
 
   renderR7DomainZoneContextBar(domainKey) {
-    const zones = this._zonesForRender().filter((zone) => this._r7ZoneId(zone) !== "all");
-    const selectedZone = this._r7PrimaryZoneForDomain();
+    const zones = this._r7SortedZonesForDomain();
+    const selectedZone = this._r7DefaultZoneForDomain();
     const selectedId = this._r7ZoneId(selectedZone);
-    return `<section data-r7-zone-context-bar data-r7-zone-context-domain="${domainKey}" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><strong style="color:#24323f;font-size:15px;">현재 선택 구역</strong><p data-r7-active-zone="${selectedId}" style="margin:5px 0 0;color:#5d6f62;font-size:13px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</p></div>${this.renderR7FreshnessPill("fresh", "센서 freshness")}</div>
+    return `<section data-r7-zone-context-bar data-r7-zone-context-domain="${domainKey}" data-r7-zone-context-default="${selectedId}" style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><strong style="color:#24323f;font-size:15px;">현재 선택 구역</strong><button type="button" data-r7-zone-sync-button data-r7-zone-sync-domain="${domainKey}" style="border:1px solid #cfe3d4;border-radius:999px;background:#f8fcf9;color:#31523b;padding:5px 9px;font-size:11px;font-weight:1000;cursor:pointer;">동기화</button></div><p data-r7-active-zone="${selectedId}" style="margin:5px 0 0;color:#5d6f62;font-size:13px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</p></div>${this.renderR7FreshnessPill("fresh", "센서 freshness")}</div>
       <div data-r7-zone-selector style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">${(zones.length ? zones : [selectedZone]).map((zone) => {
         const zoneId = this._r7ZoneId(zone);
         const active = zoneId === selectedId;
-        return `<article data-r7-zone-card data-r7-zone-card-id="${zoneId}" data-r7-active-zone="${active ? zoneId : "false"}" style="border:1px solid ${active ? "#78a87e" : "#edf4ef"};border-radius:15px;background:${active ? "#eef9f0" : "#fbfdfb"};padding:10px;display:grid;gap:5px;"><strong style="color:#31523b;font-size:13px;">${this._r7ZoneName(zone)} · ${this._r7ZoneCropLabel(zone)}</strong><span style="color:#78927f;font-size:11px;">구역별 환경 상태</span></article>`;
+        return `<article data-r7-zone-card data-r7-zone-card-id="${zoneId}" data-r7-zone-order="${this._r7ZoneSortValue(zone)}" data-r7-active-zone="${active ? zoneId : "false"}" style="border:1px solid ${active ? "#78a87e" : "#edf4ef"};border-radius:15px;background:${active ? "#eef9f0" : "#fbfdfb"};padding:10px;display:grid;gap:5px;"><strong style="color:#31523b;font-size:13px;">${this._r7ZoneName(zone)} · ${this._r7ZoneCropLabel(zone)}</strong><span style="color:#78927f;font-size:11px;">구역별 환경 상태</span></article>`;
       }).join("")}</div>
     </section>`;
   }

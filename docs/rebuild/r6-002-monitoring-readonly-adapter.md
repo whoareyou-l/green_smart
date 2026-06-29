@@ -1,6 +1,6 @@
 # R6-002 Monitoring Read-only Adapter
 
-> 기준 버전: `v1.12.52`
+> 기준 버전: `v1.12.53`
 > Status: R6-002 complete
 > 목적: R6-001 crop-cycle zone context 위에 모니터링 evidence DTO를 읽기 전용으로 붙인다.
 
@@ -91,7 +91,7 @@ question gates must use clarify tool
 
 ## R6-003 Safety/Interlock Read-only Adapter
 
-`v1.12.52`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+`v1.12.53`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
 
 Reference:
 
