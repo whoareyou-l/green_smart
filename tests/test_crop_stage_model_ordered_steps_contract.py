@@ -143,7 +143,7 @@ def test_v1_10_14_version_surfaces_are_current():
     manifest = MANIFEST.read_text(encoding="utf-8")
     ui_doc = UI_DOC.read_text(encoding="utf-8")
 
-    assert "v1.12.60" in panel[:200]
-    assert 'const VERSION = "1.12.60"' in panel
-    assert '"version": "1.12.60"' in manifest
-    assert "기준 버전: `v1.12.60`" in ui_doc
+    assert "v1.12.61" in panel[:200]
+    assert 'const VERSION = "1.12.61"' in panel
+    assert '"version": "1.12.61"' in manifest
+    assert "기준 버전: `v1.12.61`" in ui_doc

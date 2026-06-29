@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_007_version_surfaces_are_1_12_39():
-    assert '"version": "1.12.60"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.60"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.60"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.61"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.61"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.61"' in _read(REBUILD_PANEL)
     for path in (DOC, SPEC, PLAN):
         assert "R7-007" in _read(path) or path == SPEC
 
@@ -111,7 +111,7 @@ def test_r7_007_detail_placeholders_render_eight_manual_first_domains_with_layer
 def test_r7_007_visible_copy_is_manual_first_and_ai_assist_not_execution_first():
     text = _read(REBUILD_PANEL)
     required = [
-        "작물·구역·경보 중심 운영 화면",
+        "작물·구역·경보 중심",
         "data-r7-page-workspace",
         "data-r7-sidebar",
         "현재 선택 구역",

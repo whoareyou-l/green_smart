@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.60";
+const REBUILD_VERSION = "1.12.61";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -69,6 +69,17 @@ const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
   { key: "recommendation-review", label: "추천·실행 검토", replacement: "recommendation-automation" },
   { key: "settings-admin", label: "설정·관리", replacement: "settings-admin" },
 ]);
+
+const R7_DOMAIN_ICONS = Object.freeze({
+  "operations-home": "🏠",
+  "crop-operations": "🌱",
+  "environment-control": "🌡️",
+  "irrigation-fertigation": "💧",
+  "device-control": "⚙️",
+  "recommendation-automation": "🤖",
+  "safety-history": "🛡️",
+  "settings-admin": "🧩",
+});
 
 const R7_SIDEBAR_GROUPS = Object.freeze([
   { key: "operations-home", label: "운영 홈", summary: "오늘 운영 상태·fallback·우선 확인", target: "operations-home" },
@@ -144,7 +155,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadError = null;
     this._contextRequestId = 0;
     this._activeR7Domain = "operations-home";
-    this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary", "safety-history": "status-summary" };
+    this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary", "safety-history": "status-summary", "settings-admin": "domain-ownership" };
+    this._r7SidebarCollapsed = false;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -640,13 +652,60 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const commonTabs = ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"];
     const cropTabs = ["status-summary", "crop-cycle", "growth-target", "records-workflow", "model-assist", "trend-evidence"];
     const safetyTabs = ["status-summary", "block-allow", "event-history", "operation-history", "audit-evidence", "trend-evidence"];
+    const settingsTabs = ["domain-ownership", "role-permissions", "mapping-devices", "system-security", "diagnostics-audit", "rbac-policy"];
     const tabDomains = ["environment-control", "irrigation-fertigation", "device-control", "recommendation-automation"];
-    const allowed = domain === "crop-operations" ? cropTabs : domain === "safety-history" ? safetyTabs : tabDomains.includes(domain) ? commonTabs : [];
+    const allowed = domain === "crop-operations" ? cropTabs : domain === "safety-history" ? safetyTabs : domain === "settings-admin" ? settingsTabs : tabDomains.includes(domain) ? commonTabs : [];
     if (!allowed.includes(tabKey)) return false;
     if (this._activeR7DomainSubtabs[domain] === tabKey) return true;
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, [domain]: tabKey };
     this.render();
     return true;
+  }
+
+  _currentGreenSmartRole() {
+    const contextRole = this._homeContext?.actorRole || this._homeContext?.actor?.role || this._homeContext?.currentUser?.role;
+    const hassRole = this.hass?.user?.green_smart_role || this.hass?.user?.role;
+    const role = String(contextRole || hassRole || (this.hass?.user?.is_admin ? "operator" : "farm_staff") || "farm_staff").trim();
+    return role || "farm_staff";
+  }
+
+  _r7SidebarLayoutMode() {
+    return this._currentGreenSmartRole() === "operator" ? "operator-ha-adjacent" : "full-left-no-ha-sidebar";
+  }
+
+  _applyR7HASidebarPolicy() {
+    if (typeof document === "undefined" || !document?.body?.classList) return;
+    const mode = this._r7SidebarLayoutMode();
+    const setBodyClass = (name, enabled) => {
+      if (document.body.classList.toggle) document.body.classList.toggle(name, enabled);
+      else if (enabled) document.body.classList.add?.(name);
+      else document.body.classList.remove?.(name);
+    };
+    setBodyClass("green-smart-hide-ha-sidebar", mode === "full-left-no-ha-sidebar");
+    setBodyClass("green-smart-operator-ha-sidebar-adjacent", mode === "operator-ha-adjacent");
+    if (mode === "full-left-no-ha-sidebar") document.body.classList.remove?.("green-smart-operator-ha-sidebar-adjacent");
+    if (mode === "operator-ha-adjacent") document.body.classList.remove?.("green-smart-hide-ha-sidebar");
+    if (!document.getElementById?.("green-smart-r7-ha-sidebar-policy")) {
+      const style = document.createElement?.("style");
+      if (style) {
+        style.id = "green-smart-r7-ha-sidebar-policy";
+        style.textContent = `
+          body.green-smart-hide-ha-sidebar ha-sidebar,
+          body.green-smart-hide-ha-sidebar hui-sidebar,
+          body.green-smart-hide-ha-sidebar app-drawer,
+          body.green-smart-hide-ha-sidebar ha-drawer { display:none !important; width:0 !important; min-width:0 !important; }
+          body.green-smart-hide-ha-sidebar { --mdc-drawer-width:0px; --sidebar-width:0px; }
+          body.green-smart-hide-ha-sidebar green-smart-rebuild-panel { margin-left:0 !important; }
+        `;
+        document.head?.appendChild?.(style);
+      }
+    }
+  }
+
+  toggleR7SidebarCollapsed() {
+    this._r7SidebarCollapsed = !this._r7SidebarCollapsed;
+    this.render();
+    return this._r7SidebarCollapsed;
   }
 
   _bindR7DomainSubtabs() {
@@ -663,6 +722,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       link.addEventListener("click", (event) => {
         event.preventDefault();
         this.setR7ActiveDomain(link.dataset.r7SidebarTarget);
+      });
+    });
+    this.querySelectorAll("[data-r7-sidebar-collapse-toggle]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        this.toggleR7SidebarCollapsed();
       });
     });
   }
@@ -900,13 +965,23 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7Sidebar() {
-    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:16px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
-      <div style="font-weight:1000;color:#24323f;font-size:18px;">Green Smart</div>
-      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">작물·구역·경보 중심 운영 화면</p>
+    const collapsed = Boolean(this._r7SidebarCollapsed);
+    const layoutMode = this._r7SidebarLayoutMode();
+    const haSidebarPolicy = layoutMode === "operator-ha-adjacent" ? "keep" : "hide";
+    const width = collapsed ? "82px" : "248px";
+    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" style="width:${width};border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
+      <div data-r7-sidebar-brand style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+          <img data-r7-sidebar-logo-image alt="Green Smart 로고" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='14' fill='%23e3f4e6'/%3E%3Cpath d='M24 39c-7-5-12-12-12-20 0-6 5-10 12-10s12 4 12 10c0 8-5 15-12 20Z' fill='%2378a87e'/%3E%3Cpath d='M24 35V15m0 10c-5-1-8-4-9-8m9 10c5-1 8-4 9-8' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" style="width:34px;height:34px;border-radius:12px;flex:0 0 auto;" />
+          ${collapsed ? "" : `<div style="min-width:0;"><div style="font-weight:1000;color:#24323f;font-size:18px;line-height:1;">Green Smart</div><p style="margin:4px 0 0;color:#78927f;font-size:12px;line-height:1.35;">작물·구역·경보 중심</p></div>`}
+        </div>
+        <button type="button" data-r7-sidebar-collapse-toggle aria-label="${collapsed ? "사이드바 상세형" : "사이드바 간략형"}" title="${collapsed ? "상세형" : "간략형"}" style="border:1px solid #d7e8db;border-radius:999px;background:#f8fcf9;color:#31523b;width:32px;height:32px;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">${collapsed ? "»" : "«"}</button>
+      </div>
       <template data-r7-deprecated-sidebar-groups>${R7_DEPRECATED_SIDEBAR_GROUPS.map((group) => `data-r7-sidebar-group="${group.key}" ${group.label} → ${group.replacement}`).join(" | ")}</template>
       ${R7_SIDEBAR_GROUPS.map((group) => {
         const active = this._activeR7Domain === group.key;
-        return `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" style="display:block;border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:14px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;text-decoration:none;padding:11px 12px;"><strong style="display:block;font-size:14px;">${group.label}</strong><span style="display:block;margin-top:4px;color:#78927f;font-size:11px;line-height:1.4;">${group.summary}</span></a>`;
+        const icon = R7_DOMAIN_ICONS[group.key] || "•";
+        return `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" title="${group.label}" style="display:flex;align-items:center;gap:9px;justify-content:${collapsed ? "center" : "flex-start"};border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:14px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;text-decoration:none;padding:${collapsed ? "11px 8px" : "11px 12px"};"><span data-r7-sidebar-icon="${icon}" aria-hidden="true" style="font-size:20px;line-height:1;">${icon}</span>${collapsed ? "" : `<span style="display:grid;gap:3px;min-width:0;"><strong style="display:block;font-size:14px;line-height:1.2;">${group.label}</strong><span data-r7-sidebar-summary style="display:block;color:#78927f;font-size:11px;line-height:1.35;">${group.summary}</span></span>`}</a>`;
       }).join("")}
     </aside>`;
   }
@@ -1598,10 +1673,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   render() {
+    this._applyR7HASidebarPolicy();
+    const sidebarTrack = this._r7SidebarCollapsed ? "minmax(76px,92px)" : "minmax(220px,280px)";
+    const layoutMode = this._r7SidebarLayoutMode();
     this.innerHTML = `
-      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell style="min-height:100vh;padding:24px;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:24px;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
         <div style="max-width:1280px;margin:0 auto;display:grid;gap:14px;">
-          <section style="display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:18px;align-items:start;">
+          <section style="display:grid;grid-template-columns:${sidebarTrack} minmax(0,1fr);gap:18px;align-items:start;">
             ${this.renderR7Sidebar()}
             <section data-rebuild-shell-main>${this.renderR7PageShell()}</section>
           </section>
