@@ -1,6 +1,6 @@
 # VS-N002 Crop Cycle Recording Scaffold
 
-> 기준 버전: `v1.12.55`
+> 기준 버전: `v1.12.56`
 > Status: R5 crop cycle recording scaffold
 > 범위 확정: 새 scaffold/계약/DTO/권한 경계만 만들고 기존 저장 동작은 변경하지 않는다.
 

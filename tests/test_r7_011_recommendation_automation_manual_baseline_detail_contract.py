@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_011_version_surfaces_are_1_12_43():
-    assert '"version": "1.12.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.55"' in _read(REBUILD_PANEL)
-    assert "v1.12.55" in _read(DOC)
+    assert '"version": "1.12.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.56"' in _read(REBUILD_PANEL)
+    assert "v1.12.56" in _read(DOC)
 
 
 def test_r7_011_doc_records_recommendation_grammar_and_boundaries():
@@ -97,11 +97,12 @@ def test_r7_011_recommendation_detail_names_rule_ai_safety_and_fallback_items():
         assert marker in text
 
 
-def test_r7_011_recommendation_detail_is_only_attached_to_recommendation_domain():
+def test_r7_011_recommendation_detail_is_absorbed_into_visual_domain():
     text = _read(REBUILD_PANEL)
-    assert 'subpage.key === "recommendation-automation" ? this.renderR7RecommendationAutomationDetail() : ""' in text
+    assert 'subpage.key === "recommendation-automation" ? this.renderR7RecommendationZoneVisual() : ""' in text
     assert 'subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""' in text
     assert 'subpage.key === "irrigation-fertigation" ? this.renderR7IrrigationZoneVisual() : ""' in text
+    assert 'data-r7-recommendation-detail-absorbed="true"' in text
 
 
 def test_r7_011_does_not_add_recommendation_execution_or_approval_authority():
@@ -124,32 +125,35 @@ def test_r7_011_does_not_add_recommendation_execution_or_approval_authority():
         assert marker not in text
 
 
-def test_r7_011_node_smoke_renders_recommendation_detail():
+def test_r7_011_node_smoke_renders_recommendation_visual_absorbed_detail_items():
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
       globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
-      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-011-readonly-smoke', zones: [] }}) }};
+      panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-011-absorbed-visual-smoke', zones: [] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
       panel.setR7ActiveDomain('recommendation-automation');
       const html = panel.innerHTML;
       const required = [
         'data-r7-detail-subpage="recommendation-automation"',
-        'data-r7-recommendation-automation-detail',
-        'data-r7-recommendation-manual-baseline',
-        'data-r7-recommendation-rule-candidate',
-        'data-r7-recommendation-ai-assist',
-        'data-r7-recommendation-safety-final',
-        'data-r7-recommendation-fallback',
-        '수동 기준값을 먼저 보여주고 rule/schedule 후보와 AI 추천·보정 차이를 비교합니다',
-        '추천·자동화는 실행 버튼 중심 화면이 아닙니다'
+        'data-r7-recommendation-zone-visual="true"',
+        'data-r7-recommendation-detail-absorbed="true"',
+        'data-r7-recommendation-setting-card',
+        'data-r7-recommendation-rule-card',
+        'data-r7-recommendation-assist-card',
+        'data-r7-recommendation-safety-card',
+        '환경 수동 기준', '관수·양액 수동 기준', '장치 모드 기준', 'AI off fallback value',
+        'rule/schedule candidate', 'automation eligibility', 'difference from manual baseline',
+        'AI recommendation/correction', 'explanation', 'fallback',
+        'Safety-final candidate', 'not final command', 'no final command authority'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
+      if (html.includes('data-r7-recommendation-automation-detail')) process.exit(3);
       if (html.includes('data-r7-recommendation-execute')) process.exit(2);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)

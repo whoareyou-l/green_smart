@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_012_version_surfaces_are_1_12_44():
-    assert '"version": "1.12.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.55"' in _read(REBUILD_PANEL)
-    assert "v1.12.55" in _read(DOC)
+    assert '"version": "1.12.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.56"' in _read(REBUILD_PANEL)
+    assert "v1.12.56" in _read(DOC)
 
 
 def test_r7_012_doc_records_safety_history_grammar_and_boundaries():
@@ -96,7 +96,7 @@ def test_r7_012_safety_history_timeline_and_audit_items_are_named():
 def test_r7_012_safety_history_detail_is_only_attached_to_safety_history_domain():
     text = _read(REBUILD_PANEL)
     assert 'subpage.key === "safety-history" ? this.renderR7SafetyHistoryDetail() : ""' in text
-    assert 'subpage.key === "recommendation-automation" ? this.renderR7RecommendationAutomationDetail() : ""' in text
+    assert 'subpage.key === "recommendation-automation" ? this.renderR7RecommendationZoneVisual() : ""' in text
     assert 'subpage.key === "device-control" ? this.renderR7DeviceZoneVisual() : ""' in text
 
 
