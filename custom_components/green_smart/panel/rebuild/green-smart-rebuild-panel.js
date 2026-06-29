@@ -52,7 +52,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.51";
+const REBUILD_VERSION = "1.12.52";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -144,6 +144,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadError = null;
     this._contextRequestId = 0;
     this._activeR7Domain = "operations-home";
+    this._activeR7DomainSubtabs = { "environment-control": "status-summary" };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -632,6 +633,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._activeR7Domain === nextDomain) return;
     this._activeR7Domain = nextDomain;
     this.render();
+  }
+
+  setR7DomainSubtab(domainKey, tabKey) {
+    const domain = this._normalizeR7Domain(domainKey);
+    const allowed = domain === "environment-control" ? ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"] : [];
+    if (!allowed.includes(tabKey)) return false;
+    if (this._activeR7DomainSubtabs[domain] === tabKey) return true;
+    this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, [domain]: tabKey };
+    this.render();
+    return true;
+  }
+
+  _bindR7DomainSubtabs() {
+    this.querySelectorAll("button[data-r7-domain-subtab][data-r7-domain-subtab-key]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        this.setR7DomainSubtab(button.dataset.r7DomainSubtabFor, button.dataset.r7DomainSubtabKey);
+      });
+    });
   }
 
   _bindR7DomainNavigation() {
@@ -1285,7 +1305,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7DomainSubtabs(domainKey, tabs, activeKey) {
     return `<nav data-r7-domain-subtabs data-r7-domain-subtabs-for="${domainKey}" role="tablist" style="display:flex;flex-wrap:wrap;gap:8px;border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:10px;">${tabs.map(([key, label]) => {
       const active = key === activeKey;
-      return `<button type="button" data-r7-domain-subtab data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" data-r7-environment-subtab="${key}" role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;">${label}</button>`;
+      return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" data-r7-environment-subtab="${key}" role="tab" aria-selected="${active ? "true" : "false"}" style="border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:999px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;padding:8px 12px;font-size:12px;font-weight:1000;cursor:pointer;">${label}</button>`;
     }).join("")}</nav>`;
   }
 
@@ -1299,8 +1319,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
-  renderR7EnvironmentSubtabPanel(tabKey, selectedZone) {
-    const active = tabKey === "status-summary";
+  renderR7EnvironmentSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
+    const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
     const labels = {
       "status-summary": "상태 요약",
@@ -1339,8 +1359,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7EnvironmentZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
-    const panels = tabs.map(([key]) => this.renderR7EnvironmentSubtabPanel(key, selectedZone)).join("");
-    return `<section data-r7-environment-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "environment-control", title: "환경 제어", kicker: "구역별 환경 상태", summary: "온도·습도·VPD·CO₂·광/DLI 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "attention", tabs, activeTab: "status-summary", panels })}<section style="display:none;">구역별 환경 상태 · 현재 선택 구역 · 환기 후보 · Safety/Interlock 우선 · 센서 freshness</section></section>`;
+    const activeTab = this._activeR7DomainSubtabs["environment-control"] || "status-summary";
+    const panels = tabs.map(([key]) => this.renderR7EnvironmentSubtabPanel(key, selectedZone, activeTab)).join("");
+    return `<section data-r7-environment-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "environment-control", title: "환경 제어", kicker: "구역별 환경 상태", summary: "온도·습도·VPD·CO₂·광/DLI 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "attention", tabs, activeTab, panels })}<section style="display:none;">구역별 환경 상태 · 현재 선택 구역 · 환기 후보 · Safety/Interlock 우선 · 센서 freshness</section></section>`;
   }
 
   renderR7DetailSubpage(subpage) {
@@ -1437,6 +1458,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderZoneDetailModal()}
     `;
     this._bindR7DomainNavigation();
+    this._bindR7DomainSubtabs();
     this._bindZoneTabs();
   }
 }
