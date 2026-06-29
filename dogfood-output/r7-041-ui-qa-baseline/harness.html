@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>R7-041 Green Smart QA Harness</title>
+  <style>
+    body { margin:0; background:#eef3ef; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    ha-icon { display:inline-flex; align-items:center; justify-content:center; font-size:0; }
+    ha-icon::before { content: attr(icon); font-size:9px; color:inherit; max-width:42px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #qa-toolbar { position:sticky; top:0; z-index:10; display:flex; gap:8px; flex-wrap:wrap; padding:8px; background:#17261b; color:white; }
+    #qa-toolbar button { border:1px solid #5e8768; border-radius:8px; background:#25472d; color:white; padding:6px 8px; cursor:pointer; }
+    #qa-toolbar button[data-active="true"] { background:#43ad5e; }
+  </style>
+</head>
+<body>
+  <div id="qa-toolbar"></div>
+  <green-smart-rebuild-panel id="panel"></green-smart-rebuild-panel>
+  <script type="module">
+    import '/custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js';
+    const pages = [
+      ['operations-home', '운영 홈'],
+      ['crop-operations', '작물 운영'],
+      ['environment-control', '환경 제어'],
+      ['irrigation-fertigation', '관수 제어'],
+      ['device-control', '장치 제어'],
+      ['recommendation-automation', '자동화 제어'],
+      ['safety-history', '안전 제어'],
+      ['settings-admin', '설정'],
+    ];
+    const zones = [
+      { id: 'zone-1', name: '1구역', currentCrop: { name: '상추', cultivar: '청치마' }, dataAvailability: { state: 'fresh' } },
+      { id: 'zone-2', name: '2구역', currentCrop: { name: '토마토', cultivar: '대추방울' }, dataAvailability: { state: 'stale' } },
+    ];
+    const panel = document.getElementById('panel');
+    panel.hass = { user: { name: '서원 임', is_admin: true, green_smart_role: 'operator' }, callApi: async () => ({ actorRole: 'operator', zones }) };
+    panel._homeContext = { actorRole: 'operator', zones };
+    function render(page) {
+      panel._activeR7Domain = page;
+      panel.render();
+      for (const button of document.querySelectorAll('#qa-toolbar button')) button.dataset.active = String(button.dataset.page === page);
+    }
+    const toolbar = document.getElementById('qa-toolbar');
+    for (const [page, label] of pages) {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.dataset.page = page;
+      btn.addEventListener('click', () => render(page));
+      toolbar.appendChild(btn);
+    }
+    render(new URLSearchParams(location.search).get('page') || 'operations-home');
+    window.__qaRender = render;
+  </script>
+</body>
+</html>

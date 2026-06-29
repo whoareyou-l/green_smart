@@ -1,0 +1,131 @@
+{
+  "served": {
+    "url": "http://127.0.0.1:8123/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v=1.12.76",
+    "missing": [
+      "REBUILD_VERSION = \"1.12.76\""
+    ],
+    "length": 181414
+  },
+  "render": [
+    {
+      "page": "operations-home",
+      "htmlLength": 37016,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "operationsDashboard": true
+    },
+    {
+      "page": "crop-operations",
+      "htmlLength": 42240,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "environment-control",
+      "htmlLength": 44598,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "irrigation-fertigation",
+      "htmlLength": 45566,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "device-control",
+      "htmlLength": 45813,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "recommendation-automation",
+      "htmlLength": 44636,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "safety-history",
+      "htmlLength": 42894,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "settings-admin",
+      "htmlLength": 45443,
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    }
+  ]
+}

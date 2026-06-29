@@ -1,0 +1,120 @@
+{
+  "served": {
+    "missing": [],
+    "length": 181414
+  },
+  "render": [
+    {
+      "page": "operations-home",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "operationsDashboard": true
+    },
+    {
+      "page": "crop-operations",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "environment-control",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "irrigation-fertigation",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "device-control",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "recommendation-automation",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "safety-history",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    },
+    {
+      "page": "settings-admin",
+      "sidebar": true,
+      "mdiSidebar": true,
+      "emojiSidebar": false,
+      "hero": true,
+      "unifiedCard": true,
+      "zone": true,
+      "panel": true,
+      "topNavbar": true,
+      "subtabButtons": 6,
+      "subtabIcons": true,
+      "subtabTitles": true,
+      "oldPill": false
+    }
+  ]
+}
