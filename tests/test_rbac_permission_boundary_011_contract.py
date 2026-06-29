@@ -27,11 +27,11 @@ def _load_module(path: Path, name: str):
 
 
 def test_rs011_version_surfaces_are_aligned_to_1_12_10():
-    assert '"version": "1.12.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.45"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.46"' in _read(REBUILD_PANEL)
     for path in (DB_SCHEMA, LEGACY_INVENTORY, PRODUCT_PLAN, RBAC_BOUNDARY):
-        assert "v1.12.45" in _read(path)
+        assert "v1.12.46" in _read(path)
 
 
 def test_rbac_permission_boundary_document_declares_alias_vs_target_names():
@@ -130,7 +130,7 @@ def test_legacy_inventory_and_product_plan_promote_rs011_next_step_completion():
 
     required_plan = (
         "Phase R4.7 — RBAC permission naming boundary",
-        "Status:** `v1.12.45`에서 target gs_permissions permission naming boundary 완료",
+        "Status:** `v1.12.46`에서 target gs_permissions permission naming boundary 완료",
         "No role table migration in RS-011",
         "No production permission removal in RS-011",
         "legacy permission strings = compatibility aliases",

@@ -18,11 +18,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_003_version_surfaces_are_1_12_37():
-    assert '"version": "1.12.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.45"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.46"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_002_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.45" in _read(path)
+        assert "v1.12.46" in _read(path)
 
 
 def test_r7_003_doc_declares_selected_scope_and_boundaries():
@@ -52,8 +52,8 @@ def test_r7_003_panel_declares_detail_subpage_registry_for_all_sidebar_groups():
         "R7-003 Detail/configuration subpages baseline",
         "R7_DETAIL_SUBPAGES",
         "renderR7DetailSubpage",
-        "renderR7SubpagePlaceholders",
-        "data-r7-detail-subpages-baseline",
+        "renderR7ActiveDomainPage",
+        "data-r7-domain-page-router=\"true\"",
         "data-r7-detail-subpage=\"operations-home\"",
         "data-r7-detail-subpage=\"crop-centered\"",
         "data-r7-detail-subpage=\"field-status\"",
@@ -130,24 +130,29 @@ def test_r7_003_node_smoke_renders_all_detail_subpage_placeholders():
       await new Promise((resolve) => setTimeout(resolve, 0));
       const html = panel.innerHTML;
       const required = [
-        'data-r7-detail-subpages-baseline',
-        'data-r7-detail-subpage="operations-home"',
-        'data-r7-detail-subpage="crop-operations"',
-        'data-r7-detail-subpage="environment-control"',
-        'data-r7-detail-subpage="irrigation-fertigation"',
-        'data-r7-detail-subpage="device-control"',
-        'data-r7-detail-subpage="recommendation-automation"',
-        'data-r7-detail-subpage="safety-history"',
-        'data-r7-detail-subpage="settings-admin"',
-        'data-r7-subpage-readonly-boundary="true"',
-        'data-r7-subpage-config-placeholder',
-        'data-r7-manual-first-domain-baseline',
+        'data-r7-domain-page-router="true"',
+        'data-r7-active-domain="operations-home"',
+        'data-r7-domain-page="operations-home"',
+        'data-r7-domain-page-active="true"',
         'data-r7-main-dashboard'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
-      if (html.includes('구역별 작물 운영')) process.exit(2);
+      panel.setR7ActiveDomain('environment-control');
+      const envHtml = panel.innerHTML;
+      const envRequired = [
+        'data-r7-active-domain="environment-control"',
+        'data-r7-domain-page="environment-control"',
+        'data-r7-detail-subpage="environment-control"',
+        'data-r7-subpage-readonly-boundary="true"',
+        'data-r7-subpage-config-placeholder',
+        'data-r7-environment-control-detail'
+      ];
+      for (const item of envRequired) {{
+        if (!envHtml.includes(item)) {{ console.error(item); process.exit(1); }}
+      }}
+      if (envHtml.includes('구역별 작물 운영')) process.exit(2);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
     assert result.returncode == 0, result.stderr + result.stdout

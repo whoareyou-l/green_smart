@@ -19,11 +19,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_004_version_surfaces_are_1_12_38():
-    assert '"version": "1.12.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.45"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.46"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_003_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.45" in _read(path)
+        assert "v1.12.46" in _read(path)
 
 
 def test_r7_004_doc_declares_user_selected_settings_admin_scope_and_boundaries():
@@ -139,6 +139,9 @@ def test_r7_004_node_smoke_renders_settings_admin_detail_with_dashboard_preserve
       panel.hass = {{ callApi: async () => ({{ contextSource: 'legacy-physical-readonly-adapter', zones: [] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
+      const homeHtml = panel.innerHTML;
+      if (!homeHtml.includes('data-r7-main-dashboard')) {{ console.error('data-r7-main-dashboard'); process.exit(1); }}
+      panel.setR7ActiveDomain('settings-admin');
       const html = panel.innerHTML;
       const required = [
         'data-r7-settings-admin-detail',
@@ -148,8 +151,7 @@ def test_r7_004_node_smoke_renders_settings_admin_detail_with_dashboard_preserve
         'data-r7-settings-admin-secret-redaction',
         'data-r7-settings-admin-backend-enforcement',
         'RBAC_BACKEND_ENFORCED_ACTION_CLASSES',
-        '[REDACTED]',
-        'data-r7-main-dashboard'
+        '[REDACTED]'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}

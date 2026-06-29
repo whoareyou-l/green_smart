@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_009_version_surfaces_are_1_12_41():
-    assert '"version": "1.12.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.45"' in _read(REBUILD_PANEL)
-    assert "v1.12.45" in _read(DOC)
+    assert '"version": "1.12.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.46"' in _read(REBUILD_PANEL)
+    assert "v1.12.46" in _read(DOC)
 
 
 def test_r7_009_doc_records_irrigation_formula_and_boundaries():
@@ -144,6 +144,7 @@ def test_r7_009_node_smoke_renders_irrigation_detail():
       panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-009-readonly-smoke', zones: [] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
+      panel.setR7ActiveDomain('irrigation-fertigation');
       const html = panel.innerHTML;
       const required = [
         'data-r7-detail-subpage="irrigation-fertigation"',

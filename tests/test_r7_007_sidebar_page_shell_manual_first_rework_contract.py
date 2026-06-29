@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_007_version_surfaces_are_1_12_39():
-    assert '"version": "1.12.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.45"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.46"' in _read(REBUILD_PANEL)
     for path in (DOC, SPEC, PLAN):
         assert "R7-007" in _read(path) or path == SPEC
 
@@ -97,8 +97,8 @@ def test_r7_007_detail_placeholders_render_eight_manual_first_domains_with_layer
         'data-r7-detail-subpage="recommendation-automation"',
         'data-r7-detail-subpage="safety-history"',
         'data-r7-detail-subpage="settings-admin"',
-        'data-r7-manual-first-domain-baseline',
-        'data-r7-domain-layer-grammar',
+        'data-r7-domain-page-router="true"',
+        'data-r7-domain-page-shell',
         'data-r7-manual-base-settings',
         'data-r7-rule-schedule-automation',
         'data-r7-ai-assist-layer',
@@ -160,16 +160,21 @@ def test_r7_007_node_smoke_renders_new_sidebar_and_domain_placeholders():
         'data-r7-sidebar-group="device-control"',
         'data-r7-sidebar-group="recommendation-automation"',
         'data-r7-sidebar-group="safety-history"',
-        'data-r7-manual-first-domain-baseline',
-        'data-r7-manual-base-settings',
-        'data-r7-ai-assist-layer',
+        'data-r7-domain-page-router="true"',
+        'data-r7-active-domain="operations-home"',
+        'data-r7-domain-page="operations-home"',
         '수동 설정 우선 환경제어 작업공간',
         '추천·자동화'
       ];
       for (const item of required) {{
         if (!html.includes(item)) {{ console.error(item); process.exit(1); }}
       }}
-      if (html.includes('data-r7-sidebar-execute')) process.exit(2);
+      panel.setR7ActiveDomain('environment-control');
+      const envHtml = panel.innerHTML;
+      for (const item of ['data-r7-active-domain="environment-control"', 'data-r7-manual-base-settings', 'data-r7-ai-assist-layer', 'data-r7-environment-control-detail']) {{
+        if (!envHtml.includes(item)) {{ console.error(item); process.exit(1); }}
+      }}
+      if (envHtml.includes('data-r7-sidebar-execute')) process.exit(2);
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
     assert result.returncode == 0, result.stderr + result.stdout

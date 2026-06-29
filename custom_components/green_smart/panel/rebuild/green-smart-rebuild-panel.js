@@ -21,6 +21,9 @@
 // R7-013 Settings/Admin manual-first realignment markers: data-r7-settings-admin-manual-first-realigned="true" / data-r7-settings-admin-domain-ownership / data-r7-settings-admin-mapping-boundary / data-r7-settings-admin-system-boundary.
 // R7-013 Settings/Admin domain ownership markers: data-r7-settings-admin-domain="operations-home" / data-r7-settings-admin-domain="crop-operations" / data-r7-settings-admin-domain="environment-control" / data-r7-settings-admin-domain="irrigation-fertigation" / data-r7-settings-admin-domain="device-control" / data-r7-settings-admin-domain="recommendation-automation" / data-r7-settings-admin-domain="safety-history" / data-r7-settings-admin-domain="settings-admin".
 // R7-013 Settings/Admin mapping/system markers: data-r7-settings-admin-mapping-item="HA entity mapping" / data-r7-settings-admin-mapping-item="구역/장치 매핑" / data-r7-settings-admin-mapping-item="MQTT topic mapping later only" / data-r7-settings-admin-mapping-item="mapping health evidence" / data-r7-settings-admin-system-item="RBAC" / data-r7-settings-admin-system-item="사용자 역할" / data-r7-settings-admin-system-item="권한 정책" / data-r7-settings-admin-system-item="시스템 설정" / data-r7-settings-admin-system-item="진단" / data-r7-settings-admin-system-item="백업" / data-r7-settings-admin-system-item="secret redaction" / data-r7-settings-admin-system-item="감사 설정".
+// R7-014 Domain page routing markers: data-r7-domain-page-router="true" / data-r7-active-domain / data-r7-domain-page-shell / data-r7-domain-page-active="true" / data-r7-domain-page-hidden="true" / data-r7-sidebar-active="true" / data-r7-mobile-nav-active="true" / aria-current="page".
+// R7-014 domain page registry: data-r7-domain-page="operations-home" / data-r7-domain-page="crop-operations" / data-r7-domain-page="environment-control" / data-r7-domain-page="irrigation-fertigation" / data-r7-domain-page="device-control" / data-r7-domain-page="recommendation-automation" / data-r7-domain-page="safety-history" / data-r7-domain-page="settings-admin".
+// R7-014 nav target registry: data-r7-sidebar-target="operations-home" / data-r7-sidebar-target="crop-operations" / data-r7-sidebar-target="environment-control" / data-r7-sidebar-target="irrigation-fertigation" / data-r7-sidebar-target="device-control" / data-r7-sidebar-target="recommendation-automation" / data-r7-sidebar-target="safety-history" / data-r7-sidebar-target="settings-admin".
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7-003 historical subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7-007 target sidebar markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-operations" / data-r7-sidebar-group="environment-control" / data-r7-sidebar-group="irrigation-fertigation" / data-r7-sidebar-group="device-control" / data-r7-sidebar-group="recommendation-automation" / data-r7-sidebar-group="safety-history" / data-r7-sidebar-group="settings-admin".
@@ -46,7 +49,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.45";
+const REBUILD_VERSION = "1.12.46";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -137,6 +140,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadState = "loading";
     this._contextLoadError = null;
     this._contextRequestId = 0;
+    this._activeR7Domain = "operations-home";
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -616,6 +620,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  _normalizeR7Domain(domainKey) {
+    return R7_DETAIL_SUBPAGES.some((subpage) => subpage.key === domainKey) ? domainKey : "operations-home";
+  }
+
+  setR7ActiveDomain(domainKey) {
+    const nextDomain = this._normalizeR7Domain(domainKey);
+    if (this._activeR7Domain === nextDomain) return;
+    this._activeR7Domain = nextDomain;
+    this.render();
+  }
+
+  _bindR7DomainNavigation() {
+    this.querySelectorAll("[data-r7-sidebar-target], [data-r7-mobile-nav-target]").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        this.setR7ActiveDomain(link.dataset.r7SidebarTarget || link.dataset.r7MobileNavTarget);
+      });
+    });
+  }
+
   _bindZoneTabs() {
     this.querySelectorAll("[data-zone-tab]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -725,13 +749,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <div style="font-weight:1000;color:#24323f;font-size:18px;">Green Smart</div>
       <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">수동 설정 우선 환경제어 shell · read-only</p>
       <template data-r7-deprecated-sidebar-groups>${R7_DEPRECATED_SIDEBAR_GROUPS.map((group) => `data-r7-sidebar-group="${group.key}" ${group.label} → ${group.replacement}`).join(" | ")}</template>
-      ${R7_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" style="display:block;border:1px solid #e2eee5;border-radius:14px;background:#f8fcf9;color:#31523b;text-decoration:none;padding:11px 12px;"><strong style="display:block;font-size:14px;">${group.label}</strong><span style="display:block;margin-top:4px;color:#78927f;font-size:11px;line-height:1.4;">${group.summary}</span></a>`).join("")}
+      ${R7_SIDEBAR_GROUPS.map((group) => {
+        const active = this._activeR7Domain === group.key;
+        return `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" style="display:block;border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:14px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;text-decoration:none;padding:11px 12px;"><strong style="display:block;font-size:14px;">${group.label}</strong><span style="display:block;margin-top:4px;color:#78927f;font-size:11px;line-height:1.4;">${group.summary}</span></a>`;
+      }).join("")}
     </aside>`;
   }
 
   renderR7MobileNav() {
     return `<nav data-r7-mobile-nav style="display:flex;gap:8px;overflow:auto;border:1px solid #dcebe0;border-radius:16px;background:#fff;padding:10px;">
-      ${R7_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-mobile-nav-item="${group.key}" style="white-space:nowrap;border-radius:999px;background:#eef7f0;color:#31523b;text-decoration:none;padding:8px 10px;font-size:12px;font-weight:900;">${group.label}</a>`).join("")}
+      ${R7_SIDEBAR_GROUPS.map((group) => {
+        const active = this._activeR7Domain === group.key;
+        return `<a href="#${group.target}" data-r7-mobile-nav-item="${group.key}" data-r7-mobile-nav-target="${group.target}" data-r7-mobile-nav-active="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" style="white-space:nowrap;border-radius:999px;background:${active ? "#e3f4e6" : "#eef7f0"};color:#31523b;text-decoration:none;padding:8px 10px;font-size:12px;font-weight:900;">${group.label}</a>`;
+      }).join("")}
     </nav>`;
   }
 
@@ -1114,22 +1144,45 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </article>`;
   }
 
-  renderR7SubpagePlaceholders() {
-    return `<section data-r7-detail-subpages-baseline data-r7-manual-first-domain-baseline style="display:grid;gap:12px;">
-      ${R7_DETAIL_SUBPAGES.map((subpage) => this.renderR7DetailSubpage(subpage)).join("")}
+  renderR7DomainPageShell(subpage, body) {
+    return `<section data-r7-domain-page-shell data-r7-domain-page="${subpage.key}" data-r7-domain-page-active="true" data-r7-domain-page-hidden="false" style="display:grid;gap:14px;">
+      <header style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:16px;">
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Selected domain page</p>
+        <h3 style="margin:0;color:#24323f;font-size:20px;">${subpage.label}</h3>
+        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${subpage.summary}</p>
+      </header>
+      ${body}
     </section>`;
   }
 
+  renderR7ActiveDomainPage() {
+    const activeKey = this._normalizeR7Domain(this._activeR7Domain);
+    const subpage = R7_DETAIL_SUBPAGES.find((item) => item.key === activeKey) || R7_DETAIL_SUBPAGES[0];
+    switch (activeKey) {
+      case "operations-home":
+        return this.renderR7DomainPageShell(subpage, this.renderOperatingHome());
+      case "crop-operations":
+      case "environment-control":
+      case "irrigation-fertigation":
+      case "device-control":
+      case "recommendation-automation":
+      case "safety-history":
+      case "settings-admin":
+        return this.renderR7DomainPageShell(subpage, this.renderR7DetailSubpage(subpage));
+      default:
+        return this.renderR7DomainPageShell(R7_DETAIL_SUBPAGES[0], this.renderOperatingHome());
+    }
+  }
+
   renderR7PageShell() {
-    return `<section data-r7-page-shell style="display:grid;gap:16px;">
+    return `<section data-r7-page-shell data-r7-domain-page-router="true" data-r7-active-domain="${this._activeR7Domain}" style="display:grid;gap:16px;">
       <header data-r7-page-header style="border:1px solid #dcebe0;border-radius:20px;background:linear-gradient(135deg,#ffffff,#f4faf5);padding:18px;">
-        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-012 Safety/History Detail</p>
+        <p style="margin:0 0 6px;color:#5d7d64;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">R7-014 Domain Page Routing</p>
         <h2 style="margin:0;color:#24323f;font-size:22px;">수동 설정 우선 환경제어 작업공간</h2>
-        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바는 운영 홈, 작물, 환경, 관수·양액, 장치, 추천·자동화, 안전·이력, 설정·관리로 재정렬합니다. 실행 권한은 추가하지 않습니다.</p>
+        <p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">사이드바에서 선택한 도메인만 중심 화면에 표시합니다. 운영 홈은 summary dashboard이고, 각 도메인은 독립 page/detail view로 전환됩니다.</p>
       </header>
       <div data-r7-page-workspace style="display:grid;gap:16px;">
-        ${this.renderR7SubpagePlaceholders()}
-        ${this.renderOperatingHome()}
+        ${this.renderR7ActiveDomainPage()}
       </div>
     </section>`;
   }
@@ -1155,6 +1208,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </main>
       ${this.renderZoneDetailModal()}
     `;
+    this._bindR7DomainNavigation();
     this._bindZoneTabs();
   }
 }

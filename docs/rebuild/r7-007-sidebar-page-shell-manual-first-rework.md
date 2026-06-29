@@ -1,6 +1,6 @@
 # R7-007 Sidebar/Page Shell Manual-first Rework
 
-> 기준 버전: `v1.12.45`
+> 기준 버전: `v1.12.46`
 > Status: R7-007 complete
 > Purpose: 이전 R7 5그룹 sidebar/page shell을 manual-first environment-control target domains로 재정렬한다.
 
