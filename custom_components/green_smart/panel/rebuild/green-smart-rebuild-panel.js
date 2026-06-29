@@ -27,6 +27,7 @@
 // R7-015 Common visual UI system markers: data-r7-visual-system="true" / data-r7-dashboard-visual-hero / data-r7-status-badge / data-r7-status="normal" / data-r7-status="attention" / data-r7-status="warning" / data-r7-status="blocked" / data-r7-status="unknown" / data-r7-severity-card / data-r7-severity="green" / data-r7-severity="yellow" / data-r7-severity="orange" / data-r7-severity="red" / data-r7-severity="gray" / data-r7-freshness-pill / data-r7-metric-card / data-r7-domain-health-strip / data-r7-domain-health-item / data-r7-alert-banner / data-r7-mini-trend-chart.
 // R7-016 Operations home visual dashboard rewrite markers: data-r7-operations-dashboard-rewrite="true" / data-r7-command-center-hero / data-r7-today-priority-panel / data-r7-kpi-rail / data-r7-kpi-rail-item / data-r7-domain-board / data-r7-domain-board-card / data-r7-alert-stack / data-r7-trend-board / data-r7-secondary-stage-flow.
 // R7-017 Shared domain visual frame + environment tabs/zone markers: data-r7-domain-visual-frame / data-r7-domain-visual-frame-version="1" / data-r7-domain-visual-hero / data-r7-domain-visual-summary-grid / data-r7-zone-context-bar / data-r7-zone-selector / data-r7-zone-card / data-r7-active-zone / data-r7-domain-subtabs / data-r7-domain-subtab / data-r7-domain-subtab-active="true" / data-r7-domain-subtab-panel / data-r7-environment-zone-visual="true" / data-r7-environment-subtab="status-summary" / data-r7-environment-subtab="base-settings" / data-r7-environment-subtab="interlock-block" / data-r7-environment-subtab="trend-evidence".
+// R7-028 reference slim operator rail markers: data-r7-sidebar-rail-style="reference-slim-operator" / data-r7-sidebar-compact-rail="true" / data-r7-sidebar-rail-width="68" / data-r7-sidebar-active-icon-tile="true" / data-r7-sidebar-utility="settings" / data-r7-sidebar-utility="exit".
 // R7-002 group markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-centered" / data-r7-sidebar-group="field-status" / data-r7-sidebar-group="recommendation-review" / data-r7-sidebar-group="settings-admin".
 // R7-003 historical subpage markers: data-r7-detail-subpage="operations-home" / data-r7-detail-subpage="crop-centered" / data-r7-detail-subpage="field-status" / data-r7-detail-subpage="recommendation-review" / data-r7-detail-subpage="settings-admin".
 // R7-007 target sidebar markers: data-r7-sidebar-group="operations-home" / data-r7-sidebar-group="crop-operations" / data-r7-sidebar-group="environment-control" / data-r7-sidebar-group="irrigation-fertigation" / data-r7-sidebar-group="device-control" / data-r7-sidebar-group="recommendation-automation" / data-r7-sidebar-group="safety-history" / data-r7-sidebar-group="settings-admin".
@@ -52,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.61";
+const REBUILD_VERSION = "1.12.62";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -964,12 +965,41 @@ class GreenSmartRebuildPanel extends HTMLElement {
     `;
   }
 
+  _isR7ReferenceSlimRail() {
+    return this._r7SidebarLayoutMode() === "operator-ha-adjacent" && Boolean(this._r7SidebarCollapsed);
+  }
+
+  renderR7SidebarUtilityGroup(referenceSlimRail) {
+    const buttonStyle = referenceSlimRail
+      ? "width:44px;height:44px;border:0;border-radius:14px;background:transparent;color:#6f8172;display:inline-flex;align-items:center;justify-content:center;font-size:22px;text-decoration:none;cursor:pointer;"
+      : "border:1px solid #d7e8db;border-radius:999px;background:#f8fcf9;color:#31523b;padding:7px 10px;font-size:12px;font-weight:900;text-decoration:none;cursor:pointer;";
+    return `<div data-r7-sidebar-utility-group style="display:grid;gap:8px;justify-items:center;margin-top:auto;padding-top:14px;">
+      <button type="button" data-r7-sidebar-utility="settings" aria-label="설정" title="설정" style="${buttonStyle}">⚙</button>
+      <button type="button" data-r7-sidebar-utility="exit" aria-label="나가기" title="나가기" style="${buttonStyle}">↪</button>
+    </div>`;
+  }
+
   renderR7Sidebar() {
     const collapsed = Boolean(this._r7SidebarCollapsed);
     const layoutMode = this._r7SidebarLayoutMode();
     const haSidebarPolicy = layoutMode === "operator-ha-adjacent" ? "keep" : "hide";
-    const width = collapsed ? "82px" : "248px";
-    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" style="width:${width};border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
+    const referenceSlimRail = this._isR7ReferenceSlimRail();
+    const width = referenceSlimRail ? "68px" : collapsed ? "82px" : "248px";
+    const railAttrs = referenceSlimRail ? 'data-r7-sidebar-rail-style="reference-slim-operator" data-r7-sidebar-compact-rail="true" data-r7-sidebar-rail-width="68"' : 'data-r7-sidebar-rail-style="standard"';
+    if (referenceSlimRail) {
+      return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="true" ${railAttrs} style="width:68px;min-height:calc(100vh - 48px);border:0;border-right:1px solid #edf1ee;border-radius:22px;background:#ffffff;box-shadow:8px 0 24px rgba(36,50,63,.06);padding:14px 10px;display:flex;flex-direction:column;gap:16px;align-items:center;align-self:stretch;position:sticky;top:0;">
+        <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-logo-tile aria-label="Green Smart 상세형" title="Green Smart" style="width:44px;height:44px;border:0;border-radius:12px;background:#43ad5e;box-shadow:0 6px 14px rgba(67,173,94,.22);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;"><img data-r7-sidebar-logo-image alt="Green Smart 로고" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='14' fill='%2343ad5e'/%3E%3Cpath d='M24 37c-7-5-11-11-11-18 0-6 5-10 11-10s11 4 11 10c0 7-4 13-11 18Z' fill='%23ffffff'/%3E%3Cpath d='M17 23c6 0 11-3 15-8-1 8-5 13-12 15' fill='none' stroke='%2343ad5e' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" style="width:44px;height:44px;border-radius:12px;" /></button>
+        <nav data-r7-sidebar-nav-list aria-label="Green Smart compact navigation" style="display:grid;gap:12px;justify-items:center;">
+          ${R7_SIDEBAR_GROUPS.map((group) => {
+            const active = this._activeR7Domain === group.key;
+            const icon = R7_DOMAIN_ICONS[group.key] || "•";
+            return `<a href="#${group.target}" data-r7-sidebar-nav-icon-button data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" data-r7-sidebar-active-icon-tile="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" aria-label="${group.label}" title="${group.label}" style="width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:13px;background:${active ? "#dff5e5" : "transparent"};color:${active ? "#43ad5e" : "#6f8172"};text-decoration:none;font-size:22px;font-weight:900;"><span data-r7-sidebar-icon="${icon}" aria-hidden="true" style="line-height:1;">${icon}</span></a>`;
+          }).join("")}
+        </nav>
+        ${this.renderR7SidebarUtilityGroup(true)}
+      </aside>`;
+    }
+    return `<aside data-r7-sidebar data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" ${railAttrs} style="width:${width};border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:10px;align-self:start;position:sticky;top:18px;">
       <div data-r7-sidebar-brand style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};">
         <div style="display:flex;align-items:center;gap:9px;min-width:0;">
           <img data-r7-sidebar-logo-image alt="Green Smart 로고" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='14' fill='%23e3f4e6'/%3E%3Cpath d='M24 39c-7-5-12-12-12-20 0-6 5-10 12-10s12 4 12 10c0 8-5 15-12 20Z' fill='%2378a87e'/%3E%3Cpath d='M24 35V15m0 10c-5-1-8-4-9-8m9 10c5-1 8-4 9-8' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" style="width:34px;height:34px;border-radius:12px;flex:0 0 auto;" />
@@ -978,11 +1008,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
         <button type="button" data-r7-sidebar-collapse-toggle aria-label="${collapsed ? "사이드바 상세형" : "사이드바 간략형"}" title="${collapsed ? "상세형" : "간략형"}" style="border:1px solid #d7e8db;border-radius:999px;background:#f8fcf9;color:#31523b;width:32px;height:32px;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">${collapsed ? "»" : "«"}</button>
       </div>
       <template data-r7-deprecated-sidebar-groups>${R7_DEPRECATED_SIDEBAR_GROUPS.map((group) => `data-r7-sidebar-group="${group.key}" ${group.label} → ${group.replacement}`).join(" | ")}</template>
+      <nav data-r7-sidebar-nav-list style="display:grid;gap:10px;">
       ${R7_SIDEBAR_GROUPS.map((group) => {
         const active = this._activeR7Domain === group.key;
         const icon = R7_DOMAIN_ICONS[group.key] || "•";
-        return `<a href="#${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" title="${group.label}" style="display:flex;align-items:center;gap:9px;justify-content:${collapsed ? "center" : "flex-start"};border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:14px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;text-decoration:none;padding:${collapsed ? "11px 8px" : "11px 12px"};"><span data-r7-sidebar-icon="${icon}" aria-hidden="true" style="font-size:20px;line-height:1;">${icon}</span>${collapsed ? "" : `<span style="display:grid;gap:3px;min-width:0;"><strong style="display:block;font-size:14px;line-height:1.2;">${group.label}</strong><span data-r7-sidebar-summary style="display:block;color:#78927f;font-size:11px;line-height:1.35;">${group.summary}</span></span>`}</a>`;
+        return `<a href="#${group.target}" data-r7-sidebar-nav-icon-button data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" data-r7-sidebar-active-icon-tile="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" title="${group.label}" style="display:flex;align-items:center;gap:9px;justify-content:${collapsed ? "center" : "flex-start"};border:1px solid ${active ? "#78a87e" : "#e2eee5"};border-radius:14px;background:${active ? "#e3f4e6" : "#f8fcf9"};color:#31523b;text-decoration:none;padding:${collapsed ? "11px 8px" : "11px 12px"};"><span data-r7-sidebar-icon="${icon}" aria-hidden="true" style="font-size:20px;line-height:1;">${icon}</span>${collapsed ? "" : `<span style="display:grid;gap:3px;min-width:0;"><strong style="display:block;font-size:14px;line-height:1.2;">${group.label}</strong><span data-r7-sidebar-summary style="display:block;color:#78927f;font-size:11px;line-height:1.35;">${group.summary}</span></span>`}</a>`;
       }).join("")}
+      </nav>
+      ${collapsed ? this.renderR7SidebarUtilityGroup(false) : ""}
     </aside>`;
   }
 
