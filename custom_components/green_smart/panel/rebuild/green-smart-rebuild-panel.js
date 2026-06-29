@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.79";
+const REBUILD_VERSION = "1.12.80";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1568,7 +1568,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7CropStatusChip(label, value, tone = "green") {
     const colors = tone === "amber" ? ["#fff4d8", "#8a5a00", "#f0cf83"] : tone === "red" ? ["#ffe5e0", "#9a2d1b", "#efb9ae"] : tone === "blue" ? ["#edf5ff", "#264f73", "#cbdff2"] : ["#edf8ef", "#31523b", "#cae4cf"];
-    return `<span data-r7-crop-status-chip="${label}" style="display:inline-flex;align-items:center;gap:5px;border:1px solid ${colors[2]};border-radius:999px;background:${colors[0]};color:${colors[1]};padding:5px 8px;font-size:11px;font-weight:900;"><b>${label}</b>${value ? `<span>${value}</span>` : ""}</span>`;
+    const state = String(value || "").toLowerCase().includes("attention") || String(value || "").includes("주의") ? "attention" : String(value || "").toLowerCase().includes("fresh") || String(value || "").includes("정상") ? "fresh" : String(value || "").toLowerCase().includes("error") ? "error" : "ready";
+    return `<span data-r7-crop-status-chip="${label}" data-r7-product-state="${state}" style="display:inline-flex;align-items:center;gap:5px;border:1px solid ${colors[2]};border-radius:999px;background:${colors[0]};color:${colors[1]};padding:5px 8px;font-size:11px;font-weight:900;"><b>${label}</b>${value ? `<span>${value}</span>` : ""}</span>`;
   }
 
   renderR7CropActionButton(label, targetSubtab, icon = "mdi:arrow-right") {
@@ -1579,41 +1580,45 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<button type="button" data-r7-sidebar-target="${targetDomain}" data-r7-crop-domain-action-target="${targetDomain}" style="border:1px solid #d8e4f2;border-radius:999px;background:#fff;color:#264f73;padding:7px 10px;font-size:11px;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><ha-icon icon="${icon}" style="--mdc-icon-size:14px;width:14px;height:14px;"></ha-icon>${label}</button>`;
   }
 
+  renderR7ProductCardHeader({ icon = "mdi:leaf", title, subtitle = "", statusHtml = "" }) {
+    return `<header data-r7-product-card-header style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;"><div style="display:flex;align-items:flex-start;gap:9px;min-width:0;"><span style="width:32px;height:32px;border-radius:12px;background:#edf8ef;color:#31523b;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;"><ha-icon icon="${icon}" style="--mdc-icon-size:18px;width:18px;height:18px;"></ha-icon></span><div style="display:grid;gap:2px;min-width:0;"><strong style="color:#24323f;font-size:14px;line-height:1.25;">${title}</strong>${subtitle ? `<small style="color:#78927f;font-size:11px;line-height:1.35;">${subtitle}</small>` : ""}</div></div><div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;">${statusHtml}</div></header>`;
+  }
+
+  renderR7ProductCardBody({ primary = "", secondary = "", html = "" }) {
+    return `<div data-r7-product-card-body style="display:grid;gap:7px;min-width:0;">${primary ? `<div style="color:#24323f;font-size:18px;font-weight:1000;line-height:1.28;word-break:keep-all;">${primary}</div>` : ""}${secondary ? `<div style="color:#5d6f62;font-size:12px;line-height:1.5;">${secondary}</div>` : ""}${html}</div>`;
+  }
+
+  renderR7ProductCardEvidence(items = [], tone = "green") {
+    const visible = (items || []).filter((item) => item !== null && item !== undefined && String(item).trim() !== "");
+    if (!visible.length) return this.renderR7ProductEmptyState("근거 없음", "현재 context에서 표시할 근거가 없습니다.");
+    return `<div data-r7-product-card-evidence style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${visible.map((item) => `<span data-r7-crop-factor-chip data-r7-product-evidence-chip style="border:1px solid ${tone === "amber" ? "#f0cf83" : tone === "red" ? "#efb9ae" : tone === "blue" ? "#cbdff2" : "#cae4cf"};border-radius:999px;background:#fff;color:${tone === "red" ? "#8a3322" : tone === "blue" ? "#264f73" : tone === "amber" ? "#815516" : "#31523b"};padding:5px 8px;font-size:11px;font-weight:900;">${item}</span>`).join("")}</div>`;
+  }
+
+  renderR7ProductCardActionRow(actions = []) {
+    return `<div data-r7-product-card-action-row style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px;">${actions.filter(Boolean).join("")}</div>`;
+  }
+
+  renderR7ProductEmptyState(title = "데이터 없음", note = "연결된 데이터가 들어오면 자동으로 채워집니다.") {
+    return `<div data-r7-product-empty-state style="border:1px dashed #d7e8db;border-radius:12px;background:#fbfdfb;color:#78927f;padding:8px 10px;font-size:11px;line-height:1.45;"><strong style="color:#5d6f62;">${title}</strong><br>${note}</div>`;
+  }
+
+  renderR7ProductCard({ kind, tone = "green", state = "ready", legacyMarkers = "", header, body, evidence = "", actions = "" }) {
+    const border = tone === "amber" ? "#f2d3a5" : tone === "red" ? "#f0c9c0" : tone === "blue" ? "#d8e4f2" : "#dcebe0";
+    const bg = tone === "amber" ? "#fff9ef" : tone === "red" ? "#fff6f3" : tone === "blue" ? "#f8fbff" : "#fbfdfb";
+    return `<article data-r7-product-card data-r7-product-card-kind="${kind}" data-r7-product-state="${state}" data-r7-product-responsive="mobile-first" data-r7-product-component-version="1" ${legacyMarkers} style="border:1px solid ${border};border-radius:20px;background:${bg};padding:14px;display:grid;gap:12px;align-content:start;min-width:0;box-shadow:0 6px 18px rgba(49,82,59,.04);">${header}${body}${evidence}${actions}</article>`;
+  }
+
   renderR7CropStatusSummaryWidgets({ selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, freshness, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired }) {
-    const missingItems = workMissingItems === "누락 항목 없음" ? [workMissingItems] : String(workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
-    const factorItems = String(environmentImpactFactors || "영향 factor 없음").split(",").map((item) => item.trim()).filter(Boolean);
+    const missingItems = workMissingItems === "누락 항목 없음" ? [] : String(workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
+    const factorItems = String(environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
     const approvalLabel = approvalRequired ? "승인 검토 필요" : "승인 대기 없음";
-    const cardStyle = "border:1px solid #dcebe0;border-radius:18px;background:#fbfdfb;padding:13px;display:grid;gap:10px;align-content:start;";
-    return `
-      <article data-r7-crop-status-functional-card data-r7-crop-current-context-card data-r7-crop-current-card style="${cardStyle}">
-        <header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="color:#31523b;font-size:13px;">현재 작물</strong>${this.renderR7CropStatusChip("신선도", freshness, "green")}</header>
-        <div style="display:grid;gap:4px;"><span style="font-size:18px;font-weight:1000;color:#24323f;">${cropLabel} · ${growthStage}</span><span style="font-size:12px;color:#5d6f62;">${this._r7ZoneName(selectedZone)} · ${variety} · ${cropType}</span></div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">${this.renderR7CropStatusChip("작기", cropCycleId, "blue")}${this.renderR7CropStatusChip("정식일", plantDate, "green")}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">${this.renderR7CropActionButton("작기 보기", "crop-cycle", "mdi:sprout-outline")}${this.renderR7CropActionButton("생육목표", "growth-target", "mdi:target")}</div>
-      </article>
-      <article data-r7-crop-status-functional-card data-r7-crop-priority-action-card data-r7-crop-attention-queue style="${cardStyle.replace("#fbfdfb", "#fff9ef")}">
-        <header><strong style="color:#815516;font-size:13px;">우선 확인</strong><span style="margin-left:8px;color:#9b7a35;font-size:11px;font-weight:900;">read-only</span></header>
-        <span style="font-size:17px;font-weight:1000;color:#24323f;line-height:1.35;">${workNextAction}</span>
-        <ul style="margin:0;padding-left:18px;color:#6f5b2e;font-size:12px;line-height:1.55;">${missingItems.map((item) => `<li>${item}</li>`).join("")}</ul>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">${this.renderR7CropActionButton("기록·작업 확인", "records-workflow", "mdi:clipboard-text-clock-outline")}${this.renderR7CropActionButton("추세 근거", "trend-evidence", "mdi:chart-line")}</div>
-      </article>
-      <article data-r7-crop-status-functional-card data-r7-crop-record-health-card style="${cardStyle}">
-        <header><strong style="color:#31523b;font-size:13px;">기록 상태</strong></header>
-        <div style="display:grid;gap:7px;font-size:12px;color:#24323f;line-height:1.45;"><div>${this.renderR7CropStatusChip("생육", growthSurvey.staleState || "unknown", "green")} ${growthSurvey.latestLabel || "생육조사 기록 없음"}</div><div>${this.renderR7CropStatusChip("예찰", pestScouting.staleState || "unknown", "amber")} ${pestScouting.latestLabel || "병해충 예찰 기록 없음"}</div><div>${this.renderR7CropStatusChip("방제", controlTreatment.staleState || "unknown", "red")} ${controlTreatment.latestLabel || "방제 기록 없음"}</div></div>
-        <div>${this.renderR7CropActionButton("기록 상세", "records-workflow", "mdi:format-list-bulleted")}</div>
-      </article>
-      <article data-r7-crop-status-functional-card data-r7-crop-influence-action-card data-r7-crop-influence-strip style="${cardStyle.replace("#fbfdfb", "#f8fbff")}">
-        <header><strong style="color:#264f73;font-size:13px;">환경·관수·장치 영향</strong></header>
-        <span style="font-size:16px;font-weight:1000;color:#24323f;line-height:1.35;">${environmentImpactFocus}</span>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">${factorItems.map((factor) => `<span data-r7-crop-factor-chip style="border:1px solid #cbdff2;border-radius:999px;background:#fff;color:#264f73;padding:5px 8px;font-size:11px;font-weight:900;">${factor}</span>`).join("")}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">${this.renderR7DomainJumpButton("환경 보기", "environment-control", "mdi:thermometer")}${this.renderR7DomainJumpButton("관수 보기", "irrigation-fertigation", "mdi:water")}${this.renderR7DomainJumpButton("장치 보기", "device-control", "mdi:devices")}</div>
-      </article>
-      <article data-r7-crop-status-functional-card data-r7-crop-recommendation-action-card style="${cardStyle.replace("#fbfdfb", "#fff6f3")}">
-        <header style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="color:#8a3322;font-size:13px;">추천 검토</strong>${this.renderR7CropStatusChip("상태", recommendationReviewState, "red")}</header>
-        <span style="font-size:16px;font-weight:1000;color:#24323f;line-height:1.35;">${recommendationReviewSummary}</span>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">${this.renderR7CropStatusChip("승인", approvalLabel, approvalRequired ? "amber" : "green")}${this.renderR7CropStatusChip("경계", "실행 없음", "red")}</div>
-        <div>${this.renderR7CropActionButton("모델·추천 검토", "model-assist", "mdi:brain")}</div>
-      </article>`;
+    const empty = this.renderR7ProductEmptyState("누락 없음", "현재 표시할 누락 항목은 없습니다.");
+    const currentCard = this.renderR7ProductCard({ kind: "current-crop", tone: "green", state: "fresh", legacyMarkers: "data-r7-crop-status-functional-card data-r7-crop-current-context-card data-r7-crop-current-card", header: this.renderR7ProductCardHeader({ icon: "mdi:sprout-outline", title: "현재 작물", subtitle: `${this._r7ZoneName(selectedZone)} 기준`, statusHtml: this.renderR7CropStatusChip("신선도", freshness, "green") }), body: this.renderR7ProductCardBody({ primary: `${cropLabel} · ${growthStage}`, secondary: `${variety} · ${cropType}` }), evidence: this.renderR7ProductCardEvidence([`작기 ${cropCycleId}`, `정식일 ${plantDate}`], "green"), actions: this.renderR7ProductCardActionRow([this.renderR7CropActionButton("작기 보기", "crop-cycle", "mdi:sprout-outline"), this.renderR7CropActionButton("생육목표", "growth-target", "mdi:target")]) });
+    const priorityCard = this.renderR7ProductCard({ kind: "priority-check", tone: "amber", state: missingItems.length ? "attention" : "fresh", legacyMarkers: "data-r7-crop-status-functional-card data-r7-crop-priority-action-card data-r7-crop-attention-queue", header: this.renderR7ProductCardHeader({ icon: "mdi:alert-circle-outline", title: "우선 확인", subtitle: "read-only · 작업 우선순위", statusHtml: this.renderR7CropStatusChip("상태", missingItems.length ? "attention" : "fresh", "amber") }), body: this.renderR7ProductCardBody({ primary: workNextAction, html: missingItems.length ? `<ul style="margin:0;padding-left:18px;color:#6f5b2e;font-size:12px;line-height:1.55;">${missingItems.map((item) => `<li>${item}</li>`).join("")}</ul>` : empty }), evidence: this.renderR7ProductCardEvidence(missingItems, "amber"), actions: this.renderR7ProductCardActionRow([this.renderR7CropActionButton("기록·작업 확인", "records-workflow", "mdi:clipboard-text-clock-outline"), this.renderR7CropActionButton("추세 근거", "trend-evidence", "mdi:chart-line")]) });
+    const recordCard = this.renderR7ProductCard({ kind: "record-health", tone: "green", state: pestScouting.staleState || "ready", legacyMarkers: "data-r7-crop-status-functional-card data-r7-crop-record-health-card", header: this.renderR7ProductCardHeader({ icon: "mdi:clipboard-pulse-outline", title: "기록 상태", subtitle: "생육·예찰·방제 최신 근거", statusHtml: this.renderR7CropStatusChip("예찰", pestScouting.staleState || "unknown", "amber") }), body: this.renderR7ProductCardBody({ html: `<div style="display:grid;gap:7px;font-size:12px;color:#24323f;line-height:1.45;"><div>${this.renderR7CropStatusChip("생육", growthSurvey.staleState || "unknown", "green")} ${growthSurvey.latestLabel || "생육조사 기록 없음"}</div><div>${this.renderR7CropStatusChip("예찰", pestScouting.staleState || "unknown", "amber")} ${pestScouting.latestLabel || "병해충 예찰 기록 없음"}</div><div>${this.renderR7CropStatusChip("방제", controlTreatment.staleState || "unknown", "red")} ${controlTreatment.latestLabel || "방제 기록 없음"}</div></div>` }), evidence: this.renderR7ProductCardEvidence([growthSurvey.latestLabel, pestScouting.latestLabel, controlTreatment.latestLabel], "green"), actions: this.renderR7ProductCardActionRow([this.renderR7CropActionButton("기록 상세", "records-workflow", "mdi:format-list-bulleted")]) });
+    const influenceCard = this.renderR7ProductCard({ kind: "influence", tone: "blue", state: factorItems.length ? "attention" : "ready", legacyMarkers: "data-r7-crop-status-functional-card data-r7-crop-influence-action-card data-r7-crop-influence-strip", header: this.renderR7ProductCardHeader({ icon: "mdi:vector-link", title: "환경·관수·장치 영향", subtitle: "작물 기준 영향 요인", statusHtml: this.renderR7CropStatusChip("상태", factorItems.length ? "attention" : "ready", "blue") }), body: this.renderR7ProductCardBody({ primary: environmentImpactFocus }), evidence: this.renderR7ProductCardEvidence(factorItems, "blue"), actions: this.renderR7ProductCardActionRow([this.renderR7DomainJumpButton("환경 보기", "environment-control", "mdi:thermometer"), this.renderR7DomainJumpButton("관수 보기", "irrigation-fertigation", "mdi:water"), this.renderR7DomainJumpButton("장치 보기", "device-control", "mdi:devices")]) });
+    const recommendationCard = this.renderR7ProductCard({ kind: "recommendation", tone: "red", state: recommendationReviewState, legacyMarkers: "data-r7-crop-status-functional-card data-r7-crop-recommendation-action-card", header: this.renderR7ProductCardHeader({ icon: "mdi:brain", title: "추천 검토", subtitle: "보조 판단 · 실행 권한 없음", statusHtml: this.renderR7CropStatusChip("상태", recommendationReviewState, "red") }), body: this.renderR7ProductCardBody({ primary: recommendationReviewSummary }), evidence: this.renderR7ProductCardEvidence([approvalLabel, "실행 없음"], approvalRequired ? "amber" : "green"), actions: this.renderR7ProductCardActionRow([this.renderR7CropActionButton("모델·추천 검토", "model-assist", "mdi:brain")]) });
+    return `${currentCard}${priorityCard}${recordCard}${influenceCard}${recommendationCard}<template data-r7-product-empty-state-template>${this.renderR7ProductEmptyState()}</template>`;
   }
 
   renderR7CropSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
