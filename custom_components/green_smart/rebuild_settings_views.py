@@ -133,7 +133,11 @@ def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]]
     ]
     approval_rows = [
         {
+            "id": row.get("id"),
             "label": row.get("request_type") or "승인 요청",
+            "requester": row.get("requester") or "",
+            "requestedRole": row.get("requested_role") or "farm_staff",
+            "createdBy": row.get("created_by") or "",
             "meta": " · ".join([str(v) for v in [row.get("requester"), row.get("requested_role"), row.get("status")] if v]),
             "icon": row.get("icon") or "mdi:account-clock-outline",
             "tone": row.get("tone") or "amber",
@@ -183,7 +187,7 @@ async def settings_users_permissions_response(hass, user: Any | None = None) -> 
     approvals = await fetchall(
         hass,
         """
-        SELECT request_type, requester, requested_role, status, icon, tone, created_at
+        SELECT id, request_type, requester, requested_role, status, icon, tone, created_by, created_at
         FROM gs_approval_requests
         WHERE status IN ('pending', 'requested')
         ORDER BY created_at DESC, id DESC
@@ -200,6 +204,139 @@ async def settings_users_permissions_response(hass, user: Any | None = None) -> 
         """,
     )
     return settings_users_permissions_response_from_rows(users=users, approvals=approvals, audits=audits)
+
+
+async def create_user_approval_request(hass, user: Any | None = None) -> dict[str, Any]:
+    """Create or reuse a pending approval request for the current HA user."""
+    if fetchall is None or execute is None:
+        raise RuntimeError("green_smart db helpers unavailable outside package runtime")
+    state = await async_get_or_create_user_approval_state(hass, user)
+    ha_user_id = str(state.get("ha_user_id") or "")
+    display_name = str(state.get("display_name") or ha_user_id or "현재 사용자")
+    role = str(state.get("role") or "farm_staff")
+    if state.get("approved"):
+        return {"ok": True, "approvalRequired": False, "approvalStatus": str(state.get("status") or "active"), "message": "already_approved"}
+    existing = await fetchall(
+        hass,
+        """
+        SELECT id, request_type, requester, requested_role, status, created_by, created_at
+        FROM gs_approval_requests
+        WHERE created_by = %s AND status IN ('pending', 'requested')
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+        """,
+        (ha_user_id,),
+    )
+    if not existing:
+        await execute(
+            hass,
+            """
+            INSERT INTO gs_approval_requests (request_type, requester, requested_role, status, icon, tone, note, created_by)
+            VALUES ('사용자 승인 요청', %s, %s, 'pending', 'mdi:account-clock-outline', 'amber', 'pending user requested Green Smart access', %s)
+            """,
+            (display_name, role, ha_user_id),
+        )
+        existing = await fetchall(
+            hass,
+            """
+            SELECT id, request_type, requester, requested_role, status, created_by, created_at
+            FROM gs_approval_requests
+            WHERE created_by = %s AND status IN ('pending', 'requested')
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+            """,
+            (ha_user_id,),
+        )
+    row = existing[0] if existing else {}
+    return {
+        "ok": True,
+        "approvalRequired": True,
+        "approvalStatus": "pending",
+        "request": {
+            "id": row.get("id"),
+            "label": row.get("request_type") or "사용자 승인 요청",
+            "requester": row.get("requester") or display_name,
+            "requestedRole": row.get("requested_role") or role,
+            "status": row.get("status") or "pending",
+            "createdBy": row.get("created_by") or ha_user_id,
+        },
+    }
+
+
+async def approve_user_approval_request(hass, request_id: str, actor: Any | None = None) -> dict[str, Any]:
+    """Approve a pending user approval request and activate the target user."""
+    if fetchall is None or execute is None:
+        raise RuntimeError("green_smart db helpers unavailable outside package runtime")
+    actor_id = _ha_user_id(actor)
+    actor_role, _source = await async_get_green_smart_user_role(hass, actor_id, is_ha_admin=_ha_user_is_admin(actor))
+    if actor_role != "admin":
+        return {"ok": False, "reasonCode": "admin_required", "status": 403}
+    rows = await fetchall(
+        hass,
+        """
+        SELECT id, requester, requested_role, created_by, status
+        FROM gs_approval_requests
+        WHERE id = %s AND status IN ('pending', 'requested')
+        LIMIT 1
+        """,
+        (request_id,),
+    )
+    if not rows:
+        return {"ok": False, "reasonCode": "approval_request_not_found", "status": 404}
+    row = rows[0]
+    target_id = str(row.get("created_by") or "")
+    await execute(
+        hass,
+        "UPDATE gs_users SET status = 'active', role = %s, permission_summary = %s WHERE ha_user_id = %s",
+        (row.get("requested_role") or "farm_staff", "기록 · 모니터링", target_id),
+    )
+    await execute(
+        hass,
+        """
+        UPDATE gs_approval_requests SET status='approved', decided_by=%s, decided_at=NOW()
+        WHERE id=%s
+        """,
+        (actor_id, request_id),
+    )
+    await execute(
+        hass,
+        """
+        INSERT INTO gs_audit_logs (actor, action, summary, target_ref, result)
+        VALUES (%s, 'approve_user_access', %s, %s, 'ok')
+        """,
+        (actor_id or "admin", f"사용자 승인: {row.get('requester') or target_id} → {row.get('requested_role') or 'farm_staff'}", target_id),
+    )
+    return {"ok": True, "requestId": request_id, "approvedHaUserId": target_id, "status": "approved"}
+
+
+class RebuildSettingsApprovalRequestView(HomeAssistantView):
+    """POST /api/green_smart/rebuild/settings/approval-request."""
+
+    url = "/api/green_smart/rebuild/settings/approval-request"
+    name = "api:green_smart:rebuild:settings:approval_request"
+    requires_auth = True
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        return self.json(await create_user_approval_request(hass, user))
+
+
+class RebuildSettingsApprovalDecisionView(HomeAssistantView):
+    """POST /api/green_smart/rebuild/settings/approval-requests/{request_id}/decision."""
+
+    url = "/api/green_smart/rebuild/settings/approval-requests/{request_id}/decision"
+    name = "api:green_smart:rebuild:settings:approval_decision"
+    requires_auth = True
+
+    async def post(self, request: web.Request, request_id: str) -> web.Response:
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        result = await approve_user_approval_request(hass, request_id, user)
+        status_code = int(result.pop("status", 200))
+        if status_code != 200:
+            return web.json_response(result, status=status_code)
+        return self.json(result)
 
 
 class RebuildSettingsUsersPermissionsView(HomeAssistantView):

@@ -2,7 +2,7 @@
 
 설정 도메인 재분류 foundation.
 
-Status: current baseline for `v1.14.1`.
+Status: current baseline for `v1.14.2`.
 
 ## Why
 

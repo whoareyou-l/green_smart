@@ -21,7 +21,7 @@ def test_rebuild_plan_exists_and_sets_product_first_order():
     assert "Green Smart Product-First Rebuild Plan" in plan
     assert "제품 구조 리빌딩 → 운영 스택 리빌딩" in plan
     assert "제품 구조 리빌딩 → 운영 스택 리빌딩" in master
-    assert "v1.14.1" in plan
+    assert "v1.14.2" in plan
     assert "VS-004 신규 기능 구현" in plan
     assert "중단" in plan
 
@@ -74,7 +74,7 @@ def test_rebuild_plan_preserves_prod_and_uses_gate_for_stack_rebuild():
 
     for marker in (
         "Prod 안정성 우선",
-        "현재 `v1.14.1` 운영 반영 상태는 유지",
+        "현재 `v1.14.2` 운영 반영 상태는 유지",
         "prod stack 구조 변경",
         "운영/배포 스택 리빌드 준비",
         "사용자 승인 후 cutover",

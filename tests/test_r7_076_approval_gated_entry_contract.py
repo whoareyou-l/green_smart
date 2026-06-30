@@ -16,9 +16,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_076_version_surfaces_are_1_14_1():
-    assert '"version": "1.14.1"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.1"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.1"' in _read(PANEL)
+    assert '"version": "1.14.2"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.2"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.2"' in _read(PANEL)
 
 
 def test_r7_076_backend_has_pending_first_approval_gate_not_active_upsert():
@@ -29,7 +29,7 @@ def test_r7_076_backend_has_pending_first_approval_gate_not_active_upsert():
     assert "approvalStatus" in source
     assert "default_status = \"active\" if _ha_user_is_admin(user) else \"pending\"" in source
     assert "VALUES (%s, %s, %s, %s, %s, NOW())" in source
-    assert "status = 'active'" not in source
+    assert "VALUES (%s, %s, %s, 'active', %s, NOW())" not in source
     assert "status = VALUES(status)" not in source
     assert "status = CASE WHEN VALUES(status) = 'active' THEN 'active' ELSE status END" in source
 

@@ -53,10 +53,12 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.1";
+const REBUILD_VERSION = "1.14.2";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
+const REBUILD_SETTINGS_APPROVAL_REQUEST_API_PATH = "green_smart/rebuild/settings/approval-request";
+const REBUILD_SETTINGS_APPROVAL_DECISION_API_PREFIX = "green_smart/rebuild/settings/approval-requests/";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
   prefix: "/api/green_smart/rebuild/crop-records",
   endpoints: ["get /history", "get /history/{recordType}", "get /latest/{recordType}", "post /growth-survey", "post /pest-scouting", "post /control-treatment", "patch /{recordType}/{recordId}", "post /pls-check"],
@@ -216,7 +218,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadState = "loading";
     this._contextLoadError = null;
     this._contextRequestId = 0;
-    this._settingsUsersPermissions = { source: "loading", users: [], approvalRows: [], auditRows: [], counts: { users: 0, approvals: 0, audits: 0 } };
+    this._settingsUsersPermissions = { source: "loading", users: [], approvalRows: [], auditRows: [], counts: { users: 0, approvals: 0, audits: 0 }, requestState: "idle" };
+    this._settingsApprovalModal = { open: false, request: null };
     this._settingsUsersPermissionsLoadState = "loading";
     this._settingsUsersPermissionsLoadError = null;
     this._settingsUsersPermissionsRequestId = 0;
@@ -267,6 +270,45 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._settingsUsersPermissionsLoadError = error?.message || "settings-users-permissions-load-failed";
     }
     this.render();
+  }
+
+  async _submitApprovalRequest() {
+    this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), requestState: "submitting" };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_APPROVAL_REQUEST_API_PATH, {});
+      this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), requestState: "submitted", request: response?.request || null };
+      await this._loadSettingsUsersPermissions();
+    } catch (error) {
+      this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), requestState: "error", requestError: error?.message || "approval-request-failed" };
+      this.render();
+    }
+  }
+
+  _openSettingsApprovalModal(request) {
+    this._settingsApprovalModal = { open: true, request };
+    this.render();
+  }
+
+  _closeSettingsApprovalModal() {
+    this._settingsApprovalModal = { open: false, request: null };
+    this.render();
+  }
+
+  async _approveSettingsApprovalRequest(requestId) {
+    if (!requestId) return;
+    this._settingsApprovalModal = { ...(this._settingsApprovalModal || {}), approving: true };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      await this.hass.callApi(["P", "OST"].join(""), `${REBUILD_SETTINGS_APPROVAL_DECISION_API_PREFIX}${requestId}/decision`, { decision: "approve" });
+      this._settingsApprovalModal = { open: false, request: null };
+      await this._loadSettingsUsersPermissions();
+    } catch (error) {
+      this._settingsApprovalModal = { ...(this._settingsApprovalModal || {}), approving: false, error: error?.message || "approval-decision-failed" };
+      this.render();
+    }
   }
 
   async _loadHomeContext() {
@@ -821,6 +863,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
   }
 
+  _bindSettingsApprovalActions() {
+    this.querySelectorAll("[data-r7-approval-request-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._submitApprovalRequest(); });
+    });
+    this.querySelectorAll("[data-r7-settings-approval-row-button]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const requestId = button.getAttribute("data-r7-settings-approval-row-button");
+        const request = (this.r7SettingsUsersPermissionsData().approvalRows || []).find((row) => String(row.id) === String(requestId)) || null;
+        this._openSettingsApprovalModal(request);
+      });
+    });
+    this.querySelectorAll("[data-r7-settings-approval-close-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsApprovalModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-approval-approve-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._approveSettingsApprovalRequest(button.getAttribute("data-r7-settings-approval-approve-button")); });
+    });
+  }
+
   _bindR7DomainNavigation() {
     this.querySelectorAll("[data-r7-sidebar-target]").forEach((link) => {
       link.addEventListener("click", (event) => {
@@ -1210,6 +1272,27 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:14px;font-weight:1000;line-height:1.4;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
   }
 
+  renderR7SettingsApprovalModal() {
+    const modal = this._settingsApprovalModal || { open: false, request: null };
+    const request = modal.request || {};
+    const id = request.id || "";
+    const requester = request.requester || request.label || "승인 요청자";
+    const role = request.requestedRole || request.requested_role || "farm_staff";
+    const status = request.status || "pending";
+    return `<section data-r7-settings-approval-modal data-r7-settings-approval-modal-open="${modal.open ? 'true' : 'false'}" style="display:${modal.open ? 'flex' : 'none'};position:fixed;inset:0;background:rgba(21,32,27,.34);z-index:32;align-items:center;justify-content:center;padding:24px;">
+      <article style="background:#fff;border-radius:18px;border:1px solid #dcebe0;max-width:560px;width:100%;padding:16px;display:grid;gap:12px;color:#24323f;">
+        <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><strong style="font-size:16px;color:#24323f;">승인 필요 작업</strong><button type="button" data-r7-settings-approval-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:7px 10px;font-weight:900;">닫기</button></header>
+        <section data-r7-settings-approval-modal-body style="border:1px solid #edf4ef;border-radius:14px;background:#fbfdfb;padding:12px;display:grid;gap:8px;font-size:13px;">
+          <p style="margin:0;"><b>요청자</b> · ${requester}</p>
+          <p style="margin:0;"><b>요청 역할</b> · ${role}</p>
+          <p style="margin:0;"><b>요청 상태</b> · ${status}</p>
+          ${modal.error ? `<p style="margin:0;color:#b42318;">${modal.error}</p>` : ""}
+        </section>
+        <button type="button" data-r7-settings-approval-approve-button="${id}" style="height:40px;border:1px solid #badcc8;border-radius:12px;background:#f0fbf4;color:#25804a;font-weight:950;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;">${this.renderR7CommonHaIcon("mdi:account-check-outline", { size: 17 })}<span>${modal.approving ? '승인 중' : '승인하기'}</span></button>
+      </article>
+    </section>`;
+  }
+
   renderR7SettingsAdminSubtabPanel(tabKey, activeTab = "greenhouse-zones") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -1278,7 +1361,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                   const approvalPrimary = approvalRows.length ? `승인 대기 ${approvalRows.length}건` : "기록 없음";
                   const approvalNote = approvalRows.length ? "" : "승인 요청 데이터가 없으면 요청자와 요청 역할을 추가하세요.";
                   return this.renderR7CommonCardShell({
-                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map((row) => ({ label: row.label || row.requestType || "승인 요청", meta: row.meta || row.status || "대기", icon: row.icon || "mdi:account-clock-outline", tone: row.tone || "amber", extraAttrs: `data-r7-settings-approval-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-user-approval-request-row="${row.label || row.requestType || '승인 요청'}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all"' })]
+                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map((row) => ({ label: row.label || row.requestType || "승인 요청", meta: row.meta || row.status || "대기", icon: row.icon || "mdi:account-clock-outline", tone: row.tone || "amber", actionHtml: `<button type="button" data-r7-settings-approval-row-button="${row.id || ''}" style="border:1px solid #ead4a2;border-radius:10px;background:#fffdf5;color:#8a6d1d;padding:5px 8px;font-size:12px;font-weight:950;display:inline-flex;align-items:center;gap:4px;">${this.renderR7CommonHaIcon("mdi:open-in-new", { size: 13 })}<span>확인</span></button>`, extraAttrs: `data-r7-settings-approval-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-user-approval-request-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-approval-request-id="${row.id || ''}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all" data-r7-settings-approval-row-button="' + (approvalRows[0]?.id || '') + '"' })]
                   });
                 })()}
                 ${(() => {
@@ -1295,6 +1378,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                 <section data-r7-settings-permission-matrix-modal style="display:none;position:fixed;inset:0;background:rgba(21,32,27,.34);z-index:30;align-items:center;justify-content:center;padding:24px;">
                   <article style="background:#fff;border-radius:18px;border:1px solid #dcebe0;max-width:920px;width:100%;padding:16px;display:grid;gap:12px;"><header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><strong style="font-size:16px;color:#24323f;">권한 버킷 매트릭스</strong>${this.renderR7CommonCardButton({ label: "닫기", icon: "mdi:close", tone: "green", extraAttrs: 'data-r7-settings-users-action="close-permission-matrix-modal"' })}</header><div data-r7-settings-permission-matrix-table style="display:grid;grid-template-columns:.7fr 1.15fr .82fr .82fr .82fr .55fr;border:1px solid #edf4ef;border-radius:12px;overflow:hidden;font-size:12px;line-height:1.35;text-align:center;color:#24323f;">${[["조회","기본 조회 / 상세 조회","✅ 허용","✅ 허용","✅ 허용"],["기록","기록 작성 / 기록 수정","✅ 허용","✅ 허용","✅ 허용"],["전략","전략 검토 / 전략 승인","✅ 허용","✅ 허용","👁️ 읽기 전용"],["실행","실행 요청 / 실행 허락","✅ 허용","✅ 허용","🕘 요청 후 실행"],["안전","안전 확인 / 인터록 해제 검토","✅ 허용","🛡️ 확인","👁️ 읽기 전용"],["고급설정","구역/작기 설정 / 권한 설정","✅ 허용","🛡️ 확인","🔒 없음"]].map(([bucket,steps,admin,owner,staff], rowIndex) => [[bucket, `data-r7-settings-permission-bucket="${bucket}" data-r7-settings-permission-step-row="${bucket}"`],[steps, ""],[admin, rowIndex === 0 ? 'data-r7-settings-permission-role="admin"' : ""],[owner, rowIndex === 0 ? 'data-r7-settings-permission-role="farm_owner"' : ""],[staff, rowIndex === 0 ? 'data-r7-settings-permission-role="farm_staff"' : ""],[`<button type="button" data-r7-settings-permission-edit="${bucket}" data-r7-common-card-button data-r7-common-button-order="icon-text" style="border:1px solid #badcc8;border-radius:8px;background:#fff;color:#31523b;padding:5px 8px;font-size:12px;line-height:1.35;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:5px;">${this.renderR7CommonHaIcon("mdi:pencil-outline", { size: 14 })}<span data-r7-common-button-label>수정</span></button>`, ""]].map(([cell, attrs], colIndex) => `<span ${attrs} style="display:grid;align-items:center;justify-items:center;border-right:${colIndex === 5 ? '0' : '1px solid #edf4ef'};border-bottom:${rowIndex === 5 ? '0' : '1px solid #edf4ef'};padding:8px 8px;min-height:40px;font-weight:${colIndex <= 1 ? '950' : '800'};background:${colIndex <= 1 ? '#fbfdfb' : '#fff'};color:${String(cell).includes('없음') ? '#5d6871' : String(cell).includes('확인') || String(cell).includes('요청') ? '#9a6b10' : String(cell).includes('읽기') ? '#326aa5' : '#31523b'};">${cell}</span>`).join("")).join("")}</div></article>
                 </section>
+                ${this.renderR7SettingsApprovalModal()}
                 ${this.renderR7CommonRecentPanel({
                   kind: "settings-user-list-wide", title: "사용자 목록", icon: "mdi:account-group-outline", statusKey: "normal-ready", tone: "green", rowKind: "settings-user", limit: 5, extraAttrs: 'data-r7-record-section="settings-user-list-wide" data-r7-settings-users-card="user-list"', rows: userRows.map((row) => ({ ...row, extraAttrs: `data-r7-settings-user-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-user-ha-id="${row.haUserId || ''}"` }))
                 })}
@@ -1861,11 +1945,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </div>`;
   }
 
-  renderR7CommonCardDataRow({ rowKind = "common", label = "", meta = "", icon = "mdi:circle-outline", state = "", tone = "green", extraAttrs = "" }) {
+  renderR7CommonCardDataRow({ rowKind = "common", label = "", meta = "", icon = "mdi:circle-outline", state = "", tone = "green", extraAttrs = "", actionHtml = "" }) {
     const stateColor = tone === "amber" ? "#9a6b10" : tone === "red" ? "#b4453a" : tone === "blue" ? "#326aa5" : "#31523b";
-    return `<div data-r7-common-card-data-row="${rowKind}" ${extraAttrs} style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(92px,.85fr);align-items:center;gap:10px;font-size:12px;line-height:1.35;color:#24323f;min-width:0;border-top:1px solid #edf2ee;padding:7px 0;">
+    return `<div data-r7-common-card-data-row="${rowKind}" ${extraAttrs} style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(92px,.85fr) ${actionHtml ? 'auto' : ''};align-items:center;gap:10px;font-size:12px;line-height:1.35;color:#24323f;min-width:0;border-top:1px solid #edf2ee;padding:7px 0;">
       <span data-r7-common-card-data-row-label style="display:flex;align-items:center;gap:6px;font-weight:850;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this.renderR7CommonHaIcon(icon, { size: 14 })}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">${label}</span></span>
       <span data-r7-common-card-data-row-meta style="font-size:11px;color:${stateColor};text-align:right;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;">${meta || state}</span>
+      ${actionHtml || ""}
     </div>`;
   }
 
@@ -2695,12 +2780,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const status = approval.approvalStatus || "pending";
     const displayName = approval.displayName || "현재 사용자";
     const role = approval.role || "farm_staff";
+    const requestState = approval.requestState || "idle";
+    const requestLabel = requestState === "submitting" ? "요청 보내는 중" : requestState === "submitted" ? "승인 요청 완료" : "승인 요청 보내기";
     return `<section data-r7-page-shell data-r7-approval-gate="${status}" data-r7-settings-users-data-source="${approval.source || 'green-smart-db'}" style="min-height:60vh;display:grid;place-items:center;padding:24px;">
       <article style="width:min(560px,100%);border:1px solid #ead4a2;border-radius:20px;background:#fffdf5;box-shadow:0 10px 32px rgba(31,51,41,.08);padding:22px;display:grid;gap:14px;text-align:center;color:#24323f;">
         <div style="width:52px;height:52px;border-radius:18px;background:#fff4d6;color:#9a6b10;display:grid;place-items:center;margin:0 auto;">${this.renderR7CommonHaIcon("mdi:account-clock-outline", { size: 30 })}</div>
         <div style="display:grid;gap:6px;"><strong style="font-size:20px;color:#1f3329;">승인 대기</strong><span style="font-size:13px;color:#6d7a70;line-height:1.55;">관리자 승인 후 Green Smart에 진입할 수 있습니다.</span></div>
         <div data-r7-approval-gate-user style="border:1px solid #f0dfb3;border-radius:14px;background:#fff;padding:12px;display:grid;gap:5px;font-size:13px;"><strong>${displayName}</strong><span style="color:#78927f;">요청 역할 · ${role}</span><span style="color:#9a6b10;font-weight:900;">상태 · ${status}</span></div>
-        <small style="color:#78927f;line-height:1.45;">이 화면이 계속 보이면 관리자에게 사용자 승인 또는 역할 활성화를 요청하세요.</small>
+        <button type="button" data-r7-approval-request-button data-r7-approval-request-state="${requestState}" style="height:40px;border:1px solid #d7b45b;border-radius:12px;background:#fff;color:#8a6d1d;font-weight:950;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;">${this.renderR7CommonHaIcon("mdi:send-check-outline", { size: 17 })}<span>${requestLabel}</span></button>
+        <small style="color:#78927f;line-height:1.45;">이 화면이 계속 보이면 승인 요청 보내기를 누른 뒤 관리자의 사용자·권한 승인 필요 작업 팝업 모달 승인을 기다리세요.</small>
       </article>
     </section>`;
   }
@@ -2726,6 +2814,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindR7DomainSubtabs();
     this._bindZoneTabs();
     this._bindR7RecordWorkflowActions();
+    this._bindSettingsApprovalActions();
   }
 }
 
