@@ -135,13 +135,23 @@ def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]]
         {
             "id": row.get("id"),
             "label": row.get("request_type") or "승인 요청",
+            "requestType": row.get("request_type") or "승인 요청",
             "requester": row.get("requester") or "",
             "requestedRole": row.get("requested_role") or "farm_staff",
             "createdBy": row.get("created_by") or "",
+            "createdAt": _fmt_time(row.get("created_at")),
+            "note": row.get("note") or "",
             "meta": " · ".join([str(v) for v in [row.get("requester"), row.get("requested_role"), row.get("status")] if v]),
             "icon": row.get("icon") or "mdi:account-clock-outline",
             "tone": row.get("tone") or "amber",
             "status": row.get("status") or "pending",
+            "approvalStage": "review-pending" if str(row.get("status") or "pending") in {"pending", "requested"} else str(row.get("status") or "pending"),
+            "riskLevel": "높음" if row.get("tone") == "red" else "낮음" if row.get("tone") == "green" else "중간",
+            "target": row.get("requester") or "대상 미지정",
+            "beforeValue": "승인 전 상태",
+            "afterValue": row.get("requested_role") or "요청값 미지정",
+            "scope": "사용자·권한",
+            "validationChecks": ["requester", "reason", "approver-memo"],
         }
         for row in approvals
     ]
@@ -187,7 +197,7 @@ async def settings_users_permissions_response(hass, user: Any | None = None) -> 
     approvals = await fetchall(
         hass,
         """
-        SELECT id, request_type, requester, requested_role, status, icon, tone, created_by, created_at
+        SELECT id, request_type, requester, requested_role, status, icon, tone, note, created_by, created_at
         FROM gs_approval_requests
         WHERE status IN ('pending', 'requested')
         ORDER BY created_at DESC, id DESC
