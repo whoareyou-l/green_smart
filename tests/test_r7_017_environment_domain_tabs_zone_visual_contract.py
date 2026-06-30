@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_017_version_surfaces_are_1_12_49():
-    assert '"version": "1.12.98"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.98"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.98"' in _read(REBUILD_PANEL)
-    assert "v1.12.98" in _read(DOC)
+    assert '"version": "1.12.99"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.99"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.99"' in _read(REBUILD_PANEL)
+    assert "v1.12.99" in _read(DOC)
 
 
 def test_r7_017_doc_defines_shared_domain_visual_frame_and_runtime_boundaries():

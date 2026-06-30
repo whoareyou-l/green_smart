@@ -34,9 +34,9 @@ def _render(record_type="growth-survey", width=1024):
 
 
 def test_r7_063_version_surfaces_are_1_12_98():
-    assert '"version": "1.12.98"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.98"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.98"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.99"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.99"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.99"' in _read(REBUILD_PANEL)
 
 
 def test_r7_063_required_note_card_removed_from_write_modal():
@@ -93,7 +93,7 @@ def test_r7_063_pre_save_checklist_has_required_section_completion_cards():
 
 def test_r7_063_mobile_layout_moves_reference_between_memo_and_actions():
     source = _read(REBUILD_PANEL)
-    assert '@media (max-width: 720px)' in source
+    assert '@media (max-width: 860px)' in source
     assert 'data-r7-record-mobile-reference-slot' in source
     assert 'grid-template-columns:1fr' in source
     assert 'data-r7-record-modal-actions' in source

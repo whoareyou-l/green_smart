@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.98";
+const REBUILD_VERSION = "1.12.99";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1945,7 +1945,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const stageLabels = ["활착기", "본격 엽생장기", "수확 전 품질관리기", "수확기", "작기 종료 준비"];
     const stageOptions = stageLabels.map((label) => `<option value="${label}"${label === selectedStage ? " selected" : ""}>${label}</option>`);
     const section = (key, title, body) => `<fieldset data-r7-growth-survey-section="${key}" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;background:#fff;"><legend style="font-size:13px;font-weight:950;color:#1f3329;padding:0 4px;">${title}</legend>${body}</fieldset>`;
-    return `<div data-r7-growth-survey-image-modal="true" style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.75fr);gap:14px;align-items:start;">
+    return `<div data-r7-growth-survey-image-modal="true" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);gap:16px;align-items:start;width:100%;box-sizing:border-box;">
       <div data-r7-growth-survey-left-form style="display:grid;gap:12px;min-width:0;">
         ${section("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${field({ key: "surveyDate", label: "조사일", name: "surveyDate", type: "date", value: today, required: true })}${select({ key: "zoneId", label: "조사구역", name: "zoneId", options: zoneOptions })}${select({ key: "growthStage", label: "생육단계", name: "growthStage", options: stageOptions })}${field({ key: "observerName", label: "조사자", name: "observerName", value: this.hass?.user?.name || "" })}</div><input type="hidden" name="zoneLabel" data-r7-growth-survey-field="zoneLabel" value="${this._r7ZoneName?.(selectedZone) || selectedZone.name || ""}"><input type="hidden" name="cropType" value="${selectedZone.currentCrop?.crop_type || selectedZone.currentCrop?.cropType || "lettuce"}">`)}
         ${section("growth-measurements", "생육 측정값", `<div data-r7-growth-survey-measurement-grid style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${field({ key: "plantHeight", label: "초장(cm)", name: "plantHeight", type: "number", step: "0.1", min: "0" })}${field({ key: "leafLength", label: "엽장(cm)", name: "leafLength", type: "number", step: "0.1", min: "0" })}${field({ key: "leafWidth", label: "엽폭(cm)", name: "leafWidth", type: "number", step: "0.1", min: "0" })}${field({ key: "leafCount", label: "엽수", name: "leafCount", type: "number", step: "0.1", min: "0" })}${field({ key: "spadValue", label: "SPAD", name: "spadValue", type: "number", step: "0.1", min: "0" })}</div>`)}
@@ -2020,7 +2020,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         <span style="display:grid;gap:3px;"><strong style="font-size:13px;color:${tone.title};">${item.title}</strong><small style="font-size:12px;color:#62736a;line-height:1.4;">${item.text}</small></span>
       </div>`;
     }).join("");
-    return `<aside class="r7-record-mobile-reference-slot" data-r7-growth-survey-side-panel data-r7-record-mobile-reference-slot data-r7-record-pre-save-checklist style="display:grid;gap:10px;border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;position:sticky;top:8px;align-self:start;">
+    return `<aside class="r7-record-mobile-reference-slot" data-r7-growth-survey-side-panel data-r7-record-mobile-reference-slot data-r7-record-pre-save-checklist style="display:grid;gap:10px;border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;position:sticky;top:76px;z-index:2;align-self:start;max-width:340px;width:100%;box-sizing:border-box;">
         ${legacyCards}
         <strong style="font-size:15px;color:#1f3329;">저장 전 검증</strong>
         <div style="font-size:12px;color:#53645b;line-height:1.45;">저장 전 참고 · 빈 칸 없이 값을 넣었는지 확인하고 저장하세요.</div>
@@ -2033,11 +2033,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7RecordFormLayout(recordType, fieldsHtml, actionRow, stateHtml = "") {
     const hasReference = fieldsHtml.includes("data-r7-record-mobile-reference-slot");
-    const content = hasReference
-      ? fieldsHtml
-      : `<div data-r7-record-form-main style="display:grid;gap:12px;min-width:0;">${fieldsHtml}</div>${this.renderR7RecordPreSaveChecklist(recordType)}`;
+    if (hasReference) {
+      return `<form data-r7-record-write-form style="display:grid;gap:12px;">
+        <div data-r7-record-form-layout="embedded-reference" style="display:block;width:100%;box-sizing:border-box;">${fieldsHtml}</div>
+        ${stateHtml}
+        ${actionRow}
+      </form>`;
+    }
+    const content = `<div data-r7-record-form-main style="display:grid;gap:12px;min-width:0;">${fieldsHtml}</div>${this.renderR7RecordPreSaveChecklist(recordType)}`;
     return `<form data-r7-record-write-form style="display:grid;gap:12px;">
-      <div data-r7-record-form-layout style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.75fr);gap:14px;align-items:start;">${content}</div>
+      <div data-r7-record-form-layout="side-reference" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);gap:16px;align-items:start;width:100%;box-sizing:border-box;">${content}</div>
       ${stateHtml}
       ${actionRow}
     </form>`;
@@ -2046,12 +2051,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7RecordCommonModalShell(modal, summary, body) {
     return `<div data-r7-record-modal-shell data-r7-record-common-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}" style="position:fixed;inset:0;background:rgba(20,32,24,.28);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;">
       <style data-r7-record-modal-responsive-style>
-        @media (max-width: 720px) {
+        @media (max-width: 860px) {
           [data-r7-record-common-modal-shell] { padding: 10px !important; align-items: stretch !important; }
           [data-r7-record-common-modal-shell] [data-r7-record-modal-card] { width: 100% !important; max-height: calc(100vh - 20px) !important; border-radius: 14px !important; }
-          [data-r7-record-common-modal-shell] [data-r7-record-form-layout] { grid-template-columns:1fr !important; }
+          [data-r7-record-common-modal-shell] [data-r7-record-form-layout="side-reference"] { grid-template-columns:1fr !important; }
           [data-r7-record-common-modal-shell] [data-r7-growth-survey-image-modal] { grid-template-columns:1fr !important; }
-          [data-r7-record-common-modal-shell] .r7-record-mobile-reference-slot { position: static !important; order: 2; }
+          [data-r7-record-common-modal-shell] .r7-record-mobile-reference-slot { position: static !important; top:0 !important; order: 2; max-width:none !important; }
           [data-r7-record-common-modal-shell] .r7-record-modal-actions { grid-template-columns:1fr !important; }
           [data-r7-record-common-modal-shell] fieldset > div { grid-template-columns:1fr !important; }
         }
