@@ -7,9 +7,24 @@ or write routes.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 from ..db import execute, fetchall, fetchone
+
+
+def _json_safe_value(value: Any) -> Any:
+    """Normalize DB driver values that Home Assistant's JSON encoder rejects."""
+    if isinstance(value, Decimal):
+        if value == value.to_integral_value():
+            return int(value)
+        return float(value)
+    return value
+
+
+def _json_safe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return row dictionaries safe for Home Assistant json responses."""
+    return [{key: _json_safe_value(value) for key, value in row.items()} for row in rows]
 
 
 async def list_crop_seasons(hass) -> list[dict[str, Any]]:
@@ -117,7 +132,7 @@ async def hard_delete_crop_season(hass, season_id: int) -> None:
 
 async def list_growth_records(hass, season_id: int) -> list[dict[str, Any]]:
     """Return non-deleted growth survey rows with legacy response keys preserved."""
-    return await fetchall(hass, """
+    return _json_safe_rows(await fetchall(hass, """
         SELECT id, survey_date AS date, plant_height AS height,
                leaf_count AS leafCount, stem_diameter AS stemDia,
                truss_count AS truss, node_count AS node,
@@ -126,7 +141,7 @@ async def list_growth_records(hass, season_id: int) -> list[dict[str, Any]]:
         FROM growth_surveys
         WHERE season_id = %s AND deleted_at IS NULL
         ORDER BY survey_date DESC
-    """, (int(season_id),))
+    """, (int(season_id),)))
 
 
 async def list_pest_records(hass, season_id: int) -> list[dict[str, Any]]:

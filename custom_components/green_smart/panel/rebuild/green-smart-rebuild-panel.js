@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.96";
+const REBUILD_VERSION = "1.12.97";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1821,7 +1821,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   async fetchR7RecordHistory(seasonId, recordType) {
     if (!this.hass?.callApi || !seasonId) return { recordType, rows: [] };
-    return await this.hass.callApi("GET", `/api/green_smart/rebuild/crop-records/${seasonId}/history/${recordType}`);
+    return await this.hass.callApi("GET", `green_smart/rebuild/crop-records/${seasonId}/history/${recordType}`);
   }
 
   createR7RecordPayload(recordType, form) {
@@ -1886,9 +1886,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
     try {
       const normalizedSeasonId = this.normalizeR7RecordSeasonId?.(seasonId) || seasonId;
       const writeMethod = ["P", "O", "S", "T"].join("");
-      const response = await this.hass.callApi(writeMethod, `/api/green_smart/rebuild/crop-records/${normalizedSeasonId}/${recordType}`, payload);
+      const response = await this.hass.callApi(writeMethod, `green_smart/rebuild/crop-records/${normalizedSeasonId}/${recordType}`, payload);
       this._r7RecordModal = { ...modal, state: "saved", saved: response, rows: [] };
-      await this._loadHomeContext?.();
+      try {
+        await this._loadHomeContext?.();
+      } catch (reloadError) {
+        this._r7RecordModal = {
+          ...this._r7RecordModal,
+          state: "saved",
+          reloadError: reloadError?.message || "contextReloadError",
+          contextReloadError: true,
+        };
+      }
       this.render();
     } catch (error) {
       this._r7RecordModal = { ...modal, state: "error", error: error?.message || "save-failed" };

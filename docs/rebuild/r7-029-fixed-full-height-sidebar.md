@@ -1,6 +1,6 @@
 # R7-029 Fixed Full-Height Sidebar
 
-> 기준 버전: `v1.12.96`
+> 기준 버전: `v1.12.97`
 > Status: R7-029 planned
 > Purpose: 간략형/상세형, 운영자/비운영자 모든 Green Smart sidebar를 화면 세로길이와 동일하게 하고, 페이지를 상하로 스크롤해도 고정된 위치에서 동일하게 보이도록 한다.
 

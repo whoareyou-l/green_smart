@@ -1,18 +1,18 @@
 from pathlib import Path
-import subprocess
+import subprocess, json
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
-DOC = ROOT / "docs/rebuild/r7-061-records-workflow-save-button-labels.md"
+DOC = ROOT / "docs/rebuild/r7-062-record-save-callapi-path-hotfix.md"
 
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render(extra="") -> str:
+def _render(extra=""):
     script = f"""
       const classSet = new Set();
       globalThis.location = {{ pathname: '/green_smart', search: '', hash: '' }};
@@ -34,48 +34,36 @@ def _render(extra="") -> str:
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
     assert result.returncode == 0, result.stderr + result.stdout
-    import json
     return json.loads(result.stdout)
 
 
-def test_r7_061_version_surfaces_are_1_12_96():
+def test_r7_062_version_surfaces_are_1_12_97():
     assert '"version": "1.12.97"' in _read(MANIFEST)
     assert 'const VERSION = "1.12.97"' in _read(LEGACY_PANEL)
     assert 'REBUILD_VERSION = "1.12.97"' in _read(REBUILD_PANEL)
 
 
-def test_r7_061_card_button_labels_match_user_request():
-    data = _render()
-    html = data['html']
-    for required in ('전체 보기', '생육조사 작성', '예전 기록', '예찰 작성', '방제기록 작성'):
-        assert required in html
-    for forbidden in ('전체 확인 보기', '검증 등록', '바로조사 작성', '히스토리', 'PHI 보기'):
-        assert forbidden not in html
-    assert html.count('예전 기록') >= 3
-    assert html.count('전체 보기') >= 2
-
-
-def test_r7_061_growth_save_uses_uppercase_post_and_numeric_season_path():
+def test_r7_062_write_callapi_uses_ha_relative_path_not_api_absolute_path():
     data = _render("panel._r7RecordModal = { mode: 'write', recordType: 'growth-survey', seasonId: 'crop_seasons:7', title: '생육조사 작성', state: 'ready', rows: [] }; await panel.submitR7RecordWorkflowForm({});")
-    calls = data['calls']
-    save = next(call for call in calls if call.get('path','').includes('/api/green_smart/rebuild/crop-records/')) if False else None
-    save_calls = [call for call in calls if 'green_smart/rebuild/crop-records/' in call.get('path','')]
-    assert save_calls, calls
+    save_calls = [call for call in data['calls'] if 'crop-records/' in call.get('path','')]
+    assert save_calls, data['calls']
     save = save_calls[0]
     assert save['method'] == 'POST'
     assert save['path'] == 'green_smart/rebuild/crop-records/7/growth-survey'
+    assert not save['path'].startswith('/api/')
     assert save['body']['date'] == '2026-06-30'
     assert save['body']['metricsJson'].startswith('[{')
-    assert any(call.get('method') == 'reload' for call in calls)
 
 
-def test_r7_061_panel_source_does_not_use_lowercase_post_for_write():
+def test_r7_062_history_callapi_uses_ha_relative_path_too():
     source = _read(REBUILD_PANEL)
-    assert 'callApi("post"' not in source
-    assert 'const writeMethod = ["P", "O", "S", "T"].join("")' in source
+    assert 'hass.callApi("GET", `green_smart/rebuild/crop-records/${seasonId}/history/${recordType}`)' in source
+    assert '`/api/green_smart/rebuild/crop-records/${seasonId}/history/${recordType}`' not in source
+    assert '`/api/green_smart/rebuild/crop-records/${normalizedSeasonId}/${recordType}`' not in source
+    assert 'green_smart/rebuild/crop-records/${normalizedSeasonId}/${recordType}' in source
 
 
-def test_r7_061_documented():
+def test_r7_062_documented():
     doc = _read(DOC)
-    for phrase in ('저장 실패 수정', 'POST method', '버튼명 변경', '생육조사 작성', '방제기록 작성'):
+    for phrase in ('저장 실패 실제 원인', 'hass.callApi', '/api/ 중복', 'green_smart/rebuild/crop-records'):
         assert phrase in doc

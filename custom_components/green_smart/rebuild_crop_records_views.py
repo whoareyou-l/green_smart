@@ -5,7 +5,7 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 
 from .db import execute, fetchone
-from .repositories.crop_repo import list_control_records, list_growth_records, list_pest_records
+from .repositories.crop_repo import list_control_records, list_growth_records, list_pest_records, _json_safe_rows
 
 REBUILD_CROP_RECORD_TYPES = {"growth-survey", "pest-scouting", "control-treatment"}
 
@@ -97,6 +97,7 @@ class RebuildCropRecordsWriteView(HomeAssistantView):
                        truss_count AS truss, node_count AS node, crop_type AS cropType, metrics_json AS metricsJson, notes AS note
                 FROM growth_surveys WHERE id = %s
             """, (new_id,))
+            row = _json_safe_rows([row])[0] if row else row
         elif record_type == "pest-scouting":
             date = body.get("date")
             pest_type = body.get("type") or body.get("pestType")
