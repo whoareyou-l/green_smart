@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.8";
+const REBUILD_VERSION = "1.14.9";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1647,7 +1647,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                   const auditPrimary = visibleAuditRows.length ? `최근 ${visibleAuditRows.length}건` : "기록 없음";
                   const auditNote = visibleAuditRows.length ? "" : "감사 데이터가 없으면 권한/안전/기록 변경 이력을 추가하세요.";
                   return this.renderR7CommonCardShell({
-                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:file-document-check-outline", title: "감사 로그", statusKey: "normal-ready", tone: "green", primary: `<span data-r7-settings-audit-primary-summary>${auditPrimary}</span>`, note: auditNote, extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="2"', html: `${this.renderR7CommonCardDataRows(visibleAuditRows.map((row) => ({ label: row.label || row.actor || "system", meta: row.meta || row.createdAt || row.created_at || "-", icon: row.icon || "mdi:account-check-outline", tone: row.tone || "green", extraAttrs: `data-r7-settings-audit-row="${row.label || row.actor || 'system'}" data-r7-settings-audit-summary="${row.summary || row.action || ''}"` })), { rowKind: "settings-audit" })}`, actions: [this.renderR7CommonCardButton({ label: "전체 감사 로그 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all" data-r7-settings-audit-log-button' })]
+                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:file-document-check-outline", title: "감사 로그", statusKey: "normal-ready", tone: "green", primary: `<span data-r7-settings-audit-primary-summary>${auditPrimary}</span>`, note: auditNote, extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="2"', html: `${this.renderR7CommonCardDataRows(visibleAuditRows.map((row) => ({ label: row.label || row.actor || "system", meta: row.meta || row.createdAt || row.created_at || "-", icon: row.icon || "mdi:account-check-outline", tone: row.tone || "green", extraAttrs: `data-r7-settings-audit-row="${row.label || row.actor || 'system'}" data-r7-settings-audit-summary="${row.summary || row.action || ''}"` })), { rowKind: "settings-audit" })}`, actions: [this.renderR7CommonCardButton({ label: "전체 감사 로그 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all" data-r7-settings-audit-log-button data-r7-settings-modal-skip-record-binding="true"' })]
                   });
                 })()}
                 ${this.renderR7CommonCardShell({
@@ -2436,6 +2436,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _bindR7RecordWorkflowActions() {
     this.querySelectorAll("[data-r7-record-card-button][data-r7-record-action-mode]").forEach((button) => {
       if (button.dataset.r7SettingsApprovalSkipRecordBinding === "true") return;
+      if (button.dataset.r7SettingsModalSkipRecordBinding === "true") return;
       button.addEventListener("click", (event) => {
         event.preventDefault();
         this.openR7RecordWorkflowModal({ mode: button.dataset.r7RecordActionMode, recordType: button.dataset.r7RecordActionType, seasonId: button.dataset.r7RecordActionSeasonId });
