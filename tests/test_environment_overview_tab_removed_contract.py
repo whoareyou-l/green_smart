@@ -19,9 +19,9 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1108_versions_and_docs_for_overview_tab_removed():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.12.88"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.88"' in panel
-    assert 'v1.12.88' in panel[:200]
+    assert '"version": "1.12.89"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.89"' in panel
+    assert 'v1.12.89' in panel[:200]
     assert "v1.10.9 Environment overview tab removed" in docs
 
 

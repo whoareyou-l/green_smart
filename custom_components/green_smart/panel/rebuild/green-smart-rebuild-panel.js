@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.88";
+const REBUILD_VERSION = "1.12.89";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1915,7 +1915,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       "trend-evidence": "시즌 리뷰에서 작기/생육/환경·관수 영향이 어떻게 변했는가? · read-only",
     };
     const body = this.renderR7CropProductSubtabScreen(tabKey, { selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, demolishDate, targetStage, targetFocus, assignmentState, freshness, recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems, environmentImpactState, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired });
-    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-crop-subtab="${tabKey}" data-r7-crop-detail-absorbed="true" ${markers[tabKey]} data-r7-crop-third-party-informed="true" data-r7-crop-real-context-bound="true" data-r7-crop-record-summary-source="${recordSource}" data-r7-crop-environment-impact-source="${environmentImpactState}" data-r7-crop-recommendation-review-source="${recommendationReviewState}" data-r7-crop-vendor-pattern="crop-goal-to-influence-to-action" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><div style="display:grid;gap:4px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span data-r7-crop-operator-question style="color:#5d6f62;font-size:12px;line-height:1.45;">${operatorQuestions[tabKey]}</span></div><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${cropLabel}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
+    const content = tabKey === "records-workflow"
+      ? `<div data-r7-records-full-width-panel style="display:block;width:100%;min-width:0;">${body}</div>`
+      : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div>`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-crop-subtab="${tabKey}" data-r7-crop-detail-absorbed="true" ${markers[tabKey]} data-r7-crop-third-party-informed="true" data-r7-crop-real-context-bound="true" data-r7-crop-record-summary-source="${recordSource}" data-r7-crop-environment-impact-source="${environmentImpactState}" data-r7-crop-recommendation-review-source="${recommendationReviewState}" data-r7-crop-vendor-pattern="crop-goal-to-influence-to-action" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><div style="display:grid;gap:4px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span data-r7-crop-operator-question style="color:#5d6f62;font-size:12px;line-height:1.45;">${operatorQuestions[tabKey]}</span></div><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${cropLabel}</span></header>${content}</section>`;
   }
 
   renderR7CropOperationsZoneVisual() {
