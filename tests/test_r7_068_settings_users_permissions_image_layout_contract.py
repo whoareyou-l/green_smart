@@ -49,9 +49,9 @@ def _render_users_permissions():
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.3"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.3"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.3"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.4"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.4"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.4"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():

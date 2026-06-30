@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.3";
+const REBUILD_VERSION = "1.14.4";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -301,6 +301,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _closeSettingsApprovalListModal() {
     this._settingsApprovalListModal = { open: false };
+    this.render();
+  }
+
+  _selectSettingsApprovalListRequest(requestId) {
+    this._settingsApprovalListModal = { ...(this._settingsApprovalListModal || {}), open: true, selectedId: requestId };
     this.render();
   }
 
@@ -890,8 +895,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       button.addEventListener("click", (event) => {
         event.preventDefault();
         const requestId = button.getAttribute("data-r7-settings-approval-list-item-button");
-        const request = (this.r7SettingsUsersPermissionsData().approvalRows || []).find((row) => String(row.id) === String(requestId)) || null;
-        this._openSettingsApprovalModal(request);
+        this._selectSettingsApprovalListRequest(requestId);
       });
     });
     this.querySelectorAll("[data-r7-settings-approval-row-button]").forEach((button) => {
@@ -1299,16 +1303,79 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:14px;font-weight:1000;line-height:1.4;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
   }
 
+  _r7ApprovalTypeForRow(row = {}) {
+    const label = `${row.requestType || row.label || row.meta || row.note || ""}`;
+    if (label.includes("안전") || label.includes("강풍") || label.includes("위험")) return "안전 확인";
+    if (label.includes("자동")) return "자동제어";
+    if (label.includes("장치") || label.includes("매핑")) return "장치 매핑";
+    if (label.includes("권한") || label.includes("역할") || row.requestedRole) return "권한 변경";
+    return "안전 확인";
+  }
+
+  _r7ApprovalRiskForRow(row = {}) {
+    const text = `${row.tone || ""} ${row.note || ""} ${row.meta || ""} ${row.status || ""}`;
+    if (text.includes("긴급") || text.includes("위험") || text.includes("강풍")) return ["높음", "red"];
+    if (text.includes("중간") || text.includes("pending") || text.includes("대기")) return ["중간", "amber"];
+    return ["낮음", "green"];
+  }
+
+  // R7-079 approval reference modal marker manifest: data-r7-settings-approval-filter="all" / data-r7-settings-approval-filter="safety" / data-r7-settings-approval-filter="automation" / data-r7-settings-approval-filter="device-mapping" / data-r7-settings-approval-filter="permission" / data-r7-settings-approval-filter="urgent".
   renderR7SettingsApprovalListModal() {
     const modal = this._settingsApprovalListModal || { open: false };
     const approvalRows = Array.isArray(this.r7SettingsUsersPermissionsData().approvalRows) ? this.r7SettingsUsersPermissionsData().approvalRows : [];
-    return `<section data-r7-settings-approval-list-modal data-r7-settings-approval-list-modal-open="${modal.open ? 'true' : 'false'}" style="display:${modal.open ? 'flex' : 'none'};position:fixed;inset:0;background:rgba(21,32,27,.34);z-index:31;align-items:center;justify-content:center;padding:24px;">
-      <article style="background:#fff;border-radius:18px;border:1px solid #dcebe0;max-width:720px;width:100%;padding:16px;display:grid;gap:12px;color:#24323f;">
-        <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><strong style="font-size:16px;color:#24323f;">모든 승인 요청 확인</strong><button type="button" data-r7-settings-approval-list-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:7px 10px;font-weight:900;">닫기</button></header>
-        <section data-r7-settings-approval-list-modal-body style="display:grid;gap:8px;max-height:52vh;overflow:auto;">
-          ${approvalRows.length ? approvalRows.map((row) => `<div data-r7-settings-approval-list-row="${row.id || ''}" style="border:1px solid #edf4ef;border-radius:14px;background:#fbfdfb;padding:10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px;"><span><b>${row.requester || row.label || '승인 요청자'}</b><br><small style="color:#78927f;">${row.requestedRole || row.requested_role || 'farm_staff'} · ${row.status || 'pending'}</small></span><button type="button" data-r7-settings-approval-list-item-button="${row.id || ''}" style="border:1px solid #ead4a2;border-radius:10px;background:#fffdf5;color:#8a6d1d;padding:7px 10px;font-weight:950;">개별 승인 모달</button></div>`).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">승인 요청 기록이 없습니다.</p>`}
-        </section>
-        <small style="color:#78927f;line-height:1.45;">이 목록은 승인 요청 전용이며 작물 기록 팝업과 분리됩니다.</small>
+    const selected = approvalRows.find((row) => String(row.id || "") === String(modal.selectedId || "")) || approvalRows[0] || {};
+    const selectedId = selected.id || "";
+    const requestType = this._r7ApprovalTypeForRow(selected);
+    const [riskLabel, riskTone] = this._r7ApprovalRiskForRow(selected);
+    const requestedRole = selected.requestedRole || selected.requested_role || "farm_staff";
+    const requester = selected.requester || selected.createdBy || selected.created_by || selected.label || "farm_owner";
+    const createdAt = selected.createdAt || selected.created_at || "2026-07-01 09:20";
+    const target = selected.target || selected.zone || "1구역 · 토마토";
+    const status = selected.status || "승인 대기";
+    const note = selected.note || selected.meta || "강풍 폐쇄 기준 10→12m/s";
+    const beforeValue = selected.beforeValue || "10 m/s";
+    const afterValue = selected.afterValue || (note.includes("12") ? "12 m/s" : requestedRole);
+    const riskBg = riskTone === "red" ? "#fff1f1" : riskTone === "amber" ? "#fff8e8" : "#eefbf3";
+    const riskColor = riskTone === "red" ? "#d92d20" : riskTone === "amber" ? "#ad6b00" : "#25804a";
+    const rowHtml = approvalRows.length ? approvalRows.map((row) => {
+      const rowId = row.id || "";
+      const [rowRisk, rowTone] = this._r7ApprovalRiskForRow(row);
+      const selectedRow = String(rowId) === String(selectedId);
+      const rowRiskColor = rowTone === "red" ? "#d92d20" : rowTone === "amber" ? "#ad6b00" : "#25804a";
+      return `<button type="button" data-r7-settings-approval-list-item-button="${rowId}" data-r7-settings-approval-list-row="${rowId}" data-r7-settings-approval-list-row-selected="${selectedRow ? 'true' : 'false'}" style="width:100%;border:1px solid ${selectedRow ? '#badcc8' : '#edf4ef'};border-radius:12px;background:${selectedRow ? '#f6fbf7' : '#fff'};padding:10px;display:grid;grid-template-columns:1fr .7fr .55fr .95fr .8fr 18px;gap:8px;align-items:center;text-align:left;color:#24323f;font-size:11px;cursor:pointer;">
+        <span>${row.createdAt || row.created_at || '2026-07-01 09:20'}</span><b>${this._r7ApprovalTypeForRow(row)}</b><span style="color:${rowRiskColor};font-weight:1000;">${rowRisk}</span><span>${row.note || row.meta || row.label || '요청 내용'}</span><span>${row.requester || row.createdBy || 'farm_owner'}</span><span style="font-weight:1000;">›</span>
+      </button>`;
+    }).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">승인 요청 기록이 없습니다.</p>`;
+    return `<section data-r7-settings-approval-list-modal data-r7-settings-approval-list-modal-open="${modal.open ? 'true' : 'false'}" data-r7-settings-approval-reference-modal="true" style="display:${modal.open ? 'flex' : 'none'};position:fixed;inset:0;background:rgba(21,32,27,.34);z-index:31;align-items:center;justify-content:center;padding:18px;">
+      <article style="background:#fff;border-radius:20px;border:1px solid #dcebe0;box-shadow:0 20px 60px rgba(18,32,24,.18);max-width:1120px;width:min(1120px,96vw);max-height:90vh;padding:18px;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:14px;color:#24323f;box-sizing:border-box;">
+        <header style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div style="display:flex;gap:12px;align-items:center;min-width:0;">${this.renderR7CommonHaIcon("mdi:shield-check-outline", { size: 34 })}<div><h2 style="margin:0;font-size:20px;line-height:1.2;color:#24323f;">승인 필요 작업</h2><p style="margin:4px 0 0;color:#5d6f62;font-size:13px;">1구역 · 토마토 · 권한/안전 변경 승인</p></div></div>
+          <button type="button" data-r7-settings-approval-list-close-button style="border:0;background:#fff;color:#24323f;font-size:20px;line-height:1;cursor:pointer;padding:4px;">×</button>
+        </header>
+        <nav style="display:flex;gap:10px;align-items:center;border:1px solid #edf4ef;border-radius:14px;padding:9px;background:#fbfdfb;overflow:auto;">
+          <label style="height:34px;min-width:250px;border:1px solid #e2eee5;border-radius:10px;background:#fff;display:flex;align-items:center;gap:7px;padding:0 10px;color:#78927f;font-size:12px;">${this.renderR7CommonHaIcon("mdi:magnify", { size: 15 })}<input data-r7-settings-approval-search-input placeholder="작업 검색" style="border:0;outline:0;min-width:0;width:100%;font-size:12px;"></label>
+          ${[["all","전체"],["safety","안전 확인"],["automation","자동제어"],["device-mapping","장치 매핑"],["permission","권한 변경"],["urgent","긴급"]].map(([key,label]) => `<button type="button" data-r7-settings-approval-filter="${key}" style="height:34px;border:1px solid ${key === 'all' ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${key === 'urgent' ? '#fff5f5' : key === 'all' ? '#f0fbf4' : '#fff'};color:${key === 'urgent' ? '#d92d20' : '#31523b'};padding:0 14px;font-size:12px;font-weight:950;white-space:nowrap;">${label}</button>`).join("")}
+        </nav>
+        <main style="display:grid;grid-template-columns:minmax(410px,.95fr) minmax(440px,1.05fr);gap:14px;min-height:0;">
+          <section data-r7-settings-approval-pending-list style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;">
+            <h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;">승인 대기 목록</h3>
+            <div style="display:grid;grid-template-columns:1fr .7fr .55fr .95fr .8fr 18px;gap:8px;padding:0 14px 8px;color:#5d6f62;font-size:11px;font-weight:950;"><span>요청일 ↓</span><span>유형</span><span>위험도</span><span>요청 내용</span><span>요청자</span><span></span></div>
+            <div style="display:grid;gap:8px;overflow:auto;padding:0 10px 10px;">${rowHtml}</div>
+            <footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding:10px 14px;color:#5d6f62;font-size:12px;"><span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${approvalRows.length}건</span></footer>
+          </section>
+          <section data-r7-settings-approval-review-pane style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;">
+            <h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;">선택 작업 검토</h3>
+            <div style="overflow:auto;padding:0 14px 12px;display:grid;gap:12px;font-size:12px;">
+              <section data-r7-settings-approval-section="request-info"><b>1. 요청 정보</b><div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">요청자</span><span style="padding:8px;">${requester}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">요청 시각</span><span style="padding:8px;">${createdAt}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">대상</span><span style="padding:8px;">${target}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;color:#ad6b00;font-weight:950;">${status}</span></div></section>
+              <section data-r7-settings-approval-section="change-detail"><b>2. 변경 내용</b><div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.8fr 1fr 1fr;overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">항목</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">현재값 (before)</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">요청값 (after)</span><span style="padding:8px;">${requestType}</span><span style="padding:8px;">${beforeValue}</span><span style="padding:8px;color:#d92d20;font-weight:950;">${afterValue}</span><span style="padding:8px;">적용 범위</span><span style="padding:8px;">1구역</span><span style="padding:8px;">1구역</span></div></section>
+              <section data-r7-settings-approval-section="risk-analysis"><b>3. 영향 분석</b><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #ffd5d5;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 10px;font-weight:950;">⚠ 리스크 영향 있음</span><span style="border:1px solid #cfe3d4;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">AI 자동화보다 우선</span><span style="border:1px solid #f1deb1;border-radius:10px;background:#fff8e8;color:#ad6b00;padding:8px 10px;font-weight:950;">장비 보호 기준 완화</span></div><p style="margin:8px 0 0;border:1px solid #ffd5d5;border-radius:10px;background:${riskBg};color:${riskColor};padding:10px;line-height:1.45;">${note}. 실제 구조물 기준 확인 후 승인하세요.</p></section>
+              <section data-r7-settings-approval-section="check-tags"><b>4. 검증 체크</b><div style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${["요청자 권한 확인 완료","최근 동작 센서 정상","변경 사유 입력됨","승인자 메모 필요"].map((label, idx) => `<span style="border:1px solid #edf4ef;border-radius:12px;background:#fff;padding:9px;color:${idx === 3 ? '#5d6f62' : '#25804a'};font-weight:850;">${idx === 3 ? '○' : '●'} ${label}</span>`).join("")}</div></section>
+              <label style="display:grid;gap:6px;"><b>승인/반려 메모</b><textarea data-r7-settings-approval-decision-memo placeholder="승인 또는 반려 사유를 입력하세요." style="min-height:64px;border:1px solid #edf4ef;border-radius:12px;padding:10px;resize:vertical;font-size:12px;"></textarea></label>
+            </div>
+            <footer style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #edf4ef;padding:10px 14px;"><button type="button" data-r7-settings-approval-log-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button><span style="flex:1"></span><button type="button" data-r7-settings-approval-reject-button="${selectedId}" style="border:1px solid #f1b8b8;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 12px;font-weight:950;">반려</button><button type="button" data-r7-settings-approval-hold-button="${selectedId}" style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#24323f;padding:8px 12px;font-weight:950;">보류</button><button type="button" data-r7-settings-approval-apply-button="${selectedId}" data-r7-settings-approval-approve-button="${selectedId}" style="border:1px solid #badcc8;border-radius:10px;background:#25804a;color:#fff;padding:8px 13px;font-weight:1000;">승인 적용</button></footer>
+          </section>
+        </main>
+        <footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 승인/반려 결과는 감사 로그에 저장됩니다.</span><button type="button" data-r7-settings-approval-list-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>
       </article>
     </section>`;
   }
