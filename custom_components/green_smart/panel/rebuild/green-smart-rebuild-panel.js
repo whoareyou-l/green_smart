@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.6";
+const REBUILD_VERSION = "1.14.7";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1303,6 +1303,47 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:14px;font-weight:1000;line-height:1.4;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
   }
 
+  renderR7CdaModalOverlay({ open = true, attrs = "", zIndex = 50, body = "" } = {}) {
+    return `<div data-r7-cda-modal-overlay ${attrs} style="position:fixed;inset:0;background:rgba(20,32,24,.30);display:${open ? 'flex' : 'none'};align-items:center;justify-content:center;z-index:${zIndex};padding:18px;box-sizing:border-box;">${body}</div>`;
+  }
+
+  renderR7CdaModalCard({ attrs = "", width = "min(1120px,96vw)", maxHeight = "90vh", rows = "auto auto minmax(0,1fr) auto", body = "" } = {}) {
+    return `<article data-r7-cda-modal-card ${attrs} style="background:#fff;border-radius:20px;border:1px solid #dcebe0;box-shadow:0 20px 60px rgba(18,32,24,.18);width:${width};max-height:${maxHeight};padding:18px;display:grid;grid-template-rows:${rows};gap:14px;color:#24323f;box-sizing:border-box;overflow:hidden;">${body}</article>`;
+  }
+
+  renderR7CdaModalHeader({ icon = "mdi:information-outline", title = "", subtitle = "", closeAttr = "", attrs = "" } = {}) {
+    return `<header data-r7-cda-modal-header ${attrs} style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;min-width:0;"><div style="display:flex;gap:12px;align-items:center;min-width:0;">${this.renderR7CommonHaIcon(icon, { size: 34 })}<div style="min-width:0;"><h2 style="margin:0;font-size:20px;line-height:1.2;color:#24323f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</h2><p style="margin:4px 0 0;color:#5d6f62;font-size:13px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${subtitle}</p></div></div><button type="button" ${closeAttr} style="border:0;background:#fff;color:#24323f;font-size:20px;line-height:1;cursor:pointer;padding:4px;">×</button></header>`;
+  }
+
+  renderR7CdaSearchFilterBar({ searchAttr = "", searchPlaceholder = "검색", filters = [], attrs = "" } = {}) {
+    return `<nav data-r7-cda-search-filter-bar ${attrs} style="display:flex;gap:10px;align-items:center;border:1px solid #edf4ef;border-radius:14px;padding:9px;background:#fbfdfb;overflow:auto;"><label style="height:34px;min-width:250px;border:1px solid #e2eee5;border-radius:10px;background:#fff;display:flex;align-items:center;gap:7px;padding:0 10px;color:#78927f;font-size:12px;">${this.renderR7CommonHaIcon("mdi:magnify", { size: 15 })}<input ${searchAttr} placeholder="${searchPlaceholder}" style="border:0;outline:0;min-width:0;width:100%;font-size:12px;"></label>${filters.map((filter) => `<button type="button" ${filter.attrs || ""} style="height:34px;border:1px solid ${filter.active ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${filter.tone === 'red' ? '#fff5f5' : filter.active ? '#f0fbf4' : '#fff'};color:${filter.tone === 'red' ? '#d92d20' : '#31523b'};padding:0 14px;font-size:12px;font-weight:950;white-space:nowrap;">${filter.label}</button>`).join("")}</nav>`;
+  }
+
+  renderR7CdaCompactListRow({ attrs = "", columns = [], selected = false } = {}) {
+    return `<button type="button" data-r7-cda-compact-list-row ${attrs} style="width:100%;min-height:42px;max-height:54px;border:1px solid ${selected ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${selected ? '#f6fbf7' : '#fff'};padding:7px 9px;display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;align-items:center;text-align:left;color:#24323f;font-size:11px;cursor:pointer;box-shadow:${selected ? '0 6px 14px rgba(37,128,74,.07)' : 'none'};overflow:hidden;">${columns.join("")}<span style="font-weight:1000;color:#31523b;">›</span></button>`;
+  }
+
+  renderR7CdaListPanel({ title = "", columns = [], rowsHtml = "", footer = "", attrs = "" } = {}) {
+    return `<section data-r7-cda-list-panel ${attrs} style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;"><h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;">${title}</h3><div style="display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;padding:0 14px 8px;color:#5d6f62;font-size:11px;font-weight:950;">${columns.map((col) => `<span>${col}</span>`).join("")}<span></span></div><div data-r7-cda-list-body style="display:grid;gap:6px;overflow:auto;padding:0 10px 10px;align-content:start;grid-auto-rows:max-content;">${rowsHtml}</div><footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding:10px 14px;color:#5d6f62;font-size:12px;">${footer}</footer></section>`;
+  }
+
+  renderR7CdaDetailSection({ title = "", body = "", attrs = "" } = {}) {
+    return `<section data-r7-cda-detail-section ${attrs}><b>${title}</b>${body}</section>`;
+  }
+
+  renderR7CdaDetailPanel({ title = "", badge = "", body = "", footer = "", attrs = "" } = {}) {
+    return `<section data-r7-cda-detail-panel ${attrs} style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;"><h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${title}</span>${badge}</h3><div style="overflow:auto;padding:0 14px 12px;display:grid;gap:12px;font-size:12px;">${body}</div>${footer}</section>`;
+  }
+
+  renderR7CdaActionFooter({ left = "", actions = [], attrs = "" } = {}) {
+    return `<footer data-r7-cda-action-footer ${attrs} style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #edf4ef;padding:10px 14px;">${left}<span style="flex:1"></span>${actions.join("")}</footer>`;
+  }
+
+  renderR7CdaSplitModal({ open = true, overlayAttrs = "", cardAttrs = "", header = "", search = "", left = "", right = "", footer = "", zIndex = 50, width = "min(1120px,96vw)" } = {}) {
+    const body = this.renderR7CdaModalCard({ attrs: `data-r7-cda-split-modal ${cardAttrs}`, width, body: `${header}${search}<main style="display:grid;grid-template-columns:minmax(430px,.98fr) minmax(450px,1.02fr);gap:14px;min-height:0;">${left}${right}</main>${footer}` });
+    return this.renderR7CdaModalOverlay({ open, zIndex, attrs: overlayAttrs, body });
+  }
+
   _r7ApprovalStageForStatus(status = "") {
     const normalized = String(status || "pending").toLowerCase();
     if (["pending", "requested"].includes(normalized)) return { key: "review-pending", label: "승인 대기", tone: "amber" };
@@ -1389,49 +1430,43 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selected = models.find((item) => String(item.id || "") === String(modal.selectedId || "")) || models[0] || this._normalizeR7ApprovalRequest({});
     const impactBadges = this._r7ApprovalImpactBadges(selected);
     const validationChecks = this._r7ApprovalValidationChecks(selected);
-    const rowHtml = models.length ? models.map((model) => {
+    const filterBar = this.renderR7CdaSearchFilterBar({
+      searchAttr: "data-r7-settings-approval-search-input",
+      searchPlaceholder: "작업 검색",
+      filters: [["all","전체"],["safety","안전 확인"],["automation","자동제어"],["device-mapping","장치 매핑"],["permission","권한 변경"],["urgent","긴급"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "urgent" ? "red" : "green", attrs: `data-r7-settings-approval-filter="${key}"` })),
+    });
+    const rowsHtml = models.length ? models.map((model) => {
       const selectedRow = String(model.id) === String(selected.id);
-      return `<button type="button" data-r7-settings-approval-list-item-button="${model.id}" data-r7-settings-approval-list-row="${model.id}" data-r7-settings-approval-list-row-compact="true" data-r7-settings-approval-list-row-selected="${selectedRow ? 'true' : 'false'}" data-r7-settings-approval-stage="${model.stage.key}" data-r7-settings-approval-risk-level="${model.risk.level}" style="width:100%;min-height:42px;max-height:54px;border:1px solid ${selectedRow ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${selectedRow ? '#f6fbf7' : '#fff'};padding:7px 9px;display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;align-items:center;text-align:left;color:#24323f;font-size:11px;cursor:pointer;box-shadow:${selectedRow ? '0 6px 14px rgba(37,128,74,.07)' : 'none'};overflow:hidden;">
-        <span>${model.requestedAt}</span><b>${model.approvalType}</b><span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(model.risk.tone)}">${model.risk.level}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${model.summary}</span><span>${model.requester}</span><span style="font-weight:1000;color:#31523b;">›</span>
-      </button>`;
+      return this.renderR7CdaCompactListRow({
+        selected: selectedRow,
+        attrs: `data-r7-settings-approval-list-item-button="${model.id}" data-r7-settings-approval-list-row="${model.id}" data-r7-settings-approval-list-row-compact="true" data-r7-settings-approval-list-row-selected="${selectedRow ? 'true' : 'false'}" data-r7-settings-approval-stage="${model.stage.key}" data-r7-settings-approval-risk-level="${model.risk.level}"`,
+        columns: [
+          `<span>${model.requestedAt}</span>`,
+          `<b>${model.approvalType}</b>`,
+          `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(model.risk.tone)}">${model.risk.level}</span>`,
+          `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${model.summary}</span>`,
+          `<span>${model.requester}</span>`,
+        ],
+      });
     }).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">승인 요청 데이터 없음</p>`;
-    const changeRows = [
-      ["요청 유형", selected.approvalType, selected.approvalType],
-      ["주요 값", selected.beforeValue, selected.afterValue],
-      ["적용 범위", selected.scope, selected.scope],
-    ];
-    return `<section data-r7-settings-approval-list-modal data-r7-settings-approval-list-modal-open="${modal.open ? 'true' : 'false'}" data-r7-settings-approval-reference-modal="true" style="display:${modal.open ? 'flex' : 'none'};position:fixed;inset:0;background:rgba(21,32,27,.34);z-index:31;align-items:center;justify-content:center;padding:18px;">
-      <article style="background:#fff;border-radius:20px;border:1px solid #dcebe0;box-shadow:0 20px 60px rgba(18,32,24,.18);max-width:1120px;width:min(1120px,96vw);max-height:90vh;padding:18px;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:14px;color:#24323f;box-sizing:border-box;">
-        <header style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-          <div style="display:flex;gap:12px;align-items:center;min-width:0;">${this.renderR7CommonHaIcon("mdi:shield-check-outline", { size: 34 })}<div><h2 style="margin:0;font-size:20px;line-height:1.2;color:#24323f;">승인 필요 작업</h2><p style="margin:4px 0 0;color:#5d6f62;font-size:13px;">${selected.target} · ${selected.approvalType} · ${selected.stage.label}</p></div></div>
-          <button type="button" data-r7-settings-approval-list-close-button style="border:0;background:#fff;color:#24323f;font-size:20px;line-height:1;cursor:pointer;padding:4px;">×</button>
-        </header>
-        <nav style="display:flex;gap:10px;align-items:center;border:1px solid #edf4ef;border-radius:14px;padding:9px;background:#fbfdfb;overflow:auto;">
-          <label style="height:34px;min-width:250px;border:1px solid #e2eee5;border-radius:10px;background:#fff;display:flex;align-items:center;gap:7px;padding:0 10px;color:#78927f;font-size:12px;">${this.renderR7CommonHaIcon("mdi:magnify", { size: 15 })}<input data-r7-settings-approval-search-input placeholder="작업 검색" style="border:0;outline:0;min-width:0;width:100%;font-size:12px;"></label>
-          ${[["all","전체"],["safety","안전 확인"],["automation","자동제어"],["device-mapping","장치 매핑"],["permission","권한 변경"],["urgent","긴급"]].map(([key,label]) => `<button type="button" data-r7-settings-approval-filter="${key}" style="height:34px;border:1px solid ${key === 'all' ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${key === 'urgent' ? '#fff5f5' : key === 'all' ? '#f0fbf4' : '#fff'};color:${key === 'urgent' ? '#d92d20' : '#31523b'};padding:0 14px;font-size:12px;font-weight:950;white-space:nowrap;">${label}</button>`).join("")}
-        </nav>
-        <main style="display:grid;grid-template-columns:minmax(430px,.98fr) minmax(450px,1.02fr);gap:14px;min-height:0;">
-          <section data-r7-settings-approval-pending-list style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;">
-            <h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;">승인 대기 목록</h3>
-            <div style="display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;padding:0 14px 8px;color:#5d6f62;font-size:11px;font-weight:950;"><span>요청일 ↓</span><span>유형</span><span>위험도</span><span>요청 내용</span><span>요청자</span><span></span></div>
-            <div data-r7-settings-approval-list-body style="display:grid;gap:6px;overflow:auto;padding:0 10px 10px;align-content:start;grid-auto-rows:max-content;">${rowHtml}</div>
-            <footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding:10px 14px;color:#5d6f62;font-size:12px;"><span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${models.length}건</span></footer>
-          </section>
-          <section data-r7-settings-approval-review-pane data-r7-settings-approval-stage="${selected.stage.key}" data-r7-settings-approval-risk-level="${selected.risk.level}" data-r7-settings-approval-decision-enabled="${selected.decisionEnabled ? 'true' : 'false'}" style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;">
-            <h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>선택 작업 검토</span><span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.stage.tone)}">${selected.stage.label}</span></h3>
-            <div style="overflow:auto;padding:0 14px 12px;display:grid;gap:12px;font-size:12px;">
-              <section data-r7-settings-approval-section="request-info"><b>1. 요청 정보</b><div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">요청자</span><span style="padding:8px;">${selected.requester}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">요청 시각</span><span style="padding:8px;">${selected.requestedAt}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">대상</span><span style="padding:8px;">${selected.target}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;font-weight:950;">${selected.stage.label}</span></div></section>
-              <section data-r7-settings-approval-section="change-detail"><b>2. 변경 내용</b><div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.8fr 1fr 1fr;overflow:hidden;">${[["항목","현재값 (before)","요청값 (after)"], ...changeRows].map((cols, idx) => cols.map((cell) => `<span data-r7-settings-approval-change-row="${idx}" style="padding:8px;background:${idx === 0 ? '#fbfdfb' : '#fff'};font-weight:${idx === 0 ? '950' : '700'};color:${idx > 0 && cell === selected.afterValue ? '#d92d20' : '#24323f'};border-bottom:${idx === changeRows.length ? '0' : '1px solid #edf4ef'};">${cell}</span>`).join("")).join("")}</div></section>
-              <section data-r7-settings-approval-section="risk-analysis"><b>3. 영향 분석</b><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">${impactBadges.map((badge) => `<span style="border:1px solid;border-radius:10px;padding:8px 10px;font-weight:950;display:inline-flex;align-items:center;gap:5px;${this._r7ApprovalToneStyle(badge.tone)}">${this.renderR7CommonHaIcon(badge.icon, { size: 14 })}${badge.label}</span>`).join("")}</div><p style="margin:8px 0 0;border:1px solid;border-radius:10px;padding:10px;line-height:1.45;${this._r7ApprovalToneStyle(selected.risk.tone)}">${selected.summary}</p></section>
-              <section data-r7-settings-approval-section="check-tags"><b>4. 검증 체크</b><div style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${validationChecks.map((check) => `<span data-r7-settings-approval-validation-check="${check.key}" data-r7-settings-approval-validation-state="${check.state}" style="border:1px solid #edf4ef;border-radius:12px;background:#fff;padding:9px;color:${check.state === 'ok' ? '#25804a' : check.state === 'missing' ? '#d92d20' : '#5d6f62'};font-weight:850;">${check.state === 'ok' ? '●' : check.state === 'missing' ? '△' : '○'} ${check.label}</span>`).join("")}</div></section>
-              <label style="display:grid;gap:6px;"><b>승인/반려 메모</b><textarea data-r7-settings-approval-decision-memo placeholder="승인 또는 반려 사유를 입력하세요." style="min-height:64px;border:1px solid #edf4ef;border-radius:12px;padding:10px;resize:vertical;font-size:12px;"></textarea></label>
-            </div>
-            <footer style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #edf4ef;padding:10px 14px;"><button type="button" data-r7-settings-approval-log-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button><span style="flex:1"></span><button type="button" data-r7-settings-approval-reject-button="${selected.id}" style="border:1px solid #f1b8b8;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 12px;font-weight:950;">반려</button><button type="button" data-r7-settings-approval-hold-button="${selected.id}" style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#24323f;padding:8px 12px;font-weight:950;">보류</button><button type="button" data-r7-settings-approval-apply-button="${selected.id}" data-r7-settings-approval-approve-button="${selected.id}" ${selected.decisionEnabled ? '' : 'disabled'} style="border:1px solid;border-radius:10px;padding:8px 13px;font-weight:1000;cursor:${selected.decisionEnabled ? 'pointer' : 'not-allowed'};${this._r7ApprovalToneStyle(selected.decisionEnabled ? 'green' : 'gray', selected.decisionEnabled ? 'solid' : 'soft')}">승인 적용</button></footer>
-          </section>
-        </main>
-        <footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 승인/반려 결과는 감사 로그에 저장됩니다. 데이터 없음/미확인 값은 요청 원본에 해당 필드가 없다는 뜻입니다.</span><button type="button" data-r7-settings-approval-list-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>
-      </article>
-    </section>`;
+    const listPanel = this.renderR7CdaListPanel({
+      title: "승인 대기 목록",
+      columns: ["요청일 ↓", "유형", "위험도", "요청 내용", "요청자"],
+      rowsHtml,
+      footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${models.length}건</span>`,
+      attrs: `data-r7-settings-approval-pending-list data-r7-settings-approval-list-body-wrapper`,
+    }).replace('data-r7-cda-list-body', 'data-r7-cda-list-body data-r7-settings-approval-list-body');
+    const changeRows = [["요청 유형", selected.approvalType, selected.approvalType], ["주요 값", selected.beforeValue, selected.afterValue], ["적용 범위", selected.scope, selected.scope]];
+    const requestInfo = this.renderR7CdaDetailSection({ title: "1. 요청 정보", attrs: 'data-r7-settings-approval-section="request-info"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">요청자</span><span style="padding:8px;">${selected.requester}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">요청 시각</span><span style="padding:8px;">${selected.requestedAt}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">대상</span><span style="padding:8px;">${selected.target}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;font-weight:950;">${selected.stage.label}</span></div>` });
+    const changeDetail = this.renderR7CdaDetailSection({ title: "2. 변경 내용", attrs: 'data-r7-settings-approval-section="change-detail"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.8fr 1fr 1fr;overflow:hidden;">${[["항목","현재값 (before)","요청값 (after)"], ...changeRows].map((cols, idx) => cols.map((cell) => `<span data-r7-settings-approval-change-row="${idx}" style="padding:8px;background:${idx === 0 ? '#fbfdfb' : '#fff'};font-weight:${idx === 0 ? '950' : '700'};color:${idx > 0 && cell === selected.afterValue ? '#d92d20' : '#24323f'};border-bottom:${idx === changeRows.length ? '0' : '1px solid #edf4ef'};">${cell}</span>`).join("")).join("")}</div>` });
+    const riskSection = this.renderR7CdaDetailSection({ title: "3. 영향 분석", attrs: 'data-r7-settings-approval-section="risk-analysis"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">${impactBadges.map((badge) => `<span style="border:1px solid;border-radius:10px;padding:8px 10px;font-weight:950;display:inline-flex;align-items:center;gap:5px;${this._r7ApprovalToneStyle(badge.tone)}">${this.renderR7CommonHaIcon(badge.icon, { size: 14 })}${badge.label}</span>`).join("")}</div><p style="margin:8px 0 0;border:1px solid;border-radius:10px;padding:10px;line-height:1.45;${this._r7ApprovalToneStyle(selected.risk.tone)}">${selected.summary}</p>` });
+    const checkSection = this.renderR7CdaDetailSection({ title: "4. 검증 체크", attrs: 'data-r7-settings-approval-section="check-tags"', body: `<div style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${validationChecks.map((check) => `<span data-r7-settings-approval-validation-check="${check.key}" data-r7-settings-approval-validation-state="${check.state}" style="border:1px solid #edf4ef;border-radius:12px;background:#fff;padding:9px;color:${check.state === 'ok' ? '#25804a' : check.state === 'missing' ? '#d92d20' : '#5d6f62'};font-weight:850;">${check.state === 'ok' ? '●' : check.state === 'missing' ? '△' : '○'} ${check.label}</span>`).join("")}</div>` });
+    const memo = `<label style="display:grid;gap:6px;"><b>승인/반려 메모</b><textarea data-r7-settings-approval-decision-memo placeholder="승인 또는 반려 사유를 입력하세요." style="min-height:64px;border:1px solid #edf4ef;border-radius:12px;padding:10px;resize:vertical;font-size:12px;"></textarea></label>`;
+    const detailFooter = this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-approval-log-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [`<button type="button" data-r7-settings-approval-reject-button="${selected.id}" style="border:1px solid #f1b8b8;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 12px;font-weight:950;">반려</button>`, `<button type="button" data-r7-settings-approval-hold-button="${selected.id}" style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#24323f;padding:8px 12px;font-weight:950;">보류</button>`, `<button type="button" data-r7-settings-approval-apply-button="${selected.id}" data-r7-settings-approval-approve-button="${selected.id}" ${selected.decisionEnabled ? '' : 'disabled'} style="border:1px solid;border-radius:10px;padding:8px 13px;font-weight:1000;cursor:${selected.decisionEnabled ? 'pointer' : 'not-allowed'};${this._r7ApprovalToneStyle(selected.decisionEnabled ? 'green' : 'gray', selected.decisionEnabled ? 'solid' : 'soft')}">승인 적용</button>`] });
+    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 작업 검토", attrs: `data-r7-settings-approval-review-pane data-r7-settings-approval-stage="${selected.stage.key}" data-r7-settings-approval-risk-level="${selected.risk.level}" data-r7-settings-approval-decision-enabled="${selected.decisionEnabled ? 'true' : 'false'}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.stage.tone)}">${selected.stage.label}</span>`, body: `${requestInfo}${changeDetail}${riskSection}${checkSection}${memo}`, footer: detailFooter });
+    const header = this.renderR7CdaModalHeader({ icon: "mdi:shield-check-outline", title: "승인 필요 작업", subtitle: `${selected.target} · ${selected.approvalType} · ${selected.stage.label}`, closeAttr: "data-r7-settings-approval-list-close-button" });
+    const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 승인/반려 결과는 감사 로그에 저장됩니다. 데이터 없음/미확인 값은 요청 원본에 해당 필드가 없다는 뜻입니다.</span><button type="button" data-r7-settings-approval-list-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
+    return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: `data-r7-settings-approval-list-modal data-r7-settings-approval-list-modal-open="${modal.open ? 'true' : 'false'}" data-r7-settings-approval-reference-modal="true"`, header, search: filterBar, left: listPanel, right: detailPanel, footer });
   }
 
   renderR7SettingsApprovalModal() {
@@ -2466,26 +2501,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7RecordCommonModalShell(modal, summary, body) {
-    return `<div data-r7-record-modal-shell data-r7-record-common-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}" style="position:fixed;inset:0;background:rgba(20,32,24,.28);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;">
-      <style data-r7-record-modal-responsive-style>
-        @media (max-width: 860px) {
-          [data-r7-record-common-modal-shell] { padding: 10px !important; align-items: stretch !important; }
-          [data-r7-record-common-modal-shell] [data-r7-record-modal-card] { width: 100% !important; max-height: calc(100vh - 20px) !important; border-radius: 14px !important; }
-          [data-r7-record-common-modal-shell] [data-r7-record-form-layout="side-reference"] { grid-template-columns:1fr !important; }
-          [data-r7-record-common-modal-shell] [data-r7-growth-survey-image-modal] { grid-template-columns:1fr !important; }
-          [data-r7-record-common-modal-shell] .r7-record-mobile-reference-slot { position: static !important; top:0 !important; order: 2; max-width:none !important; }
-          [data-r7-record-common-modal-shell] .r7-record-modal-actions { grid-template-columns:1fr !important; }
-          [data-r7-record-common-modal-shell] fieldset > div { grid-template-columns:1fr !important; }
-        }
-      </style>
-      <section data-r7-record-modal-card style="width:min(1120px,calc(100vw - 28px));max-height:88vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #dcebe0;box-shadow:0 18px 55px rgba(31,51,41,.18);display:grid;grid-template-rows:auto 1fr;">
-        <header data-r7-record-modal-sticky-header style="position:sticky;top:0;z-index:3;background:#fff;border-bottom:1px solid #edf2ee;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><strong style="font-size:18px;color:#1f3329;">${modal.title}</strong><div style="font-size:12px;color:#78927f;margin-top:3px;">작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}</div></div><button type="button" data-r7-record-modal-close style="width:34px;height:34px;border:1px solid #dcebe0;border-radius:50%;background:#fff;font-weight:950;">×</button></header>
-        <div data-r7-record-modal-scroll-body style="padding:18px;display:grid;gap:14px;min-width:0;">
-          ${summary}
-          ${body}
-        </div>
-      </section>
-    </div>`;
+    const header = this.renderR7CdaModalHeader({ icon: "mdi:history", title: modal.title, subtitle: `작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}`, closeAttr: "data-r7-record-modal-close", attrs: "data-r7-record-modal-sticky-header" });
+    const card = this.renderR7CdaModalCard({ attrs: `data-r7-record-modal-card data-r7-record-cda-modal-card data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}"`, width: "min(1120px,calc(100vw - 28px))", maxHeight: "88vh", rows: "auto 1fr", body: `<style data-r7-record-modal-responsive-style>@media (max-width: 860px) {[data-r7-record-common-modal-shell] { padding: 10px !important; align-items: stretch !important; }[data-r7-record-common-modal-shell] [data-r7-record-modal-card] { width: 100% !important; max-height: calc(100vh - 20px) !important; border-radius: 14px !important; }[data-r7-record-common-modal-shell] [data-r7-record-form-layout="side-reference"] { grid-template-columns:1fr !important; }[data-r7-record-common-modal-shell] [data-r7-growth-survey-image-modal] { grid-template-columns:1fr !important; }[data-r7-record-common-modal-shell] .r7-record-mobile-reference-slot { position: static !important; top:0 !important; order: 2; max-width:none !important; }[data-r7-record-common-modal-shell] .r7-record-modal-actions { grid-template-columns:1fr !important; }[data-r7-record-common-modal-shell] fieldset > div { grid-template-columns:1fr !important; }}</style>${header}<div data-r7-record-modal-scroll-body style="padding:18px;display:grid;gap:14px;min-width:0;overflow:auto;">${summary}${body}</div>` });
+    return this.renderR7CdaModalOverlay({ open: true, zIndex: 50, attrs: `data-r7-record-modal-shell data-r7-record-common-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}"`, body: card });
+  }
+
+  renderR7RecordHistoryCdaBody(modal, rows) {
+    const selected = rows[0] || {};
+    const historyRows = rows.length ? rows.map((row, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-record-history-row data-r7-record-history-row-compact="true" data-r7-record-history-row-selected="${index === 0 ? 'true' : 'false'}"`, columns: [`<span data-r7-record-history-row-date>${row.date || row.createdAt || row.id || '기록'}</span>`, `<b>${this.r7RecordTypeLabel(modal.recordType)}</b>`, `<span style="border:1px solid #badcc8;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;background:#f0fbf4;color:#25804a;">정상</span>`, `<span data-r7-record-history-row-summary style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.summary || row.note || '상세 기록'}</span>`, `<span>${row.actor || row.observer || '기록자 미확인'}</span>`] })).join("") : `<div data-r7-record-history-empty style="border:1px dashed #dcebe0;border-radius:10px;padding:12px;color:#78927f;font-size:12px;">표시할 기록이 없습니다.</div>`;
+    const listPanel = this.renderR7CdaListPanel({ title: "기록 히스토리", columns: ["일자", "유형", "상태", "요약", "기록자"], rowsHtml: historyRows, footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${rows.length}건</span>`, attrs: `data-r7-record-history-list-panel` }).replace('data-r7-cda-list-body', 'data-r7-cda-list-body data-r7-record-history-list');
+    const detailBody = `${this.renderR7CdaDetailSection({ title: "1. 기록 정보", attrs: 'data-r7-record-history-detail-section="info"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">일자</span><span style="padding:8px;">${selected.date || selected.createdAt || '데이터 없음'}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">유형</span><span style="padding:8px;">${this.r7RecordTypeLabel(modal.recordType)}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;">${modal.state || 'ready'}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">작기</span><span style="padding:8px;">${modal.seasonId}</span></div>` })}${this.renderR7CdaDetailSection({ title: "2. 기록 요약", attrs: 'data-r7-record-history-detail-section="summary"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${selected.summary || selected.note || '상세 기록 데이터 없음'}</p>` })}${this.renderR7CdaDetailSection({ title: "3. 원본 근거", attrs: 'data-r7-record-history-detail-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">DB history row</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">read-only</span></div>` })}`;
+    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 기록 상세", attrs: 'data-r7-record-history-detail-panel', badge: `<span style="border:1px solid #badcc8;border-radius:999px;padding:5px 9px;font-size:11px;background:#f0fbf4;color:#25804a;">읽기 전용</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-record-history-export style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">내보내기 준비</button>`, actions: [`<button type="button" data-r7-record-modal-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
+    return `<section data-r7-record-history-cda-modal="true" data-r7-record-history-summary data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${this.renderR7CdaSplitModal({ open: true, overlayAttrs: 'data-r7-record-history-inner-cda-overlay', cardAttrs: 'data-r7-record-history-inner-cda-card', header: '', search: '', left: listPanel, right: detailPanel, footer: '', width: '100%', zIndex: 1 }).replace('position:fixed;inset:0;', 'position:relative;inset:auto;').replace('background:rgba(20,32,24,.30);', 'background:transparent;').replace('z-index:1;', 'z-index:1;').replace('padding:18px;', 'padding:0;')}</section>`;
   }
 
   renderR7RecordWorkflowModal() {
@@ -2495,8 +2522,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const statusText = modal.state === "saving" ? "저장 중" : modal.state === "saved" ? "저장 완료" : modal.state === "error" ? "오류" : modal.state === "loading" ? "불러오는 중" : "입력 가능";
     const summaryText = modal.recordType === "growth-survey" ? "입력값을 확인한 뒤 저장하세요. 우측 참고 패널은 저장 전 상태 안내만 제공합니다." : "저장 후 최신 기록과 카드 상태를 다시 불러옵니다.";
     const summary = `<div data-r7-record-modal-operator-summary style="border:1px solid #e5eee7;border-radius:12px;background:#fbfdfb;padding:11px 12px;display:grid;gap:4px;"><strong style="font-size:13px;color:#1f3329;">${this.r7RecordTypeLabel(modal.recordType)} · ${statusText}</strong><span style="font-size:12px;color:#6d7a70;line-height:1.45;">${summaryText}</span></div>`;
-    const historyRows = rows.length ? rows.map((row) => `<div data-r7-record-history-row style="border:1px solid #e5eee7;border-radius:10px;padding:9px 10px;font-size:12px;color:#53645b;display:grid;gap:4px;"><strong data-r7-record-history-row-date style="color:#1f3329;">${row.date || row.id || "기록"}</strong><div data-r7-record-history-row-summary>${row.summary || row.note || "상세 기록"}</div></div>`).join("") : `<div data-r7-record-history-empty style="border:1px dashed #dcebe0;border-radius:10px;padding:12px;color:#78927f;font-size:12px;">표시할 기록이 없습니다.</div>`;
-    const history = `<section data-r7-record-history-summary style="display:grid;gap:10px;"><div style="font-size:12px;font-weight:900;color:#31523b;">총 ${rows.length}건 · 최신순</div><div data-r7-record-history-list style="display:grid;gap:8px;">${historyRows}</div></section>`;
     let body = "";
     if (modal.mode === "write") {
       const actionRow = modal.recordType === "growth-survey"
@@ -2509,7 +2534,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } else if (modal.state === "error") {
       body = `<div data-r7-record-modal-error style="border:1px solid #efc5c0;background:#fde7e4;border-radius:10px;padding:14px;color:#b4453a;font-size:12px;">${modal.error || "불러오기 실패"}</div>`;
     } else {
-      body = `<section data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${history}</section>`;
+      body = this.renderR7RecordHistoryCdaBody(modal, rows);
     }
     return this.renderR7RecordCommonModalShell(modal, summary, body);
   }
