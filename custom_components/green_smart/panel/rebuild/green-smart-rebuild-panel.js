@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.13.8";
+const REBUILD_VERSION = "1.13.9";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1231,7 +1231,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                   const approvalPrimary = approvalRows.length ? `승인 대기 ${approvalRows.length}건` : "기록 없음";
                   const approvalNote = approvalRows.length ? "" : "승인 요청 데이터가 없으면 요청자와 요청 역할을 추가하세요.";
                   return this.renderR7CommonCardShell({
-                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${approvalRows.map(([label,note,icon,tone]) => `<div data-r7-settings-approval-row="${label}" data-r7-settings-user-approval-request-row="${label}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;line-height:1.35;color:#24323f;"><span style="display:inline-flex;align-items:center;gap:6px;min-width:0;">${this.renderR7CommonHaIcon(icon, { size: 14 })}<span>${label}</span></span><small style="color:#52675b;text-align:right;">${note}</small></div>`).join("")}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all"' })]
+                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map(([label,meta,icon,tone]) => ({ label, meta, icon, tone, extraAttrs: `data-r7-settings-approval-row="${label}" data-r7-settings-user-approval-request-row="${label}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all"' })]
                   });
                 })()}
                 ${(() => {
@@ -1240,7 +1240,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                   const auditPrimary = visibleAuditRows.length ? `최근 ${visibleAuditRows.length}건` : "기록 없음";
                   const auditNote = visibleAuditRows.length ? "" : "감사 데이터가 없으면 권한/안전/기록 변경 이력을 추가하세요.";
                   return this.renderR7CommonCardShell({
-                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:file-document-check-outline", title: "감사 로그", statusKey: "normal-ready", tone: "green", primary: `<span data-r7-settings-audit-primary-summary>${auditPrimary}</span>`, note: auditNote, extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="2"', html: `${visibleAuditRows.map(([user,summary,time]) => `<div data-r7-settings-audit-row="${user}" style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:12px;line-height:1.35;color:#24323f;"><span><b>${user}</b><br><small style="color:#52675b;">${summary}</small></span><time style="color:#52675b;font-size:11px;">${time}</time></div>`).join("")}`, actions: [this.renderR7CommonCardButton({ label: "전체 감사 로그 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all"' })]
+                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:file-document-check-outline", title: "감사 로그", statusKey: "normal-ready", tone: "green", primary: `<span data-r7-settings-audit-primary-summary>${auditPrimary}</span>`, note: auditNote, extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="2"', html: `${this.renderR7CommonCardDataRows(visibleAuditRows.map(([user,summary,time]) => ({ label: user, meta: time, icon: "mdi:account-check-outline", tone: "green", extraAttrs: `data-r7-settings-audit-row="${user}" data-r7-settings-audit-summary="${summary}"` })), { rowKind: "settings-audit" })}`, actions: [this.renderR7CommonCardButton({ label: "전체 감사 로그 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all"' })]
                   });
                 })()}
                 ${this.renderR7CommonCardShell({
@@ -1814,6 +1814,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </div>`;
   }
 
+  renderR7CommonCardDataRow({ rowKind = "common", label = "", meta = "", icon = "mdi:circle-outline", state = "", tone = "green", extraAttrs = "" }) {
+    const stateColor = tone === "amber" ? "#9a6b10" : tone === "red" ? "#b4453a" : tone === "blue" ? "#326aa5" : "#31523b";
+    return `<div data-r7-common-card-data-row="${rowKind}" ${extraAttrs} style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(92px,.85fr);align-items:center;gap:10px;font-size:12px;line-height:1.35;color:#24323f;min-width:0;border-top:1px solid #edf2ee;padding:7px 0;">
+      <span data-r7-common-card-data-row-label style="display:flex;align-items:center;gap:6px;font-weight:850;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this.renderR7CommonHaIcon(icon, { size: 14 })}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">${label}</span></span>
+      <span data-r7-common-card-data-row-meta style="font-size:11px;color:${stateColor};text-align:right;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;">${meta || state}</span>
+    </div>`;
+  }
+
+  renderR7CommonCardDataRows(rows = [], { rowKind = "common" } = {}) {
+    return rows.map((row) => this.renderR7CommonCardDataRow({ rowKind, ...row })).join("");
+  }
+
   renderR7CommonCardShell({ kind, section = "", icon, title, statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "", wide = false }) {
     const sectionAttr = section ? `data-r7-record-section="${section}"` : "";
     return `<article data-r7-common-card-shell="${kind}" data-r7-record-card-shell="${kind}" data-r7-record-image-card="${kind}" ${sectionAttr} data-r7-product-state="${statusKey}" ${extraAttrs} style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;grid-template-rows:auto 1fr auto;gap:12px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);min-width:0;align-content:stretch;${wide ? 'grid-column:1/-1;' : ''}">
@@ -2220,7 +2232,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${statusLegend}
       <div data-r7-record-row="top-actions" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
         ${this.renderR7RecordCardShell({ kind: "today-work", icon: "mdi:check-circle", title: "오늘 할 일", statusKey: "normal-ready", tone: "green", primary: "필수 기록 최신 상태", actions: [this.renderR7RecordCardButton({ label: "전체 보기", icon: "mdi:format-list-checks", tone: "green", mode: "history", recordType: "growth-survey", seasonId })] })}
-        ${this.renderR7RecordCardShell({ kind: "missing-verification", icon: "mdi:clipboard-alert-outline", title: "누락·검증 필요", statusKey: "needs-verification", tone: "amber", html: '<ul style="margin:0;padding-left:18px;font-size:12px;color:#53645b;line-height:1.6;text-align:left;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>', actions: [this.renderR7RecordCardButton({ label: "전체 보기", icon: "mdi:clipboard-plus-outline", tone: "amber", mode: "verification", recordType: "growth-survey", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "missing-verification", icon: "mdi:clipboard-alert-outline", title: "누락·검증 필요", statusKey: "needs-verification", tone: "amber", html: this.renderR7CommonCardDataRows((ctx.missingItems?.length ? ctx.missingItems : ["SPAD 미입력", "병해충 예찰 5일 경과"]).map((label) => ({ label, meta: "확인 필요", icon: "mdi:alert-circle-outline", tone: "amber", extraAttrs: `data-r7-record-missing-item="${label}"` })), { rowKind: "record-missing-item" }), actions: [this.renderR7RecordCardButton({ label: "전체 보기", icon: "mdi:clipboard-plus-outline", tone: "amber", mode: "verification", recordType: "growth-survey", seasonId })] })}
         ${this.renderR7RecordCardShell({ kind: "ai-evidence", icon: "mdi:target", title: "AI 근거 연결", statusKey: "evidence-limited", tone: "red", note: "생육조사 데이터가 추천 신뢰도를 제한합니다.", actions: [this.renderR7RecordCardButton({ label: "근거 보기", icon: "mdi:open-in-new", tone: "red", mode: "evidence", recordType: "growth-survey", seasonId })], extraAttrs: "data-r7-record-ai-card" })}
       </div>
       <div data-r7-record-row="core-records" data-r7-record-image-grid="primary" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">

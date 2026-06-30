@@ -27,11 +27,11 @@ def _load_service():
 
 
 def test_rs021_version_surfaces_are_aligned_to_1_12_20():
-    assert '"version": "1.13.8"' in _read(MANIFEST)
-    assert 'const VERSION = "1.13.8"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.13.8"' in _read(REBUILD_PANEL)
+    assert '"version": "1.13.9"' in _read(MANIFEST)
+    assert 'const VERSION = "1.13.9"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.13.9"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.13.8" in _read(path)
+        assert "v1.13.9" in _read(path)
 
 
 def test_rs021_document_records_operator_approval_scaffold_boundary():
@@ -168,7 +168,7 @@ def test_docs_specs_plan_and_inventory_record_rs021_and_next_step():
         assert marker in spec
     for marker in (
         "Phase R4.17 — Operator approval scaffold",
-        "Status:** `v1.13.8`에서 작업자 승인 scaffold 완료",
+        "Status:** `v1.13.9`에서 작업자 승인 scaffold 완료",
         "No production route removal in RS-021",
         "No DB migration in RS-021",
         "No write/mutation in RS-021",
