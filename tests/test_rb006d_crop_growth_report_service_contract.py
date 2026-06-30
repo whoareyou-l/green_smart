@@ -19,9 +19,9 @@ def _class_section(source: str, class_name: str, next_marker: str) -> str:
 
 
 def test_rb006d_version_surfaces_are_v11111():
-    assert '"version": "1.12.86"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.86"' in _read(PANEL)
-    assert "v1.12.86" in _read(BACKEND_PLAN)
+    assert '"version": "1.12.87"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.87"' in _read(PANEL)
+    assert "v1.12.87" in _read(BACKEND_PLAN)
 
 
 def test_rb006d_service_exposes_growth_report_boundary_without_sql_or_http():
@@ -92,7 +92,7 @@ def test_rb006d_docs_record_model_report_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006D Crop model/report service boundary",
-        "v1.12.86",
+        "v1.12.87",
         "growth-report GET service boundary",
         "growth_report_response",
         "Center sync scheduler 변경 없음",

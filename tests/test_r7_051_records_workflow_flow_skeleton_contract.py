@@ -57,10 +57,10 @@ def _render_script() -> str:
 
 
 def test_r7_051_version_surfaces_are_1_12_86():
-    assert '"version": "1.12.86"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.86"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.86"' in _read(REBUILD_PANEL)
-    assert "v1.12.86" in _read(DOC)
+    assert '"version": "1.12.87"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.87"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.87"' in _read(REBUILD_PANEL)
+    assert "v1.12.87" in _read(DOC)
 
 
 def test_r7_051_plan_defines_ui_only_write_history_pls_skeletons():

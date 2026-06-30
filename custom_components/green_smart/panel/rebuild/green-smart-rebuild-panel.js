@@ -53,9 +53,18 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.86";
+const REBUILD_VERSION = "1.12.87";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
+const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
+  prefix: "/api/green_smart/rebuild/crop-records",
+  endpoints: ["get /history", "get /history/{recordType}", "get /latest/{recordType}", "post /growth-survey", "post /pest-scouting", "post /control-treatment", "patch /{recordType}/{recordId}", "post /pls-check"],
+  recordTypes: ["growth-survey", "pest-scouting", "control-treatment"],
+  sourceSurface: "crop-operations.records-workflow",
+  mode: "planned-contract-only",
+  writeImplementationEnabled: false,
+  executionEnabled: false,
+});
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
   { key: "growth-goal", label: "생육목표", description: "오늘 작물이 가야 할 목표를 정리합니다." },
@@ -1699,7 +1708,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const pesticideName = controlTreatment.latest?.pesticides?.[0]?.name || "약제명";
     const plsState = this.r7RecordPlsRequiresCheck(controlTreatment) ? "PLS 확인 필요" : "PLS 적합";
     const historyFields = ["최근 N건", "날짜", "요약", "작성자/수정 여부는 API 연결 후"];
-    return `<section data-r7-record-flow-skeleton="write-history-pls" data-r7-record-api-boundary="ui-skeleton-only" style="grid-column:1/-1;background:#f7faf6;border:1px solid #d7e7dc;border-radius:18px;padding:14px;display:grid;gap:12px;">
+    return `<section data-r7-record-flow-skeleton="write-history-pls" data-r7-record-api-boundary="ui-skeleton-only" data-r7-record-api-contract="planned-v1.12.87" data-r7-record-api-prefix="${R7_RECORDS_WORKFLOW_API_CONTRACT.prefix}" style="grid-column:1/-1;background:#f7faf6;border:1px solid #d7e7dc;border-radius:18px;padding:14px;display:grid;gap:12px;">
+      <template data-r7-record-api-contract="planned-v1.12.87" data-r7-record-api-mode="planned-contract-only" data-r7-record-api-write-enabled="false">${R7_RECORDS_WORKFLOW_API_CONTRACT.mode} · writeImplementationEnabled=${R7_RECORDS_WORKFLOW_API_CONTRACT.writeImplementationEnabled} · ${R7_RECORDS_WORKFLOW_API_CONTRACT.endpoints.join(" · ")}</template>
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><div style="font-size:15px;font-weight:900;color:#1f3329;">작성·히스토리 플로우</div><div style="font-size:12px;color:#667569;margin-top:2px;">UI skeleton only · 저장 API 연결 전</div></div><span data-r7-record-submit-state="pending-api" style="font-size:11px;border:1px solid #e2c56d;background:#fff8df;color:#6f5b2e;border-radius:999px;padding:4px 8px;font-weight:800;">pending-api</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
         ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-modal="growth-survey-write"', title: "생육조사 작성 플로우", fields: ["조사일", "초장", "엽수", "생육단계", "특이사항", "작기/구역 연결"] })}
