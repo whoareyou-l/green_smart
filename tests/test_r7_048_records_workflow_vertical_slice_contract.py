@@ -37,44 +37,31 @@ def _node_harness(record_summary: str) -> str:
     """
 
 
-def test_r7_048_version_surfaces_are_1_12_83():
-    assert '"version": "1.12.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.84"' in _read(REBUILD_PANEL)
-    assert "v1.12.84" in _read(DOC)
+def test_r7_048_version_surfaces_follow_current_release():
+    assert '"version": "1.12.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.85"' in _read(REBUILD_PANEL)
+    assert "v1.12.85" in _read(DOC)
 
 
-def test_r7_048_plan_is_records_workflow_only_and_field_mapped():
-    text = _read(DOC)
-    for phrase in [
-        "Implement only the `작물 운영 > 기록·작업` subtab",
-        "records-workflow` only",
-        "selectedZone.cropRecordSummary",
-        "workQueue.nextAction",
-        "growthSurvey.latestLabel",
-        "pestScouting.latestLabel",
-        "controlTreatment.latestLabel",
-        "PLS 확인 필요",
-        "data-r7-crop-record-workflow-vertical-slice=\"true\"",
-    ]:
-        assert phrase in text
-
-
-def test_r7_048_source_contains_records_workflow_vertical_slice_helpers_only():
+def test_r7_048_records_workflow_baseline_is_superseded_by_r7_050_product_layout():
     text = _read(REBUILD_PANEL)
-    for marker in [
-        "renderR7CropRecordWorkflowVerticalSlice(",
-        "r7RecordMissingItems(",
-        "r7RecordCardState(",
-        "r7RecordEvidence(",
+    for current_marker in [
+        "renderR7RecordsWorkflowProductLayout(",
+        "data-r7-records-workflow-product-layout=\"write-history-review\"",
+        "data-r7-record-action-state=\"pending-api\"",
+        "data-r7-record-action-state=\"navigation-only\"",
+    ]:
+        assert current_marker in text
+    for old_marker in [
         "data-r7-crop-record-workflow-vertical-slice=\"true\"",
         "data-r7-crop-record-workflow-layout=\"priority-records-source\"",
         "data-r7-crop-record-card-kind=\"missing-attention\"",
     ]:
-        assert marker in text
+        assert old_marker not in text
 
 
-def test_r7_048_records_workflow_complete_state_uses_exact_dto_values():
+def test_r7_048_records_workflow_values_remain_visible_inside_new_product_layout():
     record_summary = """{
       recordSummarySource: 'crop_repo_recent_records_readonly',
       growthSurvey: { count: 2, latest: { date: '2026-06-28', height: 18.4, leafCount: 9 }, latestLabel: '2026-06-28 · 초장 18.4cm · 엽수 9', staleState: 'fresh' },
@@ -85,22 +72,15 @@ def test_r7_048_records_workflow_complete_state_uses_exact_dto_values():
     }"""
     script = _node_harness(record_summary) + """
       const required = [
-        'data-r7-crop-record-workflow-vertical-slice="true"',
-        'data-r7-crop-record-workflow-layout="priority-records-source"',
-        'data-r7-crop-record-card-kind="today-work"',
-        'data-r7-crop-record-card-kind="growth-survey"',
-        'data-r7-crop-record-card-kind="pest-scouting"',
-        'data-r7-crop-record-card-kind="control-treatment"',
-        'data-r7-crop-record-card-kind="missing-attention"',
-        'data-r7-crop-record-card-kind="record-source"',
+        'data-r7-records-workflow-product-layout="write-history-review"',
         '오늘 할 일', '최근 기록 검토 완료', '누락 없음',
         '생육조사', '2026-06-28 · 초장 18.4cm · 엽수 9', '초장 18.4cm', '엽수 9',
         '병해충 예찰', '2026-06-29 · 진딧물 · low',
         '방제', '2026-06-29 · 친환경유제 · PLS 적합', 'PLS 적합',
-        '기록 원천', 'crop_repo_recent_records_readonly',
+        '기록 원천', 'recordSummarySource=crop_repo_recent_records_readonly',
         'readOnly=true', 'writeEnabled=false', 'executionEnabled=false', 'deviceCommandEnabled=false', 'mqttEnabled=false'
       ];
-      const forbidden = ['기록·작업 운영 화면', 'data-r7-crop-direct-execute', 'data-r7-crop-ha-service-call', 'data-r7-crop-mqtt-command'];
+      const forbidden = ['data-r7-crop-product-direct-cards="records-workflow"', 'data-r7-crop-record-card-kind="today-work"', 'data-r7-crop-record-card-kind="growth-survey"'];
       const missing = required.filter((needle) => !html.includes(needle));
       const bad = forbidden.filter((needle) => html.includes(needle));
       if (missing.length || bad.length) { console.error(JSON.stringify({ missing, bad })); process.exit(1); }
@@ -109,37 +89,8 @@ def test_r7_048_records_workflow_complete_state_uses_exact_dto_values():
     assert result.returncode == 0, result.stderr + result.stdout
 
 
-def test_r7_048_records_workflow_missing_and_pls_warning_state_is_explicit():
-    record_summary = """{
-      recordSummarySource: 'crop_repo_recent_records_readonly',
-      growthSurvey: { count: 0, latest: {}, latestLabel: '생육조사 기록 없음', staleState: 'empty' },
-      pestScouting: { count: 0, latest: {}, latestLabel: '병해충 예찰 기록 없음', staleState: 'empty' },
-      controlTreatment: { count: 1, latest: { date: '2026-06-30', pesticides: [{ name: '리도밀', pls: false }] }, latestLabel: '2026-06-30 · 리도밀 · PLS 확인 필요', staleState: 'fresh' },
-      workQueue: { nextAction: '누락 기록 확인', missingItems: ['생육조사 없음', '병해충 예찰 없음'] },
-      readOnly: true, writeEnabled: false, executionEnabled: false, deviceCommandEnabled: false, mqttEnabled: false
-    }"""
-    script = _node_harness(record_summary) + """
-      const required = [
-        '오늘 할 일', '누락 기록 확인', '2개 확인 필요',
-        '생육조사 없음', '병해충 예찰 없음',
-        '생육조사 기록 없음', '최근 0건 · empty',
-        '병해충 예찰 기록 없음',
-        '방제', '2026-06-30 · 리도밀 · PLS 확인 필요', 'PLS 확인 필요',
-        '누락/주의', '2개 확인 필요',
-        'data-r7-crop-record-attention="true"',
-        'data-r7-product-state="attention"'
-      ];
-      const missing = required.filter((needle) => !html.includes(needle));
-      if (missing.length) { console.error(JSON.stringify({ missing })); process.exit(1); }
-    """
-    result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
-    assert result.returncode == 0, result.stderr + result.stdout
-
-
-def test_r7_048_other_crop_subtab_product_builders_are_not_replaced_by_this_slice():
+def test_r7_048_other_crop_subtab_product_builders_are_preserved():
     text = _read(REBUILD_PANEL)
-    # The slice may route through the common dispatcher, but only records-workflow gets the vertical-slice layout marker.
-    assert text.count('data-r7-crop-record-workflow-vertical-slice="true"') == 1
     for helper in [
         "renderR7CropCycleCards(",
         "renderR7CropGrowthTargetCards(",

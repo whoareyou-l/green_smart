@@ -22,10 +22,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_047_version_surfaces_are_1_12_82():
-    assert '"version": "1.12.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.84"' in _read(REBUILD_PANEL)
-    assert "v1.12.84" in _read(DOC)
+    assert '"version": "1.12.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.85"' in _read(REBUILD_PANEL)
+    assert "v1.12.85" in _read(DOC)
 
 
 def test_r7_047_plan_forbids_duplicate_operating_screen_wrappers():
@@ -54,7 +54,7 @@ def test_r7_047_source_removes_visible_duplicate_wrapper_headings():
         assert helper in text
 
 
-def test_r7_047_records_workflow_renders_direct_record_cards_with_exact_dto_values():
+def test_r7_047_records_workflow_values_survive_in_r7_050_product_layout_without_old_cards():
     script = f"""
       const classSet = new Set();
       globalThis.location = {{ pathname: '/green_smart', search: '', hash: '' }};
@@ -72,9 +72,6 @@ def test_r7_047_records_workflow_renders_direct_record_cards_with_exact_dto_valu
         id: 'zone-1', name: '1구역', crop: '상추', state: '활착기',
         currentCrop: {{ crop_cycle_id: 'cycle-1', crop_label_ko: '상추', crop_type: 'lettuce', growth_stage: '활착기', variety: '청치마', plant_date: '2026-06-01', demolish_date: '철거 예정 없음' }},
         currentCropAssignment: {{ assignmentState: 'assigned', sourceRowId: 'crop_seasons:1', dataAvailability: {{ state: 'fresh', source: 'currentCropAssignment' }} }},
-        growthTargetProjection: {{ targetStageLabel: '엽수 확대', targetFocus: '초기 활착 안정' }},
-        environmentImpactProjection: {{ impactState: 'attention', impactFocus: 'VPD 낮음 · 근권 수분 높음', impactFactors: ['VPD 0.68kPa', '배액률 18%', '차광 스크린 닫힘'] }},
-        recommendationReviewProjection: {{ reviewState: 'ready', reviewSummary: '관수 지연 검토 · 환기 후보 확인', approvalRequired: true }},
         cropRecordSummary: {{
           recordSummarySource: 'crop_repo_recent_records_readonly',
           growthSurvey: {{ count: 2, latest: {{ date: '2026-06-28', height: 18.4, leafCount: 9 }}, latestLabel: '2026-06-28 · 초장 18.4cm · 엽수 9', staleState: 'fresh' }},
@@ -92,33 +89,17 @@ def test_r7_047_records_workflow_renders_direct_record_cards_with_exact_dto_valu
       panel.render();
       const html = panel.innerHTML;
       const required = [
-        'data-r7-crop-product-direct-cards="records-workflow"',
-        'data-r7-crop-product-card-grid',
-        'data-r7-crop-record-card-kind="today-work"',
-        'data-r7-crop-record-card-kind="growth-survey"',
-        'data-r7-crop-record-card-kind="pest-scouting"',
-        'data-r7-crop-record-card-kind="control-treatment"',
-        'data-r7-crop-record-card-kind="record-source"',
-        '오늘 할 일',
-        '병해충 예찰 재확인',
-        '생육조사 7일 경과',
-        '예찰 위치 확인',
-        '생육조사',
-        '2026-06-28 · 초장 18.4cm · 엽수 9',
-        '최근 2건 · fresh',
-        '병해충 예찰',
-        '2026-06-29 · 진딧물 · low',
-        '최근 1건 · attention',
-        '방제',
-        '2026-06-29 · 친환경유제 · PLS 적합',
-        '최근 1건 · fresh',
-        '기록 원천',
-        'crop_repo_recent_records_readonly',
-        'read-only · write/execute disabled'
+        'data-r7-records-workflow-product-layout="write-history-review"',
+        '오늘 할 일', '병해충 예찰 재확인', '생육조사 7일 경과', '예찰 위치 확인',
+        '생육조사', '2026-06-28 · 초장 18.4cm · 엽수 9', '최근 2건 · fresh',
+        '병해충 예찰', '2026-06-29 · 진딧물 · low', '최근 1건 · attention',
+        '방제', '2026-06-29 · 친환경유제 · PLS 적합', '최근 1건 · fresh',
+        '기록 원천', 'recordSummarySource=crop_repo_recent_records_readonly', 'read-only · write/execute disabled'
       ];
+      const forbidden = ['data-r7-crop-product-direct-cards="records-workflow"', 'data-r7-crop-record-card-kind="today-work"', 'data-r7-crop-record-card-kind="growth-survey"', ...{FORBIDDEN_WRAPPER_HEADINGS!r}];
       const missing = required.filter((needle) => !html.includes(needle));
-      const forbidden = {FORBIDDEN_WRAPPER_HEADINGS!r}.filter((needle) => html.includes(needle));
-      if (missing.length || forbidden.length) {{ console.error(JSON.stringify({{ missing, forbidden }})); process.exit(1); }}
+      const bad = forbidden.filter((needle) => html.includes(needle));
+      if (missing.length || bad.length) {{ console.error(JSON.stringify({{ missing, bad }})); process.exit(1); }}
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
     assert result.returncode == 0, result.stderr + result.stdout
@@ -150,7 +131,9 @@ def test_r7_047_all_crop_subtabs_use_direct_cards_not_duplicate_screens():
         panel._activeR7Domain = 'crop-operations';
         panel.render();
         const html = panel.innerHTML;
-        const required = [`data-r7-crop-product-direct-cards="${{tab}}"`, 'data-r7-crop-product-card-grid', ...requiredByTab[tab]];
+        const required = tab === 'records-workflow'
+          ? ['data-r7-records-workflow-product-layout="write-history-review"', ...requiredByTab[tab]]
+          : [`data-r7-crop-product-direct-cards="${{tab}}"`, 'data-r7-crop-product-card-grid', ...requiredByTab[tab]];
         const missing = required.filter((needle) => !html.includes(needle));
         const forbidden = {FORBIDDEN_WRAPPER_HEADINGS!r}.filter((needle) => html.includes(needle));
         if (missing.length || forbidden.length) failed.push({{ tab, missing, forbidden }});
