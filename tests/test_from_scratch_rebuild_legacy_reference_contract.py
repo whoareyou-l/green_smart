@@ -98,4 +98,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-059 adds the image-reference growth survey modal fields/side panel; keep bounded under the adjusted cap.
     # R7-061 adds write-method normalization and save hotfix helpers; keep bounded under the adjusted cap.
     # R7-063 adds the shared records modal shell, sticky header, responsive layout, and save-before validation cards.
-    assert len(rebuild.splitlines()) < 2575
+    # R7-066 reclassifies Settings into greenhouse/zone, crop-object, mapping, RBAC, safety, system, and diagnostics foundations.
+    assert len(rebuild.splitlines()) < 2625
