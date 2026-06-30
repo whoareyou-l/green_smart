@@ -18,14 +18,14 @@
 
 ## 0. 왜 리빌딩이 필요한가
 
-현재 `v1.13.4` 기준 진단 수치:
+현재 `v1.13.5` 기준 진단 수치:
 
 | 항목 | 현재 상태 | 리빌딩 판단 |
 |---|---:|---|
 | `panel/green-smart-panel.js` | 10,007 lines | UI 상태·렌더·API 호출·모달·도메인 로직이 한 파일에 과밀 |
 | `crop_views.py` | 4,946 lines | 작기/생육/AI/리포트/인터록/품질/예측이 한 API 파일에 과밀 |
 | `zone_control_views.py` | 2,737 lines | 환경/관수/장치/인터록/실행 경로가 한 파일에 과밀 |
-| `docs/design/ui-information-architecture-and-rbac.md` | 기준 버전 `v1.9.56` | 현재 구현 `v1.13.4`와 문서 기준 괴리 |
+| `docs/design/ui-information-architecture-and-rbac.md` | 기준 버전 `v1.9.56` | 현재 구현 `v1.13.5`와 문서 기준 괴리 |
 | 전체 contract tests | 536 passed | 회귀 방어는 좋지만, 구조 정리는 테스트가 아니라 아키텍처 경계가 필요 |
 
 결론: 기능은 돌아가지만, 계속 vertical slice를 누적하면 UI·API·문서가 더 무거워진다. 다음 단계는 신규 기능이 아니라 **제품 구조 리빌딩 baseline**이다.
@@ -34,7 +34,7 @@
 
 ## 1. 리빌딩 원칙
 
-1. **Prod 안정성 우선:** 현재 `v1.13.4` 운영 반영 상태는 유지한다. 리빌딩 중 prod에 즉시 큰 변경을 넣지 않는다.
+1. **Prod 안정성 우선:** 현재 `v1.13.5` 운영 반영 상태는 유지한다. 리빌딩 중 prod에 즉시 큰 변경을 넣지 않는다.
 2. **제품 구조 먼저:** 화면/도메인/API/DB/model 경계를 먼저 정리한다. Docker/Compose 운영 리빌드는 제품 구조 기준이 확정된 뒤 진행한다.
 3. **기능 추가 중단:** VS-004 같은 신규 기능은 리빌딩 baseline이 생길 때까지 보류한다.
 4. **큰 rewrite 금지:** 한 번에 전체 교체하지 않는다. Compatibility adapter와 contract test로 점진 이관한다.
@@ -98,7 +98,7 @@
 
 ### Phase R0 — 현재 구조 freeze 및 inventory
 
-**Objective:** 현재 `v1.13.4`를 안전 기준선으로 고정하고 리빌딩 대상/보존 대상을 분리한다.
+**Objective:** 현재 `v1.13.5`를 안전 기준선으로 고정하고 리빌딩 대상/보존 대상을 분리한다.
 
 **Files:**
 - Create: `docs/rebuild/current-state-inventory.md`
@@ -114,7 +114,7 @@
 
 ### Phase R1 — 제품 IA/RBAC baseline 재작성
 
-**Objective:** 오래된 `v1.9.56` 기준 IA/RBAC 문서를 `v1.13.4+` 기준으로 재정렬한다.
+**Objective:** 오래된 `v1.9.56` 기준 IA/RBAC 문서를 `v1.13.5+` 기준으로 재정렬한다.
 
 **Files:**
 - Rewrite/Update: `docs/design/ui-information-architecture-and-rbac.md`
@@ -129,7 +129,7 @@
 
 ### Phase R2 — Frontend decomposition plan
 
-**Status:** `v1.13.4`에서 기준선 완료. 상세 산출물은 `docs/rebuild/frontend-decomposition-plan.md`.
+**Status:** `v1.13.5`에서 기준선 완료. 상세 산출물은 `docs/rebuild/frontend-decomposition-plan.md`.
 
 **Objective:** 10,007줄 단일 panel JS를 바로 쪼개지 않고, 먼저 모듈 경계와 adapter 전략을 문서/계약으로 고정한다.
 
@@ -157,7 +157,7 @@ panel/
 
 ### Phase R3 — Backend/API decomposition plan
 
-**Status:** `v1.13.4`에서 기준선 완료. 상세 산출물은 `docs/rebuild/backend-api-decomposition-plan.md`.
+**Status:** `v1.13.5`에서 기준선 완료. 상세 산출물은 `docs/rebuild/backend-api-decomposition-plan.md`.
 
 **Objective:** `crop_views.py`, `zone_control_views.py`를 도메인별 view/helper/service로 분리하는 adapter-first 계획 수립.
 
@@ -191,7 +191,7 @@ green_smart/
 
 ### Phase R4 — DB/schema rationalization plan
 
-**Status:** `v1.13.4`에서 기준선 완료. 상세 산출물은 `docs/rebuild/db-schema-rationalization-plan.md`.
+**Status:** `v1.13.5`에서 기준선 완료. 상세 산출물은 `docs/rebuild/db-schema-rationalization-plan.md`.
 
 **Objective:** legacy physical schema를 제품 방향으로 삼지 않고, RBAC-first target schema와 migration gate를 정한다.
 
@@ -203,7 +203,7 @@ green_smart/
 
 ### Phase R4.5 — Legacy direction inventory
 
-**Status:** `v1.13.4`에서 legacy direction inventory 완료. 상세 산출물은 `docs/rebuild/legacy-direction-inventory.md`.
+**Status:** `v1.13.5`에서 legacy direction inventory 완료. 상세 산출물은 `docs/rebuild/legacy-direction-inventory.md`.
 
 **Boundary:**
 ```text
@@ -215,7 +215,7 @@ rebuild panel only for new product slices
 
 ### Phase R4.6 — Crop Cycle API naming boundary
 
-**Status:** `v1.13.4`에서 crop_cycle/currentCrop API naming boundary 완료. 상세 산출물은 `docs/rebuild/crop-cycle-api-boundary.md`.
+**Status:** `v1.13.5`에서 crop_cycle/currentCrop API naming boundary 완료. 상세 산출물은 `docs/rebuild/crop-cycle-api-boundary.md`.
 
 **Boundary:**
 ```text
@@ -227,7 +227,7 @@ crop_cycle/currentCrop = product-facing target
 
 ### Phase R4.7 — RBAC permission naming boundary
 
-**Status:** `v1.13.4`에서 target gs_permissions permission naming boundary 완료. 상세 산출물은 `docs/rebuild/rbac-permission-boundary.md`.
+**Status:** `v1.13.5`에서 target gs_permissions permission naming boundary 완료. 상세 산출물은 `docs/rebuild/rbac-permission-boundary.md`.
 
 **Boundary:**
 ```text
@@ -239,7 +239,7 @@ gs_permissions target codes = product-facing permission names
 
 ### Phase R4.8 — Rebuild currentCrop/crop_cycle adapter
 
-**Status:** `v1.13.4`에서 rebuild currentCrop/crop_cycle service adapter 완료. 상세 산출물은 `docs/rebuild/rebuild-current-crop-adapter.md`.
+**Status:** `v1.13.5`에서 rebuild currentCrop/crop_cycle service adapter 완료. 상세 산출물은 `docs/rebuild/rebuild-current-crop-adapter.md`.
 
 **Boundary:**
 ```text
@@ -251,7 +251,7 @@ No DB migration in RS-012
 
 ### Phase R4.9 — Read-only DB adapter
 
-**Status:** `v1.13.4`에서 legacy physical DB → crop_cycle/currentCrop DTO read-only adapter 완료. 상세 산출물은 `docs/rebuild/read-only-db-adapter.md`.
+**Status:** `v1.13.5`에서 legacy physical DB → crop_cycle/currentCrop DTO read-only adapter 완료. 상세 산출물은 `docs/rebuild/read-only-db-adapter.md`.
 
 **Boundary:**
 ```text
@@ -264,7 +264,7 @@ read-only adapter must not INSERT/UPDATE/DELETE
 
 ### Phase R4.10 — Rebuild home context API source adapter
 
-**Status:** `v1.13.4`에서 rebuild home context API가 RS-013 read-only DB adapter service를 source로 사용하도록 연결 완료. 상세 산출물은 `docs/rebuild/rebuild-home-context-api-source-adapter.md`.
+**Status:** `v1.13.5`에서 rebuild home context API가 RS-013 read-only DB adapter service를 source로 사용하도록 연결 완료. 상세 산출물은 `docs/rebuild/rebuild-home-context-api-source-adapter.md`.
 
 **Boundary:**
 ```text
@@ -277,7 +277,7 @@ No write/mutation in RS-014
 
 ### Phase R4.11 — Rebuild panel async context loading
 
-**Status:** `v1.13.4`에서 rebuild panel이 protected home context API를 비동기로 호출하도록 연결 완료. 상세 산출물은 `docs/rebuild/rebuild-panel-async-context-loading.md`.
+**Status:** `v1.13.5`에서 rebuild panel이 protected home context API를 비동기로 호출하도록 연결 완료. 상세 산출물은 `docs/rebuild/rebuild-panel-async-context-loading.md`.
 
 **Boundary:**
 ```text
@@ -291,7 +291,7 @@ fallback remains static read-only context
 
 ### Phase R4.12 — Crop cycle read-only page slice
 
-**Status:** `v1.13.4`에서 작물상태/생육목표의 crop_cycle/currentCrop read-only UI 표시 완료. 상세 산출물은 `docs/rebuild/crop-cycle-readonly-page-slice.md`.
+**Status:** `v1.13.5`에서 작물상태/생육목표의 crop_cycle/currentCrop read-only UI 표시 완료. 상세 산출물은 `docs/rebuild/crop-cycle-readonly-page-slice.md`.
 
 **Boundary:**
 ```text
@@ -305,7 +305,7 @@ No write/mutation in RS-016
 
 ### Phase R4.13 — Zone current crop assignment read model
 
-**Status:** `v1.13.4`에서 구역별 currentCrop 배정 read model 완료. 상세 산출물은 `docs/rebuild/zone-current-crop-assignment-read-model.md`.
+**Status:** `v1.13.5`에서 구역별 currentCrop 배정 read model 완료. 상세 산출물은 `docs/rebuild/zone-current-crop-assignment-read-model.md`.
 
 **Boundary:**
 ```text
@@ -320,7 +320,7 @@ No write/mutation in RS-017
 
 ### Phase R4.14 — Growth target read-only projection
 
-**Status:** `v1.13.4`에서 생육목표 read-only projection 완료. 상세 산출물은 `docs/rebuild/growth-target-readonly-projection.md`.
+**Status:** `v1.13.5`에서 생육목표 read-only projection 완료. 상세 산출물은 `docs/rebuild/growth-target-readonly-projection.md`.
 
 **Boundary:**
 ```text
@@ -334,7 +334,7 @@ No write/mutation in RS-018
 
 ### Phase R4.15 — Environment impact read-only projection
 
-**Status:** `v1.13.4`에서 영향지도 read-only projection 완료. 상세 산출물은 `docs/rebuild/environment-impact-readonly-projection.md`.
+**Status:** `v1.13.5`에서 영향지도 read-only projection 완료. 상세 산출물은 `docs/rebuild/environment-impact-readonly-projection.md`.
 
 **Boundary:**
 ```text
@@ -348,7 +348,7 @@ No write/mutation in RS-019
 
 ### Phase R4.16 — Recommendation review read-only projection
 
-**Status:** `v1.13.4`에서 추천·실행 read-only projection 완료. 상세 산출물은 `docs/rebuild/recommendation-review-readonly-projection.md`.
+**Status:** `v1.13.5`에서 추천·실행 read-only projection 완료. 상세 산출물은 `docs/rebuild/recommendation-review-readonly-projection.md`.
 
 **Boundary:**
 ```text
@@ -362,7 +362,7 @@ No write/mutation in RS-020
 
 ### Phase R4.17 — Operator approval scaffold
 
-**Status:** `v1.13.4`에서 작업자 승인 scaffold 완료. 상세 산출물은 `docs/rebuild/operator-approval-scaffold.md`.
+**Status:** `v1.13.5`에서 작업자 승인 scaffold 완료. 상세 산출물은 `docs/rebuild/operator-approval-scaffold.md`.
 
 **Boundary:**
 ```text
@@ -376,7 +376,7 @@ No write/mutation in RS-021
 
 ### Phase R4.18 — Safety/Interlock preflight projection
 
-**Status:** `v1.13.4`에서 Safety/Interlock preflight projection 완료. 상세 산출물은 `docs/rebuild/safety-interlock-preflight-projection.md`.
+**Status:** `v1.13.5`에서 Safety/Interlock preflight projection 완료. 상세 산출물은 `docs/rebuild/safety-interlock-preflight-projection.md`.
 
 **Boundary:**
 ```text
@@ -390,7 +390,7 @@ No write/mutation in RS-022
 
 ### Phase R4.19 — Virtual execution rehearsal scaffold
 
-**Status:** `v1.13.4`에서 Virtual execution rehearsal scaffold 완료. 상세 산출물은 `docs/rebuild/virtual-execution-rehearsal-scaffold.md`.
+**Status:** `v1.13.5`에서 Virtual execution rehearsal scaffold 완료. 상세 산출물은 `docs/rebuild/virtual-execution-rehearsal-scaffold.md`.
 
 **Boundary:**
 ```text
@@ -405,7 +405,7 @@ No MQTT/device command in RS-023
 
 ### Phase R4.20 — Rehearsal result review projection
 
-**Status:** `v1.13.4`에서 Rehearsal result review projection 완료. 상세 산출물은 `docs/rebuild/rehearsal-result-review-projection.md`.
+**Status:** `v1.13.5`에서 Rehearsal result review projection 완료. 상세 산출물은 `docs/rebuild/rehearsal-result-review-projection.md`.
 
 **Boundary:**
 ```text
@@ -420,7 +420,7 @@ No approval/execution release in RS-024
 
 ### Phase R4.21 — Virtual runner input contract
 
-**Status:** `v1.13.4`에서 Virtual runner input contract 완료. 상세 산출물은 `docs/rebuild/virtual-runner-input-contract.md`.
+**Status:** `v1.13.5`에서 Virtual runner input contract 완료. 상세 산출물은 `docs/rebuild/virtual-runner-input-contract.md`.
 
 **Boundary:**
 ```text
@@ -435,7 +435,7 @@ No virtual runner execution in RS-025
 
 ### Phase R4.22 — Virtual runner dry-run result adapter
 
-**Status:** `v1.13.4`에서 Virtual runner dry-run result adapter 완료. 상세 산출물은 `docs/rebuild/virtual-runner-dry-run-result-adapter.md`.
+**Status:** `v1.13.5`에서 Virtual runner dry-run result adapter 완료. 상세 산출물은 `docs/rebuild/virtual-runner-dry-run-result-adapter.md`.
 
 **Boundary:**
 ```text
@@ -450,7 +450,7 @@ No virtual runner execution in RS-026
 
 ### Phase R4.23 — Virtual rehearsal pass/fail review projection
 
-**Status:** `v1.13.4`에서 Virtual rehearsal pass/fail review projection 완료. 상세 산출물은 `docs/rebuild/virtual-rehearsal-pass-fail-review-projection.md`.
+**Status:** `v1.13.5`에서 Virtual rehearsal pass/fail review projection 완료. 상세 산출물은 `docs/rebuild/virtual-rehearsal-pass-fail-review-projection.md`.
 
 **Boundary:**
 ```text
@@ -483,14 +483,14 @@ Historical evidence compatibility markers retained for existing contracts:
 
 ```text
 RB-003 Crop read-only component extraction
-v1.13.4
+v1.13.5
 domains/crop/crop-readonly.js
 read-only render helpers only
 crop write modal/save/delete 변경 없음
 DB/API 변경 없음
 
 RB-004 Crop write modal extraction
-v1.13.4
+v1.13.5
 domains/crop/crop-write-modal.js
 작기 write modal render helpers only
 save/delete bindings remain in panel shell
@@ -499,7 +499,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-004B Growth survey modal render extraction
-v1.13.4
+v1.13.5
 domains/crop/crop-growth-modal.js
 생육조사 modal render helpers only
 save/API bindings remain in panel shell
@@ -508,7 +508,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-004C Pest scouting modal render extraction
-v1.13.4
+v1.13.5
 domains/crop/crop-pest-modal.js
 병해충 예찰 modal render helpers only
 autocomplete/API/save bindings remain in panel shell
@@ -517,7 +517,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-004D Control/treatment modal render extraction
-v1.13.4
+v1.13.5
 domains/crop/crop-control-modal.js
 방제 기록 modal render helpers only
 PLS/혼용 warning render markers preserved
@@ -527,7 +527,7 @@ route path 변경 없음
 response shape 변경 없음
 
 RB-006A Crop read-only service/repo boundary
-v1.13.4
+v1.13.5
 services/crop_service.py
 repositories/crop_repo.py
 GET /api/green_smart/crop/seasons
@@ -537,7 +537,7 @@ response shape 변경 없음
 DB migration 없음
 
 RB-006B Crop record read-only repositories
-v1.13.4
+v1.13.5
 growth/pest/control read GET helpers
 list_growth_records
 list_pest_records
@@ -548,7 +548,7 @@ response shape 변경 없음
 DB migration 없음
 
 RB-006C Crop season write service/repo boundary
-v1.13.4
+v1.13.5
 create/update/delete/demolish write helpers
 create_crop_season
 update_crop_season
@@ -560,7 +560,7 @@ response shape 변경 없음
 DB migration 없음
 
 RB-006D Crop model/report service boundary
-v1.13.4
+v1.13.5
 growth-report GET service boundary
 growth_report_response
 Center sync scheduler 변경 없음
@@ -645,7 +645,7 @@ DB migration 없음
 
 ### Phase R5.1 — VS-N002 Crop cycle recording scaffold
 
-**Status:** `v1.13.4`에서 VS-N002 Crop cycle recording scaffold 완료. 상세 산출물은 `docs/rebuild/vs-n002-crop-cycle-recording-scaffold.md`.
+**Status:** `v1.13.5`에서 VS-N002 Crop cycle recording scaffold 완료. 상세 산출물은 `docs/rebuild/vs-n002-crop-cycle-recording-scaffold.md`.
 
 **Confirmed order:**
 ```text
@@ -666,7 +666,7 @@ No existing crop season save behavior change in VS-N002
 
 ### Phase R5.2 — VS-N003 Real-time monitoring read-only scaffold
 
-**Status:** `v1.13.4`에서 VS-N003 Real-time monitoring read-only scaffold 완료. 상세 산출물은 `docs/rebuild/vs-n003-realtime-monitoring-readonly-scaffold.md`.
+**Status:** `v1.13.5`에서 VS-N003 Real-time monitoring read-only scaffold 완료. 상세 산출물은 `docs/rebuild/vs-n003-realtime-monitoring-readonly-scaffold.md`.
 
 **Confirmed order:**
 ```text
@@ -689,7 +689,7 @@ No HA entity read API in VS-N003
 
 ### Phase R5.3 — VS-N004 Interlock/Safety core scaffold
 
-**Status:** `v1.13.4`에서 VS-N004 Interlock/Safety core scaffold 완료. 상세 산출물은 `docs/rebuild/vs-n004-interlock-safety-core-scaffold.md`.
+**Status:** `v1.13.5`에서 VS-N004 Interlock/Safety core scaffold 완료. 상세 산출물은 `docs/rebuild/vs-n004-interlock-safety-core-scaffold.md`.
 
 **Confirmed order:**
 ```text
@@ -712,7 +712,7 @@ No approval/override release in VS-N004
 
 ## R5 Foundation Completion Baseline
 
-`v1.13.4`에서 R5 foundation closure를 완료했다.
+`v1.13.5`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -739,7 +739,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.13.4`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.13.5`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -767,7 +767,7 @@ question gates must use clarify tool
 
 ## R6-002 Monitoring Read-only Adapter
 
-`v1.13.4`에서 R6-002 Monitoring read-only adapter를 완료했다.
+`v1.13.5`에서 R6-002 Monitoring read-only adapter를 완료했다.
 
 Reference:
 
@@ -799,7 +799,7 @@ question gates must use clarify tool
 
 ## R6-003 Safety/Interlock Read-only Adapter
 
-`v1.13.4`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+`v1.13.5`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
 
 Reference:
 
@@ -830,7 +830,7 @@ question gates must use clarify tool
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.13.4`에서 R7-000 IA blueprint를 완료했다.
+`v1.13.5`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -855,7 +855,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.13.4`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.13.5`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -880,7 +880,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.13.4`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.13.5`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -904,7 +904,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.13.4`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.13.5`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -929,7 +929,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.13.4`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.13.5`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 

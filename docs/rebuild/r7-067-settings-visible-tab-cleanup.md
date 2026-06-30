@@ -1,6 +1,6 @@
 # R7-067 Settings visible tab cleanup
 
-Status: current baseline for `v1.13.4`.
+Status: current baseline for `v1.13.5`.
 
 ## Problem
 

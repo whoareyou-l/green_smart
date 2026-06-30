@@ -1,6 +1,6 @@
 # R7-010 Device Control Manual/Base Read-only Detail
 
-> 기준 버전: `v1.13.4`
+> 기준 버전: `v1.13.5`
 > Status: R7-010 complete
 > Purpose: `장치 제어` 도메인을 manual-first 장치 운영/권한/안전 판단 구조로 구체화한다.
 
