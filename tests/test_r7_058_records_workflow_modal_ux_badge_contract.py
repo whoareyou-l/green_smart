@@ -37,9 +37,9 @@ def _render(extra="") -> str:
 
 
 def test_r7_058_version_surfaces_are_1_12_93():
-    assert '"version": "1.12.97"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.97"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.97"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.98"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.98"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.98"' in _read(REBUILD_PANEL)
 
 
 def test_r7_058_record_badge_has_one_visible_status_label_not_label_plus_stage():
@@ -65,16 +65,20 @@ def test_r7_058_write_modal_has_operator_ux_sections_and_validation_copy_after_r
     html = _render("panel._r7RecordModal = { mode: 'write', recordType: 'pest-scouting', seasonId: 7, title: '병해충 예찰 작성', state: 'ready', rows: [] };")
     for marker in (
         'data-r7-record-modal-operator-summary',
-        'data-r7-record-modal-required-note',
+        'data-r7-record-common-modal-shell',
+        'data-r7-record-modal-sticky-header',
+        'data-r7-record-pre-save-checklist',
         'data-r7-record-form-field-group="common"',
         'data-r7-record-form-field-group="pest-scouting"',
         'data-r7-record-modal-actions',
         'data-r7-record-modal-cancel',
         'data-r7-record-modal-submit',
-        '필수 입력',
+        '저장 전 참고',
         '저장 후 최신 기록과 카드 상태를 다시 불러옵니다.',
     ):
         assert marker in html
+    assert 'data-r7-record-modal-required-note' not in html
+    assert '필수 입력' not in html
     growth = _render("panel._r7RecordModal = { mode: 'write', recordType: 'growth-survey', seasonId: 7, title: '생육조사 작성', state: 'ready', rows: [] };")
     assert 'data-r7-growth-survey-image-modal="true"' in growth
     assert '저장 후 검증' not in growth

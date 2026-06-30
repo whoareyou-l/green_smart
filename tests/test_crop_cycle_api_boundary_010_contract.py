@@ -16,11 +16,11 @@ def _read(path: Path) -> str:
 
 
 def test_rs010_version_surfaces_are_aligned_to_1_12_9():
-    assert '"version": "1.12.97"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.97"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.97"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.98"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.98"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.98"' in _read(REBUILD_PANEL)
     for path in (INTERFACE_SPEC, DB_SCHEMA, LEGACY_INVENTORY, PRODUCT_PLAN, API_BOUNDARY):
-        assert "v1.12.97" in _read(path)
+        assert "v1.12.98" in _read(path)
 
 
 def test_crop_cycle_api_boundary_document_declares_adapter_vs_product_names():
@@ -76,7 +76,7 @@ def test_product_plan_mentions_rs010_without_route_migration():
     text = _read(PRODUCT_PLAN)
     required = (
         "Phase R4.6 — Crop Cycle API naming boundary",
-        "Status:** `v1.12.97`에서 crop_cycle/currentCrop API naming boundary 완료",
+        "Status:** `v1.12.98`에서 crop_cycle/currentCrop API naming boundary 완료",
         "No production route removal in RS-010",
         "No DB migration in RS-010",
         "crop/seasons = compatibility adapter",

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.97";
+const REBUILD_VERSION = "1.12.98";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1952,18 +1952,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         ${section("quality-disorder", "품질/생리장해 측정값", `<div data-r7-growth-survey-quality-grid style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${field({ key: "leafArea", label: "엽면적(cm²)", name: "leafArea", type: "number", step: "0.1", min: "0" })}${field({ key: "freshWeight", label: "생체중(g)", name: "freshWeight", type: "number", step: "0.1", min: "0" })}${field({ key: "tipburnScore", label: "잎끝마름", name: "tipburnScore", type: "number", step: "1", min: "0" })}${select({ key: "boltingSign", label: "추대 징후", name: "boltingSign", options: [["none", "없음"], ["suspected", "의심"], ["visible", "확인"]].map(([v, t]) => `<option value="${v}">${t}</option>`) })}${select({ key: "leafColorScore", label: "잎색/상품성", name: "leafColorScore", options: [["unknown", "확인 전"], ["dark_green", "진녹색"], ["normal_green", "정상 녹색"], ["pale", "연한 잎색"], ["yellowing", "황화"], ["edge_browning", "가장자리 갈변"]].map(([v, t]) => `<option value="${v}">${t}</option>`) })}${select({ key: "harvestReadiness", label: "수확 가능 여부", name: "harvestReadiness", options: [["unknown", "확인 전"], ["not_ready", "아직"], ["ready", "가능"], ["hold", "보류"]].map(([v, t]) => `<option value="${v}">${t}</option>`) })}</div><div data-r7-growth-survey-image-analysis style="margin-top:10px;border:1px dashed #cfe3d4;border-radius:12px;padding:10px;display:grid;gap:8px;background:#fbfdfb;"><input data-r7-growth-survey-image-input data-r7-growth-survey-field="qualityImage" name="qualityImage" type="file" accept="image/*" style="display:none;"><button type="button" data-r7-growth-survey-image-upload style="height:36px;border:1px solid #cfe3d4;border-radius:10px;background:#f4fbf5;color:#31523b;font-weight:950;">품질/생리장해 이미지 추가</button><span data-r7-growth-survey-image-file-name style="font-size:12px;color:#78927f;">선택된 이미지 없음</span><label style="${labelStyle}"><span>이미지 분석 결과</span><textarea name="imageAnalysisNote" rows="3" data-r7-growth-survey-field="imageAnalysisNote" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;font-size:12px;"></textarea></label></div>`)}
         ${section("memo", "메모", `<label style="${labelStyle}"><span>조사 메모</span><textarea name="note" rows="3" data-r7-growth-survey-field="note" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;font-size:12px;"></textarea></label>`)}
       </div>
-      <aside data-r7-growth-survey-side-panel style="display:grid;gap:10px;border:1px solid #e5eee7;border-radius:14px;background:#fbfdfb;padding:12px;position:sticky;top:8px;">
-        <strong style="font-size:14px;color:#1f3329;">저장 전 참고</strong>
-        <div style="display:grid;gap:8px;font-size:12px;color:#53645b;line-height:1.45;">
-          <div data-r7-growth-survey-side-item="growth-state"><b>생육값 상태</b><br>초장·엽장·엽폭·엽수·SPAD를 입력하면 L-Index/V-Score 근거로 사용됩니다.</div>
-          <div data-r7-growth-survey-side-item="spad"><b>SPAD 입력 대기</b><br>엽색과 생리장해 판단 보조값입니다.</div>
-          <div data-r7-growth-survey-side-item="image"><b>이미지 분석 보조</b><br>품질/생리장해 사진 분석 결과를 메모로 저장합니다.</div>
-          <div data-r7-growth-survey-side-item="disorder"><b>병충/생리장해 확인</b><br>잎끝마름·추대 징후·상품성을 같이 확인합니다.</div>
-          <div data-r7-growth-survey-side-item="harvest"><b>수확·후처리 자료 저장 가능</b><br>수확 가능 여부는 품질 판단 참고값입니다.</div>
-          <div data-r7-growth-survey-side-item="vscore"><b>V-Score 계산 대기</b><br>저장 후 모델 근거 데이터로 반영됩니다.</div>
-          <div data-r7-growth-survey-side-item="crop-evidence"><b>작물 근거</b><br>${this._r7ZoneName?.(selectedZone) || "현재 구역"} · 현재 작기 기준 기록입니다.</div>
-        </div>
-      </aside>
+      ${this.renderR7RecordPreSaveChecklist("growth-survey", { zoneName: this._r7ZoneName?.(selectedZone) || "현재 구역" })}
     </div>`;
   }
 
@@ -1978,6 +1967,105 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `${common}<fieldset data-r7-record-form-field-group="control-treatment" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;"><legend style="font-size:12px;font-weight:950;color:#31523b;padding:0 4px;">방제 기록</legend><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">약제명<input name="pesticideName" required style="${baseInput}"></label><label style="${labelStyle}">PHI(일)<input name="phiDays" type="number" min="0" style="${baseInput}"></label></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">REI(시간)<input name="reiHours" type="number" min="0" style="${baseInput}"></label><label style="${labelStyle}">PLS<select name="pls" style="${baseInput}"><option value="true">적합</option><option value="false">확인 필요</option></select></label></div>${note}</fieldset>`;
   }
 
+  renderR7RecordPreSaveChecklist(recordType, options = {}) {
+    const zoneName = options.zoneName || "현재 구역";
+    const baseCards = recordType === "growth-survey"
+      ? [
+          { key: "basic-info", title: "기본 정보", text: "조사일·조사구역·생육단계·조사자를 빈 칸 없이 값을 넣었는지 확인하세요." },
+          { key: "growth-measurements", title: "생육 측정값", text: "초장·엽장·엽폭·엽수·SPAD 입력 상태를 저장 전에 확인합니다." },
+          { key: "quality-disorder", title: "품질/생리장해 측정값", text: "엽면적·생체중·잎끝마름·추대·상품성·수확 가능 여부를 확인합니다." },
+        ]
+      : recordType === "pest-scouting"
+        ? [
+            { key: "basic-info", title: "공통 정보", text: "조사일과 위치 입력 여부를 확인합니다." },
+            { key: "growth-measurements", title: "예찰 핵심값", text: "병해충/증상과 심각도 값을 확인합니다." },
+            { key: "quality-disorder", title: "후속 판단", text: "메모와 조치 필요 여부를 저장 전 확인합니다." },
+          ]
+        : [
+            { key: "basic-info", title: "공통 정보", text: "방제일과 대상 구역 입력 여부를 확인합니다." },
+            { key: "growth-measurements", title: "방제 핵심값", text: "약제명·PHI·REI·PLS 값을 확인합니다." },
+            { key: "quality-disorder", title: "안전 확인", text: "수확 전 안전기간과 메모를 저장 전 확인합니다." },
+          ];
+    const legacyCards = baseCards.map((card) => `<template data-r7-record-check-card="${card.key}">${card.title} · ${card.text}</template>`).join("");
+    const validationItems = recordType === "growth-survey"
+      ? [
+          { key: "required", icon: "ok", tone: "green", title: "필수값 0/8", text: "모든 필수 항목을 입력해야 저장 가능합니다." },
+          { key: "spad", icon: "wait", tone: "amber", title: "SPAD 입력 대기", text: "SPAD 값을 입력해주세요." },
+          { key: "tipburn", icon: "warn", tone: "orange", title: "팁번/잎끝 마름 확인", text: "품질/생리장해 지표 입력을 권장합니다." },
+          { key: "bolting", icon: "ok", tone: "green", title: "추대·웃자람 지표 저장 가능", text: "관련 지표가 저장되어 근거에 반영됩니다." },
+        ]
+      : recordType === "pest-scouting"
+        ? [
+            { key: "required", icon: "ok", tone: "green", title: "필수값 확인", text: "조사일과 병해충/증상 값을 확인합니다." },
+            { key: "spad", icon: "wait", tone: "amber", title: "심각도 입력 대기", text: "심각도 값이 예찰 우선순위에 반영됩니다." },
+            { key: "tipburn", icon: "warn", tone: "orange", title: "위치 확인", text: "발생 위치를 입력하면 후속 방제 판단에 도움이 됩니다." },
+            { key: "bolting", icon: "ok", tone: "green", title: "예찰 근거 저장 가능", text: "저장 후 기록 근거에 반영됩니다." },
+          ]
+        : [
+            { key: "required", icon: "ok", tone: "green", title: "필수값 확인", text: "방제일과 약제명을 확인합니다." },
+            { key: "spad", icon: "wait", tone: "amber", title: "PHI/REI 확인", text: "수확 전 안전기간 값을 확인해주세요." },
+            { key: "tipburn", icon: "warn", tone: "orange", title: "PLS 상태 확인", text: "PLS 적합 여부를 저장 전에 확인합니다." },
+            { key: "bolting", icon: "ok", tone: "green", title: "방제 근거 저장 가능", text: "저장 후 기록 근거에 반영됩니다." },
+          ];
+    const toneStyle = (tone) => tone === "green"
+      ? { bg: "#f1fbf4", border: "#d8eedf", iconBg: "#34a853", icon: "#fff", title: "#246b3b" }
+      : tone === "amber"
+        ? { bg: "#fff8e8", border: "#f1dcaa", iconBg: "#f3a53f", icon: "#fff", title: "#9a650d" }
+        : { bg: "#fff6e8", border: "#efd3a3", iconBg: "#e9952d", icon: "#fff", title: "#8a5a12" };
+    const iconText = (icon) => icon === "ok" ? "✓" : icon === "wait" ? "◷" : "!";
+    const validationCards = validationItems.map((item) => {
+      const tone = toneStyle(item.tone);
+      return `<div data-r7-record-validation-card="${item.key}" style="display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;border:1px solid ${tone.border};border-radius:14px;background:${tone.bg};padding:11px 12px;box-shadow:0 1px 0 rgba(31,51,41,.03);">
+        <span data-r7-record-validation-icon="${item.icon}" style="width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:${tone.iconBg};color:${tone.icon};font-size:15px;font-weight:950;line-height:1;">${iconText(item.icon)}</span>
+        <span style="display:grid;gap:3px;"><strong style="font-size:13px;color:${tone.title};">${item.title}</strong><small style="font-size:12px;color:#62736a;line-height:1.4;">${item.text}</small></span>
+      </div>`;
+    }).join("");
+    return `<aside class="r7-record-mobile-reference-slot" data-r7-growth-survey-side-panel data-r7-record-mobile-reference-slot data-r7-record-pre-save-checklist style="display:grid;gap:10px;border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;position:sticky;top:8px;align-self:start;">
+        ${legacyCards}
+        <strong style="font-size:15px;color:#1f3329;">저장 전 검증</strong>
+        <div style="font-size:12px;color:#53645b;line-height:1.45;">저장 전 참고 · 빈 칸 없이 값을 넣었는지 확인하고 저장하세요.</div>
+        <div data-r7-record-validation-list style="display:grid;gap:9px;">${validationCards}</div>
+        <template data-r7-growth-survey-side-item="growth-state">생육값 상태</template>
+        <template data-r7-growth-survey-side-item="vscore">V-Score 계산 대기</template>
+        <template data-r7-growth-survey-side-item="crop-evidence">작물 근거 · ${zoneName} · 현재 작기 기준 기록입니다.</template>
+      </aside>`;
+  }
+
+  renderR7RecordFormLayout(recordType, fieldsHtml, actionRow, stateHtml = "") {
+    const hasReference = fieldsHtml.includes("data-r7-record-mobile-reference-slot");
+    const content = hasReference
+      ? fieldsHtml
+      : `<div data-r7-record-form-main style="display:grid;gap:12px;min-width:0;">${fieldsHtml}</div>${this.renderR7RecordPreSaveChecklist(recordType)}`;
+    return `<form data-r7-record-write-form style="display:grid;gap:12px;">
+      <div data-r7-record-form-layout style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.75fr);gap:14px;align-items:start;">${content}</div>
+      ${stateHtml}
+      ${actionRow}
+    </form>`;
+  }
+
+  renderR7RecordCommonModalShell(modal, summary, body) {
+    return `<div data-r7-record-modal-shell data-r7-record-common-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}" style="position:fixed;inset:0;background:rgba(20,32,24,.28);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;">
+      <style data-r7-record-modal-responsive-style>
+        @media (max-width: 720px) {
+          [data-r7-record-common-modal-shell] { padding: 10px !important; align-items: stretch !important; }
+          [data-r7-record-common-modal-shell] [data-r7-record-modal-card] { width: 100% !important; max-height: calc(100vh - 20px) !important; border-radius: 14px !important; }
+          [data-r7-record-common-modal-shell] [data-r7-record-form-layout] { grid-template-columns:1fr !important; }
+          [data-r7-record-common-modal-shell] [data-r7-growth-survey-image-modal] { grid-template-columns:1fr !important; }
+          [data-r7-record-common-modal-shell] .r7-record-mobile-reference-slot { position: static !important; order: 2; }
+          [data-r7-record-common-modal-shell] .r7-record-modal-actions { grid-template-columns:1fr !important; }
+          [data-r7-record-common-modal-shell] fieldset > div { grid-template-columns:1fr !important; }
+        }
+      </style>
+      <section data-r7-record-modal-card style="width:min(1120px,calc(100vw - 28px));max-height:88vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #dcebe0;box-shadow:0 18px 55px rgba(31,51,41,.18);display:grid;grid-template-rows:auto 1fr;">
+        <header data-r7-record-modal-sticky-header style="position:sticky;top:0;z-index:3;background:#fff;border-bottom:1px solid #edf2ee;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><strong style="font-size:18px;color:#1f3329;">${modal.title}</strong><div style="font-size:12px;color:#78927f;margin-top:3px;">작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}</div></div><button type="button" data-r7-record-modal-close style="width:34px;height:34px;border:1px solid #dcebe0;border-radius:50%;background:#fff;font-weight:950;">×</button></header>
+        <div data-r7-record-modal-scroll-body style="padding:18px;display:grid;gap:14px;min-width:0;">
+          ${summary}
+          ${body}
+        </div>
+      </section>
+    </div>`;
+  }
+
   renderR7RecordWorkflowModal() {
     const modal = this._r7RecordModal;
     if (!modal) return "";
@@ -1990,9 +2078,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     let body = "";
     if (modal.mode === "write") {
       const actionRow = modal.recordType === "growth-survey"
-        ? `<div data-r7-record-modal-actions style="display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px;"><button data-r7-growth-survey-cancel data-r7-record-modal-cancel data-r7-record-modal-close type="button" style="height:38px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:950;">취소</button><button data-r7-growth-survey-draft type="button" style="height:38px;border:1px solid #bcd6ee;border-radius:10px;background:#f4f9ff;color:#326aa5;font-weight:950;">임시저장</button><button data-r7-growth-survey-submit data-r7-record-modal-submit type="submit" style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">${modal.state === "saving" ? "저장 중..." : "저장 후 갱신"}</button></div>`
-        : `<div data-r7-record-modal-actions style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button data-r7-record-modal-cancel data-r7-record-modal-close type="button" style="height:38px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:950;">취소</button><button data-r7-record-modal-submit type="submit" style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">${modal.state === "saving" ? "저장 중..." : "저장"}</button></div>`;
-      body = `<form data-r7-record-write-form style="display:grid;gap:12px;"><div data-r7-record-modal-required-note style="font-size:12px;color:#9a6b10;background:#fff8e6;border:1px solid #ead4a2;border-radius:10px;padding:9px 10px;"><strong>필수 입력</strong> · 날짜와 기록 유형별 핵심 항목을 확인하세요.</div>${this.renderR7RecordWriteFields(modal.recordType)}${modal.state === "error" ? `<div data-r7-record-modal-error style="font-size:12px;color:#b4453a;">${modal.error || "저장 실패"}</div>` : ""}${modal.state === "saved" ? `<div data-r7-record-modal-saved style="font-size:12px;color:#25804a;">저장 완료</div>` : ""}${actionRow}</form>`;
+        ? `<div class="r7-record-modal-actions" data-r7-record-modal-actions style="display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px;"><button data-r7-growth-survey-cancel data-r7-record-modal-cancel data-r7-record-modal-close type="button" style="height:38px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:950;">취소</button><button data-r7-growth-survey-draft type="button" style="height:38px;border:1px solid #bcd6ee;border-radius:10px;background:#f4f9ff;color:#326aa5;font-weight:950;">임시저장</button><button data-r7-growth-survey-submit data-r7-record-modal-submit type="submit" style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">${modal.state === "saving" ? "저장 중..." : "저장 후 갱신"}</button></div>`
+        : `<div class="r7-record-modal-actions" data-r7-record-modal-actions style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button data-r7-record-modal-cancel data-r7-record-modal-close type="button" style="height:38px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:950;">취소</button><button data-r7-record-modal-submit type="submit" style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">${modal.state === "saving" ? "저장 중..." : "저장"}</button></div>`;
+      const stateHtml = `${modal.state === "error" ? `<div data-r7-record-modal-error style="font-size:12px;color:#b4453a;">${modal.error || "저장 실패"}</div>` : ""}${modal.state === "saved" ? `<div data-r7-record-modal-saved style="font-size:12px;color:#25804a;">저장 완료</div>` : ""}`;
+      body = this.renderR7RecordFormLayout(modal.recordType, this.renderR7RecordWriteFields(modal.recordType), actionRow, stateHtml);
     } else if (modal.state === "loading") {
       body = `<div data-r7-record-modal-loading style="border:1px dashed #dcebe0;border-radius:10px;padding:14px;color:#78927f;font-size:12px;">히스토리를 불러오는 중입니다.</div>`;
     } else if (modal.state === "error") {
@@ -2000,13 +2089,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } else {
       body = `<section data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${history}</section>`;
     }
-    return `<div data-r7-record-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}" style="position:fixed;inset:0;background:rgba(20,32,24,.28);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;">
-      <section style="width:min(1120px,calc(100vw - 28px));max-height:88vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #dcebe0;box-shadow:0 18px 55px rgba(31,51,41,.18);padding:18px;display:grid;gap:14px;">
-        <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><strong style="font-size:18px;color:#1f3329;">${modal.title}</strong><div style="font-size:12px;color:#78927f;margin-top:3px;">작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}</div></div><button type="button" data-r7-record-modal-close style="width:34px;height:34px;border:1px solid #dcebe0;border-radius:50%;background:#fff;font-weight:950;">×</button></header>
-        ${summary}
-        ${body}
-      </section>
-    </div>`;
+    return this.renderR7RecordCommonModalShell(modal, summary, body);
   }
 
   renderR7RecordsWorkflowProductLayout(ctx) {
