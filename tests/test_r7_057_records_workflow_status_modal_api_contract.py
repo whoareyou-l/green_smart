@@ -36,9 +36,9 @@ def _render_script(extra="") -> str:
 
 
 def test_r7_057_version_surfaces_are_1_12_92():
-    assert '"version": "1.14.0"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.0"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.0"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.1"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.1"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.1"' in _read(REBUILD_PANEL)
 
 
 def test_r7_057_status_badges_are_explicit_by_card_with_color_policy():

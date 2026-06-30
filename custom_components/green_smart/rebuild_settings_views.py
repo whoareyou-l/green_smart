@@ -48,6 +48,66 @@ except Exception:  # direct exec/import contract tests outside package
         return ("admin" if is_ha_admin else "farm_staff", "fallback")
 
 SETTINGS_USERS_PERMISSIONS_SOURCE = "green-smart-db"
+APPROVED_USER_STATUSES = {"active", "approved"}
+
+
+def _is_approved_status(status: Any) -> bool:
+    return str(status or "").lower() in APPROVED_USER_STATUSES
+
+
+def settings_users_permissions_pending_response(*, ha_user_id: str = "", display_name: str = "", role: str = "farm_staff", status: str = "pending", source: str = SETTINGS_USERS_PERMISSIONS_SOURCE) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "source": source,
+        "approvalRequired": True,
+        "approvalStatus": status or "pending",
+        "reasonCode": "user_approval_required",
+        "haUserId": ha_user_id,
+        "displayName": display_name or "현재 사용자",
+        "role": role or "farm_staff",
+        "users": [],
+        "approvalRows": [],
+        "auditRows": [],
+        "counts": {"users": 0, "approvals": 0, "audits": 0},
+    }
+
+
+async def async_get_or_create_user_approval_state(hass, user: Any | None) -> dict[str, Any]:
+    if fetchall is None or execute is None:
+        raise RuntimeError("green_smart db helpers unavailable outside package runtime")
+    ha_user_id = _ha_user_id(user)
+    display_name = _ha_user_name(user) or ha_user_id or "현재 사용자"
+    role, role_source = await async_get_green_smart_user_role(hass, ha_user_id, is_ha_admin=_ha_user_is_admin(user))
+    if not ha_user_id:
+        return {"approved": False, "ha_user_id": "", "display_name": display_name, "role": role, "role_source": role_source, "status": "missing_user"}
+    default_status = "active" if _ha_user_is_admin(user) else "pending"
+    permission_summary = "전체 설정" if role == "admin" else "승인 · 전략" if role == "farm_owner" else "기록 · 모니터링"
+    await execute(
+        hass,
+        """
+        INSERT INTO gs_users (ha_user_id, display_name, role, status, permission_summary, last_seen_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
+        ON DUPLICATE KEY UPDATE
+            display_name = VALUES(display_name),
+            role = VALUES(role),
+            status = CASE WHEN VALUES(status) = 'active' THEN 'active' ELSE status END,
+            permission_summary = VALUES(permission_summary),
+            last_seen_at = NOW()
+        """,
+        (ha_user_id, display_name, role, default_status, permission_summary),
+    )
+    rows = await fetchall(
+        hass,
+        """
+        SELECT ha_user_id, display_name, role, status, permission_summary, last_seen_at
+        FROM gs_users
+        WHERE ha_user_id = %s
+        LIMIT 1
+        """,
+        (ha_user_id,),
+    )
+    row = rows[0] if rows else {"ha_user_id": ha_user_id, "display_name": display_name, "role": role, "status": default_status}
+    return {**row, "approved": _is_approved_status(row.get("status")), "role_source": role_source}
 
 
 def _fmt_time(value: Any) -> str:
@@ -103,24 +163,13 @@ def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]]
 
 async def settings_users_permissions_response(hass, user: Any | None = None) -> dict[str, Any]:
     """Read users/approval/audit state from MariaDB for Settings > 사용자·권한."""
-    ha_user_id = _ha_user_id(user)
-    display_name = _ha_user_name(user) or ha_user_id or "현재 사용자"
-    role, _role_source = await async_get_green_smart_user_role(hass, ha_user_id, is_ha_admin=_ha_user_is_admin(user))
-    if ha_user_id:
-        permission_summary = "전체 설정" if role == "admin" else "승인 · 전략" if role == "farm_owner" else "기록 · 모니터링"
-        await execute(
-            hass,
-            """
-            INSERT INTO gs_users (ha_user_id, display_name, role, status, permission_summary, last_seen_at)
-            VALUES (%s, %s, %s, 'active', %s, NOW())
-            ON DUPLICATE KEY UPDATE
-                display_name = VALUES(display_name),
-                role = VALUES(role),
-                status = 'active',
-                permission_summary = VALUES(permission_summary),
-                last_seen_at = NOW()
-            """,
-            (ha_user_id, display_name, role, permission_summary),
+    approval_state = await async_get_or_create_user_approval_state(hass, user)
+    if not approval_state.get("approved"):
+        return settings_users_permissions_pending_response(
+            ha_user_id=str(approval_state.get("ha_user_id") or ""),
+            display_name=str(approval_state.get("display_name") or ""),
+            role=str(approval_state.get("role") or "farm_staff"),
+            status=str(approval_state.get("status") or "pending"),
         )
     users = await fetchall(
         hass,

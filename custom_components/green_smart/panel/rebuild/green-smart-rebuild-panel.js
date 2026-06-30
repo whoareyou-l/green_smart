@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.0";
+const REBUILD_VERSION = "1.14.1";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -247,6 +247,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const response = await this.hass.callApi("GET", REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH);
       if (requestId !== this._settingsUsersPermissionsRequestId) return;
       this._settingsUsersPermissions = {
+        ok: response?.ok !== false,
+        approvalRequired: Boolean(response?.approvalRequired),
+        approvalStatus: response?.approvalStatus || "active",
+        reasonCode: response?.reasonCode || "",
+        displayName: response?.displayName || "",
+        role: response?.role || "",
         source: response?.source || "green-smart-db",
         users: Array.isArray(response?.users) ? response.users : [],
         approvalRows: Array.isArray(response?.approvalRows) ? response.approvalRows : [],
@@ -2676,10 +2682,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7PageShell() {
+    const approval = this.r7SettingsUsersPermissionsData();
+    if (approval?.approvalRequired) return this.renderR7ApprovalGate(approval);
     return `<section data-r7-page-shell data-r7-domain-page-router="true" data-r7-active-domain="${this._activeR7Domain}" style="display:grid;gap:16px;">
       <div data-r7-page-workspace style="display:grid;gap:16px;">
         ${this.renderR7ActiveDomainPage()}
       </div>
+    </section>`;
+  }
+
+  renderR7ApprovalGate(approval = {}) {
+    const status = approval.approvalStatus || "pending";
+    const displayName = approval.displayName || "현재 사용자";
+    const role = approval.role || "farm_staff";
+    return `<section data-r7-page-shell data-r7-approval-gate="${status}" data-r7-settings-users-data-source="${approval.source || 'green-smart-db'}" style="min-height:60vh;display:grid;place-items:center;padding:24px;">
+      <article style="width:min(560px,100%);border:1px solid #ead4a2;border-radius:20px;background:#fffdf5;box-shadow:0 10px 32px rgba(31,51,41,.08);padding:22px;display:grid;gap:14px;text-align:center;color:#24323f;">
+        <div style="width:52px;height:52px;border-radius:18px;background:#fff4d6;color:#9a6b10;display:grid;place-items:center;margin:0 auto;">${this.renderR7CommonHaIcon("mdi:account-clock-outline", { size: 30 })}</div>
+        <div style="display:grid;gap:6px;"><strong style="font-size:20px;color:#1f3329;">승인 대기</strong><span style="font-size:13px;color:#6d7a70;line-height:1.55;">관리자 승인 후 Green Smart에 진입할 수 있습니다.</span></div>
+        <div data-r7-approval-gate-user style="border:1px solid #f0dfb3;border-radius:14px;background:#fff;padding:12px;display:grid;gap:5px;font-size:13px;"><strong>${displayName}</strong><span style="color:#78927f;">요청 역할 · ${role}</span><span style="color:#9a6b10;font-weight:900;">상태 · ${status}</span></div>
+        <small style="color:#78927f;line-height:1.45;">이 화면이 계속 보이면 관리자에게 사용자 승인 또는 역할 활성화를 요청하세요.</small>
+      </article>
     </section>`;
   }
 
