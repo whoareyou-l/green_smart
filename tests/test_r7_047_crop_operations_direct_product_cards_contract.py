@@ -22,7 +22,7 @@ def test_r7_047_records_workflow_now_uses_r7_053_image_dashboard_not_old_direct_
         'status-summary': ['현재 작물','우선 확인','기록 상태','영향 요인','추천 검토'],
         'crop-cycle': ['작기 연결','작물 프로필','운영 경계','구역 배정 근거'],
         'growth-target': ['현재 → 목표','관찰 포인트','환경 영향','기록 확인'],
-        'records-workflow': ['data-r7-records-image-dashboard="true"','오늘 할 일','누락·검증 필요','생육조사','병해충 예찰','방제 기록','품질/생리장해','최근 기록','AI 근거 연결'],
+        'records-workflow': ['data-r7-records-image-dashboard="true"','data-r7-record-row="top-actions"','오늘 할 일','누락·검증 필요','AI 근거 연결','data-r7-record-row="core-records"','생육조사','병해충 예찰','방제 기록','data-r7-record-row="recent-records"','최근 기록'],
         'model-assist': ['추천 요약','근거 요인','승인/실행 경계'],
         'trend-evidence': ['시즌 근거 요약','생육 흐름','영향 흐름','데이터 충분성']
       }};

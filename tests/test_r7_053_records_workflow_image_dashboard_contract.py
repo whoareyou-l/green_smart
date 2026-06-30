@@ -44,9 +44,9 @@ def _render_script() -> str:
 
 
 def test_r7_053_version_surfaces_are_1_12_88():
-    assert '"version": "1.12.89"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.89"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.89"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.90"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.90"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.90"' in _read(REBUILD_PANEL)
 
 
 def test_r7_053_records_workflow_renders_image_like_dashboard_cards():
@@ -59,7 +59,6 @@ def test_r7_053_records_workflow_renders_image_like_dashboard_cards():
         'data-r7-record-image-card="growth-survey"', '생육조사', '오늘 필요', '최근 기록 없음', 'G-Index 계산에 필요한 생육 데이터가 없습니다.', '바로조사 작성', '히스토리',
         'data-r7-record-image-card="pest-scouting"', '병해충 예찰', '주의', '최근 5일 전', '예찰 작성', '예전 기록',
         'data-r7-record-image-card="control-treatment"', '방제 기록', '정상', 'PHI 3일 남음', '방제 기록', 'PHI 보기',
-        'data-r7-record-image-card="quality-physiology"', '품질/생리장해', '수집 필요', 'SPAD/칼슘/수분/숯가루', '측정값 입력', '이미지 분석',
         'data-r7-record-recent-log-panel', '최근 기록', 'fresh', '방제 기록', '2026-06-30 08:10', 'PHI 3일 남음',
         'data-r7-record-ai-card', 'AI 근거 연결', '근거 부족', '근거 보기'
       ];
@@ -80,7 +79,7 @@ def test_r7_053_records_workflow_deletes_previous_visible_card_content_and_skele
         'data-r7-record-section="missing-attention"',
         'data-r7-record-section="record-source"',
         'data-r7-record-flow-skeleton="write-history-pls"',
-        'data-r7-record-api-contract="planned-v1.12.89"',
+        'data-r7-record-api-contract="planned-v1.12.90"',
         'data-r7-record-api-prefix="/api/green_smart/rebuild/crop-records"',
         '작성·히스토리 플로우',
         '생육조사 작성 플로우',

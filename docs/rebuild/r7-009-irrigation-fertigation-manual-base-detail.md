@@ -1,6 +1,6 @@
 # R7-009 Irrigation/Fertigation Manual/Base Read-only Detail
 
-> 기준 버전: `v1.12.89`
+> 기준 버전: `v1.12.90`
 > Status: R7-009 complete
 > Purpose: `관수 제어` 도메인을 manual-first 관수 제어 운영 구조로 구체화한다.
 

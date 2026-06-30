@@ -35,7 +35,9 @@ def test_r7_049_product_layout_is_superseded_by_image_dashboard_cards():
         'data-r7-record-image-card="growth-survey"',
         'data-r7-record-image-card="pest-scouting"',
         'data-r7-record-image-card="control-treatment"',
-        'data-r7-record-image-card="quality-physiology"',
+        'data-r7-record-row="top-actions"',
+        'data-r7-record-row="core-records"',
+        'data-r7-record-row="recent-records"',
         'data-r7-record-recent-log-panel',
         'data-r7-record-ai-card',
     ]:

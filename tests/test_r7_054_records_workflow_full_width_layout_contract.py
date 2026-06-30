@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_054_version_surfaces_are_1_12_89():
-    assert '"version": "1.12.89"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.89"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.89"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.90"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.90"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.90"' in _read(REBUILD_PANEL)
 
 
 def test_r7_054_records_workflow_bypasses_190px_subtab_grid_wrapper():
@@ -46,9 +46,11 @@ def test_r7_054_records_workflow_render_places_image_dashboard_in_full_width_pan
         'display:block;width:100%;min-width:0;',
         'data-r7-records-image-dashboard="true"',
         'data-r7-record-image-grid="primary"',
-        'grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px;',
+        'grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;',
         'data-r7-record-image-card="today-work"',
-        'data-r7-record-image-card="quality-physiology"',
+        'data-r7-record-row="top-actions"',
+        'data-r7-record-row="core-records"',
+        'data-r7-record-row="recent-records"',
         'data-r7-record-recent-log-panel',
         'data-r7-record-ai-card'
       ];

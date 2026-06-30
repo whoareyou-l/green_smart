@@ -33,7 +33,9 @@ def test_r7_048_records_workflow_vertical_slice_is_superseded_by_image_dashboard
         '생육조사',
         '병해충 예찰',
         '방제 기록',
-        '품질/생리장해',
+        'data-r7-record-row="top-actions"',
+        'data-r7-record-row="core-records"',
+        'data-r7-record-row="recent-records"',
         '최근 기록',
         'AI 근거 연결',
     ]:

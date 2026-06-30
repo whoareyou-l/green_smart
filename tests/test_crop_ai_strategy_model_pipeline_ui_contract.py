@@ -89,8 +89,8 @@ def test_v11020_versions_and_docs_record_pipeline_ui():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.12.89"' in manifest
-    assert 'const VERSION = "1.12.89"' in panel
+    assert '"version": "1.12.90"' in manifest
+    assert 'const VERSION = "1.12.90"' in panel
     assert "v1.10.20 AI Strategy model pipeline UI" in docs
     for marker in (
         "data-crop-ai-model-pipeline-summary",

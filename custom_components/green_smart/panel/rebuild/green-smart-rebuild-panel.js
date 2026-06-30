@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.89";
+const REBUILD_VERSION = "1.12.90";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1712,7 +1712,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       { kind: "병해충 예찰", at: "2026-06-25 09:20", memo: "잎말림병 의심 1건", state: "주의", tone: "amber", icon: "mdi:bug-outline" },
     ];
     return `<div data-r7-records-image-dashboard="true" data-r7-crop-record-card style="display:grid;gap:12px;width:100%;">
-      <div data-r7-record-image-grid="primary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px;">
+      <div data-r7-record-row="top-actions" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
         <article data-r7-record-image-card="today-work" style="${cardStyle}">
           ${header("mdi:check-circle", "오늘 할 일", "정상", "green")}
           <div style="font-size:15px;font-weight:900;color:#2f7d48;text-align:center;margin:10px 0;">필수 기록 최신 상태</div>
@@ -1723,6 +1723,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
           <ul style="margin:0;padding-left:22px;font-size:12px;color:#53645b;line-height:1.6;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>
           <div>${button("검증 등록", "mdi:clipboard-plus-outline", "amber")}</div>
         </article>
+        <section data-r7-record-ai-card style="${cardStyle}">
+          ${header("mdi:target", "AI 근거 연결", "근거 부족", "red")}
+          <div style="font-size:12px;color:#6d7a70;line-height:1.5;">생육조사 데이터가 추천 신뢰도를 제한합니다.</div>
+          <div>${button("근거 보기", "mdi:open-in-new", "red")}</div>
+        </section>
+      </div>
+      <div data-r7-record-row="core-records" data-r7-record-image-grid="primary" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
         <article data-r7-record-image-card="growth-survey" style="${cardStyle}">
           ${header("mdi:sprout-outline", "생육조사", "오늘 필요", "blue")}
           <div><div style="font-size:15px;font-weight:900;color:#2d6fb3;">최근 기록 없음</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">G-Index 계산에 필요한 생육 데이터가 없습니다.</div></div>
@@ -1738,21 +1745,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
           <div><div style="font-size:15px;font-weight:900;color:#2f7d48;">PHI 3일 남음</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">사용 약제 기준 · 수확 전 안전 기간 확인</div></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("방제 기록", "mdi:file-plus-outline", "green")}${button("PHI 보기", "mdi:eye-outline", "blue")}</div>
         </article>
-        <article data-r7-record-image-card="quality-physiology" style="${cardStyle}">
-          ${header("mdi:leaf", "품질/생리장해", "수집 필요", "amber")}
-          <div><div style="font-size:15px;font-weight:900;color:#d48a18;">SPAD/칼슘/수분/숯가루</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">색·팁번·생리장해 확인이 필요합니다.</div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("측정값 입력", "mdi:pencil-outline", "amber")}${button("이미지 분석", "mdi:camera-outline", "blue")}</div>
-        </article>
       </div>
-      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:12px;align-items:stretch;">
-        <section data-r7-record-recent-log-panel style="${cardStyle}min-height:116px;">
+      <div data-r7-record-row="recent-records" style="display:grid;grid-template-columns:1fr;gap:12px;grid-column:1/-1;">
+        <section data-r7-record-recent-log-panel style="${cardStyle}min-height:116px;grid-column:1/-1;">
           <div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;gap:8px;align-items:center;"><ha-icon icon="mdi:clipboard-text-clock-outline" style="width:21px;height:21px;color:#53645b;"></ha-icon><div style="font-size:14px;font-weight:900;color:#1f3329;">최근 기록</div></div>${badge("fresh", "green")}</div>
           <div style="display:grid;gap:4px;">${recentRows.map((row) => `<div data-r7-record-recent-row style="display:grid;grid-template-columns:120px 130px 1fr 90px 18px;gap:8px;align-items:center;font-size:11px;color:#53645b;border-top:1px solid #edf2ee;padding:7px 0;"><span style="display:flex;gap:6px;align-items:center;font-weight:800;"><ha-icon icon="${row.icon}" style="width:14px;height:14px;"></ha-icon>${row.kind}</span><span>${row.at}</span><span>${row.memo}</span><span style="font-weight:900;color:${row.tone === "amber" ? "#c28a1a" : "#2f7d48"};">${row.state}</span><span>›</span></div>`).join("")}</div>
-        </section>
-        <section data-r7-record-ai-card style="${cardStyle}min-height:116px;">
-          ${header("mdi:target", "AI 근거 연결", "근거 부족", "red")}
-          <div style="font-size:12px;color:#6d7a70;line-height:1.5;">생육조사와 품질 측정값이<br>추천 신뢰도를 제한합니다.</div>
-          <div>${button("근거 보기", "mdi:open-in-new", "red")}</div>
         </section>
       </div>
     </div><template data-r7-product-screen data-r7-product-screen-kind="records-workflow" data-r7-crop-product-subtab-screen="records-workflow" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
