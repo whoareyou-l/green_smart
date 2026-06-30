@@ -1,6 +1,6 @@
 # R7-033 Sidebar Settings Utility + User Exit
 
-> 기준 버전: `v1.14.2`
+> 기준 버전: `v1.14.3`
 > Status: R7-033 planned
 > Purpose: 설정 도메인을 사이드바 메인 탭 목록에서 제거하고 하단 두 번째 utility로만 제공하며, 하단 나가기 버튼에 로그인 사용자 정보를 표시하면서 기존 로그아웃/나가기 기능을 유지한다.
 

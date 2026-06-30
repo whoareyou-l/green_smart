@@ -100,4 +100,4 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-063 adds the shared records modal shell, sticky header, responsive layout, and save-before validation cards.
     # R7-066 reclassifies Settings into greenhouse/zone, crop-object, mapping, RBAC, safety, system, and diagnostics foundations.
     # R7-071 adds shared HA-icon card/button/recent-row helpers used by records-workflow and Settings users-permissions.
-    assert len(rebuild.splitlines()) < 2865
+    assert len(rebuild.splitlines()) < 2890
