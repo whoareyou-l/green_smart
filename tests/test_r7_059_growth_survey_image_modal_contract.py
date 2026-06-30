@@ -35,9 +35,9 @@ def _render(extra="") -> str:
 
 
 def test_r7_059_version_surfaces_are_1_12_94():
-    assert '"version": "1.12.94"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.94"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.94"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.95"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.95"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.95"' in _read(REBUILD_PANEL)
 
 
 def test_r7_059_growth_modal_matches_reference_image_layout_sections():
@@ -71,7 +71,6 @@ def test_r7_059_growth_modal_contains_same_survey_items_as_reference_scope():
         'leafCount': '엽수',
         'leafArea': '엽면적',
         'freshWeight': '생체중',
-        'rootLength': '근장',
         'spadValue': 'SPAD',
         'tipburnScore': '잎끝마름',
         'boltingSign': '추대 징후',
@@ -85,7 +84,7 @@ def test_r7_059_growth_modal_contains_same_survey_items_as_reference_scope():
 
 def test_r7_059_growth_payload_persists_extra_items_in_metrics_json_not_legacy_columns():
     source = _read(REBUILD_PANEL)
-    for key in ('leafLength', 'leafWidth', 'leafArea', 'freshWeight', 'rootLength', 'spadValue', 'tipburnScore', 'boltingSign', 'leafColorScore', 'harvestReadiness'):
+    for key in ('leafLength', 'leafWidth', 'leafArea', 'freshWeight', 'spadValue', 'tipburnScore', 'boltingSign', 'leafColorScore', 'harvestReadiness'):
         assert key in source
     assert 'metricsJson: JSON.stringify(growthMetrics)' in source
     assert 'height: data.get("plantHeight") || data.get("height") || null' in source

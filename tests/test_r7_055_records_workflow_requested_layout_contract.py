@@ -45,9 +45,9 @@ def _render_script() -> str:
 
 
 def test_r7_055_version_surfaces_are_1_12_90():
-    assert '"version": "1.12.94"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.94"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.94"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.95"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.95"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.95"' in _read(REBUILD_PANEL)
 
 
 def test_r7_055_records_workflow_matches_requested_three_row_layout():

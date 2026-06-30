@@ -10,6 +10,17 @@ from .repositories.crop_repo import list_control_records, list_growth_records, l
 REBUILD_CROP_RECORD_TYPES = {"growth-survey", "pest-scouting", "control-treatment"}
 
 
+def _normalize_season_id(season_id: str) -> int:
+    """Accept numeric ids plus compatibility strings such as crop_seasons:7 or cycle-7."""
+    raw = str(season_id or "").strip()
+    if raw.isdigit():
+        return int(raw)
+    for prefix in ("crop_seasons:", "cycle-"):
+        if raw.startswith(prefix) and raw[len(prefix):].isdigit():
+            return int(raw[len(prefix):])
+    raise ValueError("invalid season_id")
+
+
 def _record_summary(record_type: str, row: dict) -> str:
     if record_type == "growth-survey":
         parts = [row.get("date"), row.get("height") is not None and f"초장 {row.get('height')}cm", row.get("leafCount") is not None and f"엽수 {row.get('leafCount')}"]
@@ -40,7 +51,10 @@ class RebuildCropRecordsHistoryView(HomeAssistantView):
         hass = request.app["hass"]
         if record_type not in REBUILD_CROP_RECORD_TYPES:
             return _bad("unknown record_type", 404)
-        sid = int(season_id)
+        try:
+            sid = _normalize_season_id(season_id)
+        except ValueError:
+            return _bad("invalid season_id", 400)
         if record_type == "growth-survey":
             rows = await list_growth_records(hass, sid)
         elif record_type == "pest-scouting":
@@ -65,7 +79,10 @@ class RebuildCropRecordsWriteView(HomeAssistantView):
             body = await request.json()
         except Exception:
             return _bad("Invalid JSON")
-        sid = int(season_id)
+        try:
+            sid = _normalize_season_id(season_id)
+        except ValueError:
+            return _bad("invalid season_id", 400)
         if record_type == "growth-survey":
             date = body.get("date")
             if not date:

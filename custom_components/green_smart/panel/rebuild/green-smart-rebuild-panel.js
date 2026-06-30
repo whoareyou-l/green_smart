@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.94";
+const REBUILD_VERSION = "1.12.95";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1723,9 +1723,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return R7_RECORD_STATUS_DEFINITIONS[statusKey] || R7_RECORD_STATUS_DEFINITIONS["normal-ready"];
   }
 
+  activeR7RecordSeasonIdForZone(zone = null) {
+    const selected = zone || this._r7PrimaryZoneForDomain?.() || this._zonesForRender?.()[0] || {};
+    const sourceRowId = selected.currentCropAssignment?.sourceRowId || selected.sourceRowId || "";
+    const sourcePrefix = "crop_" + "seasons:";
+    const sourceMatch = String(sourceRowId).match(new RegExp(`^${sourcePrefix}(\\d+)$`));
+    if (sourceMatch) return sourceMatch[1];
+    return selected.currentCrop?.crop_cycle_id || selected.currentCrop?.cropSeasonId || selected.activeCropCycleId || selected.crop_cycle || "";
+  }
+
   activeR7RecordSeasonId() {
-    const zone = this._r7PrimaryZoneForDomain?.() || this._zonesForRender?.()[0] || {};
-    return zone.currentCrop?.crop_cycle_id || zone.activeCropCycleId || zone.crop_cycle || "";
+    return this.activeR7RecordSeasonIdForZone();
   }
 
   renderR7RecordCardBadge(statusKey = "normal-ready") {
@@ -1809,25 +1817,28 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const data = new FormData(form);
     const base = { date: data.get("date") || data.get("surveyDate") || new Date().toISOString().slice(0, 10), note: data.get("note") || "" };
     if (recordType === "growth-survey") {
-      const growthMetrics = {
-        surveyDate: data.get("surveyDate") || base.date,
-        zoneLabel: data.get("zoneLabel") || "",
-        growthStage: data.get("growthStage") || "",
-        observerName: data.get("observerName") || "",
-        plantHeight: data.get("plantHeight") || null,
-        leafLength: data.get("leafLength") || null,
-        leafWidth: data.get("leafWidth") || null,
-        leafCount: data.get("leafCount") || null,
-        leafArea: data.get("leafArea") || null,
-        freshWeight: data.get("freshWeight") || null,
-        rootLength: data.get("rootLength") || null,
-        spadValue: data.get("spadValue") || null,
-        tipburnScore: data.get("tipburnScore") || null,
-        boltingSign: data.get("boltingSign") || "none",
-        leafColorScore: data.get("leafColorScore") || null,
-        harvestReadiness: data.get("harvestReadiness") || "unknown",
-      };
-      return { ...base, height: data.get("plantHeight") || data.get("height") || null, leafCount: data.get("leafCount") || null, cropType: data.get("cropType") || "lettuce", metricsJson: JSON.stringify(growthMetrics) };
+      const selectedZone = this._findZoneForRender?.(data.get("zoneId")) || this._r7PrimaryZoneForDomain?.() || {};
+      const growthMetrics = [
+        ["surveyDate", data.get("surveyDate") || base.date],
+        ["zoneId", data.get("zoneId") || this._r7ZoneId?.(selectedZone) || ""],
+        ["zoneLabel", data.get("zoneLabel") || this._r7ZoneName?.(selectedZone) || ""],
+        ["growthStage", data.get("growthStage") || selectedZone.currentCrop?.growth_stage || selectedZone.currentCrop?.growthStage || ""],
+        ["observerName", data.get("observerName") || ""],
+        ["plantHeight", data.get("plantHeight") || null],
+        ["leafLength", data.get("leafLength") || null],
+        ["leafWidth", data.get("leafWidth") || null],
+        ["leafCount", data.get("leafCount") || null],
+        ["spadValue", data.get("spadValue") || null],
+        ["leafArea", data.get("leafArea") || null],
+        ["freshWeight", data.get("freshWeight") || null],
+        ["tipburnScore", data.get("tipburnScore") || null],
+        ["boltingSign", data.get("boltingSign") || "none"],
+        ["leafColorScore", data.get("leafColorScore") || "unknown"],
+        ["harvestReadiness", data.get("harvestReadiness") || "unknown"],
+        ["qualityImageAttached", data.get("qualityImage") ? true : false],
+        ["imageAnalysisNote", data.get("imageAnalysisNote") || ""],
+      ].map(([key, value]) => ({ key, value })).filter((item) => item.value !== null && item.value !== "");
+      return { ...base, zoneId: data.get("zoneId") || this._r7ZoneId?.(selectedZone) || "", zoneLabel: data.get("zoneLabel") || this._r7ZoneName?.(selectedZone) || "", height: data.get("plantHeight") || data.get("height") || null, leafCount: data.get("leafCount") || null, cropType: data.get("cropType") || "lettuce", metricsJson: JSON.stringify(growthMetrics) };
     }
     if (recordType === "pest-scouting") return { ...base, type: data.get("type") || "미지정", location: data.get("location") || "", severity: Number(data.get("severity") || 1) };
     return { ...base, pesticideName: data.get("pesticideName") || "미지정 약제", phiDays: data.get("phiDays") ? Number(data.get("phiDays")) : null, reiHours: data.get("reiHours") ? Number(data.get("reiHours")) : null, pls: data.get("pls") === "true" };
@@ -1880,35 +1891,55 @@ class GreenSmartRebuildPanel extends HTMLElement {
       });
     });
     this.querySelectorAll("[data-r7-record-modal-close]").forEach((button) => button.addEventListener("click", () => this.closeR7RecordWorkflowModal()));
+    this.querySelectorAll("[data-r7-growth-survey-image-upload]").forEach((button) => button.addEventListener("click", () => {
+      const input = this.querySelector("[data-r7-growth-survey-image-input]");
+      input?.click?.();
+    }));
+    this.querySelectorAll("[data-r7-growth-survey-image-input]").forEach((input) => input.addEventListener("change", () => {
+      const label = this.querySelector("[data-r7-growth-survey-image-file-name]");
+      if (label) label.textContent = input.files?.[0]?.name || "이미지 선택됨";
+    }));
     this.querySelectorAll("form[data-r7-record-write-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this.submitR7RecordWorkflowForm(form); }));
   }
 
   renderR7GrowthSurveyImageFields() {
     const today = new Date().toISOString().slice(0, 10);
-    const inputStyle = "height:34px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;";
+    const zones = (this._zonesForRender?.() || []).filter((zone) => this._r7ZoneId(zone) !== "all");
+    const selectedZone = this._r7PrimaryZoneForDomain?.() || zones[0] || {};
+    const selectedZoneId = this._r7ZoneId?.(selectedZone) || selectedZone.id || "";
+    const selectedStage = selectedZone.currentCrop?.growth_stage || selectedZone.currentCrop?.growthStage || selectedZone.state || "활착기";
+    const inputStyle = "height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;";
     const labelStyle = "display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;";
-    const field = ({ key, label, name = key, type = "text", value = "", step = "", min = "", options = null, required = false }) => {
+    const select = ({ key, label, name = key, options = [] }) => `<label style="${labelStyle}"><span>${label}</span><select name="${name}" data-r7-growth-survey-field="${key}" style="${inputStyle}">${options.join("")}</select></label>`;
+    const field = ({ key, label, name = key, type = "text", value = "", step = "", min = "", required = false }) => {
       const attrs = `${type === "number" && step ? ` step="${step}"` : ""}${type === "number" && min !== "" ? ` min="${min}"` : ""}${required ? " required" : ""}`;
-      const control = options ? `<select name="${name}" data-r7-growth-survey-field="${key}" style="${inputStyle}">${options.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select>` : `<input name="${name}" data-r7-growth-survey-field="${key}" type="${type}" value="${value}"${attrs} style="${inputStyle}">`;
-      return `<label style="${labelStyle}"><span>${label}</span>${control}</label>`;
+      return `<label style="${labelStyle}"><span>${label}</span><input name="${name}" data-r7-growth-survey-field="${key}" type="${type}" value="${value}"${attrs} style="${inputStyle}"></label>`;
     };
+    const zoneOptions = (zones.length ? zones : [selectedZone]).map((zone) => {
+      const zoneId = this._r7ZoneId?.(zone) || zone.id || "";
+      const selected = zoneId === selectedZoneId;
+      return `<option value="${zoneId}" data-r7-growth-survey-zone-option="${zoneId}"${selected ? " selected" : ""}>${this._r7ZoneName?.(zone) || zone.name || zoneId}</option>`;
+    });
+    const stageLabels = ["활착기", "본격 엽생장기", "수확 전 품질관리기", "수확기", "작기 종료 준비"];
+    const stageOptions = stageLabels.map((label) => `<option value="${label}"${label === selectedStage ? " selected" : ""}>${label}</option>`);
     const section = (key, title, body) => `<fieldset data-r7-growth-survey-section="${key}" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;background:#fff;"><legend style="font-size:13px;font-weight:950;color:#1f3329;padding:0 4px;">${title}</legend>${body}</fieldset>`;
-    return `<div data-r7-growth-survey-image-modal="true" style="display:grid;grid-template-columns:minmax(0,1.45fr) minmax(220px,.75fr);gap:14px;align-items:start;">
+    return `<div data-r7-growth-survey-image-modal="true" style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.75fr);gap:14px;align-items:start;">
       <div data-r7-growth-survey-left-form style="display:grid;gap:12px;min-width:0;">
-        ${section("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${field({ key: "surveyDate", label: "조사일", name: "surveyDate", type: "date", value: today, required: true })}${field({ key: "zoneLabel", label: "조사구역", name: "zoneLabel", value: "1구역" })}${field({ key: "growthStage", label: "생육단계", name: "growthStage", value: "활착기" })}${field({ key: "observerName", label: "조사자", name: "observerName", value: this.hass?.user?.name || "" })}</div><input type="hidden" name="cropType" value="lettuce">`)}
-        ${section("growth-measurements", "생육 측정값", `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">${field({ key: "plantHeight", label: "초장(cm)", name: "plantHeight", type: "number", step: "0.1", min: "0" })}${field({ key: "leafLength", label: "엽장(cm)", name: "leafLength", type: "number", step: "0.1", min: "0" })}${field({ key: "leafWidth", label: "엽폭(cm)", name: "leafWidth", type: "number", step: "0.1", min: "0" })}${field({ key: "leafCount", label: "엽수", name: "leafCount", type: "number", step: "0.1", min: "0" })}${field({ key: "leafArea", label: "엽면적(cm²)", name: "leafArea", type: "number", step: "0.1", min: "0" })}${field({ key: "freshWeight", label: "생체중(g)", name: "freshWeight", type: "number", step: "0.1", min: "0" })}${field({ key: "rootLength", label: "근장(cm)", name: "rootLength", type: "number", step: "0.1", min: "0" })}</div>`)}
-        ${section("quality-disorder", "품질/생리장해 측정값", `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${field({ key: "spadValue", label: "SPAD", name: "spadValue", type: "number", step: "0.1", min: "0" })}${field({ key: "tipburnScore", label: "잎끝마름", name: "tipburnScore", type: "number", step: "1", min: "0" })}${field({ key: "boltingSign", label: "추대 징후", name: "boltingSign", options: [["none", "없음"], ["suspected", "의심"], ["visible", "확인"]] })}${field({ key: "leafColorScore", label: "잎색/상품성", name: "leafColorScore", type: "number", step: "1", min: "0" })}${field({ key: "harvestReadiness", label: "수확 가능 여부", name: "harvestReadiness", options: [["unknown", "확인 전"], ["not_ready", "아직"], ["ready", "가능"], ["hold", "보류"]] })}</div>`)}
+        ${section("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${field({ key: "surveyDate", label: "조사일", name: "surveyDate", type: "date", value: today, required: true })}${select({ key: "zoneId", label: "조사구역", name: "zoneId", options: zoneOptions })}${select({ key: "growthStage", label: "생육단계", name: "growthStage", options: stageOptions })}${field({ key: "observerName", label: "조사자", name: "observerName", value: this.hass?.user?.name || "" })}</div><input type="hidden" name="zoneLabel" data-r7-growth-survey-field="zoneLabel" value="${this._r7ZoneName?.(selectedZone) || selectedZone.name || ""}"><input type="hidden" name="cropType" value="${selectedZone.currentCrop?.crop_type || selectedZone.currentCrop?.cropType || "lettuce"}">`)}
+        ${section("growth-measurements", "생육 측정값", `<div data-r7-growth-survey-measurement-grid style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${field({ key: "plantHeight", label: "초장(cm)", name: "plantHeight", type: "number", step: "0.1", min: "0" })}${field({ key: "leafLength", label: "엽장(cm)", name: "leafLength", type: "number", step: "0.1", min: "0" })}${field({ key: "leafWidth", label: "엽폭(cm)", name: "leafWidth", type: "number", step: "0.1", min: "0" })}${field({ key: "leafCount", label: "엽수", name: "leafCount", type: "number", step: "0.1", min: "0" })}${field({ key: "spadValue", label: "SPAD", name: "spadValue", type: "number", step: "0.1", min: "0" })}</div>`)}
+        ${section("quality-disorder", "품질/생리장해 측정값", `<div data-r7-growth-survey-quality-grid style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${field({ key: "leafArea", label: "엽면적(cm²)", name: "leafArea", type: "number", step: "0.1", min: "0" })}${field({ key: "freshWeight", label: "생체중(g)", name: "freshWeight", type: "number", step: "0.1", min: "0" })}${field({ key: "tipburnScore", label: "잎끝마름", name: "tipburnScore", type: "number", step: "1", min: "0" })}${select({ key: "boltingSign", label: "추대 징후", name: "boltingSign", options: [["none", "없음"], ["suspected", "의심"], ["visible", "확인"]].map(([v, t]) => `<option value="${v}">${t}</option>`) })}${select({ key: "leafColorScore", label: "잎색/상품성", name: "leafColorScore", options: [["unknown", "확인 전"], ["dark_green", "진녹색"], ["normal_green", "정상 녹색"], ["pale", "연한 잎색"], ["yellowing", "황화"], ["edge_browning", "가장자리 갈변"]].map(([v, t]) => `<option value="${v}">${t}</option>`) })}${select({ key: "harvestReadiness", label: "수확 가능 여부", name: "harvestReadiness", options: [["unknown", "확인 전"], ["not_ready", "아직"], ["ready", "가능"], ["hold", "보류"]].map(([v, t]) => `<option value="${v}">${t}</option>`) })}</div><div data-r7-growth-survey-image-analysis style="margin-top:10px;border:1px dashed #cfe3d4;border-radius:12px;padding:10px;display:grid;gap:8px;background:#fbfdfb;"><input data-r7-growth-survey-image-input data-r7-growth-survey-field="qualityImage" name="qualityImage" type="file" accept="image/*" style="display:none;"><button type="button" data-r7-growth-survey-image-upload style="height:36px;border:1px solid #cfe3d4;border-radius:10px;background:#f4fbf5;color:#31523b;font-weight:950;">품질/생리장해 이미지 추가</button><span data-r7-growth-survey-image-file-name style="font-size:12px;color:#78927f;">선택된 이미지 없음</span><label style="${labelStyle}"><span>이미지 분석 결과</span><textarea name="imageAnalysisNote" rows="3" data-r7-growth-survey-field="imageAnalysisNote" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;font-size:12px;"></textarea></label></div>`)}
         ${section("memo", "메모", `<label style="${labelStyle}"><span>조사 메모</span><textarea name="note" rows="3" data-r7-growth-survey-field="note" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;font-size:12px;"></textarea></label>`)}
       </div>
       <aside data-r7-growth-survey-side-panel style="display:grid;gap:10px;border:1px solid #e5eee7;border-radius:14px;background:#fbfdfb;padding:12px;position:sticky;top:8px;">
         <strong style="font-size:14px;color:#1f3329;">저장 전 참고</strong>
         <div style="display:grid;gap:8px;font-size:12px;color:#53645b;line-height:1.45;">
-          <div data-r7-growth-survey-side-item="growth-state"><b>생육값 상태</b><br>초장·엽장·엽폭·엽수를 입력하면 L-Index/V-Score 근거로 사용됩니다.</div>
+          <div data-r7-growth-survey-side-item="growth-state"><b>생육값 상태</b><br>초장·엽장·엽폭·엽수·SPAD를 입력하면 L-Index/V-Score 근거로 사용됩니다.</div>
           <div data-r7-growth-survey-side-item="spad"><b>SPAD 입력 대기</b><br>엽색과 생리장해 판단 보조값입니다.</div>
+          <div data-r7-growth-survey-side-item="image"><b>이미지 분석 보조</b><br>품질/생리장해 사진 분석 결과를 메모로 저장합니다.</div>
           <div data-r7-growth-survey-side-item="disorder"><b>병충/생리장해 확인</b><br>잎끝마름·추대 징후·상품성을 같이 확인합니다.</div>
           <div data-r7-growth-survey-side-item="harvest"><b>수확·후처리 자료 저장 가능</b><br>수확 가능 여부는 품질 판단 참고값입니다.</div>
           <div data-r7-growth-survey-side-item="vscore"><b>V-Score 계산 대기</b><br>저장 후 모델 근거 데이터로 반영됩니다.</div>
-          <div data-r7-growth-survey-side-item="crop-evidence"><b>작물 근거</b><br>상추 · 현재 작기 · 구역 기준 기록입니다.</div>
+          <div data-r7-growth-survey-side-item="crop-evidence"><b>작물 근거</b><br>${this._r7ZoneName?.(selectedZone) || "현재 구역"} · 현재 작기 기준 기록입니다.</div>
         </div>
       </aside>
     </div>`;
@@ -1948,7 +1979,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       body = `<section data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${history}</section>`;
     }
     return `<div data-r7-record-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}" style="position:fixed;inset:0;background:rgba(20,32,24,.28);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;">
-      <section style="width:min(720px,100%);max-height:82vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #dcebe0;box-shadow:0 18px 55px rgba(31,51,41,.18);padding:18px;display:grid;gap:14px;">
+      <section style="width:min(1120px,calc(100vw - 28px));max-height:88vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #dcebe0;box-shadow:0 18px 55px rgba(31,51,41,.18);padding:18px;display:grid;gap:14px;">
         <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><strong style="font-size:18px;color:#1f3329;">${modal.title}</strong><div style="font-size:12px;color:#78927f;margin-top:3px;">작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}</div></div><button type="button" data-r7-record-modal-close style="width:34px;height:34px;border:1px solid #dcebe0;border-radius:50%;background:#fff;font-weight:950;">×</button></header>
         ${summary}
         ${body}
