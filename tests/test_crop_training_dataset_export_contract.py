@@ -92,7 +92,7 @@ def test_v1966_version_markers_contract():
     manifest = MANIFEST.read_text(encoding="utf-8")
     panel = PANEL.read_text(encoding="utf-8")
     central = CENTRAL.read_text(encoding="utf-8")
-    assert '"version": "1.13.6"' in manifest
-    assert 'const VERSION = "1.13.6"' in panel
-    assert "v1.13.6" in panel[:200]
+    assert '"version": "1.13.7"' in manifest
+    assert 'const VERSION = "1.13.7"' in panel
+    assert "v1.13.7" in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central

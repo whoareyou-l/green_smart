@@ -30,9 +30,9 @@ def _render_users_permissions():
 
 
 def test_r7_069_version_surfaces_are_1_13_4():
-    assert '"version": "1.13.6"' in _read(MANIFEST)
-    assert 'const VERSION = "1.13.6"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.13.6"' in _read(REBUILD_PANEL)
+    assert '"version": "1.13.7"' in _read(MANIFEST)
+    assert 'const VERSION = "1.13.7"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.13.7"' in _read(REBUILD_PANEL)
 
 
 def test_r7_069_permission_matrix_has_detailed_steps_and_edit_buttons():
@@ -65,15 +65,12 @@ def test_r7_069_user_flow_is_approval_request_not_invitation():
         '요청 역할',
         '요청 상태',
         '대기',
-        '허락',
-        '반려',
         'data-r7-settings-user-approval-request-row=',
-        'data-r7-settings-users-action="approve-request"',
-        'data-r7-settings-users-action="reject-request"',
+        'data-r7-settings-users-action="approval-all"',
     ]
     for item in required:
         assert item in html
-    forbidden = ['사용자 초대', '초대 대기', 'data-r7-settings-users-action="invite"']
+    forbidden = ['사용자 초대', '초대 대기', 'data-r7-settings-users-action="invite"', 'data-r7-settings-users-action="approve-request"', 'data-r7-settings-users-action="reject-request"']
     for item in forbidden:
         assert item not in html
 

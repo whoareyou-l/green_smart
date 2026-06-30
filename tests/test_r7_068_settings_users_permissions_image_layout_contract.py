@@ -30,9 +30,9 @@ def _render_users_permissions():
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.13.6"' in _read(MANIFEST)
-    assert 'const VERSION = "1.13.6"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.13.6"' in _read(REBUILD_PANEL)
+    assert '"version": "1.13.7"' in _read(MANIFEST)
+    assert 'const VERSION = "1.13.7"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.13.7"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -76,9 +76,11 @@ def test_r7_068_permission_matrix_contains_role_columns_and_bucket_rows():
 
 def test_r7_068_user_list_approval_audit_rows_are_table_like():
     html = _render_users_permissions()
-    assert html.count('data-r7-settings-user-row=') >= 3
+    assert html.count('data-r7-settings-user-row=') == 5
     assert html.count('data-r7-settings-approval-row=') >= 3
-    assert html.count('data-r7-settings-audit-row=') >= 3
+    assert html.count('data-r7-settings-audit-row=') == 2
+    assert 'data-r7-common-data-limit="2"' in html
+    assert 'data-r7-common-table-limit="5"' in html
     for header in ['사용자', '역할', '상태', '최근 활동', '권한 요약']:
         assert header in html
 
