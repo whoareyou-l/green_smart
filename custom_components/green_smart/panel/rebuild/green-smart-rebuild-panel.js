@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.92";
+const REBUILD_VERSION = "1.12.93";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1730,7 +1730,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7RecordCardBadge(statusKey = "normal-ready") {
     const status = this.r7RecordStatus(statusKey);
-    return `<span data-r7-record-card-badge data-r7-record-status-key="${statusKey}" data-r7-record-status-stage="${status.stage}" style="font-size:11px;font-weight:900;border:1px solid ${status.border};border-radius:999px;padding:4px 8px;background:${status.bg};color:${status.text};line-height:1;white-space:nowrap;display:inline-flex;gap:5px;align-items:center;"><b>${status.label}</b><small style="font-size:10px;font-weight:800;opacity:.78;">${status.stage}</small></span>`;
+    const label = `${status.label} · ${status.stage}`;
+    return `<span data-r7-record-card-badge data-r7-record-status-key="${statusKey}" data-r7-record-status-stage="${status.stage}" aria-label="${label}" title="${label}" style="font-size:11px;font-weight:900;border:1px solid ${status.border};border-radius:999px;padding:4px 8px;background:${status.bg};color:${status.text};line-height:1;white-space:nowrap;display:inline-flex;gap:5px;align-items:center;"><span data-r7-record-badge-visible-label>${status.label}</span></span>`;
   }
 
   renderR7RecordCardHeader({ icon, title, statusKey = "normal-ready", tone = "green", extraAttrs = "" }) {
@@ -1761,7 +1762,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-record-card-action-row style="display:grid;grid-template-columns:repeat(${visible.length},minmax(0,1fr));gap:8px;align-items:center;margin-top:auto;">${visible.join("")}</div>`;
   }
 
-  renderR7RecordCardShell({ kind, icon, title, status, statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
+  renderR7RecordCardShell({ kind, icon, title, statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
     return `<article data-r7-record-card-shell="${kind}" data-r7-record-image-card="${kind}" ${extraAttrs} style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;grid-template-rows:auto 1fr auto;gap:12px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);min-width:0;align-content:stretch;">
       ${this.renderR7RecordCardHeader({ icon, title, statusKey, tone })}
       ${this.renderR7RecordCardBody({ primary, note, html, tone })}
@@ -1782,7 +1783,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7RecentRecordPanel(recentRows = []) {
     return `<section data-r7-record-recent-log-panel style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;gap:12px;min-height:116px;box-shadow:0 1px 2px rgba(31,51,41,.04);grid-column:1/-1;min-width:0;">
-      ${this.renderR7RecordCardHeader({ icon: "mdi:clipboard-text-clock-outline", title: "최근 기록", status: "fresh", tone: "green", extraAttrs: 'data-r7-record-recent-header' })}
+      ${this.renderR7RecordCardHeader({ icon: "mdi:clipboard-text-clock-outline", title: "최근 기록", statusKey: "normal-ready", tone: "green", extraAttrs: 'data-r7-record-recent-header' })}
       <div data-r7-record-recent-body style="display:grid;gap:0;min-width:0;">${recentRows.map((row) => this.renderR7RecentRecordRow(row)).join("")}</div>
     </section>`;
   }
@@ -1864,24 +1865,37 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7RecordWriteFields(recordType) {
     const today = new Date().toISOString().slice(0, 10);
-    const common = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">조사/기록일<input name="date" type="date" value="${today}" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>`;
-    const note = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">메모<textarea name="note" rows="3" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;"></textarea></label>`;
-    if (recordType === "growth-survey") return `${common}<input type="hidden" name="cropType" value="lettuce"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">초장(cm)<input name="height" type="number" step="0.1" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">엽수<input name="leafCount" type="number" step="0.1" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label></div>${note}`;
-    if (recordType === "pest-scouting") return `${common}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">병해충/증상<input name="type" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">심각도<input name="severity" type="number" min="1" max="5" value="1" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label></div><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">위치<input name="location" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>${note}`;
-    return `${common}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">약제명<input name="pesticideName" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">PHI(일)<input name="phiDays" type="number" min="0" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">REI(시간)<input name="reiHours" type="number" min="0" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">PLS<select name="pls" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"><option value="true">적합</option><option value="false">확인 필요</option></select></label></div>${note}`;
+    const baseInput = "height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;background:#fff;box-sizing:border-box;";
+    const labelStyle = "display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;";
+    const common = `<fieldset data-r7-record-form-field-group="common" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;"><legend style="font-size:12px;font-weight:950;color:#31523b;padding:0 4px;">공통 정보</legend><label style="${labelStyle}">조사/기록일<input name="date" type="date" required value="${today}" style="${baseInput}"></label></fieldset>`;
+    const note = `<label style="${labelStyle}">메모<textarea name="note" rows="3" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;"></textarea></label>`;
+    if (recordType === "growth-survey") return `${common}<fieldset data-r7-record-form-field-group="growth-survey" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;"><legend style="font-size:12px;font-weight:950;color:#31523b;padding:0 4px;">생육조사</legend><input type="hidden" name="cropType" value="lettuce"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">초장(cm)<input name="height" type="number" step="0.1" min="0" style="${baseInput}"></label><label style="${labelStyle}">엽수<input name="leafCount" type="number" step="0.1" min="0" style="${baseInput}"></label></div>${note}</fieldset>`;
+    if (recordType === "pest-scouting") return `${common}<fieldset data-r7-record-form-field-group="pest-scouting" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;"><legend style="font-size:12px;font-weight:950;color:#31523b;padding:0 4px;">병해충 예찰</legend><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">병해충/증상<input name="type" required style="${baseInput}"></label><label style="${labelStyle}">심각도<input name="severity" type="number" min="1" max="5" value="1" required style="${baseInput}"></label></div><label style="${labelStyle}">위치<input name="location" style="${baseInput}"></label>${note}</fieldset>`;
+    return `${common}<fieldset data-r7-record-form-field-group="control-treatment" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;"><legend style="font-size:12px;font-weight:950;color:#31523b;padding:0 4px;">방제 기록</legend><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">약제명<input name="pesticideName" required style="${baseInput}"></label><label style="${labelStyle}">PHI(일)<input name="phiDays" type="number" min="0" style="${baseInput}"></label></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">REI(시간)<input name="reiHours" type="number" min="0" style="${baseInput}"></label><label style="${labelStyle}">PLS<select name="pls" style="${baseInput}"><option value="true">적합</option><option value="false">확인 필요</option></select></label></div>${note}</fieldset>`;
   }
 
   renderR7RecordWorkflowModal() {
     const modal = this._r7RecordModal;
     if (!modal) return "";
     const rows = modal.rows || [];
-    const history = `<div data-r7-record-history-list style="display:grid;gap:8px;">${rows.length ? rows.map((row) => `<div data-r7-record-history-row style="border:1px solid #e5eee7;border-radius:10px;padding:9px 10px;font-size:12px;color:#53645b;"><strong style="color:#1f3329;">${row.date || row.id || "기록"}</strong><div>${row.summary || row.note || "상세 기록"}</div></div>`).join("") : `<div data-r7-record-history-empty style="border:1px dashed #dcebe0;border-radius:10px;padding:12px;color:#78927f;font-size:12px;">표시할 기록이 없습니다.</div>`}</div>`;
-    const body = modal.mode === "write"
-      ? `<form data-r7-record-write-form style="display:grid;gap:12px;">${this.renderR7RecordWriteFields(modal.recordType)}<button data-r7-record-modal-submit type="submit" style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">저장</button></form>`
-      : `<section data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${modal.state === "loading" ? "불러오는 중..." : history}</section>`;
+    const statusText = modal.state === "saving" ? "저장 중" : modal.state === "saved" ? "저장 완료" : modal.state === "error" ? "오류" : modal.state === "loading" ? "불러오는 중" : "입력 가능";
+    const summary = `<div data-r7-record-modal-operator-summary style="border:1px solid #e5eee7;border-radius:12px;background:#fbfdfb;padding:11px 12px;display:grid;gap:4px;"><strong style="font-size:13px;color:#1f3329;">${this.r7RecordTypeLabel(modal.recordType)} · ${statusText}</strong><span style="font-size:12px;color:#6d7a70;line-height:1.45;">저장 후 최신 기록과 카드 상태를 다시 불러옵니다.</span></div>`;
+    const historyRows = rows.length ? rows.map((row) => `<div data-r7-record-history-row style="border:1px solid #e5eee7;border-radius:10px;padding:9px 10px;font-size:12px;color:#53645b;display:grid;gap:4px;"><strong data-r7-record-history-row-date style="color:#1f3329;">${row.date || row.id || "기록"}</strong><div data-r7-record-history-row-summary>${row.summary || row.note || "상세 기록"}</div></div>`).join("") : `<div data-r7-record-history-empty style="border:1px dashed #dcebe0;border-radius:10px;padding:12px;color:#78927f;font-size:12px;">표시할 기록이 없습니다.</div>`;
+    const history = `<section data-r7-record-history-summary style="display:grid;gap:10px;"><div style="font-size:12px;font-weight:900;color:#31523b;">총 ${rows.length}건 · 최신순</div><div data-r7-record-history-list style="display:grid;gap:8px;">${historyRows}</div></section>`;
+    let body = "";
+    if (modal.mode === "write") {
+      body = `<form data-r7-record-write-form style="display:grid;gap:12px;"><div data-r7-record-modal-required-note style="font-size:12px;color:#9a6b10;background:#fff8e6;border:1px solid #ead4a2;border-radius:10px;padding:9px 10px;"><strong>필수 입력</strong> · 날짜와 기록 유형별 핵심 항목을 확인하세요.</div>${this.renderR7RecordWriteFields(modal.recordType)}${modal.state === "error" ? `<div data-r7-record-modal-error style="font-size:12px;color:#b4453a;">${modal.error || "저장 실패"}</div>` : ""}${modal.state === "saved" ? `<div data-r7-record-modal-saved style="font-size:12px;color:#25804a;">저장 완료</div>` : ""}<div data-r7-record-modal-actions style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button data-r7-record-modal-cancel data-r7-record-modal-close type="button" style="height:38px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:950;">취소</button><button data-r7-record-modal-submit type="submit" style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">${modal.state === "saving" ? "저장 중..." : "저장"}</button></div></form>`;
+    } else if (modal.state === "loading") {
+      body = `<div data-r7-record-modal-loading style="border:1px dashed #dcebe0;border-radius:10px;padding:14px;color:#78927f;font-size:12px;">히스토리를 불러오는 중입니다.</div>`;
+    } else if (modal.state === "error") {
+      body = `<div data-r7-record-modal-error style="border:1px solid #efc5c0;background:#fde7e4;border-radius:10px;padding:14px;color:#b4453a;font-size:12px;">${modal.error || "불러오기 실패"}</div>`;
+    } else {
+      body = `<section data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${history}</section>`;
+    }
     return `<div data-r7-record-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}" style="position:fixed;inset:0;background:rgba(20,32,24,.28);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;">
       <section style="width:min(720px,100%);max-height:82vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #dcebe0;box-shadow:0 18px 55px rgba(31,51,41,.18);padding:18px;display:grid;gap:14px;">
         <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><strong style="font-size:18px;color:#1f3329;">${modal.title}</strong><div style="font-size:12px;color:#78927f;margin-top:3px;">작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}</div></div><button type="button" data-r7-record-modal-close style="width:34px;height:34px;border:1px solid #dcebe0;border-radius:50%;background:#fff;font-weight:950;">×</button></header>
+        ${summary}
         ${body}
       </section>
     </div>`;

@@ -32,9 +32,9 @@ def _render_script() -> str:
 
 
 def test_r7_056_version_surfaces_are_1_12_91():
-    assert '"version": "1.12.92"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.92"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.92"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.93"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.93"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.93"' in _read(REBUILD_PANEL)
 
 
 def test_r7_056_source_uses_shared_record_components_instead_of_inline_locals():
