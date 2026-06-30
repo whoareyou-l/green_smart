@@ -38,10 +38,10 @@ def _node_harness(record_summary: str) -> str:
 
 
 def test_r7_049_version_surfaces_are_1_12_84():
-    assert '"version": "1.12.85"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.85"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.85"' in _read(REBUILD_PANEL)
-    assert "v1.12.85" in _read(DOC)
+    assert '"version": "1.12.86"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.86"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.86"' in _read(REBUILD_PANEL)
+    assert "v1.12.86" in _read(DOC)
 
 
 def test_r7_049_plan_supersedes_value_card_work_with_product_judgment():
@@ -50,7 +50,7 @@ def test_r7_049_plan_supersedes_value_card_work_with_product_judgment():
         "supersedes the shallow R7-048",
         "DTO value -> card display",
         "decide if it needs write CTA / history / edit / settings / approval / read-only source",
-        "v1.12.85` must be redone as `v1.12.85`",
+        "v1.12.86` must be redone as `v1.12.86`",
         "Product judgment matrix",
         "data-r7-records-workflow-product-layout=\"write-history-review\"",
     ]:

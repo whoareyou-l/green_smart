@@ -1,6 +1,6 @@
 # R7-017 Environment Domain Tabs + Zone Visual Rewrite
 
-> 기준 버전: `v1.12.85`
+> 기준 버전: `v1.12.86`
 > Status: R7-017 complete
 > Purpose: Apply the corrected R7 rule to the first domain page: shared visual frame, sub-tabs, zone context, and no long one-page stack.
 
@@ -128,5 +128,5 @@ R7-015 common visual system still passes
 R7-016 operations home still passes
 Full pytest passes
 node --check passes for both panel files
-Prod static smoke verifies v1.12.85 and R7-017 markers
+Prod static smoke verifies v1.12.86 and R7-017 markers
 ```

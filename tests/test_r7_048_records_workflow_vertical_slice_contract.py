@@ -38,10 +38,10 @@ def _node_harness(record_summary: str) -> str:
 
 
 def test_r7_048_version_surfaces_follow_current_release():
-    assert '"version": "1.12.85"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.85"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.85"' in _read(REBUILD_PANEL)
-    assert "v1.12.85" in _read(DOC)
+    assert '"version": "1.12.86"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.86"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.86"' in _read(REBUILD_PANEL)
+    assert "v1.12.86" in _read(DOC)
 
 
 def test_r7_048_records_workflow_baseline_is_superseded_by_r7_050_product_layout():

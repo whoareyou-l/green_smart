@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.85";
+const REBUILD_VERSION = "1.12.86";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1690,6 +1690,30 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<section data-r7-record-section="${section}" data-r7-product-state="${state}" ${markers} style="background:#fff;border:1px solid ${tone === 'amber' ? '#efd58a' : tone === 'blue' ? '#b9d4ee' : '#b8dec5'};border-radius:16px;padding:13px;display:grid;gap:9px;${wide ? 'grid-column:1/-1;' : ''}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><div style="font-size:14px;font-weight:800;color:#1f3329;">${title}</div>${secondary ? `<div style="font-size:12px;color:#667569;margin-top:2px;">${secondary}</div>` : ''}</div>${this.renderR7CropStatusChip("상태", state, tone)}</div><div style="font-size:16px;font-weight:800;color:#17251d;line-height:1.35;">${primary}</div>${facts.filter(Boolean).length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;">${facts.filter(Boolean).map((fact) => `<span style="border:1px solid #d8e5dc;background:#f7fbf8;border-radius:999px;padding:3px 7px;font-size:11px;color:#486255;">${fact}</span>`).join("")}</div>` : ''}${actions ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${actions}</div>` : ''}</section>`;
   }
 
+  renderR7RecordFlowCard({ marker, title, fields = [], state = "pending-api", note = "API 연결 전" }) {
+    return `<section ${marker} data-r7-record-submit-state="${state}" style="background:#fbfdf9;border:1px dashed #bfd9c9;border-radius:14px;padding:12px;display:grid;gap:8px;"><div style="font-size:13px;font-weight:900;color:#213b2d;">${title}</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${fields.map((field) => `<span style="border:1px solid #d8e5dc;background:#fff;border-radius:999px;padding:3px 7px;font-size:11px;color:#486255;">${field}</span>`).join("")}</div><div style="font-size:11px;color:#667569;">${note}</div></section>`;
+  }
+
+  renderR7RecordsWorkflowFlowSkeleton(ctx) {
+    const controlTreatment = ctx.controlTreatment || {};
+    const pesticideName = controlTreatment.latest?.pesticides?.[0]?.name || "약제명";
+    const plsState = this.r7RecordPlsRequiresCheck(controlTreatment) ? "PLS 확인 필요" : "PLS 적합";
+    const historyFields = ["최근 N건", "날짜", "요약", "작성자/수정 여부는 API 연결 후"];
+    return `<section data-r7-record-flow-skeleton="write-history-pls" data-r7-record-api-boundary="ui-skeleton-only" style="grid-column:1/-1;background:#f7faf6;border:1px solid #d7e7dc;border-radius:18px;padding:14px;display:grid;gap:12px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><div style="font-size:15px;font-weight:900;color:#1f3329;">작성·히스토리 플로우</div><div style="font-size:12px;color:#667569;margin-top:2px;">UI skeleton only · 저장 API 연결 전</div></div><span data-r7-record-submit-state="pending-api" style="font-size:11px;border:1px solid #e2c56d;background:#fff8df;color:#6f5b2e;border-radius:999px;padding:4px 8px;font-weight:800;">pending-api</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-modal="growth-survey-write"', title: "생육조사 작성 플로우", fields: ["조사일", "초장", "엽수", "생육단계", "특이사항", "작기/구역 연결"] })}
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-modal="pest-scouting-write"', title: "예찰 작성 플로우", fields: ["예찰일", "병해충명", "severity", "발생 위치", "확산 여부", "사진/메모", "방제 필요 여부"] })}
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-modal="control-treatment-write" data-r7-record-boundary="record-only-no-execution"', title: "방제 기록 작성 플로우", fields: ["방제일", "대상 병해충", "약제명", "희석배수/사용량", "PLS 상태", "작업자", "안전 메모"], note: "실행 아님 · 기록 전용 · API 연결 전" })}
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-history-drawer="growth-survey" data-r7-record-history-state="navigation-only"', title: "생육 히스토리 플로우", fields: historyFields, state: "navigation-only", note: "navigation-only · API 연결 후 실제 목록" })}
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-history-drawer="pest-scouting" data-r7-record-history-state="navigation-only"', title: "예찰 히스토리 플로우", fields: historyFields, state: "navigation-only", note: "navigation-only · API 연결 후 실제 목록" })}
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-history-drawer="control-treatment" data-r7-record-history-state="navigation-only"', title: "방제 히스토리 플로우", fields: historyFields, state: "navigation-only", note: "navigation-only · API 연결 후 실제 목록" })}
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-edit-flow="growth-survey-latest"', title: "최근 생육조사 수정", fields: ["최근 생육조사 수정", "저장 API 연결 전", "수정 사유", "작기/구역 연결"] })}
+        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-pls-check-flow', title: "PLS 확인 플로우", fields: ["PLS 확인", pesticideName, plsState, "PSIS/약제 DB 확인은 후속 API slice"], note: "방제 실행 아님 · 확인 플로우만 표시" })}
+      </div>
+    </section>`;
+  }
+
   renderR7RecordsWorkflowProductLayout(ctx) {
     const { recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction } = ctx;
     const missingItems = this.r7RecordMissingItems(ctx);
@@ -1729,6 +1753,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7RecordProductSection({ section: "control-treatment", title: "방제", primary: controlTreatment.latestLabel || "방제 기록 없음", secondary: `최근 ${controlTreatment.count ?? 0}건 · ${controlState} · 실행 아님 · 기록 전용`, state: controlState, tone: controlState === "attention" ? "amber" : "green", facts: [...controlFacts, "실행 아님 · 기록 전용"], actions: controlActions, markers: 'data-r7-record-boundary="record-only-no-execution"' })}
       ${this.renderR7RecordProductSection({ section: "missing-attention", title: "누락/주의", primary: attentionItems.length ? `${attentionItems.length}개 확인 필요` : "누락 없음", secondary: `생육 ${growthState} · 예찰 ${pestState} · 방제 ${controlState}`, state: attentionItems.length ? "attention" : "fresh", tone: attentionItems.length ? "amber" : "green", facts: attentionItems.length ? attentionItems : ["누락 없음", "PLS 적합"], actions: missingActions, markers: `data-r7-record-missing-count="${attentionItems.length}"`, wide: true })}
       ${this.renderR7RecordProductSection({ section: "record-source", title: "기록 원천", primary: "최근 기록 요약 · read-only", secondary: "read-only · write/execute disabled · 관리자 상세", state: "ready", tone: "blue", facts: recordFlags, actions: `<details data-r7-record-source-detail="admin"><summary style="font-size:12px;font-weight:800;color:#42627d;cursor:pointer;">관리자 상세</summary><div style="display:grid;gap:3px;margin-top:6px;font-size:11px;color:#53645b;">${recordFlags.map((flag) => `<span>${flag}</span>`).join("")}</div></details>`, markers: 'data-r7-record-source-summary', wide: true })}
+      ${this.renderR7RecordsWorkflowFlowSkeleton({ ...ctx, controlTreatment })}
     </div><template data-r7-product-screen data-r7-product-screen-kind="records-workflow" data-r7-crop-product-subtab-screen="records-workflow" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
   }
 

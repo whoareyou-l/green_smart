@@ -107,8 +107,8 @@ def test_v1993_versions_and_docs_record_inner_consistency():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.12.85"' in manifest
-    assert 'const VERSION = "1.12.85"' in panel
+    assert '"version": "1.12.86"' in manifest
+    assert 'const VERSION = "1.12.86"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI main card inner consistency" in docs
     for marker in (

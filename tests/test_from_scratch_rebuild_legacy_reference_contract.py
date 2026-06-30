@@ -92,4 +92,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-047 adds direct product-card helpers for all Crop Operations subtabs and removes duplicate wrapper headings.
     # R7-048 deepens only the records-workflow subtab as a vertical slice with explicit missing/PLS state handling.
     # R7-049 redoes records-workflow as a product layout with write/history/edit/PLS/source affordance judgment.
-    assert len(rebuild.splitlines()) < 2175
+    # R7-051 adds UI-only write/history/edit/PLS flow skeletons under records-workflow while keeping write APIs disconnected.
+    assert len(rebuild.splitlines()) < 2205
