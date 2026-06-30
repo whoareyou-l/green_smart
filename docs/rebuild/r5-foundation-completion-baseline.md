@@ -1,6 +1,6 @@
 # R5 Foundation Completion Baseline
 
-> 기준 버전: `v1.14.7`
+> 기준 버전: `v1.14.8`
 > Status: R5 foundation complete
 > 목적: `VS-N001~VS-N004` scaffold-only sequence를 하나의 foundation baseline으로 닫고, runtime/UI/adapter/실행 권한 작업으로 자동 전진하지 못하게 한다.
 
@@ -80,7 +80,7 @@ R5 foundation is complete only when:
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.14.7`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.14.8`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
