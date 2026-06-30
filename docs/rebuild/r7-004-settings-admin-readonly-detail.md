@@ -1,6 +1,6 @@
 # R7-004 Settings/Admin Read-only Detail
 
-> 기준 버전: `v1.12.99`
+> 기준 버전: `v1.13.0`
 > Status: R7-004 complete
 > user-selected scope: 설정 — RBAC/config/admin read-only detail
 

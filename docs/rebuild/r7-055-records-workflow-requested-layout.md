@@ -1,6 +1,6 @@
 # R7-055 Records Workflow requested layout
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.12.99`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.13.0`.
 
 ## User-requested layout
 

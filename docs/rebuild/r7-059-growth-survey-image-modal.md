@@ -1,6 +1,6 @@
 # R7-059 Growth survey image-style modal
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.12.99`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.13.0`.
 
 ## Scope
 
