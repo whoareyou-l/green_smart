@@ -16,9 +16,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb006a_version_surfaces_are_v1118():
-    assert '"version": "1.13.5"' in _read(MANIFEST)
-    assert 'const VERSION = "1.13.5"' in _read(PANEL)
-    assert "v1.13.5" in _read(BACKEND_PLAN)
+    assert '"version": "1.13.6"' in _read(MANIFEST)
+    assert 'const VERSION = "1.13.6"' in _read(PANEL)
+    assert "v1.13.6" in _read(BACKEND_PLAN)
 
 
 def test_rb006a_repository_exists_and_preserves_crop_seasons_select_helper():
@@ -113,7 +113,7 @@ def test_rb006a_docs_record_backend_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006A Crop read-only service/repo boundary",
-        "v1.13.5",
+        "v1.13.6",
         "services/crop_service.py",
         "repositories/crop_repo.py",
         "GET /api/green_smart/crop/seasons",

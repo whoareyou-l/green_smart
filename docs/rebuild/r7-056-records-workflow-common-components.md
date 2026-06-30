@@ -1,6 +1,6 @@
 # R7-056 Records Workflow common components
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.13.5`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.13.6`.
 
 ## Scope
 
