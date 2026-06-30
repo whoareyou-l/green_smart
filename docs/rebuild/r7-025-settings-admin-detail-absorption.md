@@ -1,6 +1,6 @@
 # R7-025 Settings/Admin Detail Absorption
 
-> 기준 버전: `v1.13.3`
+> 기준 버전: `v1.13.4`
 > Status: R7-025 planned
 > Purpose: 기존 `renderR7SettingsAdminDetail()` detail card를 설정 visual Admin boundary 화면으로 흡수한다.
 

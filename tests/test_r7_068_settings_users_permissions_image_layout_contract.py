@@ -30,9 +30,9 @@ def _render_users_permissions():
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.13.3"' in _read(MANIFEST)
-    assert 'const VERSION = "1.13.3"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.13.3"' in _read(REBUILD_PANEL)
+    assert '"version": "1.13.4"' in _read(MANIFEST)
+    assert 'const VERSION = "1.13.4"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.13.4"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -52,8 +52,8 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
         'staff01',
         'farm_owner',
         'farm_staff',
-        '사용자 초대',
-        '역할 변경',
+        '사용자 승인 요청',
+        '승인 요청 허락',
         '모든 승인 요청 확인',
         '전체 감사 로그 보기',
     ]

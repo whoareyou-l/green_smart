@@ -1,8 +1,8 @@
 # R7-030 Sticky Full-Height Sidebar Repair
 
-> 기준 버전: `v1.13.3`
+> 기준 버전: `v1.13.4`
 > Status: R7-030 planned
-> Purpose: v1.13.3의 `position:fixed; left:0` sidebar가 HA/sidebar/content layout 흐름을 깨는 문제를 수정한다.
+> Purpose: v1.13.4의 `position:fixed; left:0` sidebar가 HA/sidebar/content layout 흐름을 깨는 문제를 수정한다.
 
 ## Root cause
 
