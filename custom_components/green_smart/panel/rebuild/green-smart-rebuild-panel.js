@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.90";
+const REBUILD_VERSION = "1.12.91";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1699,58 +1699,95 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<section data-r7-record-section="${section}" data-r7-product-state="${state}" ${markers} style="background:#fff;border:1px solid ${tone === 'amber' ? '#efd58a' : tone === 'blue' ? '#b9d4ee' : '#b8dec5'};border-radius:16px;padding:13px;display:grid;gap:9px;${wide ? 'grid-column:1/-1;' : ''}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><div style="font-size:14px;font-weight:800;color:#1f3329;">${title}</div>${secondary ? `<div style="font-size:12px;color:#667569;margin-top:2px;">${secondary}</div>` : ''}</div>${this.renderR7CropStatusChip("상태", state, tone)}</div><div style="font-size:16px;font-weight:800;color:#17251d;line-height:1.35;">${primary}</div>${facts.filter(Boolean).length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;">${facts.filter(Boolean).map((fact) => `<span style="border:1px solid #d8e5dc;background:#f7fbf8;border-radius:999px;padding:3px 7px;font-size:11px;color:#486255;">${fact}</span>`).join("")}</div>` : ''}${actions ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${actions}</div>` : ''}</section>`;
   }
 
+  r7RecordToneColor(tone = "green", slot = "text") {
+    const palette = {
+      green: { text: "#2b6943", icon: "#43ad5e", badgeBg: "#e8f7ee", badgeText: "#25804a", border: "#badcc8" },
+      amber: { text: "#805d17", icon: "#c28a1a", badgeBg: "#fff4d6", badgeText: "#9a6b10", border: "#ead4a2" },
+      red: { text: "#a4443b", icon: "#c24d43", badgeBg: "#fde7e4", badgeText: "#b4453a", border: "#efc5c0" },
+      blue: { text: "#315f91", icon: "#5181ad", badgeBg: "#eaf3ff", badgeText: "#326aa5", border: "#bcd6ee" },
+    };
+    return (palette[tone] || palette.green)[slot] || palette.green.text;
+  }
+
+  renderR7RecordCardBadge(label, tone = "green") {
+    return `<span data-r7-record-card-badge style="font-size:11px;font-weight:900;border-radius:999px;padding:4px 8px;background:${this.r7RecordToneColor(tone, "badgeBg")};color:${this.r7RecordToneColor(tone, "badgeText")};line-height:1;white-space:nowrap;">${label}</span>`;
+  }
+
+  renderR7RecordCardHeader({ icon, title, status, tone = "green", extraAttrs = "" }) {
+    return `<header data-r7-record-card-header ${extraAttrs} style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0;">
+      <div data-r7-record-card-headline style="display:flex;align-items:center;gap:8px;min-width:0;">
+        <span data-r7-record-card-icon-wrap style="width:26px;height:26px;border-radius:9px;background:${this.r7RecordToneColor(tone, "badgeBg")};display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;"><ha-icon icon="${icon}" style="--mdc-icon-size:17px;width:17px;height:17px;color:${this.r7RecordToneColor(tone, "icon")};"></ha-icon></span>
+        <div data-r7-record-card-title style="font-size:14px;font-weight:950;color:#1f3329;line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</div>
+      </div>
+      ${this.renderR7RecordCardBadge(status, tone)}
+    </header>`;
+  }
+
+  renderR7RecordCardBody({ primary = "", note = "", html = "", tone = "green" }) {
+    return `<div data-r7-record-card-body style="display:grid;gap:6px;align-content:start;min-width:0;">
+      ${primary ? `<div data-r7-record-card-primary style="font-size:15px;font-weight:950;color:${this.r7RecordToneColor(tone, "text")};line-height:1.35;text-align:center;word-break:keep-all;">${primary}</div>` : ""}
+      ${note ? `<div data-r7-record-card-note style="font-size:12px;color:#6d7a70;line-height:1.5;text-align:center;word-break:keep-all;">${note}</div>` : ""}
+      ${html}
+    </div>`;
+  }
+
+  renderR7RecordCardButton({ label, icon = "mdi:arrow-right", tone = "green" }) {
+    return `<button type="button" data-r7-record-card-button data-r7-record-image-action="${label}" style="height:34px;min-width:0;width:100%;border:1px solid ${this.r7RecordToneColor(tone, "border")};background:#fff;border-radius:9px;padding:0 10px;font-size:12px;font-weight:900;color:${this.r7RecordToneColor(tone, "text")};display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center;white-space:nowrap;line-height:1;box-sizing:border-box;"><ha-icon icon="${icon}" style="--mdc-icon-size:15px;width:15px;height:15px;flex:0 0 auto;"></ha-icon><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">${label}</span></button>`;
+  }
+
+  renderR7RecordCardActionRow(actions = []) {
+    const visible = actions.filter(Boolean);
+    if (!visible.length) return "";
+    return `<div data-r7-record-card-action-row style="display:grid;grid-template-columns:repeat(${visible.length},minmax(0,1fr));gap:8px;align-items:center;margin-top:auto;">${visible.join("")}</div>`;
+  }
+
+  renderR7RecordCardShell({ kind, icon, title, status, tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
+    return `<article data-r7-record-card-shell="${kind}" data-r7-record-image-card="${kind}" ${extraAttrs} style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;grid-template-rows:auto 1fr auto;gap:12px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);min-width:0;align-content:stretch;">
+      ${this.renderR7RecordCardHeader({ icon, title, status, tone })}
+      ${this.renderR7RecordCardBody({ primary, note, html, tone })}
+      ${this.renderR7RecordCardActionRow(actions)}
+    </article>`;
+  }
+
+  renderR7RecentRecordRow(row) {
+    const color = row.tone === "amber" ? "#c28a1a" : row.tone === "red" ? "#c24d43" : "#2f7d48";
+    return `<div data-r7-record-recent-row style="display:grid;grid-template-columns:minmax(120px,.8fr) minmax(130px,.9fr) minmax(0,2fr) minmax(96px,.7fr) 18px;align-items:center;gap:10px;font-size:11px;color:#53645b;border-top:1px solid #edf2ee;padding:8px 0;min-width:0;">
+      <span data-r7-record-recent-kind style="display:flex;align-items:center;gap:6px;font-weight:900;min-width:0;white-space:nowrap;"><ha-icon icon="${row.icon}" style="--mdc-icon-size:14px;width:14px;height:14px;flex:0 0 auto;"></ha-icon>${row.kind}</span>
+      <span data-r7-record-recent-time style="white-space:nowrap;color:#6d7a70;">${row.at}</span>
+      <span data-r7-record-recent-memo style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.memo}</span>
+      <span data-r7-record-recent-state style="font-weight:950;color:${color};white-space:nowrap;">${row.state}</span>
+      <span aria-hidden="true" style="color:#9aa79f;">›</span>
+    </div>`;
+  }
+
+  renderR7RecentRecordPanel(recentRows = []) {
+    return `<section data-r7-record-recent-log-panel style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;gap:12px;min-height:116px;box-shadow:0 1px 2px rgba(31,51,41,.04);grid-column:1/-1;min-width:0;">
+      ${this.renderR7RecordCardHeader({ icon: "mdi:clipboard-text-clock-outline", title: "최근 기록", status: "fresh", tone: "green", extraAttrs: 'data-r7-record-recent-header' })}
+      <div data-r7-record-recent-body style="display:grid;gap:0;min-width:0;">${recentRows.map((row) => this.renderR7RecentRecordRow(row)).join("")}</div>
+    </section>`;
+  }
+
   renderR7RecordsWorkflowProductLayout(ctx) {
     const { pestScouting, controlTreatment } = ctx;
     const pestNeedsCheck = pestScouting?.staleState === "attention" || !pestScouting?.count;
     const controlOk = !this.r7RecordPlsRequiresCheck(controlTreatment);
-    const cardStyle = "background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;gap:10px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);";
-    const badge = (label, tone = "green") => `<span style="font-size:11px;font-weight:800;border-radius:999px;padding:4px 8px;background:${tone === "amber" ? "#fff4d6" : tone === "red" ? "#fde7e4" : tone === "blue" ? "#eaf3ff" : "#e8f7ee"};color:${tone === "amber" ? "#9a6b10" : tone === "red" ? "#b4453a" : tone === "blue" ? "#326aa5" : "#25804a"};">${label}</span>`;
-    const button = (label, icon = "mdi:arrow-right", tone = "green") => `<button type="button" data-r7-record-image-action="${label}" style="height:30px;border:1px solid ${tone === "amber" ? "#ead4a2" : tone === "red" ? "#efc5c0" : tone === "blue" ? "#bcd6ee" : "#badcc8"};background:#fff;border-radius:7px;padding:0 10px;font-size:12px;font-weight:800;color:${tone === "amber" ? "#805d17" : tone === "red" ? "#a4443b" : tone === "blue" ? "#315f91" : "#2b6943"};display:inline-flex;align-items:center;justify-content:center;gap:5px;"><ha-icon icon="${icon}" style="width:14px;height:14px;"></ha-icon>${label}</button>`;
-    const header = (icon, title, status, tone = "green") => `<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div style="display:flex;gap:8px;align-items:center;"><ha-icon icon="${icon}" style="width:22px;height:22px;color:${tone === "amber" ? "#c28a1a" : tone === "red" ? "#c24d43" : tone === "blue" ? "#5181ad" : "#43ad5e"};"></ha-icon><div style="font-size:14px;font-weight:900;color:#1f3329;">${title}</div></div>${badge(status, tone)}</div>`;
     const recentRows = [
       { kind: "방제 기록", at: "2026-06-30 08:10", memo: "사용 약제 2종", state: "PHI 3일 남음", tone: "green", icon: "mdi:flask-outline" },
       { kind: "병해충 예찰", at: "2026-06-25 09:20", memo: "잎말림병 의심 1건", state: "주의", tone: "amber", icon: "mdi:bug-outline" },
     ];
     return `<div data-r7-records-image-dashboard="true" data-r7-crop-record-card style="display:grid;gap:12px;width:100%;">
       <div data-r7-record-row="top-actions" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
-        <article data-r7-record-image-card="today-work" style="${cardStyle}">
-          ${header("mdi:check-circle", "오늘 할 일", "정상", "green")}
-          <div style="font-size:15px;font-weight:900;color:#2f7d48;text-align:center;margin:10px 0;">필수 기록 최신 상태</div>
-          <div style="display:flex;justify-content:center;">${button("전체 확인 보기", "mdi:format-list-checks", "green")}</div>
-        </article>
-        <article data-r7-record-image-card="missing-verification" style="${cardStyle}">
-          ${header("mdi:clipboard-alert-outline", "누락·검증 필요", "확인 필요", "amber")}
-          <ul style="margin:0;padding-left:22px;font-size:12px;color:#53645b;line-height:1.6;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>
-          <div>${button("검증 등록", "mdi:clipboard-plus-outline", "amber")}</div>
-        </article>
-        <section data-r7-record-ai-card style="${cardStyle}">
-          ${header("mdi:target", "AI 근거 연결", "근거 부족", "red")}
-          <div style="font-size:12px;color:#6d7a70;line-height:1.5;">생육조사 데이터가 추천 신뢰도를 제한합니다.</div>
-          <div>${button("근거 보기", "mdi:open-in-new", "red")}</div>
-        </section>
+        ${this.renderR7RecordCardShell({ kind: "today-work", icon: "mdi:check-circle", title: "오늘 할 일", status: "정상", tone: "green", primary: "필수 기록 최신 상태", actions: [this.renderR7RecordCardButton({ label: "전체 확인 보기", icon: "mdi:format-list-checks", tone: "green" })] })}
+        ${this.renderR7RecordCardShell({ kind: "missing-verification", icon: "mdi:clipboard-alert-outline", title: "누락·검증 필요", status: "확인 필요", tone: "amber", html: '<ul style="margin:0;padding-left:18px;font-size:12px;color:#53645b;line-height:1.6;text-align:left;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>', actions: [this.renderR7RecordCardButton({ label: "검증 등록", icon: "mdi:clipboard-plus-outline", tone: "amber" })] })}
+        ${this.renderR7RecordCardShell({ kind: "ai-evidence", icon: "mdi:target", title: "AI 근거 연결", status: "근거 부족", tone: "red", note: "생육조사 데이터가 추천 신뢰도를 제한합니다.", actions: [this.renderR7RecordCardButton({ label: "근거 보기", icon: "mdi:open-in-new", tone: "red" })], extraAttrs: "data-r7-record-ai-card" })}
       </div>
       <div data-r7-record-row="core-records" data-r7-record-image-grid="primary" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
-        <article data-r7-record-image-card="growth-survey" style="${cardStyle}">
-          ${header("mdi:sprout-outline", "생육조사", "오늘 필요", "blue")}
-          <div><div style="font-size:15px;font-weight:900;color:#2d6fb3;">최근 기록 없음</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">G-Index 계산에 필요한 생육 데이터가 없습니다.</div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("바로조사 작성", "mdi:pencil-outline", "blue")}${button("히스토리", "mdi:history", "blue")}</div>
-        </article>
-        <article data-r7-record-image-card="pest-scouting" style="${cardStyle}">
-          ${header("mdi:bug-outline", "병해충 예찰", pestNeedsCheck ? "주의" : "정상", "amber")}
-          <div><div style="font-size:15px;font-weight:900;color:#d48a18;">최근 5일 전</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">예찰 주기 지연을 확인합니다.</div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("예찰 작성", "mdi:pencil-outline", "amber")}${button("예전 기록", "mdi:history", "blue")}</div>
-        </article>
-        <article data-r7-record-image-card="control-treatment" style="${cardStyle}">
-          ${header("mdi:flask-outline", "방제 기록", controlOk ? "정상" : "확인", controlOk ? "green" : "amber")}
-          <div><div style="font-size:15px;font-weight:900;color:#2f7d48;">PHI 3일 남음</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">사용 약제 기준 · 수확 전 안전 기간 확인</div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("방제 기록", "mdi:file-plus-outline", "green")}${button("PHI 보기", "mdi:eye-outline", "blue")}</div>
-        </article>
+        ${this.renderR7RecordCardShell({ kind: "growth-survey", icon: "mdi:sprout-outline", title: "생육조사", status: "오늘 필요", tone: "blue", primary: "최근 기록 없음", note: "G-Index 계산에 필요한 생육 데이터가 없습니다.", actions: [this.renderR7RecordCardButton({ label: "바로조사 작성", icon: "mdi:pencil-outline", tone: "blue" }), this.renderR7RecordCardButton({ label: "히스토리", icon: "mdi:history", tone: "blue" })] })}
+        ${this.renderR7RecordCardShell({ kind: "pest-scouting", icon: "mdi:bug-outline", title: "병해충 예찰", status: pestNeedsCheck ? "주의" : "정상", tone: "amber", primary: "최근 5일 전", note: "예찰 주기 지연을 확인합니다.", actions: [this.renderR7RecordCardButton({ label: "예찰 작성", icon: "mdi:pencil-outline", tone: "amber" }), this.renderR7RecordCardButton({ label: "예전 기록", icon: "mdi:history", tone: "blue" })] })}
+        ${this.renderR7RecordCardShell({ kind: "control-treatment", icon: "mdi:flask-outline", title: "방제 기록", status: controlOk ? "정상" : "확인", tone: controlOk ? "green" : "amber", primary: "PHI 3일 남음", note: "사용 약제 기준 · 수확 전 안전 기간 확인", actions: [this.renderR7RecordCardButton({ label: "방제 기록", icon: "mdi:file-plus-outline", tone: "green" }), this.renderR7RecordCardButton({ label: "PHI 보기", icon: "mdi:eye-outline", tone: "blue" })] })}
       </div>
       <div data-r7-record-row="recent-records" style="display:grid;grid-template-columns:1fr;gap:12px;grid-column:1/-1;">
-        <section data-r7-record-recent-log-panel style="${cardStyle}min-height:116px;grid-column:1/-1;">
-          <div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;gap:8px;align-items:center;"><ha-icon icon="mdi:clipboard-text-clock-outline" style="width:21px;height:21px;color:#53645b;"></ha-icon><div style="font-size:14px;font-weight:900;color:#1f3329;">최근 기록</div></div>${badge("fresh", "green")}</div>
-          <div style="display:grid;gap:4px;">${recentRows.map((row) => `<div data-r7-record-recent-row style="display:grid;grid-template-columns:120px 130px 1fr 90px 18px;gap:8px;align-items:center;font-size:11px;color:#53645b;border-top:1px solid #edf2ee;padding:7px 0;"><span style="display:flex;gap:6px;align-items:center;font-weight:800;"><ha-icon icon="${row.icon}" style="width:14px;height:14px;"></ha-icon>${row.kind}</span><span>${row.at}</span><span>${row.memo}</span><span style="font-weight:900;color:${row.tone === "amber" ? "#c28a1a" : "#2f7d48"};">${row.state}</span><span>›</span></div>`).join("")}</div>
-        </section>
+        ${this.renderR7RecentRecordPanel(recentRows)}
       </div>
     </div><template data-r7-product-screen data-r7-product-screen-kind="records-workflow" data-r7-crop-product-subtab-screen="records-workflow" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
   }

@@ -29,11 +29,11 @@ def _load_service():
 
 
 def test_rs024_version_surfaces_are_aligned_to_1_12_23():
-    assert '"version": "1.12.90"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.90"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.90"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.91"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.91"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.91"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, WORKFLOW_SPEC, FAILSAFE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.12.90" in _read(path)
+        assert "v1.12.91" in _read(path)
 
 
 def test_rs024_document_records_rehearsal_result_review_boundary():
@@ -141,7 +141,7 @@ def test_docs_specs_plan_and_inventory_record_rs024_and_next_step():
         assert marker in workflow
     for marker in ("result review does not release interlock", "approvalReleaseEnabled remains false", "No device command in RS-024"):
         assert marker in failsafe
-    for marker in ("Phase R4.20 — Rehearsal result review projection", "Status:** `v1.12.90`에서 Rehearsal result review projection 완료", "No production route removal in RS-024", "No DB migration in RS-024", "No write/mutation in RS-024"):
+    for marker in ("Phase R4.20 — Rehearsal result review projection", "Status:** `v1.12.91`에서 Rehearsal result review projection 완료", "No production route removal in RS-024", "No DB migration in RS-024", "No write/mutation in RS-024"):
         assert marker in plan
     assert "RS-024" in inventory
     assert "Rehearsal result review projection completed" in inventory
