@@ -93,10 +93,10 @@ def test_v1975_pest_ui_version_markers_and_future_versions():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.12.95"' in manifest
-    assert 'const VERSION = "1.12.95"' in panel
-    assert 'v1.12.95' in panel[:200]
+    assert '"version": "1.12.96"' in manifest
+    assert 'const VERSION = "1.12.96"' in panel
+    assert 'v1.12.96' in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert '기준 버전: `v1.12.95`' in docs
+    assert '기준 버전: `v1.12.96`' in docs
     assert 'UI Slice 4 | v1.9.75 | 병해충 예찰' in plan
     assert 'UI Slice 5 | v1.9.76 | 방제 기록' in plan

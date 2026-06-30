@@ -96,4 +96,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-053 replaces the records-workflow visible content with the user-supplied image-style card dashboard.
     # R7-057 adds records-workflow status badges, modals, and API bindings while keeping execution/device boundaries out.
     # R7-059 adds the image-reference growth survey modal fields/side panel; keep bounded under the adjusted cap.
-    assert len(rebuild.splitlines()) < 2445
+    # R7-061 adds write-method normalization and save hotfix helpers; keep bounded under the adjusted cap.
+    assert len(rebuild.splitlines()) < 2485

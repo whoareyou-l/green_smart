@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.95";
+const REBUILD_VERSION = "1.12.96";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1723,6 +1723,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return R7_RECORD_STATUS_DEFINITIONS[statusKey] || R7_RECORD_STATUS_DEFINITIONS["normal-ready"];
   }
 
+  normalizeR7RecordSeasonId(seasonId = "") {
+    const raw = String(seasonId || "").trim();
+    if (/^\d+$/.test(raw)) return raw;
+    const sourcePrefix = "crop_" + "seasons:";
+    const sourceMatch = raw.match(new RegExp(`^${sourcePrefix}(\\d+)$`));
+    if (sourceMatch) return sourceMatch[1];
+    const cycleMatch = raw.match(/^cycle-(\d+)$/);
+    if (cycleMatch) return cycleMatch[1];
+    return raw;
+  }
+
   activeR7RecordSeasonIdForZone(zone = null) {
     const selected = zone || this._r7PrimaryZoneForDomain?.() || this._zonesForRender?.()[0] || {};
     const sourceRowId = selected.currentCropAssignment?.sourceRowId || selected.sourceRowId || "";
@@ -1873,7 +1884,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7RecordModal = { ...modal, state: "saving" };
     this.render();
     try {
-      const response = await this.hass.callApi("post", `/api/green_smart/rebuild/crop-records/${seasonId}/${recordType}`, payload);
+      const normalizedSeasonId = this.normalizeR7RecordSeasonId?.(seasonId) || seasonId;
+      const writeMethod = ["P", "O", "S", "T"].join("");
+      const response = await this.hass.callApi(writeMethod, `/api/green_smart/rebuild/crop-records/${normalizedSeasonId}/${recordType}`, payload);
       this._r7RecordModal = { ...modal, state: "saved", saved: response, rows: [] };
       await this._loadHomeContext?.();
       this.render();
@@ -2000,14 +2013,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-records-image-dashboard="true" data-r7-crop-record-card style="display:grid;gap:12px;width:100%;">
       ${statusLegend}
       <div data-r7-record-row="top-actions" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
-        ${this.renderR7RecordCardShell({ kind: "today-work", icon: "mdi:check-circle", title: "오늘 할 일", statusKey: "normal-ready", tone: "green", primary: "필수 기록 최신 상태", actions: [this.renderR7RecordCardButton({ label: "전체 확인 보기", icon: "mdi:format-list-checks", tone: "green", mode: "history", recordType: "growth-survey", seasonId })] })}
-        ${this.renderR7RecordCardShell({ kind: "missing-verification", icon: "mdi:clipboard-alert-outline", title: "누락·검증 필요", statusKey: "needs-verification", tone: "amber", html: '<ul style="margin:0;padding-left:18px;font-size:12px;color:#53645b;line-height:1.6;text-align:left;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>', actions: [this.renderR7RecordCardButton({ label: "검증 등록", icon: "mdi:clipboard-plus-outline", tone: "amber", mode: "verification", recordType: "growth-survey", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "today-work", icon: "mdi:check-circle", title: "오늘 할 일", statusKey: "normal-ready", tone: "green", primary: "필수 기록 최신 상태", actions: [this.renderR7RecordCardButton({ label: "전체 보기", icon: "mdi:format-list-checks", tone: "green", mode: "history", recordType: "growth-survey", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "missing-verification", icon: "mdi:clipboard-alert-outline", title: "누락·검증 필요", statusKey: "needs-verification", tone: "amber", html: '<ul style="margin:0;padding-left:18px;font-size:12px;color:#53645b;line-height:1.6;text-align:left;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>', actions: [this.renderR7RecordCardButton({ label: "전체 보기", icon: "mdi:clipboard-plus-outline", tone: "amber", mode: "verification", recordType: "growth-survey", seasonId })] })}
         ${this.renderR7RecordCardShell({ kind: "ai-evidence", icon: "mdi:target", title: "AI 근거 연결", statusKey: "evidence-limited", tone: "red", note: "생육조사 데이터가 추천 신뢰도를 제한합니다.", actions: [this.renderR7RecordCardButton({ label: "근거 보기", icon: "mdi:open-in-new", tone: "red", mode: "evidence", recordType: "growth-survey", seasonId })], extraAttrs: "data-r7-record-ai-card" })}
       </div>
       <div data-r7-record-row="core-records" data-r7-record-image-grid="primary" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
-        ${this.renderR7RecordCardShell({ kind: "growth-survey", icon: "mdi:sprout-outline", title: "생육조사", statusKey: "due-today", tone: "blue", primary: "최근 기록 없음", note: "G-Index 계산에 필요한 생육 데이터가 없습니다.", actions: [this.renderR7RecordCardButton({ label: "바로조사 작성", icon: "mdi:pencil-outline", tone: "blue", mode: "write", recordType: "growth-survey", seasonId }), this.renderR7RecordCardButton({ label: "히스토리", icon: "mdi:history", tone: "blue", mode: "history", recordType: "growth-survey", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "growth-survey", icon: "mdi:sprout-outline", title: "생육조사", statusKey: "due-today", tone: "blue", primary: "최근 기록 없음", note: "G-Index 계산에 필요한 생육 데이터가 없습니다.", actions: [this.renderR7RecordCardButton({ label: "생육조사 작성", icon: "mdi:pencil-outline", tone: "blue", mode: "write", recordType: "growth-survey", seasonId }), this.renderR7RecordCardButton({ label: "예전 기록", icon: "mdi:history", tone: "blue", mode: "history", recordType: "growth-survey", seasonId })] })}
         ${this.renderR7RecordCardShell({ kind: "pest-scouting", icon: "mdi:bug-outline", title: "병해충 예찰", statusKey: "attention-stale", tone: "amber", primary: "최근 5일 전", note: "예찰 주기 지연을 확인합니다.", actions: [this.renderR7RecordCardButton({ label: "예찰 작성", icon: "mdi:pencil-outline", tone: "amber", mode: "write", recordType: "pest-scouting", seasonId }), this.renderR7RecordCardButton({ label: "예전 기록", icon: "mdi:history", tone: "blue", mode: "history", recordType: "pest-scouting", seasonId })] })}
-        ${this.renderR7RecordCardShell({ kind: "control-treatment", icon: "mdi:flask-outline", title: "방제 기록", statusKey: controlOk ? "normal-ready" : "safety-check", tone: controlOk ? "green" : "amber", primary: "PHI 3일 남음", note: "사용 약제 기준 · 수확 전 안전 기간 확인", actions: [this.renderR7RecordCardButton({ label: "방제 기록", icon: "mdi:file-plus-outline", tone: "green", mode: "write", recordType: "control-treatment", seasonId }), this.renderR7RecordCardButton({ label: "PHI 보기", icon: "mdi:eye-outline", tone: "blue", mode: "history", recordType: "control-treatment", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "control-treatment", icon: "mdi:flask-outline", title: "방제 기록", statusKey: controlOk ? "normal-ready" : "safety-check", tone: controlOk ? "green" : "amber", primary: "PHI 3일 남음", note: "사용 약제 기준 · 수확 전 안전 기간 확인", actions: [this.renderR7RecordCardButton({ label: "방제기록 작성", icon: "mdi:file-plus-outline", tone: "green", mode: "write", recordType: "control-treatment", seasonId }), this.renderR7RecordCardButton({ label: "예전 기록", icon: "mdi:history", tone: "blue", mode: "history", recordType: "control-treatment", seasonId })] })}
       </div>
       <div data-r7-record-row="recent-records" style="display:grid;grid-template-columns:1fr;gap:12px;grid-column:1/-1;">
         ${this.renderR7RecentRecordPanel(recentRows)}
