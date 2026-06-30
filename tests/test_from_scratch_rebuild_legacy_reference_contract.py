@@ -95,4 +95,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-051 adds UI-only write/history/edit/PLS flow skeletons under records-workflow while keeping write APIs disconnected.
     # R7-053 replaces the records-workflow visible content with the user-supplied image-style card dashboard.
     # R7-057 adds records-workflow status badges, modals, and API bindings while keeping execution/device boundaries out.
-    assert len(rebuild.splitlines()) < 2380
+    # R7-059 adds the image-reference growth survey modal fields/side panel; keep bounded under the adjusted cap.
+    assert len(rebuild.splitlines()) < 2445

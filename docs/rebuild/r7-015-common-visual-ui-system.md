@@ -1,6 +1,6 @@
 # R7-015 Common Visual UI System
 
-> 기준 버전: `v1.12.93`
+> 기준 버전: `v1.12.94`
 > Status: R7-015 complete
 > Purpose: R7 rebuild 화면을 긴 설명/텍스트 card 중심에서 운영자가 한눈에 판단할 수 있는 visual dashboard 중심으로 전환한다.
 
