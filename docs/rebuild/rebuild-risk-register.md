@@ -1,7 +1,7 @@
 # Green Smart R0 Rebuild Risk Register
 
 > 기준일: `2026-06-28`
-> 기준 버전: `v1.12.87`
+> 기준 버전: `v1.12.88`
 > 목적: 제품 구조 리빌딩 중 prod 안정성, 데이터 보존, UI/API compatibility, 현장 안전을 해치지 않기 위한 위험 목록과 대응 기준을 고정한다.
 
 ---

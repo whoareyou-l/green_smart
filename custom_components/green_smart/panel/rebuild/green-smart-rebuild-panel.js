@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.87";
+const REBUILD_VERSION = "1.12.88";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1699,71 +1699,62 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<section data-r7-record-section="${section}" data-r7-product-state="${state}" ${markers} style="background:#fff;border:1px solid ${tone === 'amber' ? '#efd58a' : tone === 'blue' ? '#b9d4ee' : '#b8dec5'};border-radius:16px;padding:13px;display:grid;gap:9px;${wide ? 'grid-column:1/-1;' : ''}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><div style="font-size:14px;font-weight:800;color:#1f3329;">${title}</div>${secondary ? `<div style="font-size:12px;color:#667569;margin-top:2px;">${secondary}</div>` : ''}</div>${this.renderR7CropStatusChip("상태", state, tone)}</div><div style="font-size:16px;font-weight:800;color:#17251d;line-height:1.35;">${primary}</div>${facts.filter(Boolean).length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;">${facts.filter(Boolean).map((fact) => `<span style="border:1px solid #d8e5dc;background:#f7fbf8;border-radius:999px;padding:3px 7px;font-size:11px;color:#486255;">${fact}</span>`).join("")}</div>` : ''}${actions ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${actions}</div>` : ''}</section>`;
   }
 
-  renderR7RecordFlowCard({ marker, title, fields = [], state = "pending-api", note = "API 연결 전" }) {
-    return `<section ${marker} data-r7-record-submit-state="${state}" style="background:#fbfdf9;border:1px dashed #bfd9c9;border-radius:14px;padding:12px;display:grid;gap:8px;"><div style="font-size:13px;font-weight:900;color:#213b2d;">${title}</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${fields.map((field) => `<span style="border:1px solid #d8e5dc;background:#fff;border-radius:999px;padding:3px 7px;font-size:11px;color:#486255;">${field}</span>`).join("")}</div><div style="font-size:11px;color:#667569;">${note}</div></section>`;
-  }
-
-  renderR7RecordsWorkflowFlowSkeleton(ctx) {
-    const controlTreatment = ctx.controlTreatment || {};
-    const pesticideName = controlTreatment.latest?.pesticides?.[0]?.name || "약제명";
-    const plsState = this.r7RecordPlsRequiresCheck(controlTreatment) ? "PLS 확인 필요" : "PLS 적합";
-    const historyFields = ["최근 N건", "날짜", "요약", "작성자/수정 여부는 API 연결 후"];
-    return `<section data-r7-record-flow-skeleton="write-history-pls" data-r7-record-api-boundary="ui-skeleton-only" data-r7-record-api-contract="planned-v1.12.87" data-r7-record-api-prefix="${R7_RECORDS_WORKFLOW_API_CONTRACT.prefix}" style="grid-column:1/-1;background:#f7faf6;border:1px solid #d7e7dc;border-radius:18px;padding:14px;display:grid;gap:12px;">
-      <template data-r7-record-api-contract="planned-v1.12.87" data-r7-record-api-mode="planned-contract-only" data-r7-record-api-write-enabled="false">${R7_RECORDS_WORKFLOW_API_CONTRACT.mode} · writeImplementationEnabled=${R7_RECORDS_WORKFLOW_API_CONTRACT.writeImplementationEnabled} · ${R7_RECORDS_WORKFLOW_API_CONTRACT.endpoints.join(" · ")}</template>
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><div style="font-size:15px;font-weight:900;color:#1f3329;">작성·히스토리 플로우</div><div style="font-size:12px;color:#667569;margin-top:2px;">UI skeleton only · 저장 API 연결 전</div></div><span data-r7-record-submit-state="pending-api" style="font-size:11px;border:1px solid #e2c56d;background:#fff8df;color:#6f5b2e;border-radius:999px;padding:4px 8px;font-weight:800;">pending-api</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-modal="growth-survey-write"', title: "생육조사 작성 플로우", fields: ["조사일", "초장", "엽수", "생육단계", "특이사항", "작기/구역 연결"] })}
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-modal="pest-scouting-write"', title: "예찰 작성 플로우", fields: ["예찰일", "병해충명", "severity", "발생 위치", "확산 여부", "사진/메모", "방제 필요 여부"] })}
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-modal="control-treatment-write" data-r7-record-boundary="record-only-no-execution"', title: "방제 기록 작성 플로우", fields: ["방제일", "대상 병해충", "약제명", "희석배수/사용량", "PLS 상태", "작업자", "안전 메모"], note: "실행 아님 · 기록 전용 · API 연결 전" })}
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-history-drawer="growth-survey" data-r7-record-history-state="navigation-only"', title: "생육 히스토리 플로우", fields: historyFields, state: "navigation-only", note: "navigation-only · API 연결 후 실제 목록" })}
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-history-drawer="pest-scouting" data-r7-record-history-state="navigation-only"', title: "예찰 히스토리 플로우", fields: historyFields, state: "navigation-only", note: "navigation-only · API 연결 후 실제 목록" })}
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-history-drawer="control-treatment" data-r7-record-history-state="navigation-only"', title: "방제 히스토리 플로우", fields: historyFields, state: "navigation-only", note: "navigation-only · API 연결 후 실제 목록" })}
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-edit-flow="growth-survey-latest"', title: "최근 생육조사 수정", fields: ["최근 생육조사 수정", "저장 API 연결 전", "수정 사유", "작기/구역 연결"] })}
-        ${this.renderR7RecordFlowCard({ marker: 'data-r7-record-pls-check-flow', title: "PLS 확인 플로우", fields: ["PLS 확인", pesticideName, plsState, "PSIS/약제 DB 확인은 후속 API slice"], note: "방제 실행 아님 · 확인 플로우만 표시" })}
-      </div>
-    </section>`;
-  }
-
   renderR7RecordsWorkflowProductLayout(ctx) {
-    const { recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction } = ctx;
-    const missingItems = this.r7RecordMissingItems(ctx);
-    const growthState = this.r7RecordCardState(growthSurvey, "growth-survey");
-    const pestState = this.r7RecordCardState(pestScouting, "pest-scouting");
-    const controlState = this.r7RecordCardState(controlTreatment, "control-treatment");
-    const growthFacts = this.r7RecordEvidence(growthSurvey, "growth-survey");
-    const pestFacts = this.r7RecordEvidence(pestScouting, "pest-scouting");
-    const controlFacts = this.r7RecordEvidence(controlTreatment, "control-treatment");
-    const plsNeedsCheck = this.r7RecordPlsRequiresCheck(controlTreatment);
-    const attentionItems = [...missingItems, plsNeedsCheck ? "PLS 확인 필요" : "", growthState === "empty" ? "생육조사 empty" : "", pestState === "empty" ? "병해충 예찰 empty" : ""].filter(Boolean);
-    const recordFlags = [`recordSummarySource=${recordSource}`, `readOnly=${ctx.recordReadOnly !== false}`, `writeEnabled=${ctx.recordWriteEnabled === true}`, `executionEnabled=${ctx.recordExecutionEnabled === true}`, `deviceCommandEnabled=${ctx.recordDeviceCommandEnabled === true}`, `mqttEnabled=${ctx.recordMqttEnabled === true}`];
-    const growthActions = [
-      this.r7RecordActionButton({ label: "생육조사 작성", target: "growth-survey", attr: "data-r7-record-write-target", icon: "mdi:sprout-outline" }),
-      this.r7RecordActionButton({ label: "생육 히스토리", target: "growth-survey", state: "navigation-only", attr: "data-r7-record-history-target", icon: "mdi:history", tone: "blue" }),
-      growthSurvey.count > 0 ? this.r7RecordActionButton({ label: "최근 기록 수정", target: "growth-survey-latest", attr: "data-r7-record-edit-target", icon: "mdi:pencil-outline", tone: "amber" }) : "",
-    ].join("");
-    const pestActions = [
-      this.r7RecordActionButton({ label: "예찰 작성", target: "pest-scouting", attr: "data-r7-record-write-target", icon: "mdi:bug-outline", tone: "amber" }),
-      this.r7RecordActionButton({ label: "예찰 히스토리", target: "pest-scouting", state: "navigation-only", attr: "data-r7-record-history-target", icon: "mdi:history", tone: "blue" }),
-      this.r7RecordActionButton({ label: "방제 기록으로 연결", target: "control-treatment", attr: "data-r7-record-link-target", icon: "mdi:shield-link-variant-outline", tone: "amber" }),
-    ].join("");
-    const controlActions = [
-      this.r7RecordActionButton({ label: "방제 기록 작성", target: "control-treatment", attr: "data-r7-record-write-target", icon: "mdi:shield-plus-outline", tone: "amber" }),
-      this.r7RecordActionButton({ label: "방제 히스토리", target: "control-treatment", state: "navigation-only", attr: "data-r7-record-history-target", icon: "mdi:history", tone: "blue" }),
-      plsNeedsCheck ? this.r7RecordActionButton({ label: "PLS 확인", target: "pls", attr: "data-r7-record-check-target", icon: "mdi:clipboard-check-outline", tone: "amber" }) : "",
-    ].join("");
-    const missingActions = [
-      missingItems.join(" ").includes("생육조사") ? this.r7RecordActionButton({ label: "생육조사 작성", target: "growth-survey-write", attr: "data-r7-record-missing-action", icon: "mdi:sprout-outline" }) : "",
-      (missingItems.join(" ").includes("병해충") || missingItems.join(" ").includes("예찰")) ? this.r7RecordActionButton({ label: "예찰 작성", target: "pest-scouting-write", attr: "data-r7-record-missing-action", icon: "mdi:bug-outline", tone: "amber" }) : "",
-      missingItems.join(" ").includes("방제") ? this.r7RecordActionButton({ label: "방제 기록 작성", target: "control-treatment-write", attr: "data-r7-record-missing-action", icon: "mdi:shield-plus-outline", tone: "amber" }) : "",
-    ].join("");
-    return `<div data-r7-records-workflow-product-layout="write-history-review" data-r7-crop-record-card style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;width:100%;">
-      ${this.renderR7RecordProductSection({ section: "today-work", title: "오늘 할 일", primary: workNextAction, secondary: missingItems.length ? `${missingItems.length}개 확인 필요` : "누락 없음", state: missingItems.length ? "attention" : "fresh", tone: missingItems.length ? "amber" : "green", facts: missingItems.length ? missingItems : ["누락 없음"], actions: this.r7RecordActionsForMissingItems(missingItems), markers: 'data-r7-record-action-queue', wide: true })}
-      ${this.renderR7RecordProductSection({ section: "growth-survey", title: "생육조사", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `최근 ${growthSurvey.count ?? 0}건 · ${growthState}`, state: growthState, tone: growthState === "fresh" ? "green" : "amber", facts: growthFacts, actions: growthActions })}
-      ${this.renderR7RecordProductSection({ section: "pest-scouting", title: "병해충 예찰", primary: pestScouting.latestLabel || "병해충 예찰 기록 없음", secondary: `최근 ${pestScouting.count ?? 0}건 · ${pestState}`, state: pestState, tone: pestState === "attention" || pestState === "empty" ? "amber" : "green", facts: pestFacts, actions: pestActions })}
-      ${this.renderR7RecordProductSection({ section: "control-treatment", title: "방제", primary: controlTreatment.latestLabel || "방제 기록 없음", secondary: `최근 ${controlTreatment.count ?? 0}건 · ${controlState} · 실행 아님 · 기록 전용`, state: controlState, tone: controlState === "attention" ? "amber" : "green", facts: [...controlFacts, "실행 아님 · 기록 전용"], actions: controlActions, markers: 'data-r7-record-boundary="record-only-no-execution"' })}
-      ${this.renderR7RecordProductSection({ section: "missing-attention", title: "누락/주의", primary: attentionItems.length ? `${attentionItems.length}개 확인 필요` : "누락 없음", secondary: `생육 ${growthState} · 예찰 ${pestState} · 방제 ${controlState}`, state: attentionItems.length ? "attention" : "fresh", tone: attentionItems.length ? "amber" : "green", facts: attentionItems.length ? attentionItems : ["누락 없음", "PLS 적합"], actions: missingActions, markers: `data-r7-record-missing-count="${attentionItems.length}"`, wide: true })}
-      ${this.renderR7RecordProductSection({ section: "record-source", title: "기록 원천", primary: "최근 기록 요약 · read-only", secondary: "read-only · write/execute disabled · 관리자 상세", state: "ready", tone: "blue", facts: recordFlags, actions: `<details data-r7-record-source-detail="admin"><summary style="font-size:12px;font-weight:800;color:#42627d;cursor:pointer;">관리자 상세</summary><div style="display:grid;gap:3px;margin-top:6px;font-size:11px;color:#53645b;">${recordFlags.map((flag) => `<span>${flag}</span>`).join("")}</div></details>`, markers: 'data-r7-record-source-summary', wide: true })}
-      ${this.renderR7RecordsWorkflowFlowSkeleton({ ...ctx, controlTreatment })}
+    const { pestScouting, controlTreatment } = ctx;
+    const pestNeedsCheck = pestScouting?.staleState === "attention" || !pestScouting?.count;
+    const controlOk = !this.r7RecordPlsRequiresCheck(controlTreatment);
+    const cardStyle = "background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;gap:10px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);";
+    const badge = (label, tone = "green") => `<span style="font-size:11px;font-weight:800;border-radius:999px;padding:4px 8px;background:${tone === "amber" ? "#fff4d6" : tone === "red" ? "#fde7e4" : tone === "blue" ? "#eaf3ff" : "#e8f7ee"};color:${tone === "amber" ? "#9a6b10" : tone === "red" ? "#b4453a" : tone === "blue" ? "#326aa5" : "#25804a"};">${label}</span>`;
+    const button = (label, icon = "mdi:arrow-right", tone = "green") => `<button type="button" data-r7-record-image-action="${label}" style="height:30px;border:1px solid ${tone === "amber" ? "#ead4a2" : tone === "red" ? "#efc5c0" : tone === "blue" ? "#bcd6ee" : "#badcc8"};background:#fff;border-radius:7px;padding:0 10px;font-size:12px;font-weight:800;color:${tone === "amber" ? "#805d17" : tone === "red" ? "#a4443b" : tone === "blue" ? "#315f91" : "#2b6943"};display:inline-flex;align-items:center;justify-content:center;gap:5px;"><ha-icon icon="${icon}" style="width:14px;height:14px;"></ha-icon>${label}</button>`;
+    const header = (icon, title, status, tone = "green") => `<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div style="display:flex;gap:8px;align-items:center;"><ha-icon icon="${icon}" style="width:22px;height:22px;color:${tone === "amber" ? "#c28a1a" : tone === "red" ? "#c24d43" : tone === "blue" ? "#5181ad" : "#43ad5e"};"></ha-icon><div style="font-size:14px;font-weight:900;color:#1f3329;">${title}</div></div>${badge(status, tone)}</div>`;
+    const recentRows = [
+      { kind: "방제 기록", at: "2026-06-30 08:10", memo: "사용 약제 2종", state: "PHI 3일 남음", tone: "green", icon: "mdi:flask-outline" },
+      { kind: "병해충 예찰", at: "2026-06-25 09:20", memo: "잎말림병 의심 1건", state: "주의", tone: "amber", icon: "mdi:bug-outline" },
+    ];
+    return `<div data-r7-records-image-dashboard="true" data-r7-crop-record-card style="display:grid;gap:12px;width:100%;">
+      <div data-r7-record-image-grid="primary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px;">
+        <article data-r7-record-image-card="today-work" style="${cardStyle}">
+          ${header("mdi:check-circle", "오늘 할 일", "정상", "green")}
+          <div style="font-size:15px;font-weight:900;color:#2f7d48;text-align:center;margin:10px 0;">필수 기록 최신 상태</div>
+          <div style="display:flex;justify-content:center;">${button("전체 확인 보기", "mdi:format-list-checks", "green")}</div>
+        </article>
+        <article data-r7-record-image-card="missing-verification" style="${cardStyle}">
+          ${header("mdi:clipboard-alert-outline", "누락·검증 필요", "확인 필요", "amber")}
+          <ul style="margin:0;padding-left:22px;font-size:12px;color:#53645b;line-height:1.6;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>
+          <div>${button("검증 등록", "mdi:clipboard-plus-outline", "amber")}</div>
+        </article>
+        <article data-r7-record-image-card="growth-survey" style="${cardStyle}">
+          ${header("mdi:sprout-outline", "생육조사", "오늘 필요", "blue")}
+          <div><div style="font-size:15px;font-weight:900;color:#2d6fb3;">최근 기록 없음</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">G-Index 계산에 필요한 생육 데이터가 없습니다.</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("바로조사 작성", "mdi:pencil-outline", "blue")}${button("히스토리", "mdi:history", "blue")}</div>
+        </article>
+        <article data-r7-record-image-card="pest-scouting" style="${cardStyle}">
+          ${header("mdi:bug-outline", "병해충 예찰", pestNeedsCheck ? "주의" : "정상", "amber")}
+          <div><div style="font-size:15px;font-weight:900;color:#d48a18;">최근 5일 전</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">예찰 주기 지연을 확인합니다.</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("예찰 작성", "mdi:pencil-outline", "amber")}${button("예전 기록", "mdi:history", "blue")}</div>
+        </article>
+        <article data-r7-record-image-card="control-treatment" style="${cardStyle}">
+          ${header("mdi:flask-outline", "방제 기록", controlOk ? "정상" : "확인", controlOk ? "green" : "amber")}
+          <div><div style="font-size:15px;font-weight:900;color:#2f7d48;">PHI 3일 남음</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">사용 약제 기준 · 수확 전 안전 기간 확인</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("방제 기록", "mdi:file-plus-outline", "green")}${button("PHI 보기", "mdi:eye-outline", "blue")}</div>
+        </article>
+        <article data-r7-record-image-card="quality-physiology" style="${cardStyle}">
+          ${header("mdi:leaf", "품질/생리장해", "수집 필요", "amber")}
+          <div><div style="font-size:15px;font-weight:900;color:#d48a18;">SPAD/칼슘/수분/숯가루</div><div style="font-size:12px;color:#6d7a70;margin-top:4px;">색·팁번·생리장해 확인이 필요합니다.</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${button("측정값 입력", "mdi:pencil-outline", "amber")}${button("이미지 분석", "mdi:camera-outline", "blue")}</div>
+        </article>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:12px;align-items:stretch;">
+        <section data-r7-record-recent-log-panel style="${cardStyle}min-height:116px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;gap:8px;align-items:center;"><ha-icon icon="mdi:clipboard-text-clock-outline" style="width:21px;height:21px;color:#53645b;"></ha-icon><div style="font-size:14px;font-weight:900;color:#1f3329;">최근 기록</div></div>${badge("fresh", "green")}</div>
+          <div style="display:grid;gap:4px;">${recentRows.map((row) => `<div data-r7-record-recent-row style="display:grid;grid-template-columns:120px 130px 1fr 90px 18px;gap:8px;align-items:center;font-size:11px;color:#53645b;border-top:1px solid #edf2ee;padding:7px 0;"><span style="display:flex;gap:6px;align-items:center;font-weight:800;"><ha-icon icon="${row.icon}" style="width:14px;height:14px;"></ha-icon>${row.kind}</span><span>${row.at}</span><span>${row.memo}</span><span style="font-weight:900;color:${row.tone === "amber" ? "#c28a1a" : "#2f7d48"};">${row.state}</span><span>›</span></div>`).join("")}</div>
+        </section>
+        <section data-r7-record-ai-card style="${cardStyle}min-height:116px;">
+          ${header("mdi:target", "AI 근거 연결", "근거 부족", "red")}
+          <div style="font-size:12px;color:#6d7a70;line-height:1.5;">생육조사와 품질 측정값이<br>추천 신뢰도를 제한합니다.</div>
+          <div>${button("근거 보기", "mdi:open-in-new", "red")}</div>
+        </section>
+      </div>
     </div><template data-r7-product-screen data-r7-product-screen-kind="records-workflow" data-r7-crop-product-subtab-screen="records-workflow" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
   }
 
