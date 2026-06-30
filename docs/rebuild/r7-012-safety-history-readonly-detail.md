@@ -1,6 +1,6 @@
 # R7-012 Safety/History Read-only Detail
 
-> 기준 버전: `v1.13.1`
+> 기준 버전: `v1.13.2`
 > Status: R7-012 complete
 > Purpose: `안전 제어` 도메인을 authoritative allow/block evidence와 감사 이력 read-only 구조로 구체화한다.
 

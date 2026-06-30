@@ -110,9 +110,9 @@ def test_v1969_version_markers_for_basic_ui_slice():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.13.1"' in manifest
-    assert 'const VERSION = "1.13.1"' in panel
-    assert 'v1.13.1' in panel[:200]
+    assert '"version": "1.13.2"' in manifest
+    assert 'const VERSION = "1.13.2"' in panel
+    assert 'v1.13.2' in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert 'v1.9.72' in docs
     assert 'UI Slice 1 | v1.9.69' in plan

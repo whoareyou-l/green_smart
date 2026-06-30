@@ -1,6 +1,6 @@
 # Green Smart Master Docs Gap Inventory
 
-> 기준 버전: `v1.13.1`
+> 기준 버전: `v1.13.2`
 > 목적: 5대 master docs를 `from-scratch rebuild 기준`으로 다시 정렬하기 전에 현재 문서의 충분한 점/부족한 점/질문 gate를 고정한다.
 
 ---

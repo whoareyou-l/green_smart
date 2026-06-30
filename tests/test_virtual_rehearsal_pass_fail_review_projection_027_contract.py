@@ -29,11 +29,11 @@ def _load_service():
 
 
 def test_rs027_version_surfaces_are_aligned_to_1_12_26():
-    assert '"version": "1.13.1"' in _read(MANIFEST)
-    assert 'const VERSION = "1.13.1"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.13.1"' in _read(REBUILD_PANEL)
+    assert '"version": "1.13.2"' in _read(MANIFEST)
+    assert 'const VERSION = "1.13.2"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.13.2"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, WORKFLOW_SPEC, FAILSAFE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.13.1" in _read(path)
+        assert "v1.13.2" in _read(path)
 
 
 def test_rs027_document_records_pass_fail_review_projection_boundary():
@@ -154,7 +154,7 @@ def test_docs_specs_plan_and_inventory_record_rs027_and_rs_series_completion():
         assert marker in workflow
     for marker in ("pass/fail review projection does not release interlock", "approvalReleaseEnabled remains false", "No device command in RS-027"):
         assert marker in failsafe
-    for marker in ("Phase R4.23 — Virtual rehearsal pass/fail review projection", "Status:** `v1.13.1`에서 Virtual rehearsal pass/fail review projection 완료", "No production route removal in RS-027", "No DB migration in RS-027", "No write/mutation in RS-027", "RS sequence complete before R5 scaffold"):
+    for marker in ("Phase R4.23 — Virtual rehearsal pass/fail review projection", "Status:** `v1.13.2`에서 Virtual rehearsal pass/fail review projection 완료", "No production route removal in RS-027", "No DB migration in RS-027", "No write/mutation in RS-027", "RS sequence complete before R5 scaffold"):
         assert marker in plan
     assert "RS-027" in inventory
     assert "Virtual rehearsal pass/fail review projection completed" in inventory
