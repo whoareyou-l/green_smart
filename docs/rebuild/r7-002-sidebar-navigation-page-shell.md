@@ -1,6 +1,6 @@
 # R7-002 Sidebar Navigation + Page Shell
 
-> 기준 버전: `v1.13.7`
+> 기준 버전: `v1.13.8`
 > Status: R7-002 complete
 > 목적: R7 sidebar primary groups and page shell.
 
@@ -98,7 +98,7 @@ R7-003 should start turning these shell groups into concrete read-only detail/co
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.13.7`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.13.8`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 

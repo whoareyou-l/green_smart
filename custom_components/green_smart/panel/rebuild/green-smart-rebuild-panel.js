@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.13.7";
+const REBUILD_VERSION = "1.13.8";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -1806,11 +1806,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-common-card-action-row data-r7-record-card-action-row style="display:grid;grid-template-columns:repeat(${visible.length},minmax(0,1fr));gap:8px;align-items:center;margin-top:auto;">${visible.join("")}</div>`;
   }
 
+  renderR7CommonCardBody({ primary = "", note = "", html = "", tone = "green" }) {
+    return `<div data-r7-common-card-body data-r7-record-card-body style="display:grid;gap:6px;align-content:start;min-width:0;">
+      ${primary ? `<div data-r7-common-card-primary data-r7-record-card-primary style="font-size:15px;font-weight:950;color:${this.r7RecordToneColor(tone, "text")};line-height:1.35;text-align:center;word-break:keep-all;">${primary}</div>` : ""}
+      ${note ? `<div data-r7-common-card-note data-r7-record-card-note style="font-size:12px;color:#6d7a70;line-height:1.5;text-align:center;word-break:keep-all;">${note}</div>` : ""}
+      ${html ? `<div data-r7-common-card-html style="display:grid;gap:6px;min-width:0;">${html}</div>` : ""}
+    </div>`;
+  }
+
   renderR7CommonCardShell({ kind, section = "", icon, title, statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "", wide = false }) {
     const sectionAttr = section ? `data-r7-record-section="${section}"` : "";
     return `<article data-r7-common-card-shell="${kind}" data-r7-record-card-shell="${kind}" data-r7-record-image-card="${kind}" ${sectionAttr} data-r7-product-state="${statusKey}" ${extraAttrs} style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;grid-template-rows:auto 1fr auto;gap:12px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);min-width:0;align-content:stretch;${wide ? 'grid-column:1/-1;' : ''}">
       ${this.renderR7CommonCardHeader({ icon, title, statusKey, tone, extraAttrs: 'data-r7-record-card-header' })}
-      ${this.renderR7RecordCardBody({ primary, note, html, tone })}
+      ${this.renderR7CommonCardBody({ primary, note, html, tone })}
       ${this.renderR7CommonCardActionRow(actions)}
     </article>`;
   }
@@ -1826,9 +1834,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </div>`;
   }
 
+  r7CommonRecentDefaultLimit(kind = "", rowKind = "") {
+    const key = `${kind || ""} ${rowKind || ""}`;
+    if (key.includes("settings-user") || key.includes("user-list")) return 5;
+    if (key.includes("records-recent") || key.includes("recent-log") || key.includes("최근 기록")) return 5;
+    return null;
+  }
+
   renderR7CommonRecentPanel({ kind = "records-recent-log", title = "최근 기록", icon = "mdi:clipboard-text-clock-outline", statusKey = "normal-ready", tone = "green", rows = [], limit = null, extraAttrs = "", rowKind = "records-recent" }) {
-    const visibleRows = Number.isFinite(limit) ? rows.slice(0, limit) : rows;
-    const limitAttr = Number.isFinite(limit) ? `data-r7-common-data-limit="${limit}" data-r7-common-table-limit="${limit}"` : "";
+    const effectiveLimit = Number.isFinite(limit) ? limit : this.r7CommonRecentDefaultLimit(kind, rowKind);
+    const visibleRows = Number.isFinite(effectiveLimit) ? rows.slice(0, effectiveLimit) : rows;
+    const limitAttr = Number.isFinite(effectiveLimit) ? `data-r7-common-data-limit="${effectiveLimit}" data-r7-common-table-limit="${effectiveLimit}"` : "";
     return `<section data-r7-common-recent-panel="${kind}" ${limitAttr} ${extraAttrs} style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;gap:12px;min-height:116px;box-shadow:0 1px 2px rgba(31,51,41,.04);grid-column:1/-1;min-width:0;">
       ${this.renderR7CommonCardHeader({ icon, title, statusKey, tone, extraAttrs: 'data-r7-record-recent-header' })}
       <div data-r7-common-recent-body data-r7-record-recent-body style="display:grid;gap:0;min-width:0;">${visibleRows.map((row) => this.renderR7CommonRecentRow(row, { rowKind, extraAttrs: row.extraAttrs || (rowKind === "records-recent" ? "data-r7-record-recent-row" : "") })).join("")}</div>
@@ -1870,11 +1886,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7RecordCardBody({ primary = "", note = "", html = "", tone = "green" }) {
-    return `<div data-r7-record-card-body style="display:grid;gap:6px;align-content:start;min-width:0;">
-      ${primary ? `<div data-r7-record-card-primary style="font-size:15px;font-weight:950;color:${this.r7RecordToneColor(tone, "text")};line-height:1.35;text-align:center;word-break:keep-all;">${primary}</div>` : ""}
-      ${note ? `<div data-r7-record-card-note style="font-size:12px;color:#6d7a70;line-height:1.5;text-align:center;word-break:keep-all;">${note}</div>` : ""}
-      ${html}
-    </div>`;
+    return this.renderR7CommonCardBody({ primary, note, html, tone });
   }
 
   renderR7RecordCardButton({ label, icon = "mdi:arrow-right", tone = "green", mode = "history", recordType = "growth-survey", seasonId = "" }) {
@@ -2199,7 +2211,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const pestNeedsCheck = pestScouting?.staleState === "attention" || !pestScouting?.count;
     const controlOk = !this.r7RecordPlsRequiresCheck(controlTreatment);
     const seasonId = this.activeR7RecordSeasonId();
-    const recentRows = [
+    const recentRows = Array.isArray(ctx.recentRows) && ctx.recentRows.length ? ctx.recentRows : [
       { kind: "방제 기록", at: "2026-06-30 08:10", memo: "사용 약제 2종", state: "PHI 3일 남음", tone: "green", icon: "mdi:flask-outline" },
       { kind: "병해충 예찰", at: "2026-06-25 09:20", memo: "잎말림병 의심 1건", state: "주의", tone: "amber", icon: "mdi:bug-outline" },
     ];

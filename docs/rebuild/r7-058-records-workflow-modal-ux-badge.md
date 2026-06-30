@@ -1,6 +1,6 @@
 # R7-058 Records Workflow modal UX and badge correction
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.13.7`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.13.8`.
 
 ## Scope
 

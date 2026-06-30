@@ -1,6 +1,6 @@
 # R7-031 HA-like Sidebar
 
-> 기준 버전: `v1.13.7`
+> 기준 버전: `v1.13.8`
 > Status: R7-031 planned
 > Purpose: Green Smart sidebar를 Home Assistant 사이드바처럼 보이도록 정리한다. 강제 fixed overlay가 아니라 grid-safe sticky 레이아웃을 유지한다.
 
