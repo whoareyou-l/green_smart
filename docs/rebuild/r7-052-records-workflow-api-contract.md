@@ -2,7 +2,7 @@
 
 > **For Hermes:** This slice defines the next API contract for `작물 운영 > 기록·작업`. It must not implement real writes yet. Keep R7-051 UI skeleton visible and pending. The next implementation slice may use this contract to add routes/repositories after a separate RED cycle.
 
-**Target version:** v1.14.5
+**Target version:** v1.14.6
 **Scope:** `작물 운영 > 기록·작업` only
 **Mode:** API contract/design + source-boundary markers only
 
@@ -277,7 +277,7 @@ blocked/needs_review must not create execution authority
 
 ---
 
-## 8. Explicit non-goals for v1.14.5
+## 8. Explicit non-goals for v1.14.6
 
 ```text
 No route implementation
@@ -307,7 +307,7 @@ R7_RECORDS_WORKFLOW_API_CONTRACT
 Required render marker:
 
 ```text
-data-r7-record-api-contract="planned-v1.14.5"
+data-r7-record-api-contract="planned-v1.14.6"
 ```
 
 The render marker is informational only and must stay paired with:

@@ -57,9 +57,9 @@ def _render_records_workflow_with_many_recent_rows():
 
 
 def test_r7_073_version_surfaces_are_1_13_8():
-    assert '"version": "1.14.5"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.5"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.5"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.6"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.6"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.6"' in _read(REBUILD_PANEL)
 
 
 def test_r7_073_common_recent_panel_has_default_limit_policy():

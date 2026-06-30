@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.5";
+const REBUILD_VERSION = "1.14.6";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1391,7 +1391,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const validationChecks = this._r7ApprovalValidationChecks(selected);
     const rowHtml = models.length ? models.map((model) => {
       const selectedRow = String(model.id) === String(selected.id);
-      return `<button type="button" data-r7-settings-approval-list-item-button="${model.id}" data-r7-settings-approval-list-row="${model.id}" data-r7-settings-approval-list-row-selected="${selectedRow ? 'true' : 'false'}" data-r7-settings-approval-stage="${model.stage.key}" data-r7-settings-approval-risk-level="${model.risk.level}" style="width:100%;border:1px solid ${selectedRow ? '#badcc8' : '#edf4ef'};border-radius:12px;background:${selectedRow ? '#f6fbf7' : '#fff'};padding:9px 10px;display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;align-items:center;text-align:left;color:#24323f;font-size:11px;cursor:pointer;box-shadow:${selectedRow ? '0 8px 18px rgba(37,128,74,.08)' : 'none'};">
+      return `<button type="button" data-r7-settings-approval-list-item-button="${model.id}" data-r7-settings-approval-list-row="${model.id}" data-r7-settings-approval-list-row-compact="true" data-r7-settings-approval-list-row-selected="${selectedRow ? 'true' : 'false'}" data-r7-settings-approval-stage="${model.stage.key}" data-r7-settings-approval-risk-level="${model.risk.level}" style="width:100%;min-height:42px;max-height:54px;border:1px solid ${selectedRow ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${selectedRow ? '#f6fbf7' : '#fff'};padding:7px 9px;display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;align-items:center;text-align:left;color:#24323f;font-size:11px;cursor:pointer;box-shadow:${selectedRow ? '0 6px 14px rgba(37,128,74,.07)' : 'none'};overflow:hidden;">
         <span>${model.requestedAt}</span><b>${model.approvalType}</b><span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(model.risk.tone)}">${model.risk.level}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${model.summary}</span><span>${model.requester}</span><span style="font-weight:1000;color:#31523b;">›</span>
       </button>`;
     }).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">승인 요청 데이터 없음</p>`;
@@ -1414,7 +1414,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
           <section data-r7-settings-approval-pending-list style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;">
             <h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;">승인 대기 목록</h3>
             <div style="display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;padding:0 14px 8px;color:#5d6f62;font-size:11px;font-weight:950;"><span>요청일 ↓</span><span>유형</span><span>위험도</span><span>요청 내용</span><span>요청자</span><span></span></div>
-            <div style="display:grid;gap:8px;overflow:auto;padding:0 10px 10px;">${rowHtml}</div>
+            <div data-r7-settings-approval-list-body style="display:grid;gap:6px;overflow:auto;padding:0 10px 10px;align-content:start;grid-auto-rows:max-content;">${rowHtml}</div>
             <footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding:10px 14px;color:#5d6f62;font-size:12px;"><span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${models.length}건</span></footer>
           </section>
           <section data-r7-settings-approval-review-pane data-r7-settings-approval-stage="${selected.stage.key}" data-r7-settings-approval-risk-level="${selected.risk.level}" data-r7-settings-approval-decision-enabled="${selected.decisionEnabled ? 'true' : 'false'}" style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;">
