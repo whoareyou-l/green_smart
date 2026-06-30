@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.91";
+const REBUILD_VERSION = "1.12.92";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -61,9 +61,18 @@ const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
   endpoints: ["get /history", "get /history/{recordType}", "get /latest/{recordType}", "post /growth-survey", "post /pest-scouting", "post /control-treatment", "patch /{recordType}/{recordId}", "post /pls-check"],
   recordTypes: ["growth-survey", "pest-scouting", "control-treatment"],
   sourceSurface: "crop-operations.records-workflow",
-  mode: "planned-contract-only",
-  writeImplementationEnabled: false,
+  mode: "implemented-wrapper",
+  writeImplementationEnabled: true,
   executionEnabled: false,
+});
+
+const R7_RECORD_STATUS_DEFINITIONS = Object.freeze({
+  "normal-ready": { label: "정상", stage: "운영 가능", tone: "green", bg: "#e8f7ee", border: "#badcc8", text: "#25804a" },
+  "needs-verification": { label: "확인 필요", stage: "누락 확인", tone: "amber", bg: "#fff4d6", border: "#ead4a2", text: "#9a6b10" },
+  "evidence-limited": { label: "근거 부족", stage: "신뢰도 제한", tone: "red", bg: "#fde7e4", border: "#efc5c0", text: "#b4453a" },
+  "due-today": { label: "오늘 필요", stage: "오늘 작성", tone: "blue", bg: "#eaf3ff", border: "#bcd6ee", text: "#326aa5" },
+  "attention-stale": { label: "주의", stage: "지연 확인", tone: "amber", bg: "#fff4d6", border: "#ead4a2", text: "#9a6b10" },
+  "safety-check": { label: "확인", stage: "안전 확인", tone: "amber", bg: "#fff4d6", border: "#ead4a2", text: "#9a6b10" },
 });
 const REBUILD_PAGES = Object.freeze([
   { key: "crop-status", label: "작물상태", description: "현재 작물이 어떤 상태인지 먼저 봅니다." },
@@ -209,6 +218,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._activeR7Domain = "operations-home";
     this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary", "safety-history": "status-summary", "settings-admin": "domain-ownership" };
     this._r7SidebarCollapsed = false;
+    this._r7RecordModal = null;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -1709,17 +1719,27 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return (palette[tone] || palette.green)[slot] || palette.green.text;
   }
 
-  renderR7RecordCardBadge(label, tone = "green") {
-    return `<span data-r7-record-card-badge style="font-size:11px;font-weight:900;border-radius:999px;padding:4px 8px;background:${this.r7RecordToneColor(tone, "badgeBg")};color:${this.r7RecordToneColor(tone, "badgeText")};line-height:1;white-space:nowrap;">${label}</span>`;
+  r7RecordStatus(statusKey = "normal-ready") {
+    return R7_RECORD_STATUS_DEFINITIONS[statusKey] || R7_RECORD_STATUS_DEFINITIONS["normal-ready"];
   }
 
-  renderR7RecordCardHeader({ icon, title, status, tone = "green", extraAttrs = "" }) {
+  activeR7RecordSeasonId() {
+    const zone = this._r7PrimaryZoneForDomain?.() || this._zonesForRender?.()[0] || {};
+    return zone.currentCrop?.crop_cycle_id || zone.activeCropCycleId || zone.crop_cycle || "";
+  }
+
+  renderR7RecordCardBadge(statusKey = "normal-ready") {
+    const status = this.r7RecordStatus(statusKey);
+    return `<span data-r7-record-card-badge data-r7-record-status-key="${statusKey}" data-r7-record-status-stage="${status.stage}" style="font-size:11px;font-weight:900;border:1px solid ${status.border};border-radius:999px;padding:4px 8px;background:${status.bg};color:${status.text};line-height:1;white-space:nowrap;display:inline-flex;gap:5px;align-items:center;"><b>${status.label}</b><small style="font-size:10px;font-weight:800;opacity:.78;">${status.stage}</small></span>`;
+  }
+
+  renderR7RecordCardHeader({ icon, title, statusKey = "normal-ready", tone = "green", extraAttrs = "" }) {
     return `<header data-r7-record-card-header ${extraAttrs} style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0;">
       <div data-r7-record-card-headline style="display:flex;align-items:center;gap:8px;min-width:0;">
         <span data-r7-record-card-icon-wrap style="width:26px;height:26px;border-radius:9px;background:${this.r7RecordToneColor(tone, "badgeBg")};display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;"><ha-icon icon="${icon}" style="--mdc-icon-size:17px;width:17px;height:17px;color:${this.r7RecordToneColor(tone, "icon")};"></ha-icon></span>
         <div data-r7-record-card-title style="font-size:14px;font-weight:950;color:#1f3329;line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</div>
       </div>
-      ${this.renderR7RecordCardBadge(status, tone)}
+      ${this.renderR7RecordCardBadge(statusKey)}
     </header>`;
   }
 
@@ -1731,8 +1751,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </div>`;
   }
 
-  renderR7RecordCardButton({ label, icon = "mdi:arrow-right", tone = "green" }) {
-    return `<button type="button" data-r7-record-card-button data-r7-record-image-action="${label}" style="height:34px;min-width:0;width:100%;border:1px solid ${this.r7RecordToneColor(tone, "border")};background:#fff;border-radius:9px;padding:0 10px;font-size:12px;font-weight:900;color:${this.r7RecordToneColor(tone, "text")};display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center;white-space:nowrap;line-height:1;box-sizing:border-box;"><ha-icon icon="${icon}" style="--mdc-icon-size:15px;width:15px;height:15px;flex:0 0 auto;"></ha-icon><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">${label}</span></button>`;
+  renderR7RecordCardButton({ label, icon = "mdi:arrow-right", tone = "green", mode = "history", recordType = "growth-survey", seasonId = "" }) {
+    return `<button type="button" data-r7-record-card-button data-r7-record-image-action="${label}" data-r7-record-action-mode="${mode}" data-r7-record-action-type="${recordType}" data-r7-record-action-season-id="${seasonId}" style="height:34px;min-width:0;width:100%;border:1px solid ${this.r7RecordToneColor(tone, "border")};background:#fff;border-radius:9px;padding:0 10px;font-size:12px;font-weight:900;color:${this.r7RecordToneColor(tone, "text")};display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center;white-space:nowrap;line-height:1;box-sizing:border-box;cursor:pointer;"><ha-icon icon="${icon}" style="--mdc-icon-size:15px;width:15px;height:15px;flex:0 0 auto;"></ha-icon><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">${label}</span></button>`;
   }
 
   renderR7RecordCardActionRow(actions = []) {
@@ -1741,9 +1761,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-record-card-action-row style="display:grid;grid-template-columns:repeat(${visible.length},minmax(0,1fr));gap:8px;align-items:center;margin-top:auto;">${visible.join("")}</div>`;
   }
 
-  renderR7RecordCardShell({ kind, icon, title, status, tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
+  renderR7RecordCardShell({ kind, icon, title, status, statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
     return `<article data-r7-record-card-shell="${kind}" data-r7-record-image-card="${kind}" ${extraAttrs} style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;grid-template-rows:auto 1fr auto;gap:12px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);min-width:0;align-content:stretch;">
-      ${this.renderR7RecordCardHeader({ icon, title, status, tone })}
+      ${this.renderR7RecordCardHeader({ icon, title, statusKey, tone })}
       ${this.renderR7RecordCardBody({ primary, note, html, tone })}
       ${this.renderR7RecordCardActionRow(actions)}
     </article>`;
@@ -1767,24 +1787,127 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+
+  r7RecordTypeLabel(recordType = "growth-survey") {
+    return ({ "growth-survey": "생육조사", "pest-scouting": "병해충 예찰", "control-treatment": "방제 기록" })[recordType] || "기록";
+  }
+
+  r7RecordModeLabel(mode = "history", recordType = "growth-survey") {
+    if (mode === "write") return `${this.r7RecordTypeLabel(recordType)} 작성`;
+    if (mode === "verification") return "누락/검증 필요";
+    if (mode === "evidence") return "AI 근거 연결";
+    return `${this.r7RecordTypeLabel(recordType)} 히스토리`;
+  }
+
+  async fetchR7RecordHistory(seasonId, recordType) {
+    if (!this.hass?.callApi || !seasonId) return { recordType, rows: [] };
+    return await this.hass.callApi("GET", `/api/green_smart/rebuild/crop-records/${seasonId}/history/${recordType}`);
+  }
+
+  createR7RecordPayload(recordType, form) {
+    const data = new FormData(form);
+    const base = { date: data.get("date") || new Date().toISOString().slice(0, 10), note: data.get("note") || "" };
+    if (recordType === "growth-survey") return { ...base, height: data.get("height") || null, leafCount: data.get("leafCount") || null, cropType: data.get("cropType") || "lettuce" };
+    if (recordType === "pest-scouting") return { ...base, type: data.get("type") || "미지정", location: data.get("location") || "", severity: Number(data.get("severity") || 1) };
+    return { ...base, pesticideName: data.get("pesticideName") || "미지정 약제", phiDays: data.get("phiDays") ? Number(data.get("phiDays")) : null, reiHours: data.get("reiHours") ? Number(data.get("reiHours")) : null, pls: data.get("pls") === "true" };
+  }
+
+  async openR7RecordWorkflowModal({ mode, recordType, seasonId }) {
+    const title = this.r7RecordModeLabel(mode, recordType);
+    this._r7RecordModal = { mode, recordType, seasonId, title, state: mode === "write" ? "ready" : "loading", rows: [] };
+    this.render();
+    if (["history", "verification", "evidence"].includes(mode)) {
+      try {
+        const response = await this.fetchR7RecordHistory(seasonId, recordType);
+        this._r7RecordModal = { mode, recordType, seasonId, title, state: "ready", rows: response?.rows || [], response };
+      } catch (error) {
+        this._r7RecordModal = { mode, recordType, seasonId, title, state: "error", rows: [], error: error?.message || "history-load-failed" };
+      }
+      this.render();
+    }
+  }
+
+  closeR7RecordWorkflowModal() {
+    this._r7RecordModal = null;
+    this.render();
+  }
+
+  async submitR7RecordWorkflowForm(form) {
+    const modal = this._r7RecordModal;
+    if (!modal || !this.hass?.callApi) return;
+    const payload = this.createR7RecordPayload(modal.recordType, form);
+    const seasonId = modal.seasonId;
+    const recordType = modal.recordType;
+    this._r7RecordModal = { ...modal, state: "saving" };
+    this.render();
+    try {
+      const response = await this.hass.callApi("post", `/api/green_smart/rebuild/crop-records/${seasonId}/${recordType}`, payload);
+      this._r7RecordModal = { ...modal, state: "saved", saved: response, rows: [] };
+      await this._loadHomeContext?.();
+      this.render();
+    } catch (error) {
+      this._r7RecordModal = { ...modal, state: "error", error: error?.message || "save-failed" };
+      this.render();
+    }
+  }
+
+  _bindR7RecordWorkflowActions() {
+    this.querySelectorAll("[data-r7-record-card-button][data-r7-record-action-mode]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        this.openR7RecordWorkflowModal({ mode: button.dataset.r7RecordActionMode, recordType: button.dataset.r7RecordActionType, seasonId: button.dataset.r7RecordActionSeasonId });
+      });
+    });
+    this.querySelectorAll("[data-r7-record-modal-close]").forEach((button) => button.addEventListener("click", () => this.closeR7RecordWorkflowModal()));
+    this.querySelectorAll("form[data-r7-record-write-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this.submitR7RecordWorkflowForm(form); }));
+  }
+
+  renderR7RecordWriteFields(recordType) {
+    const today = new Date().toISOString().slice(0, 10);
+    const common = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">조사/기록일<input name="date" type="date" value="${today}" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>`;
+    const note = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">메모<textarea name="note" rows="3" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;"></textarea></label>`;
+    if (recordType === "growth-survey") return `${common}<input type="hidden" name="cropType" value="lettuce"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">초장(cm)<input name="height" type="number" step="0.1" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">엽수<input name="leafCount" type="number" step="0.1" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label></div>${note}`;
+    if (recordType === "pest-scouting") return `${common}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">병해충/증상<input name="type" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">심각도<input name="severity" type="number" min="1" max="5" value="1" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label></div><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">위치<input name="location" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>${note}`;
+    return `${common}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">약제명<input name="pesticideName" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">PHI(일)<input name="phiDays" type="number" min="0" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">REI(시간)<input name="reiHours" type="number" min="0" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">PLS<select name="pls" style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"><option value="true">적합</option><option value="false">확인 필요</option></select></label></div>${note}`;
+  }
+
+  renderR7RecordWorkflowModal() {
+    const modal = this._r7RecordModal;
+    if (!modal) return "";
+    const rows = modal.rows || [];
+    const history = `<div data-r7-record-history-list style="display:grid;gap:8px;">${rows.length ? rows.map((row) => `<div data-r7-record-history-row style="border:1px solid #e5eee7;border-radius:10px;padding:9px 10px;font-size:12px;color:#53645b;"><strong style="color:#1f3329;">${row.date || row.id || "기록"}</strong><div>${row.summary || row.note || "상세 기록"}</div></div>`).join("") : `<div data-r7-record-history-empty style="border:1px dashed #dcebe0;border-radius:10px;padding:12px;color:#78927f;font-size:12px;">표시할 기록이 없습니다.</div>`}</div>`;
+    const body = modal.mode === "write"
+      ? `<form data-r7-record-write-form style="display:grid;gap:12px;">${this.renderR7RecordWriteFields(modal.recordType)}<button data-r7-record-modal-submit type="submit" style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">저장</button></form>`
+      : `<section data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${modal.state === "loading" ? "불러오는 중..." : history}</section>`;
+    return `<div data-r7-record-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}" style="position:fixed;inset:0;background:rgba(20,32,24,.28);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;">
+      <section style="width:min(720px,100%);max-height:82vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #dcebe0;box-shadow:0 18px 55px rgba(31,51,41,.18);padding:18px;display:grid;gap:14px;">
+        <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><strong style="font-size:18px;color:#1f3329;">${modal.title}</strong><div style="font-size:12px;color:#78927f;margin-top:3px;">작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}</div></div><button type="button" data-r7-record-modal-close style="width:34px;height:34px;border:1px solid #dcebe0;border-radius:50%;background:#fff;font-weight:950;">×</button></header>
+        ${body}
+      </section>
+    </div>`;
+  }
+
   renderR7RecordsWorkflowProductLayout(ctx) {
     const { pestScouting, controlTreatment } = ctx;
     const pestNeedsCheck = pestScouting?.staleState === "attention" || !pestScouting?.count;
     const controlOk = !this.r7RecordPlsRequiresCheck(controlTreatment);
+    const seasonId = this.activeR7RecordSeasonId();
     const recentRows = [
       { kind: "방제 기록", at: "2026-06-30 08:10", memo: "사용 약제 2종", state: "PHI 3일 남음", tone: "green", icon: "mdi:flask-outline" },
       { kind: "병해충 예찰", at: "2026-06-25 09:20", memo: "잎말림병 의심 1건", state: "주의", tone: "amber", icon: "mdi:bug-outline" },
     ];
+    const statusLegend = `<template data-r7-record-status-legend>${Object.keys(R7_RECORD_STATUS_DEFINITIONS).map((key) => this.renderR7RecordCardBadge(key)).join("")}</template>`;
     return `<div data-r7-records-image-dashboard="true" data-r7-crop-record-card style="display:grid;gap:12px;width:100%;">
+      ${statusLegend}
       <div data-r7-record-row="top-actions" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
-        ${this.renderR7RecordCardShell({ kind: "today-work", icon: "mdi:check-circle", title: "오늘 할 일", status: "정상", tone: "green", primary: "필수 기록 최신 상태", actions: [this.renderR7RecordCardButton({ label: "전체 확인 보기", icon: "mdi:format-list-checks", tone: "green" })] })}
-        ${this.renderR7RecordCardShell({ kind: "missing-verification", icon: "mdi:clipboard-alert-outline", title: "누락·검증 필요", status: "확인 필요", tone: "amber", html: '<ul style="margin:0;padding-left:18px;font-size:12px;color:#53645b;line-height:1.6;text-align:left;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>', actions: [this.renderR7RecordCardButton({ label: "검증 등록", icon: "mdi:clipboard-plus-outline", tone: "amber" })] })}
-        ${this.renderR7RecordCardShell({ kind: "ai-evidence", icon: "mdi:target", title: "AI 근거 연결", status: "근거 부족", tone: "red", note: "생육조사 데이터가 추천 신뢰도를 제한합니다.", actions: [this.renderR7RecordCardButton({ label: "근거 보기", icon: "mdi:open-in-new", tone: "red" })], extraAttrs: "data-r7-record-ai-card" })}
+        ${this.renderR7RecordCardShell({ kind: "today-work", icon: "mdi:check-circle", title: "오늘 할 일", statusKey: "normal-ready", tone: "green", primary: "필수 기록 최신 상태", actions: [this.renderR7RecordCardButton({ label: "전체 확인 보기", icon: "mdi:format-list-checks", tone: "green", mode: "history", recordType: "growth-survey", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "missing-verification", icon: "mdi:clipboard-alert-outline", title: "누락·검증 필요", statusKey: "needs-verification", tone: "amber", html: '<ul style="margin:0;padding-left:18px;font-size:12px;color:#53645b;line-height:1.6;text-align:left;"><li>SPAD 미입력</li><li>병해충 예찰 5일 경과</li></ul>', actions: [this.renderR7RecordCardButton({ label: "검증 등록", icon: "mdi:clipboard-plus-outline", tone: "amber", mode: "verification", recordType: "growth-survey", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "ai-evidence", icon: "mdi:target", title: "AI 근거 연결", statusKey: "evidence-limited", tone: "red", note: "생육조사 데이터가 추천 신뢰도를 제한합니다.", actions: [this.renderR7RecordCardButton({ label: "근거 보기", icon: "mdi:open-in-new", tone: "red", mode: "evidence", recordType: "growth-survey", seasonId })], extraAttrs: "data-r7-record-ai-card" })}
       </div>
       <div data-r7-record-row="core-records" data-r7-record-image-grid="primary" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
-        ${this.renderR7RecordCardShell({ kind: "growth-survey", icon: "mdi:sprout-outline", title: "생육조사", status: "오늘 필요", tone: "blue", primary: "최근 기록 없음", note: "G-Index 계산에 필요한 생육 데이터가 없습니다.", actions: [this.renderR7RecordCardButton({ label: "바로조사 작성", icon: "mdi:pencil-outline", tone: "blue" }), this.renderR7RecordCardButton({ label: "히스토리", icon: "mdi:history", tone: "blue" })] })}
-        ${this.renderR7RecordCardShell({ kind: "pest-scouting", icon: "mdi:bug-outline", title: "병해충 예찰", status: pestNeedsCheck ? "주의" : "정상", tone: "amber", primary: "최근 5일 전", note: "예찰 주기 지연을 확인합니다.", actions: [this.renderR7RecordCardButton({ label: "예찰 작성", icon: "mdi:pencil-outline", tone: "amber" }), this.renderR7RecordCardButton({ label: "예전 기록", icon: "mdi:history", tone: "blue" })] })}
-        ${this.renderR7RecordCardShell({ kind: "control-treatment", icon: "mdi:flask-outline", title: "방제 기록", status: controlOk ? "정상" : "확인", tone: controlOk ? "green" : "amber", primary: "PHI 3일 남음", note: "사용 약제 기준 · 수확 전 안전 기간 확인", actions: [this.renderR7RecordCardButton({ label: "방제 기록", icon: "mdi:file-plus-outline", tone: "green" }), this.renderR7RecordCardButton({ label: "PHI 보기", icon: "mdi:eye-outline", tone: "blue" })] })}
+        ${this.renderR7RecordCardShell({ kind: "growth-survey", icon: "mdi:sprout-outline", title: "생육조사", statusKey: "due-today", tone: "blue", primary: "최근 기록 없음", note: "G-Index 계산에 필요한 생육 데이터가 없습니다.", actions: [this.renderR7RecordCardButton({ label: "바로조사 작성", icon: "mdi:pencil-outline", tone: "blue", mode: "write", recordType: "growth-survey", seasonId }), this.renderR7RecordCardButton({ label: "히스토리", icon: "mdi:history", tone: "blue", mode: "history", recordType: "growth-survey", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "pest-scouting", icon: "mdi:bug-outline", title: "병해충 예찰", statusKey: "attention-stale", tone: "amber", primary: "최근 5일 전", note: "예찰 주기 지연을 확인합니다.", actions: [this.renderR7RecordCardButton({ label: "예찰 작성", icon: "mdi:pencil-outline", tone: "amber", mode: "write", recordType: "pest-scouting", seasonId }), this.renderR7RecordCardButton({ label: "예전 기록", icon: "mdi:history", tone: "blue", mode: "history", recordType: "pest-scouting", seasonId })] })}
+        ${this.renderR7RecordCardShell({ kind: "control-treatment", icon: "mdi:flask-outline", title: "방제 기록", statusKey: controlOk ? "normal-ready" : "safety-check", tone: controlOk ? "green" : "amber", primary: "PHI 3일 남음", note: "사용 약제 기준 · 수확 전 안전 기간 확인", actions: [this.renderR7RecordCardButton({ label: "방제 기록", icon: "mdi:file-plus-outline", tone: "green", mode: "write", recordType: "control-treatment", seasonId }), this.renderR7RecordCardButton({ label: "PHI 보기", icon: "mdi:eye-outline", tone: "blue", mode: "history", recordType: "control-treatment", seasonId })] })}
       </div>
       <div data-r7-record-row="recent-records" style="display:grid;grid-template-columns:1fr;gap:12px;grid-column:1/-1;">
         ${this.renderR7RecentRecordPanel(recentRows)}
@@ -2203,10 +2326,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
         </div>
       </main>
       ${this.renderZoneDetailModal()}
+      ${this.renderR7RecordWorkflowModal()}
     `;
     this._bindR7DomainNavigation();
     this._bindR7DomainSubtabs();
     this._bindZoneTabs();
+    this._bindR7RecordWorkflowActions();
   }
 }
 
