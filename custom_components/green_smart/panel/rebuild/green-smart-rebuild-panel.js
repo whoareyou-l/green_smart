@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.82";
+const REBUILD_VERSION = "1.12.83";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1645,17 +1645,60 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-crop-product-direct-cards="${tabKey}" data-r7-crop-product-card-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;width:100%;">${cards.join("")}</div><template data-r7-product-screen data-r7-product-screen-kind="${tabKey}" data-r7-crop-product-subtab-screen="${tabKey}" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
   }
 
-  renderR7CropRecordWorkCards(ctx) {
-    const { recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems } = ctx;
-    const missingItems = workMissingItems === "누락 항목 없음" ? [] : String(workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
-    const recordFlags = [`readOnly=${ctx.recordReadOnly !== false}`, `writeEnabled=${ctx.recordWriteEnabled === true}`, `executionEnabled=${ctx.recordExecutionEnabled === true}`];
-    return [
-      this.renderR7CropProductCard({ kind: "today-work", label: "오늘 할 일", primary: workNextAction, secondary: missingItems.length ? `${missingItems.length}개 기록 확인 필요` : "누락 없음", state: missingItems.length ? "attention" : "fresh", tone: "amber", evidence: missingItems, actions: [], markers: 'data-r7-crop-record-card data-r7-crop-work-queue data-r7-crop-record-card-kind="today-work" data-r7-crop-registration-lane', full: true }),
-      this.renderR7CropProductCard({ kind: "growth-survey", label: "생육조사", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `최근 ${growthSurvey.count ?? 0}건 · ${growthSurvey.staleState || "unknown"}`, state: growthSurvey.staleState || "empty", tone: growthSurvey.staleState === "fresh" ? "green" : "amber", evidence: [growthSurvey.latest?.date, growthSurvey.latest?.height !== undefined ? `초장 ${growthSurvey.latest.height}cm` : "", growthSurvey.latest?.leafCount !== undefined ? `엽수 ${growthSurvey.latest.leafCount}` : ""], actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="growth-survey"' }),
-      this.renderR7CropProductCard({ kind: "pest-scouting", label: "병해충 예찰", primary: pestScouting.latestLabel || "병해충 예찰 기록 없음", secondary: `최근 ${pestScouting.count ?? 0}건 · ${pestScouting.staleState || "unknown"}`, state: pestScouting.staleState || "empty", tone: pestScouting.staleState === "attention" ? "amber" : "green", evidence: [pestScouting.latest?.date, pestScouting.latest?.type, pestScouting.latest?.severity], actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="pest-scouting"' }),
-      this.renderR7CropProductCard({ kind: "control-treatment", label: "방제", primary: controlTreatment.latestLabel || "방제 기록 없음", secondary: `최근 ${controlTreatment.count ?? 0}건 · ${controlTreatment.staleState || "unknown"}`, state: controlTreatment.staleState || "empty", tone: String(controlTreatment.latestLabel || "").includes("확인 필요") ? "amber" : "green", evidence: [controlTreatment.latest?.date, controlTreatment.latest?.pesticides?.[0]?.name, controlTreatment.latest?.pesticides?.[0]?.pls === true ? "PLS 적합" : controlTreatment.latest?.pesticides?.[0]?.pls === false ? "PLS 확인 필요" : ""], actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="control-treatment"' }),
+  r7RecordMissingItems(ctx) {
+    return ctx.workMissingItems === "누락 항목 없음" ? [] : String(ctx.workMissingItems || "").split(",").map((item) => item.trim()).filter(Boolean);
+  }
+
+  r7RecordCardState(record, kind = "record") {
+    const label = String(record?.latestLabel || "");
+    const severity = String(record?.latest?.severity || "").toLowerCase();
+    if (kind === "control-treatment" && label.includes("PLS 확인 필요")) return "attention";
+    if (severity.includes("high") || severity.includes("severe") || severity.includes("심")) return "attention";
+    return record?.staleState || "empty";
+  }
+
+  r7RecordEvidence(record, kind = "record") {
+    const latest = record?.latest || {};
+    if (kind === "growth-survey") return [latest.date, latest.height !== undefined ? `초장 ${latest.height}cm` : "", latest.leafCount !== undefined ? `엽수 ${latest.leafCount}` : ""];
+    if (kind === "pest-scouting") return [latest.date, latest.type, latest.severity];
+    if (kind === "control-treatment") return [latest.date, latest.pesticides?.[0]?.name, latest.pesticides?.[0]?.pls === true ? "PLS 적합" : latest.pesticides?.[0]?.pls === false ? "PLS 확인 필요" : ""];
+    return [];
+  }
+
+  renderR7CropRecordWorkflowVerticalSlice(ctx) {
+    const { recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction } = ctx;
+    const missingItems = this.r7RecordMissingItems(ctx);
+    const growthState = this.r7RecordCardState(growthSurvey, "growth-survey");
+    const pestState = this.r7RecordCardState(pestScouting, "pest-scouting");
+    const controlState = this.r7RecordCardState(controlTreatment, "control-treatment");
+    const attentionItems = [
+      ...missingItems,
+      growthState === "attention" || growthState === "empty" ? `생육조사 ${growthState}` : "",
+      pestState === "attention" || pestState === "empty" ? `병해충 예찰 ${pestState}` : "",
+      controlState === "attention" || controlState === "empty" ? `방제 ${controlState}` : "",
+      String(controlTreatment.latestLabel || "").includes("PLS 확인 필요") ? "PLS 확인 필요" : "",
+    ].filter(Boolean);
+    const hasAttention = attentionItems.length > 0;
+    const recordFlags = [
+      `readOnly=${ctx.recordReadOnly !== false}`,
+      `writeEnabled=${ctx.recordWriteEnabled === true}`,
+      `executionEnabled=${ctx.recordExecutionEnabled === true}`,
+      `deviceCommandEnabled=${ctx.recordDeviceCommandEnabled === true}`,
+      `mqttEnabled=${ctx.recordMqttEnabled === true}`,
+    ];
+    const cards = [
+      this.renderR7CropProductCard({ kind: "today-work", label: "오늘 할 일", primary: workNextAction, secondary: missingItems.length ? `${missingItems.length}개 확인 필요` : "누락 없음", state: missingItems.length ? "attention" : "fresh", tone: missingItems.length ? "amber" : "green", evidence: missingItems.length ? missingItems : ["누락 없음"], actions: [], markers: `data-r7-crop-record-card data-r7-crop-work-queue data-r7-crop-record-card-kind="today-work" data-r7-crop-registration-lane ${hasAttention ? 'data-r7-crop-record-attention="true"' : ''}`, full: true }),
+      this.renderR7CropProductCard({ kind: "growth-survey", label: "생육조사", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `최근 ${growthSurvey.count ?? 0}건 · ${growthState}`, state: growthState, tone: growthState === "fresh" ? "green" : "amber", evidence: this.r7RecordEvidence(growthSurvey, "growth-survey"), actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="growth-survey"' }),
+      this.renderR7CropProductCard({ kind: "pest-scouting", label: "병해충 예찰", primary: pestScouting.latestLabel || "병해충 예찰 기록 없음", secondary: `최근 ${pestScouting.count ?? 0}건 · ${pestState}`, state: pestState, tone: pestState === "attention" || pestState === "empty" ? "amber" : "green", evidence: this.r7RecordEvidence(pestScouting, "pest-scouting"), actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="pest-scouting"' }),
+      this.renderR7CropProductCard({ kind: "control-treatment", label: "방제", primary: controlTreatment.latestLabel || "방제 기록 없음", secondary: `최근 ${controlTreatment.count ?? 0}건 · ${controlState}`, state: controlState, tone: controlState === "attention" ? "amber" : "green", evidence: this.r7RecordEvidence(controlTreatment, "control-treatment"), actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="control-treatment"' }),
+      this.renderR7CropProductCard({ kind: "missing-attention", label: "누락/주의", primary: hasAttention ? `${attentionItems.length}개 확인 필요` : "누락 없음", secondary: `생육 ${growthState} · 예찰 ${pestState} · 방제 ${controlState}`, state: hasAttention ? "attention" : "fresh", tone: hasAttention ? "amber" : "green", evidence: hasAttention ? attentionItems : ["누락 없음", "PLS 적합"], actions: [], markers: `data-r7-crop-record-card data-r7-crop-record-card-kind="missing-attention" ${hasAttention ? 'data-r7-crop-record-attention="true"' : ''}`, full: true }),
       this.renderR7CropProductCard({ kind: "record-source", label: "기록 원천", primary: recordSource, secondary: "read-only · write/execute disabled", state: "ready", tone: "blue", evidence: recordFlags, actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="record-source"', full: true }),
     ];
+    return `<div data-r7-crop-record-workflow-vertical-slice="true" data-r7-crop-record-workflow-layout="priority-records-source" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;width:100%;">${cards.join("")}</div>`;
+  }
+
+  renderR7CropRecordWorkCards(ctx) {
+    return [this.renderR7CropRecordWorkflowVerticalSlice(ctx)];
   }
 
   renderR7CropCycleCards(ctx) {
