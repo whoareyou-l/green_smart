@@ -38,10 +38,10 @@ def _node_harness(record_summary: str) -> str:
 
 
 def test_r7_048_version_surfaces_are_1_12_83():
-    assert '"version": "1.12.83"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.83"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.83"' in _read(REBUILD_PANEL)
-    assert "v1.12.83" in _read(DOC)
+    assert '"version": "1.12.84"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.84"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.84"' in _read(REBUILD_PANEL)
+    assert "v1.12.84" in _read(DOC)
 
 
 def test_r7_048_plan_is_records_workflow_only_and_field_mapped():

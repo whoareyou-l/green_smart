@@ -28,11 +28,11 @@ def _load_service():
 
 
 def test_r6_002_version_surfaces_are_1_12_32():
-    assert '"version": "1.12.83"' in _read(MANIFEST)
-    assert 'const VERSION = "1.12.83"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.12.83"' in _read(REBUILD_PANEL)
+    assert '"version": "1.12.84"' in _read(MANIFEST)
+    assert 'const VERSION = "1.12.84"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.12.84"' in _read(REBUILD_PANEL)
     for path in (DOC, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.12.83" in _read(path)
+        assert "v1.12.84" in _read(path)
 
 
 def test_r6_002_document_declares_scope_after_crop_cycle_adapter():

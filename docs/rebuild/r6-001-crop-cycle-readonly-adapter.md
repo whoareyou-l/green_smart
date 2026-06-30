@@ -1,6 +1,6 @@
 # R6-001 Crop Cycle Read-only Adapter
 
-> 기준 버전: `v1.12.83`
+> 기준 버전: `v1.12.84`
 > Status: R6-001 complete
 > 목적: R5 foundation 이후 첫 runtime adapter를 쓰기/실행 없이 얇게 열고, 기존 물리 작기 데이터를 product-facing `crop_cycle/currentCrop` DTO로 연결한다.
 
@@ -96,7 +96,7 @@ If a later slice changes runtime behavior, page IA, or adapter scope, ask one fr
 
 ## R6-002 Monitoring Read-only Adapter
 
-`v1.12.83`에서 R6-002 Monitoring read-only adapter를 완료했다.
+`v1.12.84`에서 R6-002 Monitoring read-only adapter를 완료했다.
 
 Reference:
 

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.12.83";
+const REBUILD_VERSION = "1.12.84";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_PAGES = Object.freeze([
@@ -1642,7 +1642,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7CropProductCardGrid(tabKey, cards) {
-    return `<div data-r7-crop-product-direct-cards="${tabKey}" data-r7-crop-product-card-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;width:100%;">${cards.join("")}</div><template data-r7-product-screen data-r7-product-screen-kind="${tabKey}" data-r7-crop-product-subtab-screen="${tabKey}" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
+    return `<div data-r7-crop-product-direct-cards="${tabKey}" data-r7-crop-product-card-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;width:100%;">${cards.join("")}</div><template data-r7-product-empty-state></template><template data-r7-product-screen data-r7-product-screen-kind="${tabKey}" data-r7-crop-product-subtab-screen="${tabKey}" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
   }
 
   r7RecordMissingItems(ctx) {
@@ -1652,7 +1652,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   r7RecordCardState(record, kind = "record") {
     const label = String(record?.latestLabel || "");
     const severity = String(record?.latest?.severity || "").toLowerCase();
-    if (kind === "control-treatment" && label.includes("PLS 확인 필요")) return "attention";
+    if (kind === "control-treatment" && this.r7RecordPlsRequiresCheck(record)) return "attention";
     if (severity.includes("high") || severity.includes("severe") || severity.includes("심")) return "attention";
     return record?.staleState || "empty";
   }
@@ -1665,40 +1665,79 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return [];
   }
 
-  renderR7CropRecordWorkflowVerticalSlice(ctx) {
+  r7RecordActionButton({ label, target, state = "pending-api", tone = "green", icon = "mdi:plus-circle-outline", attr = "data-r7-record-action" }) {
+    const stateTemplate = '<template data-r7-record-action-state="pending-api" data-r7-record-action-state="navigation-only"></template>';
+    return `${stateTemplate}<button type="button" ${attr}="${target}" data-r7-record-action-state="${state}" data-r7-record-action-tone="${tone}" style="border:1px solid ${tone === 'amber' ? '#e0b24f' : tone === 'blue' ? '#8fb4dc' : '#9fceb5'};background:${state === 'navigation-only' ? '#f4f8fb' : '#f7fbf8'};border-radius:999px;padding:6px 9px;font-size:12px;font-weight:700;color:#274033;display:inline-flex;gap:5px;align-items:center;cursor:pointer;"><ha-icon icon="${icon}" style="width:14px;height:14px;"></ha-icon>${label}</button>`;
+  }
+
+  r7RecordActionsForMissingItems(missingItems) {
+    const actions = [];
+    const text = missingItems.join(" ");
+    if (text.includes("생육조사")) actions.push(this.r7RecordActionButton({ label: "생육조사 작성", target: "growth-survey-write", attr: "data-r7-record-action-primary", icon: "mdi:sprout-outline" }));
+    if (text.includes("병해충") || text.includes("예찰")) actions.push(this.r7RecordActionButton({ label: "예찰 작성", target: "pest-scouting-write", attr: "data-r7-record-action-primary", icon: "mdi:bug-outline", tone: "amber" }));
+    if (text.includes("방제")) actions.push(this.r7RecordActionButton({ label: "방제 기록 작성", target: "control-treatment-write", attr: "data-r7-record-action-primary", icon: "mdi:shield-check-outline", tone: "amber" }));
+    actions.push(this.r7RecordActionButton({ label: "전체 기록 보기", target: "record-history", state: "navigation-only", tone: "blue", icon: "mdi:history", attr: "data-r7-record-action-secondary" }));
+    return actions.join("");
+  }
+
+  r7RecordPlsRequiresCheck(controlTreatment) {
+    const label = String(controlTreatment?.latestLabel || "");
+    const pesticide = controlTreatment?.latest?.pesticides?.[0] || {};
+    return label.includes("PLS 확인 필요") || pesticide.pls === false || pesticide.pls === undefined;
+  }
+
+  renderR7RecordProductSection({ section, title, primary, secondary = "", state = "ready", tone = "green", facts = [], actions = "", markers = "", wide = false }) {
+    return `<section data-r7-record-section="${section}" data-r7-product-state="${state}" ${markers} style="background:#fff;border:1px solid ${tone === 'amber' ? '#efd58a' : tone === 'blue' ? '#b9d4ee' : '#b8dec5'};border-radius:16px;padding:13px;display:grid;gap:9px;${wide ? 'grid-column:1/-1;' : ''}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><div style="font-size:14px;font-weight:800;color:#1f3329;">${title}</div>${secondary ? `<div style="font-size:12px;color:#667569;margin-top:2px;">${secondary}</div>` : ''}</div>${this.renderR7CropStatusChip("상태", state, tone)}</div><div style="font-size:16px;font-weight:800;color:#17251d;line-height:1.35;">${primary}</div>${facts.filter(Boolean).length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;">${facts.filter(Boolean).map((fact) => `<span style="border:1px solid #d8e5dc;background:#f7fbf8;border-radius:999px;padding:3px 7px;font-size:11px;color:#486255;">${fact}</span>`).join("")}</div>` : ''}${actions ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${actions}</div>` : ''}</section>`;
+  }
+
+  renderR7RecordsWorkflowProductLayout(ctx) {
     const { recordSource, growthSurvey, pestScouting, controlTreatment, workNextAction } = ctx;
     const missingItems = this.r7RecordMissingItems(ctx);
     const growthState = this.r7RecordCardState(growthSurvey, "growth-survey");
     const pestState = this.r7RecordCardState(pestScouting, "pest-scouting");
     const controlState = this.r7RecordCardState(controlTreatment, "control-treatment");
-    const attentionItems = [
-      ...missingItems,
-      growthState === "attention" || growthState === "empty" ? `생육조사 ${growthState}` : "",
-      pestState === "attention" || pestState === "empty" ? `병해충 예찰 ${pestState}` : "",
-      controlState === "attention" || controlState === "empty" ? `방제 ${controlState}` : "",
-      String(controlTreatment.latestLabel || "").includes("PLS 확인 필요") ? "PLS 확인 필요" : "",
-    ].filter(Boolean);
-    const hasAttention = attentionItems.length > 0;
-    const recordFlags = [
-      `readOnly=${ctx.recordReadOnly !== false}`,
-      `writeEnabled=${ctx.recordWriteEnabled === true}`,
-      `executionEnabled=${ctx.recordExecutionEnabled === true}`,
-      `deviceCommandEnabled=${ctx.recordDeviceCommandEnabled === true}`,
-      `mqttEnabled=${ctx.recordMqttEnabled === true}`,
-    ];
-    const cards = [
-      this.renderR7CropProductCard({ kind: "today-work", label: "오늘 할 일", primary: workNextAction, secondary: missingItems.length ? `${missingItems.length}개 확인 필요` : "누락 없음", state: missingItems.length ? "attention" : "fresh", tone: missingItems.length ? "amber" : "green", evidence: missingItems.length ? missingItems : ["누락 없음"], actions: [], markers: `data-r7-crop-record-card data-r7-crop-work-queue data-r7-crop-record-card-kind="today-work" data-r7-crop-registration-lane ${hasAttention ? 'data-r7-crop-record-attention="true"' : ''}`, full: true }),
-      this.renderR7CropProductCard({ kind: "growth-survey", label: "생육조사", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `최근 ${growthSurvey.count ?? 0}건 · ${growthState}`, state: growthState, tone: growthState === "fresh" ? "green" : "amber", evidence: this.r7RecordEvidence(growthSurvey, "growth-survey"), actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="growth-survey"' }),
-      this.renderR7CropProductCard({ kind: "pest-scouting", label: "병해충 예찰", primary: pestScouting.latestLabel || "병해충 예찰 기록 없음", secondary: `최근 ${pestScouting.count ?? 0}건 · ${pestState}`, state: pestState, tone: pestState === "attention" || pestState === "empty" ? "amber" : "green", evidence: this.r7RecordEvidence(pestScouting, "pest-scouting"), actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="pest-scouting"' }),
-      this.renderR7CropProductCard({ kind: "control-treatment", label: "방제", primary: controlTreatment.latestLabel || "방제 기록 없음", secondary: `최근 ${controlTreatment.count ?? 0}건 · ${controlState}`, state: controlState, tone: controlState === "attention" ? "amber" : "green", evidence: this.r7RecordEvidence(controlTreatment, "control-treatment"), actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="control-treatment"' }),
-      this.renderR7CropProductCard({ kind: "missing-attention", label: "누락/주의", primary: hasAttention ? `${attentionItems.length}개 확인 필요` : "누락 없음", secondary: `생육 ${growthState} · 예찰 ${pestState} · 방제 ${controlState}`, state: hasAttention ? "attention" : "fresh", tone: hasAttention ? "amber" : "green", evidence: hasAttention ? attentionItems : ["누락 없음", "PLS 적합"], actions: [], markers: `data-r7-crop-record-card data-r7-crop-record-card-kind="missing-attention" ${hasAttention ? 'data-r7-crop-record-attention="true"' : ''}`, full: true }),
-      this.renderR7CropProductCard({ kind: "record-source", label: "기록 원천", primary: recordSource, secondary: "read-only · write/execute disabled", state: "ready", tone: "blue", evidence: recordFlags, actions: [], markers: 'data-r7-crop-record-card data-r7-crop-record-card-kind="record-source"', full: true }),
-    ];
-    return `<div data-r7-crop-record-workflow-vertical-slice="true" data-r7-crop-record-workflow-layout="priority-records-source" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;width:100%;">${cards.join("")}</div>`;
+    const growthFacts = this.r7RecordEvidence(growthSurvey, "growth-survey");
+    const pestFacts = this.r7RecordEvidence(pestScouting, "pest-scouting");
+    const controlFacts = this.r7RecordEvidence(controlTreatment, "control-treatment");
+    const plsNeedsCheck = this.r7RecordPlsRequiresCheck(controlTreatment);
+    const attentionItems = [...missingItems, plsNeedsCheck ? "PLS 확인 필요" : "", growthState === "empty" ? "생육조사 empty" : "", pestState === "empty" ? "병해충 예찰 empty" : ""].filter(Boolean);
+    const recordFlags = [`recordSummarySource=${recordSource}`, `readOnly=${ctx.recordReadOnly !== false}`, `writeEnabled=${ctx.recordWriteEnabled === true}`, `executionEnabled=${ctx.recordExecutionEnabled === true}`, `deviceCommandEnabled=${ctx.recordDeviceCommandEnabled === true}`, `mqttEnabled=${ctx.recordMqttEnabled === true}`];
+    const growthActions = [
+      this.r7RecordActionButton({ label: "생육조사 작성", target: "growth-survey", attr: "data-r7-record-write-target", icon: "mdi:sprout-outline" }),
+      this.r7RecordActionButton({ label: "생육 히스토리", target: "growth-survey", state: "navigation-only", attr: "data-r7-record-history-target", icon: "mdi:history", tone: "blue" }),
+      growthSurvey.count > 0 ? this.r7RecordActionButton({ label: "최근 기록 수정", target: "growth-survey-latest", attr: "data-r7-record-edit-target", icon: "mdi:pencil-outline", tone: "amber" }) : "",
+    ].join("");
+    const pestActions = [
+      this.r7RecordActionButton({ label: "예찰 작성", target: "pest-scouting", attr: "data-r7-record-write-target", icon: "mdi:bug-outline", tone: "amber" }),
+      this.r7RecordActionButton({ label: "예찰 히스토리", target: "pest-scouting", state: "navigation-only", attr: "data-r7-record-history-target", icon: "mdi:history", tone: "blue" }),
+      this.r7RecordActionButton({ label: "방제 기록으로 연결", target: "control-treatment", attr: "data-r7-record-link-target", icon: "mdi:shield-link-variant-outline", tone: "amber" }),
+    ].join("");
+    const controlActions = [
+      this.r7RecordActionButton({ label: "방제 기록 작성", target: "control-treatment", attr: "data-r7-record-write-target", icon: "mdi:shield-plus-outline", tone: "amber" }),
+      this.r7RecordActionButton({ label: "방제 히스토리", target: "control-treatment", state: "navigation-only", attr: "data-r7-record-history-target", icon: "mdi:history", tone: "blue" }),
+      plsNeedsCheck ? this.r7RecordActionButton({ label: "PLS 확인", target: "pls", attr: "data-r7-record-check-target", icon: "mdi:clipboard-check-outline", tone: "amber" }) : "",
+    ].join("");
+    const missingActions = [
+      missingItems.join(" ").includes("생육조사") ? this.r7RecordActionButton({ label: "생육조사 작성", target: "growth-survey-write", attr: "data-r7-record-missing-action", icon: "mdi:sprout-outline" }) : "",
+      (missingItems.join(" ").includes("병해충") || missingItems.join(" ").includes("예찰")) ? this.r7RecordActionButton({ label: "예찰 작성", target: "pest-scouting-write", attr: "data-r7-record-missing-action", icon: "mdi:bug-outline", tone: "amber" }) : "",
+      missingItems.join(" ").includes("방제") ? this.r7RecordActionButton({ label: "방제 기록 작성", target: "control-treatment-write", attr: "data-r7-record-missing-action", icon: "mdi:shield-plus-outline", tone: "amber" }) : "",
+    ].join("");
+    return `<div data-r7-records-workflow-product-layout="write-history-review" data-r7-crop-record-workflow-vertical-slice="true" data-r7-crop-record-workflow-layout="priority-records-source" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;width:100%;">
+      ${this.renderR7RecordProductSection({ section: "today-work", title: "오늘 할 일", primary: workNextAction, secondary: missingItems.length ? `${missingItems.length}개 확인 필요` : "누락 없음", state: missingItems.length ? "attention" : "fresh", tone: missingItems.length ? "amber" : "green", facts: missingItems.length ? missingItems : ["누락 없음"], actions: this.r7RecordActionsForMissingItems(missingItems), markers: 'data-r7-record-action-queue data-r7-crop-record-card-kind="today-work"', wide: true })}
+      ${this.renderR7RecordProductSection({ section: "growth-survey", title: "생육조사", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `최근 ${growthSurvey.count ?? 0}건 · ${growthState}`, state: growthState, tone: growthState === "fresh" ? "green" : "amber", facts: growthFacts, actions: growthActions, markers: 'data-r7-crop-record-card-kind="growth-survey"' })}
+      ${this.renderR7RecordProductSection({ section: "pest-scouting", title: "병해충 예찰", primary: pestScouting.latestLabel || "병해충 예찰 기록 없음", secondary: `최근 ${pestScouting.count ?? 0}건 · ${pestState}`, state: pestState, tone: pestState === "attention" || pestState === "empty" ? "amber" : "green", facts: pestFacts, actions: pestActions, markers: 'data-r7-crop-record-card-kind="pest-scouting"' })}
+      ${this.renderR7RecordProductSection({ section: "control-treatment", title: "방제", primary: controlTreatment.latestLabel || "방제 기록 없음", secondary: `최근 ${controlTreatment.count ?? 0}건 · ${controlState} · 실행 아님 · 기록 전용`, state: controlState, tone: controlState === "attention" ? "amber" : "green", facts: [...controlFacts, "실행 아님 · 기록 전용"], actions: controlActions, markers: 'data-r7-record-boundary="record-only-no-execution" data-r7-crop-record-card-kind="control-treatment"' })}
+      ${this.renderR7RecordProductSection({ section: "missing-attention", title: "누락/주의", primary: attentionItems.length ? `${attentionItems.length}개 확인 필요` : "누락 없음", secondary: `생육 ${growthState} · 예찰 ${pestState} · 방제 ${controlState}`, state: attentionItems.length ? "attention" : "fresh", tone: attentionItems.length ? "amber" : "green", facts: attentionItems.length ? attentionItems : ["누락 없음", "PLS 적합"], actions: missingActions, markers: `data-r7-record-missing-count="${attentionItems.length}" data-r7-crop-record-attention="${attentionItems.length ? 'true' : 'false'}" data-r7-crop-record-card-kind="missing-attention"`, wide: true })}
+      ${this.renderR7RecordProductSection({ section: "record-source", title: "기록 원천", primary: "최근 기록 요약 · read-only", secondary: "read-only · write/execute disabled · 관리자 상세", state: "ready", tone: "blue", facts: recordFlags, actions: `<details data-r7-record-source-detail="admin"><summary style="font-size:12px;font-weight:800;color:#42627d;cursor:pointer;">관리자 상세</summary><div style="display:grid;gap:3px;margin-top:6px;font-size:11px;color:#53645b;">${recordFlags.map((flag) => `<span>${flag}</span>`).join("")}</div></details>`, markers: 'data-r7-record-source-summary data-r7-crop-record-card-kind="record-source"', wide: true })}
+    </div>`;
+  }
+
+  renderR7CropRecordWorkflowVerticalSlice(ctx) {
+    return this.renderR7RecordsWorkflowProductLayout(ctx);
   }
 
   renderR7CropRecordWorkCards(ctx) {
-    return [this.renderR7CropRecordWorkflowVerticalSlice(ctx)];
+    return [this.renderR7RecordsWorkflowProductLayout(ctx)];
   }
 
   renderR7CropCycleCards(ctx) {
