@@ -53,9 +53,10 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.13.9";
+const REBUILD_VERSION = "1.14.0";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
+const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
   prefix: "/api/green_smart/rebuild/crop-records",
   endpoints: ["get /history", "get /history/{recordType}", "get /latest/{recordType}", "post /growth-survey", "post /pest-scouting", "post /control-treatment", "patch /{recordType}/{recordId}", "post /pls-check"],
@@ -215,6 +216,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadState = "loading";
     this._contextLoadError = null;
     this._contextRequestId = 0;
+    this._settingsUsersPermissions = { source: "loading", users: [], approvalRows: [], auditRows: [], counts: { users: 0, approvals: 0, audits: 0 } };
+    this._settingsUsersPermissionsLoadState = "loading";
+    this._settingsUsersPermissionsLoadError = null;
+    this._settingsUsersPermissionsRequestId = 0;
     this._activeR7Domain = "operations-home";
     this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary", "safety-history": "status-summary", "settings-admin": "greenhouse-zones" };
     this._r7SidebarCollapsed = false;
@@ -225,6 +230,37 @@ class GreenSmartRebuildPanel extends HTMLElement {
   connectedCallback() {
     this.render();
     this._loadHomeContext();
+    this._loadSettingsUsersPermissions();
+  }
+
+  r7SettingsUsersPermissionsData() {
+    return this._settingsUsersPermissions || { source: "loading", users: [], approvalRows: [], auditRows: [], counts: { users: 0, approvals: 0, audits: 0 } };
+  }
+
+  async _loadSettingsUsersPermissions() {
+    const requestId = ++this._settingsUsersPermissionsRequestId;
+    this._settingsUsersPermissionsLoadState = "loading";
+    this._settingsUsersPermissionsLoadError = null;
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi("GET", REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH);
+      if (requestId !== this._settingsUsersPermissionsRequestId) return;
+      this._settingsUsersPermissions = {
+        source: response?.source || "green-smart-db",
+        users: Array.isArray(response?.users) ? response.users : [],
+        approvalRows: Array.isArray(response?.approvalRows) ? response.approvalRows : [],
+        auditRows: Array.isArray(response?.auditRows) ? response.auditRows : [],
+        counts: response?.counts || {},
+      };
+      this._settingsUsersPermissionsLoadState = "ready";
+    } catch (error) {
+      if (requestId !== this._settingsUsersPermissionsRequestId) return;
+      this._settingsUsersPermissions = { source: "db-load-error", users: [], approvalRows: [], auditRows: [], counts: { users: 0, approvals: 0, audits: 0 } };
+      this._settingsUsersPermissionsLoadState = "error";
+      this._settingsUsersPermissionsLoadError = error?.message || "settings-users-permissions-load-failed";
+    }
+    this.render();
   }
 
   async _loadHomeContext() {
@@ -1225,22 +1261,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
         : tabKey === "device-sensor-mapping"
           ? `<section data-r7-settings-device-sensor-mapping style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="zone-sensors"', '구역별 센서', '온도 · 습도 · CO₂ · EC · pH · 광량', '센서가 어느 구역 기준인지 설정에서 확정합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="zone-devices"', '구역별 장치', '환기창 · 순환팬 · 난방 · 관수 밸브 · 양액기', '장치 제어는 설정의 매핑 기준을 사용합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="ha-entity"', 'HA entity mapping', 'sensor/switch/climate entity source', 'HA entity mapping은 상태 판단 source입니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="mapping-health"', '매핑 상태', '정상/누락/중복/통신 오류', '오류 evidence는 진단·감사에서도 확인합니다.')}</section>`
           : tabKey === "users-permissions"
-            ? `<section data-r7-settings-users-permissions data-r7-settings-users-permissions-image-layout="true" data-r7-settings-users-record-card-layout="true" data-r7-settings-users-layout-order="approval-audit-matrix-user-list" data-r7-settings-users-typography="aligned-compact" data-r7-settings-users-grid-align="centered" style="display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;align-items:stretch;line-height:1.35;">
+            ? `${(() => {
+              const settingsUsersPermissions = this.r7SettingsUsersPermissionsData();
+              const approvalRows = Array.isArray(settingsUsersPermissions.approvalRows) ? settingsUsersPermissions.approvalRows : [];
+              const auditRows = Array.isArray(settingsUsersPermissions.auditRows) ? settingsUsersPermissions.auditRows : [];
+              const userRows = Array.isArray(settingsUsersPermissions.users) ? settingsUsersPermissions.users : [];
+              const source = settingsUsersPermissions.source || "green-smart-db";
+              return `<section data-r7-settings-users-permissions data-r7-settings-users-data-source="${source}" data-r7-settings-users-permissions-image-layout="true" data-r7-settings-users-record-card-layout="true" data-r7-settings-users-layout-order="approval-audit-matrix-user-list" data-r7-settings-users-typography="aligned-compact" data-r7-settings-users-grid-align="centered" style="display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;align-items:stretch;line-height:1.35;">
                 ${(() => {
-                  const approvalRows = [["사용자 승인 요청","staff02 · farm_staff · 대기","mdi:account-clock-outline","amber"],["자동제어 활성화","owner01 허락 필요","mdi:robot-outline","amber"],["안전 리밋 변경","farm_owner 허락 필요","mdi:shield-alert-outline","amber"]];
                   const approvalPrimary = approvalRows.length ? `승인 대기 ${approvalRows.length}건` : "기록 없음";
                   const approvalNote = approvalRows.length ? "" : "승인 요청 데이터가 없으면 요청자와 요청 역할을 추가하세요.";
                   return this.renderR7CommonCardShell({
-                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map(([label,meta,icon,tone]) => ({ label, meta, icon, tone, extraAttrs: `data-r7-settings-approval-row="${label}" data-r7-settings-user-approval-request-row="${label}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all"' })]
+                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map((row) => ({ label: row.label || row.requestType || "승인 요청", meta: row.meta || row.status || "대기", icon: row.icon || "mdi:account-clock-outline", tone: row.tone || "amber", extraAttrs: `data-r7-settings-approval-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-user-approval-request-row="${row.label || row.requestType || '승인 요청'}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all"' })]
                   });
                 })()}
                 ${(() => {
-                  const auditRows = [["admin","역할 허락: staff01 → farm_staff","2026-06-30 09:12"],["owner01","안전 정책 허락","2026-06-30 08:45"],["staff01","생육조사 작성","2026-06-30 08:10"]];
                   const visibleAuditRows = auditRows.slice(0, 2);
                   const auditPrimary = visibleAuditRows.length ? `최근 ${visibleAuditRows.length}건` : "기록 없음";
                   const auditNote = visibleAuditRows.length ? "" : "감사 데이터가 없으면 권한/안전/기록 변경 이력을 추가하세요.";
                   return this.renderR7CommonCardShell({
-                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:file-document-check-outline", title: "감사 로그", statusKey: "normal-ready", tone: "green", primary: `<span data-r7-settings-audit-primary-summary>${auditPrimary}</span>`, note: auditNote, extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="2"', html: `${this.renderR7CommonCardDataRows(visibleAuditRows.map(([user,summary,time]) => ({ label: user, meta: time, icon: "mdi:account-check-outline", tone: "green", extraAttrs: `data-r7-settings-audit-row="${user}" data-r7-settings-audit-summary="${summary}"` })), { rowKind: "settings-audit" })}`, actions: [this.renderR7CommonCardButton({ label: "전체 감사 로그 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all"' })]
+                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:file-document-check-outline", title: "감사 로그", statusKey: "normal-ready", tone: "green", primary: `<span data-r7-settings-audit-primary-summary>${auditPrimary}</span>`, note: auditNote, extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="2"', html: `${this.renderR7CommonCardDataRows(visibleAuditRows.map((row) => ({ label: row.label || row.actor || "system", meta: row.meta || row.createdAt || row.created_at || "-", icon: row.icon || "mdi:account-check-outline", tone: row.tone || "green", extraAttrs: `data-r7-settings-audit-row="${row.label || row.actor || 'system'}" data-r7-settings-audit-summary="${row.summary || row.action || ''}"` })), { rowKind: "settings-audit" })}`, actions: [this.renderR7CommonCardButton({ label: "전체 감사 로그 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all"' })]
                   });
                 })()}
                 ${this.renderR7CommonCardShell({
@@ -1250,10 +1290,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
                   <article style="background:#fff;border-radius:18px;border:1px solid #dcebe0;max-width:920px;width:100%;padding:16px;display:grid;gap:12px;"><header style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><strong style="font-size:16px;color:#24323f;">권한 버킷 매트릭스</strong>${this.renderR7CommonCardButton({ label: "닫기", icon: "mdi:close", tone: "green", extraAttrs: 'data-r7-settings-users-action="close-permission-matrix-modal"' })}</header><div data-r7-settings-permission-matrix-table style="display:grid;grid-template-columns:.7fr 1.15fr .82fr .82fr .82fr .55fr;border:1px solid #edf4ef;border-radius:12px;overflow:hidden;font-size:12px;line-height:1.35;text-align:center;color:#24323f;">${[["조회","기본 조회 / 상세 조회","✅ 허용","✅ 허용","✅ 허용"],["기록","기록 작성 / 기록 수정","✅ 허용","✅ 허용","✅ 허용"],["전략","전략 검토 / 전략 승인","✅ 허용","✅ 허용","👁️ 읽기 전용"],["실행","실행 요청 / 실행 허락","✅ 허용","✅ 허용","🕘 요청 후 실행"],["안전","안전 확인 / 인터록 해제 검토","✅ 허용","🛡️ 확인","👁️ 읽기 전용"],["고급설정","구역/작기 설정 / 권한 설정","✅ 허용","🛡️ 확인","🔒 없음"]].map(([bucket,steps,admin,owner,staff], rowIndex) => [[bucket, `data-r7-settings-permission-bucket="${bucket}" data-r7-settings-permission-step-row="${bucket}"`],[steps, ""],[admin, rowIndex === 0 ? 'data-r7-settings-permission-role="admin"' : ""],[owner, rowIndex === 0 ? 'data-r7-settings-permission-role="farm_owner"' : ""],[staff, rowIndex === 0 ? 'data-r7-settings-permission-role="farm_staff"' : ""],[`<button type="button" data-r7-settings-permission-edit="${bucket}" data-r7-common-card-button data-r7-common-button-order="icon-text" style="border:1px solid #badcc8;border-radius:8px;background:#fff;color:#31523b;padding:5px 8px;font-size:12px;line-height:1.35;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:5px;">${this.renderR7CommonHaIcon("mdi:pencil-outline", { size: 14 })}<span data-r7-common-button-label>수정</span></button>`, ""]].map(([cell, attrs], colIndex) => `<span ${attrs} style="display:grid;align-items:center;justify-items:center;border-right:${colIndex === 5 ? '0' : '1px solid #edf4ef'};border-bottom:${rowIndex === 5 ? '0' : '1px solid #edf4ef'};padding:8px 8px;min-height:40px;font-weight:${colIndex <= 1 ? '950' : '800'};background:${colIndex <= 1 ? '#fbfdfb' : '#fff'};color:${String(cell).includes('없음') ? '#5d6871' : String(cell).includes('확인') || String(cell).includes('요청') ? '#9a6b10' : String(cell).includes('읽기') ? '#326aa5' : '#31523b'};">${cell}</span>`).join("")).join("")}</div></article>
                 </section>
                 ${this.renderR7CommonRecentPanel({
-                  kind: "settings-user-list-wide", title: "사용자 목록", icon: "mdi:account-group-outline", statusKey: "normal-ready", tone: "green", rowKind: "settings-user", limit: 5, extraAttrs: 'data-r7-record-section="settings-user-list-wide" data-r7-settings-users-card="user-list"', rows: [["admin","admin","활성 · 방금 전","전체 설정","mdi:shield-account-outline","green"],["owner01","farm_owner","활성 · 오늘 09:20","승인 · 전략","mdi:account-tie-outline","green"],["staff01","farm_staff","승인 대기 · -","기록 · 모니터링","mdi:account-outline","amber"],["staff02","farm_staff","대기 · 오늘 08:40","승인 요청","mdi:account-clock-outline","amber"],["viewer01","viewer","최근 5일 전","조회 전용","mdi:account-eye-outline","blue"],["retired01","inactive","30일 전","비활성","mdi:account-off-outline","red"]].map(([kind,at,memo,state,icon,tone]) => ({ kind, at, memo, state, icon, tone, extraAttrs: `data-r7-settings-user-row="${kind}"` }))
+                  kind: "settings-user-list-wide", title: "사용자 목록", icon: "mdi:account-group-outline", statusKey: "normal-ready", tone: "green", rowKind: "settings-user", limit: 5, extraAttrs: 'data-r7-record-section="settings-user-list-wide" data-r7-settings-users-card="user-list"', rows: userRows.map((row) => ({ ...row, extraAttrs: `data-r7-settings-user-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-user-ha-id="${row.haUserId || ''}"` }))
                 })}
                 <span data-r7-settings-permission-bucket-card style="display:none;">조회 · 기록 · 전략 · 실행 · 안전 · 고급설정 사용자 승인 요청 승인 요청 허락 사용자 역할 상태 최근 활동 권한 요약</span>
-              </section>`
+              </section>`;
+            })()}`
             : tabKey === "safety-approval-policy"
               ? `<section data-r7-settings-safety-approval-policy style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="approval"', '실행 승인 정책', '자동/고위험 실행 전 승인', '누가 승인 가능한지는 사용자·권한과 연결됩니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="failsafe"', 'Fail Safe 기준', '센서 오류 · 통신 실패 · 강풍 · 저온/고온', '현장 Edge 안전 판단이 우선합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="interlock"', 'Interlock 정책', '차단 조건 · 허용 조건', '실행 권한과 별개로 안전 조건이 최종 차단할 수 있습니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="notification"', '알림 정책', '위험 · 차단 · 승인 요청', '알림 채널/수신자는 후속 저장 slice에서 확정합니다.')}</section>`
               : tabKey === "system-integration"

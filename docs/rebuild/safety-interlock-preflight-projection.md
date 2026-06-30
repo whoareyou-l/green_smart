@@ -1,6 +1,6 @@
 # RS-022 Safety/Interlock Preflight Projection
 
-> 기준 버전: `v1.13.9`
+> 기준 버전: `v1.14.0`
 > Status: safety/interlock preflight projection
 > 목적: `operatorApprovalScaffold` 다음 단계로 `추천·실행` 화면에 Safety / Interlock / Fail Safe 사전검증 상태를 read-only projection으로 표시한다.
 

@@ -21,6 +21,27 @@ def _render_users_permissions():
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
       panel.hass = {{ user: {{ name: 'admin', is_admin: true }}, callApi: async () => ({{}}) }};
+      panel._settingsUsersPermissions = {{
+        source: 'contract-fixture',
+        approvalRows: [
+          {{ label: '사용자 승인 요청', meta: 'staff02 · farm_staff · 대기', icon: 'mdi:account-clock-outline', tone: 'amber' }},
+          {{ label: '자동제어 활성화', meta: 'owner01 허락 필요', icon: 'mdi:robot-outline', tone: 'amber' }},
+          {{ label: '안전 리밋 변경', meta: 'farm_owner 허락 필요', icon: 'mdi:shield-alert-outline', tone: 'amber' }},
+        ],
+        auditRows: [
+          {{ label: 'admin', summary: '역할 허락: staff01 → farm_staff', meta: '2026-06-30 09:12', icon: 'mdi:account-check-outline', tone: 'green' }},
+          {{ label: 'owner01', summary: '안전 정책 허락', meta: '2026-06-30 08:45', icon: 'mdi:account-check-outline', tone: 'green' }},
+          {{ label: 'staff01', summary: '생육조사 작성', meta: '2026-06-30 08:10', icon: 'mdi:account-check-outline', tone: 'green' }},
+        ],
+        users: [
+          {{ kind: 'admin', at: 'admin', memo: '활성 · 방금 전', state: '전체 설정', icon: 'mdi:shield-account-outline', tone: 'green' }},
+          {{ kind: 'owner01', at: 'farm_owner', memo: '활성 · 오늘 09:20', state: '승인 · 전략', icon: 'mdi:account-tie-outline', tone: 'green' }},
+          {{ kind: 'staff01', at: 'farm_staff', memo: '승인 대기 · -', state: '기록 · 모니터링', icon: 'mdi:account-outline', tone: 'amber' }},
+          {{ kind: 'staff02', at: 'farm_staff', memo: '대기 · 오늘 08:40', state: '승인 요청', icon: 'mdi:account-clock-outline', tone: 'amber' }},
+          {{ kind: 'viewer01', at: 'viewer', memo: '최근 5일 전', state: '조회 전용', icon: 'mdi:account-eye-outline', tone: 'blue' }},
+          {{ kind: 'retired01', at: 'inactive', memo: '30일 전', state: '비활성', icon: 'mdi:account-off-outline', tone: 'red' }},
+        ],
+      }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
       console.log(JSON.stringify({{ html }}));
     """
@@ -30,9 +51,9 @@ def _render_users_permissions():
 
 
 def test_r7_072_version_surfaces_are_1_13_7():
-    assert '"version": "1.13.9"' in _read(MANIFEST)
-    assert 'const VERSION = "1.13.9"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.13.9"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.0"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.0"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.0"' in _read(REBUILD_PANEL)
 
 
 def test_r7_072_approval_card_has_no_inline_allow_reject_buttons():
