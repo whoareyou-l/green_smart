@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.15";
+const REBUILD_VERSION = "1.14.16";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1691,7 +1691,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const summaryCards = [
       this.renderR7SettingsInfoCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 기본 정보", primary: "제1온실 · 운영 기준 데이터", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("운영상태", this._r7SettingsGreenhousePill("활성", "green")), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green" }),
       this.renderR7SettingsInfoCard({ key: "zone-composition", icon: "mdi:view-grid-outline", title: "구역 구성", primary: `${normalized.length}개 구역`, rows: [this._r7SettingsGreenhouseValueRow("활성", activeCount), this._r7SettingsGreenhouseValueRow("작물 연결", cropLinked), this._r7SettingsGreenhouseValueRow("미지정", normalized.length - cropLinked), this._r7SettingsGreenhouseValueRow("확인 필요", staleCount, 'style="color:#b87900;"')], tone: staleCount ? "amber" : "green" }),
-      this.renderR7RecordCardShell({ kind: "settings-zone-create", icon: "mdi:plus-circle-outline", title: "구역 생성", statusKey: "normal-ready", tone: "green", primary: "새 구역 추가 준비", note: "구역 생성은 별도 승인/저장 단계에서 처리됩니다", html: `${this.renderR7CommonCardDataRows([{ label: "생성 방식", meta: "운영자 승인 후 저장", icon: "mdi:account-check-outline" }, { label: "기본 연결", meta: "작기 · 센서 · 장치 매핑", icon: "mdi:link-variant" }], { rowKind: "settings-zone-create" })}`, actions: [this.renderR7CommonCardButton({ label: "+ 새 구역 추가", icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button data-r7-settings-modal-skip-record-binding="true"' })], extraAttrs: 'data-r7-settings-zone-create-card data-r7-settings-greenhouse-summary-card="zone-create"' }),
+      this.renderR7RecordCardShell({ kind: "settings-zone-create", icon: "mdi:plus-circle-outline", title: "구역 생성", statusKey: "due-today", tone: "blue", primary: "새 구역 없음", note: "구역을 추가하려면 승인 후 저장이 필요합니다", actions: [this.renderR7CommonCardButton({ label: "+ 새 구역 추가", icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button data-r7-settings-modal-skip-record-binding="true"' }), this.renderR7CommonCardButton({ label: "구역 목록", icon: "mdi:history", tone: "blue", extraAttrs: 'data-r7-settings-zone-list-shortcut-button data-r7-settings-modal-skip-record-binding="true"' })], extraAttrs: 'data-r7-settings-zone-create-card data-r7-settings-greenhouse-summary-card="zone-create" data-r7-settings-zone-create-reference-card="image-like-common-card"' }),
     ].join("");
     const zoneRows = normalized.map((zone, index) => ({
       kind: zone.zoneName,

@@ -1,6 +1,6 @@
 # R7-036 Domain Header Card Order Cleanup
 
-> 기준 버전: `v1.14.15`
+> 기준 버전: `v1.14.16`
 > Status: R7-036 planned
 > Purpose: 작물 운영부터 설정까지 도메인 페이지 상단 카드 구조를 사용자 요청 순서로 정리한다.
 

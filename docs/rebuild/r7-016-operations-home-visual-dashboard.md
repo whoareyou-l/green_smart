@@ -1,6 +1,6 @@
 # R7-016 Operations Home Visual Dashboard Rewrite
 
-> 기준 버전: `v1.14.15`
+> 기준 버전: `v1.14.16`
 > Status: R7-016 complete
 > Purpose: R7-015 공통 visual component를 이용해 운영 홈을 더 실제 control-room dashboard처럼 재배치한다.
 

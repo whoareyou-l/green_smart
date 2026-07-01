@@ -39,9 +39,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_089_version_surfaces_are_1_14_14():
-    assert '"version": "1.14.15"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.15"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.15"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.16"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.16"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.16"' in _read(REBUILD_PANEL)
 
 
 def test_r7_089_greenhouse_zone_top_cards_are_basic_composition_create_only():
@@ -75,7 +75,7 @@ def test_r7_089_greenhouse_create_card_uses_ha_icon_and_mutation_boundary():
     assert 'icon="mdi:plus-circle-outline"' in html
     assert 'data-r7-settings-zone-create-card' in html
     assert 'data-r7-settings-zone-create-button' in html
-    assert '구역 생성은 별도 승인/저장 단계에서 처리됩니다' in html
+    assert '구역을 추가하려면 승인 후 저장이 필요합니다' in html
     assert 'static-fixture-before-api' not in html
     assert 'Developer-only' not in html
 

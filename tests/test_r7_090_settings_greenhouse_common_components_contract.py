@@ -35,9 +35,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_090_version_surfaces_are_1_14_15():
-    assert '"version": "1.14.15"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.15"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.15"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.16"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.16"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.16"' in _read(REBUILD_PANEL)
 
 
 def test_r7_090_settings_info_cards_use_new_common_component():
@@ -60,7 +60,7 @@ def test_r7_090_zone_create_uses_existing_record_card_shell():
     assert 'data-r7-settings-zone-create-card' in html
     assert 'data-r7-settings-zone-create-button' in html
     assert '+ 새 구역 추가' in html
-    assert '구역 생성은 별도 승인/저장 단계에서 처리됩니다' in html
+    assert '구역을 추가하려면 승인 후 저장이 필요합니다' in html
 
 
 def test_r7_090_zone_list_uses_existing_common_recent_components():
