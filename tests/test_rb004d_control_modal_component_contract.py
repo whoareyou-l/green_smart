@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb004d_version_surfaces_are_v11115():
-    assert '"version": "1.14.14"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.14"' in _read(PANEL)
-    assert "v1.14.14" in _read(FRONTEND_PLAN)
+    assert '"version": "1.14.15"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.15"' in _read(PANEL)
+    assert "v1.14.15" in _read(FRONTEND_PLAN)
 
 
 def test_rb004d_control_modal_module_exists_and_exports_pure_render_helpers():
@@ -112,7 +112,7 @@ def test_rb004d_docs_record_control_modal_extraction_boundaries():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-004D Control/treatment modal render extraction",
-        "v1.14.14",
+        "v1.14.15",
         "domains/crop/crop-control-modal.js",
         "방제 기록 modal render helpers only",
         "PLS/혼용 warning render markers preserved",

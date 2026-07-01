@@ -39,14 +39,14 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_089_version_surfaces_are_1_14_14():
-    assert '"version": "1.14.14"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.14"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.14"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.15"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.15"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.15"' in _read(REBUILD_PANEL)
 
 
 def test_r7_089_greenhouse_zone_top_cards_are_basic_composition_create_only():
     html = _render_greenhouse_zones()
-    assert 'data-r7-settings-greenhouse-zones-layout="basic-composition-create-list"' in html
+    assert 'data-r7-settings-greenhouse-zones-layout="info-record-common-list"' in html
     for card in ['greenhouse-basic-info', 'zone-composition', 'zone-create']:
         assert f'data-r7-settings-greenhouse-summary-card="{card}"' in html
     assert html.index('data-r7-settings-greenhouse-summary-card="zone-composition"') < html.index('data-r7-settings-greenhouse-summary-card="zone-create"')
