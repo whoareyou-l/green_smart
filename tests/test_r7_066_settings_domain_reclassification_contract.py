@@ -13,7 +13,7 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render_settings(active_tab="greenhouse-zones"):
+def _render_settings(active_tab="greenhouse-zones", open_permission_matrix=False):
     script = f"""
       const classSet = new Set();
       globalThis.location = {{ pathname: '/green_smart', search: '', hash: '#settings-admin' }};
@@ -26,6 +26,7 @@ def _render_settings(active_tab="greenhouse-zones"):
       panel.hass = {{ user: {{ name: 'admin', is_admin: true }}, callApi: async () => ({{}}) }};
       panel._activeR7Domain = 'settings-admin';
       panel._activeR7DomainSubtabs = {{ ...panel._activeR7DomainSubtabs, 'settings-admin': {active_tab!r} }};
+      panel._settingsPermissionMatrixModal = {{ open: {str(open_permission_matrix).lower()} }};
       panel._homeContext = {{
         actorRole: 'admin',
         zones: [
@@ -41,9 +42,9 @@ def _render_settings(active_tab="greenhouse-zones"):
 
 
 def test_r7_066_version_surfaces_are_1_13_1():
-    assert '"version": "1.14.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.10"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.11"' in _read(REBUILD_PANEL)
 
 
 def test_r7_066_settings_new_tabs_replace_admin_explanation_first_tabs():
@@ -94,7 +95,7 @@ def test_r7_066_device_user_safety_system_tabs_are_reclassified():
         'diagnostics-audit': ['data-r7-settings-diagnostics-audit', '시스템 진단', '매핑 진단', '권한 감사', '실행 감사'],
     }
     for tab, needles in expected.items():
-        html = _render_settings(tab)
+        html = _render_settings(tab, open_permission_matrix=(tab == 'users-permissions'))
         for needle in needles:
             assert needle in html
 

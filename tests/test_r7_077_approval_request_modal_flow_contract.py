@@ -16,9 +16,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_077_version_surfaces_are_1_14_2():
-    assert '"version": "1.14.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.10"' in _read(PANEL)
+    assert '"version": "1.14.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.11"' in _read(PANEL)
 
 
 def test_r7_077_backend_has_request_and_approve_views():
@@ -59,8 +59,8 @@ def test_r7_077_admin_approval_card_opens_modal_and_approves():
         'data-r7-settings-approval-modal',
         'data-r7-settings-approval-modal-open',
         'data-r7-settings-approval-approve-button',
-        'data-r7-settings-approval-row-button',
-        '_openSettingsApprovalModal',
+        'data-r7-settings-approval-list-button',
+        '_openSettingsApprovalListModal',
         '_approveSettingsApprovalRequest',
         'green_smart/rebuild/settings/approval-requests/',
         '/decision',

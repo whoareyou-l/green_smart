@@ -13,7 +13,7 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render_users_permissions():
+def _render_users_permissions(open_permission_matrix=False):
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
@@ -40,6 +40,7 @@ def _render_users_permissions():
           {{ kind: 'viewer01', at: 'viewer', memo: '최근 5일 전', state: '조회 전용', icon: 'mdi:account-eye-outline', tone: 'blue' }},
         ],
       }};
+      panel._settingsPermissionMatrixModal = {{ open: {str(open_permission_matrix).lower()} }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
       console.log(JSON.stringify({{ html }}));
     """
@@ -49,9 +50,9 @@ def _render_users_permissions():
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.10"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.11"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -84,7 +85,7 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
 
 
 def test_r7_068_permission_matrix_contains_role_columns_and_bucket_rows():
-    html = _render_users_permissions()
+    html = _render_users_permissions(open_permission_matrix=True)
     for role in ['admin', 'farm_owner', 'farm_staff']:
         assert f'data-r7-settings-permission-role="{role}"' in html
     for bucket in ['조회', '기록', '전략', '실행', '안전', '고급설정']:

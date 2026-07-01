@@ -13,7 +13,7 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render_users_permissions():
+def _render_users_permissions(open_permission_matrix=False):
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
@@ -40,6 +40,7 @@ def _render_users_permissions():
           {{ kind: 'viewer01', at: 'viewer', memo: '최근 5일 전', state: '조회 전용', icon: 'mdi:account-eye-outline', tone: 'blue' }},
         ],
       }};
+      panel._settingsPermissionMatrixModal = {{ open: {str(open_permission_matrix).lower()} }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
       console.log(JSON.stringify({{ html }}));
     """
@@ -49,9 +50,9 @@ def _render_users_permissions():
 
 
 def test_r7_070_version_surfaces_are_1_13_5():
-    assert '"version": "1.14.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.10"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.11"' in _read(REBUILD_PANEL)
 
 
 def test_r7_070_users_permissions_uses_record_workflow_card_grammar_and_order():
@@ -78,17 +79,19 @@ def test_r7_070_user_list_is_full_width_and_has_no_buttons():
         assert item not in user_list
 
 
-def test_r7_070_permission_matrix_table_moves_to_hidden_modal():
-    html = _render_users_permissions()
-    summary = html.split('data-r7-settings-permission-matrix-modal', 1)[0]
+def test_r7_070_permission_matrix_table_moves_to_cda_modal():
+    closed_html = _render_users_permissions()
+    summary = closed_html.split('data-r7-settings-permission-matrix-cda-modal', 1)[0]
     assert '권한 매트릭스 보기' in summary
-    assert 'data-r7-settings-users-action="open-permission-matrix-modal"' in summary
+    assert 'data-r7-settings-permission-matrix-button' in summary
     assert 'data-r7-settings-permission-matrix-table' not in summary
-    modal = html.split('data-r7-settings-permission-matrix-modal', 1)[1]
-    assert 'style="display:none' in modal
-    assert 'data-r7-settings-permission-matrix-table' in modal
+    assert 'data-r7-settings-permission-matrix-modal-open="false"' in closed_html
+
+    open_html = _render_users_permissions(open_permission_matrix=True)
+    assert 'data-r7-settings-permission-matrix-modal-open="true"' in open_html
+    assert 'data-r7-settings-permission-matrix-table-modal="true"' in open_html
     for step in ['기본 조회 / 상세 조회', '기록 작성 / 기록 수정', '실행 요청 / 실행 허락', '구역/작기 설정 / 권한 설정']:
-        assert step in modal
+        assert step in open_html
 
 
 def test_r7_070_documented():

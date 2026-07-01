@@ -98,8 +98,8 @@ def test_v1991_versions_and_docs_record_detail_cleanup():
     manifest = _read(MANIFEST)
     central = _read(CENTRAL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.14.10"' in manifest
-    assert 'const VERSION = "1.14.10"' in panel
+    assert '"version": "1.14.11"' in manifest
+    assert 'const VERSION = "1.14.11"' in panel
     assert 'EDGE_VERSION = "1.9.96"' in central
     assert "v1.9.99 AI detail cleanup" in docs
     for marker in (

@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_007_version_surfaces_are_1_12_39():
-    assert '"version": "1.14.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.10"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.11"' in _read(REBUILD_PANEL)
     for path in (DOC, SPEC, PLAN):
         assert "R7-007" in _read(path) or path == SPEC
 

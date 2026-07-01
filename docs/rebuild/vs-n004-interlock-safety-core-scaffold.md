@@ -1,6 +1,6 @@
 # VS-N004 Interlock/Safety Core Scaffold
 
-> 기준 버전: `v1.14.10`
+> 기준 버전: `v1.14.11`
 > Status: R5 interlock/safety core scaffold
 > 범위 확정: pure Interlock/Safety DTO/권한/상태 scaffold만 추가하고 기존 SafetyGuard/Interlock/실행 판단 로직은 변경하지 않는다.
 

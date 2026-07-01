@@ -13,7 +13,7 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render_users_permissions():
+def _render_users_permissions(open_permission_matrix=False):
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
@@ -40,6 +40,7 @@ def _render_users_permissions():
           {{ kind: 'viewer01', at: 'viewer', memo: '최근 5일 전', state: '조회 전용', icon: 'mdi:account-eye-outline', tone: 'blue' }},
         ],
       }};
+      panel._settingsPermissionMatrixModal = {{ open: {str(open_permission_matrix).lower()} }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
       console.log(JSON.stringify({{ html }}));
     """
@@ -49,14 +50,14 @@ def _render_users_permissions():
 
 
 def test_r7_069_version_surfaces_are_1_13_4():
-    assert '"version": "1.14.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.10"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.11"' in _read(REBUILD_PANEL)
 
 
 def test_r7_069_permission_matrix_has_detailed_steps_and_edit_buttons():
-    html = _render_users_permissions()
-    assert 'data-r7-settings-permission-matrix-detailed="true"' in html
+    html = _render_users_permissions(open_permission_matrix=True)
+    assert 'data-r7-settings-permission-matrix-detailed="true"' in _render_users_permissions()
     for bucket in ['조회', '기록', '전략', '실행', '안전', '고급설정']:
         assert f'data-r7-settings-permission-step-row="{bucket}"' in html
     for step in ['기본 조회', '상세 조회', '기록 작성', '기록 수정', '전략 검토', '전략 승인', '실행 요청', '실행 허락', '안전 확인', '인터록 해제 검토', '구역/작기 설정', '권한 설정']:
