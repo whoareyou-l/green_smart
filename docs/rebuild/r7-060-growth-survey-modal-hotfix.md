@@ -1,6 +1,6 @@
 # R7-060 Growth survey modal hotfix
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.14.13`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.14.14`.
 
 ## User corrections
 

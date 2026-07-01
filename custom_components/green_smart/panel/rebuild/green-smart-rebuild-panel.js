@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.13";
+const REBUILD_VERSION = "1.14.14";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1673,53 +1673,34 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const currentCrop = zone.currentCrop || {};
       const cropLabel = currentCrop.crop_label_ko || currentCrop.cropLabelKo || currentCrop.cropType || currentCrop.crop_type || "작물 미등록";
       const cropCycleId = currentCrop.crop_cycle_id || currentCrop.cropCycleId || currentCrop.cropSeasonId || "없음";
-      const stage = currentCrop.growth_stage || currentCrop.growthStage || "미지정";
       const dataState = zone.dataAvailability?.state || zone.currentCropAssignment?.dataAvailability?.state || "unknown";
-      const freshness = zone.dataAvailability?.freshnessMinutes ?? zone.currentCropAssignment?.dataAvailability?.freshnessMinutes ?? null;
       const labels = Array.isArray(zone.equipmentProfile?.labels) ? zone.equipmentProfile.labels : [];
       const sensors = Math.max(1, labels.filter((label) => String(label).includes("센서") || String(label).includes("sensor")).length || Math.min(6, labels.length || 4));
       const devices = Math.max(1, labels.filter((label) => !String(label).includes("센서") && !String(label).includes("sensor")).length || Math.max(2, labels.length || 2));
       const statusTone = dataState === "fresh" || dataState === "ok" ? "green" : dataState === "stale" ? "amber" : "gray";
       const statusLabel = dataState === "fresh" || dataState === "ok" ? "활성" : dataState === "stale" ? "주의" : "확인";
-      return { zoneId, zoneName, cropLabel, cropCycleId, stage, dataState, freshness, labels, sensors, devices, statusTone, statusLabel };
+      return { zoneId, zoneName, cropLabel, cropCycleId, labels, sensors, devices, statusTone, statusLabel };
     });
-    const selected = normalized[0];
     const activeCount = normalized.filter((zone) => zone.statusTone === "green").length;
     const cropLinked = normalized.filter((zone) => zone.cropCycleId && zone.cropCycleId !== "없음").length;
-    const sensorTotal = normalized.reduce((sum, zone) => sum + zone.sensors, 0);
-    const deviceTotal = normalized.reduce((sum, zone) => sum + zone.devices, 0);
     const staleCount = normalized.filter((zone) => zone.statusTone !== "green").length;
     const summaryCards = [
       this._r7SettingsGreenhouseSummaryCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 기본 정보", primary: "제1온실 · 운영 기준 데이터", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("운영상태", this._r7SettingsGreenhousePill("활성", "green")), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green" }),
-      this._r7SettingsGreenhouseSummaryCard({ key: "zone-composition", icon: "mdi:view-grid-outline", title: "구역 구성", primary: `${normalized.length}개 구역`, rows: [this._r7SettingsGreenhouseValueRow("활성", activeCount), this._r7SettingsGreenhouseValueRow("작물 연결", cropLinked), this._r7SettingsGreenhouseValueRow("미지정", normalized.length - cropLinked), this._r7SettingsGreenhouseValueRow("센서 매핑 확인 필요", staleCount, 'style="color:#b87900;"')], tone: staleCount ? "amber" : "green" }),
-      this._r7SettingsGreenhouseSummaryCard({ key: "zone-current-crop", icon: "mdi:sprout-outline", title: "구역별 현재 작기", primary: "zone parent + currentCrop attached", rows: normalized.slice(0, 3).map((zone) => this._r7SettingsGreenhouseValueRow(`${zone.zoneName} · ${zone.cropLabel}`, this._r7SettingsGreenhousePill(`현재 작기 ${zone.cropCycleId}`, zone.statusTone))).concat(normalized.length > 3 ? [this._r7SettingsGreenhouseValueRow("추가 구역", `${normalized.length - 3}개`)] : []), tone: "green" }),
-      this._r7SettingsGreenhouseSummaryCard({ key: "data-health", icon: "mdi:database-check-outline", title: "데이터 상태", primary: "DB · HA entity · freshness", rows: [this._r7SettingsGreenhouseValueRow("DB", this._r7SettingsGreenhousePill("정상", "green")), this._r7SettingsGreenhouseValueRow("HA entity 연결", `${Math.max(0, sensorTotal + deviceTotal - staleCount)} / ${sensorTotal + deviceTotal}`), this._r7SettingsGreenhouseValueRow("센서 freshness", this._r7SettingsGreenhousePill(staleCount ? "주의" : "정상", staleCount ? "amber" : "green"))], tone: staleCount ? "amber" : "green" }),
+      this._r7SettingsGreenhouseSummaryCard({ key: "zone-composition", icon: "mdi:view-grid-outline", title: "구역 구성", primary: `${normalized.length}개 구역`, rows: [this._r7SettingsGreenhouseValueRow("활성", activeCount), this._r7SettingsGreenhouseValueRow("작물 연결", cropLinked), this._r7SettingsGreenhouseValueRow("미지정", normalized.length - cropLinked), this._r7SettingsGreenhouseValueRow("확인 필요", staleCount, 'style="color:#b87900;"')], tone: staleCount ? "amber" : "green" }),
+      this._r7SettingsGreenhouseSummaryCard({ key: "zone-create", icon: "mdi:plus-circle-outline", title: "구역 생성", primary: "새 구역 추가 준비", rows: [this._r7SettingsGreenhouseValueRow("생성 방식", "운영자 승인 후 저장"), this._r7SettingsGreenhouseValueRow("기본 연결", "작기 · 센서 · 장치 매핑"), `<button type="button" data-r7-settings-zone-create-card data-r7-settings-zone-create-button style="border:1px solid #badcc8;border-radius:10px;background:#25804a;color:#fff;height:32px;padding:0 12px;font-size:12px;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:6px;">${this.renderR7CommonHaIcon("mdi:plus-circle-outline", { size: 15 })}<span>+ 새 구역 추가</span></button>`, `<small style="color:#78927f;line-height:1.45;">구역 생성은 별도 승인/저장 단계에서 처리됩니다.</small>`], tone: "green" }),
     ].join("");
-    const zoneRows = normalized.map((zone, index) => `<div data-r7-settings-zone-list-row="${zone.zoneId}" data-r7-settings-zone-row="${zone.zoneId}" data-r7-settings-zone-list-selected="${index === 0 ? 'true' : 'false'}" style="display:grid;grid-template-columns:.6fr .75fr .85fr .55fr .9fr .65fr;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #edf2ee;font-size:12px;color:#24323f;min-width:0;">
-      <b style="color:#25804a;white-space:nowrap;">${zone.zoneName}</b><span>${zone.cropLabel}</span><span>작기 ${zone.cropCycleId}</span>${this._r7SettingsGreenhousePill(zone.statusLabel, zone.statusTone)}<span>센서 ${zone.sensors} · 장치 ${zone.devices}</span><span style="display:flex;gap:6px;justify-content:flex-end;">${this._r7SettingsGreenhousePill("상세", "green", 'data-r7-settings-zone-detail-button')} ${this._r7SettingsGreenhousePill("편집", "blue", 'data-r7-settings-zone-edit-button')}</span>
+    const zoneRows = normalized.map((zone, index) => `<div data-r7-settings-zone-list-row="${zone.zoneId}" data-r7-settings-zone-row="${zone.zoneId}" data-r7-settings-zone-list-selected="${index === 0 ? 'true' : 'false'}" style="display:grid;grid-template-columns:.6fr .75fr .95fr .55fr .9fr .55fr;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #edf2ee;font-size:12px;color:#24323f;min-width:0;">
+      <b style="color:#25804a;white-space:nowrap;">${zone.zoneName}</b><span>${zone.cropLabel}</span><span>현재 작기 ${zone.cropCycleId}</span>${this._r7SettingsGreenhousePill(zone.statusLabel, zone.statusTone)}<span>센서 ${zone.sensors} · 장치 ${zone.devices}</span><span style="display:flex;gap:6px;justify-content:flex-end;">${this._r7SettingsGreenhousePill("편집", "blue", 'data-r7-settings-zone-edit-button')}</span>
     </div>`).join("");
     const headerCells = ["구역", "작물", "현재 작기", "상태", "센서/장치", ""].map((label) => `<b>${label}</b>`).join("");
-    const selectedLabels = selected.labels.length ? selected.labels.join(" · ") : "센서/장치 매핑 없음";
-    return `<section data-r7-settings-greenhouse-zones data-r7-settings-greenhouse-zones-layout="reference-card-detail" style="display:grid;gap:12px;">
-      <div data-r7-settings-greenhouse-summary-grid style="display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:12px;">${summaryCards}</div>
-      <section data-r7-settings-greenhouse-zone-workspace style="display:grid;grid-template-columns:minmax(360px,.95fr) minmax(440px,1.25fr);gap:12px;align-items:stretch;">
-        <article data-r7-settings-zone-list-panel style="border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;display:grid;grid-template-rows:auto auto 1fr auto;gap:10px;min-width:0;">
-          <header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="font-size:15px;color:#24323f;">구역 목록</strong><button type="button" data-r7-settings-zone-create-button style="border:1px solid #badcc8;border-radius:10px;background:#25804a;color:#fff;height:32px;padding:0 12px;font-size:12px;font-weight:950;display:inline-flex;align-items:center;gap:6px;">${this.renderR7CommonHaIcon("mdi:plus-circle-outline", { size: 15 })}<span>+ 새 구역 추가</span></button></header>
-          <div data-r7-settings-zone-table-header style="display:grid;grid-template-columns:.6fr .75fr .85fr .55fr .9fr .65fr;gap:8px;color:#53645b;font-size:11px;font-weight:950;">${headerCells}</div>
-          <div style="display:grid;align-content:start;min-width:0;">${zoneRows}</div>
-          <small style="color:#78927f;line-height:1.45;">ⓘ 구역을 추가하면 작물/작기 연결 및 센서·장치 매핑 가이드가 제공됩니다.</small>
-        </article>
-        <article data-r7-settings-zone-detail-panel data-r7-settings-selected-zone-id="${selected.zoneId}" style="border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;display:grid;gap:12px;min-width:0;">
-          <header style="display:flex;align-items:center;gap:8px;"><strong style="font-size:15px;color:#24323f;">선택 구역 상세</strong>${this._r7SettingsGreenhousePill(`${selected.zoneName} · ${selected.cropLabel}`, "green")}</header>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-            <section data-r7-settings-selected-zone-detail-card="basic" style="border:1px solid #edf2ee;border-radius:14px;padding:12px;display:grid;gap:8px;"><b>기본 정보</b>${this._r7SettingsGreenhouseValueRow("구역명", selected.zoneName)}${this._r7SettingsGreenhouseValueRow("작물", selected.cropLabel)}${this._r7SettingsGreenhouseValueRow("생육목표", selected.stage)}${this._r7SettingsGreenhouseValueRow("현재 작기", this._r7SettingsGreenhousePill(`작기 ${selected.cropCycleId}`, "green"))}</section>
-            <section data-r7-settings-selected-zone-detail-card="sensors" style="border:1px solid #edf2ee;border-radius:14px;padding:12px;display:grid;gap:8px;"><b>대표 센서</b>${this._r7SettingsGreenhouseValueRow("온도", "24.7 ℃")}${this._r7SettingsGreenhouseValueRow("습도", "68.1 %")}${this._r7SettingsGreenhouseValueRow("VPD", "0.72 kPa")}${this._r7SettingsGreenhouseValueRow("CO₂", "612 ppm")}</section>
-            <section data-r7-settings-selected-zone-detail-card="devices" style="border:1px solid #edf2ee;border-radius:14px;padding:12px;display:grid;gap:8px;"><b>제어 장비 매핑</b>${this._r7SettingsGreenhouseValueRow("환기창", `${Math.max(1, selected.devices - 1)}기`)}${this._r7SettingsGreenhouseValueRow("스크린", "2중")}${this._r7SettingsGreenhouseValueRow("팬", `${Math.max(1, selected.devices)}기`)}${this._r7SettingsGreenhouseValueRow("관수 밸브", "2개")}</section>
-          </div>
-          <div data-r7-settings-zone-freshness-alert style="border:1px solid #f0d49a;border-radius:12px;background:#fff9ec;color:#9a6b10;padding:10px;font-size:12px;font-weight:850;display:flex;align-items:center;justify-content:space-between;gap:10px;"><span>${this.renderR7CommonHaIcon("mdi:alert-outline", { size: 16 })} 센서 ${selected.freshness ?? 0}분 freshness 확인 필요 (${selectedLabels})</span><button type="button" data-r7-settings-zone-sensor-health-button style="border:1px solid #badcc8;border-radius:999px;background:#fff;color:#31523b;padding:5px 9px;font-weight:950;font-size:11px;">센서 건강 상태 보기</button></div>
-          <footer style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">${this.renderR7CommonCardButton({ label: "구역 설정 편집", icon: "mdi:cog-outline", tone: "green", extraAttrs: 'data-r7-settings-zone-config-edit-button data-r7-settings-modal-skip-record-binding="true"' })}${this.renderR7CommonCardButton({ label: "장치·센서 매핑으로 이동", icon: "mdi:link-variant", tone: "green", extraAttrs: 'data-r7-settings-zone-mapping-nav-button data-r7-settings-modal-skip-record-binding="true"' })}${this.renderR7CommonCardButton({ label: "작기 연결 변경", icon: "mdi:sprout-outline", tone: "green", extraAttrs: 'data-r7-settings-zone-crop-link-button data-r7-settings-modal-skip-record-binding="true"' })}</footer>
-        </article>
-      </section>
+    return `<section data-r7-settings-greenhouse-zones data-r7-settings-greenhouse-zones-layout="basic-composition-create-list" style="display:grid;gap:12px;">
+      <div data-r7-settings-greenhouse-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${summaryCards}</div>
+      <article data-r7-settings-zone-list-panel data-r7-settings-zone-list-panel-width="full" style="border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;display:grid;grid-template-rows:auto auto 1fr auto;gap:10px;min-width:0;">
+        <header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="font-size:15px;color:#24323f;">구역 목록</strong><span style="color:#78927f;font-size:12px;font-weight:900;">구역 생성은 상단 카드에서 시작</span></header>
+        <div data-r7-settings-zone-table-header style="display:grid;grid-template-columns:.6fr .75fr .95fr .55fr .9fr .55fr;gap:8px;color:#53645b;font-size:11px;font-weight:950;">${headerCells}</div>
+        <div style="display:grid;align-content:start;min-width:0;">${zoneRows}</div>
+        <small style="color:#78927f;line-height:1.45;">ⓘ 구역 목록은 현재 구역, 작물, 작기 연결, 센서/장치 매핑 요약만 표시합니다. 상세 편집과 생성 저장은 별도 승인/저장 단계에서 처리됩니다.</small>
+      </article>
     </section>`;
   }
 
