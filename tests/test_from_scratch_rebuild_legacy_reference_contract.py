@@ -102,4 +102,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-071 adds shared HA-icon card/button/recent-row helpers used by records-workflow and Settings users-permissions.
     # R7-086 adds the dedicated CDA permission-matrix modal while keeping the rebuild surface bounded.
     # R7-087 replaces permission-matrix emoji state labels with HA ha-icon state pills and adds bucket edit selection.
-    assert len(rebuild.splitlines()) < 3185
+    # R7-088 rebuilds Settings greenhouse/zone into reference summary cards + zone list/detail panels.
+    assert len(rebuild.splitlines()) < 3265
