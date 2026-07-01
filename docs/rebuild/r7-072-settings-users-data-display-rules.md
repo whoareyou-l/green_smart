@@ -1,6 +1,6 @@
 # R7-072 Settings users data display rules
 
-Status: current baseline for `v1.14.9`.
+Status: current baseline for `v1.14.10`.
 
 ## Scope
 

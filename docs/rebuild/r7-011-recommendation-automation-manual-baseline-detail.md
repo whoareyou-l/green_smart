@@ -1,6 +1,6 @@
 # R7-011 Recommendation/Automation Manual-baseline Read-only Detail
 
-> 기준 버전: `v1.14.9`
+> 기준 버전: `v1.14.10`
 > Status: R7-011 complete
 > Purpose: `자동화 제어` 도메인을 manual-baseline-first 비교 구조로 구체화한다.
 

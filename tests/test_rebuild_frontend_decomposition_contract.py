@@ -14,11 +14,11 @@ def _read(path: Path) -> str:
 
 
 def test_r2_version_surfaces_are_v1112():
-    assert '"version": "1.14.9"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.9"' in _read(PANEL)
-    assert "v1.14.9" in _read(PLAN)
-    assert "v1.14.9" in _read(PRODUCT_PLAN)
-    assert "v1.14.9" in _read(MASTER)
+    assert '"version": "1.14.10"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.10"' in _read(PANEL)
+    assert "v1.14.10" in _read(PLAN)
+    assert "v1.14.10" in _read(PRODUCT_PLAN)
+    assert "v1.14.10" in _read(MASTER)
 
 
 def test_r2_ha_loading_keeps_single_public_panel_entrypoint():

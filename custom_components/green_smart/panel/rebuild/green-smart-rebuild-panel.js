@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.9";
+const REBUILD_VERSION = "1.14.10";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -135,11 +135,17 @@ const R7_DOMAIN_SUBTAB_ICONS = Object.freeze({
   "event-history": "mdi:history",
   "operation-history": "mdi:timeline-clock-outline",
   "audit-evidence": "mdi:file-check-outline",
+  "greenhouse-zones": "mdi:greenhouse",
+  "crop-cycle-objects": "mdi:sprout-outline",
+  "device-sensor-mapping": "mdi:devices",
+  "users-permissions": "mdi:account-key-outline",
+  "safety-approval-policy": "mdi:shield-check-outline",
+  "system-integration": "mdi:home-assistant",
+  "diagnostics-audit": "mdi:file-search-outline",
   "domain-ownership": "mdi:folder-key-outline",
   "role-permissions": "mdi:account-key-outline",
   "mapping-devices": "mdi:devices",
   "system-security": "mdi:security",
-  "diagnostics-audit": "mdi:stethoscope",
   "rbac-policy": "mdi:shield-account-outline",
 });
 
@@ -1639,7 +1645,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                   const approvalPrimary = approvalRows.length ? `승인 대기 ${approvalRows.length}건` : "기록 없음";
                   const approvalNote = approvalRows.length ? "" : "승인 요청 데이터가 없으면 요청자와 요청 역할을 추가하세요.";
                   return this.renderR7CommonCardShell({
-                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map((row) => ({ label: row.label || row.requestType || "승인 요청", meta: row.meta || row.status || "대기", icon: row.icon || "mdi:account-clock-outline", tone: row.tone || "amber", actionHtml: `<button type="button" data-r7-settings-approval-row-button="${row.id || ''}" style="border:1px solid #ead4a2;border-radius:10px;background:#fffdf5;color:#8a6d1d;padding:5px 8px;font-size:12px;font-weight:950;display:inline-flex;align-items:center;gap:4px;">${this.renderR7CommonHaIcon("mdi:open-in-new", { size: 13 })}<span>확인</span></button>`, extraAttrs: `data-r7-settings-approval-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-user-approval-request-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-approval-request-id="${row.id || ''}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all" data-r7-settings-approval-list-button data-r7-settings-approval-skip-record-binding="true"' })]
+                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "승인 필요 작업", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", primary: `<span data-r7-settings-approval-primary-summary>${approvalPrimary}</span>`, note: approvalNote ? `<span data-r7-settings-approval-empty-help>${approvalNote}</span>` : "", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map((row) => ({ label: row.label || row.requestType || "승인 요청", meta: row.meta || row.status || "대기", icon: row.icon || "mdi:account-clock-outline", tone: row.tone || "amber", extraAttrs: `data-r7-settings-approval-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-user-approval-request-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-approval-request-id="${row.id || ''}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "모든 승인 요청 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all" data-r7-settings-approval-list-button data-r7-settings-approval-skip-record-binding="true"' })]
                   });
                 })()}
                 ${(() => {
@@ -2031,7 +2037,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const active = key === activeKey;
       const icon = this._r7DomainSubtabIcon(domainKey, key);
       const domainSubtabMarker = domainKey === "crop-operations" ? `data-r7-crop-subtab="${key}"` : domainKey === "safety-history" ? `data-r7-safety-subtab="${key}"` : domainKey === "environment-control" ? `data-r7-environment-subtab="${key}"` : domainKey === "irrigation-fertigation" ? `data-r7-irrigation-subtab="${key}"` : domainKey === "device-control" ? `data-r7-device-subtab="${key}"` : domainKey === "recommendation-automation" ? `data-r7-recommendation-subtab="${key}"` : "";
-      return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-layout="nav-item" data-r7-domain-subtab-icon="ha-mdi" data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" title="${label}" style="border:0;border-bottom:${active ? "3px solid #43ad5e" : "3px solid transparent"};background:${active ? "#f2faf3" : "#ffffff"};color:${active ? "#31523b" : "#5d6f62"};padding:11px 14px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:max-content;white-space:nowrap;box-shadow:${active ? "inset 0 -1px 0 #43ad5e" : "none"};"><ha-icon icon="${icon}" data-r7-domain-subtab-ha-icon="${key}" style="--mdc-icon-size:18px;width:18px;height:18px;color:${active ? "#43ad5e" : "#78927f"};"></ha-icon><span data-r7-domain-subtab-title>${label}</span></button>`;
+      return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-layout="nav-item" data-r7-domain-subtab-icon="ha-mdi" data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" data-r7-domain-subtab-icon-name="${icon}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" title="${label}" style="border:0;border-bottom:${active ? "3px solid #43ad5e" : "3px solid transparent"};background:${active ? "#f2faf3" : "#ffffff"};color:${active ? "#31523b" : "#5d6f62"};padding:11px 14px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:max-content;white-space:nowrap;box-shadow:${active ? "inset 0 -1px 0 #43ad5e" : "none"};"><ha-icon icon="${icon}" data-r7-domain-subtab-ha-icon="${key}" style="--mdc-icon-size:18px;width:18px;height:18px;color:${active ? "#43ad5e" : "#78927f"};"></ha-icon><span data-r7-domain-subtab-title>${label}</span></button>`;
     }).join("")}</nav>`;
   }
 
