@@ -1,6 +1,6 @@
 # R6-003 Safety/Interlock Read-only Adapter
 
-> 기준 버전: `v1.14.11`
+> 기준 버전: `v1.14.12`
 > Status: R6-003 complete
 > 목적: R6-002 monitoring evidence와 기존 preflight projection을 조합해 안전·인터록 read-only evidence DTO를 zone context에 붙인다.
 
@@ -92,7 +92,7 @@ question gates must use clarify tool
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.14.11`에서 R7-000 IA blueprint를 완료했다.
+`v1.14.12`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 

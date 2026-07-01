@@ -1,6 +1,6 @@
 # R7-085 Approval card modal-only and Settings subtab icons
 
-Status: current baseline for `v1.14.11`.
+Status: current baseline for `v1.14.12`.
 
 ## Changes
 

@@ -101,4 +101,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-066 reclassifies Settings into greenhouse/zone, crop-object, mapping, RBAC, safety, system, and diagnostics foundations.
     # R7-071 adds shared HA-icon card/button/recent-row helpers used by records-workflow and Settings users-permissions.
     # R7-086 adds the dedicated CDA permission-matrix modal while keeping the rebuild surface bounded.
-    assert len(rebuild.splitlines()) < 3150
+    # R7-087 replaces permission-matrix emoji state labels with HA ha-icon state pills and adds bucket edit selection.
+    assert len(rebuild.splitlines()) < 3185

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.11";
+const REBUILD_VERSION = "1.14.12";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -347,6 +347,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _closeSettingsPermissionMatrixModal() {
     this._settingsPermissionMatrixModal = { open: false };
+    this.render();
+  }
+
+  _selectSettingsPermissionMatrixBucket(bucket) {
+    this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: bucket };
     this.render();
   }
 
@@ -938,6 +943,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("[data-r7-settings-permission-matrix-close-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsPermissionMatrixModal(); });
     });
+    this.querySelectorAll("[data-r7-settings-permission-edit]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        this._selectSettingsPermissionMatrixBucket(button.getAttribute("data-r7-settings-permission-edit"));
+      });
+    });
     this.querySelectorAll("[data-r7-settings-audit-log-close-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsAuditLogModal(); });
     });
@@ -1485,27 +1496,48 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return { id: String(id), title, actor, at, summary, target, tone, state, raw: row };
   }
 
+  _r7PermissionMatrixStateCell(state) {
+    const meta = {
+      allowed: { icon: "mdi:check-circle-outline", label: "허용", tone: "green" },
+      review: { icon: "mdi:shield-check-outline", label: "확인", tone: "amber" },
+      readonly: { icon: "mdi:eye-outline", label: "읽기 전용", tone: "blue" },
+      request: { icon: "mdi:clock-outline", label: "요청 후 실행", tone: "amber" },
+      none: { icon: "mdi:lock-outline", label: "없음", tone: "gray" },
+    }[state] || { icon: "mdi:help-circle-outline", label: "미확인", tone: "gray" };
+    const tone = this._r7ApprovalToneStyle(meta.tone);
+    return `<span data-r7-settings-permission-state="${state}" data-r7-settings-permission-state-icon="${meta.icon}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid;border-radius:999px;padding:4px 7px;font-weight:950;${tone}">${this.renderR7CommonHaIcon(meta.icon, { size: 14 })}<span>${meta.label}</span></span>`;
+  }
+
   renderR7SettingsPermissionMatrixModal() {
     const modal = this._settingsPermissionMatrixModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-permission-matrix-cda-modal="true" data-r7-settings-permission-matrix-modal-open="false"></template>`;
     const rows = [
-      ["조회", "기본 조회 / 상세 조회", "✅ 허용", "✅ 허용", "✅ 허용"],
-      ["기록", "기록 작성 / 기록 수정", "✅ 허용", "✅ 허용", "✅ 허용"],
-      ["전략", "전략 검토 / 전략 승인", "✅ 허용", "✅ 허용", "👁️ 읽기 전용"],
-      ["실행", "실행 요청 / 실행 허락", "✅ 허용", "✅ 허용", "🕘 요청 후 실행"],
-      ["안전", "안전 확인 / 인터록 해제 검토", "✅ 허용", "🛡️ 확인", "👁️ 읽기 전용"],
-      ["고급설정", "구역/작기 설정 / 권한 설정", "✅ 허용", "🛡️ 확인", "🔒 없음"],
+      { bucket: "조회", steps: "기본 조회 / 상세 조회", admin: "allowed", owner: "allowed", staff: "allowed" },
+      { bucket: "기록", steps: "기록 작성 / 기록 수정", admin: "allowed", owner: "allowed", staff: "allowed" },
+      { bucket: "전략", steps: "전략 검토 / 전략 승인", admin: "allowed", owner: "allowed", staff: "readonly" },
+      { bucket: "실행", steps: "실행 요청 / 실행 허락", admin: "allowed", owner: "allowed", staff: "request" },
+      { bucket: "안전", steps: "안전 확인 / 인터록 해제 검토", admin: "allowed", owner: "review", staff: "readonly" },
+      { bucket: "고급설정", steps: "구역/작기 설정 / 권한 설정", admin: "allowed", owner: "review", staff: "none" },
     ];
-    const matrixRows = [["버킷", "세부 단계", "admin", "farm_owner", "farm_staff", "수정"], ...rows.map((cols) => [...cols, "수정"])];
+    const selectedBucket = modal.selectedBucket || "";
+    const selected = rows.find((row) => row.bucket === selectedBucket) || null;
+    const matrixRows = [["버킷", "세부 단계", "admin", "farm_owner", "farm_staff", "수정"], ...rows.map((row) => [row.bucket, row.steps, row.admin, row.owner, row.staff, "수정"] )];
     const table = `<div data-r7-settings-permission-matrix-table data-r7-settings-permission-matrix-table-modal="true" style="display:grid;grid-template-columns:.72fr 1.4fr repeat(3,.9fr) .6fr;border:1px solid #edf4ef;border-radius:14px;overflow:hidden;font-size:12px;line-height:1.35;text-align:center;color:#24323f;">${matrixRows.map((cols, rowIndex) => cols.map((cell, colIndex) => {
       const bucket = rowIndex > 0 ? cols[0] : "";
       const roleAttr = rowIndex === 1 && colIndex >= 2 && colIndex <= 4 ? `data-r7-settings-permission-role="${["admin", "farm_owner", "farm_staff"][colIndex - 2]}"` : "";
       const bucketAttrs = rowIndex > 0 && colIndex === 0 ? `data-r7-settings-permission-bucket="${bucket}" data-r7-settings-permission-step-row="${bucket}"` : "";
+      const stateCell = rowIndex > 0 && colIndex >= 2 && colIndex <= 4;
       const edit = rowIndex > 0 && colIndex === 5;
-      const body = edit ? `<button type="button" data-r7-settings-permission-edit="${bucket}" data-r7-common-card-button data-r7-common-button-order="icon-text" style="border:1px solid #badcc8;border-radius:8px;background:#fff;color:#31523b;padding:5px 8px;font-size:12px;line-height:1.35;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:5px;">${this.renderR7CommonHaIcon("mdi:pencil-outline", { size: 14 })}<span data-r7-common-button-label>수정</span></button>` : cell;
-      return `<span ${bucketAttrs} ${roleAttr} style="display:grid;align-items:center;justify-items:center;min-height:38px;padding:8px;border-right:${colIndex === 5 ? '0' : '1px solid #edf4ef'};border-bottom:${rowIndex === rows.length ? '0' : '1px solid #edf4ef'};background:${rowIndex === 0 ? '#f6fbf7' : '#fff'};font-weight:${rowIndex === 0 || colIndex === 0 ? '950' : '750'};">${body}</span>`;
+      const body = stateCell ? this._r7PermissionMatrixStateCell(cell) : edit ? `<button type="button" data-r7-settings-permission-edit="${bucket}" data-r7-settings-permission-edit-active="${selectedBucket === bucket ? 'true' : 'false'}" data-r7-common-card-button data-r7-common-button-order="icon-text" style="border:1px solid ${selectedBucket === bucket ? '#78a87e' : '#badcc8'};border-radius:8px;background:${selectedBucket === bucket ? '#f0fbf4' : '#fff'};color:#31523b;padding:5px 8px;font-size:12px;line-height:1.35;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:5px;">${this.renderR7CommonHaIcon("mdi:pencil-outline", { size: 14 })}<span data-r7-common-button-label>수정</span></button>` : cell;
+      return `<span ${bucketAttrs} ${roleAttr} style="display:grid;align-items:center;justify-items:center;min-height:38px;padding:8px;border-right:${colIndex === 5 ? '0' : '1px solid #edf4ef'};border-bottom:${rowIndex === rows.length ? '0' : '1px solid #edf4ef'};background:${rowIndex === 0 ? '#f6fbf7' : selectedBucket === bucket ? '#fbfefc' : '#fff'};font-weight:${rowIndex === 0 || colIndex === 0 ? '950' : '750'};">${body}</span>`;
     }).join("")).join("")}</div>`;
-    const body = `${this.renderR7CdaModalHeader({ icon: "mdi:table-key", title: "권한 매트릭스 표", subtitle: "역할별 권한 버킷과 세부 단계를 팝업 모달에서 확인합니다.", closeAttr: "data-r7-settings-permission-matrix-close-button" })}<main style="overflow:auto;min-height:0;display:grid;gap:12px;">${table}<p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.55;">설정 저장/권한 변경은 별도 승인 작업입니다. 이 표는 현재 RBAC 기준을 read-only로 보여줍니다.</p></main><footer style="display:flex;justify-content:flex-end;border-top:1px solid #edf4ef;padding-top:10px;"><button type="button" data-r7-settings-permission-matrix-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
+    const editPanel = selected ? `<section data-r7-settings-permission-edit-panel="true" data-r7-settings-permission-edit-selected-bucket="${selected.bucket}" style="border:1px solid #badcc8;border-radius:14px;background:#f8fcf9;padding:12px;display:grid;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;">${selected.bucket} 버킷 수정 검토</strong><span style="color:#5d6f62;font-size:12px;font-weight:900;">선택 버킷</span></div>
+      <p style="margin:0;color:#31523b;font-size:13px;line-height:1.55;">${selected.steps}</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">${[["admin", selected.admin], ["farm_owner", selected.owner], ["farm_staff", selected.staff]].map(([role, state]) => `<span data-r7-settings-permission-edit-role="${role}" style="border:1px solid #edf4ef;border-radius:10px;background:#fff;padding:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><b>${role}</b>${this._r7PermissionMatrixStateCell(state)}</span>`).join("")}</div>
+      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">변경 저장은 별도 승인 필요 작업에서 처리됩니다. 이 버튼은 권한 버킷을 선택해 운영자가 수정 범위를 검토하도록 여는 동작입니다.</p>
+    </section>` : `<section data-r7-settings-permission-edit-panel="false" style="border:1px dashed #dcebe0;border-radius:14px;background:#fff;padding:12px;color:#78927f;font-size:12px;">수정할 버킷의 수정 버튼을 누르면 선택 버킷 검토 패널이 열립니다.</section>`;
+    const body = `${this.renderR7CdaModalHeader({ icon: "mdi:table-key", title: "권한 매트릭스 표", subtitle: "역할별 권한 버킷과 세부 단계를 팝업 모달에서 확인합니다.", closeAttr: "data-r7-settings-permission-matrix-close-button" })}<main style="overflow:auto;min-height:0;display:grid;gap:12px;">${table}${editPanel}<p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.55;">설정 저장/권한 변경은 별도 승인 작업입니다. 이 표는 현재 RBAC 기준을 read-only로 보여줍니다.</p></main><footer style="display:flex;justify-content:flex-end;border-top:1px solid #edf4ef;padding-top:10px;"><button type="button" data-r7-settings-permission-matrix-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaModalOverlay({ open: modal.open, zIndex: 31, attrs: `data-r7-settings-permission-matrix-cda-modal="true" data-r7-settings-permission-matrix-modal-open="true"`, body: this.renderR7CdaModalCard({ attrs: `data-r7-settings-permission-matrix-card`, width: "min(980px,96vw)", body }) });
   }
 
