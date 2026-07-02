@@ -5,7 +5,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 INIT = ROOT / "custom_components/green_smart/__init__.py"
-REBUILD_VIEWS = ROOT / "custom_components/green_smart/rebuild_views.py"
+REBUILD_VIEWS = ROOT / "custom_components/green_smart/rebuild_settings_write_views.py"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 DOC = ROOT / "docs/rebuild/r7-095-settings-greenhouse-zone-detail-actions.md"
@@ -37,9 +37,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_095_version_surfaces_are_1_14_20():
-    assert '"version": "1.14.22"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.22"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.22"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.23"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.23"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.23"' in _read(REBUILD_PANEL)
 
 
 def test_r7_095_backend_api_views_exist_and_are_registered():

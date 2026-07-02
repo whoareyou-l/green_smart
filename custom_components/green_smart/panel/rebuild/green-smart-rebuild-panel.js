@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.22";
+const REBUILD_VERSION = "1.14.23";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -62,6 +62,7 @@ const REBUILD_SETTINGS_APPROVAL_DECISION_API_PREFIX = "green_smart/rebuild/setti
 const REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH = "green_smart/rebuild/settings/greenhouses";
 const REBUILD_SETTINGS_ZONE_CREATE_API_PATH = "green_smart/rebuild/settings/zones";
 const REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH = "green_smart/rebuild/settings/device-sensor-mappings";
+const REBUILD_SETTINGS_SNAPSHOT_API_PATH = "green_smart/rebuild/settings/snapshot";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
   prefix: "/api/green_smart/rebuild/crop-records",
   endpoints: ["get /history", "get /history/{recordType}", "get /latest/{recordType}", "post /growth-survey", "post /pest-scouting", "post /control-treatment", "patch /{recordType}/{recordId}", "post /pls-check"],
@@ -228,6 +229,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadError = null;
     this._contextRequestId = 0;
     this._settingsUsersPermissions = { source: "loading", users: [], approvalRows: [], auditRows: [], counts: { users: 0, approvals: 0, audits: 0 }, requestState: "idle" };
+    this._settingsGreenhouseZoneData = { source: "loading", greenhouses: [], zones: [], deviceSensorMappings: [] };
+    this._settingsGreenhouseZoneLoadState = "loading";
+    this._settingsGreenhouseZoneLoadError = null;
+    this._settingsGreenhouseZoneRequestId = 0;
     this._settingsApprovalModal = { open: false, request: null };
     this._settingsApprovalListModal = { open: false };
     this._settingsAuditLogModal = { open: false };
@@ -250,6 +255,34 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
     this._loadHomeContext();
     this._loadSettingsUsersPermissions();
+    this._loadSettingsGreenhouseZoneData();
+  }
+
+  r7SettingsGreenhouseZoneData() {
+    return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [] };
+  }
+
+  async _loadSettingsGreenhouseZoneData() {
+    const requestId = ++this._settingsGreenhouseZoneRequestId;
+    this._settingsGreenhouseZoneLoadState = "loading";
+    this._settingsGreenhouseZoneLoadError = null;
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi("GET", REBUILD_SETTINGS_SNAPSHOT_API_PATH);
+      if (requestId !== this._settingsGreenhouseZoneRequestId) return;
+      this._settingsGreenhouseZoneData = {
+        source: response?.source || "green_smart_settings_db",
+        greenhouses: Array.isArray(response?.greenhouses) ? response.greenhouses : [],
+        zones: Array.isArray(response?.zones) ? response.zones : [],
+        deviceSensorMappings: Array.isArray(response?.deviceSensorMappings) ? response.deviceSensorMappings : [],
+      };
+      this._settingsGreenhouseZoneLoadState = "ready";
+    } catch (error) {
+      if (requestId !== this._settingsGreenhouseZoneRequestId) return;
+      this._settingsGreenhouseZoneLoadState = "error";
+      this._settingsGreenhouseZoneLoadError = error?.message || "settings-snapshot-load-failed";
+    }
+    this.render();
   }
 
   r7SettingsUsersPermissionsData() {
@@ -457,6 +490,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH, payload);
+      if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+      await this._loadSettingsGreenhouseZoneData();
       this._settingsGreenhouseCreateModal = { open: true, state: "saved", response };
     } catch (error) {
       this._settingsGreenhouseCreateModal = { open: true, state: "error", error: error?.message || "greenhouse-create-failed" };
@@ -471,6 +506,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_ZONE_CREATE_API_PATH, payload);
+      if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+      await this._loadSettingsGreenhouseZoneData();
       this._settingsZoneCreateModal = { open: true, state: "saved", response };
     } catch (error) {
       this._settingsZoneCreateModal = { open: true, state: "error", error: error?.message || "zone-create-failed" };
@@ -485,6 +522,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH, payload);
+      if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+      await this._loadSettingsGreenhouseZoneData();
       this._settingsDeviceSensorMappingModal = { open: true, state: "saved", response };
     } catch (error) {
       this._settingsDeviceSensorMappingModal = { open: true, state: "error", error: error?.message || "device-sensor-mapping-failed" };
@@ -1757,28 +1796,35 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7SettingsShortcutReviewLikeModal() {
     const modal = this._settingsShortcutCdaModal || { open: false, kind: "" };
     if (!modal.open) return `<template data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-cda-split-open="false"></template>`;
-    const zones = (this._zonesForRender?.() || []).filter((zone) => this._r7ZoneId?.(zone) !== "all");
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const settingsZones = Array.isArray(settingsData.zones) ? settingsData.zones : [];
+    const settingsGreenhouses = Array.isArray(settingsData.greenhouses) ? settingsData.greenhouses : [];
+    const settingsDataDeviceSensorMappings = Array.isArray(settingsData.deviceSensorMappings) ? settingsData.deviceSensorMappings : [];
+    const zones = (settingsData.zones && settingsData.zones.length ? settingsData.zones : (this._zonesForRender?.() || [])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
     const selectedZone = zones[0] || { id: "zone-1", name: "1구역", zoneName: "1구역", purpose: "재배", area: "120㎡", bedCount: 6, currentCrop: { crop_label_ko: "토마토", crop_cycle_id: "17" }, equipmentProfile: { labels: ["온도 센서", "천창", "미연결 양액기"] } };
     const kind = modal.kind || "greenhouse-info";
+    const primaryGreenhouse = settingsGreenhouses[0] || { name: this._homeContext?.greenhouseName || "제1온실", location: "경기 화성", installType: "NUC edge" };
     const meta = {
-      "greenhouse-info": { title: "온실 정보", subtitle: "온실 기본 정보와 운영 기준 검토", icon: "mdi:greenhouse", marker: "data-r7-settings-greenhouse-info-split-modal", type: "온실 정보", target: this._homeContext?.greenhouseName || "제1온실" },
+      "greenhouse-info": { title: "온실 정보", subtitle: "온실 기본 정보와 운영 기준 검토", icon: "mdi:greenhouse", marker: "data-r7-settings-greenhouse-info-split-modal", type: "온실 정보", target: primaryGreenhouse.name || this._homeContext?.greenhouseName || "제1온실" },
       "zone-list": { title: "구역 목록", subtitle: "구역별 상태와 현재 작기 검토", icon: "mdi:view-list-outline", marker: "data-r7-settings-zone-list-split-modal", type: "구역 목록", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
       "equipment-info": { title: "장비 구성", subtitle: "선택 구역 장치/센서 매핑 상태 검토", icon: "mdi:devices", marker: "data-r7-settings-equipment-info-split-modal", type: "장비 구성", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
     }[kind] || { title: "상세", subtitle: "설정 상세 검토", icon: "mdi:information-outline", marker: "data-r7-settings-greenhouse-info-split-modal", type: "설정", target: "대상" };
-    const labels = Array.isArray(selectedZone.equipmentProfile?.labels) ? selectedZone.equipmentProfile.labels : [];
+    const labels = settingsDataDeviceSensorMappings.length
+      ? settingsDataDeviceSensorMappings.map((mapping) => `${mapping.sensorEntity || "센서"} → ${mapping.deviceEntity || "장비"}`)
+      : Array.isArray(selectedZone.equipmentProfile?.labels) ? selectedZone.equipmentProfile.labels : [];
     const reviewRows = kind === "zone-list"
-      ? (zones.length ? zones : [selectedZone]).map((zone, index) => ({ id: this._r7ZoneId?.(zone) || zone.id || `zone-${index + 1}`, at: index === 0 ? "선택" : "대기", type: "구역", risk: zone.dataAvailability?.state === "fresh" ? "낮음" : "중간", summary: `${this._r7ZoneName?.(zone) || zone.zoneName || zone.name || '구역'} · ${zone.purpose || '재배'} · ${zone.area || '120㎡'}`, actor: `${zone.bedCount ?? zone.beds ?? 6} bed`, tone: zone.dataAvailability?.state === "fresh" ? "green" : "amber" }))
+      ? (settingsZones.length ? settingsZones : (zones.length ? zones : [selectedZone])).map((zone, index) => ({ id: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`, at: index === 0 ? "선택" : "대기", type: "구역", risk: zone.dataAvailability?.state === "fresh" ? "낮음" : "중간", summary: `${this._r7ZoneName?.(zone) || zone.zoneName || zone.name || '구역'} · ${zone.purpose || '재배'} · ${zone.area || '120㎡'}`, actor: `${zone.bedCount ?? zone.beds ?? 6} bed`, tone: zone.dataAvailability?.state === "fresh" ? "green" : "amber" }))
       : kind === "equipment-info"
-        ? [
+        ? (settingsDataDeviceSensorMappings.length ? settingsDataDeviceSensorMappings.map((mapping, index) => ({ id: mapping.id || `mapping-${index}`, at: index === 0 ? "선택" : "확인", type: mapping.mappingRole || "장치/센서", risk: mapping.status === "active" ? "낮음" : "중간", summary: `${mapping.sensorEntity || '센서'} → ${mapping.deviceEntity || '장비'}`, actor: mapping.zoneId || meta.target, tone: mapping.status === "active" ? "green" : "amber" })) : [
             { id: "sensors", at: "선택", type: "센서", risk: "낮음", summary: `센서 ${labels.filter((label) => String(label).includes("센서") || String(label).includes("sensor")).length || 1}개`, actor: meta.target, tone: "green" },
             { id: "devices", at: "확인", type: "장비", risk: "중간", summary: `장비 ${labels.filter((label) => !String(label).includes("센서") && !String(label).includes("sensor")).length || 1}개`, actor: meta.target, tone: "amber" },
             { id: "unmapped", at: "검토", type: "미연결", risk: labels.some((label) => /미연결|unmapped|누락/i.test(String(label))) ? "중간" : "낮음", summary: labels.find((label) => /미연결|unmapped|누락/i.test(String(label))) || "미연결 없음", actor: "mapping", tone: labels.some((label) => /미연결|unmapped|누락/i.test(String(label))) ? "amber" : "green" },
-          ]
-        : [
+          ])
+        : (settingsGreenhouses.length ? settingsGreenhouses.map((greenhouse, index) => ({ id: greenhouse.id || `greenhouse-${index}`, at: index === 0 ? "대표" : "정보", type: "온실명", risk: greenhouse.status === "active" ? "낮음" : "중간", summary: `${greenhouse.name || '온실'} · ${greenhouse.location || '위치 미등록'} · ${greenhouse.installType || '설치유형 미등록'}`, actor: "DB", tone: greenhouse.status === "active" ? "green" : "amber" })) : [
             { id: "name", at: "대표", type: "온실명", risk: "낮음", summary: this._homeContext?.greenhouseName || "제1온실", actor: "운영 기준", tone: "green" },
             { id: "location", at: "정보", type: "위치", risk: "낮음", summary: "경기 화성", actor: "설정", tone: "green" },
             { id: "install", at: "정보", type: "설치유형", risk: "중간", summary: "NUC edge", actor: "시스템", tone: "amber" },
-          ];
+          ]);
     const selected = reviewRows[0];
     const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-shortcut-search-input", searchPlaceholder: `${meta.title} 검색`, filters: [["all","전체"],["needs-review","검토 필요"],["normal","정상"],["evidence","감사 근거"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "needs-review" ? "red" : "green", attrs: `data-r7-settings-shortcut-filter="${key}"` })) });
     const rows = reviewRows.map((row) => this.renderR7CdaCompactListRow({ selected: row.id === selected.id, attrs: `data-r7-settings-shortcut-review-row="${row.id}" data-r7-settings-shortcut-review-row-selected="${row.id === selected.id ? 'true' : 'false'}"`, columns: [`<span>${row.at}</span>`, `<b>${row.type}</b>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.risk}</span>`, `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.summary}</span>`, `<span>${row.actor}</span>`] })).join("");

@@ -317,7 +317,8 @@ async def async_setup(hass, config):
         CropControlListView, CropControlDeleteView,
     )
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView, CentralCropInterlockSnapshotSyncView, CentralCropInterlockAnalyticsSummaryView
-    from .rebuild_views import RebuildHomeContextView, RebuildSettingsGreenhouseCreateView, RebuildSettingsZoneCreateView, RebuildSettingsDeviceSensorMappingView
+    from .rebuild_views import RebuildHomeContextView
+    from .rebuild_settings_write_views import RebuildSettingsSnapshotView, RebuildSettingsGreenhouseCreateView, RebuildSettingsZoneCreateView, RebuildSettingsDeviceSensorMappingView
     from .rebuild_settings_views import RebuildSettingsUsersPermissionsView, RebuildSettingsApprovalRequestView, RebuildSettingsApprovalDecisionView
     from .rebuild_crop_records_views import RebuildCropRecordsHistoryView, RebuildCropRecordsWriteView
     from .rbac import GreenSmartAuthMeView, GreenSmartRoleAssignmentView
@@ -353,6 +354,7 @@ async def async_setup(hass, config):
         hass.http.register_view(CentralCropInterlockSnapshotSyncView())
         hass.http.register_view(CentralCropInterlockAnalyticsSummaryView())
         hass.http.register_view(RebuildHomeContextView())
+        hass.http.register_view(RebuildSettingsSnapshotView())
         hass.http.register_view(RebuildSettingsGreenhouseCreateView())
         hass.http.register_view(RebuildSettingsZoneCreateView())
         hass.http.register_view(RebuildSettingsDeviceSensorMappingView())

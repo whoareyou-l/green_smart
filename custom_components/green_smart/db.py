@@ -120,6 +120,61 @@ async def ensure_schema(hass: HomeAssistant) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_greenhouses (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            name VARCHAR(128) NOT NULL,
+            location VARCHAR(255) NOT NULL DEFAULT '',
+            install_type VARCHAR(128) NOT NULL DEFAULT '',
+            approval_scope VARCHAR(128) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_greenhouse (farm_id, name),
+            KEY idx_settings_greenhouse_status (farm_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_zones (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            greenhouse_id BIGINT NULL,
+            name VARCHAR(128) NOT NULL,
+            purpose VARCHAR(128) NOT NULL DEFAULT '재배',
+            area VARCHAR(64) NOT NULL DEFAULT '',
+            bed_count INT NOT NULL DEFAULT 0,
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_zone (farm_id, name),
+            KEY idx_settings_zone_greenhouse (farm_id, greenhouse_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_device_sensor_mappings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id VARCHAR(128) NOT NULL,
+            sensor_entity VARCHAR(255) NOT NULL,
+            device_entity VARCHAR(255) NOT NULL,
+            mapping_role VARCHAR(128) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_device_sensor_mapping (farm_id, zone_id, sensor_entity, device_entity, mapping_role),
+            KEY idx_settings_device_sensor_mapping_zone (farm_id, zone_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
         CREATE TABLE IF NOT EXISTS crop_seasons (
             id INT AUTO_INCREMENT PRIMARY KEY,
             greenhouse_id INT NOT NULL DEFAULT 1,
