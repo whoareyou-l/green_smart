@@ -34,9 +34,9 @@ def _render_with_modal(open_call: str) -> str:
 
 
 def test_r7_097_version_surfaces_are_1_14_22():
-    assert '"version": "1.14.27"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.27"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.27"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.28"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.28"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.28"' in _read(REBUILD_PANEL)
 
 
 def test_r7_097_create_modals_feel_like_growth_survey_write_modal():
@@ -86,6 +86,12 @@ def test_r7_097_shortcut_list_modals_feel_like_approval_or_audit_review_modal():
             assert 'data-r7-settings-zone-list-detail-panel' in html
             assert 'data-r7-cda-entity-modal="zone-list"' in html
             assert '1. 구역 상세 정보' in html
+            assert '선택 항목 상세' in html
+            assert '선택 항목 검토' not in html
+        elif kind == 'equipment-info':
+            assert 'data-r7-settings-equipment-info-detail-panel' in html
+            assert 'data-r7-cda-entity-modal="equipment-info"' in html
+            assert '1. 장비/센서 매핑 상세 정보' in html
             assert '선택 항목 상세' in html
             assert '선택 항목 검토' not in html
         else:

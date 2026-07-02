@@ -92,9 +92,9 @@ def test_v1971_growth_slice_version_markers():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.14.27"' in manifest
-    assert 'const VERSION = "1.14.27"' in panel
-    assert 'v1.14.27' in panel[:200]
+    assert '"version": "1.14.28"' in manifest
+    assert 'const VERSION = "1.14.28"' in panel
+    assert 'v1.14.28' in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert '기준 버전: `v1.14.27`' in docs
+    assert '기준 버전: `v1.14.28`' in docs
     assert 'UI Slice 2 — v1.9.71 생육조사 Subpage Polish' in plan

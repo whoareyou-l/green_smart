@@ -16,11 +16,11 @@ def _read(path: Path) -> str:
 
 
 def test_rs015_version_surfaces_are_aligned_to_1_12_14():
-    assert '"version": "1.14.27"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.27"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.27"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.28"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.28"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.28"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.14.27" in _read(path)
+        assert "v1.14.28" in _read(path)
 
 
 def test_rs015_document_records_frontend_async_loading_boundary():
@@ -106,7 +106,7 @@ def test_docs_inventory_and_plan_record_rs015_completion_and_next_step():
         assert marker in spec
     for marker in (
         "Phase R4.11 — Rebuild panel async context loading",
-        "Status:** `v1.14.27`에서 rebuild panel이 protected home context API를 비동기로 호출하도록 연결 완료",
+        "Status:** `v1.14.28`에서 rebuild panel이 protected home context API를 비동기로 호출하도록 연결 완료",
         "No production route removal in RS-015",
         "No DB migration in RS-015",
         "No write/mutation in RS-015",

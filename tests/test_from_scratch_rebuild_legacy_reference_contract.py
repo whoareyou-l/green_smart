@@ -108,4 +108,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-099 turns greenhouse info into per-greenhouse detail with edit/delete affordances.
     # R7-100 extracts a reusable CDA entity list/detail modal so Settings popups do not regress into field-as-row dumps.
     # R7-102 reuses the CDA entity modal for zone-list rows and selected zone details.
-    assert len(rebuild.splitlines()) < 3820
+    # R7-103 reuses the CDA entity modal for equipment/sensor mapping rows and selected mapping details.
+    assert len(rebuild.splitlines()) < 3880
