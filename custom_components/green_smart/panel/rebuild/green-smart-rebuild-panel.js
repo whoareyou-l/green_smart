@@ -53,12 +53,14 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.49";
+const REBUILD_VERSION = "1.14.50";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
 const REBUILD_SETTINGS_APPROVAL_REQUEST_API_PATH = "green_smart/rebuild/settings/approval-request";
 const REBUILD_SETTINGS_APPROVAL_DECISION_API_PREFIX = "green_smart/rebuild/settings/approval-requests/";
+const REBUILD_SETTINGS_PERMISSION_CHANGE_REQUEST_API_PATH = "green_smart/rebuild/settings/permission-change-request";
+const REBUILD_SETTINGS_USER_ROLE_API_PREFIX = "green_smart/rebuild/settings/users/";
 const REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH = "green_smart/rebuild/settings/greenhouses";
 const REBUILD_SETTINGS_ZONE_CREATE_API_PATH = "green_smart/rebuild/settings/zones";
 const REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH = "green_smart/rebuild/settings/device-sensor-mappings";
@@ -447,17 +449,46 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
   }
 
-  async _approveSettingsApprovalRequest(requestId) {
+  async _approveSettingsApprovalRequest(requestId, decision = "approve") {
     if (!requestId) return;
-    this._settingsApprovalModal = { ...(this._settingsApprovalModal || {}), approving: true };
+    this._settingsApprovalModal = { ...(this._settingsApprovalModal || {}), approving: true, decision };
     this.render();
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
-      await this.hass.callApi(["P", "OST"].join(""), `${REBUILD_SETTINGS_APPROVAL_DECISION_API_PREFIX}${requestId}/decision`, { decision: "approve" });
+      await this.hass.callApi(["P", "OST"].join(""), `${REBUILD_SETTINGS_APPROVAL_DECISION_API_PREFIX}${requestId}/decision`, decision === "reject" ? { decision: "reject", memo: "" } : { decision: "approve", memo: "" });
       this._settingsApprovalModal = { open: false, request: null };
       await this._loadSettingsUsersPermissions();
     } catch (error) {
       this._settingsApprovalModal = { ...(this._settingsApprovalModal || {}), approving: false, error: error?.message || "approval-decision-failed" };
+      this.render();
+    }
+  }
+
+  async _requestSettingsPermissionBucketChange(bucket = "") {
+    const targetBucket = bucket || this._settingsPermissionMatrixModal?.selectedBucket || "권한 버킷";
+    this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: targetBucket, requestState: "submitting" };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_PERMISSION_CHANGE_REQUEST_API_PATH, { bucket: targetBucket, requestedRole: "farm_staff", note: `${targetBucket} 권한 변경 요청` });
+      this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: targetBucket, requestState: "submitted", requestId: response?.requestId };
+      await this._loadSettingsUsersPermissions();
+    } catch (error) {
+      this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: targetBucket, requestState: "error", error: error?.message || "permission-change-request-failed" };
+      this.render();
+    }
+  }
+
+  async _updateSettingsUserRole(haUserId, role = "farm_staff", status = "active") {
+    if (!haUserId) return;
+    this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), userUpdateState: "submitting", updatingHaUserId: haUserId };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      await this.hass.callApi("PATCH", `${REBUILD_SETTINGS_USER_ROLE_API_PREFIX}${encodeURIComponent(haUserId)}`, { role, status });
+      await this._loadSettingsUsersPermissions();
+    } catch (error) {
+      this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), userUpdateState: "error", userUpdateError: error?.message || "settings-user-role-update-failed" };
       this.render();
     }
   }
@@ -1265,6 +1296,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
         this._selectSettingsPermissionMatrixBucket(button.getAttribute("data-r7-settings-permission-edit"));
       });
     });
+    this.querySelectorAll("[data-r7-settings-permission-change-request-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._requestSettingsPermissionBucketChange(button.getAttribute("data-r7-settings-permission-change-request-button") || ""); });
+    });
+    this.querySelectorAll("[data-r7-settings-user-role-update-button]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        this._updateSettingsUserRole(button.getAttribute("data-r7-settings-user-role-update-button"), button.getAttribute("data-r7-settings-user-role-update-role") || "farm_staff", button.getAttribute("data-r7-settings-user-role-update-status") || "active");
+      });
+    });
     this.querySelectorAll("[data-r7-settings-audit-log-close-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsAuditLogModal(); });
     });
@@ -1288,7 +1328,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsApprovalModal(); });
     });
     this.querySelectorAll("[data-r7-settings-approval-approve-button]").forEach((button) => {
-      button.addEventListener("click", (event) => { event.preventDefault(); this._approveSettingsApprovalRequest(button.getAttribute("data-r7-settings-approval-approve-button")); });
+      button.addEventListener("click", (event) => { event.preventDefault(); this._approveSettingsApprovalRequest(button.getAttribute("data-r7-settings-approval-approve-button"), "approve"); });
+    });
+    this.querySelectorAll("[data-r7-settings-approval-reject-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._approveSettingsApprovalRequest(button.getAttribute("data-r7-settings-approval-reject-button"), "reject"); });
     });
     this.querySelectorAll("[data-r7-settings-greenhouse-create-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsGreenhouseCreateModal(); });
@@ -2356,7 +2399,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;">${selected.bucket} 버킷 수정 검토</strong><span style="color:#5d6f62;font-size:12px;font-weight:900;">선택 버킷</span></div>
       <p style="margin:0;color:#31523b;font-size:13px;line-height:1.55;">${selected.steps}</p>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">${[["admin", selected.admin], ["farm_owner", selected.owner], ["farm_staff", selected.staff]].map(([role, state]) => `<span data-r7-settings-permission-edit-role="${role}" style="border:1px solid #edf4ef;border-radius:10px;background:#fff;padding:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><b>${role}</b>${this._r7PermissionMatrixStateCell(state)}</span>`).join("")}</div>
-      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">변경 저장은 별도 승인 필요 작업에서 처리됩니다. 이 버튼은 권한 버킷을 선택해 운영자가 수정 범위를 검토하도록 여는 동작입니다.</p>
+      <button type="button" data-r7-settings-permission-change-request-button="${selected.bucket}" data-r7-common-card-button data-r7-common-button-order="icon-text" style="border:1px solid #badcc8;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">${this.renderR7CommonHaIcon("mdi:clipboard-plus-outline", { size: 15 })} 변경 요청 생성</button>
+      <p style="margin:0;color:#78927f;font-size:12px;line-height:1.5;">변경 저장은 별도 승인 필요 작업에서 처리됩니다. 변경 요청은 승인 필요 작업에 요청으로 저장되고 승인/반려 결과는 감사 로그에 남습니다.</p>
     </section>` : `<section data-r7-settings-permission-edit-panel="false" style="border:1px dashed #dcebe0;border-radius:14px;background:#fff;padding:12px;color:#78927f;font-size:12px;">수정할 버킷의 수정 버튼을 누르면 선택 버킷 검토 패널이 열립니다.</section>`;
     const body = `${this.renderR7CdaModalHeader({ icon: "mdi:table-key", title: "권한 매트릭스 표", subtitle: "역할별 권한 버킷과 세부 단계를 팝업 모달에서 확인합니다.", closeAttr: "data-r7-settings-permission-matrix-close-button" })}<main style="overflow:auto;min-height:0;display:grid;gap:12px;">${table}${editPanel}<p style="margin:0;color:#5d6f62;font-size:12px;line-height:1.55;">설정 저장/권한 변경은 별도 승인 작업입니다. 이 표는 현재 RBAC 기준을 read-only로 보여줍니다.</p></main><footer style="display:flex;justify-content:flex-end;border-top:1px solid #edf4ef;padding-top:10px;"><button type="button" data-r7-settings-permission-matrix-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaModalOverlay({ open: modal.open, zIndex: 31, attrs: `data-r7-settings-permission-matrix-cda-modal="true" data-r7-settings-permission-matrix-modal-open="true"`, body: this.renderR7CdaModalCard({ attrs: `data-r7-settings-permission-matrix-card`, width: "min(980px,96vw)", body }) });
@@ -2670,7 +2714,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
                 ${this.renderR7SettingsApprovalListModal()}
                 ${this.renderR7SettingsApprovalModal()}
                 ${this.renderR7CommonRecentPanel({
-                  kind: "settings-user-list-wide", title: "사용자 목록", icon: "mdi:account-group-outline", statusKey: "normal-ready", tone: "green", rowKind: "settings-user", limit: 5, extraAttrs: 'data-r7-record-section="settings-user-list-wide" data-r7-settings-users-card="user-list"', rows: userRows.map((row) => ({ ...row, extraAttrs: `data-r7-settings-user-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-user-ha-id="${row.haUserId || ''}"` }))
+                  kind: "settings-user-list-wide", title: "사용자 목록", icon: "mdi:account-group-outline", statusKey: "normal-ready", tone: "green", rowKind: "settings-user", limit: 5, extraAttrs: 'data-r7-record-section="settings-user-list-wide" data-r7-settings-users-card="user-list"', rows: userRows.map((row) => {
+                    const targetRole = row.at === "farm_staff" ? "farm_owner" : "farm_staff";
+                    const actionHtml = `<button type="button" data-r7-settings-user-role-update-button="${row.haUserId || ''}" data-r7-settings-user-role-update-role="${targetRole}" data-r7-settings-user-role-update-status="active" style="border:1px solid #badcc8;border-radius:8px;background:#fff;color:#31523b;padding:5px 8px;font-size:11px;font-weight:950;white-space:nowrap;">역할 변경</button>`;
+                    return { ...row, actionHtml, extraAttrs: `data-r7-settings-user-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-user-ha-id="${row.haUserId || ''}"` };
+                  })
                 })}
                 <span data-r7-settings-permission-bucket-card style="display:none;">조회 · 기록 · 전략 · 실행 · 안전 · 고급설정 사용자 승인 요청 승인 요청 허락 사용자 역할 상태 최근 활동 권한 요약</span>
               </section>`;

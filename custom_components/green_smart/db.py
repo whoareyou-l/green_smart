@@ -182,6 +182,53 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             KEY idx_settings_device_sensor_mapping_zone (farm_id, zone_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+        """
+        CREATE TABLE IF NOT EXISTS gs_users (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            ha_user_id VARCHAR(128) NOT NULL,
+            display_name VARCHAR(128) NOT NULL DEFAULT '',
+            role VARCHAR(64) NOT NULL DEFAULT 'farm_staff',
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            permission_summary VARCHAR(255) NOT NULL DEFAULT '조회 · 기록',
+            last_seen_at DATETIME NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_gs_users_ha_user (ha_user_id),
+            KEY idx_gs_users_role_status (role, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS gs_approval_requests (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            request_type VARCHAR(128) NOT NULL,
+            requester VARCHAR(128) NOT NULL DEFAULT '',
+            requested_role VARCHAR(64) NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'pending',
+            icon VARCHAR(64) NOT NULL DEFAULT 'mdi:account-clock-outline',
+            tone VARCHAR(32) NOT NULL DEFAULT 'amber',
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            decided_by VARCHAR(128) NULL,
+            decided_at DATETIME NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_gs_approval_requests_status (status, created_at),
+            KEY idx_gs_approval_requests_requester (requester, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS gs_audit_logs (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            actor VARCHAR(128) NOT NULL DEFAULT '',
+            action VARCHAR(128) NOT NULL DEFAULT '',
+            summary VARCHAR(255) NOT NULL DEFAULT '',
+            target_ref VARCHAR(128) NULL,
+            result VARCHAR(64) NOT NULL DEFAULT 'ok',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_gs_audit_logs_created (created_at),
+            KEY idx_gs_audit_logs_actor (actor, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
     )
     conn = await aiomysql.connect(
         host=cfg["host"],

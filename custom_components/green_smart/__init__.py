@@ -321,7 +321,7 @@ async def async_setup(hass, config):
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView, CentralCropInterlockSnapshotSyncView, CentralCropInterlockAnalyticsSummaryView
     from .rebuild_views import RebuildHomeContextView
     from .rebuild_settings_write_views import RebuildSettingsSnapshotView, RebuildSettingsGreenhouseCreateView, RebuildSettingsGreenhouseItemView, RebuildSettingsZoneCreateView, RebuildSettingsZoneItemView, RebuildSettingsDeviceSensorMappingView
-    from .rebuild_settings_views import RebuildSettingsUsersPermissionsView, RebuildSettingsApprovalRequestView, RebuildSettingsApprovalDecisionView
+    from .rebuild_settings_views import RebuildSettingsUsersPermissionsView, RebuildSettingsApprovalRequestView, RebuildSettingsApprovalDecisionView, RebuildSettingsPermissionChangeRequestView, RebuildSettingsUserRoleView
     from .rebuild_crop_records_views import RebuildCropRecordsHistoryView, RebuildCropRecordsWriteView
     from .rbac import GreenSmartAuthMeView, GreenSmartRoleAssignmentView
     from .zone_control_views import (
@@ -348,6 +348,11 @@ async def async_setup(hass, config):
             hass.http.register_view(RebuildSettingsZoneCreateView())
             hass.http.register_view(RebuildSettingsZoneItemView())
             hass.http.register_view(RebuildSettingsDeviceSensorMappingView())
+            hass.http.register_view(RebuildSettingsUsersPermissionsView())
+            hass.http.register_view(RebuildSettingsApprovalRequestView())
+            hass.http.register_view(RebuildSettingsApprovalDecisionView())
+            hass.http.register_view(RebuildSettingsPermissionChangeRequestView())
+            hass.http.register_view(RebuildSettingsUserRoleView())
             domain_data["_settings_views_registered"] = True
         _LOGGER.warning("green_smart schema bootstrap skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
         _LOGGER.warning("green_smart heavy DB-backed HTTP views skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
@@ -382,6 +387,8 @@ async def async_setup(hass, config):
         hass.http.register_view(RebuildSettingsUsersPermissionsView())
         hass.http.register_view(RebuildSettingsApprovalRequestView())
         hass.http.register_view(RebuildSettingsApprovalDecisionView())
+        hass.http.register_view(RebuildSettingsPermissionChangeRequestView())
+        hass.http.register_view(RebuildSettingsUserRoleView())
         hass.http.register_view(RebuildCropRecordsHistoryView())
         hass.http.register_view(RebuildCropRecordsWriteView())
         hass.http.register_view(GreenSmartAuthMeView())

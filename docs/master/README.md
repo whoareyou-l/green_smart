@@ -1,7 +1,7 @@
 # Green Smart 5대 마스터 문서
 
 > 기준일: `2026-06-27`
-> 기준 버전: `v1.14.49`
+> 기준 버전: `v1.14.50`
 > 목적: 뒤엉킨 Green Smart 코드와 문서를 **설계 기반(Design-Driven)** 으로 재정렬하고, 이후 모든 구현을 **문서 우선 + 수직 슬라이드(Vertical Slide)** 방식으로 진행하기 위한 최상위 마스터 문서 묶음.
 
 ## 0. 절대 원칙
@@ -94,7 +94,7 @@ VS-003은 과거 기준에서 `farm_staff`가 패널에서 상추 작기를 등�
 
 ## R5 Foundation Completion Baseline
 
-`v1.14.49`에서 R5 foundation closure를 완료했다.
+`v1.14.50`에서 R5 foundation closure를 완료했다.
 
 Reference:
 
@@ -121,7 +121,7 @@ question gates must use clarify tool
 
 ## R6-001 Crop Cycle Read-only Adapter
 
-`v1.14.49`에서 R6-001 Crop cycle read-only adapter를 완료했다.
+`v1.14.50`에서 R6-001 Crop cycle read-only adapter를 완료했다.
 
 Reference:
 
@@ -149,7 +149,7 @@ question gates must use clarify tool
 
 ## R6-002 Monitoring Read-only Adapter
 
-`v1.14.49`에서 R6-002 Monitoring read-only adapter를 완료했다.
+`v1.14.50`에서 R6-002 Monitoring read-only adapter를 완료했다.
 
 Reference:
 
@@ -181,7 +181,7 @@ question gates must use clarify tool
 
 ## R6-003 Safety/Interlock Read-only Adapter
 
-`v1.14.49`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
+`v1.14.50`에서 R6-003 Safety/Interlock read-only adapter를 완료했다.
 
 Reference:
 
@@ -212,7 +212,7 @@ question gates must use clarify tool
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.14.49`에서 R7-000 IA blueprint를 완료했다.
+`v1.14.50`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -237,7 +237,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.14.49`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.14.50`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -262,7 +262,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.14.49`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.14.50`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -286,7 +286,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.14.49`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.14.50`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -311,7 +311,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.14.49`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.14.50`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 

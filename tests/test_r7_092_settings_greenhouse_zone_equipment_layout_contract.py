@@ -41,9 +41,9 @@ def _fragment(html: str, marker: str, next_marker: str) -> str:
 
 
 def test_r7_092_version_surfaces_are_1_14_17():
-    assert '"version": "1.14.49"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.49"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.49"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.50"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.50"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.50"' in _read(REBUILD_PANEL)
 
 
 def test_r7_092_info_card_headers_have_common_status_badges():
