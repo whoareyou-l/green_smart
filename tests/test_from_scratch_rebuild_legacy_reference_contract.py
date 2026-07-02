@@ -114,4 +114,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-115 rebuilds Settings device/sensor mapping into image-like device/group/mapping cards and a mapping list.
     # R7-115/v1.14.50 adds device/group create modals that reuse the greenhouse-create common modal grammar.
     # R7-116/v1.14.50 wires Settings users-permissions cards to real approval/permission/user role APIs.
-    assert len(rebuild.splitlines()) < 4180
+    # R7-117 adds DB-backed reject/edit mutations for the selected Settings audit-log row.
+    assert len(rebuild.splitlines()) < 4210

@@ -158,11 +158,19 @@ def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]]
     ]
     audit_rows = [
         {
-            "label": row.get("actor") or "system",
+            "id": row.get("id"),
+            "label": row.get("action") or row.get("actor") or "감사 로그",
+            "actor": row.get("actor") or "system",
+            "action": row.get("action") or "audit",
             "meta": _fmt_time(row.get("created_at")),
+            "createdAt": _fmt_time(row.get("created_at")),
             "summary": row.get("summary") or row.get("action") or "감사 로그",
+            "target": row.get("target_ref") or "대상 미지정",
+            "targetRef": row.get("target_ref") or "",
+            "result": row.get("result") or "ok",
+            "status": row.get("result") or "ok",
             "icon": "mdi:account-check-outline",
-            "tone": "green" if row.get("result", "ok") == "ok" else "amber",
+            "tone": "green" if row.get("result", "ok") == "ok" else "red" if row.get("result") == "rejected" else "amber",
         }
         for row in audits
     ]
@@ -208,7 +216,7 @@ async def settings_users_permissions_response(hass, user: Any | None = None) -> 
     audits = await fetchall(
         hass,
         """
-        SELECT actor, action, summary, result, created_at
+        SELECT id, actor, action, summary, target_ref, result, created_at
         FROM gs_audit_logs
         ORDER BY created_at DESC, id DESC
         LIMIT 20
@@ -463,6 +471,68 @@ class RebuildSettingsApprovalDecisionView(HomeAssistantView):
         user = _ha_user_from_request(request)
         payload = await _json_payload(request)
         result = await approve_user_approval_request(hass, request_id, user, payload)
+        status_code = int(result.pop("status", 200))
+        if status_code != 200:
+            return web.json_response(result, status=status_code)
+        return self.json(result)
+
+
+async def update_settings_audit_log(hass, audit_id: str, user: Any | None, payload: dict[str, Any]) -> dict[str, Any]:
+    """Reject or edit the selected Settings audit-log row in gs_audit_logs."""
+    if fetchall is None or execute is None:
+        raise RuntimeError("green_smart db helpers unavailable outside package runtime")
+    actor_id = _ha_user_id(user)
+    actor_role, _source = await async_get_green_smart_user_role(hass, actor_id, is_ha_admin=_ha_user_is_admin(user))
+    if actor_role != "admin":
+        return {"ok": False, "reasonCode": "admin_required", "status": 403}
+    target_id = str(audit_id or "").strip()
+    if not target_id:
+        return {"ok": False, "reasonCode": "audit_id_required", "status": 400}
+    rows = await fetchall(
+        hass,
+        "SELECT id, actor, action, summary, target_ref, result FROM gs_audit_logs WHERE id=%s LIMIT 1",
+        (target_id,),
+    )
+    if not rows:
+        return {"ok": False, "reasonCode": "audit_log_not_found", "status": 404}
+    row = rows[0]
+    decision = str(payload.get("decision") or payload.get("operation") or "edit").strip().lower()
+    memo = str(payload.get("memo") or payload.get("summary") or "").strip()
+    if decision in {"reject", "rejected", "deny", "denied"}:
+        next_action = "audit_log_rejected"
+        next_result = "rejected"
+        next_summary = memo or f"거부됨: {row.get('summary') or row.get('action') or target_id}"
+    else:
+        next_action = "audit_log_edited"
+        next_result = "edited"
+        next_summary = memo or f"수정됨: {row.get('summary') or row.get('action') or target_id}"
+    await execute(
+        hass,
+        "UPDATE gs_audit_logs SET action=%s, summary=%s, result=%s WHERE id=%s",
+        (next_action, next_summary, next_result, target_id),
+    )
+    await execute(
+        hass,
+        """
+        INSERT INTO gs_audit_logs (actor, action, summary, target_ref, result)
+        VALUES (%s, %s, %s, %s, 'ok')
+        """,
+        (actor_id or "admin", f"settings_{next_action}", f"감사 로그 row {target_id} {('거부' if next_result == 'rejected' else '수정')}: {row.get('summary') or row.get('action') or ''}", target_id),
+    )
+    return {"ok": True, "auditId": target_id, "action": next_action, "result": next_result, "summary": next_summary, "settingsUsersPermissions": await settings_users_permissions_response(hass, user)}
+
+
+class RebuildSettingsAuditLogItemView(HomeAssistantView):
+    """PATCH /api/green_smart/rebuild/settings/audit-logs/{audit_id}."""
+
+    url = "/api/green_smart/rebuild/settings/audit-logs/{audit_id}"
+    name = "api:green_smart:rebuild:settings:audit_log_item"
+    requires_auth = True
+
+    async def patch(self, request: web.Request, audit_id: str) -> web.Response:
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        result = await update_settings_audit_log(hass, audit_id, user, await _json_payload(request))
         status_code = int(result.pop("status", 200))
         if status_code != 200:
             return web.json_response(result, status=status_code)

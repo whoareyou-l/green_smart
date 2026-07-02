@@ -26,14 +26,18 @@ def test_r7_083_audit_all_has_dedicated_cda_modal_route():
         '_openSettingsAuditLogModal',
         '_closeSettingsAuditLogModal',
         '_selectSettingsAuditLogRow',
+        '_updateSettingsAuditLogRow',
         'renderR7SettingsAuditLogModal()',
         'data-r7-settings-audit-log-button',
         'data-r7-settings-audit-log-close-button',
         'data-r7-settings-audit-log-list-item-button',
+        'data-r7-settings-audit-log-reject-button',
+        'data-r7-settings-audit-log-edit-button',
         'data-r7-settings-audit-log-cda-modal="true"',
         'data-r7-settings-audit-log-modal-open',
     ]:
         assert marker in source
+    assert 'REBUILD_SETTINGS_AUDIT_LOG_API_PREFIX = "green_smart/rebuild/settings/audit-logs/"' in source
 
 
 def test_r7_083_audit_all_button_no_longer_uses_only_generic_action():
@@ -43,6 +47,8 @@ def test_r7_083_audit_all_button_no_longer_uses_only_generic_action():
     assert '[data-r7-settings-audit-log-button]' in bind_block
     assert '[data-r7-settings-audit-log-close-button]' in bind_block
     assert '[data-r7-settings-audit-log-list-item-button]' in bind_block
+    assert '[data-r7-settings-audit-log-reject-button]' in bind_block
+    assert '[data-r7-settings-audit-log-edit-button]' in bind_block
 
 
 def test_r7_083_settings_audit_log_modal_uses_cda_completion_shape():
@@ -95,10 +101,17 @@ def test_r7_083_rendered_audit_all_modal_uses_cda_not_legacy_history_card():
         'data-r7-cda-detail-panel',
         'data-r7-cda-split-modal',
         'data-r7-settings-audit-log-detail-panel',
+        'data-r7-settings-audit-log-export',
+        'data-r7-settings-audit-log-reject-button="2"',
+        'data-r7-settings-audit-log-edit-button="2"',
         '권한 승인',
         '역할 변경',
+        '거부',
+        '수정',
     ]:
         assert marker in html
+    detail = html[html.index('data-r7-settings-audit-log-detail-panel'):html.index('전체 감사 로그') if '전체 감사 로그' in html else len(html)]
+    assert 'data-r7-settings-audit-log-close-button style' not in detail
     assert '히스토리를 불러오는 중입니다.' not in html
     assert 'data-r7-record-modal-loading' not in html
 
