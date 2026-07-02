@@ -9,14 +9,15 @@ from __future__ import annotations
 from typing import Any
 
 from ..db import fetchall
+from .legacy_adapters.zones import REBUILD_CROP_CONTEXT_ZONE_LEFT_JOIN, REBUILD_CROP_CONTEXT_ZONE_NAME_SELECT
 
 
 async def list_current_crop_cycle_rows(hass) -> list[dict[str, Any]]:
     """Return active crop cycles from legacy crop_seasons using target aliases."""
-    return await fetchall(hass, """
+    return await fetchall(hass, f"""
         SELECT
             s.zone_id AS zone_id,
-            COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zone_name,
+            {REBUILD_CROP_CONTEXT_ZONE_NAME_SELECT},
             s.id AS crop_cycle_id,
             s.id AS compatibility_crop_season_id,
             s.crop_type AS crop_type,
@@ -33,7 +34,7 @@ async def list_current_crop_cycle_rows(hass) -> list[dict[str, Any]]:
                 ELSE '생육 관찰'
             END AS growth_stage
         FROM crop_seasons s
-        LEFT JOIN zones z ON z.id = s.zone_id
+        {REBUILD_CROP_CONTEXT_ZONE_LEFT_JOIN}
         WHERE s.deleted_at IS NULL
         ORDER BY s.plant_date DESC, s.id DESC
     """)

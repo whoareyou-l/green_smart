@@ -12,3 +12,7 @@ LEGACY_TABLE_ZONES = "zones"
 CROP_SEASON_ZONE_NAME_SELECT = "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId"
 
 CROP_SEASON_ZONE_LEFT_JOIN = "LEFT JOIN zones z ON z.id = s.zone_id"
+
+REBUILD_CROP_CONTEXT_ZONE_NAME_SELECT = "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zone_name"
+
+REBUILD_CROP_CONTEXT_ZONE_LEFT_JOIN = "LEFT JOIN zones z ON z.id = s.zone_id"

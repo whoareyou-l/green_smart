@@ -7,6 +7,7 @@ LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
 SERVICE = ROOT / "custom_components/green_smart/services/rebuild_crop_context_service.py"
 REPO = ROOT / "custom_components/green_smart/repositories/rebuild_crop_context_repo.py"
+ZONE_ADAPTER = ROOT / "custom_components/green_smart/repositories/legacy_adapters/zones.py"
 VIEW = ROOT / "custom_components/green_smart/rebuild_views.py"
 DOC = ROOT / "docs/rebuild/r6-001-crop-cycle-readonly-adapter.md"
 R5_BASELINE = ROOT / "docs/rebuild/r5-foundation-completion-baseline.md"
@@ -27,11 +28,11 @@ def _load_service():
 
 
 def test_r6_001_version_surfaces_are_1_12_31():
-    assert '"version": "1.14.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.35"' in _read(REBUILD_PANEL)
     for path in (DOC, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.14.34" in _read(path)
+        assert "v1.14.35" in _read(path)
 
 
 def test_r6_001_document_declares_scope_after_r5_foundation():
@@ -86,15 +87,17 @@ def test_r6_001_service_exposes_explicit_adapter_markers_and_shape():
 
 def test_r6_001_repo_is_readonly_and_uses_aliases_without_migration_or_writes():
     text = _read(REPO)
+    zone_adapter = _read(ZONE_ADAPTER)
     for marker in (
         "async def list_current_crop_cycle_rows",
         "s.id AS crop_cycle_id",
         "s.id AS compatibility_crop_season_id",
         "s.zone_id AS zone_id",
         "FROM crop_seasons s",
-        "LEFT JOIN zones z",
+        "REBUILD_CROP_CONTEXT_ZONE_LEFT_JOIN",
     ):
         assert marker in text
+    assert "LEFT JOIN zones z" in zone_adapter
     forbidden = ("INSERT ", "UPDATE ", "DELETE ", "ALTER ", "CREATE TABLE", "DROP ", "hass.services", "async_call", "call_service")
     for marker in forbidden:
         assert marker not in text

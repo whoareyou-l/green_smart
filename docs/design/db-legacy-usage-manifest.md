@@ -1,6 +1,6 @@
 # DB Legacy Usage Manifest
 
-Version: `1.14.34`
+Version: `1.14.35`
 
 HA recorder tables are protected. This file is the DB-01 quarantine manifest for known direct Green Smart legacy table references. New direct references outside `db.py`, migrations, tests/docs, or future `legacy_adapters/*` must fail contract tests unless listed here intentionally as tracked migration debt.
 
@@ -53,7 +53,6 @@ HA recorder tables are protected. This file is the DB-01 quarantine manifest for
 - `repositories/crop_repo.py` -> `pest_surveys`
 - `repositories/crop_repo.py` -> `control_records`
 - `repositories/crop_repo.py` -> `control_pesticides`
-- `repositories/rebuild_crop_context_repo.py` -> `zones`
 - `repositories/rebuild_crop_context_repo.py` -> `crop_seasons`
 - `repositories/legacy_adapters/environment_telemetry.py` -> `sensor_readings`
 - `repositories/legacy_adapters/zones.py` -> `zones`
@@ -72,6 +71,8 @@ HA recorder tables are protected. This file is the DB-01 quarantine manifest for
 DB-02 adapter migration: `__init__.py` scheduler no longer queries `sensor_readings` directly; the remaining legacy telemetry zone lookup is quarantined in `repositories/legacy_adapters/environment_telemetry.py`.
 
 DB-02B zone adapter migration: `crop_repo.py` no longer embeds `LEFT JOIN zones`; crop-season zone-name fragments are quarantined in `repositories/legacy_adapters/zones.py`. Stale `config_flow.py -> zones` debt marker was removed because current `config_flow.py` no longer references `zones`.
+
+DB-02C rebuild crop context zone adapter migration: `rebuild_crop_context_repo.py` no longer embeds `LEFT JOIN zones`; rebuild crop-context zone-name fragments are quarantined in `repositories/legacy_adapters/zones.py`.
 
 - Do not add new markers casually; remove markers by moving access behind canonical repositories or `legacy_adapters/*`.
 - Product code must eventually stop writing to every listed legacy table.

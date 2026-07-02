@@ -6,6 +6,7 @@ MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
 REPO = ROOT / "custom_components/green_smart/repositories/rebuild_crop_context_repo.py"
+ZONE_ADAPTER = ROOT / "custom_components/green_smart/repositories/legacy_adapters/zones.py"
 SERVICE = ROOT / "custom_components/green_smart/services/rebuild_crop_context_service.py"
 INTERFACE_SPEC = ROOT / "docs/master/02-interface-spec.md"
 DB_SCHEMA = ROOT / "docs/master/03-database-schema.md"
@@ -28,11 +29,11 @@ def _load_module(path: Path, name: str):
 
 
 def test_rs013_version_surfaces_are_aligned_to_1_12_12():
-    assert '"version": "1.14.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.35"' in _read(REBUILD_PANEL)
     for path in (INTERFACE_SPEC, DB_SCHEMA, LEGACY_INVENTORY, PRODUCT_PLAN, DB_ADAPTER_DOC):
-        assert "v1.14.34" in _read(path)
+        assert "v1.14.35" in _read(path)
 
 
 def test_readonly_db_adapter_document_declares_legacy_physical_to_target_dto_boundary():
@@ -56,21 +57,24 @@ def test_readonly_db_adapter_document_declares_legacy_physical_to_target_dto_bou
 
 def test_repo_is_readonly_and_queries_legacy_physical_schema_with_target_aliases():
     text = _read(REPO)
+    zone_adapter = _read(ZONE_ADAPTER)
     required = (
         "RS-013 read-only adapter repository",
         "async def list_current_crop_cycle_rows",
         "FROM crop_seasons s",
-        "LEFT JOIN zones z",
+        "REBUILD_CROP_CONTEXT_ZONE_LEFT_JOIN",
+        "REBUILD_CROP_CONTEXT_ZONE_NAME_SELECT",
         "s.id AS crop_cycle_id",
         "s.id AS compatibility_crop_season_id",
         "s.crop_type AS crop_type",
-        "COALESCE(z.name",
         "WHERE s.deleted_at IS NULL",
         "ORDER BY s.plant_date DESC",
         "fetchall",
     )
     for marker in required:
         assert marker in text
+    assert "LEFT JOIN zones z" in zone_adapter
+    assert "COALESCE(z.name" in zone_adapter
     forbidden = ("INSERT ", "UPDATE ", "DELETE ", "execute(")
     for marker in forbidden:
         assert marker not in text
@@ -157,7 +161,7 @@ def test_master_docs_inventory_and_plan_promote_rs013_completion():
     assert "Rebuild home context API source adapter" in inventory
     for marker in (
         "Phase R4.9 — Read-only DB adapter",
-        "Status:** `v1.14.34`에서 legacy physical DB → crop_cycle/currentCrop DTO read-only adapter 완료",
+        "Status:** `v1.14.35`에서 legacy physical DB → crop_cycle/currentCrop DTO read-only adapter 완료",
         "No production route removal in RS-013",
         "No DB migration in RS-013",
     ):

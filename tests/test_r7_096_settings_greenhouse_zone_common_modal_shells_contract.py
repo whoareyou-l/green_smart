@@ -34,9 +34,9 @@ def _render_with_modal(open_call: str) -> str:
 
 
 def test_r7_096_version_surfaces_are_1_14_21():
-    assert '"version": "1.14.34"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.34"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.34"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.35"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.35"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.35"' in _read(REBUILD_PANEL)
 
 
 def test_r7_096_create_modals_use_record_common_modal_shell_not_direct_cda_overlay():
