@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.37";
+const REBUILD_VERSION = "1.14.38";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -73,16 +73,17 @@ const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
   executionEnabled: false,
 });
 
-const R7_SETTINGS_GREENHOUSE_LIST_COLUMNS = Object.freeze(["온실명", "위치", "설치유형", "승인범위", "상태"]);
+const R7_SETTINGS_GREENHOUSE_LIST_COLUMNS = Object.freeze(["온실명", "위치", "설치유형", "운영상태", "상태"]);
 const R7_SETTINGS_GREENHOUSE_DETAIL_FIELD_ORDER = Object.freeze([
   ["name", "온실명"],
   ["location", "위치"],
+  ["operatingStatus", "운영상태"],
   ["installType", "설치유형"],
-  ["approvalScope", "승인범위"],
+  ["timezone", "기본 시간대"],
   ["status", "상태"],
-  ["updatedAt", "수정시각"],
   ["createdAt", "생성시각"],
-  ["note", "메모"],
+  ["updatedAt", "수정시각"],
+  ["creationReason", "생성 사유"],
 ]);
 const R7_SETTINGS_ZONE_LIST_COLUMNS = Object.freeze(["구역명", "온실", "용도", "베드", "상태"]);
 const R7_SETTINGS_ZONE_DETAIL_FIELD_ORDER = Object.freeze([
@@ -1680,7 +1681,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         `<b>${row.name || '미등록'}</b>`,
         `<span>${row.location || '위치 미등록'}</span>`,
         `<span>${row.installType || '유형 미등록'}</span>`,
-        `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.approvalScope || '승인범위 미등록'}</span>`,
+        `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.operatingStatus || row.approvalScope || '운영상태 미등록'}</span>`,
         `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone || 'green')}">${row.statusLabel || row.status || '정상'}</span>`,
       ],
     })).join("");
@@ -1705,19 +1706,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   normalizeR7SettingsGreenhouseEntityRows(greenhouses = []) {
     const rows = Array.isArray(greenhouses) ? greenhouses : [];
-    return rows.map((greenhouse, index) => ({
-      id: greenhouse.id || `greenhouse-${index + 1}`,
-      name: greenhouse.name || greenhouse.greenhouseName || "대표 온실",
-      location: greenhouse.location || "위치 미등록",
-      installType: greenhouse.installType || greenhouse.install_type || "설치유형 미등록",
-      approvalScope: greenhouse.approvalScope || greenhouse.approval_scope || "승인범위 미등록",
-      status: greenhouse.status || "active",
-      statusLabel: greenhouse.status === "deleted" ? "삭제됨" : greenhouse.status === "inactive" ? "비활성" : "정상",
-      tone: greenhouse.status === "deleted" ? "red" : greenhouse.status === "inactive" ? "amber" : "green",
-      updatedAt: greenhouse.updatedAt || greenhouse.updated_at || "미등록",
-      createdAt: greenhouse.createdAt || greenhouse.created_at || "미등록",
-      note: greenhouse.note || "미등록",
-    }));
+    return rows.map((greenhouse, index) => {
+      const status = greenhouse.status || "active";
+      const operatingStatus = greenhouse.operatingStatus || greenhouse.operating_status || status || "active";
+      return {
+        id: greenhouse.id || `greenhouse-${index + 1}`,
+        name: greenhouse.name || greenhouse.greenhouseName || "대표 온실",
+        location: greenhouse.location || "위치 미등록",
+        installType: greenhouse.installType || greenhouse.install_type || "설치유형 미등록",
+        operatingStatus,
+        timezone: greenhouse.timezone || greenhouse.defaultTimezone || greenhouse.default_timezone || "Asia/Seoul",
+        status,
+        statusLabel: status === "deleted" ? "삭제됨" : status === "inactive" ? "비활성" : status === "maintenance" ? "점검중" : "정상",
+        tone: status === "deleted" ? "red" : status === "inactive" || status === "maintenance" ? "amber" : "green",
+        updatedAt: greenhouse.updatedAt || greenhouse.updated_at || "미등록",
+        createdAt: greenhouse.createdAt || greenhouse.created_at || "미등록",
+        creationReason: greenhouse.creationReason || greenhouse.creation_reason || greenhouse.note || "미등록",
+        note: greenhouse.note || greenhouse.creationReason || greenhouse.creation_reason || "미등록",
+      };
+    });
   }
 
   normalizeR7SettingsZoneEntityRows(zones = []) {

@@ -24,8 +24,8 @@ def _render_greenhouse_info_modal() -> str:
       panel.hass = {{ callApi: async () => ({{ ok: true }}) }};
       panel._settingsShortcutCdaModal = {{ open: true, kind: 'greenhouse-info' }};
       panel._settingsGreenhouseZoneData = {{ source: 'test', greenhouses: [
-        {{ id: 11, name: 'A동 온실', location: '화성 1농장', installType: '유리온실', approvalScope: '소유자 승인', status: 'active', note: '토마토 주력', createdAt: '2026-07-01 10:00:00', updatedAt: '2026-07-02 11:00:00' }},
-        {{ id: 12, name: 'B동 온실', location: '화성 2농장', installType: '비닐온실', approvalScope: '관리자 승인', status: 'active', note: '상추 실험', createdAt: '2026-07-01 12:00:00', updatedAt: '2026-07-02 12:00:00' }}
+        {{ id: 11, name: 'A동 온실', location: '화성 1농장', installType: '유리온실', operatingStatus: 'active', timezone: 'Asia/Seoul', status: 'active', creationReason: '토마토 주력', createdAt: '2026-07-01 10:00:00', updatedAt: '2026-07-02 11:00:00' }},
+        {{ id: 12, name: 'B동 온실', location: '화성 2농장', installType: '비닐온실', operatingStatus: 'maintenance', timezone: 'Asia/Seoul', status: 'active', creationReason: '상추 실험', createdAt: '2026-07-01 12:00:00', updatedAt: '2026-07-02 12:00:00' }}
       ], zones: [], deviceSensorMappings: [] }};
       console.log(JSON.stringify({{ html: panel.renderR7SettingsShortcutReviewLikeModal() }}));
     """
@@ -35,9 +35,9 @@ def _render_greenhouse_info_modal() -> str:
 
 
 def test_r7_099_version_surfaces_are_1_14_24():
-    assert '"version": "1.14.37"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.37"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.37"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.38"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.38"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.38"' in _read(REBUILD_PANEL)
 
 
 def test_r7_099_backend_has_greenhouse_update_delete_routes_and_soft_delete():
@@ -62,13 +62,17 @@ def test_r7_099_greenhouse_info_list_is_greenhouse_per_row_and_detail_not_review
     assert 'data-r7-settings-greenhouse-info-row="11"' in html
     assert 'data-r7-settings-greenhouse-info-row="12"' in html
     assert 'A동 온실' in html and 'B동 온실' in html
-    assert '화성 1농장' in html and '유리온실' in html and '소유자 승인' in html
+    assert '화성 1농장' in html and '유리온실' in html and 'active' in html
     assert '선택 항목 상세' in html
     assert '선택 항목 검토' not in html
     assert 'data-r7-settings-greenhouse-info-detail-panel' in html
     assert 'data-r7-settings-greenhouse-detail-field="location"' in html
+    assert 'data-r7-settings-greenhouse-detail-field="operatingStatus"' in html
     assert 'data-r7-settings-greenhouse-detail-field="installType"' in html
-    assert 'data-r7-settings-greenhouse-detail-field="approvalScope"' in html
+    assert 'data-r7-settings-greenhouse-detail-field="timezone"' in html
+    assert 'data-r7-settings-greenhouse-detail-field="creationReason"' in html
+    assert 'data-r7-settings-greenhouse-detail-field="approvalScope"' not in html
+    assert '승인범위' not in html
     assert '토마토 주력' in html
 
 
