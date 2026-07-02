@@ -50,9 +50,9 @@ def _section(html: str, key: str) -> str:
 
 
 def test_r7_105_version_surfaces_are_1_14_30():
-    assert '"version": "1.14.30"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.30"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.30"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.31"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.31"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.31"' in _read(REBUILD_PANEL)
 
 
 def test_r7_105_zone_create_header_has_product_ready_copy_not_internal_settings_trace():
@@ -85,19 +85,21 @@ def test_r7_105_basic_info_starts_with_greenhouse_fk_select_then_auto_zone_name_
     assert 'readonly' in re.search(r'<input name="name".*?>', basic, re.S).group(0)
 
 
-def test_r7_105_zone_purpose_dropdown_has_default_and_detailed_operator_options():
+def test_r7_105_zone_purpose_dropdown_stores_korean_operator_labels_not_english_codes():
     html = _render_zone_create_modal()
     basic = _section(html, 'basic-info')
     purpose_select = re.search(r'<select name="purpose".*?</select>', basic, re.S).group(0)
-    for value, label in [
-        ('cultivation', '재배 구역'),
-        ('nursery', '육묘 구역'),
-        ('office', '사무 구역'),
-        ('experiment', '실험 구역'),
-        ('storage', '자재 보관 구역'),
-        ('quarantine', '격리·검역 구역'),
+    for label in [
+        '재배 구역',
+        '육묘 구역',
+        '사무 구역',
+        '실험 구역',
+        '자재 보관 구역',
+        '격리·검역 구역',
     ]:
-        assert re.search(rf'value="{value}"[^>]*>{label}', purpose_select)
+        assert re.search(rf'value="{label}"[^>]*>{label}', purpose_select)
+    for stale_code in ['cultivation', 'nursery', 'office', 'experiment', 'storage', 'quarantine']:
+        assert f'value="{stale_code}"' not in purpose_select
     assert 'value="재배"' not in purpose_select
     assert 'name="purpose"' in purpose_select
 

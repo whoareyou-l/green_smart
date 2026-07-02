@@ -52,6 +52,8 @@
 격리·검역 구역
 ```
 
+DB `green_smart_settings_zones.purpose`에는 내부 영문 코드가 아니라 운영자 표시명과 동일한 한국어 라벨을 저장한다. 이전 UI에서 들어온 `cultivation`, `nursery`, `office`, `experiment`, `storage`, `quarantine` 값은 저장 직전 각각 `재배 구역`, `육묘 구역`, `사무 구역`, `실험 구역`, `자재 보관 구역`, `격리·검역 구역`으로 정규화한다.
+
 ## 구역 구성
 
 ```text

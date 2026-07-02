@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.30";
+const REBUILD_VERSION = "1.14.31";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2017,12 +2017,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       return { value: id, label: name, attrs: `data-next-zone-name="${this._r7SettingsNextZoneName(greenhouse, settingsZones)}"` };
     });
     const purposeOptions = [
-      { value: "cultivation", label: "재배 구역" },
-      { value: "nursery", label: "육묘 구역" },
-      { value: "office", label: "사무 구역" },
-      { value: "experiment", label: "실험 구역" },
-      { value: "storage", label: "자재 보관 구역" },
-      { value: "quarantine", label: "격리·검역 구역" },
+      { value: "재배 구역", label: "재배 구역" },
+      { value: "육묘 구역", label: "육묘 구역" },
+      { value: "사무 구역", label: "사무 구역" },
+      { value: "실험 구역", label: "실험 구역" },
+      { value: "자재 보관 구역", label: "자재 보관 구역" },
+      { value: "격리·검역 구역", label: "격리·검역 구역" },
     ];
     const nextZoneName = this._r7SettingsNextZoneName(selectedGreenhouse, settingsZones);
     const sections = [

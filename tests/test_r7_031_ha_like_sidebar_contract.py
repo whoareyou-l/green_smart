@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_031_version_surfaces_are_1_12_65():
-    assert '"version": "1.14.30"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.30"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.30"' in _read(REBUILD_PANEL)
-    assert "v1.14.30" in _read(DOC)
+    assert '"version": "1.14.31"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.31"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.31"' in _read(REBUILD_PANEL)
+    assert "v1.14.31" in _read(DOC)
 
 
 def test_r7_031_doc_defines_ha_like_sidebar_contract():

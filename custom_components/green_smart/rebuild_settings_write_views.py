@@ -34,6 +34,28 @@ def _int(payload: dict[str, Any], *keys: str, default: int = 0) -> int:
     return default
 
 
+ZONE_PURPOSE_LABELS = {
+    "cultivation": "재배 구역",
+    "nursery": "육묘 구역",
+    "office": "사무 구역",
+    "experiment": "실험 구역",
+    "storage": "자재 보관 구역",
+    "quarantine": "격리·검역 구역",
+    "재배": "재배 구역",
+    "재배 구역": "재배 구역",
+    "육묘 구역": "육묘 구역",
+    "사무 구역": "사무 구역",
+    "실험 구역": "실험 구역",
+    "자재 보관 구역": "자재 보관 구역",
+    "격리·검역 구역": "격리·검역 구역",
+}
+
+
+def _zone_purpose_label(payload: dict[str, Any]) -> str:
+    raw = _str(payload, "purpose", "zonePurpose", default="재배 구역")
+    return ZONE_PURPOSE_LABELS.get(raw, raw if raw.endswith("구역") else "재배 구역")
+
+
 async def _settings_payload(request: web.Request) -> dict[str, Any]:
     try:
         payload = await request.json()
@@ -165,7 +187,7 @@ async def create_settings_zone(hass, payload: dict[str, Any], actor: str = "oper
         ON DUPLICATE KEY UPDATE
             purpose = VALUES(purpose), area = VALUES(area), bed_count = VALUES(bed_count), note = VALUES(note),
             status = 'active', updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
-        """, (farm_id, _int(payload, "greenhouseId", "greenhouse_id", default=0) or None, name, _str(payload, "purpose", default="재배"), _str(payload, "area"), _int(payload, "bedCount", "bed_count"), _str(payload, "note"), actor, actor))
+        """, (farm_id, _int(payload, "greenhouseId", "greenhouse_id", default=0) or None, name, _zone_purpose_label(payload), _str(payload, "area"), _int(payload, "bedCount", "bed_count"), _str(payload, "note"), actor, actor))
     rows = await list_settings_zones(hass, farm_id)
     return next((row for row in rows if row["name"] == name), rows[0] if rows else {"name": name})
 
