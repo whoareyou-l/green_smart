@@ -93,6 +93,39 @@ def _zone_bed_label(value: Any) -> str:
     return f"{text}개" if text.replace(".", "", 1).isdigit() else text
 
 
+GREENHOUSE_OPERATING_STATUS_LABELS = {
+    "active": "운영중",
+    "운영중": "운영중",
+    "standby": "대기",
+    "대기": "대기",
+    "maintenance": "점검중",
+    "점검중": "점검중",
+    "inactive": "비활성",
+    "비활성": "비활성",
+}
+GREENHOUSE_STATUS_LABELS = {
+    "active": "정상",
+    "normal": "정상",
+    "정상": "정상",
+    "inactive": "비활성",
+    "비활성": "비활성",
+    "deleted": "삭제됨",
+    "삭제됨": "삭제됨",
+}
+
+
+def _greenhouse_operating_status_label(payload: dict[str, Any] | None = None, *keys: str, default: str = "운영중") -> str:
+    payload = payload or {}
+    raw = _str(payload, *(keys or ("operatingStatus", "operating_status")), default=default)
+    return GREENHOUSE_OPERATING_STATUS_LABELS.get(raw, GREENHOUSE_OPERATING_STATUS_LABELS.get(raw.lower(), raw or default))
+
+
+def _greenhouse_status_label(payload: dict[str, Any] | None = None, *keys: str, default: str = "정상") -> str:
+    payload = payload or {}
+    raw = _str(payload, *(keys or ("status", "state")), default=default)
+    return GREENHOUSE_STATUS_LABELS.get(raw, GREENHOUSE_STATUS_LABELS.get(raw.lower(), raw or default))
+
+
 async def _settings_payload(request: web.Request) -> dict[str, Any]:
     try:
         payload = await request.json()
@@ -108,12 +141,12 @@ def _greenhouse_dto(row: dict[str, Any]) -> dict[str, Any]:
         "name": row.get("name") or "제1온실",
         "location": row.get("location") or "",
         "installType": row.get("install_type") or "",
-        "operatingStatus": row.get("operating_status") or row.get("status") or "active",
+        "operatingStatus": _greenhouse_operating_status_label({"operatingStatus": row.get("operating_status") or row.get("status")}),
         "timezone": row.get("timezone") or "Asia/Seoul",
         "approvalScope": row.get("approval_scope") or "",
         "note": row.get("note") or row.get("creation_reason") or "",
         "creationReason": row.get("creation_reason") or row.get("note") or "",
-        "status": row.get("status") or "active",
+        "status": _greenhouse_status_label({"status": row.get("status")}),
         "createdAt": row.get("created_at"),
         "updatedAt": row.get("updated_at"),
     }
@@ -161,7 +194,7 @@ async def list_settings_greenhouses(hass, farm_id: int = 1) -> list[dict[str, An
     rows = await fetchall(hass, """
         SELECT id, farm_id, name, location, operating_status, install_type, timezone, approval_scope, note, creation_reason, status, created_at, updated_at
         FROM green_smart_settings_greenhouses
-        WHERE farm_id = %s AND status <> 'deleted'
+        WHERE farm_id = %s AND status NOT IN ('삭제됨', 'deleted')
         ORDER BY updated_at DESC, id DESC
         """, (farm_id,))
     return [_greenhouse_dto(row) for row in rows]
@@ -172,23 +205,24 @@ async def create_settings_greenhouse(hass, payload: dict[str, Any], actor: str =
     creation_reason = _str(payload, "creationReason", "creation_reason", "note")
     await execute(hass, """
         INSERT INTO green_smart_settings_greenhouses
-            (farm_id, name, location, operating_status, install_type, timezone, approval_scope, note, creation_reason, created_by, updated_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (farm_id, name, location, operating_status, install_type, timezone, approval_scope, note, creation_reason, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             location = VALUES(location), operating_status = VALUES(operating_status),
             install_type = VALUES(install_type), timezone = VALUES(timezone), approval_scope = VALUES(approval_scope),
-            note = VALUES(note), creation_reason = VALUES(creation_reason), status = 'active',
+            note = VALUES(note), creation_reason = VALUES(creation_reason), status = VALUES(status),
             updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
         """, (
             farm_id,
             name,
             _str(payload, "location"),
-            _str(payload, "operatingStatus", "operating_status", default="active"),
+            _greenhouse_operating_status_label(payload, "operatingStatus", "operating_status", default="운영중"),
             _str(payload, "installType", "install_type"),
             _str(payload, "timezone", "defaultTimezone", default="Asia/Seoul"),
             _str(payload, "approvalScope", "approval_scope"),
             creation_reason,
             creation_reason,
+            _greenhouse_status_label(payload, "status", "state", default="정상"),
             actor,
             actor,
         ))
@@ -202,17 +236,18 @@ async def update_settings_greenhouse(hass, greenhouse_id: int, payload: dict[str
         UPDATE green_smart_settings_greenhouses
         SET name = %s, location = %s, operating_status = %s, install_type = %s, timezone = %s,
             approval_scope = %s, note = %s, creation_reason = %s,
-            status = 'active', updated_by = %s, updated_at = CURRENT_TIMESTAMP
+            status = %s, updated_by = %s, updated_at = CURRENT_TIMESTAMP
         WHERE farm_id = %s AND id = %s
         """, (
             _str(payload, "name", "greenhouseName", default="제1온실"),
             _str(payload, "location"),
-            _str(payload, "operatingStatus", "operating_status", default="active"),
+            _greenhouse_operating_status_label(payload, "operatingStatus", "operating_status", default="운영중"),
             _str(payload, "installType", "install_type"),
             _str(payload, "timezone", "defaultTimezone", default="Asia/Seoul"),
             _str(payload, "approvalScope", "approval_scope"),
             creation_reason,
             creation_reason,
+            _greenhouse_status_label(payload, "status", "state", default="정상"),
             actor,
             farm_id,
             greenhouse_id,
@@ -223,11 +258,10 @@ async def update_settings_greenhouse(hass, greenhouse_id: int, payload: dict[str
 
 async def delete_settings_greenhouse(hass, greenhouse_id: int, actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
     await execute(hass, """
-        UPDATE green_smart_settings_greenhouses
-        SET status = 'deleted', updated_by = %s, updated_at = CURRENT_TIMESTAMP
+        DELETE FROM green_smart_settings_greenhouses
         WHERE farm_id = %s AND id = %s
-        """, (actor, farm_id, greenhouse_id))
-    return {"id": greenhouse_id, "status": "deleted"}
+        """, (farm_id, greenhouse_id))
+    return {"id": greenhouse_id, "status": "삭제됨", "deleted": True}
 
 
 async def list_settings_zones(hass, farm_id: int = 1) -> list[dict[str, Any]]:

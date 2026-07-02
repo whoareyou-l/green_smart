@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_version_surfaces_are_1_14_37():
-    assert '"version": "1.14.40"' in _read(MANIFEST)
-    assert 'REBUILD_VERSION = "1.14.40"' in _read(PANEL)
-    assert 'const VERSION = "1.14.40"' in _read(LEGACY_PANEL)
+    assert '"version": "1.14.41"' in _read(MANIFEST)
+    assert 'REBUILD_VERSION = "1.14.41"' in _read(PANEL)
+    assert 'const VERSION = "1.14.41"' in _read(LEGACY_PANEL)
 
 
 def test_db_pool_targets_dedicated_green_smart_schema_not_homeassistant_db_name():
@@ -34,7 +34,7 @@ def test_minimal_settings_schema_creates_green_smart_modal_tables_only():
     assert "USE `green_smart`" in db
     assert "CREATE TABLE IF NOT EXISTS green_smart_settings_greenhouses" in db
     for column in (
-        "operating_status VARCHAR(32) NOT NULL DEFAULT 'active'",
+        "operating_status VARCHAR(32) NOT NULL DEFAULT '운영중'",
         "timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Seoul'",
         "creation_reason TEXT NULL",
     ):

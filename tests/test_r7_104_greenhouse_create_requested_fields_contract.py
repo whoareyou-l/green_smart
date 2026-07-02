@@ -31,9 +31,9 @@ def _render_greenhouse_create_modal() -> str:
 
 
 def test_r7_104_version_surfaces_are_1_14_29():
-    assert '"version": "1.14.40"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.40"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.40"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.41"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.41"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.41"' in _read(REBUILD_PANEL)
 
 
 def test_r7_104_greenhouse_create_basic_info_has_only_name_and_location_inputs():
@@ -67,7 +67,7 @@ def test_r7_104_greenhouse_create_operation_standard_has_three_selects_in_order(
 def test_r7_104_dropdown_options_are_operator_ready_and_install_type_is_nuc_only():
     html = _render_greenhouse_create_modal()
     operation = re.search(r'data-r7-settings-create-section="operation-standard".*?</fieldset>', html, re.S).group(0)
-    for value, label in [('active', '운영중'), ('standby', '대기'), ('maintenance', '점검중'), ('inactive', '비활성')]:
+    for value, label in [('운영중', '운영중'), ('대기', '대기'), ('점검중', '점검중'), ('비활성', '비활성')]:
         assert re.search(rf'value="{value}"[^>]*>{label}', operation)
     assert 'name="installType"' in operation
     install_select = re.search(r'<select name="installType".*?</select>', operation, re.S).group(0)

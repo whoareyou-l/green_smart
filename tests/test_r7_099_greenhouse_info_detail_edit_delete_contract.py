@@ -35,12 +35,12 @@ def _render_greenhouse_info_modal() -> str:
 
 
 def test_r7_099_version_surfaces_are_1_14_24():
-    assert '"version": "1.14.40"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.40"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.40"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.41"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.41"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.41"' in _read(REBUILD_PANEL)
 
 
-def test_r7_099_backend_has_greenhouse_update_delete_routes_and_soft_delete():
+def test_r7_099_backend_has_greenhouse_update_delete_routes_and_hard_delete():
     views = _read(VIEWS)
     for marker in [
         "update_settings_greenhouse",
@@ -54,7 +54,8 @@ def test_r7_099_backend_has_greenhouse_update_delete_routes_and_soft_delete():
     ]:
         assert marker in views
     assert "WHERE farm_id = %s AND id = %s" in views
-    assert "status = 'deleted'" in views
+    assert "DELETE FROM green_smart_settings_greenhouses" in views
+    assert "status = 'deleted'" not in views
 
 
 def test_r7_099_greenhouse_info_list_is_greenhouse_per_row_and_detail_not_review():
@@ -84,13 +85,15 @@ def test_r7_099_greenhouse_info_detail_has_edit_delete_buttons():
     assert '>삭제<' in html
 
 
-def test_r7_099_frontend_handlers_call_patch_delete_then_snapshot_reload():
+def test_r7_099_frontend_handlers_open_edit_modal_or_delete_then_snapshot_reload():
     source = _read(REBUILD_PANEL)
     for marker in [
         "_editSettingsGreenhouse",
         "_deleteSettingsGreenhouse",
-        "REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH + `/${greenhouseId}`",
-        'this.hass.callApi("PATCH"',
+        'mode: "edit"',
+        "greenhouseId",
+        'const method = isEdit ? "PATCH"',
+        'const path = isEdit ? `${REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH}/${modal.greenhouseId}`',
         'this.hass.callApi(["DEL", "ETE"].join("")',
         "await this._loadSettingsGreenhouseZoneData()",
         "data-r7-settings-greenhouse-edit-button",

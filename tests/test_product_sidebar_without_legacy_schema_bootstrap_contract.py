@@ -13,9 +13,9 @@ def _read(path: Path) -> str:
 
 
 def test_version_surfaces_are_1_14_36():
-    assert '"version": "1.14.40"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.40"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.40"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.41"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.41"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.41"' in _read(REBUILD_PANEL)
 
 
 def test_schema_bootstrap_is_disabled_by_default_but_explicitly_opt_in():

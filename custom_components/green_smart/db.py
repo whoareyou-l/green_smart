@@ -129,13 +129,13 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             farm_id BIGINT NOT NULL DEFAULT 1,
             name VARCHAR(128) NOT NULL,
             location VARCHAR(255) NOT NULL DEFAULT '',
-            operating_status VARCHAR(32) NOT NULL DEFAULT 'active',
+            operating_status VARCHAR(32) NOT NULL DEFAULT '운영중',
             install_type VARCHAR(128) NOT NULL DEFAULT '',
             timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Seoul',
             approval_scope VARCHAR(128) NOT NULL DEFAULT '',
             note TEXT NULL,
             creation_reason TEXT NULL,
-            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
             created_by VARCHAR(128) NULL,
             updated_by VARCHAR(128) NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -216,10 +216,18 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
                     if await cur.fetchone():
                         continue
                 await cur.execute(rendered)
-            await _ensure_column(cur, "green_smart_settings_greenhouses", "operating_status", "operating_status VARCHAR(32) NOT NULL DEFAULT 'active' AFTER location")
+            await _ensure_column(cur, "green_smart_settings_greenhouses", "operating_status", "operating_status VARCHAR(32) NOT NULL DEFAULT '운영중' AFTER location")
             await _ensure_column(cur, "green_smart_settings_greenhouses", "timezone", "timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Seoul' AFTER install_type")
             await _ensure_column(cur, "green_smart_settings_greenhouses", "creation_reason", "creation_reason TEXT NULL AFTER note")
             await _ensure_index(cur, "green_smart_settings_greenhouses", "idx_settings_greenhouse_operating_status", "(farm_id, operating_status)")
+            await cur.execute("ALTER TABLE green_smart_settings_greenhouses MODIFY operating_status VARCHAR(32) NOT NULL DEFAULT '운영중'")
+            await cur.execute("ALTER TABLE green_smart_settings_greenhouses MODIFY status VARCHAR(32) NOT NULL DEFAULT '정상'")
+            await cur.execute("""
+                UPDATE green_smart_settings_greenhouses
+                SET operating_status = CASE operating_status WHEN 'active' THEN '운영중' WHEN 'standby' THEN '대기' WHEN 'maintenance' THEN '점검중' WHEN 'inactive' THEN '비활성' ELSE operating_status END,
+                    status = CASE status WHEN 'active' THEN '정상' WHEN 'inactive' THEN '비활성' WHEN 'deleted' THEN '삭제됨' ELSE status END
+                WHERE operating_status IN ('active', 'standby', 'maintenance', 'inactive') OR status IN ('active', 'inactive', 'deleted')
+            """)
             await cur.execute("ALTER TABLE green_smart_settings_zones MODIFY status VARCHAR(32) NOT NULL DEFAULT '정상'")
             await cur.execute("""
                 UPDATE green_smart_settings_zones
@@ -260,7 +268,7 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             install_type VARCHAR(128) NOT NULL DEFAULT '',
             approval_scope VARCHAR(128) NOT NULL DEFAULT '',
             note TEXT NULL,
-            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
             created_by VARCHAR(128) NULL,
             updated_by VARCHAR(128) NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

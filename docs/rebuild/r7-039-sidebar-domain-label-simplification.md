@@ -1,6 +1,6 @@
 # R7-039 Sidebar Domain Label Simplification
 
-> 기준 버전: `v1.14.40`
+> 기준 버전: `v1.14.41`
 > Status: R7-039 planned
 > Purpose: 사용자가 요청한 사이드바/도메인 표시명을 더 짧은 제어 중심 명칭으로 변경한다.
 

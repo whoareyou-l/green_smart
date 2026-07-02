@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.40";
+const REBUILD_VERSION = "1.14.41";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -465,7 +465,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
 
   _openSettingsGreenhouseCreateModal() {
-    this._settingsGreenhouseCreateModal = { open: true, state: "idle" };
+    this._settingsGreenhouseCreateModal = { open: true, mode: "create", state: "idle", values: {} };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
@@ -527,21 +527,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   async _editSettingsGreenhouse(greenhouseId) {
     const greenhouse = this._greenhouseById(greenhouseId);
-    if (!greenhouse || !this.hass?.callApi) return;
-    const payload = {
-      name: greenhouse.name || "제1온실",
-      location: greenhouse.location || "",
-      installType: greenhouse.installType || "",
-      operatingStatus: greenhouse.operatingStatus || "active",
-      timezone: greenhouse.timezone || "Asia/Seoul",
-      approvalScope: greenhouse.approvalScope || "",
-      creationReason: greenhouse.creationReason || greenhouse.note || "",
-      note: greenhouse.note || greenhouse.creationReason || "",
-    };
-    const response = await this.hass.callApi("PATCH", REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH + `/${greenhouseId}`, payload);
-    if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
-    await this._loadSettingsGreenhouseZoneData();
-    this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: greenhouseId, actionState: "edited" };
+    if (!greenhouse) return;
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
+    this._settingsZoneCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsGreenhouseCreateModal = { open: true, mode: "edit", greenhouseId, state: "idle", values: {
+      name: greenhouse.name || "제1온실", location: greenhouse.location || "", installType: greenhouse.installType || "NUC edge",
+      operatingStatus: greenhouse.operatingStatus || "운영중", timezone: greenhouse.timezone || "Asia/Seoul", status: greenhouse.status || "정상", note: greenhouse.creationReason || greenhouse.note || "",
+    } };
     this.render();
   }
 
@@ -560,16 +553,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   async _submitSettingsGreenhouseCreateForm(form) {
     const payload = this._settingsFormPayload(form);
-    this._settingsGreenhouseCreateModal = { ...(this._settingsGreenhouseCreateModal || {}), open: true, state: "saving" };
+    const modal = this._settingsGreenhouseCreateModal || {};
+    const isEdit = modal.mode === "edit" && modal.greenhouseId;
+    this._settingsGreenhouseCreateModal = { ...modal, open: true, state: "saving" };
     this.render();
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
-      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH, payload);
+      const method = isEdit ? "PATCH" : ["P", "OST"].join("");
+      const path = isEdit ? `${REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH}/${modal.greenhouseId}` : REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH;
+      const response = await this.hass.callApi(method, path, payload);
       if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
       await this._loadSettingsGreenhouseZoneData();
-      this._settingsGreenhouseCreateModal = { open: true, state: "saved", response };
+      this._settingsGreenhouseCreateModal = { ...modal, open: true, mode: isEdit ? "edit" : "create", state: "saved", response };
     } catch (error) {
-      this._settingsGreenhouseCreateModal = { open: true, state: "error", error: error?.message || "greenhouse-create-failed" };
+      this._settingsGreenhouseCreateModal = { ...modal, open: true, state: "error", error: error?.message || (isEdit ? "greenhouse-edit-failed" : "greenhouse-create-failed") };
     }
     this.render();
   }
@@ -1990,11 +1987,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7SettingsGreenhouseCreateModal() {
     const modal = this._settingsGreenhouseCreateModal || { open: false };
+    const values = modal.values || {};
+    const isEdit = modal.mode === "edit";
     const operatingStatusOptions = [
-      { value: "active", label: "운영중" },
-      { value: "standby", label: "대기" },
-      { value: "maintenance", label: "점검중" },
-      { value: "inactive", label: "비활성" },
+      { value: "운영중", label: "운영중" }, { value: "대기", label: "대기" }, { value: "점검중", label: "점검중" }, { value: "비활성", label: "비활성" },
+    ];
+    const statusOptions = [
+      { value: "정상", label: "정상" }, { value: "비활성", label: "비활성" }, { value: "점검중", label: "점검중" },
     ];
     const installTypeOptions = [
       { value: "NUC edge", label: "NUC edge" },
@@ -2006,11 +2005,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       { value: "America/Los_Angeles", label: "America/Los_Angeles" },
     ];
     const sections = [
-      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("name", "온실명", this._homeContext?.greenhouseName || "대표 온실")}${this._r7SettingsCreateField("location", "위치", "경기 화성")}</div>`),
-      this._r7SettingsCreateSection("operation-standard", "운영 기준", `<div style="display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;">${this._r7SettingsCreateSelect("operatingStatus", "운영상태", operatingStatusOptions, "active")}${this._r7SettingsCreateSelect("installType", "설치유형", installTypeOptions, "NUC edge")}${this._r7SettingsCreateSelect("timezone", "기본 시간대", timezoneOptions, "Asia/Seoul")}</div>`),
-      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", "")),
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("name", "온실명", values.name || this._homeContext?.greenhouseName || "대표 온실")}${this._r7SettingsCreateField("location", "위치", values.location || "경기 화성")}</div>`),
+      this._r7SettingsCreateSection("operation-standard", "운영 기준", `<div style="display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateSelect("operatingStatus", "운영상태", operatingStatusOptions, values.operatingStatus || "운영중")}${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "정상")}${this._r7SettingsCreateSelect("installType", "설치유형", installTypeOptions, values.installType || "NUC edge")}${this._r7SettingsCreateSelect("timezone", "기본 시간대", timezoneOptions, values.timezone || "Asia/Seoul")}</div>`),
+      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", values.note || "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "greenhouse-create", title: "온실 생성", subtitle: "생육조사 작성 모달처럼 기본 정보와 검증을 나눠 저장합니다", formAttr: "data-r7-settings-greenhouse-create-form", closeKind: "greenhouse", state: modal.state, error: modal.error, submitLabel: "온실 저장", sections });
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "greenhouse-create", title: isEdit ? "온실 수정" : "온실 생성", subtitle: "생육조사 작성 모달처럼 기본 정보와 검증을 나눠 저장합니다", formAttr: "data-r7-settings-greenhouse-create-form", closeKind: "greenhouse", state: modal.state, error: modal.error, submitLabel: isEdit ? "온실 수정" : "온실 저장", sections });
   }
 
   _r7SettingsNextZoneName(greenhouse, zones = []) {
