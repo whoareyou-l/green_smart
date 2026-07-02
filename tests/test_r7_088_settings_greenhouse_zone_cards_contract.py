@@ -35,20 +35,20 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_088_version_surfaces_are_current():
-    assert '"version": "1.14.16"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.16"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.16"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.17"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.17"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.17"' in _read(REBUILD_PANEL)
 
 
 def test_r7_088_greenhouse_zone_subtab_keeps_reference_card_foundation_after_simplification():
     html = _render_greenhouse_zones()
     assert 'data-r7-settings-greenhouse-zones' in html
-    assert 'data-r7-settings-greenhouse-zones-layout="info-record-common-list"' in html
-    for card in ['greenhouse-basic-info', 'zone-composition', 'zone-create']:
+    assert 'data-r7-settings-greenhouse-zones-layout="info-create-equipment-list"' in html
+    for card in ['greenhouse-basic-info', 'zone-basic-info', 'equipment-composition', 'zone-create']:
         assert f'data-r7-settings-greenhouse-summary-card="{card}"' in html
     for legacy_marker in ['data-r7-settings-greenhouse-card="greenhouse-profile"', 'data-r7-settings-greenhouse-card="zone-count"']:
         assert legacy_marker in html
-    for phrase in ['온실 기본 정보', '구역 구성', '구역 생성', '구역 목록']:
+    for phrase in ['온실 기본 정보', '구역 기본 정보', '장비 구성', '구역 생성', '구역 목록']:
         assert phrase in html
 
 

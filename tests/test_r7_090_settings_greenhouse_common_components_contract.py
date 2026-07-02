@@ -35,9 +35,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_090_version_surfaces_are_1_14_15():
-    assert '"version": "1.14.16"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.16"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.16"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.17"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.17"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.17"' in _read(REBUILD_PANEL)
 
 
 def test_r7_090_settings_info_cards_use_new_common_component():
@@ -46,9 +46,10 @@ def test_r7_090_settings_info_cards_use_new_common_component():
     assert 'renderR7SettingsInfoCard({' in source
     html = _render_greenhouse_zones()
     assert 'data-r7-settings-info-card="greenhouse-basic-info"' in html
-    assert 'data-r7-settings-info-card="zone-composition"' in html
+    assert 'data-r7-settings-info-card="zone-basic-info"' in html
+    assert 'data-r7-settings-info-card="equipment-composition"' in html
     assert 'data-r7-settings-greenhouse-summary-card="greenhouse-basic-info"' in html
-    assert 'data-r7-settings-greenhouse-summary-card="zone-composition"' in html
+    assert 'data-r7-settings-greenhouse-summary-card="zone-basic-info"' in html
     assert 'data-r7-settings-info-card="zone-create"' not in html
 
 

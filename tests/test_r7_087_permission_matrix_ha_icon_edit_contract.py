@@ -31,9 +31,9 @@ def _render_permission_matrix(selected_bucket=""):
 
 
 def test_r7_087_version_surfaces_are_1_14_12():
-    assert '"version": "1.14.16"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.16"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.16"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.17"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.17"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.17"' in _read(REBUILD_PANEL)
 
 
 def test_r7_087_permission_matrix_status_uses_ha_icons_not_emoji():

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.16";
+const REBUILD_VERSION = "1.14.17";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1656,12 +1656,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<span ${attrs} style="display:inline-flex;align-items:center;justify-content:center;border:1px solid;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:950;white-space:nowrap;${style}">${label}</span>`;
   }
 
-  renderR7SettingsInfoCard({ key, icon, title, primary, rows = [], tone = "green", extraAttrs = "" }) {
-    const legacyCard = { "greenhouse-basic-info": "greenhouse-profile", "zone-composition": "zone-count", "zone-current-crop": "zone-current-cycle" }[key];
+  renderR7SettingsInfoCard({ key, icon, title, primary, rows = [], tone = "green", statusKey = "normal-ready", extraAttrs = "" }) {
+    const legacyCard = { "greenhouse-basic-info": "greenhouse-profile", "zone-basic-info": "zone-count", "zone-composition": "zone-count", "zone-current-crop": "zone-current-cycle" }[key];
     const legacyAttr = legacyCard ? `data-r7-settings-greenhouse-card="${legacyCard}"` : "";
     return `<article data-r7-settings-info-card="${key}" data-r7-settings-greenhouse-summary-card="${key}" ${legacyAttr} ${extraAttrs} style="border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;display:grid;grid-template-rows:auto auto 1fr;gap:10px;min-height:132px;box-shadow:0 1px 2px rgba(31,51,41,.04);">
-      <header style="display:flex;align-items:center;gap:10px;min-width:0;">${this.renderR7CommonHaIcon(icon, { size: 30, color: this.r7RecordToneColor(tone, "icon") })}<div style="min-width:0;"><strong style="display:block;color:#24323f;font-size:14px;line-height:1.25;">${title}</strong><span style="display:block;color:#78927f;font-size:11px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${primary}</span></div></header>
-      <div style="display:grid;gap:7px;align-content:start;">${rows.join("")}</div>
+      ${this.renderR7CommonCardHeader({ icon, title, statusKey, tone, extraAttrs: 'data-r7-settings-info-card-header' })}
+      ${primary ? `<span data-r7-settings-info-card-primary style="display:block;color:#78927f;font-size:11px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${primary}</span>` : ""}
+      <div data-r7-settings-info-card-body style="display:grid;gap:7px;align-content:start;">${rows.join("")}</div>
     </article>`;
   }
 
@@ -1670,7 +1671,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7SettingsGreenhouseZonesSubtab(zones) {
-    const sourceZones = zones.length ? zones : [{ id: "zone-1", name: "1구역", currentCrop: { crop_cycle_id: "미연결", crop_label_ko: "작물 없음", growth_stage: "미지정" }, dataAvailability: { state: "unknown", freshnessMinutes: null }, equipmentProfile: { labels: ["센서 미매핑"] } }];
+    const sourceZones = zones.length ? zones : [{ id: "zone-1", name: "1구역", purpose: "재배", area: "120㎡", bedCount: 6, currentCrop: { crop_cycle_id: "미연결", crop_label_ko: "작물 없음", growth_stage: "미지정" }, dataAvailability: { state: "unknown", freshnessMinutes: null }, equipmentProfile: { labels: ["센서 미매핑"] } }];
     const normalized = sourceZones.map((zone, index) => {
       const zoneId = this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`;
       const zoneName = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역`;
@@ -1683,15 +1684,22 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const devices = Math.max(1, labels.filter((label) => !String(label).includes("센서") && !String(label).includes("sensor")).length || Math.max(2, labels.length || 2));
       const statusTone = dataState === "fresh" || dataState === "ok" ? "green" : dataState === "stale" ? "amber" : "gray";
       const statusLabel = dataState === "fresh" || dataState === "ok" ? "활성" : dataState === "stale" ? "주의" : "확인";
-      return { zoneId, zoneName, cropLabel, cropCycleId, labels, sensors, devices, statusTone, statusLabel };
+      const purpose = zone.purpose || zone.zonePurpose || zone.usage || "재배";
+      const area = zone.area || zone.areaLabel || zone.size || "120㎡";
+      const bedCount = zone.bedCount ?? zone.beds ?? zone.bed_count ?? 6;
+      return { zoneId, zoneName, cropLabel, cropCycleId, labels, sensors, devices, statusTone, statusLabel, purpose, area, bedCount };
     });
-    const activeCount = normalized.filter((zone) => zone.statusTone === "green").length;
-    const cropLinked = normalized.filter((zone) => zone.cropCycleId && zone.cropCycleId !== "없음").length;
-    const staleCount = normalized.filter((zone) => zone.statusTone !== "green").length;
-    const summaryCards = [
-      this.renderR7SettingsInfoCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 기본 정보", primary: "제1온실 · 운영 기준 데이터", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("운영상태", this._r7SettingsGreenhousePill("활성", "green")), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green" }),
-      this.renderR7SettingsInfoCard({ key: "zone-composition", icon: "mdi:view-grid-outline", title: "구역 구성", primary: `${normalized.length}개 구역`, rows: [this._r7SettingsGreenhouseValueRow("활성", activeCount), this._r7SettingsGreenhouseValueRow("작물 연결", cropLinked), this._r7SettingsGreenhouseValueRow("미지정", normalized.length - cropLinked), this._r7SettingsGreenhouseValueRow("확인 필요", staleCount, 'style="color:#b87900;"')], tone: staleCount ? "amber" : "green" }),
-      this.renderR7RecordCardShell({ kind: "settings-zone-create", icon: "mdi:plus-circle-outline", title: "구역 생성", statusKey: "due-today", tone: "blue", primary: "새 구역 없음", note: "구역을 추가하려면 승인 후 저장이 필요합니다", actions: [this.renderR7CommonCardButton({ label: "+ 새 구역 추가", icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button data-r7-settings-modal-skip-record-binding="true"' }), this.renderR7CommonCardButton({ label: "구역 목록", icon: "mdi:history", tone: "blue", extraAttrs: 'data-r7-settings-zone-list-shortcut-button data-r7-settings-modal-skip-record-binding="true"' })], extraAttrs: 'data-r7-settings-zone-create-card data-r7-settings-greenhouse-summary-card="zone-create" data-r7-settings-zone-create-reference-card="image-like-common-card"' }),
+    const selected = normalized[0];
+    const sensorTotal = normalized.reduce((sum, zone) => sum + zone.sensors, 0);
+    const deviceTotal = normalized.reduce((sum, zone) => sum + zone.devices, 0);
+    const greenhouseInfo = this.renderR7SettingsInfoCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 기본 정보", primary: "운영 기준 데이터", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green", statusKey: "normal-ready" });
+    const zoneInfo = this.renderR7SettingsInfoCard({ key: "zone-basic-info", icon: "mdi:view-grid-outline", title: "구역 기본 정보", primary: selected.zoneName, rows: [this._r7SettingsGreenhouseValueRow("구역 용도", selected.purpose), this._r7SettingsGreenhouseValueRow("면적", selected.area), this._r7SettingsGreenhouseValueRow("배드 수", selected.bedCount)], tone: selected.statusTone === "amber" ? "amber" : "green", statusKey: selected.statusTone === "amber" ? "needs-verification" : "normal-ready" });
+    const equipmentInfo = this.renderR7SettingsInfoCard({ key: "equipment-composition", icon: "mdi:devices", title: "장비 구성", primary: "센서 · 장치 매핑", rows: [this._r7SettingsGreenhouseValueRow("센서", `${sensorTotal}개`), this._r7SettingsGreenhouseValueRow("장치", `${deviceTotal}개`), this._r7SettingsGreenhouseValueRow("매핑 상태", this._r7SettingsGreenhousePill(deviceTotal + sensorTotal ? "확인됨" : "확인 필요", deviceTotal + sensorTotal ? "green" : "amber"))], tone: "green", statusKey: deviceTotal + sensorTotal ? "normal-ready" : "needs-verification" });
+    const createCard = ({ kind, title, icon, primary, note, addLabel, addAttr, shortcutLabel, shortcutAttr, tone = "blue" }) => this.renderR7RecordCardShell({ kind, icon, title, statusKey: "due-today", tone, primary, note, actions: [this.renderR7CommonCardButton({ label: addLabel, icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: `${addAttr} data-r7-settings-modal-skip-record-binding="true"` }), this.renderR7CommonCardButton({ label: shortcutLabel, icon: "mdi:history", tone: "blue", extraAttrs: `${shortcutAttr} data-r7-settings-modal-skip-record-binding="true"` })], extraAttrs: `data-r7-settings-create-card="${kind}" data-r7-settings-greenhouse-summary-card="${kind.replace('settings-', '').replace('-create', '')}-create" data-r7-settings-zone-create-reference-card="image-like-common-card"` });
+    const createCards = [
+      createCard({ kind: "settings-greenhouse-create", title: "온실 생성", icon: "mdi:greenhouse", primary: "새 온실 없음", note: "온실을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 온실 추가", addAttr: 'data-r7-settings-greenhouse-create-button', shortcutLabel: "온실 정보", shortcutAttr: 'data-r7-settings-greenhouse-info-shortcut-button' }),
+      createCard({ kind: "settings-zone-create", title: "구역 생성", icon: "mdi:plus-circle-outline", primary: "새 구역 없음", note: "구역을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 구역 추가", addAttr: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button', shortcutLabel: "구역 목록", shortcutAttr: 'data-r7-settings-zone-list-shortcut-button' }),
+      createCard({ kind: "settings-equipment-create", title: "장비 생성", icon: "mdi:devices", primary: "새 장비 없음", note: "장비를 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 장비 추가", addAttr: 'data-r7-settings-equipment-create-button', shortcutLabel: "장비 구성", shortcutAttr: 'data-r7-settings-equipment-info-shortcut-button' }),
     ].join("");
     const zoneRows = normalized.map((zone, index) => ({
       kind: zone.zoneName,
@@ -1713,8 +1721,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       rowKind: "settings-zone",
       extraAttrs: 'data-r7-settings-zone-list-panel data-r7-settings-zone-list-panel-width="full" data-r7-settings-zone-table-header',
     });
-    return `<section data-r7-settings-greenhouse-zones data-r7-settings-greenhouse-zones-layout="info-record-common-list" style="display:grid;gap:12px;">
-      <div data-r7-settings-greenhouse-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${summaryCards}</div>
+    return `<section data-r7-settings-greenhouse-zones data-r7-settings-greenhouse-zones-layout="info-create-equipment-list" style="display:grid;gap:12px;">
+      <div data-r7-settings-info-row="overview" data-r7-settings-greenhouse-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${greenhouseInfo}${zoneInfo}${equipmentInfo}</div>
+      <div data-r7-settings-create-row="create" style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${createCards}</div>
       ${zoneList}
     </section>`;
   }

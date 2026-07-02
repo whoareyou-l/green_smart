@@ -39,22 +39,22 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_089_version_surfaces_are_1_14_14():
-    assert '"version": "1.14.16"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.16"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.16"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.17"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.17"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.17"' in _read(REBUILD_PANEL)
 
 
 def test_r7_089_greenhouse_zone_top_cards_are_basic_composition_create_only():
     html = _render_greenhouse_zones()
-    assert 'data-r7-settings-greenhouse-zones-layout="info-record-common-list"' in html
-    for card in ['greenhouse-basic-info', 'zone-composition', 'zone-create']:
+    assert 'data-r7-settings-greenhouse-zones-layout="info-create-equipment-list"' in html
+    for card in ['greenhouse-basic-info', 'zone-basic-info', 'equipment-composition', 'zone-create']:
         assert f'data-r7-settings-greenhouse-summary-card="{card}"' in html
-    assert html.index('data-r7-settings-greenhouse-summary-card="zone-composition"') < html.index('data-r7-settings-greenhouse-summary-card="zone-create"')
+    assert html.index('data-r7-settings-greenhouse-summary-card="zone-basic-info"') < html.index('data-r7-record-card-shell="settings-zone-create"')
     for forbidden_card in ['zone-current-crop', 'data-health']:
         assert f'data-r7-settings-greenhouse-summary-card="{forbidden_card}"' not in html
     for forbidden_text in ['구역별 현재 작기', '데이터 상태', '선택 구역 상세', '대표 센서', '제어 장비 매핑']:
         assert forbidden_text not in html
-    for phrase in ['온실 기본 정보', '구역 구성', '구역 생성', '+ 새 구역 추가']:
+    for phrase in ['온실 기본 정보', '구역 기본 정보', '장비 구성', '구역 생성', '+ 새 구역 추가']:
         assert phrase in html
 
 
