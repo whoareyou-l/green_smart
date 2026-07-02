@@ -35,9 +35,9 @@ def _render_greenhouse_info_modal() -> str:
 
 
 def test_r7_099_version_surfaces_are_1_14_24():
-    assert '"version": "1.14.41"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.41"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.41"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.42"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.42"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.42"' in _read(REBUILD_PANEL)
 
 
 def test_r7_099_backend_has_greenhouse_update_delete_routes_and_hard_delete():
@@ -47,8 +47,8 @@ def test_r7_099_backend_has_greenhouse_update_delete_routes_and_hard_delete():
         "delete_settings_greenhouse",
         "RebuildSettingsGreenhouseItemView",
         'url = "/api/green_smart/rebuild/settings/greenhouses/{greenhouse_id}"',
-        "async def patch(self, request: web.Request)",
-        "async def delete(self, request: web.Request)",
+        "async def patch(self, request: web.Request, greenhouse_id=None)",
+        "async def delete(self, request: web.Request, greenhouse_id=None)",
         "deleted",
         "settingsSnapshot",
     ]:

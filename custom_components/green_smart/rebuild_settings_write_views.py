@@ -358,15 +358,15 @@ class RebuildSettingsGreenhouseItemView(HomeAssistantView):
     name = "api:green_smart:rebuild:settings:greenhouse_item"
     requires_auth = True
 
-    async def patch(self, request: web.Request) -> web.Response:
+    async def patch(self, request: web.Request, greenhouse_id=None) -> web.Response:
         hass = request.app["hass"]
-        greenhouse_id = int(request.match_info["greenhouse_id"])
+        greenhouse_id = int(greenhouse_id or request.match_info["greenhouse_id"])
         item = await update_settings_greenhouse(hass, greenhouse_id, await _settings_payload(request), actor=_request_actor(request))
         return self.json({"ok": True, "kind": "greenhouse", "saved": True, "approvalRequired": False, "greenhouse": item, "settingsSnapshot": await settings_snapshot_response(hass)})
 
-    async def delete(self, request: web.Request) -> web.Response:
+    async def delete(self, request: web.Request, greenhouse_id=None) -> web.Response:
         hass = request.app["hass"]
-        greenhouse_id = int(request.match_info["greenhouse_id"])
+        greenhouse_id = int(greenhouse_id or request.match_info["greenhouse_id"])
         item = await delete_settings_greenhouse(hass, greenhouse_id, actor=_request_actor(request))
         return self.json({"ok": True, "kind": "greenhouse", "deleted": True, "approvalRequired": False, "greenhouse": item, "settingsSnapshot": await settings_snapshot_response(hass)})
 

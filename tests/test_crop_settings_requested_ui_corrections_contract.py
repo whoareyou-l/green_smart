@@ -123,8 +123,8 @@ def test_v1978_control_modal_auto_calculation_fields_and_payload():
 
 
 def test_v1978_version_markers():
-    assert '"version": "1.14.41"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.41"' in _read(PANEL)
-    assert 'v1.14.41' in _read(PANEL)[:200]
+    assert '"version": "1.14.42"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.42"' in _read(PANEL)
+    assert 'v1.14.42' in _read(PANEL)[:200]
     assert 'EDGE_VERSION = "1.9.96"' in _read(CENTRAL)
-    assert '기준 버전: `v1.14.41`' in _read(UI_DOC)
+    assert '기준 버전: `v1.14.42`' in _read(UI_DOC)
