@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.29";
+const REBUILD_VERSION = "1.14.30";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1214,6 +1214,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsDetailActionModal(button.getAttribute("data-r7-settings-detail-action-modal-close") || "all"); });
     });
     this.querySelectorAll("form[data-r7-settings-greenhouse-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsGreenhouseCreateForm(form); }));
+    this.querySelectorAll("[data-r7-settings-zone-greenhouse-fk-select]").forEach((select) => {
+      select.addEventListener("change", () => {
+        const option = select.options?.[select.selectedIndex];
+        const nextName = option?.getAttribute("data-next-zone-name") || option?.dataset?.nextZoneName || "1-1구역";
+        const form = select.closest?.("form");
+        const nameInput = form?.querySelector?.("[data-r7-settings-zone-auto-name]");
+        if (nameInput) nameInput.value = nextName;
+      });
+    });
     this.querySelectorAll("form[data-r7-settings-zone-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsZoneCreateForm(form); }));
     this.querySelectorAll("form[data-r7-settings-device-sensor-mapping-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceSensorMappingForm(form); }));
     this.querySelectorAll("[data-r7-settings-greenhouse-info-shortcut-button]").forEach((button) => {
@@ -1941,8 +1950,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SettingsCreateSelect(name, label, options = [], selectedValue = "", attrs = "") {
-    const items = options.map(({ value, label: optionLabel }) => `<option value="${value}"${String(value) === String(selectedValue) ? " selected" : ""}>${optionLabel}</option>`).join("");
+    const items = options.map(({ value, label: optionLabel, attrs: optionAttrs = "" }) => `<option value="${value}"${String(value) === String(selectedValue) ? " selected" : ""} ${optionAttrs}>${optionLabel}</option>`).join("");
     return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><select name="${name}" required ${attrs} style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;">${items}</select></label>`;
+  }
+
+  _r7SettingsCreateNumberWithUnit(name, label, value = "", unit = "", attrs = "") {
+    return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><span style="display:grid;grid-template-columns:1fr auto;align-items:center;border:1px solid #dcebe0;border-radius:8px;background:#fff;overflow:hidden;"><input name="${name}" type="number" value="${value}" required ${attrs} style="height:36px;border:0;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"><span style="border-left:1px solid #edf2ee;padding:0 10px;color:#5d6f62;font-weight:950;">${unit}</span></span></label>`;
   }
 
   _r7SettingsCreateTextarea(name, label, value = "") {
@@ -1978,14 +1991,46 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "greenhouse-create", title: "온실 생성", subtitle: "생육조사 작성 모달처럼 기본 정보와 검증을 나눠 저장합니다", formAttr: "data-r7-settings-greenhouse-create-form", closeKind: "greenhouse", state: modal.state, error: modal.error, submitLabel: "온실 저장", sections });
   }
 
+  _r7SettingsNextZoneName(greenhouse, zones = []) {
+    const greenhouseId = String(greenhouse?.id || greenhouse?.greenhouseId || "1");
+    const greenhouseNumber = greenhouse?.greenhouseNumber || greenhouse?.number || (Number.isFinite(Number(greenhouseId)) ? String(greenhouseId) : "1");
+    const related = (Array.isArray(zones) ? zones : []).filter((zone) => String(zone.greenhouseId || zone.greenhouse_id || zone.greenhouse || "") === greenhouseId || String(zone.greenhouseName || "") === String(greenhouse?.name || greenhouse?.greenhouseName || ""));
+    const maxZone = related.reduce((max, zone) => {
+      const label = String(zone.zoneName || zone.name || zone.label || "");
+      const match = label.match(/(?:^|[^0-9])([0-9]+)\s*구역/) || label.match(/^[0-9]+-([0-9]+)/);
+      return Math.max(max, match ? Number(match[1]) : 0);
+    }, 0);
+    return `${greenhouseNumber}-${maxZone + 1}구역`;
+  }
+
   renderR7SettingsZoneCreateModal() {
     const modal = this._settingsZoneCreateModal || { open: false };
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const settingsGreenhouses = Array.isArray(settingsData.greenhouses) ? settingsData.greenhouses : [];
+    const settingsZones = Array.isArray(settingsData.zones) ? settingsData.zones : [];
+    const fallbackGreenhouse = { id: 1, name: this._homeContext?.greenhouseName || "대표온실" };
+    const greenhouses = settingsGreenhouses.length ? settingsGreenhouses : [fallbackGreenhouse];
+    const selectedGreenhouse = greenhouses[0];
+    const greenhouseOptions = greenhouses.map((greenhouse, index) => {
+      const id = greenhouse.id || greenhouse.greenhouseId || index + 1;
+      const name = greenhouse.name || greenhouse.greenhouseName || `온실 ${index + 1}`;
+      return { value: id, label: name, attrs: `data-next-zone-name="${this._r7SettingsNextZoneName(greenhouse, settingsZones)}"` };
+    });
+    const purposeOptions = [
+      { value: "cultivation", label: "재배 구역" },
+      { value: "nursery", label: "육묘 구역" },
+      { value: "office", label: "사무 구역" },
+      { value: "experiment", label: "실험 구역" },
+      { value: "storage", label: "자재 보관 구역" },
+      { value: "quarantine", label: "격리·검역 구역" },
+    ];
+    const nextZoneName = this._r7SettingsNextZoneName(selectedGreenhouse, settingsZones);
     const sections = [
-      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("name", "구역명", "신규 구역")}${this._r7SettingsCreateField("purpose", "구역 용도", "재배")}</div>`),
-      this._r7SettingsCreateSection("zone-composition", "구역 구성", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("area", "면적", "120㎡")}${this._r7SettingsCreateField("bedCount", "배드 수", "6")}</div>`),
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateSelect("greenhouseId", "온실명", greenhouseOptions, selectedGreenhouse?.id || 1, 'data-r7-settings-zone-greenhouse-fk-select')}${this._r7SettingsCreateField("name", "구역명", nextZoneName, 'readonly data-r7-settings-zone-auto-name')}${this._r7SettingsCreateSelect("purpose", "구역 용도", purposeOptions, "cultivation")}</div>`),
+      this._r7SettingsCreateSection("zone-composition", "구역 구성", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateNumberWithUnit("area", "면적", "120", "m²", 'min="0" step="0.1" data-r7-settings-zone-area-unit="m2"')}${this._r7SettingsCreateNumberWithUnit("bedCount", "배드 수", "6", "개", 'min="0" step="1" data-r7-settings-zone-bed-unit="count"')}</div>`),
       this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: "구역 생성", subtitle: "구역 구성값을 입력하고 저장 전 검증을 확인합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: "구역 저장", sections });
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: "구역 생성", subtitle: "온실별 재배·운영 공간을 등록하고 저장 전 기준을 확인합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: "구역 저장", sections });
   }
 
   renderR7SettingsDeviceSensorMappingModal() {
