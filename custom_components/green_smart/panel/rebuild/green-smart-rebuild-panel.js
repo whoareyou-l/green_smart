@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.26";
+const REBUILD_VERSION = "1.14.27";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -82,6 +82,18 @@ const R7_SETTINGS_GREENHOUSE_DETAIL_FIELD_ORDER = Object.freeze([
   ["status", "상태"],
   ["updatedAt", "수정시각"],
   ["createdAt", "생성시각"],
+  ["note", "메모"],
+]);
+const R7_SETTINGS_ZONE_LIST_COLUMNS = Object.freeze(["구역명", "온실", "용도", "베드", "상태"]);
+const R7_SETTINGS_ZONE_DETAIL_FIELD_ORDER = Object.freeze([
+  ["zoneName", "구역명"],
+  ["greenhouseName", "온실"],
+  ["purpose", "용도"],
+  ["area", "면적"],
+  ["bedCount", "베드"],
+  ["currentCrop", "현재 작물"],
+  ["status", "상태"],
+  ["updatedAt", "수정시각"],
   ["note", "메모"],
 ]);
 const R7_RECORD_STATUS_DEFINITIONS = Object.freeze({
@@ -1655,13 +1667,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-cda-entity-detail-fields="${entityType}" style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;">${fieldHtml}</div>`;
   }
 
-  renderR7CdaEntityListDetailModal({ entityType = "entity", modalOpen = true, icon = "mdi:information-outline", title = "", subtitle = "", rows = [], selectedId = "", listColumns = [], detailFields = [], rowAttr = "", entityFooterActions = [], closeAttr = "", marker = "", zIndex = 44 } = {}) {
+  renderR7CdaEntityListDetailModal({ entityType = "entity", modalOpen = true, icon = "mdi:information-outline", title = "", subtitle = "", rows = [], selectedId = "", listColumns = [], detailFields = [], detailSectionTitle = "1. 선택 항목 상세 정보", detailPanelAttrs = "", rowAttr = "", entityFooterActions = [], closeAttr = "", marker = "", zIndex = 44 } = {}) {
     const selected = rows.find((row) => String(row.id) === String(selectedId)) || rows[0] || {};
     const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-shortcut-search-input", searchPlaceholder: `${title} 검색`, filters: [["all","전체"],["needs-review","검토 필요"],["normal","정상"],["evidence","감사 근거"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "needs-review" ? "red" : "green", attrs: `data-r7-settings-shortcut-filter="${key}"` })) });
     const rowHtml = this.renderR7CdaEntityRows({ entityType, rows, selectedId: selected.id, rowAttr });
     const listPanel = this.renderR7CdaListPanel({ title: `${title} 목록`, columns: listColumns, rowsHtml: rowHtml || `<p style="margin:0;color:#78927f;font-size:13px;">표시할 항목 없음</p>`, footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${rows.length}건</span>`, attrs: `data-r7-settings-shortcut-review-list-panel data-r7-settings-shortcut-cda-split-kind="${entityType}"` });
-    const detailBody = `${this.renderR7CdaDetailSection({ title: "1. 온실 상세 정보", attrs: 'data-r7-settings-shortcut-review-section="greenhouse-detail"', body: this.renderR7CdaEntityDetailFields({ entityType, entity: selected, fields: detailFields }) })}`;
-    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 항목 상세", attrs: `data-r7-settings-greenhouse-info-detail-panel data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${entityType}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone || 'green')}">${selected.statusLabel || selected.status || '정상'}</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ attrs: `data-r7-cda-entity-detail-footer="${entityType}"`, left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [...entityFooterActions, `<button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
+    const detailBody = `${this.renderR7CdaDetailSection({ title: detailSectionTitle, attrs: 'data-r7-settings-shortcut-review-section="entity-detail"', body: this.renderR7CdaEntityDetailFields({ entityType, entity: selected, fields: detailFields }) })}`;
+    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 항목 상세", attrs: `${detailPanelAttrs} data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${entityType}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone || 'green')}">${selected.statusLabel || selected.status || '정상'}</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ attrs: `data-r7-cda-entity-detail-footer="${entityType}"`, left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [...entityFooterActions, `<button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
     const header = this.renderR7CdaModalHeader({ icon, title, subtitle, closeAttr });
     const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ CDA entity 공통 팝업 모달은 엔티티별 row와 선택 엔티티 상세를 같은 문법으로 재사용합니다.</span><button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modalOpen, zIndex, overlayAttrs: `${marker} data-r7-cda-entity-modal="${entityType}" data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-review-like-modal="approval-audit" data-r7-settings-shortcut-cda-split-kind="${entityType}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${entityType}"`, header, search, left: listPanel, right: detailPanel, footer });
@@ -1682,6 +1694,34 @@ class GreenSmartRebuildPanel extends HTMLElement {
       createdAt: greenhouse.createdAt || greenhouse.created_at || "미등록",
       note: greenhouse.note || "미등록",
     }));
+  }
+
+  normalizeR7SettingsZoneEntityRows(zones = []) {
+    const rows = Array.isArray(zones) ? zones : [];
+    return rows.map((zone, index) => {
+      const zoneName = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `구역 ${index + 1}`;
+      const bedCount = zone.bedCount ?? zone.beds ?? "미등록";
+      const status = zone.status || zone.state || "active";
+      const statusLabel = status === "deleted" ? "삭제됨" : status === "inactive" ? "비활성" : "정상";
+      return {
+        id: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`,
+        name: zoneName,
+        location: zone.greenhouseName || zone.greenhouse || this._homeContext?.greenhouseName || "대표 온실",
+        installType: zone.purpose || zone.zonePurpose || "용도 미등록",
+        approvalScope: `${bedCount} bed`,
+        status,
+        statusLabel,
+        tone: status === "deleted" ? "red" : status === "inactive" ? "amber" : "green",
+        zoneName,
+        greenhouseName: zone.greenhouseName || zone.greenhouse || this._homeContext?.greenhouseName || "대표 온실",
+        purpose: zone.purpose || zone.zonePurpose || "용도 미등록",
+        area: zone.area || zone.areaM2 || "면적 미등록",
+        bedCount: `${bedCount} bed`,
+        currentCrop: zone.currentCrop || zone.cropName || zone.crop || "미등록",
+        updatedAt: zone.updatedAt || zone.updated_at || "미등록",
+        note: zone.note || "미등록",
+      };
+    });
   }
 
   renderR7CdaActionFooter({ left = "", actions = [], attrs = "" } = {}) {
@@ -1931,8 +1971,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
         selectedId: selectedGreenhouse?.id,
         listColumns: R7_SETTINGS_GREENHOUSE_LIST_COLUMNS,
         detailFields: R7_SETTINGS_GREENHOUSE_DETAIL_FIELD_ORDER,
+        detailSectionTitle: "1. 온실 상세 정보",
+        detailPanelAttrs: "data-r7-settings-greenhouse-info-detail-panel",
         rowAttr: "data-r7-settings-greenhouse-info-row",
         entityFooterActions,
+        closeAttr: "data-r7-settings-shortcut-cda-split-close",
+        marker: meta.marker,
+      });
+    }
+    if (kind === "zone-list") {
+      const fallbackZone = { id: "zone-primary", zoneName: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역", greenhouseName: this._homeContext?.greenhouseName || "대표 온실", purpose: selectedZone.purpose || "재배", area: selectedZone.area || "120㎡", bedCount: selectedZone.bedCount ?? selectedZone.beds ?? 6, currentCrop: selectedZone.currentCrop || selectedZone.cropName || "미등록", status: selectedZone.status || "active", updatedAt: selectedZone.updatedAt || "미등록", note: selectedZone.note || "미등록" };
+      const sourceZones = settingsZones.length ? settingsZones : (zones.length ? zones : [fallbackZone]);
+      const zoneRows = this.normalizeR7SettingsZoneEntityRows(sourceZones);
+      const selectedZoneRow = zoneRows.find((row) => String(row.id) === String(modal.selectedZoneId || modal.selectedId || "")) || zoneRows[0];
+      return this.renderR7CdaEntityListDetailModal({
+        entityType: "zone-list",
+        modalOpen: modal.open,
+        icon: meta.icon,
+        title: meta.title,
+        subtitle: "구역별 목록 · 선택 구역 상세",
+        rows: zoneRows,
+        selectedId: selectedZoneRow?.id,
+        listColumns: R7_SETTINGS_ZONE_LIST_COLUMNS,
+        detailFields: R7_SETTINGS_ZONE_DETAIL_FIELD_ORDER,
+        detailSectionTitle: "1. 구역 상세 정보",
+        detailPanelAttrs: "data-r7-settings-zone-list-detail-panel",
+        rowAttr: "data-r7-settings-zone-list-row",
         closeAttr: "data-r7-settings-shortcut-cda-split-close",
         marker: meta.marker,
       });

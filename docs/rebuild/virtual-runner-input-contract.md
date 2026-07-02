@@ -1,6 +1,6 @@
 # RS-025 Virtual Runner Input Contract
 
-> 기준 버전: `v1.14.26`
+> 기준 버전: `v1.14.27`
 > Status: virtual runner input contract
 > 목적: `리허설 결과 검토` 다음 단계로, 향후 실제 virtual runner가 사용할 입력 shape를 read-only 계약으로 고정한다.
 
