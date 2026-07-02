@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.14.20`
+> 기준 버전: `v1.14.21`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 상태: `reference/evidence only after direction correction`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
@@ -389,7 +389,7 @@ pytest -q
 
 ## R7-005+ Manual-first domain reset notice
 
-`v1.14.20`까지의 R7-000~R7-004 기록은 완료된 historical/compatibility evidence로 보존한다. 그러나 R7-005 이후의 현재 제품 방향은 `docs/rebuild/r7-005-legacy-audit-domain-research-manual-first-plan.md`와 `docs/rebuild/r7-006-manual-first-target-domain-spec.md`가 우선한다.
+`v1.14.21`까지의 R7-000~R7-004 기록은 완료된 historical/compatibility evidence로 보존한다. 그러나 R7-005 이후의 현재 제품 방향은 `docs/rebuild/r7-005-legacy-audit-domain-research-manual-first-plan.md`와 `docs/rebuild/r7-006-manual-first-target-domain-spec.md`가 우선한다.
 
 Current target:
 
@@ -410,7 +410,7 @@ Old R7 groups such as `현장 상태`, `추천·실행 검토`, `field-status`, 
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.14.20`에서 R7-000 IA blueprint를 완료했다.
+`v1.14.21`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -435,7 +435,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.14.20`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.14.21`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -460,7 +460,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.14.20`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.14.21`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -484,7 +484,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.14.20`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.14.21`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -509,7 +509,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.14.20`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.14.21`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 

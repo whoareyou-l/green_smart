@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.20";
+const REBUILD_VERSION = "1.14.21";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -235,6 +235,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsUsersPermissionsLoadState = "loading";
     this._settingsUsersPermissionsLoadError = null;
     this._settingsUsersPermissionsRequestId = 0;
@@ -314,6 +315,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsApprovalListModal = { open: true };
     this.render();
   }
@@ -335,6 +337,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsAuditLogModal = { open: true };
     this.render();
   }
@@ -362,6 +365,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
     this.render();
   }
 
@@ -395,6 +399,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsGreenhouseCreateModal = { open: true, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
     this.render();
   }
 
@@ -402,6 +407,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: true, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
     this.render();
   }
 
@@ -416,6 +422,27 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (kind === "greenhouse" || kind === "all") this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     if (kind === "zone" || kind === "all") this._settingsZoneCreateModal = { open: false, state: "idle" };
     if (kind === "mapping" || kind === "all") this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this.render();
+  }
+
+
+  _openSettingsGreenhouseInfoSplitModal() {
+    this._settingsShortcutCdaModal = { open: true, kind: "greenhouse-info" };
+    this.render();
+  }
+
+  _openSettingsZoneListSplitModal() {
+    this._settingsShortcutCdaModal = { open: true, kind: "zone-list" };
+    this.render();
+  }
+
+  _openSettingsEquipmentInfoSplitModal() {
+    this._settingsShortcutCdaModal = { open: true, kind: "equipment-info" };
+    this.render();
+  }
+
+  _closeSettingsShortcutCdaSplitModal() {
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
     this.render();
   }
 
@@ -1079,6 +1106,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("form[data-r7-settings-greenhouse-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsGreenhouseCreateForm(form); }));
     this.querySelectorAll("form[data-r7-settings-zone-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsZoneCreateForm(form); }));
     this.querySelectorAll("form[data-r7-settings-device-sensor-mapping-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceSensorMappingForm(form); }));
+    this.querySelectorAll("[data-r7-settings-greenhouse-info-shortcut-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsGreenhouseInfoSplitModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-zone-list-shortcut-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsZoneListSplitModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-equipment-info-shortcut-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsEquipmentInfoSplitModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-shortcut-cda-split-close]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsShortcutCdaSplitModal(); });
+    });
   }
 
   _bindR7DomainNavigation() {
@@ -1614,16 +1653,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
 
-  renderR7SettingsDetailActionModal({ open, kind, title, subtitle, formAttr, closeKind, fields, submitLabel, state = "idle", error = "" }) {
-    // R7-095 modal marker manifest: data-r7-settings-greenhouse-create-modal / data-r7-settings-zone-create-modal / data-r7-settings-device-sensor-mapping-modal / data-r7-settings-greenhouse-create-form / data-r7-settings-zone-create-form / data-r7-settings-device-sensor-mapping-form.
+  renderR7SettingsCreateRecordCommonModal({ open, kind, title, subtitle, formAttr, closeKind, fields, submitLabel, state = "idle", error = "" }) {
     if (!open) return `<template data-r7-settings-${kind}-modal="true" data-r7-settings-${kind}-modal-open="false"></template>`;
-    const body = `${this.renderR7CdaModalHeader({ icon: "mdi:cog-outline", title, subtitle, closeAttr: `data-r7-settings-detail-action-modal-close="${closeKind}"` })}
-      <form ${formAttr} style="display:grid;gap:10px;min-width:0;">
-        ${fields.join("")}
-        ${error ? `<p style="margin:0;color:#b42318;font-size:12px;">${error}</p>` : ""}
-        <footer style="display:flex;gap:8px;justify-content:flex-end;"><button type="button" data-r7-settings-detail-action-modal-close="${closeKind}" style="height:36px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:900;padding:0 12px;">닫기</button><button type="submit" style="height:36px;border:1px solid #badcc8;border-radius:10px;background:#25804a;color:#fff;font-weight:950;padding:0 14px;">${state === "saving" ? "저장 중" : state === "saved" ? "저장됨" : submitLabel}</button></footer>
-      </form>`;
-    return this.renderR7CdaModalOverlay({ open, zIndex: 43, attrs: `data-r7-settings-${kind}-modal data-r7-settings-${kind}-modal-open="true"`, body: this.renderR7CdaModalCard({ attrs: `data-r7-settings-${kind}-modal-card`, width: "min(620px,96vw)", body }) });
+    const statusText = state === "saving" ? "저장 중" : state === "saved" ? "저장 완료" : state === "error" ? "오류" : "입력 가능";
+    const modalModel = { mode: "settings-create", recordType: kind, seasonId: "settings", title };
+    const summary = `<div data-r7-settings-create-record-common-modal data-r7-settings-create-record-kind="${kind}" data-r7-record-modal-operator-summary style="border:1px solid #e5eee7;border-radius:12px;background:#fbfdfb;padding:11px 12px;display:grid;gap:4px;"><strong style="font-size:13px;color:#1f3329;">${title} · ${statusText}</strong><span style="font-size:12px;color:#6d7a70;line-height:1.45;">${subtitle}</span></div>`;
+    const stateHtml = `${error ? `<p data-r7-settings-create-record-error style="margin:0;color:#b42318;font-size:12px;">${error}</p>` : ""}${state === "saved" ? `<p data-r7-settings-create-record-saved style="margin:0;color:#25804a;font-size:12px;">저장됨</p>` : ""}`;
+    const actionRow = `<div class="r7-record-modal-actions" data-r7-settings-create-record-actions style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button type="button" data-r7-settings-detail-action-modal-close="${closeKind}" data-r7-record-modal-cancel style="height:38px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:950;">취소</button><button type="submit" data-r7-record-modal-submit style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">${state === "saving" ? "저장 중..." : state === "saved" ? "저장됨" : submitLabel}</button></div>`;
+    const body = `<form ${formAttr} data-r7-settings-create-record-form="${kind}" style="display:grid;gap:12px;min-width:0;">${fields.join("")}${stateHtml}${actionRow}</form>`;
+    return this.renderR7RecordCommonModalShell(modalModel, summary, body);
+  }
+
+  renderR7SettingsDetailActionModal({ open, kind, title, subtitle, formAttr, closeKind, fields, submitLabel, state = "idle", error = "" }) {
+    // R7-095 marker manifest: data-r7-settings-greenhouse-create-modal / data-r7-settings-zone-create-modal / data-r7-settings-device-sensor-mapping-modal / data-r7-settings-greenhouse-create-form / data-r7-settings-zone-create-form / data-r7-settings-device-sensor-mapping-form.
+    // R7-096 creation buttons reuse record common modal shell via renderR7RecordCommonModalShell, not direct CDA overlay.
+    return this.renderR7SettingsCreateRecordCommonModal({ open, kind, title, subtitle, formAttr, closeKind, fields, submitLabel, state, error });
   }
 
   renderR7SettingsGreenhouseCreateModal() {
@@ -1643,6 +1687,30 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selected = (this._zonesForRender?.() || [])[0] || { zoneId: "zone-1", name: "1구역" };
     const field = (name, label, value = "") => `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">${label}<input name="${name}" value="${value}" required style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>`;
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-sensor-mapping", title: "장치/센서 매핑", subtitle: "선택 구역의 센서와 장비를 연결합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state, error: modal.error, submitLabel: "매핑 저장", fields: [field("zoneId", "구역 ID", selected.zoneId || selected.id || "zone-1"), field("sensorEntity", "센서 entity", "sensor.greenhouse_temperature"), field("deviceEntity", "장비 entity", "switch.greenhouse_fan"), field("mappingRole", "역할", "환경 센서/환기 장치")] });
+  }
+
+
+  renderR7SettingsShortcutCdaSplitModal() {
+    const modal = this._settingsShortcutCdaModal || { open: false, kind: "" };
+    if (!modal.open) return `<template data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-cda-split-open="false"></template>`;
+    const zones = (this._zonesForRender?.() || []).filter((zone) => this._r7ZoneId?.(zone) !== "all");
+    const selected = zones[0] || { id: "zone-1", name: "1구역", zoneName: "1구역", purpose: "재배", area: "120㎡", bedCount: 6, equipmentProfile: { labels: ["센서 미매핑"] } };
+    const kind = modal.kind || "greenhouse-info";
+    const meta = {
+      "greenhouse-info": { title: "온실 정보", subtitle: "온실 기본 정보와 운영 기준", marker: "data-r7-settings-greenhouse-info-split-modal" },
+      "zone-list": { title: "구역 목록", subtitle: "구역별 상태와 현재 작기", marker: "data-r7-settings-zone-list-split-modal" },
+      "equipment-info": { title: "장비 구성", subtitle: "선택 구역 장치/센서 매핑 상태", marker: "data-r7-settings-equipment-info-split-modal" },
+    }[kind] || { title: "상세", subtitle: "설정 상세", marker: "data-r7-settings-greenhouse-info-split-modal" };
+    const header = this.renderR7CdaModalHeader({ icon: kind === "equipment-info" ? "mdi:devices" : kind === "zone-list" ? "mdi:view-list-outline" : "mdi:greenhouse", title: meta.title, subtitle: meta.subtitle, closeAttr: "data-r7-settings-shortcut-cda-split-close" });
+    const rows = kind === "zone-list"
+      ? (zones.length ? zones : [selected]).map((zone, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-settings-shortcut-zone-row="${this._r7ZoneId?.(zone) || zone.id || 'zone-1'}"`, columns: [this._r7ZoneName?.(zone) || zone.zoneName || zone.name || "1구역", zone.purpose || "재배", zone.area || "120㎡", `${zone.bedCount ?? zone.beds ?? 6} bed`, index === 0 ? "선택" : "대기"] })).join("")
+      : kind === "equipment-info"
+        ? [`센서 · ${(selected.equipmentProfile?.labels || []).filter((label) => String(label).includes("센서") || String(label).includes("sensor")).length || 1}`, `장비 · ${(selected.equipmentProfile?.labels || []).filter((label) => !String(label).includes("센서") && !String(label).includes("sensor")).length || 1}`, `미연결 · ${(selected.equipmentProfile?.labels || []).filter((label) => /미연결|unmapped|누락/i.test(String(label))).length}`].map((label, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-settings-shortcut-equipment-row="${index}"`, columns: [label, selected.zoneName || selected.name || "1구역", index === 2 ? "확인 필요" : "확인됨"] })).join("")
+        : ["온실명 · " + (this._homeContext?.greenhouseName || "제1온실"), "위치 · 경기 화성", "설치유형 · NUC edge"].map((label, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-settings-shortcut-greenhouse-row="${index}"`, columns: [label, "운영 기준", index === 0 ? "대표" : "정보"] })).join("");
+    const listPanel = this.renderR7CdaListPanel({ title: meta.title, columns: kind === "zone-list" ? ["이름", "용도", "면적", "배드", "상태"] : ["항목", "범위", "상태"], rowsHtml: rows, attrs: `data-r7-settings-shortcut-list-panel data-r7-settings-shortcut-cda-split-kind="${kind}"` });
+    const detailBody = this.renderR7CdaDetailSection({ title: "선택 상세", attrs: `data-r7-settings-shortcut-detail-section="${kind}"`, body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${meta.subtitle}</p>` });
+    const detailPanel = this.renderR7CdaDetailPanel({ title: "상세", attrs: `data-r7-settings-shortcut-detail-panel data-r7-settings-shortcut-cda-split-kind="${kind}"`, badge: `<span style="border:1px solid #badcc8;border-radius:999px;padding:5px 9px;font-size:11px;background:#f0fbf4;color:#25804a;">공통 CDA</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ actions: [`<button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
+    return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 44, overlayAttrs: `${meta.marker} data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-cda-split-kind="${kind}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${kind}"`, header, left: listPanel, right: detailPanel, footer: "" });
   }
 
   renderR7SettingsPermissionMatrixModal() {
@@ -3379,6 +3447,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7SettingsGreenhouseCreateModal()}
       ${this.renderR7SettingsZoneCreateModal()}
       ${this.renderR7SettingsDeviceSensorMappingModal()}
+      ${this.renderR7SettingsShortcutCdaSplitModal()}
     `;
     this._bindR7DomainNavigation();
     this._bindR7DomainSubtabs();
