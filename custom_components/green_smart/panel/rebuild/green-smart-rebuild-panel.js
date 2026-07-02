@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.43";
+const REBUILD_VERSION = "1.14.44";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1780,22 +1780,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
   normalizeR7SettingsZoneEntityRows(zones = []) {
     const rows = Array.isArray(zones) ? zones : [];
+    const greenhouseById = Array.isArray(this.r7SettingsGreenhouseZoneData().greenhouses) ? this.r7SettingsGreenhouseZoneData().greenhouses : [];
     return rows.map((zone, index) => {
       const zoneName = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `구역 ${index + 1}`;
       const bedCount = zone.bedCount ?? zone.beds ?? zone.bed_count ?? "미등록";
       const statusLabel = this._r7ZoneStatusLabel(zone.status || zone.state || "정상");
+      const greenhouse = greenhouseById.find((item) => String(item.id || item.greenhouseId) === String(zone.greenhouseId || zone.greenhouse_id || ""));
+      const greenhouseName = zone.greenhouseName || zone.greenhouse || greenhouse?.name || greenhouse?.greenhouseName || this._homeContext?.greenhouseName || "대표 온실";
       const status = statusLabel;
       return {
         id: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`,
         name: zoneName,
-        location: zone.greenhouseName || zone.greenhouse || this._homeContext?.greenhouseName || "대표 온실",
+        location: greenhouseName,
         installType: zone.purpose || zone.zonePurpose || "용도 미등록",
         approvalScope: this._r7ZoneBedLabel(bedCount),
         status,
         statusLabel,
         tone: statusLabel === "삭제됨" ? "red" : statusLabel === "비활성" || statusLabel === "점검중" ? "amber" : "green",
         zoneName,
-        greenhouseName: zone.greenhouseName || zone.greenhouse || this._homeContext?.greenhouseName || "대표 온실",
+        greenhouseName,
         purpose: zone.purpose || zone.zonePurpose || "용도 미등록",
         area: zone.area || zone.areaM2 || "면적 미등록",
         bedCount: this._r7ZoneBedLabel(bedCount),
@@ -2074,7 +2077,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const settingsGreenhouses = Array.isArray(settingsData.greenhouses) ? settingsData.greenhouses : [];
     const settingsZones = Array.isArray(settingsData.zones) ? settingsData.zones : [];
     const fallbackGreenhouse = { id: 1, name: this._homeContext?.greenhouseName || "대표온실" };
-    const greenhouses = (settingsGreenhouses.length ? settingsGreenhouses : [fallbackGreenhouse]).map((greenhouse, index) => ({ ...greenhouse, displayNumber: greenhouse.displayNumber || greenhouse.display_number || index + 1 }));
+    const greenhouses = (settingsGreenhouses.length ? settingsGreenhouses : [fallbackGreenhouse]).slice().sort((a, b) => Number(a.id || a.greenhouseId || 0) - Number(b.id || b.greenhouseId || 0)).map((greenhouse, index) => ({ ...greenhouse, displayNumber: greenhouse.displayNumber || greenhouse.display_number || index + 1 }));
     const selectedGreenhouse = greenhouses.find((greenhouse) => String(greenhouse.id || greenhouse.greenhouseId) === String(values.greenhouseId || "")) || greenhouses[0];
     const greenhouseOptions = greenhouses.map((greenhouse, index) => {
       const id = greenhouse.id || greenhouse.greenhouseId || index + 1;

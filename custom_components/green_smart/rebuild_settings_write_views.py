@@ -160,6 +160,7 @@ def _zone_dto(row: dict[str, Any]) -> dict[str, Any]:
         "zoneId": f"settings-zone-{zone_id}" if zone_id else row.get("name"),
         "farmId": row.get("farm_id"),
         "greenhouseId": row.get("greenhouse_id"),
+        "greenhouseName": row.get("greenhouse_name") or "",
         "name": row.get("name") or "1구역",
         "zoneName": row.get("name") or "1구역",
         "purpose": row.get("purpose") or "재배 구역",
@@ -195,7 +196,7 @@ async def list_settings_greenhouses(hass, farm_id: int = 1) -> list[dict[str, An
         SELECT id, farm_id, name, location, operating_status, install_type, timezone, approval_scope, note, creation_reason, status, created_at, updated_at
         FROM green_smart_settings_greenhouses
         WHERE farm_id = %s AND status NOT IN ('삭제됨', 'deleted')
-        ORDER BY updated_at DESC, id DESC
+        ORDER BY id ASC
         """, (farm_id,))
     return [_greenhouse_dto(row) for row in rows]
 
@@ -266,10 +267,11 @@ async def delete_settings_greenhouse(hass, greenhouse_id: int, actor: str = "ope
 
 async def list_settings_zones(hass, farm_id: int = 1) -> list[dict[str, Any]]:
     rows = await fetchall(hass, """
-        SELECT id, farm_id, greenhouse_id, name, purpose, area, bed_count, note, status, created_at, updated_at
-        FROM green_smart_settings_zones
-        WHERE farm_id = %s
-        ORDER BY updated_at DESC, id DESC
+        SELECT z.id, z.farm_id, z.greenhouse_id, gh.name AS greenhouse_name, z.name, z.purpose, z.area, z.bed_count, z.note, z.status, z.created_at, z.updated_at
+        FROM green_smart_settings_zones z
+        LEFT JOIN green_smart_settings_greenhouses gh ON gh.farm_id = z.farm_id AND gh.id = z.greenhouse_id
+        WHERE z.farm_id = %s
+        ORDER BY z.id ASC
         """, (farm_id,))
     return [_zone_dto(row) for row in rows]
 

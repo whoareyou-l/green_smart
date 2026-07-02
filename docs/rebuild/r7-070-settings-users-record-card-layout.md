@@ -1,6 +1,6 @@
 # R7-070 Settings users-permissions record-card layout
 
-Status: current baseline for `v1.14.43`.
+Status: current baseline for `v1.14.44`.
 
 ## Scope
 
