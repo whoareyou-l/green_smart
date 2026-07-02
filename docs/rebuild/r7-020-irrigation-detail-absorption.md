@@ -1,6 +1,6 @@
 # R7-020 Irrigation/Fertigation Detail Absorption
 
-> 기준 버전: `v1.14.36`
+> 기준 버전: `v1.14.37`
 > Status: R7-020 planned/contracted
 > Purpose: Remove the rendered Irrigation/Fertigation read-only detail card and absorb its content into the zone-scoped visual tabs.
 
@@ -97,5 +97,5 @@ All old detail content is mapped to visual tabs/cards
 Existing R7 routing/sidebar contracts still pass
 Full pytest passes
 node --check passes
-Prod static smoke verifies v1.14.36 and R7-020 markers
+Prod static smoke verifies v1.14.37 and R7-020 markers
 ```

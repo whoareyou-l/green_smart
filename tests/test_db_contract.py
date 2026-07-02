@@ -16,7 +16,8 @@ def test_db_cfg_reads_only_expected_environment_variables_with_safe_defaults():
     assert 'os.environ.get("DB_PORT", "3306")' in source
     assert 'os.environ.get("DB_USER", "gs_user")' in source
     assert 'os.environ.get("DB_PASSWORD", "")' in source
-    assert 'os.environ.get("DB_NAME", "green_smart")' in source
+    assert 'os.environ.get("GREEN_SMART_DB_NAME", "green_smart")' in source
+    assert 'os.environ.get("DB_NAME", "green_smart")' not in source
 
 
 def test_db_pool_uses_utf8mb4_autocommit_and_bounded_pool_size():

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.36";
+const REBUILD_VERSION = "1.14.37";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -531,8 +531,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       name: greenhouse.name || "제1온실",
       location: greenhouse.location || "",
       installType: greenhouse.installType || "",
+      operatingStatus: greenhouse.operatingStatus || "active",
+      timezone: greenhouse.timezone || "Asia/Seoul",
       approvalScope: greenhouse.approvalScope || "",
-      note: greenhouse.note || "",
+      creationReason: greenhouse.creationReason || greenhouse.note || "",
+      note: greenhouse.note || greenhouse.creationReason || "",
     };
     const response = await this.hass.callApi("PATCH", REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH + `/${greenhouseId}`, payload);
     if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;

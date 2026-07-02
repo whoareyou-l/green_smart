@@ -13,9 +13,9 @@ def _read(path: Path) -> str:
 
 
 def test_version_surfaces_are_1_14_36():
-    assert '"version": "1.14.36"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.36"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.36"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.37"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.37"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.37"' in _read(REBUILD_PANEL)
 
 
 def test_schema_bootstrap_is_disabled_by_default_but_explicitly_opt_in():
@@ -27,8 +27,8 @@ def test_schema_bootstrap_is_disabled_by_default_but_explicitly_opt_in():
     assert "if schema_bootstrap:" in source
     assert "await ensure_schema(hass)" in source
     assert "green_smart schema bootstrap skipped" in source
-    assert "green_smart DB-backed HTTP views skipped" in source
-    assert "return True" in source.split("green_smart DB-backed HTTP views skipped", 1)[1].split("if not domain_data.get(\"_views_registered\")", 1)[0]
+    assert "green_smart heavy DB-backed HTTP views skipped" in source
+    assert "RebuildSettingsGreenhouseCreateView" in source.split("green_smart heavy DB-backed HTTP views skipped", 1)[0]
     assert "green_smart DB-backed schedulers skipped" in source
     assert "return True" in source.split("green_smart DB-backed schedulers skipped", 1)[1].split("await _setup_safety_guard_watchdog_scheduler", 1)[0]
 

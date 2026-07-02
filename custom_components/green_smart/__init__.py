@@ -306,7 +306,7 @@ async def async_setup(hass, config):
         WeatherLocationSearchView, WeatherWeeklyView,
         PesticideSearchView, PesticideKeyConfigView, PesticideMixCheckView,
     )
-    from .db import ensure_schema
+    from .db import ensure_schema, ensure_settings_schema
     from .crop_views import (
         CropSeasonsView, CropSeasonDemolishView, CropSeasonDeleteView,
         CropGrowthListView, CropGrowthReportView, CropModelFeatureSourcesView, CropModelTrainingSnapshotView, CropModelTrainingReadinessView,
@@ -336,11 +336,20 @@ async def async_setup(hass, config):
     )
     domain_data = hass.data.setdefault(DOMAIN, {})
     schema_bootstrap = _schema_bootstrap_enabled()
+    await ensure_settings_schema(hass)
+    _LOGGER.warning("green_smart settings schema bootstrap completed")
     if schema_bootstrap:
         await ensure_schema(hass)
     else:
+        if not domain_data.get("_settings_views_registered"):
+            hass.http.register_view(RebuildSettingsSnapshotView())
+            hass.http.register_view(RebuildSettingsGreenhouseCreateView())
+            hass.http.register_view(RebuildSettingsGreenhouseItemView())
+            hass.http.register_view(RebuildSettingsZoneCreateView())
+            hass.http.register_view(RebuildSettingsDeviceSensorMappingView())
+            domain_data["_settings_views_registered"] = True
         _LOGGER.warning("green_smart schema bootstrap skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
-        _LOGGER.warning("green_smart DB-backed HTTP views skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
+        _LOGGER.warning("green_smart heavy DB-backed HTTP views skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
         _LOGGER.warning("green_smart DB-backed schedulers skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
         return True
     if not domain_data.get("_views_registered"):

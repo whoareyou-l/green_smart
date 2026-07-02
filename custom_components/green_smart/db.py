@@ -9,6 +9,16 @@ _LOGGER = logging.getLogger(__name__)
 _pool: aiomysql.Pool | None = None
 
 
+def _green_smart_db_name() -> str:
+    """Return the dedicated Green Smart schema name.
+
+    `DB_NAME` may still point at Home Assistant recorder databases on older
+    installs. Product data must live in the dedicated Green Smart schema unless
+    explicitly overridden.
+    """
+    return os.environ.get("GREEN_SMART_DB_NAME", "green_smart")
+
+
 def _db_cfg() -> dict:
     """환경변수에서 DB 접속 정보 반환."""
     return {
@@ -16,7 +26,7 @@ def _db_cfg() -> dict:
         "port":     int(os.environ.get("DB_PORT", "3306")),
         "user":     os.environ.get("DB_USER", "gs_user"),
         "password": os.environ.get("DB_PASSWORD", ""),
-        "db":       os.environ.get("DB_NAME", "green_smart"),
+        "db":       _green_smart_db_name(),
     }
 
 
@@ -102,6 +112,121 @@ async def _ensure_index(cur, table: str, index_name: str, ddl: str) -> None:
         await cur.execute(f"ALTER TABLE {table} ADD INDEX {index_name} {ddl}")
 
 
+async def ensure_settings_schema(hass: HomeAssistant) -> None:
+    """Create the dedicated Green Smart schema and settings modal tables.
+
+    This is the minimal schema required for the settings greenhouse/zone/modal
+    flows while the old all-in-one legacy schema bootstrap remains disabled.
+    """
+    cfg = _db_cfg()
+    db_name = _green_smart_db_name()
+    create_database_statement = "CREATE DATABASE IF NOT EXISTS `green_smart` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    statements = (
+        "USE `green_smart`",
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_greenhouses (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            name VARCHAR(128) NOT NULL,
+            location VARCHAR(255) NOT NULL DEFAULT '',
+            operating_status VARCHAR(32) NOT NULL DEFAULT 'active',
+            install_type VARCHAR(128) NOT NULL DEFAULT '',
+            timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Seoul',
+            approval_scope VARCHAR(128) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            creation_reason TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_greenhouse (farm_id, name),
+            KEY idx_settings_greenhouse_status (farm_id, status),
+            KEY idx_settings_greenhouse_operating_status (farm_id, operating_status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_zones (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            greenhouse_id BIGINT NULL,
+            name VARCHAR(128) NOT NULL,
+            purpose VARCHAR(128) NOT NULL DEFAULT '재배',
+            area VARCHAR(64) NOT NULL DEFAULT '',
+            bed_count INT NOT NULL DEFAULT 0,
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_zone (farm_id, name),
+            KEY idx_settings_zone_greenhouse (farm_id, greenhouse_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_device_sensor_mappings (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id VARCHAR(128) NOT NULL,
+            sensor_entity VARCHAR(255) NOT NULL,
+            device_entity VARCHAR(255) NOT NULL,
+            mapping_role VARCHAR(128) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_device_sensor_mapping (farm_id, zone_id, sensor_entity, device_entity, mapping_role),
+            KEY idx_settings_device_sensor_mapping_zone (farm_id, zone_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+    )
+    conn = await aiomysql.connect(
+        host=cfg["host"],
+        port=cfg["port"],
+        user=cfg["user"],
+        password=cfg["password"],
+        charset="utf8mb4",
+        autocommit=True,
+    )
+    try:
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = %s", (db_name,))
+            schema_exists = bool(await cur.fetchone())
+            if not schema_exists:
+                rendered_create = create_database_statement.replace("`green_smart`", f"`{db_name}`")
+                try:
+                    await cur.execute(rendered_create)
+                except aiomysql.OperationalError as err:
+                    if str(err.args[0]) in {"1044", "1045"}:
+                        _LOGGER.warning("green_smart database create skipped by DB privileges; expecting existing db=%s", db_name)
+                    else:
+                        raise
+            for statement in statements:
+                rendered = statement.replace("`green_smart`", f"`{db_name}`")
+                normalized = rendered.lstrip().upper()
+                if normalized.startswith("CREATE TABLE IF NOT EXISTS"):
+                    table_name = rendered.split("CREATE TABLE IF NOT EXISTS", 1)[1].strip().split()[0].strip("`")
+                    await cur.execute(
+                        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+                        (db_name, table_name),
+                    )
+                    if await cur.fetchone():
+                        continue
+                await cur.execute(rendered)
+            await _ensure_column(cur, "green_smart_settings_greenhouses", "operating_status", "operating_status VARCHAR(32) NOT NULL DEFAULT 'active' AFTER location")
+            await _ensure_column(cur, "green_smart_settings_greenhouses", "timezone", "timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Seoul' AFTER install_type")
+            await _ensure_column(cur, "green_smart_settings_greenhouses", "creation_reason", "creation_reason TEXT NULL AFTER note")
+            await _ensure_index(cur, "green_smart_settings_greenhouses", "idx_settings_greenhouse_operating_status", "(farm_id, operating_status)")
+    finally:
+        conn.close()
+        if hasattr(conn, "ensure_closed"):
+            await conn.ensure_closed()
+    _LOGGER.info("green_smart settings schema ensured (db=%s)", db_name)
+
+
 async def ensure_schema(hass: HomeAssistant) -> None:
     """Create the crop-management schema used by the Green Smart panel.
 
@@ -109,6 +234,7 @@ async def ensure_schema(hass: HomeAssistant) -> None:
     Keep this idempotent so HA restarts safely bootstrap missing tables before
     the HTTP views try to read/write crop records.
     """
+    await ensure_settings_schema(hass)
     statements = (
         """
         CREATE TABLE IF NOT EXISTS zones (
