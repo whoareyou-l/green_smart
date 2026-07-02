@@ -385,6 +385,11 @@ async def approve_user_approval_request(hass, request_id: str, actor: Any | None
     if decision in {"reject", "rejected", "deny", "denied"}:
         await execute(
             hass,
+            "UPDATE gs_users SET status = 'rejected', permission_summary = %s WHERE ha_user_id = %s",
+            ("승인 거부", target_id),
+        )
+        await execute(
+            hass,
             """
             UPDATE gs_approval_requests SET status='rejected', decided_by=%s, decided_at=NOW(), note=CONCAT(COALESCE(note,''), %s)
             WHERE id=%s
@@ -397,13 +402,22 @@ async def approve_user_approval_request(hass, request_id: str, actor: Any | None
             INSERT INTO gs_audit_logs (actor, action, summary, target_ref, result)
             VALUES (%s, 'reject_user_access', %s, %s, 'rejected')
             """,
-            (actor_id or "admin", f"승인 요청 반려: {row.get('requester') or target_id}", target_id or request_id),
+            (actor_id or "admin", f"승인 거부: {row.get('requester') or target_id} Green Smart 접근 반려", target_id or request_id),
         )
-        return {"ok": True, "requestId": request_id, "rejectedHaUserId": target_id, "status": "rejected"}
+        return {"ok": True, "requestId": request_id, "rejectedHaUserId": target_id, "status": "rejected", "settingsUsersPermissions": await settings_users_permissions_response(hass, actor)}
+    requested_role = str(row.get("requested_role") or "farm_staff")
     await execute(
         hass,
-        "UPDATE gs_users SET status = 'active', role = %s, permission_summary = %s WHERE ha_user_id = %s",
-        (row.get("requested_role") or "farm_staff", _permission_summary_for_role(str(row.get("requested_role") or "farm_staff")), target_id),
+        """
+        INSERT INTO gs_users (ha_user_id, display_name, role, status, permission_summary, last_seen_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
+        ON DUPLICATE KEY UPDATE
+            role = VALUES(role),
+            status = %s,
+            permission_summary = VALUES(permission_summary),
+            last_seen_at = NOW()
+        """,
+        (target_id, row.get("requester") or target_id, requested_role, "active", _permission_summary_for_role(requested_role), "active"),
     )
     await execute(
         hass,
@@ -419,9 +433,9 @@ async def approve_user_approval_request(hass, request_id: str, actor: Any | None
         INSERT INTO gs_audit_logs (actor, action, summary, target_ref, result)
         VALUES (%s, 'approve_user_access', %s, %s, 'ok')
         """,
-        (actor_id or "admin", f"사용자 승인: {row.get('requester') or target_id} → {row.get('requested_role') or 'farm_staff'}", target_id),
+        (actor_id or "admin", f"사용자 승인: {row.get('requester') or target_id} Green Smart 접근 승인 → {row.get('requested_role') or 'farm_staff'}", target_id),
     )
-    return {"ok": True, "requestId": request_id, "approvedHaUserId": target_id, "status": "approved"}
+    return {"ok": True, "requestId": request_id, "approvedHaUserId": target_id, "status": "approved", "settingsUsersPermissions": await settings_users_permissions_response(hass, actor)}
 
 
 class RebuildSettingsApprovalRequestView(HomeAssistantView):

@@ -38,11 +38,11 @@ def test_r7_079_reference_modal_structure_markers_exist():
         'data-r7-settings-approval-section="check-tags"',
         'data-r7-settings-approval-decision-memo',
         'data-r7-settings-approval-reject-button',
-        'data-r7-settings-approval-hold-button',
         'data-r7-settings-approval-apply-button',
         '_selectSettingsApprovalListRequest',
     ]:
         assert marker in source
+    assert 'data-r7-settings-approval-hold-button' not in source
 
 
 def test_r7_079_rendered_reference_modal_matches_requested_layout():
@@ -64,8 +64,10 @@ def test_r7_079_rendered_reference_modal_matches_requested_layout():
     result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
     assert result.returncode == 0, result.stderr + result.stdout
     html = json.loads(result.stdout)["html"]
-    for text in ["승인 필요 작업", "승인 대기 목록", "선택 작업 검토", "요청 정보", "변경 내용", "영향 분석", "검증 체크", "승인/반려 메모", "상세 로그 보기", "반려", "보류", "승인 적용"]:
+    for text in ["승인 필요 작업", "승인 대기 목록", "선택 작업 검토", "요청 정보", "변경 내용", "영향 분석", "검증 체크", "승인/반려 메모", "상세 로그 보기", "반려", "승인"]:
         assert text in html
+    assert "보류" not in html
+    assert "승인 적용" not in html
     assert 'data-r7-settings-approval-reference-modal="true"' in html
     assert 'data-r7-settings-approval-list-modal-open="true"' in html
     assert 'data-r7-settings-approval-list-row-selected="true"' in html
@@ -76,5 +78,7 @@ def test_r7_079_rendered_reference_modal_matches_requested_layout():
 
 def test_r7_079_documented():
     doc = _read(DOC)
-    for phrase in ["좌측 승인 대기 목록", "우측 선택 작업 검토", "요청 정보", "변경 내용", "영향 분석", "검증 체크", "승인 적용"]:
+    for phrase in ["좌측 승인 대기 목록", "우측 선택 작업 검토", "요청 정보", "변경 내용", "영향 분석", "검증 체크", "승인"]:
         assert phrase in doc
+    assert "보류" not in doc
+    assert "승인 적용" not in doc

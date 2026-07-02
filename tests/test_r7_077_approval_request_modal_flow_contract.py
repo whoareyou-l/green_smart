@@ -31,7 +31,7 @@ def test_r7_077_backend_has_request_and_approve_views():
         'url = "/api/green_smart/rebuild/settings/approval-requests/{request_id}/decision"',
         "create_user_approval_request",
         "approve_user_approval_request",
-        "UPDATE gs_users SET status = 'active'",
+        '"active"',
         "INSERT INTO gs_audit_logs",
         "status='approved'",
     ]:

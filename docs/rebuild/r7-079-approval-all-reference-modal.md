@@ -17,7 +17,7 @@ Status: current baseline for `v1.14.50`.
   - 영향 분석
   - 검증 체크
   - 승인/반려 메모
-- Footer actions: 상세 로그 보기, 반려, 보류, 승인 적용, 닫기.
+- Footer actions: 상세 로그 보기, 반려, 승인, 닫기.
 
 ## Binding boundary
 
@@ -25,4 +25,4 @@ The modal is still isolated from crop record/history modal routing. `모든 승�
 
 ## Decision behavior
 
-The list row changes the selected review pane. `승인 적용` reuses the existing approval decision API path through the approval button marker, while 반려/보류 remain visible UI affordances until backend decision expansion is implemented.
+The list row changes the selected review pane. `승인` calls the approval decision API and activates the target Green Smart user; `반려` calls the same decision API with reject, records the user as rejected, and writes an audit log row.

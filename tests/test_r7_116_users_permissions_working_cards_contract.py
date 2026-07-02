@@ -48,6 +48,10 @@ def test_r7_116_backend_exposes_working_card_mutation_apis_and_audit_writes():
     ):
         assert literal in views
     assert "UPDATE gs_users SET role = %s, status = %s, permission_summary = %s" in views
+    assert "UPDATE gs_users SET status = 'rejected'" in views
+    assert '"active"' in views
+    assert "Green Smart 접근 승인" in views
+    assert "Green Smart 접근 반려" in views
     assert "INSERT INTO gs_approval_requests" in views
 
 
@@ -67,6 +71,16 @@ def test_r7_116_frontend_binds_cards_to_real_api_actions():
         assert literal in source
     assert 'this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_PERMISSION_CHANGE_REQUEST_API_PATH' in source
     assert 'this.hass.callApi("PATCH", `${REBUILD_SETTINGS_USER_ROLE_API_PREFIX}${encodeURIComponent(haUserId)}`' in source
+
+
+def test_r7_116_approval_modal_has_no_hold_and_equal_decision_buttons():
+    source = _read(PANEL)
+    assert 'data-r7-settings-approval-hold-button' not in source
+    assert '>승인 적용<' not in source
+    assert 'approvalDecisionButtonStyle = "height:40px;min-width:88px;' in source
+    assert 'data-r7-settings-approval-reject-button="${selected.id}" style="${approvalDecisionButtonStyle}' in source
+    assert 'data-r7-settings-approval-approve-button="${selected.id}"' in source
+    assert '>승인</button>' in source
 
 
 def test_r7_116_db_has_columns_needed_for_role_and_decision_audit():
