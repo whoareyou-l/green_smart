@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_083_version_surfaces_are_1_14_8():
-    assert '"version": "1.14.52"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.52"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.52"' in _read(PANEL)
+    assert '"version": "1.14.53"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.53"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.53"' in _read(PANEL)
 
 
 def test_r7_083_audit_all_has_dedicated_cda_modal_route():
@@ -78,13 +78,13 @@ def test_r7_083_rendered_audit_all_modal_uses_cda_not_legacy_history_card():
       panel._settingsUsersPermissions = {{
         source: 'contract-fixture',
         approvalRows: [],
-        users: [],
-        auditRows: [
-          {{ id: 1, label: '권한 승인', actor: 'admin', action: 'approve', summary: 'farm_staff 승인', meta: '2026-07-01 05:10', createdAt: '2026-07-01 05:10', tone: 'green' }},
-          {{ id: 2, label: '역할 변경', actor: 'owner01', action: 'role-change', summary: '조회 권한 변경', meta: '2026-07-01 05:20', createdAt: '2026-07-01 05:20', tone: 'amber' }}
+        auditRows: [],
+        users: [
+          {{ id: 1, haUserId: 'admin-ha-id', displayName: 'admin', role: 'admin', status: 'active', permissionSummary: '전체 설정', lastSeenAt: '2026-07-03 08:12', createdAt: '2026-07-03 06:15', updatedAt: '2026-07-03 08:12' }},
+          {{ id: 3, haUserId: 'user-ha-id', displayName: '임서원', role: 'farm_staff', status: 'active', permissionSummary: '기록 · 모니터링', lastSeenAt: '2026-07-03 06:15', createdAt: '2026-07-03 06:15', updatedAt: '2026-07-03 06:17' }}
         ]
       }};
-      panel._settingsAuditLogModal = {{ open: true, selectedId: 2 }};
+      panel._settingsAuditLogModal = {{ open: true, selectedId: 'user-ha-id' }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
       console.log(JSON.stringify({{ html }}));
     """
@@ -102,23 +102,25 @@ def test_r7_083_rendered_audit_all_modal_uses_cda_not_legacy_history_card():
         'data-r7-cda-split-modal',
         'data-r7-settings-audit-log-detail-panel',
         'data-r7-settings-audit-log-export',
-        'data-r7-settings-audit-log-reject-button="2"',
-        'data-r7-settings-audit-log-edit-button="2"',
-        '전체 감사 로그',
+        'data-r7-settings-audit-log-reject-button="user-ha-id"',
+        'data-r7-settings-audit-log-edit-button="user-ha-id"',
         '유저 목록',
         '선택한 유저 상세',
-        'actor',
-        'action',
-        'summary',
-        'target_ref',
-        'result',
-        '권한 승인',
-        '역할 변경',
+        'green_smart.gs_users',
+        'ha_user_id',
+        'display_name',
+        'role',
+        'status',
+        'permission_summary',
+        '임서원',
+        'farm_staff',
         '거부',
         '수정',
     ]:
         assert marker in html
-    detail = html[html.index('data-r7-settings-audit-log-detail-panel'):html.index('전체 감사 로그') if '전체 감사 로그' in html else len(html)]
+    detail_start = html.index('data-r7-settings-audit-log-detail-panel')
+    detail_end = html.index('<footer', detail_start) if '<footer' in html[detail_start:] else len(html)
+    detail = html[detail_start:detail_end]
     assert 'data-r7-settings-audit-log-close-button style' not in detail
     assert '히스토리를 불러오는 중입니다.' not in html
     assert 'data-r7-record-modal-loading' not in html
@@ -130,10 +132,10 @@ def test_r7_083_audit_edit_uses_growth_common_modal_prefilled_with_db_columns():
       const mod = await import({str(PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
       panel._settingsUsersPermissions = {{
-        source: 'contract-fixture', approvalRows: [], users: [],
-        auditRows: [{{ id: 7, actor: 'admin-user', action: 'approve_user_access', summary: '사용자 승인', targetRef: 'ha-user-7', target: 'ha-user-7', result: 'ok', status: 'ok', createdAt: '2026-07-03 06:17' }}]
+        source: 'contract-fixture', approvalRows: [], auditRows: [],
+        users: [{{ id: 7, haUserId: 'ha-user-7', displayName: '임서원', role: 'farm_staff', status: 'active', permissionSummary: '기록 · 모니터링', lastSeenAt: '2026-07-03 06:17', createdAt: '2026-07-03 06:15', updatedAt: '2026-07-03 06:17' }}]
       }};
-      panel._settingsAuditLogEditModal = {{ open: true, selectedId: 7, state: 'idle' }};
+      panel._settingsAuditLogEditModal = {{ open: true, selectedId: 'ha-user-7', state: 'idle' }};
       const html = panel.renderR7SettingsAuditLogEditModal();
       console.log(JSON.stringify({{ html }}));
     """
@@ -144,13 +146,14 @@ def test_r7_083_audit_edit_uses_growth_common_modal_prefilled_with_db_columns():
         'data-r7-record-common-modal-shell',
         'data-r7-settings-audit-log-edit-modal="true"',
         'data-r7-settings-audit-log-edit-form',
-        'name="actor" value="admin-user"',
-        'name="action" value="approve_user_access"',
-        'name="summary"',
-        '사용자 승인',
-        'name="target_ref" value="ha-user-7"',
-        'name="result" value="ok"',
-        '감사 로그 수정',
+        'name="haUserId" value="ha-user-7"',
+        'name="displayName" value="임서원"',
+        'name="role" value="farm_staff"',
+        'name="status" value="active"',
+        'name="permissionSummary"',
+        '기록 · 모니터링',
+        '유저 수정',
+        'gs_users DB 항목',
     ]:
         assert marker in html
 

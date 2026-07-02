@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_116_version_surfaces_are_1_14_52():
-    assert '"version": "1.14.52"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.52"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.52"' in _read(PANEL)
+def test_r7_116_version_surfaces_are_1_14_53():
+    assert '"version": "1.14.53"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.53"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.53"' in _read(PANEL)
 
 
 def test_r7_116_users_permissions_routes_registered_even_when_schema_bootstrap_is_off():
@@ -48,7 +48,7 @@ def test_r7_116_backend_exposes_working_card_mutation_apis_and_audit_writes():
         "gs_audit_logs",
     ):
         assert literal in views
-    assert "UPDATE gs_users SET role = %s, status = %s, permission_summary = %s" in views
+    assert "UPDATE gs_users SET display_name = %s, role = %s, status = %s, permission_summary = %s" in views
     assert "UPDATE gs_users SET status = 'rejected'" in views
     assert '"active"' in views
     assert "Green Smart 접근 승인" in views

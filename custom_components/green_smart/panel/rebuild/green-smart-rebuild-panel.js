@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.52";
+const REBUILD_VERSION = "1.14.53";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -439,18 +439,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (!auditId) return;
     const data = new FormData(form);
     const payload = {
-      decision: "edit",
-      actor: String(data.get("actor") || ""),
-      action: String(data.get("action") || ""),
-      summary: String(data.get("summary") || ""),
-      target_ref: String(data.get("target_ref") || ""),
-      result: String(data.get("result") || ""),
+      displayName: String(data.get("displayName") || ""),
+      role: String(data.get("role") || "farm_staff"),
+      status: String(data.get("status") || "active"),
+      permissionSummary: String(data.get("permissionSummary") || ""),
     };
     this._settingsAuditLogEditModal = { ...(this._settingsAuditLogEditModal || {}), open: true, selectedId: auditId, state: "saving", error: "" };
     this.render();
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
-      await this.hass.callApi("PATCH", `${REBUILD_SETTINGS_AUDIT_LOG_API_PREFIX}${encodeURIComponent(auditId)}`, payload);
+      await this.hass.callApi("PATCH", `${REBUILD_SETTINGS_USER_ROLE_API_PREFIX}${encodeURIComponent(auditId)}`, payload);
       this._settingsAuditLogEditModal = { ...(this._settingsAuditLogEditModal || {}), open: false, state: "saved" };
       this._settingsAuditLogModal = { ...(this._settingsAuditLogModal || {}), open: true, selectedId: auditId, actionState: "saved", actionDecision: "edit" };
       await this._loadSettingsUsersPermissions();
@@ -1375,7 +1373,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       });
     });
     this.querySelectorAll("[data-r7-settings-audit-log-reject-button]").forEach((button) => {
-      button.addEventListener("click", (event) => { event.preventDefault(); this._updateSettingsAuditLogRow(button.getAttribute("data-r7-settings-audit-log-reject-button"), "reject"); });
+      button.addEventListener("click", (event) => { event.preventDefault(); this._updateSettingsUserRole(button.getAttribute("data-r7-settings-audit-log-reject-button"), button.getAttribute("data-r7-settings-audit-log-reject-role") || "farm_staff", "rejected"); });
     });
     this.querySelectorAll("[data-r7-settings-audit-log-edit-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsAuditLogEditModal(button.getAttribute("data-r7-settings-audit-log-edit-button")); });
@@ -2099,6 +2097,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `background:${palette[0]};border-color:${palette[1]};color:${palette[2]};`;
   }
 
+  _normalizeR7SettingsUserRow(row = {}, index = 0) {
+    const haUserId = row.haUserId || row.ha_user_id || row.id || `user-${index + 1}`;
+    const displayName = row.displayName || row.display_name || row.kind || haUserId || "사용자";
+    const role = row.role || row.at || "farm_staff";
+    const status = row.status || String(row.memo || "").split(" · ")[0] || "active";
+    const permissionSummary = row.permissionSummary || row.permission_summary || row.state || "조회 · 기록";
+    const lastSeenAt = row.lastSeenAt || row.last_seen_at || row.memo || "미확인";
+    const createdAt = row.createdAt || row.created_at || "미확인";
+    const updatedAt = row.updatedAt || row.updated_at || "미확인";
+    const tone = row.tone || (status === "active" ? "green" : status === "rejected" ? "red" : "amber");
+    return { id: String(haUserId), dbId: row.id || "", haUserId: String(haUserId), displayName, role, status, permissionSummary, lastSeenAt, createdAt, updatedAt, tone, raw: row };
+  }
+
   _normalizeR7SettingsAuditRow(row = {}, index = 0) {
     const id = row.id || row.auditId || row.createdAt || row.created_at || row.actor || `audit-${index + 1}`;
     const action = row.action || row.raw?.action || "audit";
@@ -2477,56 +2488,56 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7SettingsAuditLogEditModal() {
     const modal = this._settingsAuditLogEditModal || { open: false };
-    const rows = (Array.isArray(this.r7SettingsUsersPermissionsData().auditRows) ? this.r7SettingsUsersPermissionsData().auditRows : []).map((row, index) => this._normalizeR7SettingsAuditRow(row, index));
-    const selected = rows.find((row) => String(row.id) === String(modal.selectedId || "")) || rows[0] || this._normalizeR7SettingsAuditRow({}, 0);
+    const rows = (Array.isArray(this.r7SettingsUsersPermissionsData().users) ? this.r7SettingsUsersPermissionsData().users : []).map((row, index) => this._normalizeR7SettingsUserRow(row, index));
+    const selected = rows.find((row) => String(row.haUserId) === String(modal.selectedId || "")) || rows[0] || this._normalizeR7SettingsUserRow({}, 0);
     const value = (v) => this._r7Text(v || "");
     const sections = [
-      this._r7SettingsCreateSection("audit-db-identity", "DB 기준 식별 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>id</span><input name="id" value="${value(selected.id)}" readonly data-r7-settings-audit-log-edit-db-column="id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label>${this._r7SettingsCreateField("actor", "actor", value(selected.actor), 'data-r7-settings-audit-log-edit-db-column="actor"')}</div>`),
-      this._r7SettingsCreateSection("audit-db-action", "DB 항목 수정", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("action", "action", value(selected.action), 'data-r7-settings-audit-log-edit-db-column="action"')}${this._r7SettingsCreateField("result", "result", value(selected.result), 'data-r7-settings-audit-log-edit-db-column="result"')}${this._r7SettingsCreateField("target_ref", "target_ref", value(selected.targetRef), 'data-r7-settings-audit-log-edit-db-column="target_ref"')}</div>`),
-      this._r7SettingsCreateSection("audit-db-summary", "summary", this._r7SettingsCreateTextarea("summary", "summary", value(selected.summary)).replace('<textarea ', '<textarea data-r7-settings-audit-log-edit-db-column="summary" ')),
+      this._r7SettingsCreateSection("user-db-identity", "DB 기준 식별 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>id</span><input name="id" value="${value(selected.dbId)}" readonly data-r7-settings-audit-log-edit-db-column="id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>ha_user_id</span><input name="haUserId" value="${value(selected.haUserId)}" readonly data-r7-settings-audit-log-edit-db-column="ha_user_id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label></div>`),
+      this._r7SettingsCreateSection("user-db-fields", "DB 항목 수정", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("displayName", "display_name", value(selected.displayName), 'data-r7-settings-audit-log-edit-db-column="display_name"')}${this._r7SettingsCreateField("role", "role", value(selected.role), 'data-r7-settings-audit-log-edit-db-column="role"')}${this._r7SettingsCreateField("status", "status", value(selected.status), 'data-r7-settings-audit-log-edit-db-column="status"')}</div>`),
+      this._r7SettingsCreateSection("user-db-permission", "permission_summary", this._r7SettingsCreateTextarea("permissionSummary", "permission_summary", value(selected.permissionSummary)).replace('<textarea ', '<textarea data-r7-settings-audit-log-edit-db-column="permission_summary" ')),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "audit-log-edit", title: "감사 로그 수정", subtitle: "생육조사 작성 팝업과 같은 공통 모달에서 gs_audit_logs DB 항목을 수정합니다", formAttr: `data-r7-settings-audit-log-edit-form="${value(selected.id)}"`, closeKind: "audit-log-edit", state: modal.state || "idle", error: modal.error || "", submitLabel: "DB 수정 저장", sections });
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "audit-log-edit", title: "유저 수정", subtitle: "생육조사 작성 팝업과 같은 공통 모달에서 gs_users DB 항목을 수정합니다", formAttr: `data-r7-settings-audit-log-edit-form="${value(selected.haUserId)}"`, closeKind: "audit-log-edit", state: modal.state || "idle", error: modal.error || "", submitLabel: "유저 수정 저장", sections });
   }
 
   renderR7SettingsAuditLogModal() {
     const modal = this._settingsAuditLogModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-audit-log-cda-modal="true" data-r7-settings-audit-log-modal-open="false"></template>`;
-    const auditRows = Array.isArray(this.r7SettingsUsersPermissionsData().auditRows) ? this.r7SettingsUsersPermissionsData().auditRows : [];
-    const rows = auditRows.map((row, index) => this._normalizeR7SettingsAuditRow(row, index));
-    const selected = rows.find((row) => String(row.id) === String(modal.selectedId || "")) || rows[0] || this._normalizeR7SettingsAuditRow({}, 0);
+    const userRows = Array.isArray(this.r7SettingsUsersPermissionsData().users) ? this.r7SettingsUsersPermissionsData().users : [];
+    const rows = userRows.map((row, index) => this._normalizeR7SettingsUserRow(row, index));
+    const selected = rows.find((row) => String(row.haUserId) === String(modal.selectedId || "")) || rows[0] || this._normalizeR7SettingsUserRow({}, 0);
     const search = this.renderR7CdaSearchFilterBar({
       searchAttr: "data-r7-settings-audit-log-search-input",
       searchPlaceholder: "유저 목록 검색",
-      filters: [["all","전체"],["ok","ok"],["edited","edited"],["rejected","rejected"],["system","system"]].map(([key,label]) => ({ label, active: key === "all", tone: "green", attrs: `data-r7-settings-audit-log-filter="${key}"` })),
+      filters: [["all","전체"],["active","active"],["pending","pending"],["rejected","rejected"],["admin","admin"]].map(([key,label]) => ({ label, active: key === "all", tone: "green", attrs: `data-r7-settings-audit-log-filter="${key}"` })),
     });
     const rowHtml = rows.length ? rows.map((row) => this.renderR7CdaCompactListRow({
-      selected: row.id === selected.id,
-      attrs: `data-r7-settings-audit-log-list-item-button="${row.id}" data-r7-settings-audit-log-row="${row.id}" data-r7-settings-audit-log-row-selected="${row.id === selected.id ? 'true' : 'false'}"`,
-      columns: [`<span>${row.id}</span>`, `<b>${row.actor}</b>`, `<span>${row.action}</span>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.result}</span>`, `<span>${row.at}</span>`],
+      selected: row.haUserId === selected.haUserId,
+      attrs: `data-r7-settings-audit-log-list-item-button="${row.haUserId}" data-r7-settings-audit-log-row="${row.haUserId}" data-r7-settings-audit-log-row-selected="${row.haUserId === selected.haUserId ? 'true' : 'false'}"`,
+      columns: [`<span>${row.dbId}</span>`, `<b>${row.displayName}</b>`, `<span>${row.role}</span>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.status}</span>`, `<span>${row.updatedAt}</span>`],
     })).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">유저 목록 데이터 없음</p>`;
     const listPanel = this.renderR7CdaListPanel({
       title: "유저 목록",
-      columns: ["id", "actor", "action", "result", "created_at"],
+      columns: ["id", "display_name", "role", "status", "updated_at"],
       rowsHtml: rowHtml,
       footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${rows.length}건</span>`,
       attrs: 'data-r7-settings-audit-log-list-panel',
     }).replace('data-r7-cda-list-body', 'data-r7-cda-list-body data-r7-settings-audit-log-list-body');
     const dbGrid = `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.7fr 1.3fr .7fr 1.3fr;overflow:hidden;">${[
-      ["id", selected.id], ["actor", selected.actor], ["action", selected.action], ["summary", selected.summary], ["target_ref", selected.targetRef || "NULL"], ["result", selected.result], ["created_at", selected.at]
+      ["id", selected.dbId], ["ha_user_id", selected.haUserId], ["display_name", selected.displayName], ["role", selected.role], ["status", selected.status], ["permission_summary", selected.permissionSummary], ["last_seen_at", selected.lastSeenAt], ["created_at", selected.createdAt], ["updated_at", selected.updatedAt]
     ].map(([label, value]) => `<span style="padding:8px;background:#fbfdfb;font-weight:950;">${label}</span><span style="padding:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${value}</span>`).join("")}</div>`;
-    const info = this.renderR7CdaDetailSection({ title: "1. DB row", attrs: 'data-r7-settings-audit-log-section="info"', body: dbGrid });
-    const summary = this.renderR7CdaDetailSection({ title: "2. summary", attrs: 'data-r7-settings-audit-log-section="summary"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${selected.summary}</p>` });
-    const evidence = this.renderR7CdaDetailSection({ title: "3. DB 근거", attrs: 'data-r7-settings-audit-log-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">green_smart.gs_audit_logs</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">id 기준 수정</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">actor/action/summary/target_ref/result</span></div>` });
+    const info = this.renderR7CdaDetailSection({ title: "1. gs_users DB row", attrs: 'data-r7-settings-audit-log-section="info"', body: dbGrid });
+    const summary = this.renderR7CdaDetailSection({ title: "2. permission_summary", attrs: 'data-r7-settings-audit-log-section="summary"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${selected.permissionSummary}</p>` });
+    const evidence = this.renderR7CdaDetailSection({ title: "3. DB 근거", attrs: 'data-r7-settings-audit-log-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">green_smart.gs_users</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">ha_user_id 기준 수정</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">display_name/role/status/permission_summary</span></div>` });
     const actionStatus = modal.actionState === "saving" ? "저장 중" : modal.actionState === "saved" ? "DB 반영 완료" : modal.actionState === "error" ? `오류: ${modal.actionError || 'audit-log-update-failed'}` : "";
     const detailPanel = this.renderR7CdaDetailPanel({
       title: "선택한 유저 상세",
       attrs: 'data-r7-settings-audit-log-detail-panel',
-      badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.state}</span>`,
+      badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.status}</span>`,
       body: `${info}${summary}${evidence}${actionStatus ? `<p data-r7-settings-audit-log-action-state="${modal.actionState}" style="margin:0;color:${modal.actionState === 'error' ? '#b42318' : '#25804a'};font-size:12px;font-weight:900;">${actionStatus}</p>` : ''}`,
-      footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-audit-log-export style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">내보내기 준비</button>`, actions: [`<button type="button" data-r7-settings-audit-log-reject-button="${selected.id}" style="border:1px solid #f1b8b8;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 12px;font-weight:950;">거부</button>`, `<button type="button" data-r7-settings-audit-log-edit-button="${selected.id}" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`] }),
+      footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-audit-log-export style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">내보내기 준비</button>`, actions: [`<button type="button" data-r7-settings-audit-log-reject-button="${selected.haUserId}" data-r7-settings-audit-log-reject-role="${selected.role}" style="border:1px solid #f1b8b8;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 12px;font-weight:950;">거부</button>`, `<button type="button" data-r7-settings-audit-log-edit-button="${selected.haUserId}" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`] }),
     });
-    const header = this.renderR7CdaModalHeader({ icon: "mdi:file-document-check-outline", title: "전체 감사 로그", subtitle: `${selected.actor} · ${selected.title} · ${selected.at}`, closeAttr: "data-r7-settings-audit-log-close-button" });
-    const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 이 모달은 설정 감사 로그 전용 CDA 완성형입니다. 기록 조회 공통 레이아웃과 동일한 구조를 사용합니다.</span><button type="button" data-r7-settings-audit-log-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
+    const header = this.renderR7CdaModalHeader({ icon: "mdi:account-group-outline", title: "유저 목록", subtitle: `${selected.displayName} · ${selected.role} · ${selected.status}`, closeAttr: "data-r7-settings-audit-log-close-button" });
+    const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 이 모달은 gs_users DB 기준의 유저 목록/상세/수정 흐름입니다. 변경 이력은 감사 로그에 기록됩니다.</span><button type="button" data-r7-settings-audit-log-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: `data-r7-settings-audit-log-cda-modal="true" data-r7-settings-audit-log-modal-open="${modal.open ? 'true' : 'false'}"`, header, search, left: listPanel, right: detailPanel, footer });
   }
 

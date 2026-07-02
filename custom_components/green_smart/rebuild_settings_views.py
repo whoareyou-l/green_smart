@@ -122,10 +122,18 @@ def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]]
     """Map DB rows into the rebuild settings/users-permissions DTO."""
     user_rows = [
         {
+            "id": row.get("id"),
             "kind": row.get("display_name") or row.get("ha_user_id") or "사용자",
+            "displayName": row.get("display_name") or "",
             "at": row.get("role") or "farm_staff",
+            "role": row.get("role") or "farm_staff",
             "memo": f"{row.get('status') or 'active'} · {_fmt_time(row.get('last_seen_at'))}",
             "state": row.get("permission_summary") or "조회 · 기록",
+            "permissionSummary": row.get("permission_summary") or "조회 · 기록",
+            "status": row.get("status") or "active",
+            "lastSeenAt": _fmt_time(row.get("last_seen_at")),
+            "createdAt": _fmt_time(row.get("created_at")),
+            "updatedAt": _fmt_time(row.get("updated_at")),
             "icon": "mdi:shield-account-outline" if row.get("role") == "admin" else "mdi:account-tie-outline" if row.get("role") == "farm_owner" else "mdi:account-outline",
             "tone": "green" if row.get("status") == "active" else "amber",
             "haUserId": row.get("ha_user_id") or "",
@@ -197,7 +205,7 @@ async def settings_users_permissions_response(hass, user: Any | None = None) -> 
     users = await fetchall(
         hass,
         """
-        SELECT ha_user_id, display_name, role, status, permission_summary, last_seen_at
+        SELECT id, ha_user_id, display_name, role, status, permission_summary, last_seen_at, created_at, updated_at
         FROM gs_users
         ORDER BY last_seen_at DESC, updated_at DESC, id DESC
         LIMIT 50
@@ -345,14 +353,17 @@ async def update_settings_user_role(hass, ha_user_id: str, user: Any | None, pay
         return {"ok": False, "reasonCode": "ha_user_id_required", "status": 400}
     role = _valid_role(payload.get("role"))
     status = _valid_user_status(payload.get("status") or "active")
+    display_name = str(payload.get("displayName") or payload.get("display_name") or "").strip()
     permission_summary = str(payload.get("permissionSummary") or payload.get("permission_summary") or _permission_summary_for_role(role))
     existing = await fetchall(hass, "SELECT ha_user_id, display_name, role, status, permission_summary FROM gs_users WHERE ha_user_id=%s LIMIT 1", (target,))
     if not existing:
         return {"ok": False, "reasonCode": "settings_user_not_found", "status": 404}
+    if not display_name:
+        display_name = str(existing[0].get("display_name") or target)
     await execute(
         hass,
-        "UPDATE gs_users SET role = %s, status = %s, permission_summary = %s WHERE ha_user_id = %s",
-        (role, status, permission_summary, target),
+        "UPDATE gs_users SET display_name = %s, role = %s, status = %s, permission_summary = %s WHERE ha_user_id = %s",
+        (display_name, role, status, permission_summary, target),
     )
     await execute(
         hass,
