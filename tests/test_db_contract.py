@@ -477,19 +477,23 @@ def test_control_record_save_requires_active_season_before_posting():
 def test_crop_season_post_ensures_zone_and_get_keeps_zone_id_name():
     view_source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
     repo_source = (ROOT / "custom_components" / "green_smart" / "repositories" / "crop_repo.py").read_text(encoding="utf-8")
+    zone_adapter = (ROOT / "custom_components" / "green_smart" / "repositories" / "legacy_adapters" / "zones.py").read_text(encoding="utf-8")
 
     assert "async def _ensure_zone" in view_source
     assert "INSERT IGNORE INTO zones" in view_source
     assert "await _ensure_zone(hass, zone_id_int)" in view_source
     assert "create_crop_season(hass, actor, body)" in view_source
-    assert "LEFT JOIN zones" in repo_source
-    assert "s.zone_id AS zoneId" in repo_source
-    assert "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName" in repo_source
+    assert "CROP_SEASON_ZONE_LEFT_JOIN" in repo_source
+    assert "CROP_SEASON_ZONE_NAME_SELECT" in repo_source
+    assert "LEFT JOIN zones" in zone_adapter
+    assert "s.zone_id AS zoneId" in zone_adapter
+    assert "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName" in zone_adapter
 
 
 def test_crop_season_patch_updates_editable_fields_and_returns_zone_label():
     view_source = (ROOT / "custom_components" / "green_smart" / "crop_views.py").read_text(encoding="utf-8")
     repo_source = (ROOT / "custom_components" / "green_smart" / "repositories" / "crop_repo.py").read_text(encoding="utf-8")
+    zone_adapter = (ROOT / "custom_components" / "green_smart" / "repositories" / "legacy_adapters" / "zones.py").read_text(encoding="utf-8")
 
     assert "async def patch(self, request: web.Request, season_id: str)" in view_source
     assert "update_crop_season(hass, actor, int(season_id), body)" in view_source
@@ -497,7 +501,8 @@ def test_crop_season_patch_updates_editable_fields_and_returns_zone_label():
     assert "crop_type = %s" in repo_source
     assert "zone_id = %s" in repo_source
     assert "plant_density = %s" in repo_source
-    assert "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName" in repo_source
+    assert "CROP_SEASON_ZONE_NAME_SELECT" in repo_source
+    assert "COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName" in zone_adapter
 
 
 def test_crop_season_delete_hard_deletes_child_tables_before_season():

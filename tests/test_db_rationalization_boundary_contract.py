@@ -92,9 +92,9 @@ def _production_py_files() -> list[Path]:
 
 
 def test_db_rationalization_version_surfaces_are_1_14_32():
-    assert '"version": "1.14.33"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.33"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.33"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.34"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.34"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.34"' in _read(REBUILD_PANEL)
 
 
 def test_db_rationalization_docs_classify_all_current_tables_and_protect_ha_recorder():
@@ -127,6 +127,16 @@ def test_no_destructive_sql_against_ha_or_legacy_tables_without_approval_marker(
     assert offenders == []
 
 
+def _contains_legacy_sql_table_reference(text: str, table: str) -> bool:
+    """Return true for SQL table tokens, not incidental words/import paths."""
+    table_pattern = re.escape(table)
+    sql_table_reference = re.compile(
+        rf"\b(FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+`?{table_pattern}`?\b",
+        re.I,
+    )
+    return bool(sql_table_reference.search(text))
+
+
 def test_legacy_table_direct_usage_is_quarantined_in_manifest_not_untracked():
     manifest = _read(MANIFEST_DOC)
     offenders = []
@@ -134,7 +144,7 @@ def test_legacy_table_direct_usage_is_quarantined_in_manifest_not_untracked():
         relative = str(path.relative_to(CUSTOM_COMPONENT))
         text = _read(path)
         for table in sorted(LEGACY_TABLES):
-            if table in text:
+            if _contains_legacy_sql_table_reference(text, table):
                 if relative in ALLOWED_BOOTSTRAP_FILES:
                     continue
                 marker = f"`{relative}` -> `{table}`"

@@ -4,6 +4,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CROP_VIEWS = ROOT / "custom_components" / "green_smart" / "crop_views.py"
 CROP_SERVICE = ROOT / "custom_components" / "green_smart" / "services" / "crop_service.py"
 CROP_REPO = ROOT / "custom_components" / "green_smart" / "repositories" / "crop_repo.py"
+ZONE_ADAPTER = ROOT / "custom_components" / "green_smart" / "repositories" / "legacy_adapters" / "zones.py"
 BACKEND_PLAN = ROOT / "docs" / "rebuild" / "backend-api-decomposition-plan.md"
 MASTER_PLAN = ROOT / "docs" / "plans" / "2026-06-28-green-smart-product-first-rebuild-plan.md"
 PROJECT_MASTER = ROOT / "docs" / "PROJECT_MASTER_PLAN.md"
@@ -16,26 +17,29 @@ def _read(path: Path) -> str:
 
 
 def test_rb006a_version_surfaces_are_v1118():
-    assert '"version": "1.14.33"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.33"' in _read(PANEL)
-    assert "v1.14.33" in _read(BACKEND_PLAN)
+    assert '"version": "1.14.34"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.34"' in _read(PANEL)
+    assert "v1.14.34" in _read(BACKEND_PLAN)
 
 
 def test_rb006a_repository_exists_and_preserves_crop_seasons_select_helper():
     assert CROP_REPO.exists()
     repo = _read(CROP_REPO)
+    zone_adapter = _read(ZONE_ADAPTER)
     for marker in (
         "async def list_crop_seasons",
         "FROM crop_seasons s",
-        "LEFT JOIN zones z ON z.id = s.zone_id",
+        "CROP_SEASON_ZONE_LEFT_JOIN",
+        "CROP_SEASON_ZONE_NAME_SELECT",
         "WHERE s.deleted_at IS NULL",
         "ORDER BY s.plant_date DESC",
         "cropType",
         "demolishDate",
-        "zoneName",
-        "zoneId",
     ):
         assert marker in repo
+    assert "LEFT JOIN zones z ON z.id = s.zone_id" in zone_adapter
+    assert "zoneName" in zone_adapter
+    assert "zoneId" in zone_adapter
     list_section = repo.split("async def list_crop_seasons", 1)[1].split("async def get_crop_season", 1)[0]
     for forbidden in (
         "INSERT INTO crop_seasons",
@@ -113,7 +117,7 @@ def test_rb006a_docs_record_backend_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006A Crop read-only service/repo boundary",
-        "v1.14.33",
+        "v1.14.34",
         "services/crop_service.py",
         "repositories/crop_repo.py",
         "GET /api/green_smart/crop/seasons",

@@ -4,6 +4,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CROP_VIEWS = ROOT / "custom_components" / "green_smart" / "crop_views.py"
 CROP_SERVICE = ROOT / "custom_components" / "green_smart" / "services" / "crop_service.py"
 CROP_REPO = ROOT / "custom_components" / "green_smart" / "repositories" / "crop_repo.py"
+ZONE_ADAPTER = ROOT / "custom_components" / "green_smart" / "repositories" / "legacy_adapters" / "zones.py"
 BACKEND_PLAN = ROOT / "docs" / "rebuild" / "backend-api-decomposition-plan.md"
 MASTER_PLAN = ROOT / "docs" / "plans" / "2026-06-28-green-smart-product-first-rebuild-plan.md"
 PROJECT_MASTER = ROOT / "docs" / "PROJECT_MASTER_PLAN.md"
@@ -20,13 +21,14 @@ def _class_section(source: str, class_name: str, next_marker: str) -> str:
 
 
 def test_rb006c_version_surfaces_are_v11110():
-    assert '"version": "1.14.33"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.33"' in _read(PANEL)
-    assert "v1.14.33" in _read(BACKEND_PLAN)
+    assert '"version": "1.14.34"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.34"' in _read(PANEL)
+    assert "v1.14.34" in _read(BACKEND_PLAN)
 
 
 def test_rb006c_repository_owns_crop_season_write_sql_and_legacy_refetch_shape():
     repo = _read(CROP_REPO)
+    zone_adapter = _read(ZONE_ADAPTER)
     for marker in (
         "async def create_crop_season",
         "async def update_crop_season",
@@ -40,13 +42,15 @@ def test_rb006c_repository_owns_crop_season_write_sql_and_legacy_refetch_shape()
         "DELETE FROM pest_surveys WHERE season_id = %s",
         "DELETE FROM growth_surveys WHERE season_id = %s",
         "DELETE FROM crop_seasons WHERE id = %s",
-        "LEFT JOIN zones z ON z.id = s.zone_id",
+        "CROP_SEASON_ZONE_LEFT_JOIN",
+        "CROP_SEASON_ZONE_NAME_SELECT",
         "cropType",
         "demolishDate",
-        "zoneName",
-        "zoneId",
     ):
         assert marker in repo
+    assert "LEFT JOIN zones z ON z.id = s.zone_id" in zone_adapter
+    assert "zoneName" in zone_adapter
+    assert "zoneId" in zone_adapter
     for forbidden in (
         "request.app",
         "HomeAssistantView",
@@ -145,7 +149,7 @@ def test_rb006c_docs_record_write_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006C Crop season write service/repo boundary",
-        "v1.14.33",
+        "v1.14.34",
         "create/update/delete/demolish write helpers",
         "create_crop_season",
         "update_crop_season",

@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import Any
 
 from ..db import execute, fetchall, fetchone
+from .legacy_adapters.zones import CROP_SEASON_ZONE_LEFT_JOIN, CROP_SEASON_ZONE_NAME_SELECT
 
 
 def _json_safe_value(value: Any) -> Any:
@@ -29,16 +30,16 @@ def _json_safe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 async def list_crop_seasons(hass) -> list[dict[str, Any]]:
     """Return non-deleted crop seasons with legacy response keys preserved."""
-    return await fetchall(hass, """
+    return await fetchall(hass, f"""
         SELECT
             s.id, s.crop_type AS cropType, s.variety, s.method,
             s.plant_date AS plantDate, s.demolish_date AS demolishDate,
             s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
             s.total_plants AS totalPlants, s.plant_density AS plantDensity,
             s.train_dir AS trainDir, s.notes,
-            COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
+            {CROP_SEASON_ZONE_NAME_SELECT}
         FROM crop_seasons s
-        LEFT JOIN zones z ON z.id = s.zone_id
+        {CROP_SEASON_ZONE_LEFT_JOIN}
         WHERE s.deleted_at IS NULL
         ORDER BY s.plant_date DESC
     """)
@@ -53,8 +54,8 @@ async def get_crop_season(hass, season_id: int, *, include_deleted: bool = False
                s.row_spacing AS rowSpacing, s.plant_spacing AS plantSpacing,
                s.total_plants AS totalPlants, s.plant_density AS plantDensity,
                s.train_dir AS trainDir, s.notes,
-               COALESCE(z.name, CONCAT(s.zone_id, '구역')) AS zoneName, s.zone_id AS zoneId
-        FROM crop_seasons s LEFT JOIN zones z ON z.id = s.zone_id
+               {CROP_SEASON_ZONE_NAME_SELECT}
+        FROM crop_seasons s {CROP_SEASON_ZONE_LEFT_JOIN}
         WHERE s.id = %s {deleted_clause}
     """, (int(season_id),))
 

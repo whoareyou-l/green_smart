@@ -1,6 +1,6 @@
 # R7-062 Record save callApi path hotfix
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.14.33`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.14.34`.
 
 ## 저장 실패 실제 원인
 

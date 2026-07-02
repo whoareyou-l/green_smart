@@ -1,6 +1,6 @@
 # Current DB Rationalization
 
-Version: `1.14.33`
+Version: `1.14.34`
 
 운영 DB 구조 변경 없음. 이 문서는 DB-00/DB-01 baseline으로, 현재 운영 MariaDB `homeassistant` DB의 59개 테이블을 HA 기본 테이블, Green Smart 레거시/호환 테이블, Green Smart 현재/신규 테이블로 분류하고 레거시 사용 금지 경계를 고정한다.
 
@@ -102,6 +102,13 @@ Total tables: `59`
 - `legacy_adapters` package introduced for explicit compatibility bridges.
 - `repositories/legacy_adapters/environment_telemetry.py` now owns the remaining `sensor_readings` lookup used by edge environment telemetry scheduling.
 - `__init__.py` scheduler no longer queries `sensor_readings` directly.
+- 운영 DB 구조 변경 없음: adapter slice only.
+
+### DB-02B status
+
+- `repositories/legacy_adapters/zones.py` introduced for legacy `zones` compatibility fragments.
+- `crop_repo.py no longer embeds `LEFT JOIN zones`; crop-season zone-name SQL fragments are imported from the adapter.
+- Stale `config_flow.py -> zones` manifest marker removed after verifying current config flow has no `zones` SQL.
 - 운영 DB 구조 변경 없음: adapter slice only.
 
 1. DB-02 follow-up: move additional direct legacy reads into `legacy_adapters/*` or canonical repositories.
