@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_083_version_surfaces_are_1_14_8():
-    assert '"version": "1.14.53"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.53"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.53"' in _read(PANEL)
+    assert '"version": "1.14.54"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.54"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.54"' in _read(PANEL)
 
 
 def test_r7_083_audit_all_has_dedicated_cda_modal_route():
@@ -106,12 +106,16 @@ def test_r7_083_rendered_audit_all_modal_uses_cda_not_legacy_history_card():
         'data-r7-settings-audit-log-edit-button="user-ha-id"',
         '유저 목록',
         '선택한 유저 상세',
-        'green_smart.gs_users',
-        'ha_user_id',
-        'display_name',
-        'role',
-        'status',
-        'permission_summary',
+        '번호',
+        '사용자 이름',
+        '역할',
+        '상태',
+        '수정일',
+        'HA 사용자 ID',
+        '권한 요약',
+        '최근 접속',
+        '생성일',
+        '유저 DB',
         '임서원',
         'farm_staff',
         '거부',
@@ -148,9 +152,21 @@ def test_r7_083_audit_edit_uses_growth_common_modal_prefilled_with_db_columns():
         'data-r7-settings-audit-log-edit-form',
         'name="haUserId" value="ha-user-7"',
         'name="displayName" value="임서원"',
-        'name="role" value="farm_staff"',
-        'name="status" value="active"',
+        'data-r7-settings-user-role-select',
+        '<select name="role"',
+        '<option value="farm_staff" selected>농장 작업자</option>',
+        '<option value="admin"',
+        '<option value="farm_owner"',
+        'data-r7-settings-user-status-select',
+        '<select name="status"',
+        '<option value="active" selected>활성</option>',
+        '<option value="pending"',
+        '<option value="rejected"',
         'name="permissionSummary"',
+        '사용자 이름',
+        '역할',
+        '상태',
+        '권한 요약',
         '기록 · 모니터링',
         '유저 수정',
         'gs_users DB 항목',

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.53";
+const REBUILD_VERSION = "1.14.54";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2491,10 +2491,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const rows = (Array.isArray(this.r7SettingsUsersPermissionsData().users) ? this.r7SettingsUsersPermissionsData().users : []).map((row, index) => this._normalizeR7SettingsUserRow(row, index));
     const selected = rows.find((row) => String(row.haUserId) === String(modal.selectedId || "")) || rows[0] || this._normalizeR7SettingsUserRow({}, 0);
     const value = (v) => this._r7Text(v || "");
+    const selectStyle = "height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;width:100%;font-weight:800;color:#24323f;";
+    const option = (current, val, label) => `<option value="${value(val)}" ${String(current) === String(val) ? 'selected' : ''}>${value(label)}</option>`;
+    const roleSelect = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>역할</span><select name="role" data-r7-settings-audit-log-edit-db-column="role" data-r7-settings-user-role-select style="${selectStyle}">${option(selected.role, 'admin', '관리자')}${option(selected.role, 'farm_owner', '농장 소유자')}${option(selected.role, 'farm_staff', '농장 작업자')}</select></label>`, statusSelect = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>상태</span><select name="status" data-r7-settings-audit-log-edit-db-column="status" data-r7-settings-user-status-select style="${selectStyle}">${option(selected.status, 'active', '활성')}${option(selected.status, 'pending', '승인 대기')}${option(selected.status, 'rejected', '거부됨')}${option(selected.status, 'disabled', '비활성')}</select></label>`;
     const sections = [
-      this._r7SettingsCreateSection("user-db-identity", "DB 기준 식별 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>id</span><input name="id" value="${value(selected.dbId)}" readonly data-r7-settings-audit-log-edit-db-column="id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>ha_user_id</span><input name="haUserId" value="${value(selected.haUserId)}" readonly data-r7-settings-audit-log-edit-db-column="ha_user_id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label></div>`),
-      this._r7SettingsCreateSection("user-db-fields", "DB 항목 수정", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("displayName", "display_name", value(selected.displayName), 'data-r7-settings-audit-log-edit-db-column="display_name"')}${this._r7SettingsCreateField("role", "role", value(selected.role), 'data-r7-settings-audit-log-edit-db-column="role"')}${this._r7SettingsCreateField("status", "status", value(selected.status), 'data-r7-settings-audit-log-edit-db-column="status"')}</div>`),
-      this._r7SettingsCreateSection("user-db-permission", "permission_summary", this._r7SettingsCreateTextarea("permissionSummary", "permission_summary", value(selected.permissionSummary)).replace('<textarea ', '<textarea data-r7-settings-audit-log-edit-db-column="permission_summary" ')),
+      this._r7SettingsCreateSection("user-db-identity", "DB 기준 식별 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>번호</span><input name="id" value="${value(selected.dbId)}" readonly data-r7-settings-audit-log-edit-db-column="id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>HA 사용자 ID</span><input name="haUserId" value="${value(selected.haUserId)}" readonly data-r7-settings-audit-log-edit-db-column="ha_user_id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label></div>`),
+      this._r7SettingsCreateSection("user-db-fields", "사용자 정보 수정", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("displayName", "사용자 이름", value(selected.displayName), 'data-r7-settings-audit-log-edit-db-column="display_name"')}${roleSelect}${statusSelect}</div>`),
+      this._r7SettingsCreateSection("user-db-permission", "권한 요약", this._r7SettingsCreateTextarea("permissionSummary", "권한 요약", value(selected.permissionSummary)).replace('<textarea ', '<textarea data-r7-settings-audit-log-edit-db-column="permission_summary" ')),
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "audit-log-edit", title: "유저 수정", subtitle: "생육조사 작성 팝업과 같은 공통 모달에서 gs_users DB 항목을 수정합니다", formAttr: `data-r7-settings-audit-log-edit-form="${value(selected.haUserId)}"`, closeKind: "audit-log-edit", state: modal.state || "idle", error: modal.error || "", submitLabel: "유저 수정 저장", sections });
   }
@@ -2508,7 +2511,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const search = this.renderR7CdaSearchFilterBar({
       searchAttr: "data-r7-settings-audit-log-search-input",
       searchPlaceholder: "유저 목록 검색",
-      filters: [["all","전체"],["active","active"],["pending","pending"],["rejected","rejected"],["admin","admin"]].map(([key,label]) => ({ label, active: key === "all", tone: "green", attrs: `data-r7-settings-audit-log-filter="${key}"` })),
+      filters: [["all","전체"],["active","활성"],["pending","승인 대기"],["rejected","거부됨"],["admin","관리자"]].map(([key,label]) => ({ label, active: key === "all", tone: "green", attrs: `data-r7-settings-audit-log-filter="${key}"` })),
     });
     const rowHtml = rows.length ? rows.map((row) => this.renderR7CdaCompactListRow({
       selected: row.haUserId === selected.haUserId,
@@ -2517,17 +2520,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
     })).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">유저 목록 데이터 없음</p>`;
     const listPanel = this.renderR7CdaListPanel({
       title: "유저 목록",
-      columns: ["id", "display_name", "role", "status", "updated_at"],
+      columns: ["번호", "사용자 이름", "역할", "상태", "수정일"],
       rowsHtml: rowHtml,
       footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${rows.length}건</span>`,
       attrs: 'data-r7-settings-audit-log-list-panel',
     }).replace('data-r7-cda-list-body', 'data-r7-cda-list-body data-r7-settings-audit-log-list-body');
     const dbGrid = `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.7fr 1.3fr .7fr 1.3fr;overflow:hidden;">${[
-      ["id", selected.dbId], ["ha_user_id", selected.haUserId], ["display_name", selected.displayName], ["role", selected.role], ["status", selected.status], ["permission_summary", selected.permissionSummary], ["last_seen_at", selected.lastSeenAt], ["created_at", selected.createdAt], ["updated_at", selected.updatedAt]
+      ["번호", selected.dbId], ["HA 사용자 ID", selected.haUserId], ["사용자 이름", selected.displayName], ["역할", selected.role], ["상태", selected.status], ["권한 요약", selected.permissionSummary], ["최근 접속", selected.lastSeenAt], ["생성일", selected.createdAt], ["수정일", selected.updatedAt]
     ].map(([label, value]) => `<span style="padding:8px;background:#fbfdfb;font-weight:950;">${label}</span><span style="padding:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${value}</span>`).join("")}</div>`;
-    const info = this.renderR7CdaDetailSection({ title: "1. gs_users DB row", attrs: 'data-r7-settings-audit-log-section="info"', body: dbGrid });
-    const summary = this.renderR7CdaDetailSection({ title: "2. permission_summary", attrs: 'data-r7-settings-audit-log-section="summary"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${selected.permissionSummary}</p>` });
-    const evidence = this.renderR7CdaDetailSection({ title: "3. DB 근거", attrs: 'data-r7-settings-audit-log-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">green_smart.gs_users</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">ha_user_id 기준 수정</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">display_name/role/status/permission_summary</span></div>` });
+    const info = this.renderR7CdaDetailSection({ title: "1. 유저 DB 행", attrs: 'data-r7-settings-audit-log-section="info"', body: dbGrid });
+    const summary = this.renderR7CdaDetailSection({ title: "2. 권한 요약", attrs: 'data-r7-settings-audit-log-section="summary"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${selected.permissionSummary}</p>` });
+    const evidence = this.renderR7CdaDetailSection({ title: "3. DB 근거", attrs: 'data-r7-settings-audit-log-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">유저 DB</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">HA 사용자 ID 기준 수정</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">사용자 이름/역할/상태/권한 요약</span></div>` });
     const actionStatus = modal.actionState === "saving" ? "저장 중" : modal.actionState === "saved" ? "DB 반영 완료" : modal.actionState === "error" ? `오류: ${modal.actionError || 'audit-log-update-failed'}` : "";
     const detailPanel = this.renderR7CdaDetailPanel({
       title: "선택한 유저 상세",
