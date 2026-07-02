@@ -1,6 +1,6 @@
 # R7-088 Settings greenhouse/zone reference card detail layout
 
-Status: current baseline for `v1.14.32`.
+Status: current baseline for `v1.14.33`.
 
 ## Scope
 

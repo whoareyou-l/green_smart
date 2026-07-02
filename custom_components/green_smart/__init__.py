@@ -178,20 +178,11 @@ def _teardown_center_crop_interlock_snapshot_sync_scheduler(hass) -> None:
 
 async def _run_edge_environment_telemetry_sync_tick(hass, now) -> None:
     from .central_views import sync_environment_telemetry_snapshot
-    from .db import fetchall
+    from .repositories.legacy_adapters.environment_telemetry import list_recent_environment_telemetry_zone_ids
 
     domain_data = hass.data.setdefault(DOMAIN, {})
     try:
-        zones = await fetchall(
-            hass,
-            """
-            SELECT DISTINCT COALESCE(zone_id, 1) AS zone_id
-            FROM sensor_readings
-            WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
-            ORDER BY zone_id ASC
-            LIMIT 20
-            """,
-        )
+        zones = await list_recent_environment_telemetry_zone_ids(hass)
     except Exception as exc:  # pragma: no cover - HA runtime scheduler path
         _LOGGER.warning("Edge environment telemetry zone lookup failed: %s", exc)
         return

@@ -1,6 +1,6 @@
 # DB Legacy Usage Manifest
 
-Version: `1.14.32`
+Version: `1.14.33`
 
 HA recorder tables are protected. This file is the DB-01 quarantine manifest for known direct Green Smart legacy table references. New direct references outside `db.py`, migrations, tests/docs, or future `legacy_adapters/*` must fail contract tests unless listed here intentionally as tracked migration debt.
 
@@ -24,7 +24,6 @@ HA recorder tables are protected. This file is the DB-01 quarantine manifest for
 
 - `__init__.py` -> `zones`
 - `__init__.py` -> `crop_seasons`
-- `__init__.py` -> `sensor_readings`
 - `central_views.py` -> `sensor_readings`
 - `config_flow.py` -> `zones`
 - `crop_cycle_scaffold.py` -> `crop_seasons`
@@ -58,6 +57,7 @@ HA recorder tables are protected. This file is the DB-01 quarantine manifest for
 - `repositories/crop_repo.py` -> `control_pesticides`
 - `repositories/rebuild_crop_context_repo.py` -> `zones`
 - `repositories/rebuild_crop_context_repo.py` -> `crop_seasons`
+- `repositories/legacy_adapters/environment_telemetry.py` -> `sensor_readings`
 - `services/crop_service.py` -> `crop_seasons`
 - `services/crop_service.py` -> `growth_surveys`
 - `services/crop_service.py` -> `control_records`
@@ -69,6 +69,8 @@ HA recorder tables are protected. This file is the DB-01 quarantine manifest for
 - `zone_control_views.py` -> `sensor_readings`
 
 ## Retirement rule
+
+DB-02 adapter migration: `__init__.py` scheduler no longer queries `sensor_readings` directly; the remaining legacy telemetry zone lookup is quarantined in `repositories/legacy_adapters/environment_telemetry.py`.
 
 - Do not add new markers casually; remove markers by moving access behind canonical repositories or `legacy_adapters/*`.
 - Product code must eventually stop writing to every listed legacy table.
