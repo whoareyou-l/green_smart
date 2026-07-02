@@ -1,6 +1,6 @@
 # DB Legacy Usage Manifest
 
-Version: `1.14.46`
+Version: `1.14.47`
 
 HA recorder tables are protected. This file is the DB-01 quarantine manifest for known direct Green Smart legacy table references. New direct references outside `db.py`, migrations, tests/docs, or future `legacy_adapters/*` must fail contract tests unless listed here intentionally as tracked migration debt.
 

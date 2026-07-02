@@ -1,6 +1,6 @@
 # R7-069 Settings users-permissions matrix and approval flow
 
-Status: current baseline for `v1.14.46`.
+Status: current baseline for `v1.14.47`.
 
 ## Scope
 

@@ -1,76 +1,80 @@
-# R7-115 Device/Sensor mapping image-like cards
+# R7-115 Device/Sensor mapping cards
 
-Version: v1.14.46
-Status: prod verified
+Version: v1.14.47
+Status: prod verification pending
 
-## User request
+## User correction in v1.14.47
 
-Rebuild Settings → `장치·센서 매핑` content cards using the supplied Settings image as a reference. The content should be organized as:
+The Settings → `장치·센서 매핑` subtab was corrected after the first v1.14.46 card rebuild.
 
-1. 장치
-2. 그룹
-3. 매핑
+Required changes:
 
-## UI structure
+1. Remove the `현재 선택 구역` strip from inside the content-card area.
+2. Rename the three summary cards:
+   - `장치` → `장치 기본 정보`
+   - `그룹` → `그룹 기본 정보`
+   - `매핑` → `오류 기본 정보`
+3. Rename action/list labels:
+   - `장치 구성` → `장치 추가`
+   - `그룹 구성` → `그룹 추가`
+   - remove `매핑 확인`
+   - `매핑 목록` → `장치 목록`
+4. Encode the intended process:
+   - first add devices,
+   - then create one or more groups,
+   - group creation stores the zone as a foreign-key reference,
+   - then connect added devices to groups,
+   - a device can be connected to multiple groups.
 
-The subtab now follows the same grammar as the image-like `온실·구역` screen:
+## Current UI structure
 
-1. Selected-zone strip
-   - `현재 선택 구역`
-   - zone pill cards
-   - mapping freshness chip
-2. Three summary cards
-   - `장치`
-   - `그룹`
-   - `매핑`
-3. Three action cards
-   - `장치 구성`
-   - `그룹 구성`
-   - `매핑 확인`
-4. Full-width mapping list
-   - `매핑 목록`
-   - rows include group/role, sensor entity, device entity, status, note
+```text
+3 summary cards:
+  장치 기본 정보 / 그룹 기본 정보 / 오류 기본 정보
+
+2 action cards:
+  장치 추가 / 그룹 추가
+
+process summary:
+  1. 장치 추가 → 2. 그룹 추가 → 3. 그룹에 장치 연결
+
+full-width list:
+  장치 목록
+```
 
 ## Markers
 
 ```text
 data-r7-settings-device-sensor-mapping
-data-r7-settings-device-mapping-layout="device-group-mapping"
-data-r7-settings-device-selected-zone-strip
+data-r7-settings-device-mapping-layout="device-group-error-device-list"
 data-r7-settings-device-summary-grid
-data-r7-settings-device-card="device"
-data-r7-settings-device-card="group"
-data-r7-settings-device-card="mapping"
+data-r7-settings-device-card="device-basic"
+data-r7-settings-device-card="group-basic"
+data-r7-settings-device-card="error-basic"
 data-r7-settings-device-action-row
+data-r7-settings-device-list-panel
+data-r7-settings-device-list-row="{mapping_id}"
+```
+
+Process markers:
+
+```text
+data-r7-settings-device-process="device-add-first"
+data-r7-settings-device-process="group-create-zone-fk"
+data-r7-settings-device-process="group-device-link"
+data-r7-settings-device-group-zone-fk="required"
+data-r7-settings-device-group-link-stage="device-to-group"
+```
+
+Removed from the active device/sensor mapping content card:
+
+```text
+data-r7-settings-device-selected-zone-strip
+data-r7-settings-device-action-card="mapping"
 data-r7-settings-device-mapping-list-panel
-data-r7-settings-device-mapping-row="{mapping_id}"
-```
-
-Existing actions are preserved:
-
-```text
-data-r7-settings-device-sensor-mapping-button
-data-r7-settings-equipment-info-shortcut-button
-```
-
-## Removed old flat cards
-
-The previous flat four-card layout was removed from this subtab:
-
-```text
-data-r7-settings-device-sensor-card="zone-sensors"
-data-r7-settings-device-sensor-card="zone-devices"
-data-r7-settings-device-sensor-card="ha-entity"
-data-r7-settings-device-sensor-card="mapping-health"
 ```
 
 ## Verification
 
-- Focused contracts: pass
-- Full suite: `1515 passed`
-- HA config check: pass
-- Prod served JS smoke:
-  - `REBUILD_VERSION = "1.14.46"`
-  - new device/group/mapping markers present
-  - old flat-card markers absent
-- Stable HA log window: no errors
+- Focused contracts: `19 passed`
+- Full suite / prod smoke: run after this document update

@@ -47,43 +47,50 @@ def _render_device_mapping() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_115_version_surfaces_are_1_14_46():
-    assert '"version": "1.14.46"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.46"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.46"' in _read(REBUILD_PANEL)
+def test_r7_115_version_surfaces_are_1_14_47():
+    assert '"version": "1.14.47"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.47"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.47"' in _read(REBUILD_PANEL)
 
 
-def test_r7_115_device_sensor_mapping_uses_image_like_device_group_mapping_cards():
+def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
     html = _render_device_mapping()
     for marker in (
         'data-r7-settings-device-sensor-mapping',
-        'data-r7-settings-device-mapping-layout="device-group-mapping"',
-        'data-r7-settings-device-selected-zone-strip',
+        'data-r7-settings-device-mapping-layout="device-group-error-device-list"',
         'data-r7-settings-device-summary-grid',
-        'data-r7-settings-device-card="device"',
-        'data-r7-settings-device-card="group"',
-        'data-r7-settings-device-card="mapping"',
+        'data-r7-settings-device-card="device-basic"',
+        'data-r7-settings-device-card="group-basic"',
+        'data-r7-settings-device-card="error-basic"',
         'data-r7-settings-device-action-row',
-        'data-r7-settings-device-mapping-list-panel',
+        'data-r7-settings-device-list-panel',
     ):
         assert marker in html
-    for text in ('현재 선택 구역', 'A구역', 'B구역', '장치', '그룹', '매핑', '장치 구성', '그룹 구성', '매핑 확인', '매핑 목록'):
+    for text in ('장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록'):
+        assert text in html
+    for forbidden in ('data-r7-settings-device-selected-zone-strip', 'data-r7-settings-device-action-card="mapping"', '장치 구성', '그룹 구성', '매핑 목록'):
+        assert forbidden not in html
+
+
+def test_r7_115_device_group_process_is_device_add_then_group_with_zone_fk_then_group_device_link():
+    html = _render_device_mapping()
+    for marker in (
+        'data-r7-settings-device-process="device-add-first"',
+        'data-r7-settings-device-process="group-create-zone-fk"',
+        'data-r7-settings-device-process="group-device-link"',
+        'data-r7-settings-device-group-zone-fk="required"',
+        'data-r7-settings-device-group-link-stage="device-to-group"',
+    ):
+        assert marker in html
+    for text in ('1. 장치 추가', '2. 그룹 추가', '3. 그룹에 장치 연결', '그룹 생성 단계에서 구역 정보를 외래키로 저장', '하나의 장치를 여러 그룹에 연결할 수 있습니다'):
         assert text in html
 
 
-def test_r7_115_mapping_cards_keep_existing_actions_and_remove_old_flat_four_card_layout():
-    html = _render_device_mapping()
-    assert 'data-r7-settings-device-sensor-mapping-button' in html
-    assert 'data-r7-settings-equipment-info-shortcut-button' in html
-    assert '장치/센서 매핑 열기' in html
-    assert '장비 구성' in html
-    for old in ('data-r7-settings-device-sensor-card="zone-sensors"', 'data-r7-settings-device-sensor-card="zone-devices"', 'data-r7-settings-device-sensor-card="ha-entity"', 'data-r7-settings-device-sensor-card="mapping-health"'):
-        assert old not in html
-
-
-def test_r7_115_mapping_list_renders_device_group_mapping_rows():
+def test_r7_115_device_list_keeps_rows_and_old_flat_cards_removed():
     html = _render_device_mapping()
     for text in ('환경 센서 그룹', '관수 그룹', 'sensor.a_temperature', 'switch.a_roof_motor', 'sensor.b_ec', 'switch.b_irrigation_valve', '천창 제어 기준', '점검 필요'):
         assert text in html
-    assert 'data-r7-settings-device-mapping-row="10"' in html
-    assert 'data-r7-settings-device-mapping-row="11"' in html
+    assert 'data-r7-settings-device-list-row="10"' in html
+    assert 'data-r7-settings-device-list-row="11"' in html
+    for old in ('data-r7-settings-device-sensor-card="zone-sensors"', 'data-r7-settings-device-sensor-card="zone-devices"', 'data-r7-settings-device-sensor-card="ha-entity"', 'data-r7-settings-device-sensor-card="mapping-health"', 'data-r7-settings-device-mapping-list-panel'):
+        assert old not in html
