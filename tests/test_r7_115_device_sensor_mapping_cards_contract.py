@@ -47,10 +47,10 @@ def _render_device_mapping() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_115_version_surfaces_are_1_14_47():
-    assert '"version": "1.14.47"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.47"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.47"' in _read(REBUILD_PANEL)
+def test_r7_115_version_surfaces_are_1_14_48():
+    assert '"version": "1.14.48"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.48"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.48"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -62,17 +62,19 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
         'data-r7-settings-device-card="device-basic"',
         'data-r7-settings-device-card="group-basic"',
         'data-r7-settings-device-card="error-basic"',
+        'data-r7-settings-device-error-common-card="approval-needed"',
         'data-r7-settings-device-action-row',
         'data-r7-settings-device-list-panel',
     ):
         assert marker in html
     for text in ('장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록'):
         assert text in html
-    for forbidden in ('data-r7-settings-device-selected-zone-strip', 'data-r7-settings-device-action-card="mapping"', '장치 구성', '그룹 구성', '매핑 목록'):
+    for forbidden in ('data-r7-settings-device-selected-zone-strip', 'data-r7-settings-device-process-summary', 'data-r7-settings-device-action-card="mapping"', '장치 구성', '그룹 구성', '매핑 목록'):
         assert forbidden not in html
+    assert 'data-r7-settings-device-action-row style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;"' in html
 
 
-def test_r7_115_device_group_process_is_device_add_then_group_with_zone_fk_then_group_device_link():
+def test_r7_115_device_group_process_is_documented_not_rendered_as_guidance_box():
     html = _render_device_mapping()
     for marker in (
         'data-r7-settings-device-process="device-add-first"',
@@ -82,8 +84,8 @@ def test_r7_115_device_group_process_is_device_add_then_group_with_zone_fk_then_
         'data-r7-settings-device-group-link-stage="device-to-group"',
     ):
         assert marker in html
-    for text in ('1. 장치 추가', '2. 그룹 추가', '3. 그룹에 장치 연결', '그룹 생성 단계에서 구역 정보를 외래키로 저장', '하나의 장치를 여러 그룹에 연결할 수 있습니다'):
-        assert text in html
+    for forbidden_text in ('1. 장치 추가', '2. 그룹 추가', '3. 그룹에 장치 연결', '그룹 생성 단계에서 구역 정보를 외래키로 저장', '하나의 장치를 여러 그룹에 연결할 수 있습니다'):
+        assert forbidden_text not in html
 
 
 def test_r7_115_device_list_keeps_rows_and_old_flat_cards_removed():

@@ -1,46 +1,42 @@
 # R7-115 Device/Sensor mapping cards
 
-Version: v1.14.47
+Version: v1.14.48
 Status: prod verification pending
 
-## User correction in v1.14.47
+## User correction in v1.14.48
 
-The Settings → `장치·센서 매핑` subtab was corrected after the first v1.14.46 card rebuild.
+The Settings → `장치·센서 매핑` subtab was corrected again after the v1.14.47 process-card update.
 
 Required changes:
 
-1. Remove the `현재 선택 구역` strip from inside the content-card area.
-2. Rename the three summary cards:
-   - `장치` → `장치 기본 정보`
-   - `그룹` → `그룹 기본 정보`
-   - `매핑` → `오류 기본 정보`
-3. Rename action/list labels:
-   - `장치 구성` → `장치 추가`
-   - `그룹 구성` → `그룹 추가`
-   - remove `매핑 확인`
-   - `매핑 목록` → `장치 목록`
-4. Encode the intended process:
-   - first add devices,
-   - then create one or more groups,
-   - group creation stores the zone as a foreign-key reference,
-   - then connect added devices to groups,
-   - a device can be connected to multiple groups.
+1. Remove the guidance/process box from the visible content cards; the process belongs in documentation only.
+2. Keep `장치 추가` and `그룹 추가` as action cards, but render them in a 3-column row so each action card occupies the same width as the summary cards above.
+3. Render `오류 기본 정보` with the same common-card component family used by Settings → 사용자·권한 → `승인 필요 작업`.
 
-## Current UI structure
+## Current visible UI structure
 
 ```text
 3 summary cards:
   장치 기본 정보 / 그룹 기본 정보 / 오류 기본 정보
 
-2 action cards:
-  장치 추가 / 그룹 추가
-
-process summary:
-  1. 장치 추가 → 2. 그룹 추가 → 3. 그룹에 장치 연결
+3-column action row:
+  장치 추가 / 그룹 추가 / empty third column
 
 full-width list:
   장치 목록
 ```
+
+No visible process guidance box is rendered in this subtab.
+
+## Documented process only
+
+The intended management process is kept here as documentation, not as a visible guidance box:
+
+1. Add devices first.
+2. Create one or more groups.
+3. Group creation stores the zone as a foreign-key reference.
+4. Connect added devices to groups.
+5. A device can be connected to multiple groups.
 
 ## Markers
 
@@ -51,12 +47,13 @@ data-r7-settings-device-summary-grid
 data-r7-settings-device-card="device-basic"
 data-r7-settings-device-card="group-basic"
 data-r7-settings-device-card="error-basic"
+data-r7-settings-device-error-common-card="approval-needed"
 data-r7-settings-device-action-row
 data-r7-settings-device-list-panel
 data-r7-settings-device-list-row="{mapping_id}"
 ```
 
-Process markers:
+Process markers remain as non-copy markers on the relevant cards/buttons:
 
 ```text
 data-r7-settings-device-process="device-add-first"
@@ -70,11 +67,12 @@ Removed from the active device/sensor mapping content card:
 
 ```text
 data-r7-settings-device-selected-zone-strip
+data-r7-settings-device-process-summary
 data-r7-settings-device-action-card="mapping"
 data-r7-settings-device-mapping-list-panel
 ```
 
 ## Verification
 
-- Focused contracts: `19 passed`
+- Focused contracts: `16 passed`
 - Full suite / prod smoke: run after this document update

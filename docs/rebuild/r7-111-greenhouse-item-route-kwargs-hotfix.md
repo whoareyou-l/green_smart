@@ -1,6 +1,6 @@
 # R7-111 Greenhouse item route kwargs hotfix
 
-Version: v1.14.47
+Version: v1.14.48
 Status: prod verified
 
 ## Bug
@@ -45,7 +45,7 @@ greenhouse_id = int(greenhouse_id or request.match_info["greenhouse_id"])
 - Regression contract added: `tests/test_r7_111_greenhouse_item_route_kwargs_contract.py`
 - Full suite: `1500 passed`
 - Prod HA config check: pass
-- Served frontend marker: `REBUILD_VERSION = "1.14.47"`
+- Served frontend marker: `REBUILD_VERSION = "1.14.48"`
 - Prod route-kwarg smoke:
   - `view.patch(..., greenhouse_id="1")` → HTTP 200
   - `view.delete(..., greenhouse_id=temp_id)` → HTTP 200
