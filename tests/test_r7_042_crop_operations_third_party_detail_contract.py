@@ -46,10 +46,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_042_version_surfaces_are_1_12_77():
-    assert '"version": "1.14.25"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.25"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.25"' in _read(REBUILD_PANEL)
-    assert "v1.14.25" in _read(DOC)
+    assert '"version": "1.14.26"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.26"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.26"' in _read(REBUILD_PANEL)
+    assert "v1.14.26" in _read(DOC)
 
 
 def test_r7_042_research_doc_cites_third_party_patterns_and_boundaries():
