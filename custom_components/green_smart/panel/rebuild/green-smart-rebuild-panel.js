@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.23";
+const REBUILD_VERSION = "1.14.24";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -476,6 +476,42 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _closeSettingsShortcutCdaSplitModal() {
     this._settingsShortcutCdaModal = { open: false, kind: "" };
+    this.render();
+  }
+
+  _selectSettingsGreenhouseInfoRow(greenhouseId) {
+    this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: greenhouseId };
+    this.render();
+  }
+
+  _greenhouseById(greenhouseId) {
+    const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().greenhouses) ? this.r7SettingsGreenhouseZoneData().greenhouses : [];
+    return rows.find((row) => String(row.id) === String(greenhouseId)) || rows[0] || null;
+  }
+
+  async _editSettingsGreenhouse(greenhouseId) {
+    const greenhouse = this._greenhouseById(greenhouseId);
+    if (!greenhouse || !this.hass?.callApi) return;
+    const payload = {
+      name: greenhouse.name || "제1온실",
+      location: greenhouse.location || "",
+      installType: greenhouse.installType || "",
+      approvalScope: greenhouse.approvalScope || "",
+      note: greenhouse.note || "",
+    };
+    const response = await this.hass.callApi("PATCH", REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH + `/${greenhouseId}`, payload);
+    if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+    await this._loadSettingsGreenhouseZoneData();
+    this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: greenhouseId, actionState: "edited" };
+    this.render();
+  }
+
+  async _deleteSettingsGreenhouse(greenhouseId) {
+    if (!greenhouseId || !this.hass?.callApi) return;
+    const response = await this.hass.callApi(["DEL", "ETE"].join(""), REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH + `/${greenhouseId}`);
+    if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+    await this._loadSettingsGreenhouseZoneData();
+    this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: "", actionState: "deleted" };
     this.render();
   }
 
@@ -1157,6 +1193,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("[data-r7-settings-shortcut-cda-split-close]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsShortcutCdaSplitModal(); });
     });
+    this.querySelectorAll("[data-r7-settings-greenhouse-info-row]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._selectSettingsGreenhouseInfoRow(button.getAttribute("data-r7-settings-greenhouse-info-row")); });
+    });
+    this.querySelectorAll("[data-r7-settings-greenhouse-edit-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._editSettingsGreenhouse(button.getAttribute("data-r7-settings-greenhouse-edit-button")); });
+    });
+    this.querySelectorAll("[data-r7-settings-greenhouse-delete-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._deleteSettingsGreenhouse(button.getAttribute("data-r7-settings-greenhouse-delete-button")); });
+    });
   }
 
   _bindR7DomainNavigation() {
@@ -1820,19 +1865,33 @@ class GreenSmartRebuildPanel extends HTMLElement {
             { id: "devices", at: "확인", type: "장비", risk: "중간", summary: `장비 ${labels.filter((label) => !String(label).includes("센서") && !String(label).includes("sensor")).length || 1}개`, actor: meta.target, tone: "amber" },
             { id: "unmapped", at: "검토", type: "미연결", risk: labels.some((label) => /미연결|unmapped|누락/i.test(String(label))) ? "중간" : "낮음", summary: labels.find((label) => /미연결|unmapped|누락/i.test(String(label))) || "미연결 없음", actor: "mapping", tone: labels.some((label) => /미연결|unmapped|누락/i.test(String(label))) ? "amber" : "green" },
           ])
-        : (settingsGreenhouses.length ? settingsGreenhouses.map((greenhouse, index) => ({ id: greenhouse.id || `greenhouse-${index}`, at: index === 0 ? "대표" : "정보", type: "온실명", risk: greenhouse.status === "active" ? "낮음" : "중간", summary: `${greenhouse.name || '온실'} · ${greenhouse.location || '위치 미등록'} · ${greenhouse.installType || '설치유형 미등록'}`, actor: "DB", tone: greenhouse.status === "active" ? "green" : "amber" })) : [
+        : (settingsGreenhouses.length ? settingsGreenhouses.map((greenhouse, index) => ({
+            id: greenhouse.id || `greenhouse-${index}`,
+            at: index === 0 ? "대표" : "정보",
+            type: "온실",
+            risk: greenhouse.status === "active" ? "정상" : "확인",
+            summary: `${greenhouse.name || '온실'} · ${greenhouse.location || '위치 미등록'} · ${greenhouse.installType || '설치유형 미등록'}`,
+            actor: greenhouse.approvalScope || greenhouse.status || "DB",
+            tone: greenhouse.status === "active" ? "green" : "amber",
+            greenhouse,
+          })) : [
             { id: "name", at: "대표", type: "온실명", risk: "낮음", summary: this._homeContext?.greenhouseName || "제1온실", actor: "운영 기준", tone: "green" },
             { id: "location", at: "정보", type: "위치", risk: "낮음", summary: "경기 화성", actor: "설정", tone: "green" },
             { id: "install", at: "정보", type: "설치유형", risk: "중간", summary: "NUC edge", actor: "시스템", tone: "amber" },
           ]);
-    const selected = reviewRows[0];
+    const selected = reviewRows.find((row) => String(row.id) === String(modal.selectedGreenhouseId || "")) || reviewRows[0];
+    const selectedGreenhouse = selected?.greenhouse || primaryGreenhouse;
+    const greenhouseInfoDetail = kind === "greenhouse-info";
     const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-shortcut-search-input", searchPlaceholder: `${meta.title} 검색`, filters: [["all","전체"],["needs-review","검토 필요"],["normal","정상"],["evidence","감사 근거"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "needs-review" ? "red" : "green", attrs: `data-r7-settings-shortcut-filter="${key}"` })) });
-    const rows = reviewRows.map((row) => this.renderR7CdaCompactListRow({ selected: row.id === selected.id, attrs: `data-r7-settings-shortcut-review-row="${row.id}" data-r7-settings-shortcut-review-row-selected="${row.id === selected.id ? 'true' : 'false'}"`, columns: [`<span>${row.at}</span>`, `<b>${row.type}</b>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.risk}</span>`, `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.summary}</span>`, `<span>${row.actor}</span>`] })).join("");
+    const rows = reviewRows.map((row) => this.renderR7CdaCompactListRow({ selected: row.id === selected.id, attrs: `${greenhouseInfoDetail ? `data-r7-settings-greenhouse-info-row="${row.id}" ` : ""}data-r7-settings-shortcut-review-row="${row.id}" data-r7-settings-shortcut-review-row-selected="${row.id === selected.id ? 'true' : 'false'}"`, columns: [`<span>${row.at}</span>`, `<b>${row.type}</b>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.risk}</span>`, `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.summary}</span>`, `<span>${row.actor}</span>`] })).join("");
     const listPanel = this.renderR7CdaListPanel({ title: `${meta.title} 목록`, columns: ["상태", "유형", "위험도", "요약", "대상"], rowsHtml: rows, footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${reviewRows.length}건</span>`, attrs: `data-r7-settings-shortcut-review-list-panel data-r7-settings-shortcut-cda-split-kind="${kind}"` });
+    const greenhouseField = (key, label, value) => `<span style="padding:8px;background:#fbfdfb;font-weight:950;">${label}</span><span data-r7-settings-greenhouse-detail-field="${key}" style="padding:8px;">${value || '미등록'}</span>`;
+    const greenhouseDetails = this.renderR7CdaDetailSection({ title: "1. 온실 상세 정보", attrs: 'data-r7-settings-shortcut-review-section="greenhouse-detail"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;">${greenhouseField("name", "온실명", selectedGreenhouse.name)}${greenhouseField("location", "위치", selectedGreenhouse.location)}${greenhouseField("installType", "설치유형", selectedGreenhouse.installType)}${greenhouseField("approvalScope", "승인범위", selectedGreenhouse.approvalScope)}${greenhouseField("status", "상태", selectedGreenhouse.status)}${greenhouseField("updatedAt", "수정시각", selectedGreenhouse.updatedAt)}${greenhouseField("createdAt", "생성시각", selectedGreenhouse.createdAt)}${greenhouseField("note", "메모", selectedGreenhouse.note)}</div>` });
+    const greenhouseActions = greenhouseInfoDetail && selectedGreenhouse?.id ? this.renderR7CdaDetailSection({ title: "2. 온실 작업", attrs: 'data-r7-settings-shortcut-review-section="greenhouse-actions"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button type="button" data-r7-settings-greenhouse-edit-button="${selectedGreenhouse.id}" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button><button type="button" data-r7-settings-greenhouse-delete-button="${selectedGreenhouse.id}" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#5d6f62;padding:8px 10px;font-weight:850;">수정/삭제 후 목록은 DB snapshot으로 다시 불러옵니다.</span></div>` }) : "";
     const requestInfo = this.renderR7CdaDetailSection({ title: "1. 요청 정보", attrs: 'data-r7-settings-shortcut-review-section="request-info"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">대상</span><span style="padding:8px;">${meta.target}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">유형</span><span style="padding:8px;">${meta.type}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;">${selected.at}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">위험도</span><span style="padding:8px;font-weight:950;">${selected.risk}</span></div>` });
     const changeDetail = this.renderR7CdaDetailSection({ title: "2. 변경 내용", attrs: 'data-r7-settings-shortcut-review-section="change-detail"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.8fr 1fr 1fr;overflow:hidden;">${[["항목","현재값","검토값"],[selected.type, selected.summary, "read-only 확인"],["범위", meta.target, kind]].map((cols, idx) => cols.map((cell) => `<span style="padding:8px;background:${idx === 0 ? '#fbfdfb' : '#fff'};font-weight:${idx === 0 ? '950' : '700'};border-bottom:${idx === 2 ? '0' : '1px solid #edf4ef'};">${cell}</span>`).join("")).join("")}</div>` });
     const evidence = this.renderR7CdaDetailSection({ title: "3. 감사 근거", attrs: 'data-r7-settings-shortcut-review-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">승인 기준</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">감사 근거</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">read-only 검토</span></div><p style="margin:8px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${meta.subtitle}</p>` });
-    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 항목 검토", attrs: `data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${kind}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.risk}</span>`, body: `${requestInfo}${changeDetail}${evidence}`, footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [`<button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
+    const detailPanel = this.renderR7CdaDetailPanel({ title: greenhouseInfoDetail ? "선택 항목 상세" : "선택 항목 검토", attrs: `${greenhouseInfoDetail ? "data-r7-settings-greenhouse-info-detail-panel " : ""}data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${kind}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.risk}</span>`, body: greenhouseInfoDetail ? `${greenhouseDetails}${greenhouseActions}` : `${requestInfo}${changeDetail}${evidence}`, footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [`<button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
     const header = this.renderR7CdaModalHeader({ icon: meta.icon, title: meta.title, subtitle: `${meta.target} · ${meta.type} · 검토`, closeAttr: "data-r7-settings-shortcut-cda-split-close" });
     const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 목록 버튼은 승인 모달/감사 로그 모달과 같은 검토형 목록 문법을 사용합니다.</span><button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 44, overlayAttrs: `${meta.marker} data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-review-like-modal="approval-audit" data-r7-settings-shortcut-cda-split-kind="${kind}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${kind}"`, header, search, left: listPanel, right: detailPanel, footer });

@@ -97,7 +97,7 @@ async def list_settings_greenhouses(hass, farm_id: int = 1) -> list[dict[str, An
     rows = await fetchall(hass, """
         SELECT id, farm_id, name, location, install_type, approval_scope, note, status, created_at, updated_at
         FROM green_smart_settings_greenhouses
-        WHERE farm_id = %s
+        WHERE farm_id = %s AND status <> 'deleted'
         ORDER BY updated_at DESC, id DESC
         """, (farm_id,))
     return [_greenhouse_dto(row) for row in rows]
@@ -115,6 +115,35 @@ async def create_settings_greenhouse(hass, payload: dict[str, Any], actor: str =
         """, (farm_id, name, _str(payload, "location"), _str(payload, "installType", "install_type"), _str(payload, "approvalScope", "approval_scope"), _str(payload, "note"), actor, actor))
     rows = await list_settings_greenhouses(hass, farm_id)
     return next((row for row in rows if row["name"] == name), rows[0] if rows else {"name": name})
+
+
+async def update_settings_greenhouse(hass, greenhouse_id: int, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    await execute(hass, """
+        UPDATE green_smart_settings_greenhouses
+        SET name = %s, location = %s, install_type = %s, approval_scope = %s, note = %s,
+            status = 'active', updated_by = %s, updated_at = CURRENT_TIMESTAMP
+        WHERE farm_id = %s AND id = %s
+        """, (
+            _str(payload, "name", "greenhouseName", default="제1온실"),
+            _str(payload, "location"),
+            _str(payload, "installType", "install_type"),
+            _str(payload, "approvalScope", "approval_scope"),
+            _str(payload, "note"),
+            actor,
+            farm_id,
+            greenhouse_id,
+        ))
+    rows = await list_settings_greenhouses(hass, farm_id)
+    return next((row for row in rows if str(row.get("id")) == str(greenhouse_id)), {"id": greenhouse_id, "status": "updated"})
+
+
+async def delete_settings_greenhouse(hass, greenhouse_id: int, actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    await execute(hass, """
+        UPDATE green_smart_settings_greenhouses
+        SET status = 'deleted', updated_by = %s, updated_at = CURRENT_TIMESTAMP
+        WHERE farm_id = %s AND id = %s
+        """, (actor, farm_id, greenhouse_id))
+    return {"id": greenhouse_id, "status": "deleted"}
 
 
 async def list_settings_zones(hass, farm_id: int = 1) -> list[dict[str, Any]]:
@@ -203,6 +232,24 @@ class RebuildSettingsGreenhouseCreateView(HomeAssistantView):
         hass = request.app["hass"]
         item = await create_settings_greenhouse(hass, await _settings_payload(request), actor=_request_actor(request))
         return self.json({"ok": True, "kind": "greenhouse", "saved": True, "approvalRequired": False, "greenhouse": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+
+class RebuildSettingsGreenhouseItemView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/greenhouses/{greenhouse_id}"
+    name = "api:green_smart:rebuild:settings:greenhouse_item"
+    requires_auth = True
+
+    async def patch(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        greenhouse_id = int(request.match_info["greenhouse_id"])
+        item = await update_settings_greenhouse(hass, greenhouse_id, await _settings_payload(request), actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "greenhouse", "saved": True, "approvalRequired": False, "greenhouse": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+    async def delete(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        greenhouse_id = int(request.match_info["greenhouse_id"])
+        item = await delete_settings_greenhouse(hass, greenhouse_id, actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "greenhouse", "deleted": True, "approvalRequired": False, "greenhouse": item, "settingsSnapshot": await settings_snapshot_response(hass)})
 
 
 class RebuildSettingsZoneCreateView(HomeAssistantView):

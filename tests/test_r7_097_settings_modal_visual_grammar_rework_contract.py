@@ -34,9 +34,9 @@ def _render_with_modal(open_call: str) -> str:
 
 
 def test_r7_097_version_surfaces_are_1_14_22():
-    assert '"version": "1.14.23"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.23"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.23"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.24"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.24"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.24"' in _read(REBUILD_PANEL)
 
 
 def test_r7_097_create_modals_feel_like_growth_survey_write_modal():
@@ -77,11 +77,16 @@ def test_r7_097_shortcut_list_modals_feel_like_approval_or_audit_review_modal():
         assert 'data-r7-settings-shortcut-review-list-panel' in html
         assert 'data-r7-settings-shortcut-review-row' in html
         assert 'data-r7-settings-shortcut-review-pane' in html
-        assert 'data-r7-settings-shortcut-review-section="request-info"' in html
-        assert 'data-r7-settings-shortcut-review-section="change-detail"' in html
-        assert 'data-r7-settings-shortcut-review-section="evidence"' in html
-        assert '선택 항목 검토' in html
-        assert '감사 근거' in html or '승인 기준' in html
+        if kind == 'greenhouse-info':
+            assert 'data-r7-settings-greenhouse-info-detail-panel' in html
+            assert '선택 항목 상세' in html
+            assert '선택 항목 검토' not in html
+        else:
+            assert 'data-r7-settings-shortcut-review-section="request-info"' in html
+            assert 'data-r7-settings-shortcut-review-section="change-detail"' in html
+            assert 'data-r7-settings-shortcut-review-section="evidence"' in html
+            assert '선택 항목 검토' in html
+            assert '감사 근거' in html or '승인 기준' in html
         assert '닫기' in html
 
 

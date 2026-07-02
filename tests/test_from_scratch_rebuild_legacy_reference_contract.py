@@ -105,4 +105,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-088 rebuilds Settings greenhouse/zone into reference summary cards + zone list/detail panels.
     # R7-097 remakes Settings create/list modals to match growth-survey write and approval/audit review modal grammar.
     # R7-098 adds settings DB snapshot reload and API-backed list data while keeping write views outside rebuild_views.py.
-    assert len(rebuild.splitlines()) < 3610
+    # R7-099 turns greenhouse info into per-greenhouse detail with edit/delete affordances.
+    assert len(rebuild.splitlines()) < 3670
