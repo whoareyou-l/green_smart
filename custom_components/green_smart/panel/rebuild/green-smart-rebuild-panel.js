@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.28";
+const REBUILD_VERSION = "1.14.29";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1940,6 +1940,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><input name="${name}" value="${value}" required ${attrs} style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"></label>`;
   }
 
+  _r7SettingsCreateSelect(name, label, options = [], selectedValue = "", attrs = "") {
+    const items = options.map(({ value, label: optionLabel }) => `<option value="${value}"${String(value) === String(selectedValue) ? " selected" : ""}>${optionLabel}</option>`).join("");
+    return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><select name="${name}" required ${attrs} style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;">${items}</select></label>`;
+  }
+
   _r7SettingsCreateTextarea(name, label, value = "") {
     return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><textarea name="${name}" rows="3" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;font-size:12px;">${value}</textarea></label>`;
   }
@@ -1950,9 +1955,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7SettingsGreenhouseCreateModal() {
     const modal = this._settingsGreenhouseCreateModal || { open: false };
+    const operatingStatusOptions = [
+      { value: "active", label: "운영중" },
+      { value: "standby", label: "대기" },
+      { value: "maintenance", label: "점검중" },
+      { value: "inactive", label: "비활성" },
+    ];
+    const installTypeOptions = [
+      { value: "NUC edge", label: "NUC edge" },
+    ];
+    const timezoneOptions = [
+      { value: "Asia/Seoul", label: "Asia/Seoul · 한국 표준시" },
+      { value: "UTC", label: "UTC" },
+      { value: "Asia/Tokyo", label: "Asia/Tokyo" },
+      { value: "America/Los_Angeles", label: "America/Los_Angeles" },
+    ];
     const sections = [
-      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("name", "온실명", this._homeContext?.greenhouseName || "제1온실")}${this._r7SettingsCreateField("location", "위치", "경기 화성")}</div>`),
-      this._r7SettingsCreateSection("operation-standard", "운영 기준", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("installType", "설치유형", "NUC edge")}${this._r7SettingsCreateField("approvalScope", "승인 범위", "온실 기본 정보")}</div>`),
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("name", "온실명", this._homeContext?.greenhouseName || "대표 온실")}${this._r7SettingsCreateField("location", "위치", "경기 화성")}</div>`),
+      this._r7SettingsCreateSection("operation-standard", "운영 기준", `<div style="display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;">${this._r7SettingsCreateSelect("operatingStatus", "운영상태", operatingStatusOptions, "active")}${this._r7SettingsCreateSelect("installType", "설치유형", installTypeOptions, "NUC edge")}${this._r7SettingsCreateSelect("timezone", "기본 시간대", timezoneOptions, "Asia/Seoul")}</div>`),
       this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", "")),
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "greenhouse-create", title: "온실 생성", subtitle: "생육조사 작성 모달처럼 기본 정보와 검증을 나눠 저장합니다", formAttr: "data-r7-settings-greenhouse-create-form", closeKind: "greenhouse", state: modal.state, error: modal.error, submitLabel: "온실 저장", sections });

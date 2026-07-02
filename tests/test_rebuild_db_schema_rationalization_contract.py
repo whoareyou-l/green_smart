@@ -15,12 +15,12 @@ def _read(path: Path) -> str:
 
 
 def test_rs008_version_surfaces_are_v1127():
-    assert '"version": "1.14.28"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.28"' in _read(PANEL)
-    assert "v1.14.28" in _read(PLAN)
-    assert "v1.14.28" in _read(PRODUCT_PLAN)
-    assert "v1.14.28" in _read(MASTER)
-    assert "v1.14.28" in _read(MASTER_DB)
+    assert '"version": "1.14.29"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.29"' in _read(PANEL)
+    assert "v1.14.29" in _read(PLAN)
+    assert "v1.14.29" in _read(PRODUCT_PLAN)
+    assert "v1.14.29" in _read(MASTER)
+    assert "v1.14.29" in _read(MASTER_DB)
 
 
 def test_rs008_target_schema_uses_rbac_first_gs_prefix_and_crop_cycle_direction():

@@ -1,6 +1,6 @@
 # R7-086 Permission matrix modal hotfix
 
-Status: current baseline for `v1.14.28`.
+Status: current baseline for `v1.14.29`.
 
 ## Scope
 

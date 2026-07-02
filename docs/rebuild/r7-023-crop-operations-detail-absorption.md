@@ -1,6 +1,6 @@
 # R7-023 Crop Operations Detail Absorption
 
-> 기준 버전: v1.14.28
+> 기준 버전: v1.14.29
 > Status: planned via RED contract
 > Scope: 작물 운영 도메인을 crop-centered, zone-scoped visual 하위탭으로 전환
 
