@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.45";
+const REBUILD_VERSION = "1.14.46";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2445,6 +2445,50 @@ class GreenSmartRebuildPanel extends HTMLElement {
     </section>`;
   }
 
+  renderR7SettingsDeviceSensorMappingSubtab(zones = []) {
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const sourceZones = (zones.length ? zones : (Array.isArray(settingsData.zones) ? settingsData.zones : [])).filter((zone) => this._r7ZoneId(zone) !== "all");
+    const normalizedZones = (sourceZones.length ? sourceZones : [{ id: "zone-1", zoneName: "A구역", name: "A구역", equipmentProfile: { labels: ["온도 센서", "천창 모터"] }, dataAvailability: { state: "unknown" } }]).map((zone, index) => {
+      const zoneId = this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`;
+      const zoneName = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역`;
+      const labels = Array.isArray(zone.equipmentProfile?.labels) ? zone.equipmentProfile.labels : [];
+      const sensorCount = labels.filter((label) => /센서|sensor/i.test(String(label))).length || Math.min(3, labels.length || 1);
+      const deviceCount = Math.max(1, labels.length - sensorCount || 1);
+      const dataState = zone.dataAvailability?.state || zone.currentCropAssignment?.dataAvailability?.state || "unknown";
+      const tone = dataState === "fresh" || dataState === "ok" ? "green" : dataState === "stale" ? "amber" : "gray";
+      const status = tone === "green" ? "활성" : tone === "amber" ? "주의" : "확인";
+      return { zoneId, zoneName, labels, sensorCount, deviceCount, dataState, tone, status };
+    });
+    const selected = normalizedZones[0];
+    const mappingRows = this.normalizeR7SettingsEquipmentEntityRows(Array.isArray(settingsData.deviceSensorMappings) ? settingsData.deviceSensorMappings : [], normalizedZones);
+    const selectedMappings = mappingRows.filter((row) => String(row.zoneName || "") === String(selected.zoneName || "") || String(row.location || "") === String(selected.zoneName || ""));
+    const visibleMappings = mappingRows;
+    const activeMappings = visibleMappings.filter((row) => !["inactive", "deleted", "비활성", "삭제됨"].includes(String(row.status || row.statusLabel || "").toLowerCase())).length;
+    const inactiveMappings = Math.max(0, visibleMappings.length - activeMappings);
+    const groupNames = [...new Set((visibleMappings.length ? visibleMappings : [{ mappingRole: "환경 센서 그룹" }]).map((row) => row.mappingRole || row.name || "장치 그룹"))];
+    const selectedStrip = `<section data-r7-settings-device-selected-zone-strip style="display:grid;gap:8px;border-bottom:1px solid #edf4ef;padding-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><div><strong style="font-size:15px;color:#24323f;">현재 선택 구역</strong><span style="margin-left:8px;border:1px solid #badcc8;border-radius:999px;background:#f1fbf3;color:#31523b;padding:4px 9px;font-size:11px;font-weight:950;">${selected.status}</span><p style="margin:6px 0 0;color:#5d6f62;font-size:12px;">장치/그룹/매핑 기준을 구역별로 확인합니다.</p></div><span style="border:1px solid #dcebe0;border-radius:999px;padding:7px 12px;color:#31523b;font-size:12px;font-weight:950;background:#fbfdfb;">매핑 freshness</span></div><div style="display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:8px;">${normalizedZones.map((zone, index) => `<article data-r7-settings-device-zone-pill="${zone.zoneId}" data-r7-settings-device-zone-selected="${index === 0 ? 'true' : 'false'}" style="border:1px solid ${index === 0 ? '#badcc8' : '#edf4ef'};border-radius:14px;background:${index === 0 ? '#f1fbf3' : '#fff'};padding:10px 12px;"><strong style="display:block;color:#31523b;font-size:13px;">${zone.zoneName}</strong><small style="color:#78927f;">센서 ${zone.sensorCount} · 장치 ${zone.deviceCount}</small></article>`).join("")}</div></section>`;
+    const deviceCard = this.renderR7SettingsInfoCard({ key: "device", icon: "mdi:devices", title: "장치", primary: `${selected.deviceCount}개 장치`, rows: [this._r7SettingsGreenhouseValueRow("환기/스크린", `${Math.max(1, selected.deviceCount - 1)}개`), this._r7SettingsGreenhouseValueRow("관수/양액", `${Math.max(1, Math.min(selected.deviceCount, 2))}개`), this._r7SettingsGreenhouseValueRow("제어 기준", "HA entity")], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-device-card="device"' });
+    const groupCard = this.renderR7SettingsInfoCard({ key: "group", icon: "mdi:view-grid-plus-outline", title: "그룹", primary: `${groupNames.length}개 그룹`, rows: [this._r7SettingsGreenhouseValueRow("환경 그룹", groupNames.find((name) => /환경|센서/i.test(name)) || groupNames[0] || "미등록"), this._r7SettingsGreenhouseValueRow("관수 그룹", groupNames.find((name) => /관수|양액/i.test(name)) || "검토 필요"), this._r7SettingsGreenhouseValueRow("상태", inactiveMappings ? "점검 필요" : "정상")], tone: inactiveMappings ? "amber" : "green", statusKey: inactiveMappings ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-device-card="group"' });
+    const mappingCard = this.renderR7SettingsInfoCard({ key: "mapping", icon: "mdi:vector-link", title: "매핑", primary: visibleMappings.length ? `${visibleMappings.length}건 연결` : "매핑 확인 필요", rows: [this._r7SettingsGreenhouseValueRow("활성", `${activeMappings}건`), this._r7SettingsGreenhouseValueRow("점검", `${inactiveMappings}건`), this._r7SettingsGreenhouseValueRow("미연결", `${visibleMappings.length ? 0 : 1}건`)], tone: inactiveMappings || !visibleMappings.length ? "amber" : "green", statusKey: inactiveMappings || !visibleMappings.length ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-device-card="mapping"' });
+    const actionCard = ({ kind, title, icon, primary, note, addLabel, addAttr, shortcutLabel, shortcutAttr, tone = "blue" }) => this.renderR7RecordCardShell({ kind, icon, title, statusKey: "due-today", tone, primary, note, actions: [this.renderR7CommonCardButton({ label: addLabel, icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: `${addAttr} data-r7-settings-modal-skip-record-binding="true"` }), this.renderR7CommonCardButton({ label: shortcutLabel, icon: "mdi:history", tone: "blue", extraAttrs: `${shortcutAttr} data-r7-settings-modal-skip-record-binding="true"` })], extraAttrs: `data-r7-settings-device-action-card="${kind}"` });
+    const actions = [
+      actionCard({ kind: "device", title: "장치 구성", icon: "mdi:devices", primary: "장치 확인 필요", note: "환기창·팬·밸브 등 실행 대상 장치를 점검합니다.", addLabel: "장치 구성 열기", addAttr: 'data-r7-settings-equipment-info-shortcut-button', shortcutLabel: "매핑 목록", shortcutAttr: 'data-r7-settings-device-mapping-list-shortcut' }),
+      actionCard({ kind: "group", title: "그룹 구성", icon: "mdi:view-grid-plus-outline", primary: "그룹 확인 필요", note: "환경·관수·장치 그룹을 구역 기준으로 묶습니다.", addLabel: "그룹 구성", addAttr: 'data-r7-settings-device-group-button', shortcutLabel: "장치 목록", shortcutAttr: 'data-r7-settings-device-list-shortcut' }),
+      actionCard({ kind: "mapping", title: "매핑 확인", icon: "mdi:vector-link", primary: "매핑 확인 필요", note: "센서 entity와 장치 entity를 연결합니다.", addLabel: "장치/센서 매핑 열기", addAttr: 'data-r7-settings-device-sensor-mapping-button', shortcutLabel: "장비 구성", shortcutAttr: 'data-r7-settings-equipment-info-shortcut-button' }),
+    ].join("");
+    const listRows = (visibleMappings.length ? visibleMappings : [{ id: "empty", mappingRole: "매핑 미등록", sensorEntity: "sensor 미연결", deviceEntity: "device 미연결", note: "장치/센서 매핑 열기에서 추가", tone: "amber", statusLabel: "확인" }]).map((row) => ({
+      kind: row.mappingRole || row.name || "장치 그룹",
+      at: row.sensorEntity || row.installType || "sensor 미등록",
+      memo: `${row.deviceEntity || row.approvalScope || "device 미등록"} · ${row.note || row.direction || "매핑 메모 없음"}`,
+      state: row.statusLabel || row.status || "확인",
+      tone: row.tone || "green",
+      icon: "mdi:vector-link",
+      extraAttrs: `data-r7-settings-device-mapping-row="${row.id}"`,
+    }));
+    const mappingList = this.renderR7CommonRecentPanel({ kind: "settings-device-mapping-list", title: "매핑 목록", icon: "mdi:format-list-bulleted", statusKey: inactiveMappings ? "needs-verification" : "normal-ready", tone: inactiveMappings ? "amber" : "green", rows: listRows, limit: Number.POSITIVE_INFINITY, rowKind: "settings-device-mapping", extraAttrs: 'data-r7-settings-device-mapping-list-panel data-r7-settings-device-table-header' });
+    return `<section data-r7-settings-device-sensor-mapping data-r7-settings-device-mapping-layout="device-group-mapping" style="display:grid;gap:12px;">${selectedStrip}<div data-r7-settings-device-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${deviceCard}${groupCard}${mappingCard}</div><div data-r7-settings-device-action-row style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${actions}</div>${mappingList}</section>`;
+  }
+
   renderR7SettingsAdminSubtabPanel(tabKey, activeTab = "greenhouse-zones") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -2488,7 +2532,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const body = tabKey === "greenhouse-zones"
       ? this.renderR7SettingsGreenhouseZonesSubtab(zones)
       : tabKey === "device-sensor-mapping"
-          ? `<section data-r7-settings-device-sensor-mapping style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="zone-sensors"', '구역별 센서', '온도 · 습도 · CO₂ · EC · pH · 광량', '센서가 어느 구역 기준인지 설정에서 확정합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="zone-devices"', '구역별 장치', '환기창 · 순환팬 · 난방 · 관수 밸브 · 양액기', '장치 제어는 설정의 매핑 기준을 사용합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="ha-entity"', 'HA entity mapping', 'sensor/switch/climate entity source', 'HA entity mapping은 상태 판단 source입니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="mapping-health"', '매핑 상태', '정상/누락/중복/통신 오류', '오류 evidence는 진단·감사에서도 확인합니다.')}</section>`
+          ? this.renderR7SettingsDeviceSensorMappingSubtab(zones)
           : tabKey === "users-permissions"
             ? `${(() => {
               const settingsUsersPermissions = this.r7SettingsUsersPermissionsData();

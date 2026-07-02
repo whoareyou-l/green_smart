@@ -111,4 +111,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-103 reuses the CDA entity modal for equipment/sensor mapping rows and selected mapping details.
     # R7-105 adds greenhouse FK select + automatic next zone-name calculation to the zone-create modal.
     # R7-112 adds zone-list footer edit/delete actions and reuses the zone-create modal as a PATCH-backed zone edit modal.
-    assert len(rebuild.splitlines()) < 3980
+    # R7-115 rebuilds Settings device/sensor mapping into image-like device/group/mapping cards and a mapping list.
+    assert len(rebuild.splitlines()) < 4020
