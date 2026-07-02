@@ -65,9 +65,9 @@ def _render_records_workflow():
 
 
 def test_r7_074_version_surfaces_are_1_13_9():
-    assert '"version": "1.14.21"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.21"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.21"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.22"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.22"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.22"' in _read(REBUILD_PANEL)
 
 
 def test_r7_074_common_body_row_helpers_exist():

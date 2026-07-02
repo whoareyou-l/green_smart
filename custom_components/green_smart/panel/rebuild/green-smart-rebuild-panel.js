@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.21";
+const REBUILD_VERSION = "1.14.22";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1653,64 +1653,147 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
 
-  renderR7SettingsCreateRecordCommonModal({ open, kind, title, subtitle, formAttr, closeKind, fields, submitLabel, state = "idle", error = "" }) {
+  renderR7SettingsCreatePreSaveChecklist(kind, title) {
+    const model = {
+      "greenhouse-create": [
+        ["basic-info", "온실명·위치 확인", "온실 기본값이 운영 화면에 바로 노출됩니다."],
+        ["operation-standard", "운영 기준 확인", "설치유형과 관리 기준을 저장 전에 확인합니다."],
+        ["memo", "승인 메모", "생성 사유는 감사 로그 근거로 남깁니다."],
+      ],
+      "zone-create": [
+        ["basic-info", "구역명·용도 확인", "구역 이름과 재배 목적을 빈 칸 없이 입력합니다."],
+        ["zone-composition", "면적·배드 수 확인", "면적과 배드 수는 작물 배치 기준이 됩니다."],
+        ["memo", "승인 메모", "구역 생성 사유를 남깁니다."],
+      ],
+      "device-sensor-mapping": [
+        ["basic-info", "구역 기준 확인", "장치와 센서가 어느 구역 기준인지 확인합니다."],
+        ["mapping-target", "entity 매핑 확인", "센서 entity와 장비 entity를 잘못 연결하지 않도록 확인합니다."],
+        ["memo", "감사 근거", "매핑 변경 근거를 감사 로그에 남깁니다."],
+      ],
+    }[kind] || [["basic-info", "기본 정보", "입력값을 확인합니다."]];
+    const toneStyle = (idx) => idx === 0
+      ? { bg: "#f1fbf4", border: "#d8eedf", iconBg: "#34a853", title: "#246b3b", icon: "✓" }
+      : idx === 1
+        ? { bg: "#fff8e8", border: "#f1dcaa", iconBg: "#f3a53f", title: "#9a650d", icon: "◷" }
+        : { bg: "#fff6e8", border: "#efd3a3", iconBg: "#e9952d", title: "#8a5a12", icon: "!" };
+    return `<aside data-r7-settings-create-pre-save-checklist data-r7-record-pre-save-checklist style="display:grid;gap:10px;border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;position:sticky;top:76px;z-index:2;align-self:start;max-width:340px;width:100%;box-sizing:border-box;">
+      <strong style="font-size:15px;color:#1f3329;">저장 전 검증</strong>
+      <div style="font-size:12px;color:#53645b;line-height:1.45;">생육조사 작성 모달 문법처럼 왼쪽은 작성 폼, 오른쪽은 저장 전 확인입니다.</div>
+      <div data-r7-settings-create-validation-list style="display:grid;gap:9px;">${model.map((item, idx) => {
+        const tone = toneStyle(idx);
+        return `<div data-r7-settings-create-validation-card="${item[0]}" style="display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;border:1px solid ${tone.border};border-radius:14px;background:${tone.bg};padding:11px 12px;box-shadow:0 1px 0 rgba(31,51,41,.03);"><span style="width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:${tone.iconBg};color:#fff;font-size:15px;font-weight:950;line-height:1;">${tone.icon}</span><span style="display:grid;gap:3px;"><strong style="font-size:13px;color:${tone.title};">${item[1]}</strong><small style="font-size:12px;color:#62736a;line-height:1.4;">${item[2]}</small></span></div>`;
+      }).join("")}</div>
+      <template data-r7-settings-create-reference-modal="growth-survey-write">${title} · 생육조사 작성 모달 문법</template>
+    </aside>`;
+  }
+
+  renderR7SettingsCreateGrowthLikeModal({ open, kind, title, subtitle, formAttr, closeKind, sections, submitLabel, state = "idle", error = "" }) {
     if (!open) return `<template data-r7-settings-${kind}-modal="true" data-r7-settings-${kind}-modal-open="false"></template>`;
     const statusText = state === "saving" ? "저장 중" : state === "saved" ? "저장 완료" : state === "error" ? "오류" : "입력 가능";
     const modalModel = { mode: "settings-create", recordType: kind, seasonId: "settings", title };
-    const summary = `<div data-r7-settings-create-record-common-modal data-r7-settings-create-record-kind="${kind}" data-r7-record-modal-operator-summary style="border:1px solid #e5eee7;border-radius:12px;background:#fbfdfb;padding:11px 12px;display:grid;gap:4px;"><strong style="font-size:13px;color:#1f3329;">${title} · ${statusText}</strong><span style="font-size:12px;color:#6d7a70;line-height:1.45;">${subtitle}</span></div>`;
+    const summary = `<div data-r7-settings-create-record-common-modal data-r7-settings-create-growth-like-modal="true" data-r7-settings-create-record-kind="${kind}" data-r7-record-modal-operator-summary style="border:1px solid #e5eee7;border-radius:12px;background:#fbfdfb;padding:11px 12px;display:grid;gap:4px;"><strong style="font-size:13px;color:#1f3329;">${title} · ${statusText}</strong><span style="font-size:12px;color:#6d7a70;line-height:1.45;">${subtitle}</span></div>`;
     const stateHtml = `${error ? `<p data-r7-settings-create-record-error style="margin:0;color:#b42318;font-size:12px;">${error}</p>` : ""}${state === "saved" ? `<p data-r7-settings-create-record-saved style="margin:0;color:#25804a;font-size:12px;">저장됨</p>` : ""}`;
     const actionRow = `<div class="r7-record-modal-actions" data-r7-settings-create-record-actions style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button type="button" data-r7-settings-detail-action-modal-close="${closeKind}" data-r7-record-modal-cancel style="height:38px;border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;font-weight:950;">취소</button><button type="submit" data-r7-record-modal-submit style="height:38px;border:0;border-radius:10px;background:#43ad5e;color:#fff;font-weight:950;">${state === "saving" ? "저장 중..." : state === "saved" ? "저장됨" : submitLabel}</button></div>`;
-    const body = `<form ${formAttr} data-r7-settings-create-record-form="${kind}" style="display:grid;gap:12px;min-width:0;">${fields.join("")}${stateHtml}${actionRow}</form>`;
+    const leftForm = `<div data-r7-settings-create-left-form style="display:grid;gap:12px;min-width:0;">${sections.join("")}</div>`;
+    const body = `<form ${formAttr} data-r7-settings-create-record-form="${kind}" style="display:grid;gap:12px;min-width:0;"><div data-r7-settings-create-form-layout="growth-like" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);gap:16px;align-items:start;width:100%;box-sizing:border-box;">${leftForm}${this.renderR7SettingsCreatePreSaveChecklist(kind, title)}</div>${stateHtml}${actionRow}</form>`;
     return this.renderR7RecordCommonModalShell(modalModel, summary, body);
   }
 
-  renderR7SettingsDetailActionModal({ open, kind, title, subtitle, formAttr, closeKind, fields, submitLabel, state = "idle", error = "" }) {
+  renderR7SettingsCreateRecordCommonModal(args) {
+    return this.renderR7SettingsCreateGrowthLikeModal(args);
+  }
+
+  renderR7SettingsDetailActionModal({ open, kind, title, subtitle, formAttr, closeKind, sections, fields, submitLabel, state = "idle", error = "" }) {
     // R7-095 marker manifest: data-r7-settings-greenhouse-create-modal / data-r7-settings-zone-create-modal / data-r7-settings-device-sensor-mapping-modal / data-r7-settings-greenhouse-create-form / data-r7-settings-zone-create-form / data-r7-settings-device-sensor-mapping-form.
     // R7-096 creation buttons reuse record common modal shell via renderR7RecordCommonModalShell, not direct CDA overlay.
-    return this.renderR7SettingsCreateRecordCommonModal({ open, kind, title, subtitle, formAttr, closeKind, fields, submitLabel, state, error });
+    // R7-097 creation buttons use growth-like sectioned form grammar from 생육조사 작성 모달.
+    return this.renderR7SettingsCreateGrowthLikeModal({ open, kind, title, subtitle, formAttr, closeKind, sections: sections || fields || [], submitLabel, state, error });
+  }
+
+  _r7SettingsCreateField(name, label, value = "", attrs = "") {
+    return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><input name="${name}" value="${value}" required ${attrs} style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"></label>`;
+  }
+
+  _r7SettingsCreateTextarea(name, label, value = "") {
+    return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><textarea name="${name}" rows="3" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;font-size:12px;">${value}</textarea></label>`;
+  }
+
+  _r7SettingsCreateSection(key, title, body) {
+    return `<fieldset data-r7-settings-create-section="${key}" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;background:#fff;"><legend style="font-size:13px;font-weight:950;color:#1f3329;padding:0 4px;">${title}</legend>${body}</fieldset>`;
   }
 
   renderR7SettingsGreenhouseCreateModal() {
     const modal = this._settingsGreenhouseCreateModal || { open: false };
-    const field = (name, label, value = "") => `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">${label}<input name="${name}" value="${value}" required style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>`;
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "greenhouse-create", title: "온실 생성", subtitle: "온실 기본 정보를 승인 후 저장합니다", formAttr: "data-r7-settings-greenhouse-create-form", closeKind: "greenhouse", state: modal.state, error: modal.error, submitLabel: "온실 저장", fields: [field("name", "온실명", this._homeContext?.greenhouseName || "제1온실"), field("location", "위치", "경기 화성"), field("installType", "설치유형", "NUC edge")] });
+    const sections = [
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("name", "온실명", this._homeContext?.greenhouseName || "제1온실")}${this._r7SettingsCreateField("location", "위치", "경기 화성")}</div>`),
+      this._r7SettingsCreateSection("operation-standard", "운영 기준", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("installType", "설치유형", "NUC edge")}${this._r7SettingsCreateField("approvalScope", "승인 범위", "온실 기본 정보")}</div>`),
+      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", "")),
+    ];
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "greenhouse-create", title: "온실 생성", subtitle: "생육조사 작성 모달처럼 기본 정보와 검증을 나눠 저장합니다", formAttr: "data-r7-settings-greenhouse-create-form", closeKind: "greenhouse", state: modal.state, error: modal.error, submitLabel: "온실 저장", sections });
   }
 
   renderR7SettingsZoneCreateModal() {
     const modal = this._settingsZoneCreateModal || { open: false };
-    const field = (name, label, value = "") => `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">${label}<input name="${name}" value="${value}" required style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>`;
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: "구역 생성", subtitle: "구역 용도, 면적, 배드 수를 승인 후 저장합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: "구역 저장", fields: [field("name", "구역명", "신규 구역"), field("purpose", "구역 용도", "재배"), field("area", "면적", "120㎡"), field("bedCount", "배드 수", "6")] });
+    const sections = [
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("name", "구역명", "신규 구역")}${this._r7SettingsCreateField("purpose", "구역 용도", "재배")}</div>`),
+      this._r7SettingsCreateSection("zone-composition", "구역 구성", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("area", "면적", "120㎡")}${this._r7SettingsCreateField("bedCount", "배드 수", "6")}</div>`),
+      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", "")),
+    ];
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: "구역 생성", subtitle: "구역 구성값을 입력하고 저장 전 검증을 확인합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: "구역 저장", sections });
   }
 
   renderR7SettingsDeviceSensorMappingModal() {
     const modal = this._settingsDeviceSensorMappingModal || { open: false };
     const selected = (this._zonesForRender?.() || [])[0] || { zoneId: "zone-1", name: "1구역" };
-    const field = (name, label, value = "") => `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;">${label}<input name="${name}" value="${value}" required style="height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;"></label>`;
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-sensor-mapping", title: "장치/센서 매핑", subtitle: "선택 구역의 센서와 장비를 연결합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state, error: modal.error, submitLabel: "매핑 저장", fields: [field("zoneId", "구역 ID", selected.zoneId || selected.id || "zone-1"), field("sensorEntity", "센서 entity", "sensor.greenhouse_temperature"), field("deviceEntity", "장비 entity", "switch.greenhouse_fan"), field("mappingRole", "역할", "환경 센서/환기 장치")] });
+    const sections = [
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("zoneId", "구역 ID", selected.zoneId || selected.id || "zone-1")}${this._r7SettingsCreateField("mappingRole", "역할", "환경 센서/환기 장치")}</div>`),
+      this._r7SettingsCreateSection("mapping-target", "매핑 대상", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("sensorEntity", "센서 entity", "sensor.greenhouse_temperature")}${this._r7SettingsCreateField("deviceEntity", "장비 entity", "switch.greenhouse_fan")}</div>`),
+      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "매핑 변경 근거", "")),
+    ];
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-sensor-mapping", title: "장치/센서 매핑", subtitle: "생육조사 작성 모달처럼 구역 기준과 매핑 대상을 나눠 입력합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state, error: modal.error, submitLabel: "매핑 저장", sections });
   }
 
 
-  renderR7SettingsShortcutCdaSplitModal() {
+  renderR7SettingsShortcutReviewLikeModal() {
     const modal = this._settingsShortcutCdaModal || { open: false, kind: "" };
     if (!modal.open) return `<template data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-cda-split-open="false"></template>`;
     const zones = (this._zonesForRender?.() || []).filter((zone) => this._r7ZoneId?.(zone) !== "all");
-    const selected = zones[0] || { id: "zone-1", name: "1구역", zoneName: "1구역", purpose: "재배", area: "120㎡", bedCount: 6, equipmentProfile: { labels: ["센서 미매핑"] } };
+    const selectedZone = zones[0] || { id: "zone-1", name: "1구역", zoneName: "1구역", purpose: "재배", area: "120㎡", bedCount: 6, currentCrop: { crop_label_ko: "토마토", crop_cycle_id: "17" }, equipmentProfile: { labels: ["온도 센서", "천창", "미연결 양액기"] } };
     const kind = modal.kind || "greenhouse-info";
     const meta = {
-      "greenhouse-info": { title: "온실 정보", subtitle: "온실 기본 정보와 운영 기준", marker: "data-r7-settings-greenhouse-info-split-modal" },
-      "zone-list": { title: "구역 목록", subtitle: "구역별 상태와 현재 작기", marker: "data-r7-settings-zone-list-split-modal" },
-      "equipment-info": { title: "장비 구성", subtitle: "선택 구역 장치/센서 매핑 상태", marker: "data-r7-settings-equipment-info-split-modal" },
-    }[kind] || { title: "상세", subtitle: "설정 상세", marker: "data-r7-settings-greenhouse-info-split-modal" };
-    const header = this.renderR7CdaModalHeader({ icon: kind === "equipment-info" ? "mdi:devices" : kind === "zone-list" ? "mdi:view-list-outline" : "mdi:greenhouse", title: meta.title, subtitle: meta.subtitle, closeAttr: "data-r7-settings-shortcut-cda-split-close" });
-    const rows = kind === "zone-list"
-      ? (zones.length ? zones : [selected]).map((zone, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-settings-shortcut-zone-row="${this._r7ZoneId?.(zone) || zone.id || 'zone-1'}"`, columns: [this._r7ZoneName?.(zone) || zone.zoneName || zone.name || "1구역", zone.purpose || "재배", zone.area || "120㎡", `${zone.bedCount ?? zone.beds ?? 6} bed`, index === 0 ? "선택" : "대기"] })).join("")
+      "greenhouse-info": { title: "온실 정보", subtitle: "온실 기본 정보와 운영 기준 검토", icon: "mdi:greenhouse", marker: "data-r7-settings-greenhouse-info-split-modal", type: "온실 정보", target: this._homeContext?.greenhouseName || "제1온실" },
+      "zone-list": { title: "구역 목록", subtitle: "구역별 상태와 현재 작기 검토", icon: "mdi:view-list-outline", marker: "data-r7-settings-zone-list-split-modal", type: "구역 목록", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
+      "equipment-info": { title: "장비 구성", subtitle: "선택 구역 장치/센서 매핑 상태 검토", icon: "mdi:devices", marker: "data-r7-settings-equipment-info-split-modal", type: "장비 구성", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
+    }[kind] || { title: "상세", subtitle: "설정 상세 검토", icon: "mdi:information-outline", marker: "data-r7-settings-greenhouse-info-split-modal", type: "설정", target: "대상" };
+    const labels = Array.isArray(selectedZone.equipmentProfile?.labels) ? selectedZone.equipmentProfile.labels : [];
+    const reviewRows = kind === "zone-list"
+      ? (zones.length ? zones : [selectedZone]).map((zone, index) => ({ id: this._r7ZoneId?.(zone) || zone.id || `zone-${index + 1}`, at: index === 0 ? "선택" : "대기", type: "구역", risk: zone.dataAvailability?.state === "fresh" ? "낮음" : "중간", summary: `${this._r7ZoneName?.(zone) || zone.zoneName || zone.name || '구역'} · ${zone.purpose || '재배'} · ${zone.area || '120㎡'}`, actor: `${zone.bedCount ?? zone.beds ?? 6} bed`, tone: zone.dataAvailability?.state === "fresh" ? "green" : "amber" }))
       : kind === "equipment-info"
-        ? [`센서 · ${(selected.equipmentProfile?.labels || []).filter((label) => String(label).includes("센서") || String(label).includes("sensor")).length || 1}`, `장비 · ${(selected.equipmentProfile?.labels || []).filter((label) => !String(label).includes("센서") && !String(label).includes("sensor")).length || 1}`, `미연결 · ${(selected.equipmentProfile?.labels || []).filter((label) => /미연결|unmapped|누락/i.test(String(label))).length}`].map((label, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-settings-shortcut-equipment-row="${index}"`, columns: [label, selected.zoneName || selected.name || "1구역", index === 2 ? "확인 필요" : "확인됨"] })).join("")
-        : ["온실명 · " + (this._homeContext?.greenhouseName || "제1온실"), "위치 · 경기 화성", "설치유형 · NUC edge"].map((label, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-settings-shortcut-greenhouse-row="${index}"`, columns: [label, "운영 기준", index === 0 ? "대표" : "정보"] })).join("");
-    const listPanel = this.renderR7CdaListPanel({ title: meta.title, columns: kind === "zone-list" ? ["이름", "용도", "면적", "배드", "상태"] : ["항목", "범위", "상태"], rowsHtml: rows, attrs: `data-r7-settings-shortcut-list-panel data-r7-settings-shortcut-cda-split-kind="${kind}"` });
-    const detailBody = this.renderR7CdaDetailSection({ title: "선택 상세", attrs: `data-r7-settings-shortcut-detail-section="${kind}"`, body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${meta.subtitle}</p>` });
-    const detailPanel = this.renderR7CdaDetailPanel({ title: "상세", attrs: `data-r7-settings-shortcut-detail-panel data-r7-settings-shortcut-cda-split-kind="${kind}"`, badge: `<span style="border:1px solid #badcc8;border-radius:999px;padding:5px 9px;font-size:11px;background:#f0fbf4;color:#25804a;">공통 CDA</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ actions: [`<button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
-    return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 44, overlayAttrs: `${meta.marker} data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-cda-split-kind="${kind}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${kind}"`, header, left: listPanel, right: detailPanel, footer: "" });
+        ? [
+            { id: "sensors", at: "선택", type: "센서", risk: "낮음", summary: `센서 ${labels.filter((label) => String(label).includes("센서") || String(label).includes("sensor")).length || 1}개`, actor: meta.target, tone: "green" },
+            { id: "devices", at: "확인", type: "장비", risk: "중간", summary: `장비 ${labels.filter((label) => !String(label).includes("센서") && !String(label).includes("sensor")).length || 1}개`, actor: meta.target, tone: "amber" },
+            { id: "unmapped", at: "검토", type: "미연결", risk: labels.some((label) => /미연결|unmapped|누락/i.test(String(label))) ? "중간" : "낮음", summary: labels.find((label) => /미연결|unmapped|누락/i.test(String(label))) || "미연결 없음", actor: "mapping", tone: labels.some((label) => /미연결|unmapped|누락/i.test(String(label))) ? "amber" : "green" },
+          ]
+        : [
+            { id: "name", at: "대표", type: "온실명", risk: "낮음", summary: this._homeContext?.greenhouseName || "제1온실", actor: "운영 기준", tone: "green" },
+            { id: "location", at: "정보", type: "위치", risk: "낮음", summary: "경기 화성", actor: "설정", tone: "green" },
+            { id: "install", at: "정보", type: "설치유형", risk: "중간", summary: "NUC edge", actor: "시스템", tone: "amber" },
+          ];
+    const selected = reviewRows[0];
+    const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-shortcut-search-input", searchPlaceholder: `${meta.title} 검색`, filters: [["all","전체"],["needs-review","검토 필요"],["normal","정상"],["evidence","감사 근거"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "needs-review" ? "red" : "green", attrs: `data-r7-settings-shortcut-filter="${key}"` })) });
+    const rows = reviewRows.map((row) => this.renderR7CdaCompactListRow({ selected: row.id === selected.id, attrs: `data-r7-settings-shortcut-review-row="${row.id}" data-r7-settings-shortcut-review-row-selected="${row.id === selected.id ? 'true' : 'false'}"`, columns: [`<span>${row.at}</span>`, `<b>${row.type}</b>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.risk}</span>`, `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.summary}</span>`, `<span>${row.actor}</span>`] })).join("");
+    const listPanel = this.renderR7CdaListPanel({ title: `${meta.title} 목록`, columns: ["상태", "유형", "위험도", "요약", "대상"], rowsHtml: rows, footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${reviewRows.length}건</span>`, attrs: `data-r7-settings-shortcut-review-list-panel data-r7-settings-shortcut-cda-split-kind="${kind}"` });
+    const requestInfo = this.renderR7CdaDetailSection({ title: "1. 요청 정보", attrs: 'data-r7-settings-shortcut-review-section="request-info"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">대상</span><span style="padding:8px;">${meta.target}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">유형</span><span style="padding:8px;">${meta.type}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;">${selected.at}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">위험도</span><span style="padding:8px;font-weight:950;">${selected.risk}</span></div>` });
+    const changeDetail = this.renderR7CdaDetailSection({ title: "2. 변경 내용", attrs: 'data-r7-settings-shortcut-review-section="change-detail"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.8fr 1fr 1fr;overflow:hidden;">${[["항목","현재값","검토값"],[selected.type, selected.summary, "read-only 확인"],["범위", meta.target, kind]].map((cols, idx) => cols.map((cell) => `<span style="padding:8px;background:${idx === 0 ? '#fbfdfb' : '#fff'};font-weight:${idx === 0 ? '950' : '700'};border-bottom:${idx === 2 ? '0' : '1px solid #edf4ef'};">${cell}</span>`).join("")).join("")}</div>` });
+    const evidence = this.renderR7CdaDetailSection({ title: "3. 감사 근거", attrs: 'data-r7-settings-shortcut-review-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">승인 기준</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">감사 근거</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">read-only 검토</span></div><p style="margin:8px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${meta.subtitle}</p>` });
+    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 항목 검토", attrs: `data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${kind}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.risk}</span>`, body: `${requestInfo}${changeDetail}${evidence}`, footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [`<button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
+    const header = this.renderR7CdaModalHeader({ icon: meta.icon, title: meta.title, subtitle: `${meta.target} · ${meta.type} · 검토`, closeAttr: "data-r7-settings-shortcut-cda-split-close" });
+    const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 목록 버튼은 승인 모달/감사 로그 모달과 같은 검토형 목록 문법을 사용합니다.</span><button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
+    return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 44, overlayAttrs: `${meta.marker} data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-review-like-modal="approval-audit" data-r7-settings-shortcut-cda-split-kind="${kind}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${kind}"`, header, search, left: listPanel, right: detailPanel, footer });
+  }
+
+  renderR7SettingsShortcutCdaSplitModal() {
+    return this.renderR7SettingsShortcutReviewLikeModal();
   }
 
   renderR7SettingsPermissionMatrixModal() {
