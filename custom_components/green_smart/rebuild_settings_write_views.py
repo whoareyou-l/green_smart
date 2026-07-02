@@ -289,6 +289,25 @@ async def create_settings_zone(hass, payload: dict[str, Any], actor: str = "oper
     return next((row for row in rows if row["name"] == name), rows[0] if rows else {"name": name})
 
 
+async def update_settings_zone(hass, zone_id: int, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    await execute(hass, """
+        UPDATE green_smart_settings_zones
+        SET greenhouse_id = %s, name = %s, purpose = %s, area = %s, bed_count = %s,
+            note = %s, status = %s, updated_by = %s, updated_at = CURRENT_TIMESTAMP
+        WHERE farm_id = %s AND id = %s
+        """, (_int(payload, "greenhouseId", "greenhouse_id", default=0) or None, _str(payload, "name", "zoneName", default="신규 구역"), _zone_purpose_label(payload), _str(payload, "area"), _int(payload, "bedCount", "bed_count"), _str(payload, "note"), _zone_status_label(payload, "status", "state", default="정상"), actor, farm_id, zone_id))
+    rows = await list_settings_zones(hass, farm_id)
+    return next((row for row in rows if str(row.get("id")) == str(zone_id)), {"id": zone_id, "status": "updated"})
+
+
+async def delete_settings_zone(hass, zone_id: int, actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    await execute(hass, """
+        DELETE FROM green_smart_settings_zones
+        WHERE farm_id = %s AND id = %s
+        """, (farm_id, zone_id))
+    return {"id": zone_id, "status": "삭제됨", "deleted": True}
+
+
 async def list_settings_device_sensor_mappings(hass, farm_id: int = 1) -> list[dict[str, Any]]:
     rows = await fetchall(hass, """
         SELECT id, farm_id, zone_id, sensor_entity, device_entity, mapping_role, note, status, created_at, updated_at
@@ -384,6 +403,24 @@ class RebuildSettingsZoneCreateView(HomeAssistantView):
         hass = request.app["hass"]
         item = await create_settings_zone(hass, await _settings_payload(request), actor=_request_actor(request))
         return self.json({"ok": True, "kind": "zone", "saved": True, "approvalRequired": False, "zone": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+
+class RebuildSettingsZoneItemView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/zones/{zone_id}"
+    name = "api:green_smart:rebuild:settings:zone_item"
+    requires_auth = True
+
+    async def patch(self, request: web.Request, zone_id=None) -> web.Response:
+        hass = request.app["hass"]
+        zone_id = int(zone_id or request.match_info["zone_id"])
+        item = await update_settings_zone(hass, zone_id, await _settings_payload(request), actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "zone", "saved": True, "approvalRequired": False, "zone": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+    async def delete(self, request: web.Request, zone_id=None) -> web.Response:
+        hass = request.app["hass"]
+        zone_id = int(zone_id or request.match_info["zone_id"])
+        item = await delete_settings_zone(hass, zone_id, actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "zone", "deleted": True, "approvalRequired": False, "zone": item, "settingsSnapshot": await settings_snapshot_response(hass)})
 
 
 class RebuildSettingsDeviceSensorMappingView(HomeAssistantView):

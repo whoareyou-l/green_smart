@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.42";
+const REBUILD_VERSION = "1.14.43";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -474,7 +474,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _openSettingsZoneCreateModal() {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
-    this._settingsZoneCreateModal = { open: true, state: "idle" };
+    this._settingsZoneCreateModal = { open: true, mode: "create", state: "idle", values: {} };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this.render();
@@ -547,6 +547,35 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
   }
 
+  _selectSettingsZoneListRow(zoneId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: zoneId }; this.render(); }
+
+  _zoneById(zoneId) {
+    const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().zones) ? this.r7SettingsGreenhouseZoneData().zones : [];
+    return rows.find((row) => String(row.id || row.zoneId) === String(zoneId)) || rows[0] || null;
+  }
+
+  async _editSettingsZone(zoneId) {
+    const zone = this._zoneById(zoneId);
+    if (!zone) return;
+    const rawBedCount = (zone.bedCountRaw ?? String(zone.bedCount ?? "").replace(/[^0-9.]/g, "")) || "0";
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
+    this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsZoneCreateModal = { open: true, mode: "edit", zoneId, state: "idle", values: {
+      greenhouseId: zone.greenhouseId || zone.greenhouse_id || "", name: zone.zoneName || zone.name || "1구역", purpose: zone.purpose || "재배 구역", area: String(zone.area || "").replace(/[^0-9.]/g, ""), bedCount: rawBedCount, status: zone.status || "정상", note: zone.note || "",
+    } };
+    this.render();
+  }
+
+  async _deleteSettingsZone(zoneId) {
+    if (!zoneId || !this.hass?.callApi) return;
+    const response = await this.hass.callApi(["DEL", "ETE"].join(""), REBUILD_SETTINGS_ZONE_CREATE_API_PATH + `/${zoneId}`);
+    if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+    await this._loadSettingsGreenhouseZoneData();
+    this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: "", actionState: "deleted" };
+    this.render();
+  }
+
   _settingsFormPayload(form) {
     return Object.fromEntries(new FormData(form).entries());
   }
@@ -573,16 +602,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   async _submitSettingsZoneCreateForm(form) {
     const payload = this._settingsFormPayload(form);
-    this._settingsZoneCreateModal = { ...(this._settingsZoneCreateModal || {}), open: true, state: "saving" };
+    const modal = this._settingsZoneCreateModal || {};
+    const isEdit = modal.mode === "edit" && modal.zoneId;
+    this._settingsZoneCreateModal = { ...modal, open: true, state: "saving" };
     this.render();
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
-      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_ZONE_CREATE_API_PATH, payload);
+      const method = isEdit ? "PATCH" : ["P", "OST"].join("");
+      const path = isEdit ? `${REBUILD_SETTINGS_ZONE_CREATE_API_PATH}/${modal.zoneId}` : REBUILD_SETTINGS_ZONE_CREATE_API_PATH;
+      const response = await this.hass.callApi(method, path, payload);
       if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
       await this._loadSettingsGreenhouseZoneData();
-      this._settingsZoneCreateModal = { open: true, state: "saved", response };
+      this._settingsZoneCreateModal = { ...modal, open: true, mode: isEdit ? "edit" : "create", state: "saved", response };
     } catch (error) {
-      this._settingsZoneCreateModal = { open: true, state: "error", error: error?.message || "zone-create-failed" };
+      this._settingsZoneCreateModal = { ...modal, open: true, state: "error", error: error?.message || (isEdit ? "zone-edit-failed" : "zone-create-failed") };
     }
     this.render();
   }
@@ -1246,6 +1279,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this.querySelectorAll("[data-r7-settings-greenhouse-delete-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._deleteSettingsGreenhouse(button.getAttribute("data-r7-settings-greenhouse-delete-button")); });
+    });
+    this.querySelectorAll("[data-r7-settings-zone-list-row]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._selectSettingsZoneListRow(button.getAttribute("data-r7-settings-zone-list-row")); });
+    });
+    this.querySelectorAll("[data-r7-settings-zone-edit-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._editSettingsZone(button.getAttribute("data-r7-settings-zone-edit-button")); });
+    });
+    this.querySelectorAll("[data-r7-settings-zone-delete-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._deleteSettingsZone(button.getAttribute("data-r7-settings-zone-delete-button")); });
     });
   }
 
@@ -2026,12 +2068,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7SettingsZoneCreateModal() {
     const modal = this._settingsZoneCreateModal || { open: false };
+    const values = modal.values || {};
+    const isEdit = modal.mode === "edit";
     const settingsData = this.r7SettingsGreenhouseZoneData();
     const settingsGreenhouses = Array.isArray(settingsData.greenhouses) ? settingsData.greenhouses : [];
     const settingsZones = Array.isArray(settingsData.zones) ? settingsData.zones : [];
     const fallbackGreenhouse = { id: 1, name: this._homeContext?.greenhouseName || "대표온실" };
     const greenhouses = (settingsGreenhouses.length ? settingsGreenhouses : [fallbackGreenhouse]).map((greenhouse, index) => ({ ...greenhouse, displayNumber: greenhouse.displayNumber || greenhouse.display_number || index + 1 }));
-    const selectedGreenhouse = greenhouses[0];
+    const selectedGreenhouse = greenhouses.find((greenhouse) => String(greenhouse.id || greenhouse.greenhouseId) === String(values.greenhouseId || "")) || greenhouses[0];
     const greenhouseOptions = greenhouses.map((greenhouse, index) => {
       const id = greenhouse.id || greenhouse.greenhouseId || index + 1;
       const name = greenhouse.name || greenhouse.greenhouseName || `온실 ${index + 1}`;
@@ -2045,13 +2089,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
       { value: "자재 보관 구역", label: "자재 보관 구역" },
       { value: "격리·검역 구역", label: "격리·검역 구역" },
     ];
+    const statusOptions = [{ value: "정상", label: "정상" }, { value: "감사 근거", label: "감사 근거" }, { value: "검토 필요", label: "검토 필요" }];
     const nextZoneName = this._r7SettingsNextZoneName(selectedGreenhouse, settingsZones);
+    const zoneNameAttrs = isEdit ? 'data-r7-settings-zone-auto-name' : 'readonly data-r7-settings-zone-auto-name';
     const sections = [
-      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateSelect("greenhouseId", "온실명", greenhouseOptions, selectedGreenhouse?.id || 1, 'data-r7-settings-zone-greenhouse-fk-select')}${this._r7SettingsCreateField("name", "구역명", nextZoneName, 'readonly data-r7-settings-zone-auto-name')}${this._r7SettingsCreateSelect("purpose", "구역 용도", purposeOptions, "cultivation")}</div>`),
-      this._r7SettingsCreateSection("zone-composition", "구역 구성", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateNumberWithUnit("area", "면적", "120", "m²", 'min="0" step="0.1" data-r7-settings-zone-area-unit="m2"')}${this._r7SettingsCreateNumberWithUnit("bedCount", "배드 수", "6", "개", 'min="0" step="1" data-r7-settings-zone-bed-unit="count"')}</div>`),
-      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", "")),
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateSelect("greenhouseId", "온실명", greenhouseOptions, values.greenhouseId || selectedGreenhouse?.id || 1, 'data-r7-settings-zone-greenhouse-fk-select')}${this._r7SettingsCreateField("name", "구역명", values.name || nextZoneName, zoneNameAttrs)}${this._r7SettingsCreateSelect("purpose", "구역 용도", purposeOptions, values.purpose || "재배 구역")}</div>`),
+      this._r7SettingsCreateSection("zone-composition", "구역 구성", `<div style="display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;">${this._r7SettingsCreateNumberWithUnit("area", "면적", values.area || "120", "m²", 'min="0" step="0.1" data-r7-settings-zone-area-unit="m2"')}${this._r7SettingsCreateNumberWithUnit("bedCount", "배드 수", values.bedCount || "6", "개", 'min="0" step="1" data-r7-settings-zone-bed-unit="count"')}${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "정상")}</div>`),
+      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "생성 사유", values.note || "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: "구역 생성", subtitle: "온실별 재배·운영 공간을 등록하고 저장 전 기준을 확인합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: "구역 저장", sections });
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: isEdit ? "구역 수정" : "구역 생성", subtitle: "온실별 재배·운영 공간을 등록하고 저장 전 기준을 확인합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: isEdit ? "구역 수정" : "구역 저장", sections });
   }
 
   renderR7SettingsDeviceSensorMappingModal() {
@@ -2113,6 +2159,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const sourceZones = settingsZones.length ? settingsZones : (zones.length ? zones : [fallbackZone]);
       const zoneRows = this.normalizeR7SettingsZoneEntityRows(sourceZones);
       const selectedZoneRow = zoneRows.find((row) => String(row.id) === String(modal.selectedZoneId || modal.selectedId || "")) || zoneRows[0];
+      const entityFooterActions = selectedZoneRow?.id ? [
+        `<button type="button" data-r7-settings-zone-edit-button="${selectedZoneRow.id}" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`,
+        `<button type="button" data-r7-settings-zone-delete-button="${selectedZoneRow.id}" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button>`,
+      ] : [];
       return this.renderR7CdaEntityListDetailModal({
         entityType: "zone-list",
         modalOpen: modal.open,
@@ -2126,6 +2176,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         detailSectionTitle: "1. 구역 상세 정보",
         detailPanelAttrs: "data-r7-settings-zone-list-detail-panel",
         rowAttr: "data-r7-settings-zone-list-row",
+        entityFooterActions,
         closeAttr: "data-r7-settings-shortcut-cda-split-close",
         marker: meta.marker,
       });

@@ -1,6 +1,6 @@
 # R7-003 Detail/Configuration Subpages Baseline
 
-> 기준 버전: `v1.14.42`
+> 기준 버전: `v1.14.43`
 > Status: R7-003 complete
 > selected scope: all five sidebar groups receive read-only detail/config placeholder baselines
 > 목적: all five R7 sidebar groups receive read-only detail/config placeholder baselines.
@@ -101,7 +101,7 @@ R7-004 should choose one group to replace its placeholder with a deeper read-onl
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.14.42`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.14.43`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 
