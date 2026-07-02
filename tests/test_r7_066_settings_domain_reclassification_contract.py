@@ -42,17 +42,19 @@ def _render_settings(active_tab="greenhouse-zones", open_permission_matrix=False
 
 
 def test_r7_066_version_surfaces_are_1_13_1():
-    assert '"version": "1.14.44"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.44"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.44"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.45"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.45"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.45"' in _read(REBUILD_PANEL)
 
 
 def test_r7_066_settings_new_tabs_replace_admin_explanation_first_tabs():
     html = _render_settings()
-    for label in ('온실·구역', '작기·작물 객체', '장치·센서 매핑', '사용자·권한', '안전·승인 정책', '시스템·연동', '진단·감사'):
+    for label in ('온실·구역', '장치·센서 매핑', '사용자·권한', '안전·승인 정책', '시스템·연동', '진단·감사'):
         assert label in html
-    for key in ('greenhouse-zones', 'crop-cycle-objects', 'device-sensor-mapping', 'users-permissions', 'safety-approval-policy', 'system-integration', 'diagnostics-audit'):
+    for key in ('greenhouse-zones', 'device-sensor-mapping', 'users-permissions', 'safety-approval-policy', 'system-integration', 'diagnostics-audit'):
         assert f'data-r7-settings-admin-subtab="{key}"' in html
+    assert '작기·작물 객체' not in html
+    assert 'data-r7-settings-admin-subtab="crop-cycle-objects"' not in html
     assert 'data-r7-settings-admin-subtab="domain-ownership"' in html  # hidden compatibility only
     assert 'data-r7-settings-admin-subtab="rbac-policy"' in html  # hidden compatibility only
 
@@ -74,16 +76,14 @@ def test_r7_066_greenhouse_zones_tab_contains_required_greenhouse_zone_baseline_
         assert needle in html
 
 
-def test_r7_066_crop_cycle_objects_tab_contains_four_object_rule():
+def test_r7_066_crop_cycle_objects_tab_removed_and_owned_by_crop_operations():
     html = _render_settings('crop-cycle-objects')
     for needle in (
         'data-r7-settings-crop-cycle-objects',
         'data-r7-settings-object-rule="four-per-cycle"',
-        '작기 4',
-        '4-1', '4-2', '4-3', '4-4',
         '작기 번호-객체 번호',
     ):
-        assert needle in html
+        assert needle not in html
 
 
 def test_r7_066_device_user_safety_system_tabs_are_reclassified():
@@ -102,5 +102,5 @@ def test_r7_066_device_user_safety_system_tabs_are_reclassified():
 
 def test_r7_066_documented():
     doc = _read(DOC)
-    for phrase in ('온실·구역', '작기·작물 객체', '장치·센서 매핑', '사용자·권한', '설정 도메인 재분류', '기준 데이터 관리 도메인'):
+    for phrase in ('온실·구역', '장치·센서 매핑', '사용자·권한', '설정 도메인 재분류', '기준 데이터 관리 도메인'):
         assert phrase in doc

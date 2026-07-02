@@ -1,18 +1,17 @@
 # R7-067 Settings visible tab cleanup
 
-Status: current baseline for `v1.14.44`.
+Status: current baseline for `v1.14.45`.
 
 ## Problem
 
-After R7-066, the settings page showed both the new 7 tabs and the old compatibility tabs. This made the visible navigation too crowded.
+After R7-066, the settings page showed both the new settings tabs and the old compatibility tabs. R7-114 also moved the crop-cycle/object content to 작물 운영 > 작기·현재작물, so settings should now expose 6 visible tabs.
 
 ## Fix
 
 구버전 탭 버튼 노출 제거:
 
-- Visible settings tabs now show 7개만 표시:
+- Visible settings tabs now show 6개만 표시:
   - 온실·구역
-  - 작기·작물 객체
   - 장치·센서 매핑
   - 사용자·권한
   - 안전·승인 정책

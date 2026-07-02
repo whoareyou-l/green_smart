@@ -1,6 +1,6 @@
 # R7-095 Settings greenhouse/zone detail actions
 
-Status: current baseline for `v1.14.44`.
+Status: current baseline for `v1.14.45`.
 
 ## Scope
 

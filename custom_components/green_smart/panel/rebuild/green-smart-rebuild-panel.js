@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.44";
+const REBUILD_VERSION = "1.14.45";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -176,7 +176,6 @@ const R7_DOMAIN_SUBTAB_ICONS = Object.freeze({
   "operation-history": "mdi:timeline-clock-outline",
   "audit-evidence": "mdi:file-check-outline",
   "greenhouse-zones": "mdi:greenhouse",
-  "crop-cycle-objects": "mdi:sprout-outline",
   "device-sensor-mapping": "mdi:devices",
   "users-permissions": "mdi:account-key-outline",
   "safety-approval-policy": "mdi:shield-check-outline",
@@ -1123,7 +1122,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const commonTabs = ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"];
     const cropTabs = ["status-summary", "crop-cycle", "growth-target", "records-workflow", "model-assist", "trend-evidence"];
     const safetyTabs = ["status-summary", "block-allow", "event-history", "operation-history", "audit-evidence", "trend-evidence"];
-    const settingsTabs = ["greenhouse-zones", "crop-cycle-objects", "device-sensor-mapping", "users-permissions", "safety-approval-policy", "system-integration", "diagnostics-audit", "domain-ownership", "role-permissions", "mapping-devices", "system-security", "rbac-policy"];
+    const settingsTabs = ["greenhouse-zones", "device-sensor-mapping", "users-permissions", "safety-approval-policy", "system-integration", "diagnostics-audit", "domain-ownership", "role-permissions", "mapping-devices", "system-security", "rbac-policy"];
     const tabDomains = ["environment-control", "irrigation-fertigation", "device-control", "recommendation-automation"];
     const allowed = domain === "crop-operations" ? cropTabs : domain === "safety-history" ? safetyTabs : domain === "settings-admin" ? settingsTabs : tabDomains.includes(domain) ? commonTabs : [];
     if (!allowed.includes(tabKey)) return false;
@@ -2450,18 +2449,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
     const zones = (this._zonesForRender?.() || []).filter((zone) => this._r7ZoneId(zone) !== "all");
-    const zoneRows = (zones.length ? zones : [{ id: "zone-1", name: "1구역", currentCrop: { crop_cycle_id: 4, growth_stage: "활착기" }, dataAvailability: { state: "unknown" } }]).map((zone) => {
-      const zoneId = this._r7ZoneId?.(zone) || zone.id || "zone";
-      const zoneName = this._r7ZoneName?.(zone) || zone.name || zoneId;
-      const cropCycleId = zone.currentCrop?.crop_cycle_id || zone.currentCrop?.cropCycleId || "없음";
-      const stage = zone.currentCrop?.growth_stage || zone.currentCrop?.growthStage || "미지정";
-      return `<article data-r7-settings-zone-row="${zoneId}" style="border:1px solid #e2eee5;border-radius:14px;background:#fff;padding:11px;display:grid;gap:5px;"><strong style="color:#31523b;font-size:13px;">${zoneName}</strong><span style="font-size:13px;color:#24323f;font-weight:950;">현재 작기 ${cropCycleId}</span><small style="color:#78927f;font-size:11px;">상태: 활성 · 생육단계 ${stage}</small></article>`;
-    }).join("");
-    const firstCycleId = zones[0]?.currentCrop?.crop_cycle_id || zones[0]?.currentCrop?.cropCycleId || 4;
-    const objectCards = [1, 2, 3, 4].map((objectNo) => `<span data-r7-settings-crop-object="${firstCycleId}-${objectNo}" style="border:1px solid #dcebe0;border-radius:999px;background:#f4fbf5;color:#31523b;padding:7px 10px;font-weight:950;font-size:12px;">${firstCycleId}-${objectNo}</span>`).join("");
     const labels = {
       "greenhouse-zones": "온실·구역",
-      "crop-cycle-objects": "작기·작물 객체",
       "device-sensor-mapping": "장치·센서 매핑",
       "users-permissions": "사용자·권한",
       "safety-approval-policy": "안전·승인 정책",
@@ -2498,9 +2487,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     const body = tabKey === "greenhouse-zones"
       ? this.renderR7SettingsGreenhouseZonesSubtab(zones)
-      : tabKey === "crop-cycle-objects"
-        ? `<section data-r7-settings-crop-cycle-objects data-r7-settings-object-rule="four-per-cycle" style="display:grid;gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-crop-cycle-card="object-rule"', `작기 ${firstCycleId}`, '작기마다 4개의 작물 객체', '객체 번호는 작기 번호-객체 번호 형식입니다. 예: 4-3')}<div style="display:flex;flex-wrap:wrap;gap:8px;">${objectCards}</div><small style="color:#78927f;">작기 번호-객체 번호 · 생육조사/추세/이상치 비교 기준</small></section>`
-        : tabKey === "device-sensor-mapping"
+      : tabKey === "device-sensor-mapping"
           ? `<section data-r7-settings-device-sensor-mapping style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="zone-sensors"', '구역별 센서', '온도 · 습도 · CO₂ · EC · pH · 광량', '센서가 어느 구역 기준인지 설정에서 확정합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="zone-devices"', '구역별 장치', '환기창 · 순환팬 · 난방 · 관수 밸브 · 양액기', '장치 제어는 설정의 매핑 기준을 사용합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="ha-entity"', 'HA entity mapping', 'sensor/switch/climate entity source', 'HA entity mapping은 상태 판단 source입니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-device-sensor-card="mapping-health"', '매핑 상태', '정상/누락/중복/통신 오류', '오류 evidence는 진단·감사에서도 확인합니다.')}</section>`
           : tabKey === "users-permissions"
             ? `${(() => {
@@ -2558,11 +2545,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7SettingsAdminZoneVisual() {
-    const tabs = [["greenhouse-zones", "온실·구역"], ["crop-cycle-objects", "작기·작물 객체"], ["device-sensor-mapping", "장치·센서 매핑"], ["users-permissions", "사용자·권한"], ["safety-approval-policy", "안전·승인 정책"], ["system-integration", "시스템·연동"], ["diagnostics-audit", "진단·감사"]];
+    const tabs = [["greenhouse-zones", "온실·구역"], ["device-sensor-mapping", "장치·센서 매핑"], ["users-permissions", "사용자·권한"], ["safety-approval-policy", "안전·승인 정책"], ["system-integration", "시스템·연동"], ["diagnostics-audit", "진단·감사"]];
     const legacyTabs = [["domain-ownership", "도메인 소유권"], ["role-permissions", "역할·권한"], ["mapping-devices", "매핑·장치"], ["system-security", "시스템·보안"], ["rbac-policy", "RBAC 정책"]];
-    const activeTab = this._activeR7DomainSubtabs["settings-admin"] || "greenhouse-zones";
+    const requestedActiveTab = this._activeR7DomainSubtabs["settings-admin"] || "greenhouse-zones";
+    const activeTab = tabs.some(([key]) => key === requestedActiveTab) ? requestedActiveTab : "greenhouse-zones";
     const panels = tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
-    return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 작기·작물 객체, 장치·센서 매핑, 사용자·권한, 안전·승인 정책, 시스템·연동, 진단·감사의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 7개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="diagnostics-audit" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="diagnostics-backup-audit" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
+    return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 장치·센서 매핑, 사용자·권한, 안전·승인 정책, 시스템·연동, 진단·감사의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 6개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="diagnostics-audit" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="diagnostics-backup-audit" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
   }
 
   renderR7EnvironmentControlDetail() {
@@ -3536,9 +3524,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7CropCycleCards(ctx) {
     const { selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, demolishDate, assignmentState, freshness, recordSource } = ctx;
+    const cropObjectBadges = [1, 2, 3, 4].map((objectNo) => `${cropCycleId}-${objectNo}`);
     return [
       this.renderR7CropProductCard({ kind: "crop-cycle-link", label: "작기 연결", primary: cropCycleId, secondary: `${assignmentState} · ${recordSource}`, state: assignmentState === "assigned" ? "fresh" : "attention", tone: "green", evidence: [freshness, `source ${recordSource}`, "read-only"], markers: 'data-r7-crop-cycle-card data-r7-crop-registration-lane data-r7-crop-assignment-card' }),
       this.renderR7CropProductCard({ kind: "crop-profile", label: "작물 프로필", primary: `${cropLabel} · ${variety}`, secondary: `${cropType} · ${growthStage}`, state: cropLabel === "작물 미지정" ? "empty" : "fresh", tone: "green", evidence: [cropType, growthStage, this._r7ZoneName(selectedZone)], actions: [this.renderR7CropActionButton("생육목표", "growth-target", "mdi:target")], markers: 'data-r7-crop-cycle-card data-r7-crop-registration-lane' }),
+      this.renderR7CropProductCard({ kind: "crop-object-rule", label: "작물 객체", primary: "작기마다 4개의 작물 객체", secondary: "작기 번호-객체 번호 · 생육조사/추세/이상치 비교 기준", state: "ready", tone: "blue", evidence: cropObjectBadges, markers: 'data-r7-crop-cycle-card data-r7-crop-cycle-object-rule-card data-r7-crop-object-rule="four-per-cycle"' }),
       this.renderR7CropProductCard({ kind: "operation-boundary", label: "운영 경계", primary: `${plantDate} ~ ${demolishDate}`, secondary: "정식일/철거일 기준으로 기록과 추세를 해석", state: plantDate === "정식일 미등록" ? "attention" : "fresh", tone: "amber", evidence: [`정식일 ${plantDate}`, `철거 ${demolishDate}`], actions: [this.renderR7CropActionButton("추세·근거", "trend-evidence", "mdi:chart-line")], markers: 'data-r7-crop-cycle-card data-r7-crop-season-review' }),
       this.renderR7CropProductCard({ kind: "assignment-evidence", label: "구역 배정 근거", primary: this._r7ZoneName(selectedZone), secondary: freshness, state: freshness.includes("fresh") ? "fresh" : "ready", tone: "blue", evidence: [assignmentState, freshness], markers: 'data-r7-crop-assignment-card data-r7-crop-registration-lane' }),
     ];

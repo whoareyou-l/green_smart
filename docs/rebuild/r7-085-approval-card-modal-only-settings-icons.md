@@ -1,6 +1,6 @@
 # R7-085 Approval card modal-only and Settings subtab icons
 
-Status: current baseline for `v1.14.44`.
+Status: current baseline for `v1.14.45`.
 
 ## Changes
 
@@ -13,7 +13,6 @@ Status: current baseline for `v1.14.44`.
 ## Settings subtab icon map
 
 - 온실·구역 → `mdi:greenhouse`
-- 작기·작물 객체 → `mdi:sprout-outline`
 - 장치·센서 매핑 → `mdi:devices`
 - 사용자·권한 → `mdi:account-key-outline`
 - 안전·승인 정책 → `mdi:shield-check-outline`
