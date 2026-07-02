@@ -39,9 +39,9 @@ def _render(extra="") -> str:
 
 
 def test_r7_061_version_surfaces_are_1_12_96():
-    assert '"version": "1.14.51"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.51"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.51"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.52"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.52"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.52"' in _read(REBUILD_PANEL)
 
 
 def test_r7_061_card_button_labels_match_user_request():

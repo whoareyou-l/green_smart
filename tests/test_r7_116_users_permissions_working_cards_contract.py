@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_116_version_surfaces_are_1_14_51():
-    assert '"version": "1.14.51"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.51"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.51"' in _read(PANEL)
+def test_r7_116_version_surfaces_are_1_14_52():
+    assert '"version": "1.14.52"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.52"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.52"' in _read(PANEL)
 
 
 def test_r7_116_users_permissions_routes_registered_even_when_schema_bootstrap_is_off():
@@ -58,7 +58,7 @@ def test_r7_116_backend_exposes_working_card_mutation_apis_and_audit_writes():
         'url = "/api/green_smart/rebuild/settings/audit-logs/{audit_id}"',
         'update_settings_audit_log',
         'SELECT id, actor, action, summary, target_ref, result FROM gs_audit_logs WHERE id=%s LIMIT 1',
-        'UPDATE gs_audit_logs SET action=%s, summary=%s, result=%s WHERE id=%s',
+        'UPDATE gs_audit_logs SET actor=%s, action=%s, summary=%s, target_ref=%s, result=%s WHERE id=%s',
         'audit_log_rejected',
         'audit_log_edited',
     ):

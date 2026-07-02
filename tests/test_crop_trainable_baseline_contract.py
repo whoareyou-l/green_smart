@@ -103,6 +103,6 @@ def test_v1957_version_markers_contract():
     manifest = MANIFEST.read_text(encoding="utf-8")
     panel = PANEL.read_text(encoding="utf-8")
 
-    assert '"version": "1.14.51"' in manifest
-    assert 'const VERSION = "1.14.51"' in panel
-    assert "v1.14.51" in panel[:200]
+    assert '"version": "1.14.52"' in manifest
+    assert 'const VERSION = "1.14.52"' in panel
+    assert "v1.14.52" in panel[:200]

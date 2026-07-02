@@ -499,17 +499,21 @@ async def update_settings_audit_log(hass, audit_id: str, user: Any | None, paylo
     decision = str(payload.get("decision") or payload.get("operation") or "edit").strip().lower()
     memo = str(payload.get("memo") or payload.get("summary") or "").strip()
     if decision in {"reject", "rejected", "deny", "denied"}:
+        next_actor = str(row.get("actor") or "")
         next_action = "audit_log_rejected"
         next_result = "rejected"
+        next_target_ref = row.get("target_ref")
         next_summary = memo or f"거부됨: {row.get('summary') or row.get('action') or target_id}"
     else:
-        next_action = "audit_log_edited"
-        next_result = "edited"
-        next_summary = memo or f"수정됨: {row.get('summary') or row.get('action') or target_id}"
+        next_actor = str(payload.get("actor") or row.get("actor") or "").strip()
+        next_action = str(payload.get("action") or "audit_log_edited").strip() or "audit_log_edited"
+        next_summary = str(payload.get("summary") or memo or row.get("summary") or row.get("action") or target_id).strip()
+        next_target_ref = str(payload.get("target_ref") or payload.get("targetRef") or row.get("target_ref") or "").strip() or None
+        next_result = str(payload.get("result") or "edited").strip() or "edited"
     await execute(
         hass,
-        "UPDATE gs_audit_logs SET action=%s, summary=%s, result=%s WHERE id=%s",
-        (next_action, next_summary, next_result, target_id),
+        "UPDATE gs_audit_logs SET actor=%s, action=%s, summary=%s, target_ref=%s, result=%s WHERE id=%s",
+        (next_actor, next_action, next_summary, next_target_ref, next_result, target_id),
     )
     await execute(
         hass,
@@ -519,7 +523,7 @@ async def update_settings_audit_log(hass, audit_id: str, user: Any | None, paylo
         """,
         (actor_id or "admin", f"settings_{next_action}", f"감사 로그 row {target_id} {('거부' if next_result == 'rejected' else '수정')}: {row.get('summary') or row.get('action') or ''}", target_id),
     )
-    return {"ok": True, "auditId": target_id, "action": next_action, "result": next_result, "summary": next_summary, "settingsUsersPermissions": await settings_users_permissions_response(hass, user)}
+    return {"ok": True, "auditId": target_id, "actor": next_actor, "action": next_action, "targetRef": next_target_ref or "", "result": next_result, "summary": next_summary, "settingsUsersPermissions": await settings_users_permissions_response(hass, user)}
 
 
 class RebuildSettingsAuditLogItemView(HomeAssistantView):

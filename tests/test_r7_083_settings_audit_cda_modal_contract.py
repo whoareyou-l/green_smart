@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_083_version_surfaces_are_1_14_8():
-    assert '"version": "1.14.51"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.51"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.51"' in _read(PANEL)
+    assert '"version": "1.14.52"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.52"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.52"' in _read(PANEL)
 
 
 def test_r7_083_audit_all_has_dedicated_cda_modal_route():
@@ -104,6 +104,14 @@ def test_r7_083_rendered_audit_all_modal_uses_cda_not_legacy_history_card():
         'data-r7-settings-audit-log-export',
         'data-r7-settings-audit-log-reject-button="2"',
         'data-r7-settings-audit-log-edit-button="2"',
+        '전체 감사 로그',
+        '유저 목록',
+        '선택한 유저 상세',
+        'actor',
+        'action',
+        'summary',
+        'target_ref',
+        'result',
         '권한 승인',
         '역할 변경',
         '거부',
@@ -114,6 +122,37 @@ def test_r7_083_rendered_audit_all_modal_uses_cda_not_legacy_history_card():
     assert 'data-r7-settings-audit-log-close-button style' not in detail
     assert '히스토리를 불러오는 중입니다.' not in html
     assert 'data-r7-record-modal-loading' not in html
+def test_r7_083_audit_edit_uses_growth_common_modal_prefilled_with_db_columns():
+    script = f"""
+      globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
+      globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
+      const mod = await import({str(PANEL)!r});
+      const panel = new mod.GreenSmartRebuildPanel();
+      panel._settingsUsersPermissions = {{
+        source: 'contract-fixture', approvalRows: [], users: [],
+        auditRows: [{{ id: 7, actor: 'admin-user', action: 'approve_user_access', summary: '사용자 승인', targetRef: 'ha-user-7', target: 'ha-user-7', result: 'ok', status: 'ok', createdAt: '2026-07-03 06:17' }}]
+      }};
+      panel._settingsAuditLogEditModal = {{ open: true, selectedId: 7, state: 'idle' }};
+      const html = panel.renderR7SettingsAuditLogEditModal();
+      console.log(JSON.stringify({{ html }}));
+    """
+    result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr + result.stdout
+    html = json.loads(result.stdout)['html']
+    for marker in [
+        'data-r7-record-common-modal-shell',
+        'data-r7-settings-audit-log-edit-modal="true"',
+        'data-r7-settings-audit-log-edit-form',
+        'name="actor" value="admin-user"',
+        'name="action" value="approve_user_access"',
+        'name="summary"',
+        '사용자 승인',
+        'name="target_ref" value="ha-user-7"',
+        'name="result" value="ok"',
+        '감사 로그 수정',
+    ]:
+        assert marker in html
 
 
 def test_r7_083_documented():

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.51";
+const REBUILD_VERSION = "1.14.52";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -423,6 +423,43 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
   }
 
+  _openSettingsAuditLogEditModal(auditId) {
+    if (!auditId) return;
+    this._settingsAuditLogEditModal = { open: true, selectedId: auditId, state: "idle", error: "" };
+    this.render();
+  }
+
+  _closeSettingsAuditLogEditModal() {
+    this._settingsAuditLogEditModal = { open: false };
+    this.render();
+  }
+
+  async _submitSettingsAuditLogEditForm(form) {
+    const auditId = this._settingsAuditLogEditModal?.selectedId || form?.getAttribute?.("data-r7-settings-audit-log-edit-form") || "";
+    if (!auditId) return;
+    const data = new FormData(form);
+    const payload = {
+      decision: "edit",
+      actor: String(data.get("actor") || ""),
+      action: String(data.get("action") || ""),
+      summary: String(data.get("summary") || ""),
+      target_ref: String(data.get("target_ref") || ""),
+      result: String(data.get("result") || ""),
+    };
+    this._settingsAuditLogEditModal = { ...(this._settingsAuditLogEditModal || {}), open: true, selectedId: auditId, state: "saving", error: "" };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      await this.hass.callApi("PATCH", `${REBUILD_SETTINGS_AUDIT_LOG_API_PREFIX}${encodeURIComponent(auditId)}`, payload);
+      this._settingsAuditLogEditModal = { ...(this._settingsAuditLogEditModal || {}), open: false, state: "saved" };
+      this._settingsAuditLogModal = { ...(this._settingsAuditLogModal || {}), open: true, selectedId: auditId, actionState: "saved", actionDecision: "edit" };
+      await this._loadSettingsUsersPermissions();
+    } catch (error) {
+      this._settingsAuditLogEditModal = { ...(this._settingsAuditLogEditModal || {}), open: true, selectedId: auditId, state: "error", error: error?.message || "audit-log-edit-failed" };
+      this.render();
+    }
+  }
+
   async _updateSettingsAuditLogRow(auditId, decision = "edit") {
     if (!auditId) return;
     const current = (this.r7SettingsUsersPermissionsData().auditRows || []).find((row) => String(row.id || row.auditId || "") === String(auditId)) || {};
@@ -571,6 +608,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (kind === "device" || kind === "all") this._settingsDeviceCreateModal = { open: false, state: "idle" };
     if (kind === "device-group" || kind === "all") this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     if (kind === "mapping" || kind === "all") this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    if (kind === "audit-log-edit" || kind === "all") this._settingsAuditLogEditModal = { open: false, state: "idle" };
     this.render();
   }
 
@@ -1340,8 +1378,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       button.addEventListener("click", (event) => { event.preventDefault(); this._updateSettingsAuditLogRow(button.getAttribute("data-r7-settings-audit-log-reject-button"), "reject"); });
     });
     this.querySelectorAll("[data-r7-settings-audit-log-edit-button]").forEach((button) => {
-      button.addEventListener("click", (event) => { event.preventDefault(); this._updateSettingsAuditLogRow(button.getAttribute("data-r7-settings-audit-log-edit-button"), "edit"); });
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsAuditLogEditModal(button.getAttribute("data-r7-settings-audit-log-edit-button")); });
     });
+    this.querySelectorAll("form[data-r7-settings-audit-log-edit-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsAuditLogEditForm(form); }));
     this.querySelectorAll("[data-r7-settings-approval-list-close-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsApprovalListModal(); });
     });
@@ -2062,14 +2101,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _normalizeR7SettingsAuditRow(row = {}, index = 0) {
     const id = row.id || row.auditId || row.createdAt || row.created_at || row.actor || `audit-${index + 1}`;
-    const title = row.label || row.action || row.summary || "감사 로그";
+    const action = row.action || row.raw?.action || "audit";
+    const title = row.label || action || row.summary || "감사 로그";
     const actor = row.actor || row.createdBy || row.created_by || "작업자 미확인";
     const at = row.createdAt || row.created_at || row.meta || "시간 데이터 없음";
-    const summary = row.summary || row.note || row.action || "감사 상세 없음";
-    const target = row.target || row.targetLabel || row.domain || "대상 미지정";
-    const tone = row.tone || (String(row.action || "").includes("reject") ? "red" : String(row.action || "").includes("approve") ? "green" : "blue");
-    const state = row.status || row.state || "recorded";
-    return { id: String(id), title, actor, at, summary, target, tone, state, raw: row };
+    const summary = row.summary || row.note || action || "감사 상세 없음";
+    const targetRef = row.targetRef || row.target_ref || row.target || row.raw?.target_ref || "";
+    const target = targetRef || row.targetLabel || row.domain || "대상 미지정";
+    const result = row.result || row.status || row.state || "recorded";
+    const tone = row.tone || (String(action || "").includes("reject") ? "red" : String(action || "").includes("approve") ? "green" : "blue");
+    const state = result;
+    return { id: String(id), title, actor, action, at, summary, target, targetRef, result, tone, state, raw: row };
   }
 
   _r7PermissionMatrixStateCell(state) {
@@ -2433,6 +2475,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return this.renderR7CdaModalOverlay({ open: modal.open, zIndex: 31, attrs: `data-r7-settings-permission-matrix-cda-modal="true" data-r7-settings-permission-matrix-modal-open="true"`, body: this.renderR7CdaModalCard({ attrs: `data-r7-settings-permission-matrix-card`, width: "min(980px,96vw)", body }) });
   }
 
+  renderR7SettingsAuditLogEditModal() {
+    const modal = this._settingsAuditLogEditModal || { open: false };
+    const rows = (Array.isArray(this.r7SettingsUsersPermissionsData().auditRows) ? this.r7SettingsUsersPermissionsData().auditRows : []).map((row, index) => this._normalizeR7SettingsAuditRow(row, index));
+    const selected = rows.find((row) => String(row.id) === String(modal.selectedId || "")) || rows[0] || this._normalizeR7SettingsAuditRow({}, 0);
+    const value = (v) => this._r7Text(v || "");
+    const sections = [
+      this._r7SettingsCreateSection("audit-db-identity", "DB 기준 식별 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>id</span><input name="id" value="${value(selected.id)}" readonly data-r7-settings-audit-log-edit-db-column="id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label>${this._r7SettingsCreateField("actor", "actor", value(selected.actor), 'data-r7-settings-audit-log-edit-db-column="actor"')}</div>`),
+      this._r7SettingsCreateSection("audit-db-action", "DB 항목 수정", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("action", "action", value(selected.action), 'data-r7-settings-audit-log-edit-db-column="action"')}${this._r7SettingsCreateField("result", "result", value(selected.result), 'data-r7-settings-audit-log-edit-db-column="result"')}${this._r7SettingsCreateField("target_ref", "target_ref", value(selected.targetRef), 'data-r7-settings-audit-log-edit-db-column="target_ref"')}</div>`),
+      this._r7SettingsCreateSection("audit-db-summary", "summary", this._r7SettingsCreateTextarea("summary", "summary", value(selected.summary)).replace('<textarea ', '<textarea data-r7-settings-audit-log-edit-db-column="summary" ')),
+    ];
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "audit-log-edit", title: "감사 로그 수정", subtitle: "생육조사 작성 팝업과 같은 공통 모달에서 gs_audit_logs DB 항목을 수정합니다", formAttr: `data-r7-settings-audit-log-edit-form="${value(selected.id)}"`, closeKind: "audit-log-edit", state: modal.state || "idle", error: modal.error || "", submitLabel: "DB 수정 저장", sections });
+  }
+
   renderR7SettingsAuditLogModal() {
     const modal = this._settingsAuditLogModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-audit-log-cda-modal="true" data-r7-settings-audit-log-modal-open="false"></template>`;
@@ -2441,27 +2496,30 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selected = rows.find((row) => String(row.id) === String(modal.selectedId || "")) || rows[0] || this._normalizeR7SettingsAuditRow({}, 0);
     const search = this.renderR7CdaSearchFilterBar({
       searchAttr: "data-r7-settings-audit-log-search-input",
-      searchPlaceholder: "감사 로그 검색",
-      filters: [["all","전체"],["approval","승인"],["role","권한"],["safety","안전"],["system","시스템"]].map(([key,label]) => ({ label, active: key === "all", tone: "green", attrs: `data-r7-settings-audit-log-filter="${key}"` })),
+      searchPlaceholder: "유저 목록 검색",
+      filters: [["all","전체"],["ok","ok"],["edited","edited"],["rejected","rejected"],["system","system"]].map(([key,label]) => ({ label, active: key === "all", tone: "green", attrs: `data-r7-settings-audit-log-filter="${key}"` })),
     });
     const rowHtml = rows.length ? rows.map((row) => this.renderR7CdaCompactListRow({
       selected: row.id === selected.id,
       attrs: `data-r7-settings-audit-log-list-item-button="${row.id}" data-r7-settings-audit-log-row="${row.id}" data-r7-settings-audit-log-row-selected="${row.id === selected.id ? 'true' : 'false'}"`,
-      columns: [`<span>${row.at}</span>`, `<b>${row.title}</b>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.state}</span>`, `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.summary}</span>`, `<span>${row.actor}</span>`],
-    })).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">감사 로그 데이터 없음</p>`;
+      columns: [`<span>${row.id}</span>`, `<b>${row.actor}</b>`, `<span>${row.action}</span>`, `<span style="border:1px solid;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;${this._r7ApprovalToneStyle(row.tone)}">${row.result}</span>`, `<span>${row.at}</span>`],
+    })).join("") : `<p style="margin:0;color:#78927f;font-size:13px;">유저 목록 데이터 없음</p>`;
     const listPanel = this.renderR7CdaListPanel({
-      title: "감사 로그 목록",
-      columns: ["시각", "유형", "상태", "요약", "작업자"],
+      title: "유저 목록",
+      columns: ["id", "actor", "action", "result", "created_at"],
       rowsHtml: rowHtml,
       footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${rows.length}건</span>`,
       attrs: 'data-r7-settings-audit-log-list-panel',
     }).replace('data-r7-cda-list-body', 'data-r7-cda-list-body data-r7-settings-audit-log-list-body');
-    const info = this.renderR7CdaDetailSection({ title: "1. 감사 정보", attrs: 'data-r7-settings-audit-log-section="info"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">작업자</span><span style="padding:8px;">${selected.actor}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">시각</span><span style="padding:8px;">${selected.at}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">대상</span><span style="padding:8px;">${selected.target}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;font-weight:950;">${selected.state}</span></div>` });
-    const summary = this.renderR7CdaDetailSection({ title: "2. 감사 요약", attrs: 'data-r7-settings-audit-log-section="summary"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${selected.summary}</p>` });
-    const evidence = this.renderR7CdaDetailSection({ title: "3. 원본 근거", attrs: 'data-r7-settings-audit-log-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">settings auditRows</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">read-only</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">감사 로그</span></div>` });
+    const dbGrid = `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.7fr 1.3fr .7fr 1.3fr;overflow:hidden;">${[
+      ["id", selected.id], ["actor", selected.actor], ["action", selected.action], ["summary", selected.summary], ["target_ref", selected.targetRef || "NULL"], ["result", selected.result], ["created_at", selected.at]
+    ].map(([label, value]) => `<span style="padding:8px;background:#fbfdfb;font-weight:950;">${label}</span><span style="padding:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${value}</span>`).join("")}</div>`;
+    const info = this.renderR7CdaDetailSection({ title: "1. DB row", attrs: 'data-r7-settings-audit-log-section="info"', body: dbGrid });
+    const summary = this.renderR7CdaDetailSection({ title: "2. summary", attrs: 'data-r7-settings-audit-log-section="summary"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">${selected.summary}</p>` });
+    const evidence = this.renderR7CdaDetailSection({ title: "3. DB 근거", attrs: 'data-r7-settings-audit-log-section="evidence"', body: `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><span style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 10px;font-weight:950;">green_smart.gs_audit_logs</span><span style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:8px 10px;font-weight:950;">id 기준 수정</span><span style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 10px;font-weight:950;">actor/action/summary/target_ref/result</span></div>` });
     const actionStatus = modal.actionState === "saving" ? "저장 중" : modal.actionState === "saved" ? "DB 반영 완료" : modal.actionState === "error" ? `오류: ${modal.actionError || 'audit-log-update-failed'}` : "";
     const detailPanel = this.renderR7CdaDetailPanel({
-      title: "선택 감사 상세",
+      title: "선택한 유저 상세",
       attrs: 'data-r7-settings-audit-log-detail-panel',
       badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.state}</span>`,
       body: `${info}${summary}${evidence}${actionStatus ? `<p data-r7-settings-audit-log-action-state="${modal.actionState}" style="margin:0;color:${modal.actionState === 'error' ? '#b42318' : '#25804a'};font-size:12px;font-weight:900;">${actionStatus}</p>` : ''}`,
@@ -2740,6 +2798,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                 })}
                 ${this.renderR7SettingsPermissionMatrixModal()}
                 ${this.renderR7SettingsAuditLogModal()}
+                ${this.renderR7SettingsAuditLogEditModal()}
                 ${this.renderR7SettingsApprovalListModal()}
                 ${this.renderR7SettingsApprovalModal()}
                 ${this.renderR7CommonRecentPanel({
