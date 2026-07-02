@@ -37,9 +37,9 @@ def test_r7_005_audits_legacy_influence_without_calling_main_panel_legacy():
     legacy = _read(LEGACY_PANEL)
 
     assert '_PANEL_COMPONENT = "green-smart-rebuild-panel"' in frontend
-    assert '_LEGACY_PANEL_COMPONENT = "green-smart-panel"' in frontend
+    assert '_LEGACY_PANEL_COMPONENT = "green-smart-panel"' not in frontend
     assert "main panel is not the legacy panel" in text
-    assert "legacy panel remains registered as a reference surface" in text
+    assert "legacy panel remains a file-only reference asset" in text
     assert "R7-003 five placeholder subpages | DEPRECATE/REWRITE" in text
     assert "R7-004 settings/admin read-only detail | KEEP/ADAPT" in text
     assert "legacy panel | LEGACY" in text

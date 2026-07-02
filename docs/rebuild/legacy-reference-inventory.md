@@ -94,10 +94,10 @@ Home Assistant sidebar policy:
 
 ```text
 Green Smart -> /green_smart -> green-smart-rebuild-panel
-Green Smart Legacy -> /green_smart_legacy -> green-smart-panel
+Legacy reference asset -> green-smart-panel.js (not registered as a sidebar product)
 ```
 
-`Green Smart Legacy` and `green_smart_legacy` exist only so old behavior can be inspected as reference. New work must start in the rebuild panel.
+`green-smart-panel.js` remains a file-level historical reference only; `Green Smart Legacy` and `green_smart_legacy` must not be registered as a second sidebar product. New work must start in the rebuild panel.
 
 ## Compatibility policy
 

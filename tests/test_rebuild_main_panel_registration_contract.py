@@ -21,9 +21,9 @@ def test_main_sidebar_registers_rebuild_panel_not_legacy_panel():
     assert "frontend_url_path=_PANEL_URL_PATH" in register_section
 
 
-def test_legacy_sidebar_is_renamed_and_registered_separately():
+def test_legacy_sidebar_is_not_registered_as_a_second_product():
     source = _read(FRONTEND_PANEL)
-    for marker in (
+    forbidden = (
         '_LEGACY_PANEL_COMPONENT = "green-smart-panel"',
         '_LEGACY_PANEL_URL_PATH = "green_smart_legacy"',
         '_LEGACY_PANEL_TITLE = "Green Smart Legacy"',
@@ -32,18 +32,18 @@ def test_legacy_sidebar_is_renamed_and_registered_separately():
         "webcomponent_name=_LEGACY_PANEL_COMPONENT",
         "frontend_url_path=_LEGACY_PANEL_URL_PATH",
         "sidebar_title=_LEGACY_PANEL_TITLE",
-    ):
-        assert marker in source
+    )
+    for marker in forbidden:
+        assert marker not in source
 
 
-def test_setup_registers_main_first_then_legacy_reference_panel():
+def test_setup_registers_only_main_product_panel():
     source = _read(FRONTEND_PANEL)
     setup_section = source.split("async def async_setup_panel", 1)[1].split("async def _register_static_path", 1)[0]
     assert "panel_js_url = await hass.async_add_executor_job(_get_panel_js_url)" in setup_section
-    assert "legacy_panel_js_url = await hass.async_add_executor_job(_get_legacy_panel_js_url)" in setup_section
     assert "await _register_panel(hass, panel_js_url)" in setup_section
-    assert "await _register_legacy_panel(hass, legacy_panel_js_url)" in setup_section
-    assert setup_section.index("await _register_panel(hass, panel_js_url)") < setup_section.index("await _register_legacy_panel(hass, legacy_panel_js_url)")
+    assert "legacy_panel_js_url" not in setup_section
+    assert "await _register_legacy_panel" not in setup_section
 
 
 def test_rebuild_panel_is_now_the_main_product_surface():
@@ -57,14 +57,15 @@ def test_rebuild_panel_is_now_the_main_product_surface():
     assert "No legacy panel module imports." not in source
 
 
-def test_legacy_doc_records_rename_and_main_surface_rule():
+def test_legacy_doc_records_asset_reference_and_main_surface_rule():
     doc = _read(LEGACY_DOC)
     for marker in (
-        "Green Smart Legacy",
-        "green_smart_legacy",
         "green-smart-rebuild-panel is the main product surface",
         "green-smart-panel remains legacy reference/runtime only",
         "Start from blank page/scaffold.",
         "No legacy panel module imports.",
     ):
         assert marker in doc
+    assert "must not be registered as a second sidebar product" in doc
+    assert "Green Smart -> /green_smart -> green-smart-rebuild-panel" in doc
+    assert "Green Smart Legacy -> /green_smart_legacy" not in doc

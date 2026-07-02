@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import timedelta
 
 from homeassistant.helpers.event import async_track_time_interval
@@ -16,6 +17,16 @@ EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
 CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
 EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS = 60
 CENTER_CROP_POLICY_PULL_INTERVAL_SECONDS = 300
+
+
+def _schema_bootstrap_enabled() -> bool:
+    """Return whether Green Smart should create/repair its DB schema on HA startup.
+
+    Default is off so the product sidebar can load without recreating legacy/current
+    Green Smart tables after an intentional DB purge. Set
+    GREEN_SMART_SCHEMA_BOOTSTRAP=1/true/yes/on to opt in to schema creation.
+    """
+    return os.environ.get("GREEN_SMART_SCHEMA_BOOTSTRAP", "0").strip().lower() in {"1", "true", "yes", "on"}
 
 REQUIRED_KEYS = (
     "host",
@@ -324,7 +335,14 @@ async def async_setup(hass, config):
         EnvironmentFinalTargetExecutionView, IrrigationFinalTargetExecutionView, DeviceFinalTargetExecutionView,
     )
     domain_data = hass.data.setdefault(DOMAIN, {})
-    await ensure_schema(hass)
+    schema_bootstrap = _schema_bootstrap_enabled()
+    if schema_bootstrap:
+        await ensure_schema(hass)
+    else:
+        _LOGGER.warning("green_smart schema bootstrap skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
+        _LOGGER.warning("green_smart DB-backed HTTP views skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
+        _LOGGER.warning("green_smart DB-backed schedulers skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
+        return True
     if not domain_data.get("_views_registered"):
         store = WeatherStore(hass)
         domain_data["weather_store"] = store

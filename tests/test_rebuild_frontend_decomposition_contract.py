@@ -5,6 +5,7 @@ PLAN = ROOT / "docs" / "rebuild" / "frontend-decomposition-plan.md"
 PRODUCT_PLAN = ROOT / "docs" / "plans" / "2026-06-28-green-smart-product-first-rebuild-plan.md"
 MASTER = ROOT / "docs" / "PROJECT_MASTER_PLAN.md"
 MANIFEST = ROOT / "custom_components" / "green_smart" / "manifest.json"
+REBUILD_PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "rebuild" / "green-smart-rebuild-panel.js"
 PANEL = ROOT / "custom_components" / "green_smart" / "panel" / "green-smart-panel.js"
 FRONTEND_PANEL = ROOT / "custom_components" / "green_smart" / "frontend_panel.py"
 
@@ -14,24 +15,27 @@ def _read(path: Path) -> str:
 
 
 def test_r2_version_surfaces_are_v1112():
-    assert '"version": "1.14.35"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.35"' in _read(PANEL)
-    assert "v1.14.35" in _read(PLAN)
-    assert "v1.14.35" in _read(PRODUCT_PLAN)
-    assert "v1.14.35" in _read(MASTER)
+    assert '"version": "1.14.36"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.36"' in _read(PANEL)
+    assert "v1.14.36" in _read(PLAN)
+    assert "v1.14.36" in _read(PRODUCT_PLAN)
+    assert "v1.14.36" in _read(MASTER)
 
 
-def test_r2_ha_loading_keeps_single_public_panel_entrypoint():
+def test_r2_ha_loading_keeps_single_public_product_panel_entrypoint():
     frontend = _read(FRONTEND_PANEL)
-    panel = _read(PANEL)
+    rebuild_panel = _read(REBUILD_PANEL)
     plan = _read(PLAN)
-    assert 'return f"/green_smart_panel/green-smart-panel.js?v={version}"' in frontend
+    assert 'return f"/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v={version}"' in frontend
     assert "async_register_panel" in frontend
     assert "module_url=module_url" in frontend
-    assert 'class GreenSmartPanel extends HTMLElement' in panel
-    assert 'customElements.define("green-smart-panel", GreenSmartPanel)' in panel
-    assert "green-smart-panel.js?v={manifest.version}" in plan
-    assert "public compatibility shell" in plan
+    assert 'class GreenSmartRebuildPanel extends HTMLElement' in rebuild_panel
+    assert 'const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel"' in rebuild_panel
+    assert 'customElements.define(REBUILD_ELEMENT_NAME, GreenSmartRebuildPanel)' in rebuild_panel
+    assert "green-smart-rebuild-panel.js?v={manifest.version}" in plan
+    assert "single public product sidebar entrypoint" in plan
+    assert "green-smart-panel.js?v={manifest.version}" not in plan
+    assert "public compatibility shell" not in plan
 
 
 def test_r2_target_module_structure_is_documented_before_code_split():

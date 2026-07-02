@@ -60,8 +60,8 @@ def test_v1980_pest_popup_docs_and_version_contract():
     master = _read(MASTER)
     ui_doc = _read(UI_DOC)
 
-    assert '"version": "1.14.35"' in _read(ROOT / "custom_components" / "green_smart" / "manifest.json")
-    assert 'const VERSION = "1.14.35"' in panel
+    assert '"version": "1.14.36"' in _read(ROOT / "custom_components" / "green_smart" / "manifest.json")
+    assert 'const VERSION = "1.14.36"' in panel
     assert "병해충 예찰 모달 compact layout" in master
     for marker in (
         "data-pest-compact-modal",

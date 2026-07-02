@@ -46,9 +46,9 @@ Current registration boundary is correct but still keeps a legacy reference surf
 | Path | Component | Classification |
 |---|---|---|
 | `/green_smart` | `green-smart-rebuild-panel` | active rebuild main surface |
-| `/green_smart_legacy` | `green-smart-panel` | legacy reference/compatibility surface |
+| `green-smart-panel.js` | legacy reference asset only | historical compatibility surface, not registered as a sidebar product |
 
-This means the main panel is not the legacy panel, but the legacy panel remains registered as a reference surface.
+This means the main panel is not the legacy panel, and the legacy panel remains a file-only reference asset rather than a registered sidebar product.
 
 ### 3.2 Static scan evidence
 
@@ -66,7 +66,7 @@ Latest audit scan:
 
 | Category | Examples | Decision |
 |---|---|---|
-| Active legacy surface | `/green_smart_legacy`, `green-smart-panel.js` | LEGACY reference only; do not use as product direction |
+| Active legacy asset | `green-smart-panel.js` | LEGACY file-only reference; not registered as a sidebar product; do not use as product direction |
 | Compatibility adapters | `current-crop-adapter.js`, `compatibilityAliases`, crop cycle aliases | ADAPT; acceptable only behind product DTO boundary |
 | Old R7 IA labels | `현장 상태`, `추천·실행 검토`, `작물 중심 운영` | REPLAN; too abstract / AI-execution leaning |
 | Old R7 keys | `field-status`, `recommendation-review`, `crop-centered` | ADAPT/DEPRECATE after target IA is confirmed |

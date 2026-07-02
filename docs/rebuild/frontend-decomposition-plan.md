@@ -1,6 +1,6 @@
 # Green Smart Frontend Decomposition Plan
 
-> 기준 버전: `v1.14.35`
+> 기준 버전: `v1.14.36`
 > 리빌딩 단계: `R2 — Frontend decomposition plan`
 > 상태: `reference/evidence only after direction correction`
 > 목적: `green-smart-panel.js` 10,007줄 단일 Web Component를 즉시 쪼개지 않고, Home Assistant panel loading과 기존 custom element 호환을 지키는 module boundary, adapter 전략, 이관 순서를 먼저 고정한다.
@@ -34,12 +34,12 @@ R2는 구현 분해 단계가 아니다.
 | public custom element | `green-smart-panel` |
 | shell file | `custom_components/green_smart/panel/green-smart-panel.js` |
 | HA static URL | `/green_smart_panel` |
-| HA module URL | `/green_smart_panel/green-smart-panel.js?v={manifest.version}` |
+| HA module URL | `/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v={manifest.version}` |
 | panel registration | `frontend_panel.py::_register_panel()` |
 | static path registration | `frontend_panel.py::_register_static_path()` |
 | cache busting | `manifest.json` version query string |
 
-R2 이후에도 `green-smart-panel.js`는 public entrypoint이며, HA가 직접 로딩하는 파일이다. 신규 module은 이 파일에서만 import한다.
+R2 이후 제품 사이드바의 single public product sidebar entrypoint는 `green-smart-rebuild-panel.js`이며, HA가 직접 로딩하는 파일이다. 기존 `green-smart-panel.js`는 파일 단위 legacy reference asset으로만 남기고 사이드바에 등록하지 않는다.
 
 ---
 
@@ -49,7 +49,7 @@ R2 이후에도 `green-smart-panel.js`는 public entrypoint이며, HA가 직접 
 
 ```text
 custom_components/green_smart/panel/
-  green-smart-panel.js                  # public compatibility shell, customElements.define 유지
+  green-smart-rebuild-panel.js          # single public product sidebar entrypoint, customElements.define 유지
 
   core/
     state-store.js                      # localStorage/session state, dirty-state helpers
@@ -113,7 +113,7 @@ components/tabs/*.js
 
 ## 5. Module loading strategy
 
-HA는 현재 `green-smart-panel.js?v={manifest.version}` 하나를 module로 로딩한다. 따라서 분해는 아래 방식으로 진행한다.
+HA는 현재 `green-smart-rebuild-panel.js?v={manifest.version}` 하나를 module로 로딩한다. 따라서 분해는 아래 방식으로 진행한다.
 
 ```js
 // green-smart-panel.js
@@ -201,7 +201,7 @@ custom_components/green_smart/panel/domains/admin/admin-page.js
 완료 범위:
 
 - `domains/admin/admin-page.js`가 Admin/System tab/page render helper를 export한다.
-- `green-smart-panel.js`는 public compatibility shell과 lifecycle/binding/storage 책임을 유지한다.
+- `green-smart-rebuild-panel.js`는 single public product sidebar entrypoint와 lifecycle/binding/storage 책임을 유지한다.
 - 기존 `data-admin-*`, `data-ui-section`, `data-required-permission`, `data-role-visibility`, `data-common-main-page="admin-system"` marker를 유지한다.
 - API route/DB/prod 변경 없음.
 - Crop/environment/irrigation/device extraction remains deferred.
@@ -344,7 +344,7 @@ custom_components/green_smart/panel/domains/crop/crop-control-modal.js
 
 R2 계약은 구현 분해 전 아래를 고정한다.
 
-1. HA module URL이 여전히 `green-smart-panel.js?v={manifest.version}`를 사용한다.
+1. HA module URL이 `green-smart-rebuild-panel.js?v={manifest.version}`를 사용한다.
 2. `green-smart-panel.js`가 `customElements.define("green-smart-panel", ...)`를 유지한다.
 3. 목표 module paths가 문서에 명시되어 있다.
 4. `components/*`는 pure renderer여야 하며 `hass.callApi` 직접 호출 금지 규칙이 문서화되어 있다.
@@ -389,7 +389,7 @@ pytest -q
 
 ## R7-005+ Manual-first domain reset notice
 
-`v1.14.35`까지의 R7-000~R7-004 기록은 완료된 historical/compatibility evidence로 보존한다. 그러나 R7-005 이후의 현재 제품 방향은 `docs/rebuild/r7-005-legacy-audit-domain-research-manual-first-plan.md`와 `docs/rebuild/r7-006-manual-first-target-domain-spec.md`가 우선한다.
+`v1.14.36`까지의 R7-000~R7-004 기록은 완료된 historical/compatibility evidence로 보존한다. 그러나 R7-005 이후의 현재 제품 방향은 `docs/rebuild/r7-005-legacy-audit-domain-research-manual-first-plan.md`와 `docs/rebuild/r7-006-manual-first-target-domain-spec.md`가 우선한다.
 
 Current target:
 
@@ -410,7 +410,7 @@ Old R7 groups such as `현장 상태`, `추천·실행 검토`, `field-status`, 
 
 ## R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-`v1.14.35`에서 R7-000 IA blueprint를 완료했다.
+`v1.14.36`에서 R7-000 IA blueprint를 완료했다.
 
 Reference:
 
@@ -435,7 +435,7 @@ question gates must use clarify tool
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.14.35`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.14.36`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -460,7 +460,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.14.35`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.14.36`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -484,7 +484,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.14.35`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.14.36`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -509,7 +509,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.14.35`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.14.36`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 
