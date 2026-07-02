@@ -63,5 +63,5 @@ def test_zone_insert_uses_zone_purpose_label_before_writing_to_db():
     source = MODULE_PATH.read_text(encoding="utf-8")
     assert "ZONE_PURPOSE_LABELS" in source
     assert "_zone_purpose_label(payload)" in source
-    insert_arg_tail = source.split("VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", 1)[1]
+    insert_arg_tail = source.split("VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 1)[1]
     assert "_str(payload, \"purpose\", default=\"재배\")" not in insert_arg_tail

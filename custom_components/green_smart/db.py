@@ -155,7 +155,7 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             area VARCHAR(64) NOT NULL DEFAULT '',
             bed_count INT NOT NULL DEFAULT 0,
             note TEXT NULL,
-            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
             created_by VARCHAR(128) NULL,
             updated_by VARCHAR(128) NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -220,6 +220,12 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             await _ensure_column(cur, "green_smart_settings_greenhouses", "timezone", "timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Seoul' AFTER install_type")
             await _ensure_column(cur, "green_smart_settings_greenhouses", "creation_reason", "creation_reason TEXT NULL AFTER note")
             await _ensure_index(cur, "green_smart_settings_greenhouses", "idx_settings_greenhouse_operating_status", "(farm_id, operating_status)")
+            await cur.execute("ALTER TABLE green_smart_settings_zones MODIFY status VARCHAR(32) NOT NULL DEFAULT '정상'")
+            await cur.execute("""
+                UPDATE green_smart_settings_zones
+                SET status = CASE status WHEN 'active' THEN '정상' WHEN 'inactive' THEN '비활성' WHEN 'deleted' THEN '삭제됨' ELSE status END
+                WHERE status IN ('active', 'inactive', 'deleted')
+            """)
     finally:
         conn.close()
         if hasattr(conn, "ensure_closed"):
@@ -273,7 +279,7 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             area VARCHAR(64) NOT NULL DEFAULT '',
             bed_count INT NOT NULL DEFAULT 0,
             note TEXT NULL,
-            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
             created_by VARCHAR(128) NULL,
             updated_by VARCHAR(128) NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -56,6 +56,43 @@ def _zone_purpose_label(payload: dict[str, Any]) -> str:
     return ZONE_PURPOSE_LABELS.get(raw, raw if raw.endswith("구역") else "재배 구역")
 
 
+ZONE_STATUS_LABELS = {
+    "active": "정상",
+    "normal": "정상",
+    "ok": "정상",
+    "정상": "정상",
+    "활성": "정상",
+    "inactive": "비활성",
+    "disabled": "비활성",
+    "비활성": "비활성",
+    "deleted": "삭제됨",
+    "삭제": "삭제됨",
+    "삭제됨": "삭제됨",
+    "maintenance": "점검중",
+    "점검": "점검중",
+    "점검중": "점검중",
+}
+
+
+def _zone_status_label(payload: dict[str, Any] | None = None, *keys: str, default: str = "정상") -> str:
+    payload = payload or {}
+    raw = _str(payload, *(keys or ("status", "state")), default=default)
+    return ZONE_STATUS_LABELS.get(raw, ZONE_STATUS_LABELS.get(raw.lower(), raw or default))
+
+
+def _zone_bed_label(value: Any) -> str:
+    if value is None or value == "":
+        return "미등록"
+    text = str(value).strip()
+    if not text:
+        return "미등록"
+    if text.endswith("개"):
+        return text
+    if text.lower().endswith("bed"):
+        text = text[:-3].strip()
+    return f"{text}개" if text.replace(".", "", 1).isdigit() else text
+
+
 async def _settings_payload(request: web.Request) -> dict[str, Any]:
     try:
         payload = await request.json()
@@ -84,6 +121,7 @@ def _greenhouse_dto(row: dict[str, Any]) -> dict[str, Any]:
 
 def _zone_dto(row: dict[str, Any]) -> dict[str, Any]:
     zone_id = row.get("id")
+    status = _zone_status_label({"status": row.get("status")})
     return {
         "id": zone_id,
         "zoneId": f"settings-zone-{zone_id}" if zone_id else row.get("name"),
@@ -91,12 +129,13 @@ def _zone_dto(row: dict[str, Any]) -> dict[str, Any]:
         "greenhouseId": row.get("greenhouse_id"),
         "name": row.get("name") or "1구역",
         "zoneName": row.get("name") or "1구역",
-        "purpose": row.get("purpose") or "재배",
+        "purpose": row.get("purpose") or "재배 구역",
         "area": row.get("area") or "",
-        "bedCount": row.get("bed_count") or 0,
+        "bedCount": _zone_bed_label(row.get("bed_count") or 0),
+        "bedCountRaw": row.get("bed_count") or 0,
         "note": row.get("note") or "",
-        "status": row.get("status") or "active",
-        "dataAvailability": {"state": "fresh" if (row.get("status") or "active") == "active" else "unknown"},
+        "status": status,
+        "dataAvailability": {"state": "fresh" if status == "정상" else "unknown"},
         "equipmentProfile": {"labels": []},
         "createdAt": row.get("created_at"),
         "updatedAt": row.get("updated_at"),
@@ -203,14 +242,15 @@ async def list_settings_zones(hass, farm_id: int = 1) -> list[dict[str, Any]]:
 
 async def create_settings_zone(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
     name = _str(payload, "name", "zoneName", default="신규 구역")
+    status = _zone_status_label(payload, "status", "state", default="정상")
     await execute(hass, """
         INSERT INTO green_smart_settings_zones
-            (farm_id, greenhouse_id, name, purpose, area, bed_count, note, created_by, updated_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (farm_id, greenhouse_id, name, purpose, area, bed_count, note, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             purpose = VALUES(purpose), area = VALUES(area), bed_count = VALUES(bed_count), note = VALUES(note),
-            status = 'active', updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
-        """, (farm_id, _int(payload, "greenhouseId", "greenhouse_id", default=0) or None, name, _zone_purpose_label(payload), _str(payload, "area"), _int(payload, "bedCount", "bed_count"), _str(payload, "note"), actor, actor))
+            status = VALUES(status), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
+        """, (farm_id, _int(payload, "greenhouseId", "greenhouse_id", default=0) or None, name, _zone_purpose_label(payload), _str(payload, "area"), _int(payload, "bedCount", "bed_count"), _str(payload, "note"), status, actor, actor))
     rows = await list_settings_zones(hass, farm_id)
     return next((row for row in rows if row["name"] == name), rows[0] if rows else {"name": name})
 

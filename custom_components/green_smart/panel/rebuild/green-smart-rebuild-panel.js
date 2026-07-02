@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.38";
+const REBUILD_VERSION = "1.14.39";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -85,15 +85,15 @@ const R7_SETTINGS_GREENHOUSE_DETAIL_FIELD_ORDER = Object.freeze([
   ["updatedAt", "수정시각"],
   ["creationReason", "생성 사유"],
 ]);
-const R7_SETTINGS_ZONE_LIST_COLUMNS = Object.freeze(["구역명", "온실", "용도", "베드", "상태"]);
+const R7_SETTINGS_ZONE_LIST_COLUMNS = Object.freeze(["구역명", "온실", "용도", "베드 수", "상태"]);
 const R7_SETTINGS_ZONE_DETAIL_FIELD_ORDER = Object.freeze([
   ["zoneName", "구역명"],
   ["greenhouseName", "온실"],
   ["purpose", "용도"],
   ["area", "면적"],
-  ["bedCount", "베드"],
-  ["currentCrop", "현재 작물"],
+  ["bedCount", "베드 수"],
   ["status", "상태"],
+  ["createdAt", "생성시각"],
   ["updatedAt", "수정시각"],
   ["note", "메모"],
 ]);
@@ -1726,29 +1726,41 @@ class GreenSmartRebuildPanel extends HTMLElement {
       };
     });
   }
-
+  _r7ZoneBedLabel(value = "") {
+    const text = value === null || value === undefined ? "" : String(value).trim();
+    if (!text || text.endsWith("개")) return text || "미등록";
+    const normalized = text.replace(/\s*bed$/i, "").trim();
+    return /^\d+(\.\d+)?$/.test(normalized) ? `${normalized}개` : normalized;
+  }
+  _r7ZoneStatusLabel(status = "") {
+    const raw = String(status || "정상").trim(), normalized = raw.toLowerCase();
+    if (["active", "ok", "normal", "정상", "활성"].includes(normalized)) return "정상";
+    if (["inactive", "disabled", "비활성"].includes(normalized)) return "비활성";
+    if (["deleted", "삭제", "삭제됨"].includes(normalized)) return "삭제됨";
+    return ["maintenance", "점검", "점검중"].includes(normalized) ? "점검중" : (raw || "정상");
+  }
   normalizeR7SettingsZoneEntityRows(zones = []) {
     const rows = Array.isArray(zones) ? zones : [];
     return rows.map((zone, index) => {
       const zoneName = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `구역 ${index + 1}`;
-      const bedCount = zone.bedCount ?? zone.beds ?? "미등록";
-      const status = zone.status || zone.state || "active";
-      const statusLabel = status === "deleted" ? "삭제됨" : status === "inactive" ? "비활성" : "정상";
+      const bedCount = zone.bedCount ?? zone.beds ?? zone.bed_count ?? "미등록";
+      const statusLabel = this._r7ZoneStatusLabel(zone.status || zone.state || "정상");
+      const status = statusLabel;
       return {
         id: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`,
         name: zoneName,
         location: zone.greenhouseName || zone.greenhouse || this._homeContext?.greenhouseName || "대표 온실",
         installType: zone.purpose || zone.zonePurpose || "용도 미등록",
-        approvalScope: `${bedCount} bed`,
+        approvalScope: this._r7ZoneBedLabel(bedCount),
         status,
         statusLabel,
-        tone: status === "deleted" ? "red" : status === "inactive" ? "amber" : "green",
+        tone: statusLabel === "삭제됨" ? "red" : statusLabel === "비활성" || statusLabel === "점검중" ? "amber" : "green",
         zoneName,
         greenhouseName: zone.greenhouseName || zone.greenhouse || this._homeContext?.greenhouseName || "대표 온실",
         purpose: zone.purpose || zone.zonePurpose || "용도 미등록",
         area: zone.area || zone.areaM2 || "면적 미등록",
-        bedCount: `${bedCount} bed`,
-        currentCrop: zone.currentCrop || zone.cropName || zone.crop || "미등록",
+        bedCount: this._r7ZoneBedLabel(bedCount),
+        createdAt: zone.createdAt || zone.created_at || "미등록",
         updatedAt: zone.updatedAt || zone.updated_at || "미등록",
         note: zone.note || "미등록",
       };

@@ -33,9 +33,9 @@ def _render(zones_js: str) -> str:
 
 
 def test_r7_102_version_surfaces_are_1_14_27():
-    assert '"version": "1.14.38"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.38"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.38"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.39"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.39"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.39"' in _read(REBUILD_PANEL)
 
 
 def test_r7_102_source_has_reusable_zone_entity_schema_not_review_like_dump():
@@ -58,8 +58,12 @@ def test_r7_102_zone_list_rows_are_zone_entities_when_db_has_multiple_zones():
     assert len(rows) == 2
     assert 'data-r7-settings-zone-list-row="zone-a"' in html
     assert 'data-r7-settings-zone-list-row="zone-b"' in html
-    for value in ['1구역', '2구역', 'A동 온실', '토마토 재배', '상추 재배', '6 bed', '4 bed']:
+    for value in ['1구역', '2구역', 'A동 온실', '토마토 재배', '상추 재배', '6개', '4개', '정상', '비활성']:
         assert value in html
+    assert '6 bed' not in html
+    assert '4 bed' not in html
+    assert '>active<' not in html
+    assert '>inactive<' not in html
     assert 'data-r7-cda-entity-field-row="zoneName"' not in html
     assert 'data-r7-cda-entity-field-row="purpose"' not in html
 
@@ -74,8 +78,8 @@ def test_r7_102_zone_list_fallback_is_one_zone_row_not_field_rows():
     assert '베드</b>' not in html
 
 
-def test_r7_102_zone_detail_field_order_and_values_are_operator_schema():
-    html = _render("[{ id: 'zone-b', zoneName: '2구역', greenhouseName: 'A동 온실', purpose: '상추 재배', area: '80㎡', bedCount: 4, currentCrop: '상추', status: 'inactive', updatedAt: '2026-07-02 10:00', note: '서측' }]")
+def test_r7_102_zone_detail_field_order_and_values_are_green_smart_zone_db_schema():
+    html = _render("[{ id: 'zone-b', zoneName: '2구역', greenhouseName: 'A동 온실', purpose: '상추 재배', area: '80㎡', bedCount: 4, currentCrop: '상추', status: 'inactive', createdAt: '2026-07-01 10:00', updatedAt: '2026-07-02 10:00', note: '서측' }]")
     assert '1. 구역 상세 정보' in html
     ordered = [
         'data-r7-cda-entity-detail-field="zoneName"',
@@ -83,15 +87,18 @@ def test_r7_102_zone_detail_field_order_and_values_are_operator_schema():
         'data-r7-cda-entity-detail-field="purpose"',
         'data-r7-cda-entity-detail-field="area"',
         'data-r7-cda-entity-detail-field="bedCount"',
-        'data-r7-cda-entity-detail-field="currentCrop"',
         'data-r7-cda-entity-detail-field="status"',
+        'data-r7-cda-entity-detail-field="createdAt"',
         'data-r7-cda-entity-detail-field="updatedAt"',
         'data-r7-cda-entity-detail-field="note"',
     ]
     positions = [html.index(marker) for marker in ordered]
     assert positions == sorted(positions)
-    for value in ['2구역', 'A동 온실', '상추 재배', '80㎡', '4 bed', '상추', '비활성', '2026-07-02 10:00', '서측']:
+    for value in ['2구역', 'A동 온실', '상추 재배', '80㎡', '4개', '비활성', '2026-07-01 10:00', '2026-07-02 10:00', '서측']:
         assert value in html
+    assert 'data-r7-cda-entity-detail-field="currentCrop"' not in html
+    assert '4 bed' not in html
+    assert '>inactive<' not in html
     assert '선택 항목 상세' in html
     assert 'data-r7-cda-entity-detail-footer="zone-list"' in html
 

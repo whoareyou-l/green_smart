@@ -27,11 +27,11 @@ def _load_service():
 
 
 def test_rs018_version_surfaces_are_aligned_to_1_12_17():
-    assert '"version": "1.14.38"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.38"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.38"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.39"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.39"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.39"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.14.38" in _read(path)
+        assert "v1.14.39" in _read(path)
 
 
 def test_rs018_document_records_growth_target_projection_boundary():
@@ -183,7 +183,7 @@ def test_docs_specs_plan_and_inventory_record_rs018_and_next_step():
         assert marker in spec
     for marker in (
         "Phase R4.14 — Growth target read-only projection",
-        "Status:** `v1.14.38`에서 생육목표 read-only projection 완료",
+        "Status:** `v1.14.39`에서 생육목표 read-only projection 완료",
         "No production route removal in RS-018",
         "No DB migration in RS-018",
         "No write/mutation in RS-018",
