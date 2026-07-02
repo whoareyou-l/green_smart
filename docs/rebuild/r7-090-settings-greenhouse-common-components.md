@@ -1,6 +1,6 @@
 # R7-090 Settings greenhouse common components
 
-Status: current baseline for `v1.14.17`.
+Status: current baseline for `v1.14.18`.
 
 ## Scope
 

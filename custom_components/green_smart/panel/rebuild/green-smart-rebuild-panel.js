@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.17";
+const REBUILD_VERSION = "1.14.18";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2355,7 +2355,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7CommonCardHeader({ icon = "mdi:card-text-outline", title = "", statusKey = "normal-ready", tone = "green", extraAttrs = "" }) {
     return `<header data-r7-common-card-header ${extraAttrs} style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0;">
       <div data-r7-common-card-headline data-r7-record-card-headline style="display:flex;align-items:center;gap:8px;min-width:0;">
-        <span data-r7-common-card-icon-wrap data-r7-record-card-icon-wrap style="width:26px;height:26px;border-radius:9px;background:${this.r7RecordToneColor(tone, "badgeBg")};display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;">${this.renderR7CommonHaIcon(icon, { size: 17, color: this.r7RecordToneColor(tone, "icon") })}</span>
+        <span data-r7-common-card-icon-wrap data-r7-record-card-icon-wrap data-r7-common-card-icon-style="plain-large" style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;">${this.renderR7CommonHaIcon(icon, { size: 22, color: this.r7RecordToneColor(tone, "icon") })}</span>
         <div data-r7-common-card-title data-r7-record-card-title style="font-size:14px;font-weight:950;color:#1f3329;line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</div>
       </div>
       ${this.renderR7RecordCardBadge(statusKey)}
