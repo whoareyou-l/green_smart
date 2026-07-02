@@ -39,9 +39,9 @@ def _card(html: str, marker: str, next_marker: str) -> str:
 
 
 def test_r7_094_version_surfaces_are_1_14_19():
-    assert '"version": "1.14.19"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.19"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.19"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.20"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.20"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.20"' in _read(REBUILD_PANEL)
 
 
 def test_r7_094_settings_info_subtitle_is_inside_header_headline_next_to_icon():
@@ -67,7 +67,7 @@ def test_r7_094_settings_info_primary_is_not_rendered_as_separate_body_line():
     html = _render_greenhouse_zones()
     for forbidden in ['data-r7-settings-info-card-primary', '운영 기준 데이터</span>\n      <div data-r7-settings-info-card-body']:
         assert forbidden not in html
-    for phrase in ['운영 기준 데이터', '1구역', '센서 · 장치 매핑']:
+    for phrase in ['운영 기준 데이터', '1구역', '선택 구역 상태']:
         assert phrase in html
 
 
