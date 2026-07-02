@@ -50,9 +50,9 @@ def _section(html: str, key: str) -> str:
 
 
 def test_r7_105_version_surfaces_are_1_14_30():
-    assert '"version": "1.14.39"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.39"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.39"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.40"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.40"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.40"' in _read(REBUILD_PANEL)
 
 
 def test_r7_105_zone_create_header_has_product_ready_copy_not_internal_settings_trace():
@@ -83,6 +83,25 @@ def test_r7_105_basic_info_starts_with_greenhouse_fk_select_then_auto_zone_name_
     assert '<input name="name" value="1-3구역"' in basic
     assert 'data-r7-settings-zone-auto-name' in basic
     assert 'readonly' in re.search(r'<input name="name".*?>', basic, re.S).group(0)
+
+
+def test_r7_105_zone_auto_name_uses_greenhouse_display_order_not_db_id():
+    script = f"""
+      globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML=''; this.dataset={{}}; this.style={{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
+      globalThis.customElements = {{ _items: new Map(), get(n){{ return this._items.get(n); }}, define(n,c){{ this._items.set(n,c); }} }};
+      const mod = await import({str(REBUILD_PANEL)!r});
+      const panel = new mod.GreenSmartRebuildPanel();
+      const greenhouse = {{ id: 4, name: '대표 온실', displayNumber: 1 }};
+      const zones = [{{ id: 1, greenhouseId: 4, name: '4-1구역', zoneName: '4-1구역' }}];
+      console.log(JSON.stringify({{ first: panel._r7SettingsNextZoneName(greenhouse, []), next: panel._r7SettingsNextZoneName(greenhouse, zones) }}));
+    """
+    result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr + result.stdout
+    data = json.loads(result.stdout)
+    assert data["first"] == "1-1구역"
+    assert data["next"] == "1-2구역"
+    assert data["first"] != "4-1구역"
 
 
 def test_r7_105_zone_purpose_dropdown_stores_korean_operator_labels_not_english_codes():

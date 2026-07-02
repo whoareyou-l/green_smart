@@ -1,8 +1,8 @@
 # R7-041 End-to-End UI QA Baseline
 
-> 기준 버전: `v1.14.39`
+> 기준 버전: `v1.14.40`
 > Status: R7-041 planned
-> Purpose: v1.14.39까지 만든 R7 화면/네비게이션/하위탭 UI를 실제 HA 브라우저와 render smoke로 QA하고, 하위탭 상세화/기능 연결 전 기준선을 잠근다.
+> Purpose: v1.14.40까지 만든 R7 화면/네비게이션/하위탭 UI를 실제 HA 브라우저와 render smoke로 QA하고, 하위탭 상세화/기능 연결 전 기준선을 잠근다.
 
 ## Scope
 
@@ -86,10 +86,10 @@ Prod served-source smoke passes
 Prod render smoke passes
 recent HA logs have no new matching Green Smart errors
 QA report records findings and pass/fail summary
-release tag v1.14.39 exists
+release tag v1.14.40 exists
 ```
 
 
-## v1.14.39 served JS note
+## v1.14.40 served JS note
 
-served rebuild panel JS version: 1.14.39
+served rebuild panel JS version: 1.14.40

@@ -1,6 +1,6 @@
 # R7-071 Common card components and HA icon policy
 
-Status: current baseline for `v1.14.39`.
+Status: current baseline for `v1.14.40`.
 
 ## Scope
 

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.39";
+const REBUILD_VERSION = "1.14.40";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2015,7 +2015,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _r7SettingsNextZoneName(greenhouse, zones = []) {
     const greenhouseId = String(greenhouse?.id || greenhouse?.greenhouseId || "1");
-    const greenhouseNumber = greenhouse?.greenhouseNumber || greenhouse?.number || (Number.isFinite(Number(greenhouseId)) ? String(greenhouseId) : "1");
+    const greenhouseNumber = String(greenhouse?.displayNumber || greenhouse?.display_number || greenhouse?.greenhouseNumber || greenhouse?.number || "1");
     const related = (Array.isArray(zones) ? zones : []).filter((zone) => String(zone.greenhouseId || zone.greenhouse_id || zone.greenhouse || "") === greenhouseId || String(zone.greenhouseName || "") === String(greenhouse?.name || greenhouse?.greenhouseName || ""));
     const maxZone = related.reduce((max, zone) => {
       const label = String(zone.zoneName || zone.name || zone.label || "");
@@ -2031,7 +2031,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const settingsGreenhouses = Array.isArray(settingsData.greenhouses) ? settingsData.greenhouses : [];
     const settingsZones = Array.isArray(settingsData.zones) ? settingsData.zones : [];
     const fallbackGreenhouse = { id: 1, name: this._homeContext?.greenhouseName || "대표온실" };
-    const greenhouses = settingsGreenhouses.length ? settingsGreenhouses : [fallbackGreenhouse];
+    const greenhouses = (settingsGreenhouses.length ? settingsGreenhouses : [fallbackGreenhouse]).map((greenhouse, index) => ({ ...greenhouse, displayNumber: greenhouse.displayNumber || greenhouse.display_number || index + 1 }));
     const selectedGreenhouse = greenhouses[0];
     const greenhouseOptions = greenhouses.map((greenhouse, index) => {
       const id = greenhouse.id || greenhouse.greenhouseId || index + 1;
