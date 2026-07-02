@@ -112,4 +112,5 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-105 adds greenhouse FK select + automatic next zone-name calculation to the zone-create modal.
     # R7-112 adds zone-list footer edit/delete actions and reuses the zone-create modal as a PATCH-backed zone edit modal.
     # R7-115 rebuilds Settings device/sensor mapping into image-like device/group/mapping cards and a mapping list.
-    assert len(rebuild.splitlines()) < 4020
+    # R7-115/v1.14.49 adds device/group create modals that reuse the greenhouse-create common modal grammar.
+    assert len(rebuild.splitlines()) < 4130

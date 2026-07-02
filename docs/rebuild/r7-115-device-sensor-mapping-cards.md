@@ -1,17 +1,22 @@
 # R7-115 Device/Sensor mapping cards
 
-Version: v1.14.48
+Version: v1.14.49
 Status: prod verification pending
 
-## User correction in v1.14.48
+## User correction in v1.14.49
 
-The Settings → `장치·센서 매핑` subtab was corrected again after the v1.14.47 process-card update.
+The Settings → `장치·센서 매핑` subtab was corrected again after the v1.14.48 common-card update.
 
 Required changes:
 
-1. Remove the guidance/process box from the visible content cards; the process belongs in documentation only.
-2. Keep `장치 추가` and `그룹 추가` as action cards, but render them in a 3-column row so each action card occupies the same width as the summary cards above.
-3. Render `오류 기본 정보` with the same common-card component family used by Settings → 사용자·권한 → `승인 필요 작업`.
+1. `장치 추가` button opens a creation popup modal that reuses the same common creation modal grammar as `온실 생성`.
+2. `그룹 추가` button opens a creation popup modal that reuses the same common creation modal grammar as `온실 생성`.
+3. Both modals keep the Settings create/write modal grammar:
+   - record common modal shell,
+   - operator summary,
+   - left sectioned form,
+   - right `저장 전 검증` checklist,
+   - cancel/save action row.
 
 ## Current visible UI structure
 
@@ -38,7 +43,7 @@ The intended management process is kept here as documentation, not as a visible 
 4. Connect added devices to groups.
 5. A device can be connected to multiple groups.
 
-## Markers
+## Card markers
 
 ```text
 data-r7-settings-device-sensor-mapping
@@ -51,6 +56,39 @@ data-r7-settings-device-error-common-card="approval-needed"
 data-r7-settings-device-action-row
 data-r7-settings-device-list-panel
 data-r7-settings-device-list-row="{mapping_id}"
+```
+
+## Creation modal markers
+
+Device creation:
+
+```text
+data-r7-settings-device-create-button
+data-r7-settings-device-create-modal="true"
+data-r7-settings-device-create-form
+data-r7-settings-create-growth-like-modal="true"
+data-r7-settings-create-left-form
+data-r7-settings-create-section="basic-info"
+data-r7-settings-create-section="device-target"
+data-r7-settings-create-section="memo"
+data-r7-settings-create-pre-save-checklist
+data-r7-record-pre-save-checklist
+```
+
+Group creation:
+
+```text
+data-r7-settings-device-group-create-button
+data-r7-settings-device-group-create-modal="true"
+data-r7-settings-device-group-create-form
+data-r7-settings-device-group-zone-fk-select
+data-r7-settings-create-growth-like-modal="true"
+data-r7-settings-create-left-form
+data-r7-settings-create-section="basic-info"
+data-r7-settings-create-section="zone-fk"
+data-r7-settings-create-section="memo"
+data-r7-settings-create-pre-save-checklist
+data-r7-record-pre-save-checklist
 ```
 
 Process markers remain as non-copy markers on the relevant cards/buttons:
@@ -74,5 +112,5 @@ data-r7-settings-device-mapping-list-panel
 
 ## Verification
 
-- Focused contracts: `16 passed`
+- Focused contracts: `23 passed`
 - Full suite / prod smoke: run after this document update

@@ -1,6 +1,6 @@
 # R7-114 Crop-cycle object card absorption
 
-Version: v1.14.48
+Version: v1.14.49
 Status: prod verified
 
 ## User request
@@ -53,7 +53,7 @@ If stale UI state tries to activate `crop-cycle-objects`, Settings falls back to
 - Full suite: `1511 passed`
 - HA config check: pass
 - Prod served JS smoke:
-  - `REBUILD_VERSION = "1.14.48"`
+  - `REBUILD_VERSION = "1.14.49"`
   - crop-cycle object markers present under Crop Operations code path
   - settings crop-cycle-object markers absent
 - Stable HA log window: no errors
