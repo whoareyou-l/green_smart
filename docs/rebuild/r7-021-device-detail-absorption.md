@@ -1,6 +1,6 @@
 # R7-021 Device Control Detail Absorption
 
-> 기준 버전: `v1.14.18`
+> 기준 버전: `v1.14.19`
 > Status: R7-021 planned/contracted
 > Purpose: Remove the rendered Device Control read-only detail card and absorb its content into the zone-scoped visual tabs.
 
@@ -99,5 +99,5 @@ All old detail content is mapped to visual tabs/cards
 Existing R7 routing/sidebar contracts still pass
 Full pytest passes
 node --check passes
-Prod static/render smoke verifies v1.14.18 and R7-021 markers
+Prod static/render smoke verifies v1.14.19 and R7-021 markers
 ```

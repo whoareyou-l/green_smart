@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
 LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
-DOC = ROOT / "docs/rebuild/r7-093-common-card-header-icon-plain-large.md"
+DOC = ROOT / "docs/rebuild/r7-094-settings-info-card-header-subtitle.md"
 
 
 def _read(path: Path) -> str:
@@ -32,36 +32,46 @@ def _render_greenhouse_zones() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_093_version_surfaces_are_1_14_18():
+def _card(html: str, marker: str, next_marker: str) -> str:
+    start = html.index(marker)
+    end = html.index(next_marker, start)
+    return html[start:end]
+
+
+def test_r7_094_version_surfaces_are_1_14_19():
     assert '"version": "1.14.19"' in _read(MANIFEST)
     assert 'const VERSION = "1.14.19"' in _read(LEGACY_PANEL)
     assert 'REBUILD_VERSION = "1.14.19"' in _read(REBUILD_PANEL)
 
 
-def test_r7_093_common_card_header_icon_wrap_has_no_background():
+def test_r7_094_settings_info_subtitle_is_inside_header_headline_next_to_icon():
     html = _render_greenhouse_zones()
-    wraps = re.findall(r'<span[^>]*data-r7-common-card-icon-wrap[^>]*style="([^"]+)"[^>]*>', html)
-    assert wraps
-    for style in wraps[:6]:
-        normalized = style.replace(' ', '').lower()
-        assert 'background:' not in normalized
-        assert 'border-radius' not in normalized
-        assert 'width:30px' in normalized
-        assert 'height:30px' in normalized
+    cards = [
+        _card(html, 'data-r7-settings-info-card="greenhouse-basic-info"', 'data-r7-settings-info-card="zone-basic-info"'),
+        _card(html, 'data-r7-settings-info-card="zone-basic-info"', 'data-r7-settings-info-card="equipment-composition"'),
+        _card(html, 'data-r7-settings-info-card="equipment-composition"', 'data-r7-settings-create-row="create"'),
+    ]
+    for card in cards:
+        match = re.search(r'<header[^>]*data-r7-common-card-header.*?</header>', card, flags=re.S)
+        assert match
+        header = match.group(0)
+        assert 'data-r7-common-card-icon-wrap' in header
+        assert 'data-r7-common-card-title-stack' in header
+        assert 'data-r7-common-card-subtitle' in header
+        assert header.index('data-r7-common-card-icon-wrap') < header.index('data-r7-common-card-title') < header.index('data-r7-common-card-subtitle')
+        assert 'data-r7-record-card-badge' in header
+        assert header.index('data-r7-common-card-subtitle') < header.index('data-r7-record-card-badge')
 
 
-def test_r7_093_common_card_header_icons_are_larger_than_previous_17px():
+def test_r7_094_settings_info_primary_is_not_rendered_as_separate_body_line():
     html = _render_greenhouse_zones()
-    header_icons = re.findall(r'data-r7-common-card-icon-wrap.*?<ha-icon[^>]*data-r7-common-ha-icon-policy="mdi-only"[^>]*style="([^"]+)"', html, flags=re.S)
-    assert header_icons
-    for style in header_icons[:6]:
-        normalized = style.replace(' ', '').lower()
-        assert '--mdc-icon-size:22px' in normalized
-        assert 'width:22px' in normalized
-        assert 'height:22px' in normalized
+    for forbidden in ['data-r7-settings-info-card-primary', '운영 기준 데이터</span>\n      <div data-r7-settings-info-card-body']:
+        assert forbidden not in html
+    for phrase in ['운영 기준 데이터', '1구역', '센서 · 장치 매핑']:
+        assert phrase in html
 
 
-def test_r7_093_documented():
+def test_r7_094_documented():
     doc = _read(DOC)
-    for phrase in ['헤더 아이콘', '배경색 제거', '22px', 'data-r7-common-card-icon-wrap']:
+    for phrase in ['아이콘 ㅣ 제목', '부연 설명', 'data-r7-common-card-subtitle', '제목 stack']:
         assert phrase in doc

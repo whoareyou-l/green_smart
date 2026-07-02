@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.18";
+const REBUILD_VERSION = "1.14.19";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1660,8 +1660,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const legacyCard = { "greenhouse-basic-info": "greenhouse-profile", "zone-basic-info": "zone-count", "zone-composition": "zone-count", "zone-current-crop": "zone-current-cycle" }[key];
     const legacyAttr = legacyCard ? `data-r7-settings-greenhouse-card="${legacyCard}"` : "";
     return `<article data-r7-settings-info-card="${key}" data-r7-settings-greenhouse-summary-card="${key}" ${legacyAttr} ${extraAttrs} style="border:1px solid #e5eee7;border-radius:16px;background:#fff;padding:14px;display:grid;grid-template-rows:auto auto 1fr;gap:10px;min-height:132px;box-shadow:0 1px 2px rgba(31,51,41,.04);">
-      ${this.renderR7CommonCardHeader({ icon, title, statusKey, tone, extraAttrs: 'data-r7-settings-info-card-header' })}
-      ${primary ? `<span data-r7-settings-info-card-primary style="display:block;color:#78927f;font-size:11px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${primary}</span>` : ""}
+      ${this.renderR7CommonCardHeader({ icon, title, subtitle: primary, statusKey, tone, extraAttrs: 'data-r7-settings-info-card-header' })}
       <div data-r7-settings-info-card-body style="display:grid;gap:7px;align-content:start;">${rows.join("")}</div>
     </article>`;
   }
@@ -2352,11 +2351,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<ha-icon icon="${mdiIcon}" data-r7-common-ha-icon-policy="mdi-only" ${extraAttrs} style="--mdc-icon-size:${size}px;width:${size}px;height:${size}px;flex:0 0 auto;color:${color};"></ha-icon>`;
   }
 
-  renderR7CommonCardHeader({ icon = "mdi:card-text-outline", title = "", statusKey = "normal-ready", tone = "green", extraAttrs = "" }) {
+  renderR7CommonCardHeader({ icon = "mdi:card-text-outline", title = "", subtitle = "", statusKey = "normal-ready", tone = "green", extraAttrs = "" }) {
     return `<header data-r7-common-card-header ${extraAttrs} style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0;">
-      <div data-r7-common-card-headline data-r7-record-card-headline style="display:flex;align-items:center;gap:8px;min-width:0;">
+      <div data-r7-common-card-headline data-r7-record-card-headline style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
         <span data-r7-common-card-icon-wrap data-r7-record-card-icon-wrap data-r7-common-card-icon-style="plain-large" style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;">${this.renderR7CommonHaIcon(icon, { size: 22, color: this.r7RecordToneColor(tone, "icon") })}</span>
-        <div data-r7-common-card-title data-r7-record-card-title style="font-size:14px;font-weight:950;color:#1f3329;line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</div>
+        <div data-r7-common-card-title-stack style="display:grid;gap:2px;min-width:0;align-content:start;">
+          <div data-r7-common-card-title data-r7-record-card-title style="font-size:14px;font-weight:950;color:#1f3329;line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</div>
+          ${subtitle ? `<div data-r7-common-card-subtitle style="font-size:11px;color:#78927f;line-height:1.35;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${subtitle}</div>` : ""}
+        </div>
       </div>
       ${this.renderR7RecordCardBadge(statusKey)}
     </header>`;

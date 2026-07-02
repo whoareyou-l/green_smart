@@ -16,11 +16,11 @@ def _read(path: Path) -> str:
 
 
 def test_r5_foundation_completion_version_surfaces_are_1_12_30():
-    assert '"version": "1.14.18"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.18"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.18"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.19"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.19"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.19"' in _read(REBUILD_PANEL)
     for path in (BASELINE, PRODUCT_PLAN, EXEC_PLAN, TARGET_ARCH, MASTER_README):
-        assert "v1.14.18" in _read(path)
+        assert "v1.14.19" in _read(path)
 
 
 def test_r5_foundation_baseline_document_closes_vs_n001_to_vs_n004():
