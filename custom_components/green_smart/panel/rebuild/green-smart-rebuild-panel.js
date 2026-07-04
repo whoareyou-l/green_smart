@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.57";
+const REBUILD_VERSION = "1.14.58";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2805,7 +2805,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                   });
                 })()}
                 ${this.renderR7CommonCardShell({
-                  kind: "settings-permission-matrix-summary", section: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "권한 버킷 매트릭스", statusKey: "normal-ready", tone: "blue", primary: "조회 · 기록 · 전략 · 실행 · 안전 · 고급설정", note: "상세 표는 팝업 모달에서 확인", extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true"', actions: [this.renderR7CommonCardButton({ label: "권한 매트릭스 보기", icon: "mdi:table-eye", tone: "blue", extraAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"' })]
+                  kind: "settings-permission-matrix-summary", section: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "권한 버킷 매트릭스", subtitle: '<span data-r7-settings-permission-bucket-count-note>총 6개</span>', statusKey: "normal-ready", tone: "blue", extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true" data-r7-common-data-limit="3"', html: this.renderR7CommonCardDataRows([{ label: "조회", meta: "기본 조회 · 상세 조회", icon: "mdi:eye-outline", tone: "blue", extraAttrs: 'data-r7-settings-permission-summary-row="조회"' }, { label: "기록", meta: "작성 · 수정 · 이력", icon: "mdi:clipboard-edit-outline", tone: "green", extraAttrs: 'data-r7-settings-permission-summary-row="기록"' }, { label: "전략", meta: "AI 전략 · 추천 검토", icon: "mdi:brain", tone: "blue", extraAttrs: 'data-r7-settings-permission-summary-row="전략"' }, { label: "실행", meta: "수동 실행 · 자동 실행", icon: "mdi:play-circle-outline", tone: "amber", extraAttrs: 'data-r7-settings-permission-summary-row="실행"' }, { label: "안전", meta: "Fail Safe · Interlock", icon: "mdi:shield-check-outline", tone: "amber", extraAttrs: 'data-r7-settings-permission-summary-row="안전"' }, { label: "고급설정", meta: "시스템 · 매핑 · 진단", icon: "mdi:cog-outline", tone: "blue", extraAttrs: 'data-r7-settings-permission-summary-row="고급설정"' }], { rowKind: "settings-permission-summary" }), actions: [this.renderR7CommonCardButton({ label: "권한 매트릭스 보기", icon: "mdi:table-eye", tone: "blue", extraAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"' })]
                 })}
                 ${this.renderR7SettingsPermissionMatrixModal()}
                 ${this.renderR7SettingsAuditLogModal()}

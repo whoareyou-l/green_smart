@@ -49,9 +49,9 @@ def _bootstrap(extra: str) -> str:
 
 
 def test_r7_065_version_surfaces_are_1_13_0():
-    assert '"version": "1.14.57"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.57"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.57"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.58"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.58"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.58"' in _read(REBUILD_PANEL)
 
 
 def test_r7_065_growth_survey_basic_info_has_plant_object_dropdown_from_crop_cycle():
