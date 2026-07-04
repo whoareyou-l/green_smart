@@ -1,6 +1,6 @@
 # R7-022 Recommendation/Automation Detail Absorption
 
-> 기준 버전: `v1.14.66`
+> 기준 버전: `v1.14.67`
 > Status: R7-022 planned/contracted
 > Purpose: Remove the rendered Recommendation/Automation read-only detail card and absorb its content into the zone-scoped visual tabs.
 
@@ -94,5 +94,5 @@ All old detail content is mapped to visual tabs/cards
 Existing R7 routing/sidebar contracts still pass
 Full pytest passes
 node --check passes
-Prod static/render smoke verifies v1.14.66 and R7-022 markers
+Prod static/render smoke verifies v1.14.67 and R7-022 markers
 ```

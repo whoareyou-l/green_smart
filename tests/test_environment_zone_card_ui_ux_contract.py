@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 def test_v1101_zone_selection_card_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.14.66"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.66"' in panel
-    assert 'v1.14.66' in panel[:200]
+    assert '"version": "1.14.67"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.67"' in panel
+    assert 'v1.14.67' in panel[:200]
     assert "v1.10.9 Environment zone card UI/UX alignment" in docs
     assert "구역 선택 카드" in docs
     assert "작기 선택 카드와 동일한 3줄 카드 문법" in docs

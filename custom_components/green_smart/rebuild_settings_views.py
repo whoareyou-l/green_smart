@@ -440,7 +440,13 @@ def _permission_summary_for_role(role: str) -> str:
 
 def _valid_role(role: Any) -> str:
     value = str(role or "farm_staff").strip()
-    return value if value in {"admin", "farm_owner", "farm_staff"} else "farm_staff"
+    if not value:
+        return "farm_staff"
+    safe = "".join(ch for ch in value if ch.isalnum() or ch in {"_", "-"})
+    return safe or "farm_staff"
+
+
+assert _valid_role("season_manager") == "season_manager"
 
 
 def _valid_user_status(status: Any) -> str:
