@@ -1,6 +1,6 @@
 # R7-092 Settings greenhouse/zone/equipment layout
 
-Status: current baseline for `v1.14.59`.
+Status: current baseline for `v1.14.60`.
 
 ## Required layout
 

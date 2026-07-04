@@ -321,7 +321,7 @@ async def async_setup(hass, config):
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView, CentralCropInterlockSnapshotSyncView, CentralCropInterlockAnalyticsSummaryView
     from .rebuild_views import RebuildHomeContextView
     from .rebuild_settings_write_views import RebuildSettingsSnapshotView, RebuildSettingsGreenhouseCreateView, RebuildSettingsGreenhouseItemView, RebuildSettingsZoneCreateView, RebuildSettingsZoneItemView, RebuildSettingsDeviceSensorMappingView
-    from .rebuild_settings_views import RebuildSettingsUsersPermissionsView, RebuildSettingsApprovalRequestView, RebuildSettingsApprovalDecisionView, RebuildSettingsPermissionChangeRequestView, RebuildSettingsUserRoleView, RebuildSettingsAuditLogItemView
+    from .rebuild_settings_views import RebuildSettingsUsersPermissionsView, RebuildSettingsApprovalRequestView, RebuildSettingsApprovalDecisionView, RebuildSettingsPermissionChangeRequestView, RebuildSettingsUserRoleView, RebuildSettingsAuditLogItemView, RebuildSettingsRolePermissionsView, RebuildSettingsRolePermissionItemView
     from .rebuild_crop_records_views import RebuildCropRecordsHistoryView, RebuildCropRecordsWriteView
     from .rbac import GreenSmartAuthMeView, GreenSmartRoleAssignmentView
     from .zone_control_views import (
@@ -354,6 +354,8 @@ async def async_setup(hass, config):
             hass.http.register_view(RebuildSettingsPermissionChangeRequestView())
             hass.http.register_view(RebuildSettingsUserRoleView())
             hass.http.register_view(RebuildSettingsAuditLogItemView())
+            hass.http.register_view(RebuildSettingsRolePermissionsView())
+            hass.http.register_view(RebuildSettingsRolePermissionItemView())
             domain_data["_settings_views_registered"] = True
         _LOGGER.warning("green_smart schema bootstrap skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
         _LOGGER.warning("green_smart heavy DB-backed HTTP views skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")

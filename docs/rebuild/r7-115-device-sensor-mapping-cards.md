@@ -1,9 +1,9 @@
 # R7-115 Device/Sensor mapping cards
 
-Version: v1.14.59
+Version: v1.14.60
 Status: prod verification pending
 
-## User correction in v1.14.59
+## User correction in v1.14.60
 
 The Settings → `장치·센서 매핑` subtab was corrected again after the v1.14.48 common-card update.
 

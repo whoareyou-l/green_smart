@@ -118,7 +118,149 @@ def _fmt_time(value: Any) -> str:
     return text[:16]
 
 
-def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]], approvals: list[dict[str, Any]], audits: list[dict[str, Any]], source: str = SETTINGS_USERS_PERMISSIONS_SOURCE) -> dict[str, Any]:
+
+ROLE_PERMISSION_DEFAULTS = [
+    {"role": "admin", "role_label": "관리자", "permission_summary": "전체 권한 · 시스템 설정", "view_permission": "allowed", "record_permission": "allowed", "strategy_permission": "allowed", "execution_permission": "allowed", "safety_permission": "allowed", "settings_permission": "allowed", "status": "active"},
+    {"role": "farm_owner", "role_label": "농장 소유자", "permission_summary": "운영 승인 · 전략 검토", "view_permission": "allowed", "record_permission": "allowed", "strategy_permission": "allowed", "execution_permission": "allowed", "safety_permission": "review", "settings_permission": "review", "status": "active"},
+    {"role": "farm_staff", "role_label": "농장 작업자", "permission_summary": "기록 작성 · 조회 중심", "view_permission": "allowed", "record_permission": "allowed", "strategy_permission": "readonly", "execution_permission": "request", "safety_permission": "readonly", "settings_permission": "none", "status": "active"},
+]
+
+
+async def ensure_role_permissions_schema(hass) -> None:
+    if execute is None:
+        raise RuntimeError("green_smart db helpers unavailable outside package runtime")
+    await execute(
+        hass,
+        """
+        CREATE TABLE IF NOT EXISTS gs_role_permissions (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            role VARCHAR(64) NOT NULL,
+            role_label VARCHAR(128) NOT NULL DEFAULT '',
+            permission_summary VARCHAR(255) NOT NULL DEFAULT '조회 · 기록',
+            view_permission VARCHAR(32) NOT NULL DEFAULT 'allowed',
+            record_permission VARCHAR(32) NOT NULL DEFAULT 'allowed',
+            strategy_permission VARCHAR(32) NOT NULL DEFAULT 'readonly',
+            execution_permission VARCHAR(32) NOT NULL DEFAULT 'request',
+            safety_permission VARCHAR(32) NOT NULL DEFAULT 'readonly',
+            settings_permission VARCHAR(32) NOT NULL DEFAULT 'none',
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_gs_role_permissions_role (role),
+            KEY idx_gs_role_permissions_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+    )
+    for row in ROLE_PERMISSION_DEFAULTS:
+        await execute(
+            hass,
+            """
+            INSERT INTO gs_role_permissions (role, role_label, permission_summary, view_permission, record_permission, strategy_permission, execution_permission, safety_permission, settings_permission, status, created_by, updated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'system', 'system')
+            ON DUPLICATE KEY UPDATE role = role
+            """,
+            (row["role"], row["role_label"], row["permission_summary"], row["view_permission"], row["record_permission"], row["strategy_permission"], row["execution_permission"], row["safety_permission"], row["settings_permission"], row["status"]),
+        )
+
+
+def _role_permission_dto(row: dict[str, Any]) -> dict[str, Any]:
+    role = row.get("role") or "farm_staff"
+    tone = "blue" if role == "admin" else "green" if role == "farm_owner" else "amber"
+    return {
+        "id": role,
+        "role": role,
+        "roleLabel": row.get("role_label") or role,
+        "permissionSummary": row.get("permission_summary") or "조회 · 기록",
+        "viewPermission": row.get("view_permission") or "allowed",
+        "recordPermission": row.get("record_permission") or "allowed",
+        "strategyPermission": row.get("strategy_permission") or "readonly",
+        "executionPermission": row.get("execution_permission") or "request",
+        "safetyPermission": row.get("safety_permission") or "readonly",
+        "settingsPermission": row.get("settings_permission") or "none",
+        "status": row.get("status") or "active",
+        "note": row.get("note") or "",
+        "createdAt": _fmt_time(row.get("created_at")),
+        "updatedAt": _fmt_time(row.get("updated_at")),
+        "tone": tone,
+    }
+
+
+async def list_role_permissions(hass) -> list[dict[str, Any]]:
+    if fetchall is None:
+        raise RuntimeError("green_smart db helpers unavailable outside package runtime")
+    await ensure_role_permissions_schema(hass)
+    rows = await fetchall(
+        hass,
+        """
+        SELECT role, role_label, permission_summary, view_permission, record_permission, strategy_permission, execution_permission, safety_permission, settings_permission, status, note, created_at, updated_at
+        FROM gs_role_permissions
+        ORDER BY CASE role WHEN 'admin' THEN 1 WHEN 'farm_owner' THEN 2 WHEN 'farm_staff' THEN 3 ELSE 9 END, role
+        """,
+    )
+    return [_role_permission_dto(row) for row in rows]
+
+
+def _role_permission_payload(payload: dict[str, Any]) -> dict[str, str]:
+    def pick(*keys: str, default: str = "") -> str:
+        for key in keys:
+            if payload.get(key) is not None:
+                return str(payload.get(key) or "").strip()
+        return default
+    return {
+        "role": pick("role", default="farm_staff"),
+        "role_label": pick("roleLabel", "role_label", default="농장 작업자"),
+        "permission_summary": pick("permissionSummary", "permission_summary", default="조회 · 기록"),
+        "view_permission": pick("viewPermission", "view_permission", default="allowed"),
+        "record_permission": pick("recordPermission", "record_permission", default="allowed"),
+        "strategy_permission": pick("strategyPermission", "strategy_permission", default="readonly"),
+        "execution_permission": pick("executionPermission", "execution_permission", default="request"),
+        "safety_permission": pick("safetyPermission", "safety_permission", default="readonly"),
+        "settings_permission": pick("settingsPermission", "settings_permission", default="none"),
+        "status": pick("status", default="active"),
+        "note": pick("note", default=""),
+    }
+
+
+async def upsert_role_permission(hass, user: Any | None, payload: dict[str, Any], role_id: str | None = None) -> dict[str, Any]:
+    await ensure_role_permissions_schema(hass)
+    actor = _ha_user_id(user) or "admin"
+    data = _role_permission_payload(payload)
+    if role_id:
+        data["role"] = str(payload.get("role") or role_id).strip() or role_id
+        await execute(
+            hass,
+            """
+            UPDATE gs_role_permissions SET role=%s, role_label=%s, permission_summary=%s, view_permission=%s, record_permission=%s, strategy_permission=%s, execution_permission=%s, safety_permission=%s, settings_permission=%s, status=%s, note=%s, updated_by=%s WHERE role=%s
+            """,
+            (data["role"], data["role_label"], data["permission_summary"], data["view_permission"], data["record_permission"], data["strategy_permission"], data["execution_permission"], data["safety_permission"], data["settings_permission"], data["status"], data["note"], actor, role_id),
+        )
+        action = "role_permission_updated"
+    else:
+        await execute(
+            hass,
+            """
+            INSERT INTO gs_role_permissions (role, role_label, permission_summary, view_permission, record_permission, strategy_permission, execution_permission, safety_permission, settings_permission, status, note, created_by, updated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE role_label=VALUES(role_label), permission_summary=VALUES(permission_summary), view_permission=VALUES(view_permission), record_permission=VALUES(record_permission), strategy_permission=VALUES(strategy_permission), execution_permission=VALUES(execution_permission), safety_permission=VALUES(safety_permission), settings_permission=VALUES(settings_permission), status=VALUES(status), note=VALUES(note), updated_by=VALUES(updated_by)
+            """,
+            (data["role"], data["role_label"], data["permission_summary"], data["view_permission"], data["record_permission"], data["strategy_permission"], data["execution_permission"], data["safety_permission"], data["settings_permission"], data["status"], data["note"], actor, actor),
+        )
+        action = "role_permission_created"
+    await execute(hass, "INSERT INTO gs_audit_logs (actor, action, summary, target_ref, result) VALUES (%s, %s, %s, %s, 'ok')", (actor, action, f"역할 권한 {data['role']} 저장", data["role"]))
+    return {"ok": True, "role": data["role"], "settingsUsersPermissions": await settings_users_permissions_response(hass, user)}
+
+
+async def delete_role_permission(hass, user: Any | None, role_id: str) -> dict[str, Any]:
+    await ensure_role_permissions_schema(hass)
+    actor = _ha_user_id(user) or "admin"
+    affected = await execute(hass, "DELETE FROM gs_role_permissions WHERE role = %s", (role_id,))
+    await execute(hass, "INSERT INTO gs_audit_logs (actor, action, summary, target_ref, result) VALUES (%s, 'role_permission_deleted', %s, %s, 'ok')", (actor, f"역할 권한 {role_id} 삭제", role_id))
+    return {"ok": True, "deletedRole": role_id, "affectedRows": affected, "settingsUsersPermissions": await settings_users_permissions_response(hass, user)}
+
+def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]], approvals: list[dict[str, Any]], audits: list[dict[str, Any]], role_permissions: list[dict[str, Any]] | None = None, source: str = SETTINGS_USERS_PERMISSIONS_SOURCE) -> dict[str, Any]:
     """Map DB rows into the rebuild settings/users-permissions DTO."""
     user_rows = [
         {
@@ -188,7 +330,8 @@ def settings_users_permissions_response_from_rows(*, users: list[dict[str, Any]]
         "users": user_rows,
         "approvalRows": approval_rows,
         "auditRows": audit_rows,
-        "counts": {"users": len(user_rows), "approvals": len(approval_rows), "audits": len(audit_rows)},
+        "rolePermissions": role_permissions or [],
+        "counts": {"users": len(user_rows), "approvals": len(approval_rows), "audits": len(audit_rows), "rolePermissions": len(role_permissions or [])},
     }
 
 
@@ -202,6 +345,7 @@ async def settings_users_permissions_response(hass, user: Any | None = None) -> 
             role=str(approval_state.get("role") or "farm_staff"),
             status=str(approval_state.get("status") or "pending"),
         )
+    role_permissions = await list_role_permissions(hass)
     users = await fetchall(
         hass,
         """
@@ -230,7 +374,7 @@ async def settings_users_permissions_response(hass, user: Any | None = None) -> 
         LIMIT 20
         """,
     )
-    return settings_users_permissions_response_from_rows(users=users, approvals=approvals, audits=audits)
+    return settings_users_permissions_response_from_rows(users=users, approvals=approvals, audits=audits, role_permissions=role_permissions)
 
 
 async def create_user_approval_request(hass, user: Any | None = None) -> dict[str, Any]:
@@ -583,6 +727,41 @@ class RebuildSettingsUserRoleView(HomeAssistantView):
             return web.json_response(result, status=status_code)
         return self.json(result)
 
+
+
+class RebuildSettingsRolePermissionsView(HomeAssistantView):
+    """GET/POST /api/green_smart/rebuild/settings/role-permissions."""
+
+    url = "/api/green_smart/rebuild/settings/role-permissions"
+    name = "api:green_smart:rebuild:settings:role_permissions"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        return self.json({"ok": True, "rolePermissions": await list_role_permissions(hass)})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        return self.json(await upsert_role_permission(hass, user, await _json_payload(request)))
+
+
+class RebuildSettingsRolePermissionItemView(HomeAssistantView):
+    """PATCH/DELETE /api/green_smart/rebuild/settings/role-permissions/{role_id}."""
+
+    url = "/api/green_smart/rebuild/settings/role-permissions/{role_id}"
+    name = "api:green_smart:rebuild:settings:role_permission_item"
+    requires_auth = True
+
+    async def patch(self, request: web.Request, role_id: str) -> web.Response:
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        return self.json(await upsert_role_permission(hass, user, await _json_payload(request), role_id=role_id))
+
+    async def delete(self, request: web.Request, role_id: str) -> web.Response:
+        hass = request.app["hass"]
+        user = _ha_user_from_request(request)
+        return self.json(await delete_role_permission(hass, user, role_id))
 
 class RebuildSettingsUsersPermissionsView(HomeAssistantView):
     """GET /api/green_smart/rebuild/settings/users-permissions."""

@@ -31,9 +31,9 @@ def _render_permission_matrix(selected_role="admin"):
 
 
 def test_r7_087_version_surfaces_are_1_14_12():
-    assert '"version": "1.14.59"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.59"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.59"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.60"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.60"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.60"' in _read(REBUILD_PANEL)
 
 
 def test_r7_087_permission_matrix_status_uses_ha_icons_not_emoji():
@@ -69,7 +69,10 @@ def test_r7_087_role_permission_row_selects_role_and_opens_detail_panel():
     assert 'farm_staff · 농장 작업자 · 기록 작성 · 조회 중심' in html
     assert 'data-r7-settings-role-permission-state="farm_staff"' in html
     assert '실행 요청 / 실행 허락' in html
-    assert 'data-r7-settings-permission-change-request-button="farm_staff"' in html
+    assert 'data-r7-settings-role-permission-delete-button="farm_staff"' in html
+    assert 'data-r7-settings-role-permission-add-button="farm_staff"' in html
+    assert 'data-r7-settings-role-permission-edit-button="farm_staff"' in html
+    assert 'data-r7-settings-permission-change-request-button="farm_staff"' not in html
 
 
 def test_r7_087_documented():

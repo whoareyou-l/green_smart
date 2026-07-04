@@ -197,6 +197,52 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             KEY idx_gs_users_role_status (role, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+
+        """
+        CREATE TABLE IF NOT EXISTS gs_role_permissions (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            role VARCHAR(64) NOT NULL,
+            role_label VARCHAR(128) NOT NULL DEFAULT '',
+            permission_summary VARCHAR(255) NOT NULL DEFAULT '조회 · 기록',
+            view_permission VARCHAR(32) NOT NULL DEFAULT 'allowed',
+            record_permission VARCHAR(32) NOT NULL DEFAULT 'allowed',
+            strategy_permission VARCHAR(32) NOT NULL DEFAULT 'readonly',
+            execution_permission VARCHAR(32) NOT NULL DEFAULT 'request',
+            safety_permission VARCHAR(32) NOT NULL DEFAULT 'readonly',
+            settings_permission VARCHAR(32) NOT NULL DEFAULT 'none',
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_gs_role_permissions_role (role),
+            KEY idx_gs_role_permissions_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+
+        """
+        CREATE TABLE IF NOT EXISTS gs_role_permissions (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            role VARCHAR(64) NOT NULL,
+            role_label VARCHAR(128) NOT NULL DEFAULT '',
+            permission_summary VARCHAR(255) NOT NULL DEFAULT '조회 · 기록',
+            view_permission VARCHAR(32) NOT NULL DEFAULT 'allowed',
+            record_permission VARCHAR(32) NOT NULL DEFAULT 'allowed',
+            strategy_permission VARCHAR(32) NOT NULL DEFAULT 'readonly',
+            execution_permission VARCHAR(32) NOT NULL DEFAULT 'request',
+            safety_permission VARCHAR(32) NOT NULL DEFAULT 'readonly',
+            settings_permission VARCHAR(32) NOT NULL DEFAULT 'none',
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_gs_role_permissions_role (role),
+            KEY idx_gs_role_permissions_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
         """
         CREATE TABLE IF NOT EXISTS gs_approval_requests (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
