@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.71";
+const REBUILD_VERSION = "1.14.72";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2887,6 +2887,28 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<section data-r7-settings-device-sensor-mapping data-r7-cdb-subtab-content-layout="summary3-action3-list" data-r7-settings-device-mapping-layout="device-group-error-device-list" style="display:grid;gap:12px;"><div data-r7-cdb-layout-row="summary" data-r7-settings-device-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${deviceCard}${groupCard}${errorCard}</div><div data-r7-cdb-layout-row="actions" data-r7-settings-device-action-row style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${actions}</div><div data-r7-cdb-layout-row="list">${deviceList}</div></section>`;
   }
 
+  renderR7SettingsSystemIntegrationSubtab() {
+    const summaryCards = [
+      this.renderR7CdbSummaryCard({ key: "system-ha-connection", icon: "mdi:home-assistant", title: "Home Assistant 연동", primary: "panel/API/entity 연결 상태", rows: [this._r7SettingsGreenhouseValueRow("패널", "custom panel"), this._r7SettingsGreenhouseValueRow("API", "/api/green_smart"), this._r7SettingsGreenhouseValueRow("Entity", "HA entity")], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="ha-connection"' }),
+      this.renderR7CdbSummaryCard({ key: "system-db-connection", icon: "mdi:database-outline", title: "DB 연결", primary: "MariaDB/recorder 경계", rows: [this._r7SettingsGreenhouseValueRow("운영 DB", "green_smart"), this._r7SettingsGreenhouseValueRow("Recorder", "HA recorder"), this._r7SettingsGreenhouseValueRow("Boundary", "분리 유지")], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="db-connection"' }),
+      this.renderR7CdbSummaryCard({ key: "system-api-status", icon: "mdi:api", title: "API 상태", primary: "내부 API · 센터 API", rows: [this._r7SettingsGreenhouseValueRow("Edge", "실시간 판단"), this._r7SettingsGreenhouseValueRow("Center", "분석/동기화"), this._r7SettingsGreenhouseValueRow("Secret", "[REDACTED]")], tone: "blue", statusKey: "due-today", extraAttrs: 'data-r7-settings-system-summary-card="api-status"' }),
+    ];
+    const actionCard = ({ kind, title, icon, primary, note, firstLabel, firstAttrs, secondLabel, secondAttrs, tone = "blue" }) => this.renderR7CdbButtonTwoCard({ kind, icon, title, primary, note, statusKey: "due-today", tone, firstLabel, firstIcon: "mdi:open-in-new", firstTone: "green", firstAttrs: `${firstAttrs} data-r7-settings-modal-skip-record-binding="true"`, secondLabel, secondIcon: "mdi:format-list-bulleted", secondTone: "blue", secondAttrs: `${secondAttrs} data-r7-settings-modal-skip-record-binding="true"`, extraAttrs: `data-r7-settings-system-action-card="${kind}"` });
+    const actionCards = [
+      actionCard({ kind: "system-ha-resources", title: "HA 리소스", icon: "mdi:home-assistant", primary: "panel/API/entity 연결 상태", note: "패널 정적 리소스와 HA entity/API 연결 기준을 확인합니다.", firstLabel: "HA 리소스 확인", firstAttrs: 'data-r7-settings-system-ha-resources-button', secondLabel: "HA 연동 목록", secondAttrs: 'data-r7-settings-system-ha-list-button' }),
+      actionCard({ kind: "system-db-boundary", title: "DB 경계", icon: "mdi:database-cog-outline", primary: "MariaDB/recorder 경계", note: "운영 DB와 HA recorder DB의 역할을 분리해 확인합니다.", firstLabel: "DB 경계 확인", firstAttrs: 'data-r7-settings-system-db-boundary-button', secondLabel: "DB 연결 목록", secondAttrs: 'data-r7-settings-system-db-list-button' }),
+      actionCard({ kind: "system-secret-redaction", title: "Secret redaction", icon: "mdi:shield-key-outline", primary: "[REDACTED]", note: "Secret values render as [REDACTED] only.", firstLabel: "Redaction 확인", firstAttrs: 'data-r7-settings-system-secret-redaction-button', secondLabel: "Secret 정책", secondAttrs: 'data-r7-settings-system-secret-policy-button', tone: "amber" }),
+    ];
+    const rows = [
+      { kind: "Home Assistant", at: "panel/API/entity", memo: "HA 연결과 custom panel 정적 리소스 상태", state: "정상", tone: "green", icon: "mdi:home-assistant", extraAttrs: 'data-r7-settings-system-integration-row="ha"' },
+      { kind: "DB 연결", at: "MariaDB/SQLite", memo: "운영 DB/recorder DB 경계", state: "분리", tone: "green", icon: "mdi:database-outline", extraAttrs: 'data-r7-settings-system-integration-row="db"' },
+      { kind: "API 상태", at: "내부 API · 센터 API", memo: "센터는 분석/동기화, Edge는 실시간 판단", state: "확인", tone: "blue", icon: "mdi:api", extraAttrs: 'data-r7-settings-system-integration-row="api"' },
+      { kind: "Secret redaction", at: "[REDACTED]", memo: "Secret values render as [REDACTED] only", state: "보호", tone: "amber", icon: "mdi:shield-key-outline", extraAttrs: 'data-r7-settings-system-integration-row="secret"' },
+    ];
+    const listCard = this.renderR7CdbListCard({ kind: "settings-system-integration-list", title: "연동 목록", icon: "mdi:format-list-bulleted", statusKey: "normal-ready", tone: "green", rows, limit: Number.POSITIVE_INFINITY, rowKind: "settings-system-integration", extraAttrs: 'data-r7-settings-system-integration-list-panel data-r7-settings-system-integration-table-header' });
+    return this.renderR7CdbSubtabContentLayout({ summaryCards, actionCards, listCard, extraAttrs: 'data-r7-settings-system-integration data-r7-settings-system-integration-layout="summary-action-list"' });
+  }
+
   renderR7SettingsAdminSubtabPanel(tabKey, activeTab = "greenhouse-zones") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -2996,7 +3018,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             : tabKey === "safety-approval-policy"
               ? `<section data-r7-settings-safety-approval-policy style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="approval"', '실행 승인 정책', '자동/고위험 실행 전 승인', '누가 승인 가능한지는 사용자·권한과 연결됩니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="failsafe"', 'Fail Safe 기준', '센서 오류 · 통신 실패 · 강풍 · 저온/고온', '현장 Edge 안전 판단이 우선합니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="interlock"', 'Interlock 정책', '차단 조건 · 허용 조건', '실행 권한과 별개로 안전 조건이 최종 차단할 수 있습니다.')}${this.renderR7SettingsAdminCard('data-r7-settings-safety-policy-card="notification"', '알림 정책', '위험 · 차단 · 승인 요청', '알림 채널/수신자는 후속 저장 slice에서 확정합니다.')}</section>`
               : tabKey === "system-integration"
-                ? `<section data-r7-settings-system-integration style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-system-integration-card="ha"', 'Home Assistant 연동', 'panel/API/entity 연결 상태', 'HA 연결과 custom panel 정적 리소스 상태')}${this.renderR7SettingsAdminCard('data-r7-settings-system-integration-card="db"', 'DB 연결', 'MariaDB/SQLite 상태', '운영 DB/recorder DB 경계')}${this.renderR7SettingsAdminCard('data-r7-settings-system-integration-card="api"', 'API 상태', '내부 API · 센터 API', '센터는 분석/동기화, Edge는 실시간 판단')}${this.renderR7SettingsAdminCard('data-r7-settings-system-integration-card="secret"', 'Secret redaction', '[REDACTED]', 'Secret values render as [REDACTED] only')}</section>`
+                ? this.renderR7SettingsSystemIntegrationSubtab()
                 : tabKey === "diagnostics-audit"
                   ? `<section data-r7-settings-diagnostics-audit style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SettingsAdminCard('data-r7-settings-diagnostics-card="system"', '시스템 진단', '오류/Traceback/통신 상태', '운영 전 점검 evidence')}${this.renderR7SettingsAdminCard('data-r7-settings-diagnostics-card="mapping"', '매핑 진단', '누락/중복 entity', '장치·센서 매핑 health evidence')}${this.renderR7SettingsAdminCard('data-r7-settings-diagnostics-card="permission"', '권한 감사', 'role 변경/권한 시도', 'RBAC 변경은 audit 대상')}${this.renderR7SettingsAdminCard('data-r7-settings-diagnostics-card="execution"', '실행 감사', '수동/자동/AI 관련 이력', '실행/차단/승인 이력을 안전 도메인과 연결')}</section>`
                   : tabKey === "domain-ownership"
