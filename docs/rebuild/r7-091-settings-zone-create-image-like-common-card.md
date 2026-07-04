@@ -1,6 +1,6 @@
 # R7-091 Settings zone create image-like common card
 
-Status: current baseline for `v1.14.69`.
+Status: current baseline for `v1.14.70`.
 
 ## Correction
 

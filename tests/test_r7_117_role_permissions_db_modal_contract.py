@@ -171,4 +171,4 @@ def test_r7_117_user_edit_role_select_uses_db_role_permissions():
 
 
 def test_r7_117_version_is_current():
-    assert '"version": "1.14.69"' in _read(MANIFEST)
+    assert '"version": "1.14.70"' in _read(MANIFEST)

@@ -1,35 +1,77 @@
-# R7-088 Settings greenhouse/zone reference card detail layout
+# R7-088 Settings greenhouse/zone CDB card layout
 
-Status: current baseline for `v1.14.69`.
+Status: current baseline for `v1.14.70`.
 
 ## Scope
 
-`설정 > 온실·구역` 하위탭의 내용카드를 사용자가 제공한 이미지와 기존 설정 카드 내용을 참고해 운영자용 카드/목록/상세 패널로 재구성한다.
+`설정 > 온실·구역` 하위탭은 하위탭 공통 CDB 카드 문법을 따른다. 화면에서 직접 쓰는 카드 wrapper는 CDB 4종만 허용한다.
 
-## Layout
+Allowed card wrappers:
 
-- 상단 요약 카드 4개:
+- `renderR7CdbSummaryCard()`
+- `renderR7CdbButtonOneCard()`
+- `renderR7CdbButtonTwoCard()`
+- `renderR7CdbListCard()`
+
+## CDB card grammar hotfix in v1.14.70
+
+The greenhouse/zone subtab is locked to the same CDB grammar used by the device/sensor mapping subtab.
+
+Visible row grammar:
+
+```text
+summary row: 3 summary cards
   - 온실 기본 정보
-  - 구역 구성
-  - 구역별 현재 작기
-  - 데이터 상태
-- 하단 workspace:
-  - 좌측: 구역 목록 + 구역 생성 버튼 (`+ 새 구역 추가`)
-  - 우측: 선택 구역 상세
-- 선택 구역 상세는 기본 정보, 대표 센서, 제어 장비 매핑, 센서 freshness 알림, 하단 액션 버튼을 가진다.
+  - 구역 기본 정보
+  - 장비 구성
 
-## Markers
+action row: 3 two-button cards
+  - 온실 생성
+  - 구역 생성
+  - 장치/센서 매핑
 
-- `data-r7-settings-greenhouse-zones-layout="reference-card-detail"`
-- `data-r7-settings-greenhouse-summary-card="greenhouse-basic-info"`
-- `data-r7-settings-greenhouse-summary-card="zone-composition"`
-- `data-r7-settings-greenhouse-summary-card="zone-current-crop"`
-- `data-r7-settings-greenhouse-summary-card="data-health"`
+list row: 1 list card
+  - 구역 목록
+```
+
+Implementation rules:
+
+- The subtab root keeps `data-r7-cdb-subtab-content-layout="summary3-action3-list"`.
+- The summary row keeps `data-r7-cdb-layout-row="summary"` and exactly the three visible summary concepts above.
+- The action row keeps `data-r7-cdb-layout-row="actions"` and three `renderR7CdbButtonTwoCard()` cards.
+- The list row keeps `data-r7-cdb-layout-row="list"` and the zone list is rendered through `renderR7CdbListCard()`.
+- Old four-summary-card reference layout is historical only and must not be reintroduced.
+
+## Current markers
+
+Root/layout:
+
+- `data-r7-settings-greenhouse-zones`
+- `data-r7-settings-greenhouse-zones-layout="info-create-equipment-list"`
+- `data-r7-cdb-subtab-content-layout="summary3-action3-list"`
+- `data-r7-cdb-layout-row="summary"`
+- `data-r7-cdb-layout-row="actions"`
+- `data-r7-cdb-layout-row="list"`
+
+Summary cards:
+
+- `data-r7-settings-greenhouse-summary-card="greenhouse-basic-info"` — 온실 기본 정보
+- `data-r7-settings-greenhouse-summary-card="zone-basic-info"` — 구역 기본 정보; historical wording: 구역 구성
+- `data-r7-settings-greenhouse-summary-card="equipment-composition"` — 장비 구성
+
+Action cards:
+
+- `data-r7-settings-create-card="settings-greenhouse-create"`
+- `data-r7-settings-create-card="settings-zone-create"`
+- `data-r7-settings-create-card="settings-equipment-mapping"`
+
+List:
+
 - `data-r7-settings-zone-list-panel`
-- `data-r7-settings-zone-create-button`
-- `data-r7-settings-zone-detail-panel`
-- `data-r7-settings-selected-zone-detail-card`
+- `data-r7-settings-zone-list-panel-width="full"`
+- `data-r7-settings-zone-table-header`
+- `data-r7-settings-zone-list-row="..."`
 
 ## Boundary
 
-구역 생성/편집/작기 연결 변경 버튼은 이번 slice에서 화면 affordance와 marker만 제공한다. 실제 DB mutation/save는 별도 승인/저장 slice에서 처리한다.
+온실 생성/구역 생성/장치·센서 매핑 버튼은 공통 모달 shell과 API 연결 상태를 유지한다. 이 문서는 화면 문법과 marker contract를 다루며, DB mutation 세부 정책은 `r7-098-settings-greenhouse-zone-real-db-api.md`에서 관리한다.
