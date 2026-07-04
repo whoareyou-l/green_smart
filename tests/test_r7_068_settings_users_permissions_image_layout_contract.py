@@ -13,7 +13,19 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render_users_permissions(open_permission_matrix=False):
+def _render_users_permissions(open_permission_matrix=False, empty=False):
+    approval_rows = "[]" if empty else """[
+          { label: '사용자 승인 요청', meta: 'staff02 · farm_staff · 대기', icon: 'mdi:account-clock-outline', tone: 'amber' },
+          { label: '자동제어 활성화', meta: 'owner01 허락 필요', icon: 'mdi:robot-outline', tone: 'amber' },
+          { label: '안전 리밋 변경', meta: 'farm_owner 허락 필요', icon: 'mdi:shield-alert-outline', tone: 'amber' },
+        ]"""
+    user_rows = "[]" if empty else """[
+          { kind: 'admin', at: 'admin', memo: '활성 · 방금 전', state: '전체 설정', icon: 'mdi:shield-account-outline', tone: 'green' },
+          { kind: 'owner01', at: 'farm_owner', memo: '활성 · 오늘 09:20', state: '승인 · 전략', icon: 'mdi:account-tie-outline', tone: 'green' },
+          { kind: 'staff01', at: 'farm_staff', memo: '승인 대기 · -', state: '기록 · 모니터링', icon: 'mdi:account-outline', tone: 'amber' },
+          { kind: 'staff02', at: 'farm_staff', memo: '대기 · 오늘 08:40', state: '승인 요청', icon: 'mdi:account-clock-outline', tone: 'amber' },
+          { kind: 'viewer01', at: 'viewer', memo: '최근 5일 전', state: '조회 전용', icon: 'mdi:account-eye-outline', tone: 'blue' },
+        ]"""
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
@@ -23,22 +35,9 @@ def _render_users_permissions(open_permission_matrix=False):
       panel.hass = {{ user: {{ name: 'admin', is_admin: true }}, callApi: async () => ({{}}) }};
       panel._settingsUsersPermissions = {{
         source: 'contract-fixture',
-        approvalRows: [
-          {{ label: '사용자 승인 요청', meta: 'staff02 · farm_staff · 대기', icon: 'mdi:account-clock-outline', tone: 'amber' }},
-          {{ label: '자동제어 활성화', meta: 'owner01 허락 필요', icon: 'mdi:robot-outline', tone: 'amber' }},
-          {{ label: '안전 리밋 변경', meta: 'farm_owner 허락 필요', icon: 'mdi:shield-alert-outline', tone: 'amber' }},
-        ],
-        auditRows: [
-          {{ label: 'admin', summary: '역할 허락: staff01 → farm_staff', meta: '2026-06-30 09:12', icon: 'mdi:account-check-outline', tone: 'green' }},
-          {{ label: 'owner01', summary: '안전 정책 허락', meta: '2026-06-30 08:45', icon: 'mdi:account-check-outline', tone: 'green' }},
-        ],
-        users: [
-          {{ kind: 'admin', at: 'admin', memo: '활성 · 방금 전', state: '전체 설정', icon: 'mdi:shield-account-outline', tone: 'green' }},
-          {{ kind: 'owner01', at: 'farm_owner', memo: '활성 · 오늘 09:20', state: '승인 · 전략', icon: 'mdi:account-tie-outline', tone: 'green' }},
-          {{ kind: 'staff01', at: 'farm_staff', memo: '승인 대기 · -', state: '기록 · 모니터링', icon: 'mdi:account-outline', tone: 'amber' }},
-          {{ kind: 'staff02', at: 'farm_staff', memo: '대기 · 오늘 08:40', state: '승인 요청', icon: 'mdi:account-clock-outline', tone: 'amber' }},
-          {{ kind: 'viewer01', at: 'viewer', memo: '최근 5일 전', state: '조회 전용', icon: 'mdi:account-eye-outline', tone: 'blue' }},
-        ],
+        approvalRows: {approval_rows},
+        auditRows: [],
+        users: {user_rows},
       }};
       panel._settingsPermissionMatrixModal = {{ open: {str(open_permission_matrix).lower()} }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
@@ -50,9 +49,9 @@ def _render_users_permissions(open_permission_matrix=False):
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.56"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.57"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.57"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.57"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -77,7 +76,8 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
         '승인 요청 허락',
         '전체 로그인 승인 확인',
         '전체 사용자 목록 보기',
-        '총 5명의 사용자가 있습니다',
+        '총 5명',
+        'data-r7-common-card-subtitle',
     ]
     for item in required:
         assert item in html
@@ -98,13 +98,24 @@ def test_r7_068_permission_matrix_contains_role_columns_and_bucket_rows():
 
 def test_r7_068_user_list_approval_audit_rows_are_table_like():
     html = _render_users_permissions()
-    assert html.count('data-r7-settings-user-row=') == 5
-    assert html.count('data-r7-settings-approval-row=') >= 3
-    assert html.count('data-r7-settings-audit-row=') == 2
-    assert 'data-r7-common-data-limit="2"' in html
-    assert 'data-r7-common-table-limit="5"' in html
+    assert html.count('data-r7-settings-user-row=') == 3
+    assert html.count('data-r7-settings-approval-row=') == 3
+    assert html.count('data-r7-settings-audit-row=') == 3
+    assert 'data-r7-common-data-limit="3"' in html
+    assert 'data-r7-common-table-limit="3"' in html
+    for hidden in ['staff02', 'viewer01']:
+        assert f'data-r7-settings-user-row="{hidden}"' not in html
     for header in ['사용자', '역할', '상태', '최근 활동', '권한 요약']:
         assert header in html
+
+
+def test_r7_068_common_rows_show_empty_state_only_when_no_rows():
+    html = _render_users_permissions(empty=True)
+    assert html.count('data-r7-common-empty-state') >= 2
+    assert '자료 없음.' in html
+    assert '기록 없음' not in html
+    assert 'data-r7-settings-approval-primary-summary' not in html
+    assert 'data-r7-settings-audit-primary-summary' not in html
 
 
 def test_r7_068_documented():

@@ -51,9 +51,9 @@ def _render_users_permissions():
 
 
 def test_r7_072_version_surfaces_are_1_13_7():
-    assert '"version": "1.14.56"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.57"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.57"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.57"' in _read(REBUILD_PANEL)
 
 
 def test_r7_072_approval_card_has_no_inline_allow_reject_buttons():
@@ -67,33 +67,37 @@ def test_r7_072_approval_card_has_no_inline_allow_reject_buttons():
     assert 'data-r7-settings-users-action="approval-all"' in approval_card
 
 
-def test_r7_072_approval_primary_and_note_are_data_summary_not_static_description():
+def test_r7_072_approval_subtitle_is_count_and_body_has_rows_only():
     html = _render_users_permissions()
-    assert 'data-r7-settings-approval-primary-summary' in html
+    assert 'data-r7-settings-approval-count-note' in html
+    assert '로그인 승인 요청 3건' in html
+    assert 'data-r7-settings-approval-primary-summary' not in html
     assert '사용자 승인 요청 · 자동제어 활성화 · 안전 리밋 변경' not in html
     assert '요청자 / 요청 역할 / 요청 상태 / 승인 요청 허락' not in html
-    assert any(text in html for text in ['기록 없음', '최근 5일 전', '승인 대기'])
-    # 데이터가 있을 때는 추가 요청 안내성 부연 설명을 표시하지 않는다.
+    assert '기록 없음' not in html
+    assert '승인 대기 6건' not in html
     assert 'data-r7-settings-approval-empty-help' not in html
     assert '승인 요청 데이터가 없으면 요청자와 요청 역할을 추가하세요.' not in html
 
 
-def test_r7_072_user_summary_card_renders_first_two_user_rows():
+def test_r7_072_user_summary_card_renders_latest_three_user_rows():
     html = _render_users_permissions()
-    assert 'data-r7-common-data-limit="2"' in html
+    assert 'data-r7-common-data-limit="3"' in html
     rows = re.findall(r'data-r7-settings-audit-row="([^"]+)"', html)
-    assert len(rows) == 2
-    assert rows == ['admin', 'owner01']
-    assert 'staff01' not in rows
+    assert len(rows) == 3
+    assert rows == ['admin', 'owner01', 'staff01']
+    assert 'staff02' not in rows
     assert '총 6명' in html
-    assert '총 6명의 사용자가 있습니다' in html
+    assert '총 6명의 사용자가 있습니다' not in html
+    assert 'data-r7-settings-audit-primary-summary' not in html
     assert '전체 사용자 목록 보기' in html
 
 
-def test_r7_072_table_like_common_user_list_limits_to_latest_five():
+def test_r7_072_table_like_common_user_list_limits_to_latest_three():
     html = _render_users_permissions()
-    assert 'data-r7-common-table-limit="5"' in html
+    assert 'data-r7-common-table-limit="3"' in html
     rows = re.findall(r'data-r7-settings-user-row="([^"]+)"', html)
-    assert len(rows) == 5
-    assert rows == ['admin', 'owner01', 'staff01', 'staff02', 'viewer01']
+    assert len(rows) == 3
+    assert rows == ['admin', 'owner01', 'staff01']
+    assert 'staff02' not in rows
     assert 'retired01' not in rows

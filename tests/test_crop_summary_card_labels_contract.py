@@ -83,8 +83,8 @@ def test_v11022_versions_and_docs_record_crop_summary_labels():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.14.56"' in manifest
-    assert 'const VERSION = "1.14.56"' in panel
+    assert '"version": "1.14.57"' in manifest
+    assert 'const VERSION = "1.14.57"' in panel
     assert "v1.10.22 Crop summary card labels" in docs
     for marker in (
         "data-crop-ai-summary-stage-score",

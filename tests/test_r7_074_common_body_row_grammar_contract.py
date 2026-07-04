@@ -69,9 +69,9 @@ def _render_records_workflow():
 
 
 def test_r7_074_version_surfaces_are_1_13_9():
-    assert '"version": "1.14.56"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.57"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.57"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.57"' in _read(REBUILD_PANEL)
 
 
 def test_r7_074_common_body_row_helpers_exist():
@@ -90,7 +90,7 @@ def test_r7_074_settings_approval_and_user_summary_rows_use_common_body_rows():
     user_summary_end = html.index('data-r7-common-card-shell="settings-permission-matrix-summary"', user_summary_start)
     user_summary_card = html[user_summary_start:user_summary_end]
     assert approval_card.count('data-r7-common-card-data-row="settings-approval"') == 3
-    assert user_summary_card.count('data-r7-common-card-data-row="settings-audit"') == 2
+    assert user_summary_card.count('data-r7-common-card-data-row="settings-audit"') == 3
     assert 'data-r7-settings-approval-row="사용자 승인 요청"' in approval_card
     assert 'data-r7-settings-audit-row="admin"' in user_summary_card
     assert 'data-r7-common-card-data-row-label' in approval_card

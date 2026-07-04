@@ -57,15 +57,15 @@ def _render_records_workflow_with_many_recent_rows():
 
 
 def test_r7_073_version_surfaces_are_1_13_8():
-    assert '"version": "1.14.56"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.57"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.57"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.57"' in _read(REBUILD_PANEL)
 
 
 def test_r7_073_common_recent_panel_has_default_limit_policy():
     source = _read(REBUILD_PANEL)
     assert 'r7CommonRecentDefaultLimit(' in source
-    assert 'const effectiveLimit = Number.isFinite(limit) ? limit : this.r7CommonRecentDefaultLimit(kind, rowKind);' in source
+    assert 'effectiveLimit = Number.isFinite(limit) ? limit : this.r7CommonRecentDefaultLimit(kind, rowKind)' in source
     assert 'records-recent' in source
     assert 'settings-user' in source
 
@@ -81,14 +81,12 @@ def test_r7_073_common_card_body_is_not_record_only_between_header_and_buttons()
     record_body_match = re.search(r'renderR7RecordCardBody\([^\n]*\) \{(?P<body>.*?)\n  \}', source, flags=re.S)
     assert record_body_match
     assert 'return this.renderR7CommonCardBody({ primary, note, html, tone });' in record_body_match.group('body')
-
-
-def test_r7_073_common_recent_without_limit_defaults_to_latest_five():
+def test_r7_073_common_recent_without_limit_defaults_to_latest_three():
     html = _render_common_recent_without_explicit_limit()
-    assert 'data-r7-common-data-limit="5"' in html
-    assert html.count('data-r7-common-recent-row="records-recent"') == 5
-    assert '기록1' in html and '기록5' in html
-    assert '기록6' not in html and '기록7' not in html
+    assert 'data-r7-common-data-limit="3"' in html
+    assert html.count('data-r7-common-recent-row="records-recent"') == 3
+    assert '기록1' in html and '기록2' in html and '기록3' in html
+    assert '기록4' not in html and '기록5' not in html
 
 
 def test_r7_073_crop_records_recent_uses_default_limit_without_callsite_limit():
@@ -98,10 +96,10 @@ def test_r7_073_crop_records_recent_uses_default_limit_without_callsite_limit():
     wrapper = match.group('body')
     assert 'limit:' not in wrapper
     html = _render_records_workflow_with_many_recent_rows()
-    assert 'data-r7-common-data-limit="5"' in html
-    assert html.count('data-r7-common-recent-row="records-recent"') == 5
-    assert '생육조사1' in html and '생육조사5' in html
-    assert '생육조사6' not in html and '생육조사7' not in html
+    assert 'data-r7-common-data-limit="3"' in html
+    assert html.count('data-r7-common-recent-row="records-recent"') == 3
+    assert '생육조사1' in html and '생육조사2' in html and '생육조사3' in html
+    assert '생육조사4' not in html and '생육조사5' not in html
 
 
 def test_r7_073_documented():
