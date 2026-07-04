@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_116_version_surfaces_are_1_14_62():
-    assert '"version": "1.14.62"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.62"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.62"' in _read(PANEL)
+def test_r7_116_version_surfaces_are_1_14_63():
+    assert '"version": "1.14.63"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.63"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.63"' in _read(PANEL)
 
 
 def test_r7_116_users_permissions_routes_registered_even_when_schema_bootstrap_is_off():

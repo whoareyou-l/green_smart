@@ -69,9 +69,9 @@ def _render_records_workflow():
 
 
 def test_r7_074_version_surfaces_are_1_13_9():
-    assert '"version": "1.14.62"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.62"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.62"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.63"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.63"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.63"' in _read(REBUILD_PANEL)
 
 
 def test_r7_074_common_body_row_helpers_exist():
@@ -111,7 +111,8 @@ def test_r7_074_records_missing_verification_also_uses_common_body_rows():
 def test_r7_074_source_no_bespoke_inline_rows_for_settings_approval_audit():
     source = _read(REBUILD_PANEL)
     settings_block = source.split('kind: "settings-approval-needed"', 1)[1].split('kind: "settings-permission-matrix-summary"', 1)[0]
-    assert 'renderR7CommonCardDataRows(' in settings_block
+    assert 'renderR7CdbButtonOneCard(' in settings_block
+    assert 'renderR7CdbButtonTwoCard(' in settings_block
     assert 'display:flex;align-items:center;justify-content:space-between' not in settings_block
     assert 'display:grid;grid-template-columns:1fr auto' not in settings_block
 

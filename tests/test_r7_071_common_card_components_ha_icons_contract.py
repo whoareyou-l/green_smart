@@ -97,9 +97,9 @@ def _render_records_workflow():
 
 
 def test_r7_071_version_surfaces_are_1_13_6():
-    assert '"version": "1.14.62"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.62"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.62"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.63"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.63"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.63"' in _read(REBUILD_PANEL)
 
 
 def test_r7_071_common_helpers_exist_and_document_ha_icon_policy():
@@ -112,6 +112,10 @@ def test_r7_071_common_helpers_exist_and_document_ha_icon_policy():
         'renderR7CommonCardShell(',
         'renderR7CommonRecentRow(',
         'renderR7CommonRecentPanel(',
+        'renderR7CdbSummaryCard(',
+        'renderR7CdbButtonOneCard(',
+        'renderR7CdbButtonTwoCard(',
+        'renderR7CdbListCard(',
     ]:
         assert helper in source
     assert 'data-r7-common-ha-icon-policy="mdi-only"' in source
@@ -126,6 +130,12 @@ def test_r7_071_settings_users_use_common_card_components_and_ha_icons():
     assert 'data-r7-common-recent-panel="settings-user-list-wide"' in html
     assert 'data-r7-common-recent-row="settings-user"' in html
     assert 'data-r7-common-ha-icon-policy="mdi-only"' in html
+    assert 'data-r7-cdb-common-card="button-1-card"' in html
+    assert 'data-r7-cdb-common-card="button-2-card"' in html
+    assert 'data-r7-cdb-common-card="list-card"' in html
+    assert 'data-r7-cdb-card-type="button-one"' in html
+    assert 'data-r7-cdb-card-type="button-two"' in html
+    assert 'data-r7-cdb-card-type="list"' in html
     assert 'data-r7-settings-users-card="approval-queue"' in html
     assert 'data-r7-settings-users-card="audit-log"' in html
     assert 'data-r7-settings-users-card="permission-matrix"' in html

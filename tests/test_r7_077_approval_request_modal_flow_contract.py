@@ -16,9 +16,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_077_version_surfaces_are_1_14_2():
-    assert '"version": "1.14.62"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.62"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.62"' in _read(PANEL)
+    assert '"version": "1.14.63"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.63"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.63"' in _read(PANEL)
 
 
 def test_r7_077_backend_has_request_and_approve_views():

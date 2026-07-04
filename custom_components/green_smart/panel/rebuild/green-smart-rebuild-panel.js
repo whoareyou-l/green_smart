@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.62";
+const REBUILD_VERSION = "1.14.63";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2727,7 +2727,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SettingsGreenhouseSummaryCard(args) {
-    return this.renderR7SettingsInfoCard(args);
+    return this.renderR7CdbSummaryCard(args);
+  }
+
+  renderR7CdbSummaryCard(args = {}) {
+    const extraAttrs = `${args.extraAttrs || ""} data-r7-cdb-card-type="summary" data-r7-cdb-common-card="summary-card"`;
+    return this.renderR7SettingsInfoCard({ ...args, extraAttrs });
+  }
+
+  renderR7CdbButtonOneCard({ kind, section = "", icon, title, subtitle = "", statusKey = "normal-ready", tone = "green", rows = [], rowKind = "common", buttonLabel, buttonIcon = "mdi:open-in-new", buttonTone = "green", buttonAttrs = "", extraAttrs = "" }) {
+    return this.renderR7CommonCardShell({ kind, section, icon, title, subtitle, statusKey, tone, html: this.renderR7CommonCardDataRows(rows, { rowKind }), actions: [this.renderR7CommonCardButton({ label: buttonLabel, icon: buttonIcon, tone: buttonTone, extraAttrs: buttonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-one" data-r7-cdb-common-card="button-1-card"` });
+  }
+
+  renderR7CdbButtonTwoCard({ kind, icon, title, subtitle = "", statusKey = "due-today", tone = "blue", rows = [], rowKind = "common", primary = "", note = "", firstLabel, firstIcon = "mdi:plus-circle-outline", firstTone = "green", firstAttrs = "", secondLabel, secondIcon = "mdi:history", secondTone = "blue", secondAttrs = "", extraAttrs = "" }) {
+    return this.renderR7RecordCardShell({ kind, icon, title, subtitle, statusKey, tone, primary, note, html: rows.length ? this.renderR7CommonCardDataRows(rows, { rowKind }) : "", actions: [this.renderR7CommonCardButton({ label: firstLabel, icon: firstIcon, tone: firstTone, extraAttrs: firstAttrs }), this.renderR7CommonCardButton({ label: secondLabel, icon: secondIcon, tone: secondTone, extraAttrs: secondAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-two" data-r7-cdb-common-card="button-2-card"` });
+  }
+
+  renderR7CdbListCard(args = {}) {
+    const extraAttrs = `${args.extraAttrs || ""} data-r7-cdb-card-type="list" data-r7-cdb-common-card="list-card"`;
+    return this.renderR7CommonRecentPanel({ ...args, extraAttrs });
   }
 
   renderR7SettingsGreenhouseZonesSubtab(zones) {
@@ -2753,10 +2771,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedUnmapped = selected.labels.filter((label) => /미연결|unmapped|누락|missing/i.test(String(label))).length;
     const selectedSensors = selected.sensors;
     const selectedDevices = selected.devices;
-    const greenhouseInfo = this.renderR7SettingsInfoCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 기본 정보", primary: "운영 기준 데이터", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green", statusKey: "normal-ready" });
-    const zoneInfo = this.renderR7SettingsInfoCard({ key: "zone-basic-info", icon: "mdi:view-grid-outline", title: "구역 기본 정보", primary: selected.zoneName, rows: [this._r7SettingsGreenhouseValueRow("구역 용도", selected.purpose), this._r7SettingsGreenhouseValueRow("면적", selected.area), this._r7SettingsGreenhouseValueRow("배드 수", selected.bedCount)], tone: selected.statusTone === "amber" ? "amber" : "green", statusKey: selected.statusTone === "amber" ? "needs-verification" : "normal-ready" });
-    const equipmentInfo = this.renderR7SettingsInfoCard({ key: "equipment-composition", icon: "mdi:devices", title: "장비 구성", primary: `${selected.zoneName} · 선택 구역 상태`, rows: [this._r7SettingsGreenhouseValueRow("센서", `${selectedSensors}개`, 'data-r7-settings-equipment-sensor-count'), this._r7SettingsGreenhouseValueRow("장비", `${selectedDevices}개`, 'data-r7-settings-equipment-device-count'), this._r7SettingsGreenhouseValueRow("미연결", `${selectedUnmapped}개`, 'data-r7-settings-equipment-unmapped-count')], tone: selectedUnmapped ? "amber" : "green", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-equipment-status-card="selected-zone"' });
-    const createCard = ({ kind, title, icon, primary, note, addLabel, addAttr, shortcutLabel, shortcutAttr, tone = "blue" }) => this.renderR7RecordCardShell({ kind, icon, title, statusKey: "due-today", tone, primary, note, actions: [this.renderR7CommonCardButton({ label: addLabel, icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: `${addAttr} data-r7-settings-modal-skip-record-binding="true"` }), this.renderR7CommonCardButton({ label: shortcutLabel, icon: "mdi:history", tone: "blue", extraAttrs: `${shortcutAttr} data-r7-settings-modal-skip-record-binding="true"` })], extraAttrs: `data-r7-settings-create-card="${kind}" data-r7-settings-greenhouse-summary-card="${kind.replace('settings-', '').replace('-create', '')}-create" data-r7-settings-zone-create-reference-card="image-like-common-card"` });
+    const greenhouseInfo = this.renderR7CdbSummaryCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 기본 정보", primary: "운영 기준 데이터", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green", statusKey: "normal-ready" });
+    const zoneInfo = this.renderR7CdbSummaryCard({ key: "zone-basic-info", icon: "mdi:view-grid-outline", title: "구역 기본 정보", primary: selected.zoneName, rows: [this._r7SettingsGreenhouseValueRow("구역 용도", selected.purpose), this._r7SettingsGreenhouseValueRow("면적", selected.area), this._r7SettingsGreenhouseValueRow("배드 수", selected.bedCount)], tone: selected.statusTone === "amber" ? "amber" : "green", statusKey: selected.statusTone === "amber" ? "needs-verification" : "normal-ready" });
+    const equipmentInfo = this.renderR7CdbSummaryCard({ key: "equipment-composition", icon: "mdi:devices", title: "장비 구성", primary: `${selected.zoneName} · 선택 구역 상태`, rows: [this._r7SettingsGreenhouseValueRow("센서", `${selectedSensors}개`, 'data-r7-settings-equipment-sensor-count'), this._r7SettingsGreenhouseValueRow("장비", `${selectedDevices}개`, 'data-r7-settings-equipment-device-count'), this._r7SettingsGreenhouseValueRow("미연결", `${selectedUnmapped}개`, 'data-r7-settings-equipment-unmapped-count')], tone: selectedUnmapped ? "amber" : "green", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-equipment-status-card="selected-zone"' });
+    const createCard = ({ kind, title, icon, primary, note, addLabel, addAttr, shortcutLabel, shortcutAttr, tone = "blue" }) => this.renderR7CdbButtonTwoCard({ kind, icon, title, statusKey: "due-today", tone, primary, note, firstLabel: addLabel, firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: `${addAttr} data-r7-settings-modal-skip-record-binding="true"`, secondLabel: shortcutLabel, secondIcon: "mdi:history", secondTone: "blue", secondAttrs: `${shortcutAttr} data-r7-settings-modal-skip-record-binding="true"`, extraAttrs: `data-r7-settings-create-card="${kind}" data-r7-settings-greenhouse-summary-card="${kind.replace('settings-', '').replace('-create', '')}-create" data-r7-settings-zone-create-reference-card="image-like-common-card"` });
     const createCards = [
       createCard({ kind: "settings-greenhouse-create", title: "온실 생성", icon: "mdi:greenhouse", primary: "새 온실 없음", note: "온실을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 온실 추가", addAttr: 'data-r7-settings-greenhouse-create-button', shortcutLabel: "온실 정보", shortcutAttr: 'data-r7-settings-greenhouse-info-shortcut-button' }),
       createCard({ kind: "settings-zone-create", title: "구역 생성", icon: "mdi:plus-circle-outline", primary: "새 구역 없음", note: "구역을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 구역 추가", addAttr: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button', shortcutLabel: "구역 목록", shortcutAttr: 'data-r7-settings-zone-list-shortcut-button' }),
@@ -2771,7 +2789,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       icon: "mdi:greenhouse",
       extraAttrs: `data-r7-settings-zone-list-row="${zone.zoneId}" data-r7-settings-zone-row="${zone.zoneId}" data-r7-settings-zone-list-selected="${index === 0 ? 'true' : 'false'}"`,
     }));
-    const zoneList = this.renderR7CommonRecentPanel({
+    const zoneList = this.renderR7CdbListCard({
       kind: "settings-zone-list",
       title: "구역 목록",
       icon: "mdi:view-list-outline",
@@ -2889,15 +2907,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
               return `<section data-r7-settings-users-permissions data-r7-settings-users-data-source="${source}" data-r7-settings-users-permissions-image-layout="true" data-r7-settings-users-record-card-layout="true" data-r7-settings-users-layout-order="approval-audit-matrix-user-list" data-r7-settings-users-typography="aligned-compact" data-r7-settings-users-grid-align="centered" style="display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;align-items:stretch;line-height:1.35;">
                 ${(() => {
                   const approvalNote = `로그인 승인 요청 ${approvalRows.length}건`;
-                  return this.renderR7CommonCardShell({
-                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "로그인 승인 작업", subtitle: `<span data-r7-settings-approval-count-note>${approvalNote}</span>`, statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", extraAttrs: 'data-r7-settings-users-card="approval-queue"', html: `${this.renderR7CommonCardDataRows(approvalRows.map((row) => ({ label: row.label || row.requestType || "승인 요청", meta: row.meta || row.status || "대기", icon: row.icon || "mdi:account-clock-outline", tone: row.tone || "amber", extraAttrs: `data-r7-settings-approval-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-user-approval-request-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-approval-request-id="${row.id || ''}"` })), { rowKind: "settings-approval" })}<span style="display:none;">요청자 요청 역할 요청 상태 로그인 승인 요청 승인 요청 허락 대기 ${approvalNote}</span>`, actions: [this.renderR7CommonCardButton({ label: "전체 로그인 승인 확인", icon: "mdi:clipboard-check-outline", tone: "green", extraAttrs: 'data-r7-settings-users-action="approval-all" data-r7-settings-approval-list-button data-r7-settings-approval-skip-record-binding="true"' })]
-                  });
+                  return this.renderR7CdbButtonOneCard({
+                    kind: "settings-approval-needed", section: "settings-approval-needed", icon: "mdi:account-clock-outline", title: "로그인 승인 작업", subtitle: `<span data-r7-settings-approval-count-note>${approvalNote}</span>`, statusKey: approvalRows.length ? "needs-verification" : "normal-ready", tone: "amber", extraAttrs: 'data-r7-settings-users-card="approval-queue"', rows: approvalRows.map((row) => ({ label: row.label || row.requestType || "승인 요청", meta: row.meta || row.status || "대기", icon: row.icon || "mdi:account-clock-outline", tone: row.tone || "amber", extraAttrs: `data-r7-settings-approval-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-user-approval-request-row="${row.label || row.requestType || '승인 요청'}" data-r7-settings-approval-request-id="${row.id || ''}"` })), rowKind: "settings-approval", buttonLabel: "전체 로그인 승인 확인", buttonIcon: "mdi:clipboard-check-outline", buttonTone: "green", buttonAttrs: 'data-r7-settings-users-action="approval-all" data-r7-settings-approval-list-button data-r7-settings-approval-skip-record-binding="true"' }) + `<span style="display:none;">요청자 요청 역할 요청 상태 로그인 승인 요청 승인 요청 허락 대기 ${approvalNote}</span>`;
                 })()}
                 ${(() => {
                   const auditNote = `총 ${userRows.length}명`;
-                  return this.renderR7CommonCardShell({
-                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:account-group-outline", title: "사용자 목록", subtitle: `<span data-r7-settings-user-count-note>${auditNote}</span>`, statusKey: "normal-ready", tone: "green", extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="3"', html: `${this.renderR7CommonCardDataRows(userRows.map((row) => ({ label: row.kind || row.displayName || row.haUserId || "사용자", meta: row.memo || row.state || row.role || "-", icon: row.icon || "mdi:account-outline", tone: row.tone || "green", extraAttrs: `data-r7-settings-audit-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-audit-summary="${row.state || row.permissionSummary || ''}"` })), { rowKind: "settings-audit" })}`, actions: [this.renderR7CommonCardButton({ label: "전체 사용자 목록 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all" data-r7-settings-audit-log-button data-r7-settings-modal-skip-record-binding="true"' })]
-                  });
+                  return this.renderR7CdbButtonOneCard({
+                    kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:account-group-outline", title: "사용자 목록", subtitle: `<span data-r7-settings-user-count-note>${auditNote}</span>`, statusKey: "normal-ready", tone: "green", extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="3"', rows: userRows.map((row) => ({ label: row.kind || row.displayName || row.haUserId || "사용자", meta: row.memo || row.state || row.role || "-", icon: row.icon || "mdi:account-outline", tone: row.tone || "green", extraAttrs: `data-r7-settings-audit-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-audit-summary="${row.state || row.permissionSummary || ''}"` })), rowKind: "settings-audit", buttonLabel: "전체 사용자 목록 보기", buttonIcon: "mdi:open-in-new", buttonTone: "green", buttonAttrs: 'data-r7-settings-users-action="audit-all" data-r7-settings-audit-log-button data-r7-settings-modal-skip-record-binding="true"' });
                 })()}
                 ${(() => {
                   const rolePermissionRows = [
@@ -2906,9 +2922,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
                     { label: "farm_staff", meta: "기록 작성 · 조회 중심", icon: "mdi:account-outline", tone: "amber", extraAttrs: 'data-r7-settings-role-permission-summary-row="farm_staff"' },
                   ];
                   const rolePermissionNote = `총 ${rolePermissionRows.length}개 역할`;
-                  return this.renderR7RecordCardShell({
-                    kind: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "역활별 권한", subtitle: `<span data-r7-settings-role-permission-count-note>${rolePermissionNote}</span>`, statusKey: "due-today", tone: "blue", html: this.renderR7CommonCardDataRows(rolePermissionRows, { rowKind: "settings-role-permission-summary" }), extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true" data-r7-settings-role-permission-create-card data-r7-common-data-limit="3"', actions: [this.renderR7CommonCardButton({ label: "새 역회 추가", icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: 'data-r7-settings-role-permission-create-button="farm_staff" data-r7-settings-modal-skip-record-binding="true"' }), this.renderR7CommonCardButton({ label: "전체 역활별 권한 보기", icon: "mdi:table-eye", tone: "blue", extraAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"' })]
-                  });
+                  return this.renderR7CdbButtonTwoCard({
+                    kind: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "역활별 권한", subtitle: `<span data-r7-settings-role-permission-count-note>${rolePermissionNote}</span>`, statusKey: "due-today", tone: "blue", rows: rolePermissionRows, rowKind: "settings-role-permission-summary", firstLabel: "새 역회 추가", firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: 'data-r7-settings-role-permission-create-button="farm_staff" data-r7-settings-modal-skip-record-binding="true"', secondLabel: "전체 역활별 권한 보기", secondIcon: "mdi:table-eye", secondTone: "blue", secondAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true" data-r7-settings-role-permission-create-card data-r7-common-data-limit="3"' });
                 })()}
                 ${this.renderR7SettingsPermissionMatrixModal()}
                 ${this.renderR7SettingsRolePermissionEditModal()}
@@ -2916,7 +2931,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                 ${this.renderR7SettingsAuditLogEditModal()}
                 ${this.renderR7SettingsApprovalListModal()}
                 ${this.renderR7SettingsApprovalModal()}
-                ${this.renderR7CommonRecentPanel({
+                ${this.renderR7CdbListCard({
                   kind: "settings-user-list-wide", title: "사용자 목록", icon: "mdi:account-group-outline", statusKey: "normal-ready", tone: "green", rowKind: "settings-user", limit: 3, note: `총 ${userRows.length}명`, extraAttrs: 'data-r7-record-section="settings-user-list-wide" data-r7-settings-users-card="user-list"', rows: userRows.map((row) => {
                     const targetRole = row.at === "farm_staff" ? "farm_owner" : "farm_staff";
                     const actionHtml = `<button type="button" data-r7-settings-user-role-update-button="${row.haUserId || ''}" data-r7-settings-user-role-update-role="${targetRole}" data-r7-settings-user-role-update-status="active" style="border:1px solid #badcc8;border-radius:8px;background:#fff;color:#31523b;padding:5px 8px;font-size:11px;font-weight:950;white-space:nowrap;">역할 변경</button>`;

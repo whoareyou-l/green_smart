@@ -1,6 +1,6 @@
 # R7-071 Common card components and HA icon policy
 
-Status: current baseline for `v1.14.62`.
+Status: current baseline for `v1.14.63`.
 
 ## Scope
 
@@ -19,6 +19,20 @@ Status: current baseline for `v1.14.62`.
 - `renderR7CommonCardShell()`
 - `renderR7CommonRecentRow()`
 - `renderR7CommonRecentPanel()`
+
+CDB 카드 타입 wrapper:
+
+- `renderR7CdbSummaryCard()` — 요약카드. 예: `구역 기본 정보`처럼 title/subtitle + label/value rows.
+- `renderR7CdbButtonOneCard()` — 버튼 1개 카드. 예: compact `사용자 목록`처럼 subtitle + 3-row 요약 + action 1개.
+- `renderR7CdbButtonTwoCard()` — 버튼 2개 카드. 예: `역활별 권한`처럼 subtitle + 3-row 요약 + action 2개.
+- `renderR7CdbListCard()` — 목록카드. 예: full-width `사용자 목록`처럼 recent/list rows를 넓게 표시.
+
+DOM marker:
+
+- `data-r7-cdb-common-card="summary-card"`
+- `data-r7-cdb-common-card="button-1-card"`
+- `data-r7-cdb-common-card="button-2-card"`
+- `data-r7-cdb-common-card="list-card"`
 
 ## Button order
 

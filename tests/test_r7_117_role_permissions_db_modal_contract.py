@@ -107,5 +107,26 @@ def test_r7_117_backend_has_role_permission_db_table_and_api_views():
     assert 'RebuildSettingsRolePermissionItemView' in init
 
 
+def test_r7_117_cdb_common_card_taxonomy_is_explicit():
+    source = _read(PANEL)
+    for marker in [
+        'renderR7CdbSummaryCard',
+        'renderR7CdbButtonOneCard',
+        'renderR7CdbButtonTwoCard',
+        'renderR7CdbListCard',
+        'data-r7-cdb-common-card="summary-card"',
+        'data-r7-cdb-common-card="button-1-card"',
+        'data-r7-cdb-common-card="button-2-card"',
+        'data-r7-cdb-common-card="list-card"',
+    ]:
+        assert marker in source
+
+    html = _render(open_role_modal=False, selected_role="farm_owner")
+    assert 'data-r7-cdb-common-card="button-1-card"' in html
+    assert 'data-r7-cdb-common-card="button-2-card"' in html
+    assert 'data-r7-cdb-common-card="list-card"' in html
+    assert 'data-r7-cdb-card-type="button-two"' in html
+
+
 def test_r7_117_version_is_current():
-    assert '"version": "1.14.62"' in _read(MANIFEST)
+    assert '"version": "1.14.63"' in _read(MANIFEST)
