@@ -50,9 +50,9 @@ def _render_settings() -> str:
 
 
 def test_r7_114_version_surfaces_are_1_14_45():
-    assert '"version": "1.14.63"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.63"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.63"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.64"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.64"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.64"' in _read(REBUILD_PANEL)
 
 
 def test_r7_114_crop_cycle_subtab_absorbs_crop_object_rule_card():

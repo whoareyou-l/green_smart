@@ -114,10 +114,15 @@ def test_r7_117_cdb_common_card_taxonomy_is_explicit():
         'renderR7CdbButtonOneCard',
         'renderR7CdbButtonTwoCard',
         'renderR7CdbListCard',
+        'renderR7CdbSubtabContentLayout',
         'data-r7-cdb-common-card="summary-card"',
         'data-r7-cdb-common-card="button-1-card"',
         'data-r7-cdb-common-card="button-2-card"',
         'data-r7-cdb-common-card="list-card"',
+        'data-r7-cdb-subtab-content-layout="summary3-action3-list"',
+        'data-r7-cdb-layout-row="summary"',
+        'data-r7-cdb-layout-row="actions"',
+        'data-r7-cdb-layout-row="list"',
     ]:
         assert marker in source
 
@@ -128,5 +133,18 @@ def test_r7_117_cdb_common_card_taxonomy_is_explicit():
     assert 'data-r7-cdb-card-type="button-two"' in html
 
 
+def test_r7_117_cdb_card_buttons_declare_modal_intent_and_list_modal_footer_polarity():
+    html = _render(open_role_modal=True, selected_role="farm_owner")
+    assert 'data-r7-cdb-button-role="list"' in html
+    assert 'data-r7-cdb-opens-modal="list"' in html
+    assert 'data-r7-cdb-button-role="create"' in html
+    assert 'data-r7-cdb-opens-modal="create"' in html
+    assert 'data-r7-cdb-list-modal-action-footer="positive-negative"' in html
+    assert 'data-r7-cdb-modal-action="positive"' in html
+    assert 'data-r7-cdb-positive-action="edit"' in html
+    assert 'data-r7-cdb-modal-action="negative"' in html
+    assert 'data-r7-cdb-negative-action="delete"' in html
+
+
 def test_r7_117_version_is_current():
-    assert '"version": "1.14.63"' in _read(MANIFEST)
+    assert '"version": "1.14.64"' in _read(MANIFEST)

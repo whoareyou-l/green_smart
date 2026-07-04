@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.63";
+const REBUILD_VERSION = "1.14.64";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2105,7 +2105,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7CdaActionFooter({ left = "", actions = [], attrs = "" } = {}) {
-    return `<footer data-r7-cda-action-footer ${attrs} style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #edf4ef;padding:10px 14px;">${left}<span style="flex:1"></span>${actions.join("")}</footer>`;
+    return `<footer data-r7-cda-action-footer data-r7-cdb-list-modal-action-footer="positive-negative" ${attrs} style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #edf4ef;padding:10px 14px;">${left}<span style="flex:1"></span>${actions.join("")}</footer>`;
   }
 
   renderR7CdaSplitModal({ open = true, overlayAttrs = "", cardAttrs = "", header = "", search = "", left = "", right = "", footer = "", zIndex = 50, width = "min(1120px,96vw)" } = {}) {
@@ -2455,8 +2455,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const greenhouseRows = this.normalizeR7SettingsGreenhouseEntityRows(settingsGreenhouses.length ? settingsGreenhouses : [fallbackGreenhouse]);
       const selectedGreenhouse = greenhouseRows.find((row) => String(row.id) === String(modal.selectedGreenhouseId || "")) || greenhouseRows[0];
       const entityFooterActions = selectedGreenhouse?.id ? [
-        `<button type="button" data-r7-settings-greenhouse-edit-button="${selectedGreenhouse.id}" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`,
-        `<button type="button" data-r7-settings-greenhouse-delete-button="${selectedGreenhouse.id}" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button>`,
+        `<button type="button" data-r7-settings-greenhouse-edit-button="${selectedGreenhouse.id}" data-r7-cdb-modal-action="positive" data-r7-cdb-positive-action="edit" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`,
+        `<button type="button" data-r7-settings-greenhouse-delete-button="${selectedGreenhouse.id}" data-r7-cdb-modal-action="negative" data-r7-cdb-negative-action="delete" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button>`,
       ] : [];
       return this.renderR7CdaEntityListDetailModal({
         entityType: "greenhouse-info",
@@ -2482,8 +2482,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const zoneRows = this.normalizeR7SettingsZoneEntityRows(sourceZones);
       const selectedZoneRow = zoneRows.find((row) => String(row.id) === String(modal.selectedZoneId || modal.selectedId || "")) || zoneRows[0];
       const entityFooterActions = selectedZoneRow?.id ? [
-        `<button type="button" data-r7-settings-zone-edit-button="${selectedZoneRow.id}" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`,
-        `<button type="button" data-r7-settings-zone-delete-button="${selectedZoneRow.id}" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button>`,
+        `<button type="button" data-r7-settings-zone-edit-button="${selectedZoneRow.id}" data-r7-cdb-modal-action="positive" data-r7-cdb-positive-action="edit" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`,
+        `<button type="button" data-r7-settings-zone-delete-button="${selectedZoneRow.id}" data-r7-cdb-modal-action="negative" data-r7-cdb-negative-action="delete" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button>`,
       ] : [];
       return this.renderR7CdaEntityListDetailModal({
         entityType: "zone-list",
@@ -2575,7 +2575,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const roleInfo = this.renderR7CdaDetailSection({ title: "1. 선택 역할", attrs: 'data-r7-settings-role-permission-section="role-info"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.8fr 1.2fr .8fr 1.2fr;overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">역할</span><span style="padding:8px;">${selected.label}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">구분</span><span style="padding:8px;">${selected.title}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">요약</span><span style="padding:8px;grid-column:span 3;">${selected.summary}</span></div>` });
     const permissionSection = this.renderR7CdaDetailSection({ title: "2. 역할별 권한", attrs: 'data-r7-settings-role-permission-section="bucket-permissions"', body: permissionGrid });
     const evidence = this.renderR7CdaDetailSection({ title: "3. 적용 근거", attrs: 'data-r7-settings-role-permission-section="evidence"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">설정 저장/권한 변경은 별도 승인 작업입니다. 이 모달은 현재 RBAC 기준을 역할별로 구분해 read-only로 보여줍니다.</p>` });
-    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택한 역할 상세", attrs: 'data-r7-settings-role-permission-detail-panel', badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.label}</span>`, body: `${roleInfo}${permissionSection}${evidence}`, footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-role-permission-export style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">내보내기 준비</button>`, actions: [`<button type="button" data-r7-settings-role-permission-delete-button="${selected.id}" style="border:1px solid #f1b8b8;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 12px;font-weight:950;">삭제</button>`, `<button type="button" data-r7-settings-role-permission-edit-button="${selected.id}" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`] }) });
+    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택한 역할 상세", attrs: 'data-r7-settings-role-permission-detail-panel', badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone)}">${selected.label}</span>`, body: `${roleInfo}${permissionSection}${evidence}`, footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-settings-role-permission-export style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">내보내기 준비</button>`, actions: [`<button type="button" data-r7-settings-role-permission-delete-button="${selected.id}" data-r7-cdb-modal-action="negative" data-r7-cdb-negative-action="delete" style="border:1px solid #f1b8b8;border-radius:10px;background:#fff5f5;color:#d92d20;padding:8px 12px;font-weight:950;">삭제</button>`, `<button type="button" data-r7-settings-role-permission-edit-button="${selected.id}" data-r7-cdb-modal-action="positive" data-r7-cdb-positive-action="edit" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`] }) });
     const header = this.renderR7CdaModalHeader({ icon: "mdi:table-key", title: "전체 역활별 권한 보기", subtitle: `${selected.label} · ${selected.title} · ${selected.summary}`, closeAttr: "data-r7-settings-permission-matrix-close-button" });
     const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 유저 목록 팝업과 같은 목록/상세 틀로 역할별 권한을 확인합니다. 변경 요청은 승인 작업에 기록됩니다.</span><button type="button" data-r7-settings-permission-matrix-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: `data-r7-settings-permission-matrix-cda-modal="true" data-r7-settings-permission-matrix-modal-open="true" data-r7-settings-role-permission-modal="true"`, cardAttrs: 'data-r7-settings-role-permission-cda-card', header, search, left: listPanel, right: detailPanel, footer });
@@ -2736,16 +2736,23 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7CdbButtonOneCard({ kind, section = "", icon, title, subtitle = "", statusKey = "normal-ready", tone = "green", rows = [], rowKind = "common", buttonLabel, buttonIcon = "mdi:open-in-new", buttonTone = "green", buttonAttrs = "", extraAttrs = "" }) {
-    return this.renderR7CommonCardShell({ kind, section, icon, title, subtitle, statusKey, tone, html: this.renderR7CommonCardDataRows(rows, { rowKind }), actions: [this.renderR7CommonCardButton({ label: buttonLabel, icon: buttonIcon, tone: buttonTone, extraAttrs: buttonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-one" data-r7-cdb-common-card="button-1-card"` });
+    const listButtonAttrs = `${buttonAttrs} data-r7-cdb-button-role="list" data-r7-cdb-opens-modal="list"`;
+    return this.renderR7CommonCardShell({ kind, section, icon, title, subtitle, statusKey, tone, html: this.renderR7CommonCardDataRows(rows, { rowKind }), actions: [this.renderR7CommonCardButton({ label: buttonLabel, icon: buttonIcon, tone: buttonTone, extraAttrs: listButtonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-one" data-r7-cdb-common-card="button-1-card"` });
   }
 
   renderR7CdbButtonTwoCard({ kind, icon, title, subtitle = "", statusKey = "due-today", tone = "blue", rows = [], rowKind = "common", primary = "", note = "", firstLabel, firstIcon = "mdi:plus-circle-outline", firstTone = "green", firstAttrs = "", secondLabel, secondIcon = "mdi:history", secondTone = "blue", secondAttrs = "", extraAttrs = "" }) {
-    return this.renderR7RecordCardShell({ kind, icon, title, subtitle, statusKey, tone, primary, note, html: rows.length ? this.renderR7CommonCardDataRows(rows, { rowKind }) : "", actions: [this.renderR7CommonCardButton({ label: firstLabel, icon: firstIcon, tone: firstTone, extraAttrs: firstAttrs }), this.renderR7CommonCardButton({ label: secondLabel, icon: secondIcon, tone: secondTone, extraAttrs: secondAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-two" data-r7-cdb-common-card="button-2-card"` });
+    const createButtonAttrs = `${firstAttrs} data-r7-cdb-button-role="create" data-r7-cdb-opens-modal="create"`;
+    const listButtonAttrs = `${secondAttrs} data-r7-cdb-button-role="list" data-r7-cdb-opens-modal="list"`;
+    return this.renderR7RecordCardShell({ kind, icon, title, subtitle, statusKey, tone, primary, note, html: rows.length ? this.renderR7CommonCardDataRows(rows, { rowKind }) : "", actions: [this.renderR7CommonCardButton({ label: firstLabel, icon: firstIcon, tone: firstTone, extraAttrs: createButtonAttrs }), this.renderR7CommonCardButton({ label: secondLabel, icon: secondIcon, tone: secondTone, extraAttrs: listButtonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-two" data-r7-cdb-common-card="button-2-card"` });
   }
 
   renderR7CdbListCard(args = {}) {
     const extraAttrs = `${args.extraAttrs || ""} data-r7-cdb-card-type="list" data-r7-cdb-common-card="list-card"`;
     return this.renderR7CommonRecentPanel({ ...args, extraAttrs });
+  }
+
+  renderR7CdbSubtabContentLayout({ summaryCards = [], actionCards = [], listCard = "", modals = "", extraAttrs = "" } = {}) {
+    return `<section data-r7-cdb-subtab-content-layout="summary3-action3-list" data-r7-cdb-summary-card-count="3" data-r7-cdb-action-card-count="3" ${extraAttrs} style="display:grid;gap:12px;"><div data-r7-cdb-layout-row="summary" data-r7-settings-info-row="overview" data-r7-settings-greenhouse-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${summaryCards.join("")}</div><div data-r7-cdb-layout-row="actions" data-r7-settings-create-row="create" style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${actionCards.join("")}</div><div data-r7-cdb-layout-row="list">${listCard}</div>${modals}</section>`;
   }
 
   renderR7SettingsGreenhouseZonesSubtab(zones) {
@@ -2800,11 +2807,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       rowKind: "settings-zone",
       extraAttrs: 'data-r7-settings-zone-list-panel data-r7-settings-zone-list-panel-width="full" data-r7-settings-zone-table-header',
     });
-    return `<section data-r7-settings-greenhouse-zones data-r7-settings-greenhouse-zones-layout="info-create-equipment-list" style="display:grid;gap:12px;">
-      <div data-r7-settings-info-row="overview" data-r7-settings-greenhouse-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${greenhouseInfo}${zoneInfo}${equipmentInfo}</div>
-      <div data-r7-settings-create-row="create" style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${createCards}</div>
-      ${zoneList}
-    </section>`;
+    return this.renderR7CdbSubtabContentLayout({
+      summaryCards: [greenhouseInfo, zoneInfo, equipmentInfo],
+      actionCards: [createCards],
+      listCard: zoneList,
+      extraAttrs: 'data-r7-settings-greenhouse-zones data-r7-settings-greenhouse-zones-layout="info-create-equipment-list"',
+    });
   }
 
   renderR7SettingsDeviceSensorMappingSubtab(zones = []) {

@@ -1,6 +1,6 @@
 # R7-071 Common card components and HA icon policy
 
-Status: current baseline for `v1.14.63`.
+Status: current baseline for `v1.14.64`.
 
 ## Scope
 
@@ -33,6 +33,38 @@ DOM marker:
 - `data-r7-cdb-common-card="button-1-card"`
 - `data-r7-cdb-common-card="button-2-card"`
 - `data-r7-cdb-common-card="list-card"`
+
+## Subtab content layout rule
+
+앞으로 하위탭의 내용카드는 아래 4개 CDB 카드 타입만 사용한다. 각 카드가 연결하는 DB/API는 하위탭마다 다를 수 있지만, 화면 구조와 동작 문법은 고정한다.
+
+표준 3줄 구성:
+
+1. `요약카드` 3개 — `renderR7CdbSummaryCard()`
+2. `버튼 1개 카드` 또는 `버튼 2개 카드` 3개 — `renderR7CdbButtonOneCard()` / `renderR7CdbButtonTwoCard()`
+3. `목록카드` 1개 — `renderR7CdbListCard()`
+
+표준 layout helper:
+
+- `renderR7CdbSubtabContentLayout()`
+- `data-r7-cdb-subtab-content-layout="summary3-action3-list"`
+- `data-r7-cdb-layout-row="summary"`
+- `data-r7-cdb-layout-row="actions"`
+- `data-r7-cdb-layout-row="list"`
+
+버튼 동작 규칙:
+
+- 버튼 1개 카드는 목록 팝업 모달을 연다. Marker: `data-r7-cdb-button-role="list"`, `data-r7-cdb-opens-modal="list"`.
+- 버튼 2개 카드의 첫 번째/추가 버튼은 추가·생성 팝업 모달을 연다. Marker: `data-r7-cdb-button-role="create"`, `data-r7-cdb-opens-modal="create"`.
+- 버튼 2개 카드의 두 번째/목록 버튼은 목록 팝업 모달을 연다. Marker: `data-r7-cdb-button-role="list"`, `data-r7-cdb-opens-modal="list"`.
+
+목록 팝업 모달 규칙:
+
+- 목록 팝업 모달은 좌측 목록 + 우측 상세 구조를 사용한다.
+- 우측 상세 하단에는 긍정 버튼과 부정 버튼이 존재해야 한다.
+- 긍정 버튼 예: `수정`, `승인`. Marker: `data-r7-cdb-modal-action="positive"`.
+- 부정 버튼 예: `삭제`, `거부`. Marker: `data-r7-cdb-modal-action="negative"`.
+- Footer marker: `data-r7-cdb-list-modal-action-footer="positive-negative"`.
 
 ## Button order
 

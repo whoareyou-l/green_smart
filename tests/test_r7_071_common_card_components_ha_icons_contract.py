@@ -97,9 +97,9 @@ def _render_records_workflow():
 
 
 def test_r7_071_version_surfaces_are_1_13_6():
-    assert '"version": "1.14.63"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.63"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.63"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.64"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.64"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.64"' in _read(REBUILD_PANEL)
 
 
 def test_r7_071_common_helpers_exist_and_document_ha_icon_policy():
@@ -165,5 +165,5 @@ def test_r7_071_crop_records_recent_panel_uses_common_recent_component():
 
 def test_r7_071_documented():
     doc = _read(DOC)
-    for phrase in ['ha-icon icon="mdi:..."', '아이콘, 텍스트 순', '기록·작업 공동 컴포넌트', '최근 기록', '사용자·권한']:
+    for phrase in ['ha-icon icon="mdi:..."', '아이콘, 텍스트 순', '기록·작업 공동 컴포넌트', '최근 기록', '사용자·권한', '표준 3줄 구성', 'renderR7CdbSubtabContentLayout', 'data-r7-cdb-opens-modal="create"', 'data-r7-cdb-opens-modal="list"', 'data-r7-cdb-modal-action="positive"', 'data-r7-cdb-modal-action="negative"']:
         assert phrase in doc

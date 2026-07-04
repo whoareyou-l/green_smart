@@ -35,9 +35,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_090_version_surfaces_are_1_14_15():
-    assert '"version": "1.14.63"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.63"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.63"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.64"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.64"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.64"' in _read(REBUILD_PANEL)
 
 
 def test_r7_090_settings_info_cards_use_new_common_component():
@@ -48,6 +48,11 @@ def test_r7_090_settings_info_cards_use_new_common_component():
     assert 'data-r7-settings-info-card="greenhouse-basic-info"' in html
     assert 'data-r7-cdb-common-card="summary-card"' in html
     assert 'data-r7-cdb-card-type="summary"' in html
+    assert 'data-r7-cdb-subtab-content-layout="summary3-action3-list"' in html
+    assert 'data-r7-cdb-layout-row="summary"' in html
+    assert 'data-r7-cdb-layout-row="actions"' in html
+    assert 'data-r7-cdb-layout-row="list"' in html
+    assert html.count('data-r7-cdb-common-card="summary-card"') >= 3
     assert 'data-r7-settings-info-card="zone-basic-info"' in html
     assert 'data-r7-settings-info-card="equipment-composition"' in html
     assert 'data-r7-settings-greenhouse-summary-card="greenhouse-basic-info"' in html
