@@ -33,7 +33,11 @@ def _render_users_permissions():
           {{ label: 'admin', summary: '역할 허락: staff01 → farm_staff', meta: '2026-06-30 09:12', icon: 'mdi:account-check-outline', tone: 'green' }},
           {{ label: 'owner01', summary: '안전 정책 허락', meta: '2026-06-30 08:45', icon: 'mdi:account-check-outline', tone: 'green' }},
         ],
-        users: [],
+        users: [
+          {{ kind: 'admin', haUserId: 'admin', memo: 'active · 2026-06-30 09:12', state: '전체 설정', icon: 'mdi:account-outline', tone: 'green' }},
+          {{ kind: 'owner01', haUserId: 'owner01', memo: 'active · 2026-06-30 08:45', state: '관리', icon: 'mdi:account-outline', tone: 'green' }},
+          {{ kind: 'staff01', haUserId: 'staff01', memo: 'active · 2026-06-30 08:10', state: '기록', icon: 'mdi:account-outline', tone: 'green' }},
+        ],
       }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
       console.log(JSON.stringify({{ html }}));
@@ -65,9 +69,9 @@ def _render_records_workflow():
 
 
 def test_r7_074_version_surfaces_are_1_13_9():
-    assert '"version": "1.14.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.55"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
 
 
 def test_r7_074_common_body_row_helpers_exist():
@@ -79,18 +83,20 @@ def test_r7_074_common_body_row_helpers_exist():
     assert 'data-r7-common-card-data-row-meta' in source
 
 
-def test_r7_074_settings_approval_and_audit_rows_use_common_body_rows():
+def test_r7_074_settings_approval_and_user_summary_rows_use_common_body_rows():
     html = _render_users_permissions()
     approval_card = html.split('data-r7-common-card-shell="settings-approval-needed"', 1)[1].split('data-r7-common-card-shell="settings-audit-log"', 1)[0]
-    audit_card = html.split('data-r7-common-card-shell="settings-audit-log"', 1)[1].split('data-r7-common-card-shell="settings-permission-matrix-summary"', 1)[0]
+    user_summary_start = html.index('data-r7-common-card-shell="settings-audit-log"')
+    user_summary_end = html.index('data-r7-common-card-shell="settings-permission-matrix-summary"', user_summary_start)
+    user_summary_card = html[user_summary_start:user_summary_end]
     assert approval_card.count('data-r7-common-card-data-row="settings-approval"') == 3
-    assert audit_card.count('data-r7-common-card-data-row="settings-audit"') == 2
+    assert user_summary_card.count('data-r7-common-card-data-row="settings-audit"') == 2
     assert 'data-r7-settings-approval-row="사용자 승인 요청"' in approval_card
-    assert 'data-r7-settings-audit-row="admin"' in audit_card
+    assert 'data-r7-settings-audit-row="admin"' in user_summary_card
     assert 'data-r7-common-card-data-row-label' in approval_card
     assert 'data-r7-common-card-data-row-meta' in approval_card
-    assert 'data-r7-common-card-data-row-label' in audit_card
-    assert 'data-r7-common-card-data-row-meta' in audit_card
+    assert 'data-r7-common-card-data-row-label' in user_summary_card
+    assert 'data-r7-common-card-data-row-meta' in user_summary_card
 
 
 def test_r7_074_records_missing_verification_also_uses_common_body_rows():

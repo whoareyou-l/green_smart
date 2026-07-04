@@ -42,9 +42,9 @@ def _render_settings(active_tab="greenhouse-zones", open_permission_matrix=False
 
 
 def test_r7_066_version_surfaces_are_1_13_1():
-    assert '"version": "1.14.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.55"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
 
 
 def test_r7_066_settings_new_tabs_replace_admin_explanation_first_tabs():

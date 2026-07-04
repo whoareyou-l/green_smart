@@ -24,9 +24,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_085_version_surfaces_are_1_14_10():
-    assert '"version": "1.14.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.55"' in _read(PANEL)
+    assert '"version": "1.14.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.56"' in _read(PANEL)
 
 
 def test_r7_085_approval_needed_card_has_no_inline_confirm_button():
@@ -38,7 +38,7 @@ def test_r7_085_approval_needed_card_has_no_inline_confirm_button():
     assert '<span>확인</span>' not in block
     assert 'actionHtml:' not in block
     assert 'data-r7-settings-approval-list-button' in block
-    assert '모든 승인 요청 확인' in block
+    assert '전체 로그인 승인 확인' in block
 
 
 def test_r7_085_settings_subtab_icons_are_domain_specific_and_unique():

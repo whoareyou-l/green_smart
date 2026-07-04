@@ -51,9 +51,9 @@ def _render_users_permissions():
 
 
 def test_r7_072_version_surfaces_are_1_13_7():
-    assert '"version": "1.14.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.55"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
 
 
 def test_r7_072_approval_card_has_no_inline_allow_reject_buttons():
@@ -78,16 +78,16 @@ def test_r7_072_approval_primary_and_note_are_data_summary_not_static_descriptio
     assert '승인 요청 데이터가 없으면 요청자와 요청 역할을 추가하세요.' not in html
 
 
-def test_r7_072_common_component_data_limit_renders_latest_two_audit_rows():
+def test_r7_072_user_summary_card_renders_first_two_user_rows():
     html = _render_users_permissions()
     assert 'data-r7-common-data-limit="2"' in html
     rows = re.findall(r'data-r7-settings-audit-row="([^"]+)"', html)
     assert len(rows) == 2
     assert rows == ['admin', 'owner01']
     assert 'staff01' not in rows
-    assert '2026-06-30 09:12' in html
-    assert '2026-06-30 08:45' in html
-    assert '2026-06-30 08:10' not in html
+    assert '총 6명' in html
+    assert '총 6명의 사용자가 있습니다' in html
+    assert '전체 사용자 목록 보기' in html
 
 
 def test_r7_072_table_like_common_user_list_limits_to_latest_five():

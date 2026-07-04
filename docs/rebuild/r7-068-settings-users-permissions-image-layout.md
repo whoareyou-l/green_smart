@@ -1,6 +1,6 @@
 # R7-068 Settings users-permissions image layout
 
-Status: current baseline for `v1.14.55`.
+Status: current baseline for `v1.14.56`.
 
 ## Scope
 
@@ -20,15 +20,16 @@ Status: current baseline for `v1.14.55`.
    - 권한 row: `조회`, `기록`, `전략`, `실행`, `안전`, `고급설정`
    - 상태 표현: `허용`, `읽기 전용`, `확인`, `없음`
 
-3. 승인 필요 작업
+3. 로그인 승인 작업
    - 자동제어 활성화
    - 안전 리밋 변경
    - HA entity mapping 변경
-   - 하단 버튼: `모든 승인 요청 확인`
+   - 하단 버튼: `전체 로그인 승인 확인`
 
-4. 감사 로그
-   - admin / owner01 / staff01 활동 row
-   - 하단 버튼: `전체 감사 로그 보기`
+4. 사용자 목록
+   - admin / owner01 / staff01 사용자 row
+   - 제목 밑 부연설명: `총 N명의 사용자가 있습니다`
+   - 하단 버튼: `전체 사용자 목록 보기`
 
 ## Explicit exclusion
 

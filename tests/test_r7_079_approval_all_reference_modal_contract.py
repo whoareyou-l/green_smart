@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_079_version_surfaces_are_1_14_4():
-    assert '"version": "1.14.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.55"' in _read(PANEL)
+    assert '"version": "1.14.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.56"' in _read(PANEL)
 
 
 def test_r7_079_reference_modal_structure_markers_exist():
@@ -64,7 +64,7 @@ def test_r7_079_rendered_reference_modal_matches_requested_layout():
     result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
     assert result.returncode == 0, result.stderr + result.stdout
     html = json.loads(result.stdout)["html"]
-    for text in ["승인 필요 작업", "승인 대기 목록", "선택 작업 검토", "요청 정보", "변경 내용", "영향 분석", "검증 체크", "승인/반려 메모", "상세 로그 보기", "반려", "승인"]:
+    for text in ["로그인 승인 작업", "승인 대기 목록", "선택 작업 검토", "요청 정보", "변경 내용", "영향 분석", "검증 체크", "승인/반려 메모", "상세 로그 보기", "반려", "승인"]:
         assert text in html
     assert "보류" not in html
     assert "승인 적용" not in html

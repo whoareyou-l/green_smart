@@ -50,9 +50,9 @@ def _render_users_permissions(open_permission_matrix=False):
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.55"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.56"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -64,9 +64,10 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
         'data-r7-settings-users-card="permission-matrix"',
         '권한 버킷 매트릭스',
         'data-r7-settings-users-card="approval-queue"',
-        '승인 필요 작업',
+        '로그인 승인 작업',
+        '로그인 승인 요청 3건',
         'data-r7-settings-users-card="audit-log"',
-        '감사 로그',
+        '사용자 목록',
         'admin',
         'owner01',
         'staff01',
@@ -74,8 +75,9 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
         'farm_staff',
         '사용자 승인 요청',
         '승인 요청 허락',
-        '모든 승인 요청 확인',
-        '전체 감사 로그 보기',
+        '전체 로그인 승인 확인',
+        '전체 사용자 목록 보기',
+        '총 5명의 사용자가 있습니다',
     ]
     for item in required:
         assert item in html
@@ -107,5 +109,5 @@ def test_r7_068_user_list_approval_audit_rows_are_table_like():
 
 def test_r7_068_documented():
     doc = _read(DOC)
-    for phrase in ['사용자·권한', '사용자 목록', '권한 버킷 매트릭스', '승인 필요 작업', '감사 로그', '권한 정책 메모 제외']:
+    for phrase in ['사용자·권한', '사용자 목록', '권한 버킷 매트릭스', '로그인 승인 작업', '전체 사용자 목록 보기', '권한 정책 메모 제외']:
         assert phrase in doc
