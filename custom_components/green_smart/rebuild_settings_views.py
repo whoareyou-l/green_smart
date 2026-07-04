@@ -578,8 +578,8 @@ class RebuildSettingsUserRoleView(HomeAssistantView):
         hass = request.app["hass"]
         user = _ha_user_from_request(request)
         result = await update_settings_user_role(hass, ha_user_id, user, await _json_payload(request))
-        status_code = int(result.pop("status", 200))
-        if status_code != 200:
+        if result.get("ok") is False and isinstance(result.get("status"), int):
+            status_code = int(result.pop("status", 400))
             return web.json_response(result, status=status_code)
         return self.json(result)
 

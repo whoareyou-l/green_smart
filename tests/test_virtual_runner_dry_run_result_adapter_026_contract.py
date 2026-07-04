@@ -29,11 +29,11 @@ def _load_service():
 
 
 def test_rs026_version_surfaces_are_aligned_to_1_12_25():
-    assert '"version": "1.14.54"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.54"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.54"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.55"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.55"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.55"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, WORKFLOW_SPEC, FAILSAFE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.14.54" in _read(path)
+        assert "v1.14.55" in _read(path)
 
 
 def test_rs026_document_records_dry_run_result_adapter_boundary():
@@ -151,7 +151,7 @@ def test_docs_specs_plan_and_inventory_record_rs026_and_next_step():
         assert marker in workflow
     for marker in ("dry-run result adapter does not release interlock", "runnerExecutionEnabled remains false", "No device command in RS-026"):
         assert marker in failsafe
-    for marker in ("Phase R4.22 — Virtual runner dry-run result adapter", "Status:** `v1.14.54`에서 Virtual runner dry-run result adapter 완료", "No production route removal in RS-026", "No DB migration in RS-026", "No write/mutation in RS-026"):
+    for marker in ("Phase R4.22 — Virtual runner dry-run result adapter", "Status:** `v1.14.55`에서 Virtual runner dry-run result adapter 완료", "No production route removal in RS-026", "No DB migration in RS-026", "No write/mutation in RS-026"):
         assert marker in plan
     assert "RS-026" in inventory
     assert "Virtual runner dry-run result adapter completed" in inventory
