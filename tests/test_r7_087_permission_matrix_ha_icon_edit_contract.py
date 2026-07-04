@@ -13,7 +13,7 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _render_permission_matrix(selected_bucket=""):
+def _render_permission_matrix(selected_role="admin"):
     script = f"""
       globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
       globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
@@ -21,7 +21,7 @@ def _render_permission_matrix(selected_bucket=""):
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
       panel._settingsUsersPermissions = {{ source: 'contract-fixture', approvalRows: [], auditRows: [], users: [] }};
-      panel._settingsPermissionMatrixModal = {{ open: true, selectedBucket: {selected_bucket!r} }};
+      panel._settingsPermissionMatrixModal = {{ open: true, selectedRole: {selected_role!r} }};
       const html = panel.renderR7SettingsAdminSubtabPanel('users-permissions', 'users-permissions');
       console.log(JSON.stringify({{ html }}));
     """
@@ -31,13 +31,13 @@ def _render_permission_matrix(selected_bucket=""):
 
 
 def test_r7_087_version_surfaces_are_1_14_12():
-    assert '"version": "1.14.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.58"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.59"' in _read(REBUILD_PANEL)
 
 
 def test_r7_087_permission_matrix_status_uses_ha_icons_not_emoji():
-    html = _render_permission_matrix()
+    html = _render_permission_matrix("admin") + _render_permission_matrix("farm_owner") + _render_permission_matrix("farm_staff")
     for emoji in ["✅", "🛡️", "👁️", "🕘", "🔒"]:
         assert emoji not in html
     for icon in [
@@ -56,19 +56,20 @@ def test_r7_087_permission_matrix_status_uses_ha_icons_not_emoji():
     assert 'data-r7-settings-permission-state="none"' in html
 
 
-def test_r7_087_permission_edit_button_selects_bucket_and_opens_edit_panel():
+def test_r7_087_role_permission_row_selects_role_and_opens_detail_panel():
     source = _read(REBUILD_PANEL)
-    assert '_selectSettingsPermissionMatrixBucket' in source
-    assert 'data-r7-settings-permission-edit' in source
-    assert 'data-r7-settings-permission-edit-panel' in source
-    assert 'data-r7-settings-permission-edit-selected-bucket' in source
+    assert '_selectSettingsPermissionMatrixRole' in source
+    assert 'data-r7-settings-role-permission-list-item-button' in source
+    assert 'data-r7-settings-role-permission-detail-panel' in source
+    assert 'data-r7-settings-role-permission-section="bucket-permissions"' in source
 
-    html = _render_permission_matrix(selected_bucket="실행")
-    assert 'data-r7-settings-permission-edit-panel="true"' in html
-    assert 'data-r7-settings-permission-edit-selected-bucket="실행"' in html
+    html = _render_permission_matrix("farm_staff")
+    assert 'data-r7-settings-role-permission-row-selected="true"' in html
+    assert 'data-r7-settings-role-permission-row="farm_staff"' in html
+    assert 'farm_staff · 농장 작업자 · 기록 작성 · 조회 중심' in html
+    assert 'data-r7-settings-role-permission-state="farm_staff"' in html
     assert '실행 요청 / 실행 허락' in html
-    assert '변경 저장은 별도 승인 필요 작업에서 처리됩니다' in html
-    assert 'data-r7-settings-permission-edit-active="true"' in html
+    assert 'data-r7-settings-permission-change-request-button="farm_staff"' in html
 
 
 def test_r7_087_documented():

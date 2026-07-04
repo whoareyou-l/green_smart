@@ -20,9 +20,9 @@ def _class_section(source: str, class_name: str, next_marker: str) -> str:
 
 
 def test_rb006b_version_surfaces_are_v1119():
-    assert '"version": "1.14.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.58"' in _read(PANEL)
-    assert "v1.14.58" in _read(BACKEND_PLAN)
+    assert '"version": "1.14.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.59"' in _read(PANEL)
+    assert "v1.14.59" in _read(BACKEND_PLAN)
 
 
 def test_rb006b_repository_preserves_growth_pest_control_read_helpers():
@@ -134,7 +134,7 @@ def test_rb006b_docs_record_record_readonly_boundary_and_forbidden_scope():
     project = _read(PROJECT_MASTER)
     for marker in (
         "RB-006B Crop record read-only repositories",
-        "v1.14.58",
+        "v1.14.59",
         "growth/pest/control read GET helpers",
         "list_growth_records",
         "list_pest_records",

@@ -50,9 +50,9 @@ def _render_users_permissions(open_permission_matrix=False):
 
 
 def test_r7_070_version_surfaces_are_1_13_5():
-    assert '"version": "1.14.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.58"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.59"' in _read(REBUILD_PANEL)
 
 
 def test_r7_070_users_permissions_uses_record_workflow_card_grammar_and_order():
@@ -82,14 +82,16 @@ def test_r7_070_user_list_is_full_width_and_has_no_buttons():
 def test_r7_070_permission_matrix_table_moves_to_cda_modal():
     closed_html = _render_users_permissions()
     summary = closed_html.split('data-r7-settings-permission-matrix-cda-modal', 1)[0]
-    assert '권한 매트릭스 보기' in summary
+    assert '전체 역활별 권한 보기' in summary
     assert 'data-r7-settings-permission-matrix-button' in summary
     assert 'data-r7-settings-permission-matrix-table' not in summary
     assert 'data-r7-settings-permission-matrix-modal-open="false"' in closed_html
 
     open_html = _render_users_permissions(open_permission_matrix=True)
     assert 'data-r7-settings-permission-matrix-modal-open="true"' in open_html
-    assert 'data-r7-settings-permission-matrix-table-modal="true"' in open_html
+    assert 'data-r7-settings-role-permission-modal="true"' in open_html
+    assert 'data-r7-settings-role-permission-list-panel' in open_html
+    assert 'data-r7-settings-role-permission-detail-panel' in open_html
     for step in ['기본 조회 / 상세 조회', '기록 작성 / 기록 수정', '실행 요청 / 실행 허락', '구역/작기 설정 / 권한 설정']:
         assert step in open_html
 

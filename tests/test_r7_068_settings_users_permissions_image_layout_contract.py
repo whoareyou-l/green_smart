@@ -49,9 +49,9 @@ def _render_users_permissions(open_permission_matrix=False, empty=False):
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.58"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.59"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -61,12 +61,12 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
         'data-r7-settings-users-card="user-list"',
         '사용자 목록',
         'data-r7-settings-users-card="permission-matrix"',
-        '권한 버킷 매트릭스',
-        'data-r7-settings-permission-bucket-count-note',
-        '총 6개',
-        'data-r7-settings-permission-summary-row="조회"',
-        'data-r7-settings-permission-summary-row="기록"',
-        'data-r7-settings-permission-summary-row="전략"',
+        '역활별 권한',
+        'data-r7-settings-role-permission-count-note',
+        '총 3개 역할',
+        'data-r7-settings-role-permission-summary-row="admin"',
+        'data-r7-settings-role-permission-summary-row="farm_owner"',
+        'data-r7-settings-role-permission-summary-row="farm_staff"',
         'data-r7-settings-users-card="approval-queue"',
         '로그인 승인 작업',
         '로그인 승인 요청 3건',
@@ -96,24 +96,25 @@ def test_r7_068_permission_matrix_summary_uses_common_subtitle_rows():
     start = html.index('data-r7-common-card-shell="settings-permission-matrix-summary"')
     end = html.index('data-r7-settings-permission-matrix-modal', start)
     matrix_card = html[start:end]
-    assert 'data-r7-settings-permission-bucket-count-note' in matrix_card
-    assert '총 6개' in matrix_card
-    assert matrix_card.count('data-r7-common-card-data-row="settings-permission-summary"') == 3
-    for row in ['조회', '기록', '전략']:
-        assert f'data-r7-settings-permission-summary-row="{row}"' in matrix_card
-    for hidden in ['실행', '안전', '고급설정']:
-        assert f'data-r7-settings-permission-summary-row="{hidden}"' not in matrix_card
+    assert 'data-r7-settings-role-permission-count-note' in matrix_card
+    assert '총 3개 역할' in matrix_card
+    assert matrix_card.count('data-r7-common-card-data-row="settings-role-permission-summary"') == 3
+    for row in ['admin', 'farm_owner', 'farm_staff']:
+        assert f'data-r7-settings-role-permission-summary-row="{row}"' in matrix_card
     assert 'data-r7-common-card-primary' not in matrix_card
     assert '상세 표는 팝업 모달에서 확인' not in matrix_card
+    assert '권한 버킷 매트릭스' not in matrix_card
+
 
 def test_r7_068_permission_matrix_contains_role_columns_and_bucket_rows():
     html = _render_users_permissions(open_permission_matrix=True)
     for role in ['admin', 'farm_owner', 'farm_staff']:
         assert f'data-r7-settings-permission-role="{role}"' in html
+        assert f'data-r7-settings-role-permission-row="{role}"' in html
     for bucket in ['조회', '기록', '전략', '실행', '안전', '고급설정']:
         assert f'data-r7-settings-permission-bucket="{bucket}"' in html
-    for state in ['허용', '읽기 전용', '확인', '없음']:
-        assert state in html
+    assert '허용' in html
+    assert 'data-r7-settings-role-permission-detail-panel' in html
 
 
 def test_r7_068_user_list_approval_audit_rows_are_table_like():

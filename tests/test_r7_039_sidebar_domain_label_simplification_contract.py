@@ -22,10 +22,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_039_version_surfaces_are_1_12_74():
-    assert '"version": "1.14.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.58"' in _read(REBUILD_PANEL)
-    assert "v1.14.58" in _read(DOC)
+    assert '"version": "1.14.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.59"' in _read(REBUILD_PANEL)
+    assert "v1.14.59" in _read(DOC)
 
 
 def test_r7_039_doc_records_label_mapping_and_boundary():

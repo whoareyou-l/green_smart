@@ -50,20 +50,23 @@ def _render_users_permissions(open_permission_matrix=False):
 
 
 def test_r7_069_version_surfaces_are_1_13_4():
-    assert '"version": "1.14.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.58"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.59"' in _read(REBUILD_PANEL)
 
 
-def test_r7_069_permission_matrix_has_detailed_steps_and_edit_buttons():
+def test_r7_069_permission_matrix_has_detailed_steps_and_role_rows():
     html = _render_users_permissions(open_permission_matrix=True)
     assert 'data-r7-settings-permission-matrix-detailed="true"' in _render_users_permissions()
+    for role in ['admin', 'farm_owner', 'farm_staff']:
+        assert f'data-r7-settings-role-permission-row="{role}"' in html
     for bucket in ['조회', '기록', '전략', '실행', '안전', '고급설정']:
         assert f'data-r7-settings-permission-step-row="{bucket}"' in html
     for step in ['기본 조회', '상세 조회', '기록 작성', '기록 수정', '전략 검토', '전략 승인', '실행 요청', '실행 허락', '안전 확인', '인터록 해제 검토', '구역/작기 설정', '권한 설정']:
         assert step in html
-    assert html.count('data-r7-settings-permission-edit=') >= 6
-    assert '수정' in html
+    assert 'data-r7-settings-role-permission-list-panel' in html
+    assert 'data-r7-settings-role-permission-detail-panel' in html
+    assert '전체 역활별 권한 보기' in html
 
 
 def test_r7_069_typography_alignment_markers_exist():

@@ -31,9 +31,9 @@ def _render_users_permissions(open_modal=False):
 
 
 def test_r7_086_version_surfaces_are_1_14_11():
-    assert '"version": "1.14.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.58"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.59"' in _read(REBUILD_PANEL)
 
 
 def test_r7_086_permission_matrix_button_opens_dedicated_cda_modal_not_hidden_shell():
@@ -54,12 +54,16 @@ def test_r7_086_permission_matrix_button_opens_dedicated_cda_modal_not_hidden_sh
     open_html = _render_users_permissions(open_modal=True)
     assert 'data-r7-settings-permission-matrix-cda-modal="true"' in open_html
     assert 'data-r7-settings-permission-matrix-modal-open="true"' in open_html
-    assert 'data-r7-settings-permission-matrix-table-modal="true"' in open_html
-    assert '권한 매트릭스 표' in open_html
+    assert 'data-r7-settings-role-permission-modal="true"' in open_html
+    assert '전체 역활별 권한 보기' in open_html
+    assert 'data-r7-settings-role-permission-list-panel' in open_html
+    assert 'data-r7-settings-role-permission-detail-panel' in open_html
+    assert 'data-r7-settings-permission-matrix-table-modal="true"' not in open_html
+    for role in ['admin', 'farm_owner', 'farm_staff']:
+        assert f'data-r7-settings-role-permission-row="{role}"' in open_html
+        assert f'data-r7-settings-permission-role="{role}"' in open_html
     for bucket in ['조회', '기록', '전략', '실행', '안전', '고급설정']:
         assert f'data-r7-settings-permission-step-row="{bucket}"' in open_html
-    for role in ['admin', 'farm_owner', 'farm_staff']:
-        assert f'data-r7-settings-permission-role="{role}"' in open_html
     assert 'data-r7-settings-permission-matrix-close-button' in open_html
 
 
