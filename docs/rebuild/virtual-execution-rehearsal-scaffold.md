@@ -1,6 +1,6 @@
 # RS-023 Virtual Execution Rehearsal Scaffold
 
-> 기준 버전: `v1.14.70`
+> 기준 버전: `v1.14.71`
 > Status: virtual execution rehearsal scaffold
 > 목적: `Safety / Interlock / Fail Safe 사전검증` 다음 단계로 `추천·실행` 화면에 가상 실행 리허설 상태를 read-only scaffold로 표시한다.
 

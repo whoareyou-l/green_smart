@@ -48,9 +48,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.14.70"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.70"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.70"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.71"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.71"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.71"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -92,6 +92,23 @@ def test_r7_115_device_mapping_uses_only_cdb_card_grammar_for_rows():
     assert 'data-r7-settings-device-action-card="group-add"' in html
     assert html.index('data-r7-settings-device-action-card="device-create"') < html.index('data-r7-settings-device-action-card="device-link"')
     assert 'data-r7-settings-device-action-card="device-add"' not in html
+
+
+def test_r7_115_device_button_two_cards_have_common_subtitles():
+    html = _render_device_mapping()
+    expectations = {
+        'device-create': '먼저 장치를 등록',
+        'device-link': '장치와 센서 연결',
+        'group-add': '구역 FK 필수',
+    }
+    for card, subtitle in expectations.items():
+        marker_at = html.index(f'data-r7-settings-device-action-card="{card}"')
+        start = html.rindex('<article', 0, marker_at)
+        end = html.index('</article>', marker_at)
+        snippet = html[start:end]
+        assert 'data-r7-cdb-card-type="button-two"' in snippet
+        assert 'data-r7-common-card-subtitle' in snippet
+        assert subtitle in snippet
 
 
 def test_r7_115_device_group_process_is_documented_not_rendered_as_guidance_box():

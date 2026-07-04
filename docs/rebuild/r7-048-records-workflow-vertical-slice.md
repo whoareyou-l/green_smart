@@ -2,7 +2,7 @@
 
 > **For Hermes:** Implement only the `작물 운영 > 기록·작업` subtab in this slice. Do not redesign the other Crop Operations subtabs here.
 
-**Target version:** v1.14.70
+**Target version:** v1.14.71
 **Scope:** `records-workflow` only
 **Goal:** Turn `기록·작업` into a product-ready operator workflow surface with exact DTO values, state handling, and no generic wrapper headings.
 
@@ -219,7 +219,7 @@ Add `tests/test_r7_048_records_workflow_vertical_slice_contract.py`.
 
 Must verify:
 
-1. Version surfaces are `1.14.70`.
+1. Version surfaces are `1.14.71`.
 2. This plan exists and documents the exact fields.
 3. `records-workflow` renders the six required cards.
 4. A complete record DTO shows:

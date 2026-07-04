@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb004c_version_surfaces_are_v11114():
-    assert '"version": "1.14.70"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.70"' in _read(PANEL)
-    assert "v1.14.70" in _read(FRONTEND_PLAN)
+    assert '"version": "1.14.71"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.71"' in _read(PANEL)
+    assert "v1.14.71" in _read(FRONTEND_PLAN)
 
 
 def test_rb004c_pest_modal_module_exists_and_exports_pure_render_helpers():
@@ -109,7 +109,7 @@ def test_rb004c_docs_record_pest_modal_extraction_boundaries():
     project = _read(PROJECT_MASTER)
     shared_markers = (
         "RB-004C Pest scouting modal render extraction",
-        "v1.14.70",
+        "v1.14.71",
         "domains/crop/crop-pest-modal.js",
         "병해충 예찰 modal render helpers only",
         "autocomplete/API/save bindings remain in panel shell",

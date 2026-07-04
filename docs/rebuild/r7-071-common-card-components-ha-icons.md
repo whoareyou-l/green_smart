@@ -1,6 +1,6 @@
 # R7-071 Common card components and HA icon policy
 
-Status: current baseline for `v1.14.70`.
+Status: current baseline for `v1.14.71`.
 
 ## Scope
 
@@ -55,6 +55,7 @@ DOM marker:
 버튼 동작 규칙:
 
 - 버튼 1개 카드는 목록 팝업 모달을 연다. Marker: `data-r7-cdb-button-role="list"`, `data-r7-cdb-opens-modal="list"`.
+- 버튼 2개 카드는 공통 컴포넌트에서 subtitle을 보장한다. 호출부가 `subtitle`을 넘기지 않으면 `primary`가 header subtitle로 자동 표시된다. Marker: `data-r7-cdb-button-two-subtitle="present"`.
 - 버튼 2개 카드의 첫 번째/추가 버튼은 추가·생성 팝업 모달을 연다. Marker: `data-r7-cdb-button-role="create"`, `data-r7-cdb-opens-modal="create"`.
 - 버튼 2개 카드의 두 번째/목록 버튼은 목록 팝업 모달을 연다. Marker: `data-r7-cdb-button-role="list"`, `data-r7-cdb-opens-modal="list"`.
 

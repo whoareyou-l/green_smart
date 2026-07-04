@@ -40,10 +40,10 @@ def _render_greenhouse_zones() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_119_version_surfaces_are_1_14_70():
-    assert '"version": "1.14.70"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.70"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.70"' in _read(REBUILD_PANEL)
+def test_r7_119_version_surfaces_are_1_14_71():
+    assert '"version": "1.14.71"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.71"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.71"' in _read(REBUILD_PANEL)
 
 
 def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
@@ -85,7 +85,24 @@ def test_r7_119_greenhouse_zone_action_row_is_three_button_cards_in_order():
         assert text in html
 
 
+def test_r7_119_greenhouse_zone_button_two_cards_have_common_subtitles():
+    html = _render_greenhouse_zones()
+    expectations = {
+        'settings-greenhouse-create': '새 온실 없음',
+        'settings-zone-create': '새 구역 없음',
+        'settings-equipment-mapping': '매핑 확인 필요',
+    }
+    for card, subtitle in expectations.items():
+        marker_at = html.index(f'data-r7-settings-create-card="{card}"')
+        start = html.rindex('<article', 0, marker_at)
+        end = html.index('</article>', marker_at)
+        snippet = html[start:end]
+        assert 'data-r7-cdb-card-type="button-two"' in snippet
+        assert 'data-r7-common-card-subtitle' in snippet
+        assert subtitle in snippet
+
+
 def test_r7_119_documented():
     doc = _read(DOC)
-    for phrase in ('CDB card grammar hotfix in v1.14.70', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card'):
+    for phrase in ('CDB card grammar hotfix in v1.14.71', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card'):
         assert phrase in doc

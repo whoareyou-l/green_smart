@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.70";
+const REBUILD_VERSION = "1.14.71";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2771,7 +2771,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7CdbButtonTwoCard({ kind, icon, title, subtitle = "", statusKey = "due-today", tone = "blue", rows = [], rowKind = "common", primary = "", note = "", firstLabel, firstIcon = "mdi:plus-circle-outline", firstTone = "green", firstAttrs = "", secondLabel, secondIcon = "mdi:history", secondTone = "blue", secondAttrs = "", extraAttrs = "" }) {
     const createButtonAttrs = `${firstAttrs} data-r7-cdb-button-role="create" data-r7-cdb-opens-modal="create"`;
     const listButtonAttrs = `${secondAttrs} data-r7-cdb-button-role="list" data-r7-cdb-opens-modal="list"`;
-    return this.renderR7RecordCardShell({ kind, icon, title, subtitle, statusKey, tone, primary, note, html: rows.length ? this.renderR7CommonCardDataRows(rows, { rowKind }) : "", actions: [this.renderR7CommonCardButton({ label: firstLabel, icon: firstIcon, tone: firstTone, extraAttrs: createButtonAttrs }), this.renderR7CommonCardButton({ label: secondLabel, icon: secondIcon, tone: secondTone, extraAttrs: listButtonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-two" data-r7-cdb-common-card="button-2-card"` });
+    const resolvedSubtitle = subtitle || primary;
+    return this.renderR7RecordCardShell({ kind, icon, title, subtitle: resolvedSubtitle, statusKey, tone, primary, note, html: rows.length ? this.renderR7CommonCardDataRows(rows, { rowKind }) : "", actions: [this.renderR7CommonCardButton({ label: firstLabel, icon: firstIcon, tone: firstTone, extraAttrs: createButtonAttrs }), this.renderR7CommonCardButton({ label: secondLabel, icon: secondIcon, tone: secondTone, extraAttrs: listButtonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-two" data-r7-cdb-common-card="button-2-card" data-r7-cdb-button-two-subtitle="${resolvedSubtitle ? 'present' : 'empty'}"` });
   }
 
   renderR7CdbListCard(args = {}) {
