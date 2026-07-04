@@ -48,9 +48,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.14.68"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.68"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.68"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.69"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.69"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.69"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -74,6 +74,24 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
     for forbidden in ('data-r7-settings-device-selected-zone-strip', 'data-r7-settings-device-process-summary', 'data-r7-settings-device-action-card="mapping"', '장치 구성', '그룹 구성', '매핑 목록'):
         assert forbidden not in html
     assert 'data-r7-settings-device-action-row style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;"' in html
+
+
+def test_r7_115_device_mapping_uses_only_cdb_card_grammar_for_rows():
+    html = _render_device_mapping()
+    assert html.count('data-r7-cdb-common-card="summary-card"') >= 3
+    assert html.count('data-r7-cdb-card-type="summary"') >= 3
+    assert html.count('data-r7-cdb-card-type="button-two"') >= 3
+    error_card_start = html.index('data-r7-settings-device-card="error-basic"')
+    error_card_end = html.index('</article>', error_card_start)
+    error_card = html[error_card_start:error_card_end]
+    assert 'data-r7-settings-device-error-common-card="approval-needed"' in error_card
+    assert 'data-r7-cdb-card-type="summary"' in error_card
+    assert 'data-r7-cdb-common-card="summary-card"' in error_card
+    assert 'data-r7-settings-device-action-card="device-create"' in html
+    assert 'data-r7-settings-device-action-card="device-link"' in html
+    assert 'data-r7-settings-device-action-card="group-add"' in html
+    assert html.index('data-r7-settings-device-action-card="device-create"') < html.index('data-r7-settings-device-action-card="device-link"')
+    assert 'data-r7-settings-device-action-card="device-add"' not in html
 
 
 def test_r7_115_device_group_process_is_documented_not_rendered_as_guidance_box():
