@@ -49,9 +49,9 @@ def _render_users_permissions(open_permission_matrix=False, empty=False):
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.64"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.64"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.64"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.65"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.65"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.65"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -91,6 +91,21 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
     forbidden = ['권한 정책 메모', '정책 상세 보기', '권한 버킷은 UI 표시와 backend enforcement를 분리합니다']
     for item in forbidden:
         assert item not in html
+
+
+def test_r7_068_users_permissions_has_three_first_row_summary_cards():
+    html = _render_users_permissions()
+    assert 'data-r7-cdb-subtab-content-layout="summary3-action3-list"' in html
+    assert 'data-r7-cdb-layout-row="summary"' in html
+    assert 'data-r7-cdb-layout-row="actions"' in html
+    assert 'data-r7-cdb-layout-row="list"' in html
+    assert html.count('data-r7-cdb-common-card="summary-card"') == 3
+    for card in [
+        'data-r7-settings-users-summary-card="users"',
+        'data-r7-settings-users-summary-card="approvals"',
+        'data-r7-settings-users-summary-card="roles"',
+    ]:
+        assert card in html
 
 
 def test_r7_068_permission_matrix_summary_uses_common_subtitle_rows():

@@ -147,4 +147,4 @@ def test_r7_117_cdb_card_buttons_declare_modal_intent_and_list_modal_footer_pola
 
 
 def test_r7_117_version_is_current():
-    assert '"version": "1.14.64"' in _read(MANIFEST)
+    assert '"version": "1.14.65"' in _read(MANIFEST)

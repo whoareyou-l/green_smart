@@ -31,9 +31,9 @@ def _render_users_permissions(open_modal=False):
 
 
 def test_r7_086_version_surfaces_are_1_14_11():
-    assert '"version": "1.14.64"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.64"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.64"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.65"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.65"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.65"' in _read(REBUILD_PANEL)
 
 
 def test_r7_086_permission_matrix_button_opens_dedicated_cda_modal_not_hidden_shell():

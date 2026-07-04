@@ -1,6 +1,6 @@
 # R7-071 Common card components and HA icon policy
 
-Status: current baseline for `v1.14.64`.
+Status: current baseline for `v1.14.65`.
 
 ## Scope
 
@@ -83,6 +83,9 @@ DOM marker:
   - 최근 기록 row/panel
 
 - `사용자·권한`
+  - 1줄 요약카드 3개: 사용자 현황, 승인 대기, 권한 역할
+  - 2줄 작업카드 3개: 로그인 승인 작업, 사용자 목록, 역활별 권한
+  - 3줄 목록카드 1개: 사용자 목록
   - 승인 필요 작업
   - 감사 로그
   - 권한 버킷 매트릭스
