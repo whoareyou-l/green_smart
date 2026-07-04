@@ -1,6 +1,6 @@
 # R7-076 Approval-gated entry
 
-Status: current baseline for `v1.14.61`.
+Status: current baseline for `v1.14.62`.
 
 ## Why
 

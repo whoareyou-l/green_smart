@@ -1,6 +1,6 @@
 # R7-032 HA-adjacent Green Line Sidebar
 
-> 기준 버전: `v1.14.61`
+> 기준 버전: `v1.14.62`
 > Status: R7-032 planned
 > Purpose: Green Smart sidebar를 HA 사이드바 바로 오른쪽에 붙이고, Green Smart 메인 컬러를 초록으로 복귀하며, 하단 2번째 utility를 설정 도메인으로 대체하고, 아이콘을 심플 라인 아이콘 느낌으로 변경한다.
 

@@ -53,10 +53,14 @@ def test_r7_117_role_permission_create_button_lives_on_zone_create_like_card():
     assert 'data-r7-record-card-shell="settings-permission-matrix-summary"' in card
     assert 'data-r7-record-image-card="settings-permission-matrix-summary"' in card
     assert 'data-r7-settings-role-permission-create-card' in card
-    assert '역할 권한 생성 필요' in card
-    assert '역할별 권한을 추가·수정하려면 승인 후 저장이 필요합니다' in card
+    assert 'data-r7-settings-role-permission-count-note' in card
+    assert '총 3개 역할' in card
+    assert card.count('data-r7-common-card-data-row="settings-role-permission-summary"') == 3
+    for row in ['admin', 'farm_owner', 'farm_staff']:
+        assert f'data-r7-settings-role-permission-summary-row="{row}"' in card
     assert 'data-r7-settings-role-permission-create-button="farm_staff"' in card
-    assert '+ 새 역할 권한 추가' in card
+    assert '새 역회 추가' in card
+    assert '+ 새 역할 권한 추가' not in card
     assert 'data-r7-settings-permission-matrix-button' in card
 
 
@@ -78,6 +82,8 @@ def test_r7_117_panel_calls_role_permission_crud_api():
     assert '["DEL", "ETE"].join("")' in source
     assert '`${REBUILD_SETTINGS_ROLE_PERMISSIONS_API_PREFIX}${encodeURIComponent(role)}`' in source
     assert 'this.hass.callApi(method, path, payload)' in source
+    assert 'renderR7RecordCardShell({ kind, icon, title, subtitle = ""' in source
+    assert 'this.renderR7CommonCardShell({ kind, icon, title, subtitle' in source
     assert '_openSettingsRolePermissionCreateModal' in source
     assert '_openSettingsRolePermissionEditModal' in source
     assert '_submitSettingsRolePermissionEditForm' in source
@@ -102,4 +108,4 @@ def test_r7_117_backend_has_role_permission_db_table_and_api_views():
 
 
 def test_r7_117_version_is_current():
-    assert '"version": "1.14.61"' in _read(MANIFEST)
+    assert '"version": "1.14.62"' in _read(MANIFEST)

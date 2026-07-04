@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.61";
+const REBUILD_VERSION = "1.14.62";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2899,9 +2899,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
                     kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:account-group-outline", title: "사용자 목록", subtitle: `<span data-r7-settings-user-count-note>${auditNote}</span>`, statusKey: "normal-ready", tone: "green", extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="3"', html: `${this.renderR7CommonCardDataRows(userRows.map((row) => ({ label: row.kind || row.displayName || row.haUserId || "사용자", meta: row.memo || row.state || row.role || "-", icon: row.icon || "mdi:account-outline", tone: row.tone || "green", extraAttrs: `data-r7-settings-audit-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-audit-summary="${row.state || row.permissionSummary || ''}"` })), { rowKind: "settings-audit" })}`, actions: [this.renderR7CommonCardButton({ label: "전체 사용자 목록 보기", icon: "mdi:open-in-new", tone: "green", extraAttrs: 'data-r7-settings-users-action="audit-all" data-r7-settings-audit-log-button data-r7-settings-modal-skip-record-binding="true"' })]
                   });
                 })()}
-                ${this.renderR7RecordCardShell({
-                  kind: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "역활별 권한", statusKey: "due-today", tone: "blue", primary: "역할 권한 생성 필요", note: "역할별 권한을 추가·수정하려면 승인 후 저장이 필요합니다", extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true" data-r7-settings-role-permission-create-card', actions: [this.renderR7CommonCardButton({ label: "+ 새 역할 권한 추가", icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: 'data-r7-settings-role-permission-create-button="farm_staff" data-r7-settings-modal-skip-record-binding="true"' }), this.renderR7CommonCardButton({ label: "전체 역활별 권한 보기", icon: "mdi:table-eye", tone: "blue", extraAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"' })]
-                })}
+                ${(() => {
+                  const rolePermissionRows = [
+                    { label: "admin", meta: "전체 권한 · 시스템 설정", icon: "mdi:shield-crown-outline", tone: "blue", extraAttrs: 'data-r7-settings-role-permission-summary-row="admin"' },
+                    { label: "farm_owner", meta: "운영 승인 · 전략 검토", icon: "mdi:account-tie-outline", tone: "green", extraAttrs: 'data-r7-settings-role-permission-summary-row="farm_owner"' },
+                    { label: "farm_staff", meta: "기록 작성 · 조회 중심", icon: "mdi:account-outline", tone: "amber", extraAttrs: 'data-r7-settings-role-permission-summary-row="farm_staff"' },
+                  ];
+                  const rolePermissionNote = `총 ${rolePermissionRows.length}개 역할`;
+                  return this.renderR7RecordCardShell({
+                    kind: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "역활별 권한", subtitle: `<span data-r7-settings-role-permission-count-note>${rolePermissionNote}</span>`, statusKey: "due-today", tone: "blue", html: this.renderR7CommonCardDataRows(rolePermissionRows, { rowKind: "settings-role-permission-summary" }), extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true" data-r7-settings-role-permission-create-card data-r7-common-data-limit="3"', actions: [this.renderR7CommonCardButton({ label: "새 역회 추가", icon: "mdi:plus-circle-outline", tone: "green", extraAttrs: 'data-r7-settings-role-permission-create-button="farm_staff" data-r7-settings-modal-skip-record-binding="true"' }), this.renderR7CommonCardButton({ label: "전체 역활별 권한 보기", icon: "mdi:table-eye", tone: "blue", extraAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"' })]
+                  });
+                })()}
                 ${this.renderR7SettingsPermissionMatrixModal()}
                 ${this.renderR7SettingsRolePermissionEditModal()}
                 ${this.renderR7SettingsAuditLogModal()}
@@ -3580,8 +3588,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return this.renderR7CommonCardActionRow(actions);
   }
 
-  renderR7RecordCardShell({ kind, icon, title, statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
-    return this.renderR7CommonCardShell({ kind, icon, title, statusKey, tone, primary, note, html, actions, extraAttrs });
+  renderR7RecordCardShell({ kind, icon, title, subtitle = "", statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
+    return this.renderR7CommonCardShell({ kind, icon, title, subtitle, statusKey, tone, primary, note, html, actions, extraAttrs });
   }
 
   renderR7RecentRecordRow(row) {
