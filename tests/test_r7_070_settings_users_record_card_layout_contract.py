@@ -50,20 +50,22 @@ def _render_users_permissions(open_permission_matrix=False):
 
 
 def test_r7_070_version_surfaces_are_1_13_5():
-    assert '"version": "1.14.60"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.60"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.60"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.61"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.61"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.61"' in _read(REBUILD_PANEL)
 
 
 def test_r7_070_users_permissions_uses_record_workflow_card_grammar_and_order():
     html = _render_users_permissions()
     assert 'data-r7-settings-users-record-card-layout="true"' in html
     assert 'data-r7-settings-users-layout-order="approval-audit-matrix-user-list"' in html
-    for section in ['approval-needed', 'audit-log', 'permission-matrix-summary', 'user-list-wide']:
+    for section in ['approval-needed', 'audit-log', 'user-list-wide']:
         assert f'data-r7-record-section="settings-{section}"' in html
+    assert 'data-r7-record-card-shell="settings-permission-matrix-summary"' in html
+    assert 'data-r7-record-image-card="settings-permission-matrix-summary"' in html
     approval_idx = html.index('data-r7-record-section="settings-approval-needed"')
     audit_idx = html.index('data-r7-record-section="settings-audit-log"')
-    matrix_idx = html.index('data-r7-record-section="settings-permission-matrix-summary"')
+    matrix_idx = html.index('data-r7-record-card-shell="settings-permission-matrix-summary"')
     users_idx = html.index('data-r7-record-section="settings-user-list-wide"')
     assert approval_idx < audit_idx < matrix_idx < users_idx
     assert 'grid-column:1/-1' in html

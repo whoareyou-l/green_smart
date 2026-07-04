@@ -39,11 +39,25 @@ def _render(open_role_modal=True, open_edit_modal=False, selected_role="farm_own
 def test_r7_117_role_permission_modal_actions_replace_change_request():
     html = _render(open_role_modal=True, selected_role="farm_owner")
     assert 'data-r7-settings-role-permission-delete-button="farm_owner"' in html
-    assert 'data-r7-settings-role-permission-add-button="farm_owner"' in html
     assert 'data-r7-settings-role-permission-edit-button="farm_owner"' in html
-    assert '삭제' in html and '추가' in html and '수정' in html
-    assert 'data-r7-settings-permission-change-request-button' not in html
+    assert 'data-r7-settings-role-permission-add-button' not in html
+    assert '삭제' in html and '수정' in html
     assert '변경 요청 생성' not in html
+
+
+def test_r7_117_role_permission_create_button_lives_on_zone_create_like_card():
+    html = _render(open_role_modal=False, selected_role="farm_owner")
+    start = html.index('data-r7-common-card-shell="settings-permission-matrix-summary"')
+    end = html.index('data-r7-settings-permission-matrix-modal', start)
+    card = html[start:end]
+    assert 'data-r7-record-card-shell="settings-permission-matrix-summary"' in card
+    assert 'data-r7-record-image-card="settings-permission-matrix-summary"' in card
+    assert 'data-r7-settings-role-permission-create-card' in card
+    assert '역할 권한 생성 필요' in card
+    assert '역할별 권한을 추가·수정하려면 승인 후 저장이 필요합니다' in card
+    assert 'data-r7-settings-role-permission-create-button="farm_staff"' in card
+    assert '+ 새 역할 권한 추가' in card
+    assert 'data-r7-settings-permission-matrix-button' in card
 
 
 def test_r7_117_role_permission_add_edit_modal_reuses_growth_like_shell_and_closes_list_modal():
@@ -88,4 +102,4 @@ def test_r7_117_backend_has_role_permission_db_table_and_api_views():
 
 
 def test_r7_117_version_is_current():
-    assert '"version": "1.14.60"' in _read(MANIFEST)
+    assert '"version": "1.14.61"' in _read(MANIFEST)

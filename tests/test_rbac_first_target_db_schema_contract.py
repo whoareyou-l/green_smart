@@ -13,7 +13,7 @@ def test_master_db_schema_is_rbac_first_target_model_not_legacy_physical_baselin
     doc = _read(MASTER_DB)
     required = (
         "# 3. DB 구상도 — RBAC-first Target Database Schema",
-        "기준 버전: `v1.14.60`",
+        "기준 버전: `v1.14.61`",
         "RBAC-first target schema",
         "legacy physical schema is adapter-only",
         "실제 운영 DB migration은 별도 승인 slice 전까지 금지",

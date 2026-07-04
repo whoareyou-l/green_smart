@@ -1,6 +1,6 @@
 # R7-028 Operator Compact Sidebar Rail Reference
 
-> 기준 버전: `v1.14.60`
+> 기준 버전: `v1.14.61`
 > Status: R7-028 planned
 > Purpose: 사용자가 제공한 reference image 기준으로 운영자 간략형 sidebar를 HA sidebar 바로 오른쪽의 slim icon rail로 정렬한다.
 

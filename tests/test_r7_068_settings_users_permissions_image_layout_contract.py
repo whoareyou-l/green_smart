@@ -49,9 +49,9 @@ def _render_users_permissions(open_permission_matrix=False, empty=False):
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.60"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.60"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.60"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.61"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.61"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.61"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -62,11 +62,10 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
         '사용자 목록',
         'data-r7-settings-users-card="permission-matrix"',
         '역활별 권한',
-        'data-r7-settings-role-permission-count-note',
-        '총 3개 역할',
-        'data-r7-settings-role-permission-summary-row="admin"',
-        'data-r7-settings-role-permission-summary-row="farm_owner"',
-        'data-r7-settings-role-permission-summary-row="farm_staff"',
+        '역할 권한 생성 필요',
+        '역할별 권한을 추가·수정하려면 승인 후 저장이 필요합니다',
+        '+ 새 역할 권한 추가',
+        'data-r7-settings-role-permission-create-button="farm_staff"',
         'data-r7-settings-users-card="approval-queue"',
         '로그인 승인 작업',
         '로그인 승인 요청 3건',
@@ -96,13 +95,12 @@ def test_r7_068_permission_matrix_summary_uses_common_subtitle_rows():
     start = html.index('data-r7-common-card-shell="settings-permission-matrix-summary"')
     end = html.index('data-r7-settings-permission-matrix-modal', start)
     matrix_card = html[start:end]
-    assert 'data-r7-settings-role-permission-count-note' in matrix_card
-    assert '총 3개 역할' in matrix_card
-    assert matrix_card.count('data-r7-common-card-data-row="settings-role-permission-summary"') == 3
-    for row in ['admin', 'farm_owner', 'farm_staff']:
-        assert f'data-r7-settings-role-permission-summary-row="{row}"' in matrix_card
-    assert 'data-r7-common-card-primary' not in matrix_card
-    assert '상세 표는 팝업 모달에서 확인' not in matrix_card
+    assert '역할 권한 생성 필요' in matrix_card
+    assert 'data-r7-settings-role-permission-create-button="farm_staff"' in matrix_card
+    assert '+ 새 역할 권한 추가' in matrix_card
+    assert matrix_card.count('data-r7-common-card-button') >= 2
+    assert 'data-r7-common-card-primary' in matrix_card
+    assert 'data-r7-common-card-data-row="settings-role-permission-summary"' not in matrix_card
     assert '권한 버킷 매트릭스' not in matrix_card
 
 
