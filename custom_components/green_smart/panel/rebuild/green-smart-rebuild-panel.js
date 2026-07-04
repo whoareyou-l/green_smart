@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.65";
+const REBUILD_VERSION = "1.14.66";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -509,8 +509,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
   }
 
+  _r7SettingsRolePermissionRows() {
+    const fallbackRoles = [
+      { role: "admin", roleLabel: "관리자", permissionSummary: "전체 권한 · 시스템 설정", tone: "blue", status: "active" },
+      { role: "farm_owner", roleLabel: "농장 소유자", permissionSummary: "운영 승인 · 전략 검토", tone: "green", status: "active" },
+      { role: "farm_staff", roleLabel: "농장 작업자", permissionSummary: "기록 작성 · 조회 중심", tone: "amber", status: "active" },
+    ];
+    const rows = Array.isArray(this.r7SettingsUsersPermissionsData().rolePermissions) && this.r7SettingsUsersPermissionsData().rolePermissions.length ? this.r7SettingsUsersPermissionsData().rolePermissions : fallbackRoles;
+    return rows.map((row) => ({
+      role: row.role || row.id || "farm_staff",
+      roleLabel: row.roleLabel || row.role_label || row.title || row.role || row.id || "역할",
+      permissionSummary: row.permissionSummary || row.permission_summary || row.summary || "조회 · 기록",
+      tone: row.tone || ((row.role || row.id) === "admin" ? "blue" : (row.role || row.id) === "farm_owner" ? "green" : "amber"),
+      status: row.status || "active",
+      ...row,
+    }));
+  }
+
   _rolePermissionById(role) {
-    const rows = Array.isArray(this.r7SettingsUsersPermissionsData().rolePermissions) ? this.r7SettingsUsersPermissionsData().rolePermissions : [];
+    const rows = this._r7SettingsRolePermissionRows();
     return rows.find((row) => String(row.role || row.id) === String(role)) || null;
   }
 
@@ -2588,7 +2605,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const value = (v) => this._r7Text(v || "");
     const selectStyle = "height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;width:100%;font-weight:800;color:#24323f;";
     const option = (current, val, label) => `<option value="${value(val)}" ${String(current) === String(val) ? 'selected' : ''}>${value(label)}</option>`;
-    const roleSelect = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>역할</span><select name="role" data-r7-settings-audit-log-edit-db-column="role" data-r7-settings-user-role-select style="${selectStyle}">${option(selected.role, 'admin', '관리자')}${option(selected.role, 'farm_owner', '농장 소유자')}${option(selected.role, 'farm_staff', '농장 작업자')}</select></label>`, statusSelect = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>상태</span><select name="status" data-r7-settings-audit-log-edit-db-column="status" data-r7-settings-user-status-select style="${selectStyle}">${option(selected.status, 'active', '활성')}${option(selected.status, 'pending', '승인 대기')}${option(selected.status, 'rejected', '거부됨')}${option(selected.status, 'disabled', '비활성')}</select></label>`;
+    const roleOptions = this._r7SettingsRolePermissionRows().map((row) => option(selected.role, row.role || row.id || "farm_staff", row.roleLabel || row.role_label || row.role || row.id || "역할")).join("");
+    const roleSelect = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>역할</span><select name="role" data-r7-settings-audit-log-edit-db-column="role" data-r7-settings-user-role-select data-r7-settings-user-role-select-source="role-permissions-db" style="${selectStyle}">${roleOptions}</select></label>`, statusSelect = `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>상태</span><select name="status" data-r7-settings-audit-log-edit-db-column="status" data-r7-settings-user-status-select style="${selectStyle}">${option(selected.status, 'active', '활성')}${option(selected.status, 'pending', '승인 대기')}${option(selected.status, 'rejected', '거부됨')}${option(selected.status, 'disabled', '비활성')}</select></label>`;
     const sections = [
       this._r7SettingsCreateSection("user-db-identity", "DB 기준 식별 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;"><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>번호</span><input name="id" value="${value(selected.dbId)}" readonly data-r7-settings-audit-log-edit-db-column="id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label><label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;"><span>HA 사용자 ID</span><input name="haUserId" value="${value(selected.haUserId)}" readonly data-r7-settings-audit-log-edit-db-column="ha_user_id" style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7faf8;box-sizing:border-box;font-size:12px;width:100%;"></label></div>`),
       this._r7SettingsCreateSection("user-db-fields", "사용자 정보 수정", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("displayName", "사용자 이름", value(selected.displayName), 'data-r7-settings-audit-log-edit-db-column="display_name"')}${roleSelect}${statusSelect}</div>`),
@@ -2912,22 +2930,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
               const auditRows = Array.isArray(settingsUsersPermissions.auditRows) ? settingsUsersPermissions.auditRows : [];
               const userRows = Array.isArray(settingsUsersPermissions.users) ? settingsUsersPermissions.users : [];
               const source = settingsUsersPermissions.source || "green-smart-db";
-              const rolePermissionRows = [
-                { label: "admin", meta: "전체 권한 · 시스템 설정", icon: "mdi:shield-crown-outline", tone: "blue", extraAttrs: 'data-r7-settings-role-permission-summary-row="admin"' },
-                { label: "farm_owner", meta: "운영 승인 · 전략 검토", icon: "mdi:account-tie-outline", tone: "green", extraAttrs: 'data-r7-settings-role-permission-summary-row="farm_owner"' },
-                { label: "farm_staff", meta: "기록 작성 · 조회 중심", icon: "mdi:account-outline", tone: "amber", extraAttrs: 'data-r7-settings-role-permission-summary-row="farm_staff"' },
-              ];
-              const rolePermissionNote = `총 ${rolePermissionRows.length}개 역할`;
-              const activeUsers = userRows.filter((row) => !String(row.memo || row.state || row.status || "").includes("대기")).length;
-              const pendingUsers = Math.max(userRows.length - activeUsers, 0);
+              const rolePermissionRows = this._r7SettingsRolePermissionRows().slice(0, 3).map((row) => ({
+                label: row.role || row.id || "farm_staff",
+                meta: row.permissionSummary || row.permission_summary || row.summary || "조회 · 기록",
+                icon: (row.role || row.id) === "admin" ? "mdi:shield-crown-outline" : (row.role || row.id) === "farm_owner" ? "mdi:account-tie-outline" : "mdi:account-outline",
+                tone: row.tone || ((row.role || row.id) === "admin" ? "blue" : (row.role || row.id) === "farm_owner" ? "green" : "amber"),
+                extraAttrs: `data-r7-settings-role-permission-summary-row="${row.role || row.id || 'farm_staff'}"`,
+              }));
+              const rolePermissionCount = this._r7SettingsRolePermissionRows().length;
+              const rolePermissionNote = `총 ${rolePermissionCount}개 역할`;
+              const inactiveUsers = userRows.filter((row) => ["disabled", "inactive", "비활성"].includes(String(row.status || row.state || "").toLowerCase()) || String(row.memo || "").includes("비활성")).length;
+              const activeUsers = Math.max(userRows.length - inactiveUsers, 0);
               const summaryCards = [
                 this.renderR7CdbSummaryCard({
-                  key: "users-permissions-users-summary", icon: "mdi:account-group-outline", title: "사용자 현황", primary: `등록 사용자 ${userRows.length}명`, tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-users-summary-card="users"',
-                  rows: [this._r7SettingsGreenhouseValueRow("전체 사용자", `${userRows.length}명`), this._r7SettingsGreenhouseValueRow("활성 사용자", `${activeUsers}명`), this._r7SettingsGreenhouseValueRow("대기/검토", `${pendingUsers}명`)],
+                  key: "users-permissions-approvals-summary", icon: "mdi:account-clock-outline", title: "승인 대기", primary: `로그인 승인 ${approvalRows.length}건`, tone: approvalRows.length ? "amber" : "green", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-users-summary-card="approvals"',
+                  rows: [this._r7SettingsGreenhouseValueRow("전체 승인", `${approvalRows.length}건`), this._r7SettingsGreenhouseValueRow("로그인 승인", `${approvalRows.length}건`), this._r7SettingsGreenhouseValueRow("역활 승인", `${rolePermissionCount}개 역할`)],
                 }),
                 this.renderR7CdbSummaryCard({
-                  key: "users-permissions-approvals-summary", icon: "mdi:account-clock-outline", title: "승인 대기", primary: `로그인 승인 ${approvalRows.length}건`, tone: approvalRows.length ? "amber" : "green", statusKey: approvalRows.length ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-users-summary-card="approvals"',
-                  rows: [this._r7SettingsGreenhouseValueRow("승인 요청", `${approvalRows.length}건`), this._r7SettingsGreenhouseValueRow("처리 기준", "승인/거부"), this._r7SettingsGreenhouseValueRow("목록 모달", "상세 검토")],
+                  key: "users-permissions-users-summary", icon: "mdi:account-group-outline", title: "사용자 현황", primary: `등록 사용자 ${userRows.length}명`, tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-users-summary-card="users"',
+                  rows: [this._r7SettingsGreenhouseValueRow("전체 사용자", `${userRows.length}명`), this._r7SettingsGreenhouseValueRow("활성 사용자", `${activeUsers}명`), this._r7SettingsGreenhouseValueRow("비활성 사용자", `${inactiveUsers}명`)],
                 }),
                 this.renderR7CdbSummaryCard({
                   key: "users-permissions-roles-summary", icon: "mdi:table-key", title: "권한 역할", primary: rolePermissionNote, tone: "blue", statusKey: "due-today", extraAttrs: 'data-r7-settings-users-summary-card="roles"',
@@ -2946,7 +2967,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
                     kind: "settings-audit-log", section: "settings-audit-log", icon: "mdi:account-group-outline", title: "사용자 목록", subtitle: `<span data-r7-settings-user-count-note>${auditNote}</span>`, statusKey: "normal-ready", tone: "green", extraAttrs: 'data-r7-settings-users-card="audit-log" data-r7-common-data-limit="3"', rows: userRows.map((row) => ({ label: row.kind || row.displayName || row.haUserId || "사용자", meta: row.memo || row.state || row.role || "-", icon: row.icon || "mdi:account-outline", tone: row.tone || "green", extraAttrs: `data-r7-settings-audit-row="${row.kind || row.haUserId || 'user'}" data-r7-settings-audit-summary="${row.state || row.permissionSummary || ''}"` })), rowKind: "settings-audit", buttonLabel: "전체 사용자 목록 보기", buttonIcon: "mdi:open-in-new", buttonTone: "green", buttonAttrs: 'data-r7-settings-users-action="audit-all" data-r7-settings-audit-log-button data-r7-settings-modal-skip-record-binding="true"' });
                 })(),
                 this.renderR7CdbButtonTwoCard({
-                  kind: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "역활별 권한", subtitle: `<span data-r7-settings-role-permission-count-note>${rolePermissionNote}</span>`, statusKey: "due-today", tone: "blue", rows: rolePermissionRows, rowKind: "settings-role-permission-summary", firstLabel: "새 역회 추가", firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: 'data-r7-settings-role-permission-create-button="farm_staff" data-r7-settings-modal-skip-record-binding="true"', secondLabel: "전체 역활별 권한 보기", secondIcon: "mdi:table-eye", secondTone: "blue", secondAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true" data-r7-settings-role-permission-create-card data-r7-common-data-limit="3"' }),
+                  kind: "settings-permission-matrix-summary", icon: "mdi:table-key", title: "역활별 권한", subtitle: `<span data-r7-settings-role-permission-count-note>${rolePermissionNote}</span>`, statusKey: "due-today", tone: "blue", rows: rolePermissionRows, rowKind: "settings-role-permission-summary", firstLabel: "새 역활 추가", firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: 'data-r7-settings-role-permission-create-button="farm_staff" data-r7-settings-modal-skip-record-binding="true"', secondLabel: "전체 역활별 권한 보기", secondIcon: "mdi:table-eye", secondTone: "blue", secondAttrs: 'data-r7-settings-permission-matrix-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-users-card="permission-matrix" data-r7-settings-permission-matrix-detailed="true" data-r7-settings-role-permission-create-card data-r7-common-data-limit="3"' }),
               ];
               const listCard = this.renderR7CdbListCard({
                 kind: "settings-user-list-wide", title: "사용자 목록", icon: "mdi:account-group-outline", statusKey: "normal-ready", tone: "green", rowKind: "settings-user", limit: 3, note: `총 ${userRows.length}명`, extraAttrs: 'data-r7-record-section="settings-user-list-wide" data-r7-settings-users-card="user-list"', rows: userRows.map((row) => {

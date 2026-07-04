@@ -1,6 +1,6 @@
 # R7-071 Common card components and HA icon policy
 
-Status: current baseline for `v1.14.65`.
+Status: current baseline for `v1.14.66`.
 
 ## Scope
 
@@ -83,9 +83,13 @@ DOM marker:
   - 최근 기록 row/panel
 
 - `사용자·권한`
-  - 1줄 요약카드 3개: 사용자 현황, 승인 대기, 권한 역할
+  - 1줄 요약카드 3개: 승인 대기, 사용자 현황, 권한 역할
+    - 승인 대기 row: 전체 승인, 로그인 승인, 역활 승인
+    - 사용자 현황 row: 전체 사용자, 활성 사용자, 비활성 사용자
   - 2줄 작업카드 3개: 로그인 승인 작업, 사용자 목록, 역활별 권한
   - 3줄 목록카드 1개: 사용자 목록
+  - 역활별 권한 추가 버튼 라벨: `새 역활 추가`
+  - 유저 수정 팝업의 역할 select는 `rolePermissions` DB/API 목록을 사용한다.
   - 승인 필요 작업
   - 감사 로그
   - 권한 버킷 매트릭스

@@ -59,7 +59,7 @@ def test_r7_117_role_permission_create_button_lives_on_zone_create_like_card():
     for row in ['admin', 'farm_owner', 'farm_staff']:
         assert f'data-r7-settings-role-permission-summary-row="{row}"' in card
     assert 'data-r7-settings-role-permission-create-button="farm_staff"' in card
-    assert '새 역회 추가' in card
+    assert '새 역활 추가' in card
     assert '+ 새 역할 권한 추가' not in card
     assert 'data-r7-settings-permission-matrix-button' in card
 
@@ -146,5 +146,29 @@ def test_r7_117_cdb_card_buttons_declare_modal_intent_and_list_modal_footer_pola
     assert 'data-r7-cdb-negative-action="delete"' in html
 
 
+def test_r7_117_user_edit_role_select_uses_db_role_permissions():
+    script = f"""
+      globalThis.document = {{ body: {{ classList: {{ add(){{}}, remove(){{}} }} }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
+      globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
+      const mod = await import({str(PANEL)!r});
+      const panel = new mod.GreenSmartRebuildPanel();
+      panel._settingsUsersPermissions = {{ source: 'contract', approvalRows: [], auditRows: [], users: [{{ haUserId: 'user-1', displayName: '작업자', role: 'farm_staff', status: 'active', permissionSummary: '기록 작성' }}], rolePermissions: [
+        {{ role: 'admin', roleLabel: '관리자', permissionSummary: '전체 권한', status: 'active' }},
+        {{ role: 'farm_staff', roleLabel: '농장 작업자', permissionSummary: '기록 작성', status: 'active' }},
+        {{ role: 'season_manager', roleLabel: '작기 관리자', permissionSummary: '작기 설정 · 승인 보조', status: 'active' }},
+      ] }};
+      panel._settingsAuditLogEditModal = {{ open: true, selectedId: 'user-1' }};
+      const html = panel.renderR7SettingsAuditLogEditModal();
+      console.log(JSON.stringify({{ html }}));
+    """
+    result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr + result.stdout
+    html = json.loads(result.stdout)["html"]
+    assert 'data-r7-settings-user-role-select' in html
+    assert '<option value="season_manager"' in html
+    assert '작기 관리자' in html
+
+
 def test_r7_117_version_is_current():
-    assert '"version": "1.14.65"' in _read(MANIFEST)
+    assert '"version": "1.14.66"' in _read(MANIFEST)

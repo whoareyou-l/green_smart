@@ -33,9 +33,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_093_version_surfaces_are_1_14_18():
-    assert '"version": "1.14.65"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.65"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.65"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.66"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.66"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.66"' in _read(REBUILD_PANEL)
 
 
 def test_r7_093_common_card_header_icon_wrap_has_no_background():

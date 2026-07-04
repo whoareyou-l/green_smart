@@ -49,9 +49,9 @@ def _render_users_permissions(open_permission_matrix=False, empty=False):
 
 
 def test_r7_068_version_surfaces_are_1_13_3():
-    assert '"version": "1.14.65"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.65"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.65"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.66"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.66"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.66"' in _read(REBUILD_PANEL)
 
 
 def test_r7_068_users_permissions_matches_reference_card_structure_without_policy_memo():
@@ -67,7 +67,7 @@ def test_r7_068_users_permissions_matches_reference_card_structure_without_polic
         'data-r7-settings-role-permission-summary-row="admin"',
         'data-r7-settings-role-permission-summary-row="farm_owner"',
         'data-r7-settings-role-permission-summary-row="farm_staff"',
-        '새 역회 추가',
+        '새 역활 추가',
         'data-r7-settings-role-permission-create-button="farm_staff"',
         'data-r7-settings-users-card="approval-queue"',
         '로그인 승인 작업',
@@ -100,12 +100,22 @@ def test_r7_068_users_permissions_has_three_first_row_summary_cards():
     assert 'data-r7-cdb-layout-row="actions"' in html
     assert 'data-r7-cdb-layout-row="list"' in html
     assert html.count('data-r7-cdb-common-card="summary-card"') == 3
+    approvals_index = html.index('data-r7-settings-users-summary-card="approvals"')
+    users_index = html.index('data-r7-settings-users-summary-card="users"')
+    roles_index = html.index('data-r7-settings-users-summary-card="roles"')
+    assert approvals_index < users_index < roles_index
     for card in [
         'data-r7-settings-users-summary-card="users"',
         'data-r7-settings-users-summary-card="approvals"',
         'data-r7-settings-users-summary-card="roles"',
     ]:
         assert card in html
+    for text in ['전체 승인', '로그인 승인', '역활 승인', '전체 사용자', '활성 사용자', '비활성 사용자']:
+        assert text in html
+    assert '승인 요청' not in html[approvals_index:users_index]
+    assert '처리 기준' not in html[approvals_index:users_index]
+    assert '목록 모달' not in html[approvals_index:users_index]
+    assert '대기/검토' not in html[users_index:roles_index]
 
 
 def test_r7_068_permission_matrix_summary_uses_common_subtitle_rows():
@@ -116,7 +126,7 @@ def test_r7_068_permission_matrix_summary_uses_common_subtitle_rows():
     assert 'data-r7-settings-role-permission-count-note' in matrix_card
     assert '총 3개 역할' in matrix_card
     assert 'data-r7-settings-role-permission-create-button="farm_staff"' in matrix_card
-    assert '새 역회 추가' in matrix_card
+    assert '새 역활 추가' in matrix_card
     assert matrix_card.count('data-r7-common-card-data-row="settings-role-permission-summary"') == 3
     assert matrix_card.count('data-r7-common-card-button') >= 2
     assert 'data-r7-common-card-primary' not in matrix_card

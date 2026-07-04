@@ -1,6 +1,6 @@
 # RS-027 Virtual Rehearsal Pass/Fail Review Projection
 
-> 기준 버전: `v1.14.65`
+> 기준 버전: `v1.14.66`
 > Status: virtual rehearsal pass/fail review projection
 > 목적: `가상 dry-run 결과 어댑터` 다음 단계로, 시나리오별 결과를 operator가 검토할 수 있는 pass/fail/review-needed projection으로 정리한다.
 
