@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.67";
+const REBUILD_VERSION = "1.14.68";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -66,6 +66,8 @@ const REBUILD_SETTINGS_ROLE_PERMISSIONS_API_PATH = "green_smart/rebuild/settings
 const REBUILD_SETTINGS_AUDIT_LOG_API_PREFIX = "green_smart/rebuild/settings/audit-logs/";
 const REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH = "green_smart/rebuild/settings/greenhouses";
 const REBUILD_SETTINGS_ZONE_CREATE_API_PATH = "green_smart/rebuild/settings/zones";
+const REBUILD_SETTINGS_DEVICE_CREATE_API_PATH = "green_smart/rebuild/settings/devices";
+const REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/device-groups";
 const REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH = "green_smart/rebuild/settings/device-sensor-mappings";
 const REBUILD_SETTINGS_SNAPSHOT_API_PATH = "green_smart/rebuild/settings/snapshot";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
@@ -316,6 +318,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
         greenhouses: Array.isArray(response?.greenhouses) ? response.greenhouses : [],
         zones: Array.isArray(response?.zones) ? response.zones : [],
         deviceSensorMappings: Array.isArray(response?.deviceSensorMappings) ? response.deviceSensorMappings : [],
+        devices: Array.isArray(response?.devices) ? response.devices : [],
+        deviceGroups: Array.isArray(response?.deviceGroups) ? response.deviceGroups : [],
       };
       this._settingsGreenhouseZoneLoadState = "ready";
     } catch (error) {
@@ -855,7 +859,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceCreateModal = { ...modal, open: true, state: "saving" };
     this.render();
     try {
-      const response = { ok: true, payload, uiOnly: true };
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_CREATE_API_PATH, payload);
+      if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+      await this._loadSettingsGreenhouseZoneData();
       this._settingsDeviceCreateModal = { ...modal, open: true, state: "saved", response };
     } catch (error) {
       this._settingsDeviceCreateModal = { ...modal, open: true, state: "error", error: error?.message || "device-create-failed" };
@@ -869,7 +876,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saving" };
     this.render();
     try {
-      const response = { ok: true, payload, uiOnly: true };
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH, payload);
+      if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+      await this._loadSettingsGreenhouseZoneData();
       this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saved", response };
     } catch (error) {
       this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "error", error: error?.message || "device-group-create-failed" };

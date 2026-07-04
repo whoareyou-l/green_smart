@@ -320,7 +320,7 @@ async def async_setup(hass, config):
     )
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView, CentralCropInterlockSnapshotSyncView, CentralCropInterlockAnalyticsSummaryView
     from .rebuild_views import RebuildHomeContextView
-    from .rebuild_settings_write_views import RebuildSettingsSnapshotView, RebuildSettingsGreenhouseCreateView, RebuildSettingsGreenhouseItemView, RebuildSettingsZoneCreateView, RebuildSettingsZoneItemView, RebuildSettingsDeviceSensorMappingView
+    from .rebuild_settings_write_views import RebuildSettingsSnapshotView, RebuildSettingsGreenhouseCreateView, RebuildSettingsGreenhouseItemView, RebuildSettingsZoneCreateView, RebuildSettingsZoneItemView, RebuildSettingsDeviceCreateView, RebuildSettingsDeviceGroupCreateView, RebuildSettingsDeviceSensorMappingView
     from .rebuild_settings_views import RebuildSettingsUsersPermissionsView, RebuildSettingsApprovalRequestView, RebuildSettingsApprovalDecisionView, RebuildSettingsPermissionChangeRequestView, RebuildSettingsUserRoleView, RebuildSettingsAuditLogItemView, RebuildSettingsRolePermissionsView, RebuildSettingsRolePermissionItemView
     from .rebuild_crop_records_views import RebuildCropRecordsHistoryView, RebuildCropRecordsWriteView
     from .rbac import GreenSmartAuthMeView, GreenSmartRoleAssignmentView
@@ -347,6 +347,8 @@ async def async_setup(hass, config):
             hass.http.register_view(RebuildSettingsGreenhouseItemView())
             hass.http.register_view(RebuildSettingsZoneCreateView())
             hass.http.register_view(RebuildSettingsZoneItemView())
+            hass.http.register_view(RebuildSettingsDeviceCreateView())
+            hass.http.register_view(RebuildSettingsDeviceGroupCreateView())
             hass.http.register_view(RebuildSettingsDeviceSensorMappingView())
             hass.http.register_view(RebuildSettingsUsersPermissionsView())
             hass.http.register_view(RebuildSettingsApprovalRequestView())
@@ -386,6 +388,8 @@ async def async_setup(hass, config):
         hass.http.register_view(RebuildSettingsGreenhouseItemView())
         hass.http.register_view(RebuildSettingsZoneCreateView())
         hass.http.register_view(RebuildSettingsZoneItemView())
+        hass.http.register_view(RebuildSettingsDeviceCreateView())
+        hass.http.register_view(RebuildSettingsDeviceGroupCreateView())
         hass.http.register_view(RebuildSettingsDeviceSensorMappingView())
         hass.http.register_view(RebuildSettingsUsersPermissionsView())
         hass.http.register_view(RebuildSettingsApprovalRequestView())

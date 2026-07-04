@@ -183,6 +183,42 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_devices (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            device_name VARCHAR(128) NOT NULL,
+            device_type VARCHAR(64) NOT NULL DEFAULT '환기창',
+            entity_id VARCHAR(255) NOT NULL,
+            vendor_model VARCHAR(128) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_device_entity (farm_id, entity_id),
+            KEY idx_settings_device_status (farm_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_device_groups (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id VARCHAR(128) NOT NULL,
+            group_name VARCHAR(128) NOT NULL,
+            group_type VARCHAR(64) NOT NULL DEFAULT '환경 그룹',
+            link_policy VARCHAR(128) NOT NULL DEFAULT '다중 그룹 연결 허용',
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_device_group_zone_name (farm_id, zone_id, group_name),
+            KEY idx_settings_device_group_zone (farm_id, zone_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
         CREATE TABLE IF NOT EXISTS gs_users (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             ha_user_id VARCHAR(128) NOT NULL,
@@ -405,6 +441,42 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uniq_settings_device_sensor_mapping (farm_id, zone_id, sensor_entity, device_entity, mapping_role),
             KEY idx_settings_device_sensor_mapping_zone (farm_id, zone_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_devices (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            device_name VARCHAR(128) NOT NULL,
+            device_type VARCHAR(64) NOT NULL DEFAULT '환기창',
+            entity_id VARCHAR(255) NOT NULL,
+            vendor_model VARCHAR(128) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_device_entity (farm_id, entity_id),
+            KEY idx_settings_device_status (farm_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_device_groups (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id VARCHAR(128) NOT NULL,
+            group_name VARCHAR(128) NOT NULL,
+            group_type VARCHAR(64) NOT NULL DEFAULT '환경 그룹',
+            link_policy VARCHAR(128) NOT NULL DEFAULT '다중 그룹 연결 허용',
+            note TEXT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT '정상',
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_device_group_zone_name (farm_id, zone_id, group_name),
+            KEY idx_settings_device_group_zone (farm_id, zone_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """

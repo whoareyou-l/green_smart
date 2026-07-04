@@ -50,9 +50,9 @@ def _render_users_permissions(open_permission_matrix=False):
 
 
 def test_r7_069_version_surfaces_are_1_13_4():
-    assert '"version": "1.14.67"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.67"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.67"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.68"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.68"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.68"' in _read(REBUILD_PANEL)
 
 
 def test_r7_069_permission_matrix_has_detailed_steps_and_role_rows():

@@ -1,9 +1,9 @@
 # R7-115 Device/Sensor mapping cards
 
-Version: v1.14.67
+Version: v1.14.68
 Status: prod verification pending
 
-## User correction in v1.14.67
+## User correction in v1.14.68
 
 The Settings → `장치·센서 매핑` subtab was corrected again after the v1.14.48 common-card update.
 
@@ -110,7 +110,40 @@ data-r7-settings-device-action-card="mapping"
 data-r7-settings-device-mapping-list-panel
 ```
 
+## Device/group DB-backed save in v1.14.68
+
+The v1.14.68 slice converted `장치 추가` and `그룹 추가` from UI-only saved states to real DB/API writes.
+
+Added backend storage:
+
+```text
+green_smart_settings_devices
+green_smart_settings_device_groups
+```
+
+Added APIs:
+
+```text
+POST/GET /api/green_smart/rebuild/settings/devices
+POST/GET /api/green_smart/rebuild/settings/device-groups
+```
+
+Frontend submit handlers now call the real APIs:
+
+```text
+REBUILD_SETTINGS_DEVICE_CREATE_API_PATH
+REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH
+```
+
+The settings snapshot now includes:
+
+```text
+devices
+deviceGroups
+```
+
 ## Verification
 
-- Focused contracts: `23 passed`
-- Full suite / prod smoke: run after this document update
+- Focused contracts: `17 passed`
+- Full suite: `1541 passed`
+- Prod smoke: pending

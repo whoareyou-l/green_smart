@@ -191,7 +191,37 @@ def _mapping_dto(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _device_dto(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row.get("id"),
+        "farmId": row.get("farm_id"),
+        "deviceName": row.get("device_name") or "신규 장치",
+        "deviceType": row.get("device_type") or "환기창",
+        "entityId": row.get("entity_id") or "",
+        "vendorModel": row.get("vendor_model") or "",
+        "note": row.get("note") or "",
+        "status": row.get("status") or "정상",
+        "createdAt": row.get("created_at"),
+        "updatedAt": row.get("updated_at"),
+    }
+
+
+def _device_group_dto(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row.get("id"),
+        "farmId": row.get("farm_id"),
+        "zoneId": row.get("zone_id") or "zone-1",
+        "groupName": row.get("group_name") or "신규 장치 그룹",
+        "groupType": row.get("group_type") or "환경 그룹",
+        "linkPolicy": row.get("link_policy") or "다중 그룹 연결 허용",
+        "note": row.get("note") or "",
+        "status": row.get("status") or "정상",
+        "createdAt": row.get("created_at"),
+        "updatedAt": row.get("updated_at"),
+    }
+
 async def list_settings_greenhouses(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+
     rows = await fetchall(hass, """
         SELECT id, farm_id, name, location, operating_status, install_type, timezone, approval_scope, note, creation_reason, status, created_at, updated_at
         FROM green_smart_settings_greenhouses
@@ -320,6 +350,56 @@ async def list_settings_device_sensor_mappings(hass, farm_id: int = 1) -> list[d
     return [_mapping_dto(row) for row in rows]
 
 
+async def list_settings_devices(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    rows = await fetchall(hass, """
+        SELECT id, farm_id, device_name, device_type, entity_id, vendor_model, note, status, created_at, updated_at
+        FROM green_smart_settings_devices
+        WHERE farm_id = %s
+        ORDER BY updated_at DESC, id DESC
+        """, (farm_id,))
+    return [_device_dto(row) for row in rows]
+
+
+async def create_settings_device(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    device_name = _str(payload, "deviceName", "device_name", "name", default="신규 장치")
+    entity_id = _str(payload, "entityId", "entity_id", default="switch.greenhouse_device")
+    await execute(hass, """
+        INSERT INTO green_smart_settings_devices
+            (farm_id, device_name, device_type, entity_id, vendor_model, note, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            device_name = VALUES(device_name), device_type = VALUES(device_type), vendor_model = VALUES(vendor_model),
+            note = VALUES(note), status = VALUES(status), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
+        """, (farm_id, device_name, _str(payload, "deviceType", "device_type", default="환기창"), entity_id, _str(payload, "vendorModel", "vendor_model"), _str(payload, "note"), _zone_status_label(payload, "status", "state", default="정상"), actor, actor))
+    rows = await list_settings_devices(hass, farm_id)
+    return next((row for row in rows if row["entityId"] == entity_id), rows[0] if rows else {"entityId": entity_id})
+
+
+async def list_settings_device_groups(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    rows = await fetchall(hass, """
+        SELECT id, farm_id, zone_id, group_name, group_type, link_policy, note, status, created_at, updated_at
+        FROM green_smart_settings_device_groups
+        WHERE farm_id = %s
+        ORDER BY updated_at DESC, id DESC
+        """, (farm_id,))
+    return [_device_group_dto(row) for row in rows]
+
+
+async def create_settings_device_group(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    zone_id = _str(payload, "zoneId", "zone_id", default="zone-1")
+    group_name = _str(payload, "groupName", "group_name", "name", default="신규 장치 그룹")
+    await execute(hass, """
+        INSERT INTO green_smart_settings_device_groups
+            (farm_id, zone_id, group_name, group_type, link_policy, note, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            group_type = VALUES(group_type), link_policy = VALUES(link_policy), note = VALUES(note),
+            status = VALUES(status), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
+        """, (farm_id, zone_id, group_name, _str(payload, "groupType", "group_type", default="환경 그룹"), _str(payload, "linkPolicy", "link_policy", default="다중 그룹 연결 허용"), _str(payload, "note"), _zone_status_label(payload, "status", "state", default="정상"), actor, actor))
+    rows = await list_settings_device_groups(hass, farm_id)
+    return next((row for row in rows if row["zoneId"] == zone_id and row["groupName"] == group_name), rows[0] if rows else {"zoneId": zone_id, "groupName": group_name})
+
+
 async def create_settings_device_sensor_mapping(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
     zone_id = _str(payload, "zoneId", "zone_id", default="zone-1")
     sensor_entity = _str(payload, "sensorEntity", "sensor_entity")
@@ -340,6 +420,8 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
     greenhouses = await list_settings_greenhouses(hass, farm_id)
     zones = await list_settings_zones(hass, farm_id)
     mappings = await list_settings_device_sensor_mappings(hass, farm_id)
+    devices = await list_settings_devices(hass, farm_id)
+    device_groups = await list_settings_device_groups(hass, farm_id)
     zone_by_id = {str(zone.get("id")): zone for zone in zones}
     zone_by_key = {str(zone.get("zoneId")): zone for zone in zones}
     for mapping in mappings:
@@ -347,7 +429,12 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
         label = mapping.get("sensorEntity") or mapping.get("deviceEntity") or mapping.get("mappingRole")
         if zone is not None and label:
             zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
-    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings}
+    for device_group in device_groups:
+        zone = zone_by_id.get(str(device_group.get("zoneId"))) or zone_by_key.get(str(device_group.get("zoneId")))
+        label = device_group.get("groupName") or device_group.get("groupType")
+        if zone is not None and label:
+            zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
+    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "deviceGroups": device_groups}
 
 
 class RebuildSettingsSnapshotView(HomeAssistantView):
@@ -423,6 +510,36 @@ class RebuildSettingsZoneItemView(HomeAssistantView):
         zone_id = int(zone_id or request.match_info["zone_id"])
         item = await delete_settings_zone(hass, zone_id, actor=_request_actor(request))
         return self.json({"ok": True, "kind": "zone", "deleted": True, "approvalRequired": False, "zone": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+
+class RebuildSettingsDeviceCreateView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/devices"
+    name = "api:green_smart:rebuild:settings:devices"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        return self.json({"ok": True, "devices": await list_settings_devices(hass)})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        item = await create_settings_device(hass, await _settings_payload(request), actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "device", "saved": True, "approvalRequired": False, "device": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+
+class RebuildSettingsDeviceGroupCreateView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/device-groups"
+    name = "api:green_smart:rebuild:settings:device_groups"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        return self.json({"ok": True, "deviceGroups": await list_settings_device_groups(hass)})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        item = await create_settings_device_group(hass, await _settings_payload(request), actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "device-group", "saved": True, "approvalRequired": False, "deviceGroup": item, "settingsSnapshot": await settings_snapshot_response(hass)})
 
 
 class RebuildSettingsDeviceSensorMappingView(HomeAssistantView):
