@@ -42,17 +42,19 @@ def _render_settings(active_tab="greenhouse-zones", open_permission_matrix=False
 
 
 def test_r7_066_version_surfaces_are_1_13_1():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
 
 
 def test_r7_066_settings_new_tabs_replace_admin_explanation_first_tabs():
     html = _render_settings()
-    for label in ('온실·구역', '장치·센서 매핑', '사용자·권한', '안전·승인 정책', '시스템·연동', '진단·감사'):
+    for label in ('온실·구역', '장치·센서 매핑', '사용자·권한', '시스템·연동'):
         assert label in html
-    for key in ('greenhouse-zones', 'device-sensor-mapping', 'users-permissions', 'safety-approval-policy', 'system-integration', 'diagnostics-audit'):
+    for key in ('greenhouse-zones', 'device-sensor-mapping', 'users-permissions', 'system-integration'):
         assert f'data-r7-settings-admin-subtab="{key}"' in html
+    for removed in ('안전·승인 정책', '진단·감사', 'data-r7-settings-admin-subtab="safety-approval-policy"', 'data-r7-settings-admin-subtab="diagnostics-audit"'):
+        assert removed not in html
     assert '작기·작물 객체' not in html
     assert 'data-r7-settings-admin-subtab="crop-cycle-objects"' not in html
     assert 'data-r7-settings-admin-subtab="domain-ownership"' in html  # hidden compatibility only
@@ -90,14 +92,18 @@ def test_r7_066_device_user_safety_system_tabs_are_reclassified():
     expected = {
         'device-sensor-mapping': ['data-r7-settings-device-sensor-mapping', 'data-r7-settings-device-mapping-layout="device-group-error-device-list"', '장치 기본 정보', '그룹 기본 정보', '오류 기본 정보'],
         'users-permissions': ['data-r7-settings-users-permissions', 'admin', 'farm_owner', 'farm_staff', '조회 · 기록 · 전략 · 실행 · 안전 · 고급설정'],
-        'safety-approval-policy': ['data-r7-settings-safety-approval-policy', '실행 승인 정책', 'Fail Safe 기준', 'Interlock 정책'],
         'system-integration': ['data-r7-settings-system-integration', 'Home Assistant 연동', 'DB 연결', '[REDACTED]'],
-        'diagnostics-audit': ['data-r7-settings-diagnostics-audit', '시스템 진단', '매핑 진단', '권한 감사', '실행 감사'],
     }
     for tab, needles in expected.items():
         html = _render_settings(tab, open_permission_matrix=(tab == 'users-permissions'))
         for needle in needles:
             assert needle in html
+    for removed_tab in ('safety-approval-policy', 'diagnostics-audit'):
+        html = _render_settings(removed_tab)
+        assert 'data-r7-settings-safety-approval-policy' not in html
+        assert 'data-r7-settings-diagnostics-audit' not in html
+        assert 'data-r7-domain-subtab-key="greenhouse-zones"' in html
+        assert 'data-r7-domain-subtab-active="true"' in html
 
 
 def test_r7_066_documented():

@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_025_version_surfaces_are_1_12_59():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(REBUILD_PANEL)
-    assert "v1.14.82" in _read(DOC)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
+    assert "v1.14.83" in _read(DOC)
 
 
 def test_r7_025_doc_records_settings_admin_inventory_and_mapping():
@@ -30,13 +30,11 @@ def test_r7_025_doc_records_settings_admin_inventory_and_mapping():
         "Permission buckets",
         "Mapping boundary",
         "System/config/admin boundary",
-        "Diagnostics/backup/audit export metadata",
         "RBAC policy contract",
         "도메인 소유권",
         "역할·권한",
         "매핑·장치",
         "시스템·보안",
-        "진단·감사",
         "RBAC 정책",
         "No role assignment mutation in R7-025",
         "No settings save/delete in R7-025",
@@ -58,18 +56,18 @@ def test_r7_025_panel_contains_visual_absorption_markers():
         'data-r7-settings-admin-subtab="role-permissions"',
         'data-r7-settings-admin-subtab="mapping-devices"',
         'data-r7-settings-admin-subtab="system-security"',
-        'data-r7-settings-admin-subtab="diagnostics-audit"',
         'data-r7-settings-admin-subtab="rbac-policy"',
         "data-r7-settings-domain-card",
         "data-r7-settings-role-card",
         "data-r7-settings-permission-card",
         "data-r7-settings-mapping-card",
         "data-r7-settings-system-card",
-        "data-r7-settings-diagnostics-card",
         "data-r7-settings-rbac-card",
     ]
     for marker in required:
         assert marker in text
+    assert 'data-r7-settings-admin-subtab="diagnostics-audit"' not in text
+    assert "data-r7-settings-diagnostics-card" not in text
 
 
 def test_r7_025_panel_maps_old_detail_items_to_visual_cards():

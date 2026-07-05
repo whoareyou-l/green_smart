@@ -15,10 +15,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_013_version_surfaces_are_1_12_45():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(REBUILD_PANEL)
-    assert "v1.14.82" in _read(DOC)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
+    assert "v1.14.83" in _read(DOC)
 
 
 def test_r7_013_doc_declares_manual_first_settings_admin_realignment():
@@ -122,7 +122,6 @@ def test_r7_013_preserves_r7_004_settings_admin_visual_compatibility_markers():
         'data-r7-settings-admin-area="user-role-mapping"',
         'data-r7-settings-admin-area="ha-entity-mapping"',
         'data-r7-settings-admin-area="system-config-metadata"',
-        'data-r7-settings-admin-area="diagnostics-backup-audit"',
         'data-r7-settings-admin-area="rbac-policy-contract"',
         "data-r7-settings-admin-farm-owner-staff-scope",
         "data-r7-settings-admin-secret-redaction",

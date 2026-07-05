@@ -1,6 +1,6 @@
 # R7-085 Approval card modal-only and Settings subtab icons
 
-Status: current baseline for `v1.14.82`.
+Status: current baseline for `v1.14.83`.
 
 ## Changes
 
@@ -15,9 +15,7 @@ Status: current baseline for `v1.14.82`.
 - 온실·구역 → `mdi:greenhouse`
 - 장치·센서 매핑 → `mdi:devices`
 - 사용자·권한 → `mdi:account-key-outline`
-- 안전·승인 정책 → `mdi:shield-check-outline`
 - 시스템·연동 → `mdi:home-assistant`
-- 진단·감사 → `mdi:file-search-outline`
 
 ## Boundary
 

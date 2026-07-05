@@ -1,6 +1,6 @@
 # R7-114 Crop-cycle object card absorption
 
-Version: v1.14.82
+Version: v1.14.83
 Status: prod verified
 
 ## User request
@@ -32,9 +32,7 @@ Settings now exposes 6 visible subtabs:
 1. 온실·구역
 2. 장치·센서 매핑
 3. 사용자·권한
-4. 안전·승인 정책
-5. 시스템·연동
-6. 진단·감사
+4. 시스템·연동
 
 Removed from Settings UI:
 
@@ -53,7 +51,7 @@ If stale UI state tries to activate `crop-cycle-objects`, Settings falls back to
 - Full suite: `1511 passed`
 - HA config check: pass
 - Prod served JS smoke:
-  - `REBUILD_VERSION = "1.14.82"`
+  - `REBUILD_VERSION = "1.14.83"`
   - crop-cycle object markers present under Crop Operations code path
   - settings crop-cycle-object markers absent
 - Stable HA log window: no errors

@@ -2,7 +2,7 @@
 
 설정 도메인 재분류 foundation.
 
-Status: current baseline for `v1.14.82`.
+Status: current baseline for `v1.14.83`.
 
 ## Why
 
@@ -35,23 +35,12 @@ The settings domain must become the 기준 데이터 관리 도메인 before RBA
    - farm_staff
    - 권한 버킷: 조회 · 기록 · 전략 · 실행 · 안전 · 고급설정
 
-4. 안전·승인 정책
-   - 실행 승인 정책
-   - Fail Safe 기준
-   - Interlock 정책
-   - 알림 정책
-
-5. 시스템·연동
+4. 시스템·연동
    - Home Assistant 연동
    - DB 연결
    - API 상태
    - Secret redaction / `[REDACTED]`
 
-6. 진단·감사
-   - 시스템 진단
-   - 매핑 진단
-   - 권한 감사
-   - 실행 감사
 
 ## Compatibility
 

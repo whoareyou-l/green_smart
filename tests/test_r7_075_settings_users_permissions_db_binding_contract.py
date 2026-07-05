@@ -18,9 +18,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_075_version_surfaces_are_1_14_0():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(PANEL)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(PANEL)
 
 
 def test_r7_075_db_schema_creates_settings_users_permissions_tables():
@@ -67,7 +67,7 @@ def test_r7_075_frontend_fetches_settings_users_permissions_api_and_removes_inli
     assert "_loadSettingsUsersPermissions" in source
     assert 'this.hass.callApi("GET", REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH)' in source
     assert "settingsUsersPermissions" in source
-    users_block = source.split('tabKey === "users-permissions"', 1)[1].split(': tabKey === "safety-approval-policy"', 1)[0]
+    users_block = source.split('tabKey === "users-permissions"', 1)[1].split(': tabKey === "system-integration"', 1)[0]
     assert 'const approvalRows = [["사용자 승인 요청"' not in users_block
     assert 'const auditRows = [["admin"' not in users_block
     assert 'rows: [["admin","admin"' not in users_block

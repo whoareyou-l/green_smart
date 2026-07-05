@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_027_version_surfaces_are_1_12_61():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(REBUILD_PANEL)
-    assert "v1.14.82" in _read(DOC)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
+    assert "v1.14.83" in _read(DOC)
 
 
 def test_r7_027_doc_records_sidebar_and_settings_subtab_requirements():
@@ -50,7 +50,6 @@ def test_r7_027_source_allows_settings_admin_subtabs_and_sidebar_role_layout():
         '"role-permissions"',
         '"mapping-devices"',
         '"system-security"',
-        '"diagnostics-audit"',
         '"rbac-policy"',
         "_currentGreenSmartRole",
         "_r7SidebarLayoutMode",

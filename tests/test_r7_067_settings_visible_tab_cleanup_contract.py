@@ -35,19 +35,21 @@ def _render_settings():
 
 
 def test_r7_067_version_surfaces_are_1_13_2():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
 
 
-def test_r7_067_visible_settings_tabs_are_only_current_six_tabs():
+def test_r7_067_visible_settings_tabs_are_only_current_four_tabs():
     html = _render_settings()
     visible_nav = html.split('data-r7-domain-subtab-panel', 1)[0]
-    expected = ['온실·구역', '장치·센서 매핑', '사용자·권한', '안전·승인 정책', '시스템·연동', '진단·감사']
+    expected = ['온실·구역', '장치·센서 매핑', '사용자·권한', '시스템·연동']
     for label in expected:
         assert label in visible_nav
+    for removed in ['안전·승인 정책', '진단·감사']:
+        assert removed not in visible_nav
     assert '작기·작물 객체' not in visible_nav
-    assert visible_nav.count('data-r7-domain-subtab-key=') == 6
+    assert visible_nav.count('data-r7-domain-subtab-key=') == 4
     for stale in ['도메인 소유권', '역할·권한', '매핑·장치', '시스템·보안', 'RBAC 정책']:
         assert stale not in visible_nav
 
@@ -71,5 +73,5 @@ def test_r7_067_legacy_settings_markers_remain_hidden_compatibility_only():
 
 def test_r7_067_documented():
     doc = _read(DOC)
-    for phrase in ('구버전 탭 버튼 노출 제거', '6개만 표시', 'hidden compatibility marker', '도메인 소유권', 'RBAC 정책'):
+    for phrase in ('구버전 탭 버튼 노출 제거', '4개만 표시', 'hidden compatibility marker', '도메인 소유권', 'RBAC 정책'):
         assert phrase in doc

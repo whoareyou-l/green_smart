@@ -29,11 +29,11 @@ def _load_service():
 
 
 def test_rs023_version_surfaces_are_aligned_to_1_12_22():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, WORKFLOW_SPEC, FAILSAFE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.14.82" in _read(path)
+        assert "v1.14.83" in _read(path)
 
 
 def test_rs023_document_records_virtual_rehearsal_boundary_and_scenarios():
@@ -136,7 +136,7 @@ def test_docs_specs_plan_and_inventory_record_rs023_and_next_step():
         assert marker in workflow
     for marker in ("Safety/Interlock/Fail Safe preflight remains source", "virtual rehearsal does not release interlock", "No device command in RS-023"):
         assert marker in failsafe
-    for marker in ("Phase R4.19 — Virtual execution rehearsal scaffold", "Status:** `v1.14.82`에서 Virtual execution rehearsal scaffold 완료", "No production route removal in RS-023", "No DB migration in RS-023", "No write/mutation in RS-023"):
+    for marker in ("Phase R4.19 — Virtual execution rehearsal scaffold", "Status:** `v1.14.83`에서 Virtual execution rehearsal scaffold 완료", "No production route removal in RS-023", "No DB migration in RS-023", "No write/mutation in RS-023"):
         assert marker in plan
     assert "RS-023" in inventory
     assert "Virtual execution rehearsal scaffold completed" in inventory

@@ -1,6 +1,6 @@
 # R7-067 Settings visible tab cleanup
 
-Status: current baseline for `v1.14.82`.
+Status: current baseline for `v1.14.83`.
 
 ## Problem
 
@@ -10,13 +10,11 @@ After R7-066, the settings page showed both the new settings tabs and the old co
 
 구버전 탭 버튼 노출 제거:
 
-- Visible settings tabs now show 6개만 표시:
+- Visible settings tabs now show 4개만 표시:
   - 온실·구역
   - 장치·센서 매핑
   - 사용자·권한
-  - 안전·승인 정책
   - 시스템·연동
-  - 진단·감사
 
 - Old tabs are not shown as clickable/visible tab buttons:
   - 도메인 소유권

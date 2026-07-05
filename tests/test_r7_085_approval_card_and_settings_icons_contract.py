@@ -13,9 +13,7 @@ SETTINGS_TABS = {
     "greenhouse-zones": "mdi:greenhouse",
     "device-sensor-mapping": "mdi:devices",
     "users-permissions": "mdi:account-key-outline",
-    "safety-approval-policy": "mdi:shield-check-outline",
     "system-integration": "mdi:home-assistant",
-    "diagnostics-audit": "mdi:file-search-outline",
 }
 
 
@@ -24,9 +22,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_085_version_surfaces_are_1_14_10():
-    assert '"version": "1.14.82"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.82"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.82"' in _read(PANEL)
+    assert '"version": "1.14.83"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.83"' in _read(PANEL)
 
 
 def test_r7_085_approval_needed_card_has_no_inline_confirm_button():
