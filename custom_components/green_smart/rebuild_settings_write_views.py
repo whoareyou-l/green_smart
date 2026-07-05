@@ -574,10 +574,13 @@ async def system_update_response(hass, payload: dict[str, Any] | None = None) ->
         if not entities:
             return {"ok": True, "target": target, "action": action, "supported": False, "state": "deferred", "message": "GS/HACS only via HA update entity; no matching update entity found", "components": components}
         entity_id = entities[0]["entityId"]
-        if action == "check":
-            await hass.services.async_call("homeassistant", "update_entity", {"entity_id": entity_id}, blocking=True)
-        else:
-            await hass.services.async_call("update", "install", {"entity_id": entity_id}, blocking=True)
+        try:
+            if action == "check":
+                await hass.services.async_call("homeassistant", "update_entity", {"entity_id": entity_id}, blocking=True)
+            else:
+                await hass.services.async_call("update", "install", {"entity_id": entity_id}, blocking=True)
+        except Exception as err:
+            return {"ok": False, "target": target, "action": action, "supported": True, "state": "error", "message": str(err) or "system-update-action-failed", "entityId": entity_id, "components": components}
         return {"ok": True, "target": target, "action": action, "supported": True, "state": "requested", "entityId": entity_id, "components": components}
     return {"ok": True, "source": "system_update_response", "components": components, "note": "GS/HACS only; HA/DB updates are deferred to Update Agent"}
 
