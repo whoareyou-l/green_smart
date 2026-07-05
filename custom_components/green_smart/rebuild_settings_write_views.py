@@ -485,11 +485,19 @@ async def _db_watchdog_status(hass) -> dict[str, Any]:
 async def _api_watchdog_status(hass) -> dict[str, Any]:
     center_errors: list[str] = []
     edge_errors: list[str] = []
-    center_base_url = os.environ.get("GREENITY_CENTER_BASE_URL") or os.environ.get("GREEN_SMART_CENTER_BASE_URL") or "http://127.0.0.1:18000"
+    center_config = await _load_center_connection(hass)
+    center_base_url = (
+        center_config.get("baseUrl")
+        or center_config.get("base_url")
+        or os.environ.get("GREENITY_CENTER_BASE_URL")
+        or os.environ.get("GREEN_SMART_CENTER_BASE_URL")
+        or "http://127.0.0.1:18000"
+    )
+    center_configured = bool(center_config.get("credential")) or bool(center_config.get("token"))
     center_connected = False
     try:
         session = async_get_clientsession(hass)
-        async with session.get(f"{center_base_url.rstrip('/')}/health", timeout=ClientTimeout(total=3)) as response:
+        async with session.get(f"{str(center_base_url).rstrip('/')}/health", timeout=ClientTimeout(total=3)) as response:
             center_connected = response.status < 500
             if response.status >= 400:
                 center_errors.append(f"http_{response.status}")
@@ -500,7 +508,10 @@ async def _api_watchdog_status(hass) -> dict[str, Any]:
     except Exception as exc:
         edge_errors.append(exc.__class__.__name__)
     return {
-        "centerConnectionStatus": "연결" if center_connected and not center_errors else "미연결",
+        "centerConnectionStatus": "연결" if center_connected and not center_errors else ("설정됨" if center_configured else "미연결"),
+        "centerReachabilityStatus": "연결" if center_connected and not center_errors else "미연결",
+        "centerConfigured": center_configured,
+        "centerBaseUrl": str(center_base_url or ""),
         "centerApiStatus": "정상" if not center_errors else f"오류 {len(center_errors)}건",
         "edgeApiStatus": "정상" if not edge_errors else f"오류 {len(edge_errors)}건",
         "centerApiErrorCount": len(center_errors),

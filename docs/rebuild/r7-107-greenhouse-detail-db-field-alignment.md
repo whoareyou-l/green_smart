@@ -1,6 +1,6 @@
 # R7-107 Greenhouse detail panel DB-field alignment
 
-Version: v1.14.81
+Version: v1.14.82
 Status: prod verified
 
 ## Scope

@@ -67,3 +67,19 @@ def test_r7_121_system_watchdog_scheduler_is_registered_for_periodic_refresh():
         "async_track_time_interval",
     ):
         assert marker in init_source
+
+
+def test_r7_121_center_watchdog_uses_saved_center_connection_before_env_default():
+    source = _read(VIEWS)
+    for marker in (
+        "center_config = await _load_center_connection(hass)",
+        'center_config.get("baseUrl")',
+        'center_config.get("base_url")',
+        'os.environ.get("GREENITY_CENTER_BASE_URL")',
+        '"centerConnectionStatus": "연결" if center_connected and not center_errors else ("설정됨" if center_configured else "미연결")',
+        '"centerReachabilityStatus"',
+        '"centerConfigured"',
+        '"centerBaseUrl"',
+    ):
+        assert marker in source
+    assert 'center_base_url = os.environ.get("GREENITY_CENTER_BASE_URL") or os.environ.get("GREEN_SMART_CENTER_BASE_URL") or "http://127.0.0.1:18000"' not in source
