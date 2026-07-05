@@ -1,6 +1,6 @@
 # R7-096 Settings greenhouse/zone common modal shells
 
-Status: current baseline for `v1.14.84`.
+Status: current baseline for `v1.14.85`.
 
 ## Rule
 
@@ -9,7 +9,7 @@ Status: current baseline for `v1.14.84`.
 
 ## Creation buttons
 
-`+ 새 온실 추가`, `+ 새 구역 추가`, `장치/그룹 열기`는 `renderR7RecordCommonModalShell`을 통해 렌더한다. 직접 CDA overlay/card를 조립하지 않는다.
+`+ 새 온실 추가`, `+ 새 구역 추가`, `장치 연결 작성`는 `renderR7RecordCommonModalShell`을 통해 렌더한다. 직접 CDA overlay/card를 조립하지 않는다.
 
 ## Shortcut/list buttons
 

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.84";
+const REBUILD_VERSION = "1.14.85";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -107,9 +107,9 @@ const R7_SETTINGS_ZONE_DETAIL_FIELD_ORDER = Object.freeze([
   ["updatedAt", "수정시각"],
   ["note", "메모"],
 ]);
-const R7_SETTINGS_EQUIPMENT_LIST_COLUMNS = Object.freeze(["역할", "구역", "센서", "장비", "상태"]);
+const R7_SETTINGS_EQUIPMENT_LIST_COLUMNS = Object.freeze(["장비종류", "구역", "센서", "장비", "상태"]);
 const R7_SETTINGS_EQUIPMENT_DETAIL_FIELD_ORDER = Object.freeze([
-  ["mappingRole", "역할"],
+  ["mappingRole", "장비종류"],
   ["zoneName", "구역"],
   ["sensorEntity", "센서 entity"],
   ["deviceEntity", "장비 entity"],
@@ -731,6 +731,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
   }
 
+  _openSettingsDeviceListModal() {
+    this._openSettingsEquipmentInfoSplitModal();
+  }
+
+  _openSettingsDeviceGroupListModal() {
+    this._settingsShortcutCdaModal = { open: true, kind: "device-group-list" };
+    this.render();
+  }
+
   async _openSettingsSystemUpdateModal() {
     this._settingsSystemActionModal = { open: true, kind: "update", state: "loading", data: null, error: "" };
     this.render();
@@ -993,6 +1002,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   async _submitSettingsDeviceGroupCreateForm(form) {
     const payload = this._settingsFormPayload(form);
+    payload.deviceIds = Array.from(form.querySelectorAll?.('input[name="deviceIds"]:checked') || []).map((input) => input.value);
     const modal = this._settingsDeviceGroupCreateModal || {};
     this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saving" };
     this.render();
@@ -1720,7 +1730,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsZoneListSplitModal(); });
     });
     this.querySelectorAll("[data-r7-settings-equipment-info-shortcut-button]").forEach((button) => {
-      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsEquipmentInfoSplitModal(); });
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsDeviceListModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-device-group-list-shortcut]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsDeviceGroupListModal(); });
     });
     this.querySelectorAll("[data-r7-settings-shortcut-cda-split-close]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsShortcutCdaSplitModal(); });
@@ -2185,15 +2198,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-cda-entity-detail-fields="${entityType}" style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;">${fieldHtml}</div>`;
   }
 
-  renderR7CdaEntityListDetailModal({ entityType = "entity", modalOpen = true, icon = "mdi:information-outline", title = "", subtitle = "", rows = [], selectedId = "", listColumns = [], detailFields = [], detailSectionTitle = "1. 선택 항목 상세 정보", detailPanelAttrs = "", rowAttr = "", entityFooterActions = [], closeAttr = "", marker = "", zIndex = 44 } = {}) {
+  renderR7CdaEntityListDetailModal({ entityType = "entity", modalOpen = true, icon = "mdi:information-outline", title = "", subtitle = "", rows = [], selectedId = "", listColumns = [], detailFields = [], detailSectionTitle = "1. 선택 항목 상세 정보", detailPanelAttrs = "", rowAttr = "", entityFooterActions = [], closeAttr = "", marker = "", zIndex = 44, suppressCloseButtons = false } = {}) {
     const selected = rows.find((row) => String(row.id) === String(selectedId)) || rows[0] || {};
     const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-shortcut-search-input", searchPlaceholder: `${title} 검색`, filters: [["all","전체"],["needs-review","검토 필요"],["normal","정상"],["evidence","감사 근거"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "needs-review" ? "red" : "green", attrs: `data-r7-settings-shortcut-filter="${key}"` })) });
     const rowHtml = this.renderR7CdaEntityRows({ entityType, rows, selectedId: selected.id, rowAttr });
     const listPanel = this.renderR7CdaListPanel({ title: `${title} 목록`, columns: listColumns, rowsHtml: rowHtml || `<p style="margin:0;color:#78927f;font-size:13px;">표시할 항목 없음</p>`, footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${rows.length}건</span>`, attrs: `data-r7-settings-shortcut-review-list-panel data-r7-settings-shortcut-cda-split-kind="${entityType}"` });
     const detailBody = `${this.renderR7CdaDetailSection({ title: detailSectionTitle, attrs: 'data-r7-settings-shortcut-review-section="entity-detail"', body: this.renderR7CdaEntityDetailFields({ entityType, entity: selected, fields: detailFields }) })}`;
-    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 항목 상세", attrs: `${detailPanelAttrs} data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${entityType}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone || 'green')}">${selected.statusLabel || selected.status || '정상'}</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ attrs: `data-r7-cda-entity-detail-footer="${entityType}"`, left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [...entityFooterActions, `<button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
+    const closeAction = suppressCloseButtons ? [] : [`<button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`];
+    const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 항목 상세", attrs: `${detailPanelAttrs} data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${entityType}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone || 'green')}">${selected.statusLabel || selected.status || '정상'}</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ attrs: `data-r7-cda-entity-detail-footer="${entityType}"`, left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [...entityFooterActions, ...closeAction] }) });
     const header = this.renderR7CdaModalHeader({ icon, title, subtitle, closeAttr });
-    const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ CDA entity 공통 팝업 모달은 엔티티별 row와 선택 엔티티 상세를 같은 문법으로 재사용합니다.</span><button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
+    const footer = suppressCloseButtons ? `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ CDA entity 공통 팝업 모달은 엔티티별 row와 선택 엔티티 상세를 같은 문법으로 재사용합니다.</span></footer>` : `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ CDA entity 공통 팝업 모달은 엔티티별 row와 선택 엔티티 상세를 같은 문법으로 재사용합니다.</span><button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modalOpen, zIndex, overlayAttrs: `${marker} data-r7-cda-entity-modal="${entityType}" data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-review-like-modal="approval-audit" data-r7-settings-shortcut-cda-split-kind="${entityType}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${entityType}"`, header, search, left: listPanel, right: detailPanel, footer });
   }
 
@@ -2270,28 +2284,94 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const zone = Array.isArray(zones) ? zones.find((item) => String(this._r7ZoneId?.(item) || item.zoneId || item.id || "") === String(mapping.zoneId || "")) : null;
       const zoneName = mapping.zoneName || zone?.zoneName || zone?.name || mapping.zoneId || "구역 미등록";
       const statusLabel = status === "deleted" ? "삭제됨" : status === "inactive" ? "비활성" : "정상";
-      const mappingRole = mapping.mappingRole || mapping.role || "환경 센서/환기 장치";
-      const sensorEntity = mapping.sensorEntity || mapping.sensor_entity || "sensor.greenhouse_temperature";
-      const deviceEntity = mapping.deviceEntity || mapping.device_entity || "switch.greenhouse_fan";
+      const mappingRole = mapping.mappingRole || mapping.role || mapping.deviceType || mapping.device_type || "환경 센서/환기 장치";
+      const sensorEntity = mapping.sensorEntity || mapping.sensor_entity || mapping.entityId || mapping.entity_id || "sensor.greenhouse_temperature";
+      const deviceEntity = mapping.deviceEntity || mapping.device_entity || mapping.entityId || mapping.entity_id || "switch.greenhouse_fan";
+      const deviceName = mapping.deviceName || mapping.device_name || mapping.name || mappingRole;
+      const deviceType = mapping.deviceType || mapping.device_type || mappingRole;
       return {
         id: mapping.id || mapping.mappingId || `mapping-${index + 1}`,
-        name: mappingRole,
+        name: deviceName,
         location: zoneName,
-        installType: sensorEntity,
+        installType: deviceType,
         approvalScope: deviceEntity,
         status,
         statusLabel,
         tone: status === "deleted" ? "red" : status === "inactive" ? "amber" : "green",
         mappingRole,
+        deviceName,
+        deviceType,
         zoneName,
+        zoneId: mapping.zoneId || mapping.zone_id || zone?.id || zone?.zoneId || "",
         sensorEntity,
         deviceEntity,
+        entityId: mapping.entityId || mapping.entity_id || deviceEntity || sensorEntity,
+        groupId: mapping.groupId || mapping.group_id || "",
         protocol: mapping.protocol || "미등록",
         direction: mapping.direction || mapping.mappingDirection || "미등록",
         updatedAt: mapping.updatedAt || mapping.updated_at || "미등록",
         note: mapping.note || "미등록",
       };
     });
+  }
+
+  _r7SettingsEquipmentKindOptions() {
+    return ["온습도 센서", "CO2 센서", "일사 센서", "VWC 센서", "천창 장치", "측창 장치", "스크린 장치", "유동팬 장치", "배기팬 장치", "관수 장치"].map((label) => ({ value: label, label }));
+  }
+
+  _r7SettingsConnectedDeviceRows() {
+    const data = this.r7SettingsGreenhouseZoneData();
+    const zones = Array.isArray(data.zones) ? data.zones : [];
+    const fromMappings = this.normalizeR7SettingsEquipmentEntityRows(Array.isArray(data.deviceSensorMappings) ? data.deviceSensorMappings : [], zones);
+    const fromDevices = Array.isArray(data.devices) ? data.devices.map((device, index) => ({
+      id: device.id || device.deviceId || `device-${index + 1}`,
+      name: device.deviceName || device.device_name || device.name || device.entityId || device.entity_id || "장치",
+      deviceName: device.deviceName || device.device_name || device.name || device.entityId || device.entity_id || "장치",
+      deviceType: device.deviceType || device.device_type || "장치",
+      installType: device.deviceType || device.device_type || "장치",
+      entityId: device.entityId || device.entity_id || "",
+      deviceEntity: device.entityId || device.entity_id || "",
+      zoneId: device.zoneId || device.zone_id || "",
+      location: device.zoneName || device.zone_name || device.zoneId || device.zone_id || "구역 미등록",
+      status: device.status || "active",
+      statusLabel: device.status === "inactive" ? "비활성" : "정상",
+      tone: device.status === "inactive" ? "amber" : "green",
+      groupId: device.groupId || device.group_id || "",
+      note: device.note || "미등록",
+    })) : [];
+    const byEntity = new Map();
+    [...fromDevices, ...fromMappings].forEach((row) => {
+      const key = row.entityId || row.deviceEntity || row.sensorEntity || row.id;
+      if (key && !byEntity.has(key)) byEntity.set(key, row);
+    });
+    return [...byEntity.values()];
+  }
+
+  _r7SettingsRegisteredGroupDeviceIds() {
+    const data = this.r7SettingsGreenhouseZoneData();
+    const ids = new Set();
+    (Array.isArray(data.deviceGroups) ? data.deviceGroups : []).forEach((group) => {
+      (Array.isArray(group.deviceIds) ? group.deviceIds : []).forEach((id) => ids.add(String(id)));
+      (Array.isArray(group.devices) ? group.devices : []).forEach((device) => ids.add(String(device.id || device.deviceId || device.entityId || device.entity_id || device)));
+    });
+    this._r7SettingsConnectedDeviceRows().forEach((row) => { if (row.groupId) ids.add(String(row.id)); });
+    return ids;
+  }
+
+  _r7SettingsUngroupedConnectedDeviceRows() {
+    const grouped = this._r7SettingsRegisteredGroupDeviceIds();
+    return this._r7SettingsConnectedDeviceRows().filter((row) => !grouped.has(String(row.id)) && !["inactive", "deleted", "비활성", "삭제됨"].includes(String(row.status || "").toLowerCase()));
+  }
+
+  _r7SettingsUnlinkedHaEntityOptions() {
+    const data = this.r7SettingsGreenhouseZoneData();
+    const used = new Set(this._r7SettingsConnectedDeviceRows().flatMap((row) => [row.entityId, row.deviceEntity, row.sensorEntity].filter(Boolean).map(String)));
+    const states = this.hass?.states || {};
+    const entities = Object.values(states).map((state) => ({ entity_id: state.entity_id, name: state.attributes?.friendly_name || state.entity_id })).filter((item) => item.entity_id && /^(sensor|switch|fan|cover|binary_sensor|number|climate)\./.test(item.entity_id));
+    const fallback = Array.isArray(data.unlinkedHaEntities) ? data.unlinkedHaEntities.map((item) => ({ entity_id: item.entityId || item.entity_id || item, name: item.name || item.friendlyName || item.entityId || item.entity_id || item })) : [];
+    const byId = new Map();
+    [...entities, ...fallback].forEach((item) => { if (item.entity_id && !used.has(String(item.entity_id))) byId.set(item.entity_id, item); });
+    return [...byId.values()].map((item) => ({ value: item.entity_id, label: `${item.name} · ${item.entity_id}`, attrs: 'data-r7-settings-unlinked-ha-entity-option="true"' }));
   }
 
   renderR7CdaActionFooter({ left = "", actions = [], attrs = "" } = {}) {
@@ -2603,24 +2683,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const settingsData = this.r7SettingsGreenhouseZoneData();
     const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._homeContext?.zones || [{ id: "zone-a", zoneName: "A구역", name: "A구역" }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
     const zoneOptions = zones.map((zone, index) => ({ value: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`, label: this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역` }));
-    const groupTypeOptions = [{ value: "환경 그룹", label: "환경 그룹" }, { value: "관수 그룹", label: "관수 그룹" }, { value: "환기 그룹", label: "환기 그룹" }, { value: "안전 그룹", label: "안전 그룹" }];
+    const groupTypeOptions = [{ value: "센서 그룹", label: "센서 그룹" }, { value: "장치 그룹", label: "장치 그룹" }, { value: "관수 그룹", label: "관수 그룹" }];
+    const candidates = this._r7SettingsUngroupedConnectedDeviceRows();
+    const candidateHtml = candidates.length ? candidates.map((device) => `<label data-r7-settings-device-group-candidate-row="${device.id}" style="border:1px solid #edf4ef;border-radius:10px;padding:9px;display:flex;gap:8px;align-items:flex-start;background:#fff;"><input type="checkbox" name="deviceIds" value="${device.id}" data-r7-settings-device-group-candidate-checkbox data-r7-settings-device-group-ungrouped-only="true" data-r7-settings-device-group-multi-select="true" style="margin-top:3px;"><span style="display:grid;gap:3px;"><b>${device.deviceName || device.name}</b><span>${device.deviceType || device.installType} · ${device.entityId || device.deviceEntity}</span></span></label>`).join("") : `<p data-r7-settings-device-group-no-candidate style="margin:0;color:#78927f;font-size:12px;">그룹에 추가할 수 있는 연결 완료·미등록 장치가 없습니다.</p>`;
     const sections = [
-      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("groupName", "그룹명", values.groupName || "신규 장치 그룹")}${this._r7SettingsCreateSelect("groupType", "그룹 유형", groupTypeOptions, values.groupType || "환경 그룹")}</div>`),
-      this._r7SettingsCreateSection("zone-fk", "구역 FK", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("zoneId", "구역 FK", zoneOptions, values.zoneId || zoneOptions[0]?.value || "zone-a", 'data-r7-settings-device-group-zone-fk-select')}${this._r7SettingsCreateField("linkPolicy", "장치 연결 정책", values.linkPolicy || "다중 그룹 연결 허용")}</div>`),
+      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("groupName", "그룹명", values.groupName || "신규 장치 그룹")}${this._r7SettingsCreateSelect("groupType", "그룹 유형", groupTypeOptions, values.groupType || "장치 그룹")}</div>`),
+      this._r7SettingsCreateSection("zone-fk", "구역 FK", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("zoneId", "구역 FK", zoneOptions, values.zoneId || zoneOptions[0]?.value || "zone-a", 'data-r7-settings-device-group-zone-fk-select')}${this._r7SettingsCreateField("linkPolicy", "장치 연결 정책", values.linkPolicy || "연결 완료 장치만 그룹 등록")}</div>`),
+      this._r7SettingsCreateSection("device-candidates", "그룹 장치 선택", `<div data-r7-settings-device-group-candidates data-r7-settings-device-group-ungrouped-only="true" data-r7-settings-device-group-multi-select="true" style="display:grid;gap:8px;">${candidateHtml}</div>`),
       this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "그룹 추가 사유", values.note || "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-group-create", title: "그룹 생성", subtitle: "온실 생성 팝업처럼 구역 FK와 저장 전 검증을 나눠 입력합니다", formAttr: "data-r7-settings-device-group-create-form", closeKind: "device-group", state: modal.state, error: modal.error, submitLabel: "그룹 저장", sections });
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-group-create", title: "그룹 생성", subtitle: "연결 완료 후 아직 그룹에 등록되지 않은 장치를 체크박스로 다중 선택합니다", formAttr: "data-r7-settings-device-group-create-form", closeKind: "device-group", state: modal.state, error: modal.error, submitLabel: "그룹 저장", sections });
   }
 
   renderR7SettingsDeviceSensorMappingModal() {
     const modal = this._settingsDeviceSensorMappingModal || { open: false };
-    const selected = (this._zonesForRender?.() || [])[0] || { zoneId: "zone-1", name: "1구역" };
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._zonesForRender?.() || [{ zoneId: "zone-1", name: "1구역" }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
+    const zoneOptions = zones.map((zone, index) => ({ value: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`, label: this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역` }));
+    const entityOptions = this._r7SettingsUnlinkedHaEntityOptions();
+    const equipmentKindOptions = this._r7SettingsEquipmentKindOptions();
+    const selectedEntity = entityOptions[0]?.value || "";
     const sections = [
-      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("zoneId", "구역 ID", selected.zoneId || selected.id || "zone-1")}${this._r7SettingsCreateField("mappingRole", "역할", "환경 센서/환기 장치")}</div>`),
-      this._r7SettingsCreateSection("mapping-target", "매핑 대상", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("sensorEntity", "센서 entity", "sensor.greenhouse_temperature")}${this._r7SettingsCreateField("deviceEntity", "장비 entity", "switch.greenhouse_fan")}</div>`),
-      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "매핑 변경 근거", "")),
+      this._r7SettingsCreateSection("device-connection", "장치 연결 작성", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("entityId", "장비 엔티티 ID", entityOptions.length ? entityOptions : [{ value: "", label: "미연결 HA entity 없음", attrs: 'data-r7-settings-unlinked-ha-entity-option="empty"' }], selectedEntity, 'data-r7-settings-unlinked-ha-entity-select')}${this._r7SettingsCreateSelect("deviceType", "장비종류", equipmentKindOptions, modal.values?.deviceType || "온습도 센서", 'data-r7-settings-equipment-kind-select')}</div>`),
+      this._r7SettingsCreateSection("device-name", "장치명", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("deviceName", "장치명", modal.values?.deviceName || "", 'placeholder="예: A구역 천창 1" data-r7-settings-device-name-input')}${this._r7SettingsCreateSelect("zoneId", "구역", zoneOptions, modal.values?.zoneId || zoneOptions[0]?.value || "zone-1")}</div>`),
+      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "장치 연결 근거", "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-sensor-mapping", title: "장치/그룹", subtitle: "생육조사 작성 모달처럼 구역 기준과 장치·그룹 대상을 나눠 입력합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state, error: modal.error, submitLabel: "매핑 저장", sections });
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-sensor-mapping", title: "장치 연결 작성", subtitle: "HA에 추가되어 있지만 Green Smart에 아직 연결되지 않은 장비 entity를 선택합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state, error: modal.error, submitLabel: "장치 연결 저장", sections }).replace('data-r7-record-modal-type="device-sensor-mapping"', 'data-r7-record-modal-type="device-sensor-mapping" data-r7-settings-device-connection-authoring-modal="true"');
   }
 
 
@@ -2638,7 +2726,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const meta = {
       "greenhouse-info": { title: "온실 정보", subtitle: "온실 기본 정보와 운영 기준 검토", icon: "mdi:greenhouse", marker: "data-r7-settings-greenhouse-info-split-modal", type: "온실 정보", target: primaryGreenhouse.name || this._homeContext?.greenhouseName || "제1온실" },
       "zone-list": { title: "구역 목록", subtitle: "구역별 상태와 현재 작기 검토", icon: "mdi:view-list-outline", marker: "data-r7-settings-zone-list-split-modal", type: "구역 목록", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
-      "equipment-info": { title: "장치 목록", subtitle: "선택 구역 장치/그룹 상태 검토", icon: "mdi:devices", marker: "data-r7-settings-equipment-info-split-modal", type: "장치 목록", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
+      "equipment-info": { title: "장치 목록", subtitle: "장치 연결 작성 기준으로 등록/연결된 장치를 확인합니다", icon: "mdi:devices", marker: "data-r7-settings-device-list-cda-modal=\"true\" data-r7-settings-equipment-info-split-modal", type: "장치 목록", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
+      "device-group-list": { title: "그룹 목록", subtitle: "장치 그룹별 포함 장치와 상태를 확인합니다", icon: "mdi:view-grid-plus-outline", marker: "data-r7-settings-device-group-list-cda-modal=\"true\"", type: "그룹 목록", target: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역" },
     }[kind] || { title: "상세", subtitle: "설정 상세 검토", icon: "mdi:information-outline", marker: "data-r7-settings-greenhouse-info-split-modal", type: "설정", target: "대상" };
     if (kind === "greenhouse-info") {
       const fallbackGreenhouse = { id: "greenhouse-primary", name: this._homeContext?.greenhouseName || "대표 온실", location: this._homeContext?.location || "위치 미등록", installType: "설치유형 미등록", approvalScope: "승인범위 미등록", status: "active", note: "미등록", createdAt: "미등록", updatedAt: "미등록" };
@@ -2694,23 +2783,58 @@ class GreenSmartRebuildPanel extends HTMLElement {
       });
     }
     if (kind === "equipment-info") {
-      const fallbackMapping = { id: "mapping-primary", zoneId: this._r7ZoneId?.(selectedZone) || selectedZone.zoneId || selectedZone.id || "zone-1", zoneName: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역", mappingRole: "환경 센서/환기 장치", sensorEntity: "sensor.greenhouse_temperature", deviceEntity: "switch.greenhouse_fan", status: "active", protocol: "mqtt", direction: "sensor-to-device", updatedAt: "미등록", note: "미등록" };
-      const sourceMappings = settingsDataDeviceSensorMappings.length ? settingsDataDeviceSensorMappings : [fallbackMapping];
-      const equipmentRows = this.normalizeR7SettingsEquipmentEntityRows(sourceMappings, settingsZones.length ? settingsZones : zones);
+      const equipmentRows = this._r7SettingsConnectedDeviceRows().length ? this._r7SettingsConnectedDeviceRows() : [this.normalizeR7SettingsEquipmentEntityRows([{ id: "mapping-primary", zoneId: this._r7ZoneId?.(selectedZone) || selectedZone.zoneId || selectedZone.id || "zone-1", zoneName: this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "1구역", deviceName: "장치 미등록", deviceType: "장치", entityId: "entity 미연결", status: "inactive", note: "장치 연결 작성 후 목록에 표시됩니다" }], settingsZones.length ? settingsZones : zones)[0]];
       const selectedMapping = equipmentRows.find((row) => String(row.id) === String(modal.selectedMappingId || modal.selectedId || "")) || equipmentRows[0];
+      const entityFooterActions = selectedMapping?.id ? [
+        `<button type="button" data-r7-settings-device-delete-button="${selectedMapping.id}" data-r7-cdb-modal-action="negative" data-r7-cdb-negative-action="delete" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button>`,
+        `<button type="button" data-r7-settings-device-edit-button="${selectedMapping.id}" data-r7-cdb-modal-action="positive" data-r7-cdb-positive-action="edit" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`,
+      ] : [];
       return this.renderR7CdaEntityListDetailModal({
         entityType: "equipment-info",
         modalOpen: modal.open,
         icon: meta.icon,
         title: meta.title,
-        subtitle: "장비/센서 매핑별 목록 · 선택 매핑 상세",
+        subtitle: "장치별 목록 · 선택 장치 상세",
         rows: equipmentRows,
         selectedId: selectedMapping?.id,
-        listColumns: R7_SETTINGS_EQUIPMENT_LIST_COLUMNS,
-        detailFields: R7_SETTINGS_EQUIPMENT_DETAIL_FIELD_ORDER,
-        detailSectionTitle: "1. 장비/센서 매핑 상세 정보",
-        detailPanelAttrs: "data-r7-settings-equipment-info-detail-panel",
+        listColumns: ["장치명", "장비종류", "장비 엔티티 ID", "상태"],
+        detailFields: [["deviceName", "장치명"], ["deviceType", "장비종류"], ["entityId", "장비 엔티티 ID"], ["location", "구역"], ["statusLabel", "상태"], ["note", "메모"]],
+        detailSectionTitle: "1. 장치 상세 정보",
+        detailPanelAttrs: "data-r7-settings-device-list-detail-panel",
         rowAttr: "data-r7-settings-equipment-info-row",
+        entityFooterActions,
+        closeAttr: "data-r7-settings-shortcut-cda-split-close",
+        marker: meta.marker,
+        suppressCloseButtons: true,
+      });
+    }
+    if (kind === "device-group-list") {
+      const groups = Array.isArray(settingsData.deviceGroups) && settingsData.deviceGroups.length ? settingsData.deviceGroups : [{ id: "group-empty", groupName: "그룹 미등록", groupType: "장치 그룹", zoneId: this._r7ZoneId?.(selectedZone) || selectedZone.zoneId || selectedZone.id || "zone-a", deviceIds: [], status: "empty", note: "그룹 생성 후 장치를 선택하세요" }];
+      const devicesById = new Map(this._r7SettingsConnectedDeviceRows().map((device) => [String(device.id), device]));
+      const groupRows = groups.map((group, index) => {
+        const deviceIds = Array.isArray(group.deviceIds) ? group.deviceIds : [];
+        const deviceNames = deviceIds.map((id) => devicesById.get(String(id))?.deviceName || devicesById.get(String(id))?.name || id).join(" · ") || "장치 없음";
+        return { id: group.id || group.groupId || `group-${index + 1}`, name: group.groupName || group.group_name || "장치 그룹", location: group.zoneName || group.zone_name || group.zoneId || group.zone_id || "구역 미등록", installType: group.groupType || group.group_type || "장치 그룹", approvalScope: `${deviceIds.length}개 장치`, status: group.status || "active", statusLabel: group.status === "inactive" ? "비활성" : group.status === "empty" ? "미등록" : "정상", tone: group.status === "inactive" || group.status === "empty" ? "amber" : "green", deviceNames, note: group.note || deviceNames };
+      });
+      const selectedGroup = groupRows.find((row) => String(row.id) === String(modal.selectedGroupId || modal.selectedId || "")) || groupRows[0];
+      const entityFooterActions = selectedGroup?.id ? [
+        `<button type="button" data-r7-settings-device-group-delete-button="${selectedGroup.id}" data-r7-cdb-modal-action="negative" data-r7-cdb-negative-action="delete" style="border:1px solid #efc5c0;border-radius:10px;background:#fff7f6;color:#b4453a;padding:8px 12px;font-weight:950;">삭제</button>`,
+        `<button type="button" data-r7-settings-device-group-edit-button="${selectedGroup.id}" data-r7-cdb-modal-action="positive" data-r7-cdb-positive-action="edit" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`,
+      ] : [];
+      return this.renderR7CdaEntityListDetailModal({
+        entityType: "device-group-list",
+        modalOpen: modal.open,
+        icon: meta.icon,
+        title: meta.title,
+        subtitle: "그룹별 목록 · 선택 그룹 상세",
+        rows: groupRows,
+        selectedId: selectedGroup?.id,
+        listColumns: ["그룹명", "그룹 유형", "구역", "장치 수"],
+        detailFields: [["name", "그룹명"], ["installType", "그룹 유형"], ["location", "구역"], ["approvalScope", "장치 수"], ["deviceNames", "포함 장치"], ["statusLabel", "상태"]],
+        detailSectionTitle: "1. 그룹 상세 정보",
+        detailPanelAttrs: "data-r7-settings-device-group-list-detail-panel",
+        rowAttr: "data-r7-settings-device-group-list-row",
+        entityFooterActions,
         closeAttr: "data-r7-settings-shortcut-cda-split-close",
         marker: meta.marker,
       });
@@ -3026,7 +3150,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const createCards = [
       createCard({ kind: "settings-greenhouse-create", title: "온실 생성", icon: "mdi:greenhouse", primary: "새 온실 없음", note: "온실을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 온실 추가", addAttr: 'data-r7-settings-greenhouse-create-button', shortcutLabel: "온실 정보", shortcutAttr: 'data-r7-settings-greenhouse-info-shortcut-button' }),
       createCard({ kind: "settings-zone-create", title: "구역 생성", icon: "mdi:plus-circle-outline", primary: "새 구역 없음", note: "구역을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 구역 추가", addAttr: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button', shortcutLabel: "구역 목록", shortcutAttr: 'data-r7-settings-zone-list-shortcut-button' }),
-      createCard({ kind: "settings-equipment-mapping", title: "장치/그룹", icon: "mdi:devices", primary: "매핑 확인 필요", note: "선택 구역의 장치와 그룹을 확인합니다", addLabel: "장치/그룹 열기", addAttr: 'data-r7-settings-device-sensor-mapping-button', shortcutLabel: "장치 목록", shortcutAttr: 'data-r7-settings-equipment-info-shortcut-button' }),
+      createCard({ kind: "settings-equipment-mapping", title: "장치 연결 작성", icon: "mdi:devices", primary: "매핑 확인 필요", note: "선택 구역의 장치와 그룹을 확인합니다", addLabel: "장치 연결 작성", addAttr: 'data-r7-settings-device-sensor-mapping-button', shortcutLabel: "장치 목록", shortcutAttr: 'data-r7-settings-equipment-info-shortcut-button' }),
     ].join("");
     const zoneRows = normalized.map((zone, index) => ({
       kind: zone.zoneName,
@@ -3143,7 +3267,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const zones = (this._zonesForRender?.() || []).filter((zone) => this._r7ZoneId(zone) !== "all");
     const labels = {
       "greenhouse-zones": "온실·구역",
-      "device-sensor-mapping": "장치·그룹",
+      "device-sensor-mapping": "장치 연결 작성",
       "users-permissions": "사용자·권한",
       "system-integration": "시스템·연동",
       "domain-ownership": "도메인 소유권",
@@ -3257,12 +3381,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7SettingsAdminZoneVisual() {
-    const tabs = [["greenhouse-zones", "온실·구역"], ["device-sensor-mapping", "장치·그룹"], ["users-permissions", "사용자·권한"], ["system-integration", "시스템·연동"]];
+    const tabs = [["greenhouse-zones", "온실·구역"], ["device-sensor-mapping", "장치 연결 작성"], ["users-permissions", "사용자·권한"], ["system-integration", "시스템·연동"]];
     const legacyTabs = [["domain-ownership", "도메인 소유권"], ["role-permissions", "역할·권한"], ["mapping-devices", "매핑·장치"], ["system-security", "시스템·보안"], ["rbac-policy", "RBAC 정책"]];
     const requestedActiveTab = this._activeR7DomainSubtabs["settings-admin"] || "greenhouse-zones";
     const activeTab = tabs.some(([key]) => key === requestedActiveTab) ? requestedActiveTab : "greenhouse-zones";
     const panels = tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
-    return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 장치·그룹, 사용자·권한, 시스템·연동의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 4개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
+    return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 장치 연결 작성, 사용자·권한, 시스템·연동의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 4개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
   }
 
   renderR7EnvironmentControlDetail() {

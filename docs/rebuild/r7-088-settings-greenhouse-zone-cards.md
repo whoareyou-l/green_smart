@@ -1,6 +1,6 @@
 # R7-088 Settings greenhouse/zone CDB card layout
 
-Status: current baseline for `v1.14.84`.
+Status: current baseline for `v1.14.85`.
 
 ## Scope
 
@@ -13,7 +13,7 @@ Allowed card wrappers:
 - `renderR7CdbButtonTwoCard()`
 - `renderR7CdbListCard()`
 
-## CDB card grammar hotfix in v1.14.84
+## CDB card grammar hotfix in v1.14.85
 
 The greenhouse/zone subtab is locked to the same CDB grammar used by the device/sensor mapping subtab.
 
@@ -28,7 +28,7 @@ summary row: 3 summary cards
 action row: 3 two-button cards
   - 온실 생성
   - 구역 생성
-  - 장치/그룹
+  - 장치 연결 작성
 
 list row: 1 list card
   - 구역 목록

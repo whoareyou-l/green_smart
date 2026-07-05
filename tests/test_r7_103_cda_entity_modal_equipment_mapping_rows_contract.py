@@ -33,9 +33,9 @@ def _render(mappings_js: str) -> str:
 
 
 def test_r7_103_version_surfaces_are_1_14_28():
-    assert '"version": "1.14.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
 
 
 def test_r7_103_source_has_reusable_equipment_entity_schema_not_review_like_dump():
@@ -57,7 +57,7 @@ def test_r7_103_equipment_rows_are_mapping_entities_when_db_has_multiple_mapping
     assert len(rows) == 2
     assert 'data-r7-settings-equipment-info-row="map-a"' in html
     assert 'data-r7-settings-equipment-info-row="map-b"' in html
-    for value in ['환경 센서', '관수 밸브', '1구역', '2구역', 'sensor.temp_1', 'sensor.moisture_2', 'switch.fan_1', 'switch.valve_2']:
+    for value in ['환경 센서', '관수 밸브', '1구역', '2구역', 'switch.fan_1', 'switch.valve_2']:
         assert value in html
     assert 'data-r7-cda-entity-field-row="mappingRole"' not in html
     assert '<b>센서</b>' not in html
@@ -69,7 +69,7 @@ def test_r7_103_equipment_fallback_is_one_mapping_row_not_summary_rows():
     html = _render("[]")
     rows = re.findall(r'data-r7-cda-entity-row="equipment-info"', html)
     assert len(rows) == 1
-    assert '환경 센서/환기 장치' in html
+    assert '장치 미등록' in html
     assert '센서 1개' not in html
     assert '장비 1개' not in html
     assert '미연결 없음' not in html
@@ -77,26 +77,23 @@ def test_r7_103_equipment_fallback_is_one_mapping_row_not_summary_rows():
 
 def test_r7_103_equipment_detail_field_order_and_values_are_operator_schema():
     html = _render("[{ id: 'map-b', zoneId: 'zone-b', zoneName: '2구역', mappingRole: '관수 밸브', sensorEntity: 'sensor.moisture_2', deviceEntity: 'switch.valve_2', status: 'inactive', protocol: 'modbus', direction: 'manual', updatedAt: '2026-07-02 10:00', note: '점검 필요' }]")
-    assert '1. 장비/센서 매핑 상세 정보' in html
+    assert '1. 장치 상세 정보' in html
     ordered = [
-        'data-r7-cda-entity-detail-field="mappingRole"',
-        'data-r7-cda-entity-detail-field="zoneName"',
-        'data-r7-cda-entity-detail-field="sensorEntity"',
-        'data-r7-cda-entity-detail-field="deviceEntity"',
-        'data-r7-cda-entity-detail-field="protocol"',
-        'data-r7-cda-entity-detail-field="direction"',
-        'data-r7-cda-entity-detail-field="status"',
-        'data-r7-cda-entity-detail-field="updatedAt"',
+        'data-r7-cda-entity-detail-field="deviceName"',
+        'data-r7-cda-entity-detail-field="deviceType"',
+        'data-r7-cda-entity-detail-field="entityId"',
+        'data-r7-cda-entity-detail-field="location"',
+        'data-r7-cda-entity-detail-field="statusLabel"',
         'data-r7-cda-entity-detail-field="note"',
     ]
     positions = [html.index(marker) for marker in ordered]
     assert positions == sorted(positions)
-    for value in ['관수 밸브', '2구역', 'sensor.moisture_2', 'switch.valve_2', 'modbus', 'manual', '비활성', '2026-07-02 10:00', '점검 필요']:
+    for value in ['관수 밸브', '2구역', 'switch.valve_2', '비활성', '점검 필요']:
         assert value in html
     assert 'data-r7-cda-entity-detail-footer="equipment-info"' in html
 
 
 def test_r7_103_documented():
     doc = _read(DOC)
-    for phrase in ["CDA entity", "장비/센서 매핑별 row", "필드별 row 금지", "매핑 상세", "공통 팝업 모달"]:
+    for phrase in ["CDA entity", "장치 목록", "필드별 row 금지", "장치 상세", "공통 팝업 모달"]:
         assert phrase in doc

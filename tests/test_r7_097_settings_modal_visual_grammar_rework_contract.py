@@ -34,16 +34,16 @@ def _render_with_modal(open_call: str) -> str:
 
 
 def test_r7_097_version_surfaces_are_1_14_22():
-    assert '"version": "1.14.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
 
 
 def test_r7_097_create_modals_feel_like_growth_survey_write_modal():
     cases = [
         ('panel._openSettingsGreenhouseCreateModal();', 'greenhouse-create', ['basic-info', 'operation-standard', 'memo']),
         ('panel._openSettingsZoneCreateModal();', 'zone-create', ['basic-info', 'zone-composition', 'memo']),
-        ('panel._openSettingsDeviceSensorMappingModal();', 'device-sensor-mapping', ['basic-info', 'mapping-target', 'memo']),
+        ('panel._openSettingsDeviceSensorMappingModal();', 'device-sensor-mapping', ['device-connection', 'device-name', 'memo']),
     ]
     for call, kind, sections in cases:
         html = _render_with_modal(call)
@@ -89,9 +89,9 @@ def test_r7_097_shortcut_list_modals_feel_like_approval_or_audit_review_modal():
             assert '선택 항목 상세' in html
             assert '선택 항목 검토' not in html
         elif kind == 'equipment-info':
-            assert 'data-r7-settings-equipment-info-detail-panel' in html
+            assert 'data-r7-settings-device-list-detail-panel' in html
             assert 'data-r7-cda-entity-modal="equipment-info"' in html
-            assert '1. 장비/센서 매핑 상세 정보' in html
+            assert '1. 장치 상세 정보' in html
             assert '선택 항목 상세' in html
             assert '선택 항목 검토' not in html
         else:
@@ -100,7 +100,8 @@ def test_r7_097_shortcut_list_modals_feel_like_approval_or_audit_review_modal():
             assert 'data-r7-settings-shortcut-review-section="evidence"' in html
             assert '선택 항목 검토' in html
             assert '감사 근거' in html or '승인 기준' in html
-        assert '닫기' in html
+        if kind != 'equipment-info':
+            assert '닫기' in html
 
 
 def test_r7_097_source_keeps_reference_grammar_names_near_settings_modals():

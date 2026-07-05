@@ -35,15 +35,15 @@ def _render_settings():
 
 
 def test_r7_067_version_surfaces_are_1_13_2():
-    assert '"version": "1.14.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
 
 
 def test_r7_067_visible_settings_tabs_are_only_current_four_tabs():
     html = _render_settings()
     visible_nav = html.split('data-r7-domain-subtab-panel', 1)[0]
-    expected = ['온실·구역', '장치·그룹', '사용자·권한', '시스템·연동']
+    expected = ['온실·구역', '장치 연결 작성', '사용자·권한', '시스템·연동']
     for label in expected:
         assert label in visible_nav
     for removed in ['안전·승인 정책', '진단·감사']:

@@ -37,9 +37,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_095_version_surfaces_are_1_14_20():
-    assert '"version": "1.14.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
 
 
 def test_r7_095_backend_api_views_exist_and_are_registered():
@@ -75,8 +75,8 @@ def test_r7_095_equipment_card_is_selected_zone_status_counts():
 def test_r7_095_equipment_create_card_becomes_device_sensor_mapping_entry():
     html = _render_greenhouse_zones()
     assert 'data-r7-record-card-shell="settings-equipment-mapping"' in html
-    assert '장치/그룹' in html
-    assert '장치/그룹 열기' in html
+    assert '장치 연결 작성' in html
+    assert '장치 연결 작성' in html
     assert 'data-r7-settings-device-sensor-mapping-button' in html
     assert '+ 새 장비 추가' not in html
 
@@ -111,5 +111,5 @@ def test_r7_095_modals_and_frontend_api_boundaries_exist():
 
 def test_r7_095_documented():
     doc = _read(DOC)
-    for phrase in ['선택 구역 상태', '센서, 장비, 미연결', '장치/그룹', '팝업 모달', 'API']:
+    for phrase in ['선택 구역 상태', '센서, 장비, 미연결', '장치 연결 작성', '팝업 모달', 'API']:
         assert phrase in doc

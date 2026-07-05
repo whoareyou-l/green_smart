@@ -48,9 +48,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.14.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -67,7 +67,7 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
         'data-r7-settings-device-list-panel',
     ):
         assert marker in html
-    for text in ('장치·그룹', '장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록'):
+    for text in ('장치 연결 작성', '장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록'):
         assert text in html
     for text in ('미연결', '통신 오류', '장치 오류', '센서', '장치', '센서 그룹', '장치 그룹', '관수 그룹', '장치 연결'):
         assert text in html

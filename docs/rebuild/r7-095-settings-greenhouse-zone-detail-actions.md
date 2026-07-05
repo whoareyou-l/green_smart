@@ -1,6 +1,6 @@
 # R7-095 Settings greenhouse/zone detail actions
 
-Status: current baseline for `v1.14.84`.
+Status: current baseline for `v1.14.85`.
 
 ## Scope
 
@@ -12,12 +12,12 @@ Status: current baseline for `v1.14.84`.
 
 ## Device/sensor mapping
 
-기존 `장비 생성` 카드는 `장치/그룹` 진입 카드로 변경한다. 주요 버튼은 `장치/그룹 열기`이며 장치/그룹 팝업 모달을 연다.
+기존 `장비 생성` 카드는 `장치 연결 작성` 진입 카드로 변경한다. 주요 버튼은 `장치 연결 작성`이며 장치 연결 작성 팝업 모달을 연다.
 
 ## Modals and API
 
 - 온실 생성 팝업 모달: `POST /api/green_smart/rebuild/settings/greenhouses`
 - 구역 생성 팝업 모달: `POST /api/green_smart/rebuild/settings/zones`
-- 장치/그룹 팝업 모달: `POST /api/green_smart/rebuild/settings/device-sensor-mappings`
+- 장치 연결 작성 팝업 모달: `POST /api/green_smart/rebuild/settings/device-sensor-mappings`
 
 API는 현재 approval-gated shell이며 실제 장치 실행은 하지 않는다.

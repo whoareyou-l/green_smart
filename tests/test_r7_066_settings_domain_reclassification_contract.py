@@ -42,14 +42,14 @@ def _render_settings(active_tab="greenhouse-zones", open_permission_matrix=False
 
 
 def test_r7_066_version_surfaces_are_1_13_1():
-    assert '"version": "1.14.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
 
 
 def test_r7_066_settings_new_tabs_replace_admin_explanation_first_tabs():
     html = _render_settings()
-    for label in ('온실·구역', '장치·그룹', '사용자·권한', '시스템·연동'):
+    for label in ('온실·구역', '장치 연결 작성', '사용자·권한', '시스템·연동'):
         assert label in html
     for key in ('greenhouse-zones', 'device-sensor-mapping', 'users-permissions', 'system-integration'):
         assert f'data-r7-settings-admin-subtab="{key}"' in html

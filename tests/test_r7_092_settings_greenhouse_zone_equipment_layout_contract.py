@@ -41,9 +41,9 @@ def _fragment(html: str, marker: str, next_marker: str) -> str:
 
 
 def test_r7_092_version_surfaces_are_1_14_17():
-    assert '"version": "1.14.84"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.85"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
 
 
 def test_r7_092_info_card_headers_have_common_status_badges():
@@ -98,7 +98,7 @@ def test_r7_092_required_cards_exist_with_expected_titles():
         'data-r7-record-card-shell="settings-equipment-mapping"',
     ]:
         assert marker in html
-    for phrase in ['장비 구성', '온실 생성', '구역 생성', '장치/그룹', '+ 새 온실 추가', '+ 새 구역 추가', '장치/그룹 열기']:
+    for phrase in ['장비 구성', '온실 생성', '구역 생성', '장치 연결 작성', '+ 새 온실 추가', '+ 새 구역 추가', '장치 연결 작성']:
         assert phrase in html
 
 
