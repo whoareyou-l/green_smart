@@ -17,6 +17,7 @@ EDGE_REALTIME_EVALUATION_INTERVAL_SECONDS = 60
 CENTER_CROP_INTERLOCK_SNAPSHOT_SYNC_INTERVAL_SECONDS = 300
 EDGE_ENVIRONMENT_TELEMETRY_SYNC_INTERVAL_SECONDS = 60
 CENTER_CROP_POLICY_PULL_INTERVAL_SECONDS = 300
+SYSTEM_INTEGRATION_WATCHDOG_INTERVAL_SECONDS = 60
 
 
 def _schema_bootstrap_enabled() -> bool:
@@ -74,6 +75,47 @@ def _teardown_safety_guard_watchdog_scheduler(hass) -> None:
     if unsub:
         unsub()
         domain_data["safety_guard_watchdog_scheduler_stopped"] = True
+
+
+async def _run_system_integration_watchdog_tick(hass, now) -> None:
+    from .rebuild_settings_write_views import system_integration_watchdog_response
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    try:
+        domain_data["system_integration_watchdog_snapshot"] = await system_integration_watchdog_response(hass)
+        domain_data["last_system_integration_watchdog_tick"] = now
+    except Exception as exc:  # pragma: no cover - HA runtime scheduler path
+        domain_data["system_integration_watchdog_snapshot"] = {
+            "dbUse": "MariaDB",
+            "dbVersion": "확인 실패",
+            "dbStatus": "오류 1건",
+            "centerConnectionStatus": "미연결",
+            "centerApiStatus": "오류 1건",
+            "edgeApiStatus": "오류 1건",
+            "systemIntegrationError": exc.__class__.__name__,
+        }
+        _LOGGER.warning("System integration watchdog scheduler tick failed: %s", exc)
+
+
+async def _setup_system_integration_watchdog_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("unsub_system_integration_watchdog"):
+        return
+
+    def _tick(now):
+        hass.loop.call_soon_threadsafe(hass.async_create_task, _run_system_integration_watchdog_tick(hass, now))
+
+    domain_data["unsub_system_integration_watchdog"] = async_track_time_interval(hass, _tick, timedelta(seconds=SYSTEM_INTEGRATION_WATCHDOG_INTERVAL_SECONDS))
+    domain_data["system_integration_watchdog_scheduler_started"] = True
+    await _run_system_integration_watchdog_tick(hass, None)
+
+
+def _teardown_system_integration_watchdog_scheduler(hass) -> None:
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    unsub = domain_data.pop("unsub_system_integration_watchdog", None)
+    if unsub:
+        unsub()
+        domain_data["system_integration_watchdog_scheduler_stopped"] = True
 
 
 async def _run_growth_report_notification_scheduler_tick(hass, now) -> None:
@@ -361,6 +403,7 @@ async def async_setup(hass, config):
             domain_data["_settings_views_registered"] = True
         _LOGGER.warning("green_smart schema bootstrap skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
         _LOGGER.warning("green_smart heavy DB-backed HTTP views skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
+        await _setup_system_integration_watchdog_scheduler(hass)
         _LOGGER.warning("green_smart DB-backed schedulers skipped (GREEN_SMART_SCHEMA_BOOTSTRAP=0)")
         return True
     if not domain_data.get("_views_registered"):
@@ -463,6 +506,7 @@ async def async_setup(hass, config):
         hass.http.register_view(DeviceFinalTargetExecutionView())
         domain_data["_views_registered"] = True
     await _setup_safety_guard_watchdog_scheduler(hass)
+    await _setup_system_integration_watchdog_scheduler(hass)
     await _setup_growth_report_notification_scheduler(hass)
     await _setup_crop_policy_notification_scheduler(hass)
     await _setup_center_crop_interlock_snapshot_sync_scheduler(hass)
@@ -503,6 +547,7 @@ async def async_unload_entry(hass, entry):
         unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         _teardown_safety_guard_watchdog_scheduler(hass)
+        _teardown_system_integration_watchdog_scheduler(hass)
         _teardown_growth_report_notification_scheduler(hass)
         _teardown_crop_policy_notification_scheduler(hass)
         _teardown_center_crop_interlock_snapshot_sync_scheduler(hass)

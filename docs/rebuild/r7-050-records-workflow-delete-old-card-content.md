@@ -2,7 +2,7 @@
 
 > **For Hermes:** The user's instruction was not only to add product actions. The old content-card UI must be used as documentation/reference, then removed from the visible `기록·작업` rendering path. Rebuild the visible layout from the new product judgment structure only.
 
-**Target version:** v1.14.73
+**Target version:** v1.14.74
 **Scope:** `작물 운영 > 기록·작업` subtab only
 **Corrective reason:** R7-049 still left the new product layout inside the old Crop Operations `product-card-grid` wrapper and retained old R7-048 record-card compatibility markers in the visible records workflow. That violates the user instruction to reference the previous content, delete it, and rewrite the structure.
 
@@ -105,7 +105,7 @@ tests/test_r7_050_records_workflow_old_content_deleted_contract.py
 
 Must verify:
 
-1. Version surfaces are `1.14.73`.
+1. Version surfaces are `1.14.74`.
 2. This corrective plan exists and states old cards are reference-only then removed.
 3. Rendered `records-workflow` contains product-layout markers and action affordances.
 4. Rendered `records-workflow` does **not** contain:

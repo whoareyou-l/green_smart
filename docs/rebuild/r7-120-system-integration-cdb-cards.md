@@ -1,6 +1,6 @@
 # R7-120 Settings system integration CDB cards
 
-Status: current baseline for `v1.14.73`.
+Status: current baseline for `v1.14.74`.
 
 ## Scope
 
@@ -17,17 +17,17 @@ Allowed card wrappers:
 ```text
 summary row: 3 summary cards
   - Home Assistant 연동
-    - HA 버전
-    - HACS 버전
-    - GS 버전
+    - HA 버전: 도커에 설치된 Home Assistant 버전
+    - HACS 버전: `/config/custom_components/hacs/manifest.json` 버전 또는 미설치
+    - GS 버전: Green Smart manifest 버전
   - DB 연결
-    - 전체 DB 상태
-    - HA DB 상태
-    - GS DB 상태
+    - DB 사용: MariaDB
+    - DB 버전: `SELECT VERSION()` 결과
+    - DB 상태: 정상 또는 오류 N건
   - API 상태
-    - Center 연결 상태
-    - Center API 상태
-    - Edge API 상태
+    - Center 연결 상태: 연결 또는 미연결
+    - Center API 상태: 정상 또는 오류 N건
+    - Edge API 상태: 정상 또는 오류 N건
 
 action row: 3 two-button cards
   - HA 리소스

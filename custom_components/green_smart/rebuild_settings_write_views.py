@@ -1,12 +1,35 @@
 """Real DB-backed settings API for Green Smart rebuild greenhouse/zone modals."""
 from __future__ import annotations
 
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
-from aiohttp import web
+from aiohttp import ClientTimeout, web
 from homeassistant.components.http import HomeAssistantView
+try:
+    from homeassistant.const import __version__ as HA_VERSION
+except Exception:  # isolated contract tests may stub homeassistant as a non-package
+    HA_VERSION = "unknown"
+try:
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
+except Exception:  # isolated contract tests may stub homeassistant as a non-package
+    def async_get_clientsession(hass):
+        raise RuntimeError("Home Assistant aiohttp client session unavailable")
 
+try:
+    from .const import DOMAIN
+except Exception:  # isolated contract tests may stub package modules
+    DOMAIN = "green_smart"
 from .db import execute, fetchall
+try:
+    from .db import fetchone
+except Exception:  # older isolated stubs only expose fetchall/execute
+    async def fetchone(hass, sql: str, args: tuple = ()):  # type: ignore[no-redef]
+        rows = await fetchall(hass, sql, args)
+        return rows[0] if rows else None
 
 
 def _request_actor(request: web.Request) -> str:
@@ -416,6 +439,89 @@ async def create_settings_device_sensor_mapping(hass, payload: dict[str, Any], a
     return next((row for row in rows if row["zoneId"] == zone_id and row["sensorEntity"] == sensor_entity and row["deviceEntity"] == device_entity), rows[0] if rows else {"zoneId": zone_id})
 
 
+def _manifest_version(path: Path, default: str = "미설치") -> str:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return str(data.get("version") or default)
+    except Exception:
+        return default
+
+
+def _ha_version_status(hass) -> str:
+    return str(HA_VERSION or "unknown")
+
+
+def _hacs_version_status(hass) -> str:
+    hacs_manifest = Path(hass.config.path("custom_components", "hacs", "manifest.json")) if hasattr(hass, "config") else Path("/config/custom_components/hacs/manifest.json")
+    return _manifest_version(hacs_manifest, default="미설치")
+
+
+def _gs_version_status(hass) -> str:
+    gs_manifest = Path(__file__).with_name("manifest.json")
+    return _manifest_version(gs_manifest, default="unknown")
+
+
+async def _db_watchdog_status(hass) -> dict[str, Any]:
+    errors: list[str] = []
+    version = "확인 실패"
+    try:
+        row = await fetchone(hass, "SELECT VERSION() AS version")
+        version = str((row or {}).get("version") or "unknown")
+    except Exception as exc:
+        errors.append(exc.__class__.__name__)
+    return {
+        "dbUse": "MariaDB",
+        "dbVersion": version,
+        "dbStatus": "정상" if not errors else f"오류 {len(errors)}건",
+        "dbErrorCount": len(errors),
+        "dbErrors": errors[:3],
+    }
+
+
+async def _api_watchdog_status(hass) -> dict[str, Any]:
+    center_errors: list[str] = []
+    edge_errors: list[str] = []
+    center_base_url = os.environ.get("GREENITY_CENTER_BASE_URL") or os.environ.get("GREEN_SMART_CENTER_BASE_URL") or "http://127.0.0.1:18000"
+    center_connected = False
+    try:
+        session = async_get_clientsession(hass)
+        async with session.get(f"{center_base_url.rstrip('/')}/health", timeout=ClientTimeout(total=3)) as response:
+            center_connected = response.status < 500
+            if response.status >= 400:
+                center_errors.append(f"http_{response.status}")
+    except Exception as exc:
+        center_errors.append(exc.__class__.__name__)
+    try:
+        await list_settings_greenhouses(hass)
+    except Exception as exc:
+        edge_errors.append(exc.__class__.__name__)
+    return {
+        "centerConnectionStatus": "연결" if center_connected and not center_errors else "미연결",
+        "centerApiStatus": "정상" if not center_errors else f"오류 {len(center_errors)}건",
+        "edgeApiStatus": "정상" if not edge_errors else f"오류 {len(edge_errors)}건",
+        "centerApiErrorCount": len(center_errors),
+        "edgeApiErrorCount": len(edge_errors),
+        "centerApiErrors": center_errors[:3],
+        "edgeApiErrors": edge_errors[:3],
+    }
+
+
+async def system_integration_watchdog_response(hass) -> dict[str, Any]:
+    db_status = await _db_watchdog_status(hass)
+    api_status = await _api_watchdog_status(hass)
+    snapshot = {
+        "haVersion": _ha_version_status(hass),
+        "hacsVersion": _hacs_version_status(hass),
+        "gsVersion": _gs_version_status(hass),
+        **db_status,
+        **api_status,
+        "checkedAt": datetime.now(timezone.utc).isoformat(),
+        "source": "green_smart_system_watchdog",
+    }
+    hass.data.setdefault(DOMAIN, {})["system_integration_watchdog_snapshot"] = snapshot
+    return snapshot
+
+
 async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
     greenhouses = await list_settings_greenhouses(hass, farm_id)
     zones = await list_settings_zones(hass, farm_id)
@@ -434,7 +540,8 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
         label = device_group.get("groupName") or device_group.get("groupType")
         if zone is not None and label:
             zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
-    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "deviceGroups": device_groups}
+    system_integration = await system_integration_watchdog_response(hass)
+    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "deviceGroups": device_groups, "systemIntegration": system_integration}
 
 
 class RebuildSettingsSnapshotView(HomeAssistantView):

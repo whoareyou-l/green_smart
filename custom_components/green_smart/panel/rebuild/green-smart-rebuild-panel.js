@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.73";
+const REBUILD_VERSION = "1.14.74";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -302,7 +302,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   r7SettingsGreenhouseZoneData() {
-    return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [] };
+    return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], systemIntegration: {} };
   }
 
   async _loadSettingsGreenhouseZoneData() {
@@ -320,6 +320,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         deviceSensorMappings: Array.isArray(response?.deviceSensorMappings) ? response.deviceSensorMappings : [],
         devices: Array.isArray(response?.devices) ? response.devices : [],
         deviceGroups: Array.isArray(response?.deviceGroups) ? response.deviceGroups : [],
+        systemIntegration: response?.systemIntegration && typeof response.systemIntegration === "object" ? response.systemIntegration : {},
       };
       this._settingsGreenhouseZoneLoadState = "ready";
     } catch (error) {
@@ -2888,10 +2889,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7SettingsSystemIntegrationSubtab() {
+    const system = this.r7SettingsGreenhouseZoneData().systemIntegration || {};
     const summaryCards = [
-      this.renderR7CdbSummaryCard({ key: "system-ha-connection", icon: "mdi:home-assistant", title: "Home Assistant 연동", primary: "panel/API/entity 연결 상태", rows: [this._r7SettingsGreenhouseValueRow("HA 버전", "Home Assistant"), this._r7SettingsGreenhouseValueRow("HACS 버전", "HACS"), this._r7SettingsGreenhouseValueRow("GS 버전", REBUILD_VERSION)], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="ha-connection"' }),
-      this.renderR7CdbSummaryCard({ key: "system-db-connection", icon: "mdi:database-outline", title: "DB 연결", primary: "MariaDB/recorder 경계", rows: [this._r7SettingsGreenhouseValueRow("전체 DB 상태", "분리 유지"), this._r7SettingsGreenhouseValueRow("HA DB 상태", "HA recorder"), this._r7SettingsGreenhouseValueRow("GS DB 상태", "green_smart")], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="db-connection"' }),
-      this.renderR7CdbSummaryCard({ key: "system-api-status", icon: "mdi:api", title: "API 상태", primary: "내부 API · 센터 API", rows: [this._r7SettingsGreenhouseValueRow("Center 연결 상태", "분석/동기화"), this._r7SettingsGreenhouseValueRow("Center API 상태", "센터 API"), this._r7SettingsGreenhouseValueRow("Edge API 상태", "실시간 판단")], tone: "blue", statusKey: "due-today", extraAttrs: 'data-r7-settings-system-summary-card="api-status"' }),
+      this.renderR7CdbSummaryCard({ key: "system-ha-connection", icon: "mdi:home-assistant", title: "Home Assistant 연동", primary: "HA/HACS/GS 실제 버전", rows: [this._r7SettingsGreenhouseValueRow("HA 버전", system.haVersion || "확인 중"), this._r7SettingsGreenhouseValueRow("HACS 버전", system.hacsVersion || "미설치"), this._r7SettingsGreenhouseValueRow("GS 버전", system.gsVersion || REBUILD_VERSION)], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="ha-connection"' }),
+      this.renderR7CdbSummaryCard({ key: "system-db-connection", icon: "mdi:database-outline", title: "DB 연결", primary: "MariaDB watchdog", rows: [this._r7SettingsGreenhouseValueRow("DB 사용", system.dbUse || "MariaDB"), this._r7SettingsGreenhouseValueRow("DB 버전", system.dbVersion || "확인 중"), this._r7SettingsGreenhouseValueRow("DB 상태", system.dbStatus || "확인 중")], tone: (system.dbErrorCount || 0) ? "amber" : "green", statusKey: (system.dbErrorCount || 0) ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="db-connection"' }),
+      this.renderR7CdbSummaryCard({ key: "system-api-status", icon: "mdi:api", title: "API 상태", primary: "Center/Edge watchdog", rows: [this._r7SettingsGreenhouseValueRow("Center 연결 상태", system.centerConnectionStatus || "확인 중"), this._r7SettingsGreenhouseValueRow("Center API 상태", system.centerApiStatus || "확인 중"), this._r7SettingsGreenhouseValueRow("Edge API 상태", system.edgeApiStatus || "확인 중")], tone: ((system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "amber" : "blue", statusKey: ((system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="api-status"' }),
     ];
     const actionCard = ({ kind, title, icon, primary, note, firstLabel, firstAttrs, secondLabel, secondAttrs, tone = "blue" }) => this.renderR7CdbButtonTwoCard({ kind, icon, title, primary, note, statusKey: "due-today", tone, firstLabel, firstIcon: "mdi:open-in-new", firstTone: "green", firstAttrs: `${firstAttrs} data-r7-settings-modal-skip-record-binding="true"`, secondLabel, secondIcon: "mdi:format-list-bulleted", secondTone: "blue", secondAttrs: `${secondAttrs} data-r7-settings-modal-skip-record-binding="true"`, extraAttrs: `data-r7-settings-system-action-card="${kind}"` });
     const actionCards = [
