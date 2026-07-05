@@ -510,13 +510,28 @@ async def _api_watchdog_status(hass) -> dict[str, Any]:
     }
 
 
+def _update_status_label(entities: list[dict[str, Any]], unavailable_label: str = "확인 불가") -> str:
+    if not entities:
+        return unavailable_label
+    state = str(entities[0].get("state") or "unknown").lower()
+    if state in {"off", "idle", "latest", "up_to_date", "unknown"}:
+        return "최신"
+    if state in {"on", "update_available"}:
+        return "업데이트 가능"
+    return "확인 중"
+
+
 async def system_integration_watchdog_response(hass) -> dict[str, Any]:
     db_status = await _db_watchdog_status(hass)
     api_status = await _api_watchdog_status(hass)
+    update_entities = _discover_update_entities(hass)
     snapshot = {
         "haVersion": _ha_version_status(hass),
         "hacsVersion": _hacs_version_status(hass),
         "gsVersion": _gs_version_status(hass),
+        "gsUpdateStatus": _update_status_label(update_entities.get("gs", [])),
+        "hacsUpdateStatus": _update_status_label(update_entities.get("hacs", [])),
+        "haDbUpdateStatus": "Update Agent 도입 후",
         **db_status,
         **api_status,
         "checkedAt": datetime.now(timezone.utc).isoformat(),
@@ -622,8 +637,11 @@ async def _save_center_connection(hass, data: dict[str, Any]) -> None:
         await store.async_save(data)
 
 
-def _redacted_center_connection(data: dict[str, Any], status: str = "미연결") -> dict[str, Any]:
-    return {"baseUrl": data.get("baseUrl") or data.get("base_url") or "", "enabled": bool(data.get("enabled", True)), "credentialState": "configured" if data.get("credential") else "missing", "connectionStatus": status, "credentialPreview": "[REDACTED]" if data.get("credential") else ""}
+def _redacted_center_connection(data: dict[str, Any], status: str = "미연결", reachability: str = "미검증") -> dict[str, Any]:
+    configured = bool(data.get("credential"))
+    connection_status = "설정됨" if configured else status
+    # UI contract marker: "connectionStatus": "설정됨" when credential is stored; reachabilityStatus carries 실제 연결성.
+    return {"baseUrl": data.get("baseUrl") or data.get("base_url") or "", "enabled": bool(data.get("enabled", True)), "credentialState": "configured" if configured else "missing", "connectionStatus": connection_status, "reachabilityStatus": reachability, "reachable": reachability == "연결", "configured": configured, "credentialPreview": "[REDACTED]" if configured else "", "allowedCredentialPreview": "[REDACTED]" if configured else ""}
 
 
 async def system_center_connection_response(hass, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -631,7 +649,8 @@ async def system_center_connection_response(hass, payload: dict[str, Any] | None
     current = await _load_center_connection(hass)
     if payload:
         base_url = str(payload.get("baseUrl") or payload.get("base_url") or current.get("baseUrl") or "http://127.0.0.1:18000").rstrip("/")
-        credential = str(payload.get("allowedCredential") or payload.get("credential") or current.get("credential") or "")
+        credential_payload = str(payload.get("allowedCredential") or payload.get("credential") or "")
+        credential = current.get("credential") if credential_payload == "[REDACTED]" else (credential_payload or current.get("credential") or "")
         current = {"baseUrl": base_url, "credential": credential, "enabled": bool(payload.get("enabled", True))}
         await _save_center_connection(hass, current)
         if credential:
@@ -641,6 +660,7 @@ async def system_center_connection_response(hass, payload: dict[str, Any] | None
             except Exception:
                 pass
     status = "미연결"
+    reachability = "미검증"
     if current.get("baseUrl"):
         headers = {"Authorization": f"Bearer {current['credential']}"} if current.get("credential") else {}
         try:
@@ -649,10 +669,12 @@ async def system_center_connection_response(hass, payload: dict[str, Any] | None
                 async with session.get(f"{str(current['baseUrl']).rstrip('/')}{path}", headers=headers, timeout=ClientTimeout(total=3)) as response:
                     if response.status < 500:
                         status = "연결"
+                        reachability = "연결"
                         break
         except Exception:
             status = "미연결"
-    redacted = _redacted_center_connection(current, status)
+            reachability = "미연결"
+    redacted = _redacted_center_connection(current, status, reachability)
     hass.data.setdefault(DOMAIN, {})["center_connection"] = redacted
     return {"ok": True, "centerConnection": redacted}
 

@@ -17,11 +17,11 @@ def _read(path: Path) -> str:
 
 
 def test_rs014_version_surfaces_are_aligned_to_1_12_13():
-    assert '"version": "1.14.79"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.79"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.79"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.80"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.80"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.80"' in _read(REBUILD_PANEL)
     for path in (API_DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.14.79" in _read(path)
+        assert "v1.14.80" in _read(path)
 
 
 def test_rs014_api_source_adapter_document_records_db_backed_readonly_contract():
@@ -98,7 +98,7 @@ def test_docs_inventory_and_plan_record_rs014_completion_and_next_step():
         assert marker in spec
     for marker in (
         "Phase R4.10 — Rebuild home context API source adapter",
-        "Status:** `v1.14.79`에서 rebuild home context API가 RS-013 read-only DB adapter service를 source로 사용하도록 연결 완료",
+        "Status:** `v1.14.80`에서 rebuild home context API가 RS-013 read-only DB adapter service를 source로 사용하도록 연결 완료",
         "No production route removal in RS-014",
         "No DB migration in RS-014",
         "No write/mutation in RS-014",

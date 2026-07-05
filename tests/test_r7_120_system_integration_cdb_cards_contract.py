@@ -34,10 +34,10 @@ def _render_system_integration() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_120_version_surfaces_are_1_14_79():
-    assert '"version": "1.14.79"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.79"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.79"' in _read(REBUILD_PANEL)
+def test_r7_120_version_surfaces_are_1_14_80():
+    assert '"version": "1.14.80"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.80"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.80"' in _read(REBUILD_PANEL)
 
 
 def test_r7_120_system_integration_uses_cdb_layout_and_cards():

@@ -43,7 +43,8 @@ def test_r7_124_system_common_modal_close_buttons_include_record_shell_x():
 def test_r7_124_cards_show_real_action_summary_and_center_list_label():
     panel = _read(PANEL)
     for marker in (
-        'this._r7SettingsGreenhouseValueRow("GS/HACS", "확인·업데이트 가능")',
+        'this._r7SettingsGreenhouseValueRow("Green Smart", system.gsUpdateStatus || "최신 확인 중")',
+        'this._r7SettingsGreenhouseValueRow("HACS", system.hacsUpdateStatus || "최신 확인 중")',
         'this._r7SettingsGreenhouseValueRow("HA/DB", "Update Agent 도입 후")',
         'buttonLabel: "업데이트 목록"',
         'this._r7SettingsGreenhouseValueRow("작업", "로그 조회 · watchdog 재검사")',
