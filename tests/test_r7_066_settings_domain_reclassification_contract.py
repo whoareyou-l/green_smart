@@ -42,14 +42,14 @@ def _render_settings(active_tab="greenhouse-zones", open_permission_matrix=False
 
 
 def test_r7_066_version_surfaces_are_1_13_1():
-    assert '"version": "1.14.83"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.84"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
 
 
 def test_r7_066_settings_new_tabs_replace_admin_explanation_first_tabs():
     html = _render_settings()
-    for label in ('온실·구역', '장치·센서 매핑', '사용자·권한', '시스템·연동'):
+    for label in ('온실·구역', '장치·그룹', '사용자·권한', '시스템·연동'):
         assert label in html
     for key in ('greenhouse-zones', 'device-sensor-mapping', 'users-permissions', 'system-integration'):
         assert f'data-r7-settings-admin-subtab="{key}"' in html
@@ -90,7 +90,7 @@ def test_r7_066_crop_cycle_objects_tab_removed_and_owned_by_crop_operations():
 
 def test_r7_066_device_user_safety_system_tabs_are_reclassified():
     expected = {
-        'device-sensor-mapping': ['data-r7-settings-device-sensor-mapping', 'data-r7-settings-device-mapping-layout="device-group-error-device-list"', '장치 기본 정보', '그룹 기본 정보', '오류 기본 정보'],
+        'device-sensor-mapping': ['data-r7-settings-device-sensor-mapping', 'data-r7-settings-device-mapping-layout="error-device-group-device-list"', '장치 기본 정보', '그룹 기본 정보', '오류 기본 정보'],
         'users-permissions': ['data-r7-settings-users-permissions', 'admin', 'farm_owner', 'farm_staff', '조회 · 기록 · 전략 · 실행 · 안전 · 고급설정'],
         'system-integration': ['data-r7-settings-system-integration', 'Home Assistant 연동', 'DB 연결', '[REDACTED]'],
     }

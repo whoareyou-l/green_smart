@@ -41,9 +41,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_119_version_surfaces_are_1_14_80():
-    assert '"version": "1.14.83"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.84"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
 
 
 def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
@@ -81,7 +81,7 @@ def test_r7_119_greenhouse_zone_action_row_is_three_button_cards_in_order():
     assert zone in html
     assert mapping in html
     assert html.index(greenhouse) < html.index(zone) < html.index(mapping)
-    for text in ('온실 생성', '+ 새 온실 추가', '온실 정보', '구역 생성', '+ 새 구역 추가', '구역 목록', '장치/센서 매핑', '장치/센서 매핑 열기', '장비 구성'):
+    for text in ('온실 생성', '+ 새 온실 추가', '온실 정보', '구역 생성', '+ 새 구역 추가', '구역 목록', '장치/그룹', '장치/그룹 열기', '장치 목록'):
         assert text in html
 
 
@@ -104,5 +104,5 @@ def test_r7_119_greenhouse_zone_button_two_cards_have_common_subtitles():
 
 def test_r7_119_documented():
     doc = _read(DOC)
-    for phrase in ('CDB card grammar hotfix in v1.14.83', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card'):
+    for phrase in ('CDB card grammar hotfix in v1.14.84', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card'):
         assert phrase in doc

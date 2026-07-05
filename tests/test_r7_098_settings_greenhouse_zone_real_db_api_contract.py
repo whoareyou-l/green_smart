@@ -16,9 +16,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_098_version_surfaces_are_1_14_23():
-    assert '"version": "1.14.83"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.84"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
 
 
 def test_r7_098_db_schema_has_real_settings_tables_not_ack_only_shell():
@@ -101,5 +101,5 @@ def test_r7_098_frontend_submit_behavior_calls_post_then_get_snapshot():
 
 def test_r7_098_documented():
     doc = _read(DOC)
-    for phrase in ["실제 DB", "GET/POST", "settingsSnapshot", "green_smart_settings_greenhouses", "장치/센서 매핑"]:
+    for phrase in ["실제 DB", "GET/POST", "settingsSnapshot", "green_smart_settings_greenhouses", "장치/그룹"]:
         assert phrase in doc

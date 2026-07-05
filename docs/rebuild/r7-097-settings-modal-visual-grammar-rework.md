@@ -26,7 +26,7 @@
 
 - `+ 새 온실 추가`
 - `+ 새 구역 추가`
-- `장치/센서 매핑 열기`
+- `장치/그룹 열기`
 
 적용 marker:
 
@@ -44,7 +44,7 @@ data-r7-record-pre-save-checklist
 
 - `온실 정보`
 - `구역 목록`
-- `장비 구성`
+- `장치 목록`
 
 적용 marker:
 
@@ -65,4 +65,4 @@ data-r7-settings-shortcut-review-section="evidence"
 
 - 생성 모달이 생육조사 작성 모달의 sectioned form + 저장 전 검증 문법을 갖는지
 - 목록 모달이 승인 모달 / 감사 로그 모달의 review list + detail evidence 문법을 갖는지
-- 버전 표면이 `1.14.83`인지
+- 버전 표면이 `1.14.84`인지

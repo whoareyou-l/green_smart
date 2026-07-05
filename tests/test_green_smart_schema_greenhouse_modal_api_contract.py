@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_version_surfaces_are_1_14_37():
-    assert '"version": "1.14.83"' in _read(MANIFEST)
-    assert 'REBUILD_VERSION = "1.14.83"' in _read(PANEL)
-    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
+    assert '"version": "1.14.84"' in _read(MANIFEST)
+    assert 'REBUILD_VERSION = "1.14.84"' in _read(PANEL)
+    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
 
 
 def test_db_pool_targets_dedicated_green_smart_schema_not_homeassistant_db_name():

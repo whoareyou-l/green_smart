@@ -48,16 +48,16 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.14.83"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.83"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.83"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.84"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.84"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.84"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
     html = _render_device_mapping()
     for marker in (
         'data-r7-settings-device-sensor-mapping',
-        'data-r7-settings-device-mapping-layout="device-group-error-device-list"',
+        'data-r7-settings-device-mapping-layout="error-device-group-device-list"',
         'data-r7-settings-device-summary-grid',
         'data-r7-settings-device-card="device-basic"',
         'data-r7-settings-device-card="group-basic"',
@@ -67,7 +67,9 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
         'data-r7-settings-device-list-panel',
     ):
         assert marker in html
-    for text in ('장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록'):
+    for text in ('장치·그룹', '장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록'):
+        assert text in html
+    for text in ('미연결', '통신 오류', '장치 오류', '센서', '장치', '센서 그룹', '장치 그룹', '관수 그룹', '장치 연결'):
         assert text in html
     assert 'data-r7-settings-device-create-button' in html
     assert 'data-r7-settings-device-group-create-button' in html
@@ -80,8 +82,12 @@ def test_r7_115_device_mapping_uses_only_cdb_card_grammar_for_rows():
     html = _render_device_mapping()
     assert html.count('data-r7-cdb-common-card="summary-card"') >= 3
     assert html.count('data-r7-cdb-card-type="summary"') >= 3
-    assert html.count('data-r7-cdb-card-type="button-two"') >= 3
+    assert html.count('data-r7-cdb-card-type="button-one"') >= 1
+    assert html.count('data-r7-cdb-card-type="button-two"') >= 2
     error_card_start = html.index('data-r7-settings-device-card="error-basic"')
+    device_card_start = html.index('data-r7-settings-device-card="device-basic"')
+    group_card_start = html.index('data-r7-settings-device-card="group-basic"')
+    assert error_card_start < device_card_start < group_card_start
     error_card_end = html.index('</article>', error_card_start)
     error_card = html[error_card_start:error_card_end]
     assert 'data-r7-settings-device-error-common-card="approval-needed"' in error_card
@@ -106,7 +112,8 @@ def test_r7_115_device_button_two_cards_have_common_subtitles():
         start = html.rindex('<article', 0, marker_at)
         end = html.index('</article>', marker_at)
         snippet = html[start:end]
-        assert 'data-r7-cdb-card-type="button-two"' in snippet
+        expected_type = 'button-one' if card == 'device-create' else 'button-two'
+        assert f'data-r7-cdb-card-type="{expected_type}"' in snippet
         assert 'data-r7-common-card-subtitle' in snippet
         assert subtitle in snippet
 

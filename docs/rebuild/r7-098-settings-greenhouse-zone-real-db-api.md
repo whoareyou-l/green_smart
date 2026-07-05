@@ -52,4 +52,4 @@ POST 응답은 더 이상 `approval-gated-settings-shell` ack가 아니다. 실�
 
 ## 범위
 
-이번 slice는 온실·구역·장치/센서 매핑의 실제 DB/API CRUD baseline 중 생성/조회 흐름이다. 삭제/수정 전용 UI, 승인 워크플로우와 감사 로그 DB 세분화는 별도 slice에서 다룬다.
+이번 slice는 온실·구역·장치/그룹의 실제 DB/API CRUD baseline 중 생성/조회 흐름이다. 삭제/수정 전용 UI, 승인 워크플로우와 감사 로그 DB 세분화는 별도 slice에서 다룬다.
