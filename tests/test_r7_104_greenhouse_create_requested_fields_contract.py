@@ -31,9 +31,9 @@ def _render_greenhouse_create_modal() -> str:
 
 
 def test_r7_104_version_surfaces_are_1_14_29():
-    assert '"version": "1.14.76"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.76"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.76"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.77"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.77"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.77"' in _read(REBUILD_PANEL)
 
 
 def test_r7_104_greenhouse_create_basic_info_has_only_name_and_location_inputs():

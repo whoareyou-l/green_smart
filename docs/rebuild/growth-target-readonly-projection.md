@@ -1,6 +1,6 @@
 # RS-018 Growth Target Read-only Projection
 
-> 기준 버전: `v1.14.76`
+> 기준 버전: `v1.14.77`
 > Status: growth target read-only projection
 > 목적: `currentCropAssignment`를 기반으로 `생육목표` 화면에 구역별 목표 상태를 읽기 전용 projection으로 표시한다.
 
