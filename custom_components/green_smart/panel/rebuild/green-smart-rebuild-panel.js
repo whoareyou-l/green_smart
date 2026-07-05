@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.77";
+const REBUILD_VERSION = "1.14.78";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -768,6 +768,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._settingsSystemActionModal = { open: true, kind: "center", state: "ready", data, error: "" };
     } catch (error) {
       this._settingsSystemActionModal = { open: true, kind: "center", state: "error", data: null, error: error?.message || "system-center-load-failed" };
+    }
+    this.render();
+  }
+
+  async _openSettingsSystemCenterListModal() {
+    this._settingsSystemActionModal = { open: true, kind: "center-list", state: "loading", data: null, error: "" };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_CENTER_CONNECTION_API_PATH);
+      this._settingsSystemActionModal = { open: true, kind: "center-list", state: "ready", data, error: "" };
+    } catch (error) {
+      this._settingsSystemActionModal = { open: true, kind: "center-list", state: "error", data: null, error: error?.message || "system-center-list-load-failed" };
     }
     this.render();
   }
@@ -1628,8 +1641,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("[data-r7-settings-system-db-api-error-log-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsSystemErrorsModal(); });
     });
-    this.querySelectorAll("[data-r7-settings-system-center-auth-connect-button], [data-r7-settings-system-center-connection-list-button]").forEach((button) => {
+    this.querySelectorAll("[data-r7-settings-system-center-auth-connect-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsSystemCenterConnectionModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-system-center-connection-list-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsSystemCenterListModal(); });
+    });
+    this.querySelectorAll("[data-r7-record-modal-close]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        if (button.closest?.("[data-r7-record-modal-type=\"system-center-connection\"]")) {
+          event.preventDefault();
+          this._closeSettingsDetailActionModal("system-action");
+        }
+      });
     });
     this.querySelectorAll("[data-r7-settings-system-action-modal-close]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsSystemActionModal(); });
@@ -2686,11 +2710,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (!modal.open) return `<template data-r7-settings-system-action-modal="true" data-r7-settings-system-action-modal-open="false"></template>`;
     const data = modal.data || {};
     const error = modal.error || "";
+    if (modal.kind === "center-list") {
+      const center = data.centerConnection || {};
+      const rows = [{ id: "primary", name: "Primary Center", baseUrl: center.baseUrl || "미설정", connectionStatus: center.connectionStatus || "미연결", credentialState: center.credentialState || "missing" }];
+      const selected = rows[0];
+      const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-system-center-search-input", searchPlaceholder: "Center 목록 검색", filters: [["all","전체"],["connected","연결"],["missing","미연결"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "connected" ? "green" : "amber", attrs: `data-r7-settings-system-center-filter="${key}"` })) });
+      const rowHtml = rows.map((row) => this.renderR7CdaCompactListRow({ selected: row === selected, attrs: `data-r7-settings-system-center-row="${row.id}" data-r7-settings-system-center-list-item-button="${row.id}"`, columns: [`<b>${row.name}</b>`, `<span>${row.baseUrl}</span>`, `<span>${row.connectionStatus}</span>`, `<span>${row.credentialState === "configured" ? "[REDACTED]" : "missing"}</span>`] })).join("");
+      const listPanel = this.renderR7CdaListPanel({ title: "Center 목록", columns: ["이름", "URL", "상태", "인증"], rowsHtml: rowHtml, footer: `<span>총 ${rows.length}건</span><button type="button" data-r7-settings-system-center-auth-connect-button style="border:1px solid #badcc8;border-radius:8px;background:#f0fbf4;color:#25804a;padding:6px 10px;font-weight:950;">Center 연결 추가</button>`, attrs: 'data-r7-settings-system-center-list-panel' });
+      const detailBody = `${this.renderR7CdaDetailSection({ title: "1. Center 연결", attrs: 'data-r7-settings-system-center-section="connection"', body: `<div style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:.8fr 1.2fr;overflow:hidden;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">URL</span><span style="padding:8px;">${selected.baseUrl}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;">${selected.connectionStatus}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">허용 토큰</span><span style="padding:8px;">${selected.credentialState === 'configured' ? '[REDACTED]' : 'missing'}</span></div>` })}${this.renderR7CdaDetailSection({ title: "2. 사용 가능 API", attrs: 'data-r7-settings-system-center-section="apis"', body: `<p style="margin:7px 0 0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">농약 · 기상청 API는 Center 연결 토큰 검증 후 중앙 adapter 경로에서 사용합니다.</p>` })}`;
+      const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 Center 상세", attrs: 'data-r7-settings-system-center-detail-panel', badge: `<span style="border:1px solid #badcc8;border-radius:999px;padding:5px 9px;font-size:11px;color:#25804a;background:#f0fbf4;font-weight:950;">${selected.connectionStatus}</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ left: `<span>토큰 원문은 저장 후 다시 표시하지 않습니다</span>`, actions: [`<button type="button" data-r7-settings-system-center-auth-connect-button data-r7-cdb-modal-action="positive" style="border:1px solid #badcc8;border-radius:10px;background:#f0fbf4;color:#25804a;padding:8px 12px;font-weight:950;">수정</button>`] }) });
+      const header = this.renderR7CdaModalHeader({ icon: "mdi:cloud-key-outline", title: "Center 목록", subtitle: "전체 역활별 권한 보기 팝업과 같은 CDA 목록/상세 틀에서 Center 연결을 확인합니다", closeAttr: "data-r7-settings-system-action-modal-close" });
+      return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: 'data-r7-settings-system-center-list-cda-modal="true" data-r7-settings-system-action-modal="true"', cardAttrs: 'data-r7-settings-system-center-list-cda-card', header, search, left: listPanel, right: detailPanel, footer: `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ Center에서 발급한 허용 토큰을 1회 붙여넣어 저장합니다.</span><button type="button" data-r7-settings-system-action-modal-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>` });
+    }
     if (modal.kind === "center") {
       const center = data.centerConnection || {};
       const sections = [
         this._r7SettingsCreateSection("center-connection", "Center 연결 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("baseUrl", "Center URL", center.baseUrl || "http://127.0.0.1:18000", 'data-r7-settings-system-center-common-modal="true" data-r7-settings-system-center-db-column="base_url"')}${this._r7SettingsCreateField("allowedCredential", "허용 토큰", "", 'placeholder="저장 시 [REDACTED]로만 표시" data-r7-settings-system-center-common-modal="true" data-r7-settings-system-center-db-column="allowed_credential"')}</div>`),
         this._r7SettingsCreateSection("center-status", "연결 상태", `<div data-r7-settings-system-center-common-modal="true" style="display:grid;grid-template-columns:.8fr 1.2fr .8fr 1.2fr;overflow:hidden;border:1px solid #edf4ef;border-radius:12px;"><span style="padding:8px;background:#fbfdfb;font-weight:950;">상태</span><span style="padding:8px;">${center.connectionStatus || "미연결"}</span><span style="padding:8px;background:#fbfdfb;font-weight:950;">인증</span><span style="padding:8px;">${center.credentialState || "missing"} · [REDACTED]</span></div>`),
+        this._r7SettingsCreateSection("center-credential-guide", "허용 토큰 등록 방식", `<p data-r7-settings-system-center-common-modal="true" style="margin:0;border:1px solid #edf4ef;border-radius:12px;background:#fbfdfb;padding:10px;line-height:1.5;">Center에서 발급한 허용 토큰을 1회 붙여넣어 저장합니다. 토큰 원문은 저장 후 다시 표시하지 않습니다.</p>`),
       ];
       return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "system-center-connection", title: center.credentialState === "configured" ? "Center 연결 수정" : "Center 연결 추가", subtitle: "역활별 권한 추가/수정 팝업과 같은 공통 작성 모달에서 Center URL과 허용 토큰을 저장합니다", formAttr: "data-r7-settings-system-center-form", closeKind: "system-action", state: modal.state || "idle", error, submitLabel: "Center 연결 저장/검증", sections });
     }
@@ -3039,9 +3076,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.renderR7CdbSummaryCard({ key: "system-db-connection", icon: "mdi:database-outline", title: "DB 연결", primary: "MariaDB watchdog", rows: [this._r7SettingsGreenhouseValueRow("DB 사용", system.dbUse || "MariaDB"), this._r7SettingsGreenhouseValueRow("DB 버전", system.dbVersion || "확인 중"), this._r7SettingsGreenhouseValueRow("DB 상태", system.dbStatus || "확인 중")], tone: (system.dbErrorCount || 0) ? "amber" : "green", statusKey: (system.dbErrorCount || 0) ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="db-connection"' }),
       this.renderR7CdbSummaryCard({ key: "system-api-status", icon: "mdi:api", title: "API 상태", primary: "Center/Edge watchdog", rows: [this._r7SettingsGreenhouseValueRow("Center 연결 상태", system.centerConnectionStatus || "확인 중"), this._r7SettingsGreenhouseValueRow("Center API 상태", system.centerApiStatus || "확인 중"), this._r7SettingsGreenhouseValueRow("Edge API 상태", system.edgeApiStatus || "확인 중")], tone: ((system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "amber" : "blue", statusKey: ((system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="api-status"' }),
     ];
-    const deferredUpdateCard = this.renderR7CdbButtonOneCard({ kind: "system-update-deferred", icon: "mdi:update", title: "업데이트", subtitle: "DB·HA·HACS·GS 최신화", statusKey: "needs-verification", tone: "amber", rows: [this._r7SettingsGreenhouseValueRow("대상", "DB · HA · HACS · GS"), this._r7SettingsGreenhouseValueRow("상태", "기능 보류"), this._r7SettingsGreenhouseValueRow("방식", "Update Agent 예정")], buttonLabel: "기능 보류", buttonIcon: "mdi:clock-outline", buttonTone: "amber", buttonAttrs: 'data-r7-settings-system-update-deferred-button data-r7-settings-system-update-status="deferred" data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-system-action-card="system-update-deferred" data-r7-settings-system-update-card="deferred"' });
-    const dbApiErrorCard = this.renderR7CdbButtonOneCard({ kind: "system-db-api-errors", icon: "mdi:alert-decagram-outline", title: "DB/API 오류", subtitle: "watchdog 오류 로그", statusKey: ((system.dbErrorCount || 0) + (system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "needs-verification" : "normal-ready", tone: ((system.dbErrorCount || 0) + (system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "amber" : "green", rows: [this._r7SettingsGreenhouseValueRow("DB 오류", `${system.dbErrorCount || 0}건`), this._r7SettingsGreenhouseValueRow("Center 오류", `${system.centerApiErrorCount || 0}건`), this._r7SettingsGreenhouseValueRow("Edge 오류", `${system.edgeApiErrorCount || 0}건`)], buttonLabel: "오류 로그 보기", buttonIcon: "mdi:file-search-outline", buttonTone: "amber", buttonAttrs: 'data-r7-settings-system-db-api-error-log-button data-r7-settings-system-log-fix-stage="inspect-and-fix" data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-system-action-card="system-db-api-errors" data-r7-settings-system-db-api-error-card="logs"' });
-    const centerConnectionCard = this.renderR7CdbButtonTwoCard({ kind: "system-center-connection", icon: "mdi:cloud-key-outline", title: "Center 연결", primary: system.centerConnectionStatus || "미연결", note: "Center 허용 토큰과 연결 상태를 관리합니다.", statusKey: system.centerConnectionStatus === "연결" ? "normal-ready" : "needs-verification", tone: system.centerConnectionStatus === "연결" ? "green" : "blue", firstLabel: "허용 토큰 연결", firstIcon: "mdi:key-plus", firstTone: "green", firstAttrs: 'data-r7-settings-system-center-auth-connect-button data-r7-settings-system-center-auth-stage="allow-credential" data-r7-settings-modal-skip-record-binding="true"', secondLabel: "Center 연결 목록", secondIcon: "mdi:format-list-bulleted", secondTone: "blue", secondAttrs: 'data-r7-settings-system-center-connection-list-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-system-action-card="system-center-connection" data-r7-settings-system-center-connection-card="credential"' });
+    const deferredUpdateCard = this.renderR7CdbButtonOneCard({ kind: "system-update-deferred", icon: "mdi:update", title: "업데이트", subtitle: "GS/HACS 업데이트 우선 지원", statusKey: "due-today", tone: "blue", rows: [this._r7SettingsGreenhouseValueRow("GS/HACS", "확인·업데이트 가능"), this._r7SettingsGreenhouseValueRow("HA/DB", "Update Agent 도입 후"), this._r7SettingsGreenhouseValueRow("방식", "HA update entity 기반")], buttonLabel: "업데이트 목록", buttonIcon: "mdi:format-list-checks", buttonTone: "blue", buttonAttrs: 'data-r7-settings-system-update-deferred-button data-r7-settings-system-update-status="gs-hacs-only" data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-system-action-card="system-update-deferred" data-r7-settings-system-update-card="deferred"' });
+    const dbApiErrorCard = this.renderR7CdbButtonOneCard({ kind: "system-db-api-errors", icon: "mdi:alert-decagram-outline", title: "DB/API 오류", subtitle: "로그·재검사·수정 힌트", statusKey: ((system.dbErrorCount || 0) + (system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "needs-verification" : "normal-ready", tone: ((system.dbErrorCount || 0) + (system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)) ? "amber" : "green", rows: [this._r7SettingsGreenhouseValueRow("작업", "로그 조회 · watchdog 재검사"), this._r7SettingsGreenhouseValueRow("오류", `${(system.dbErrorCount || 0) + (system.centerApiErrorCount || 0) + (system.edgeApiErrorCount || 0)}건`), this._r7SettingsGreenhouseValueRow("수정", "힌트 확인 후 재검사")], buttonLabel: "오류 작업 보기", buttonIcon: "mdi:file-search-outline", buttonTone: "amber", buttonAttrs: 'data-r7-settings-system-db-api-error-log-button data-r7-settings-system-log-fix-stage="inspect-and-fix" data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-system-action-card="system-db-api-errors" data-r7-settings-system-db-api-error-card="logs"' });
+    const centerConnectionCard = this.renderR7CdbButtonTwoCard({ kind: "system-center-connection", icon: "mdi:cloud-key-outline", title: "Center 연결", primary: system.centerConnectionStatus || "미연결", note: "Center 허용 토큰과 연결 상태를 관리합니다.", statusKey: system.centerConnectionStatus === "연결" ? "normal-ready" : "needs-verification", tone: system.centerConnectionStatus === "연결" ? "green" : "blue", firstLabel: "허용 토큰 연결", firstIcon: "mdi:key-plus", firstTone: "green", firstAttrs: 'data-r7-settings-system-center-auth-connect-button data-r7-settings-system-center-auth-stage="allow-credential" data-r7-settings-modal-skip-record-binding="true"', secondLabel: "Center 목록", secondIcon: "mdi:format-list-bulleted", secondTone: "blue", secondAttrs: 'data-r7-settings-system-center-connection-list-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-system-action-card="system-center-connection" data-r7-settings-system-center-connection-card="credential"' });
     const actionCards = [deferredUpdateCard, dbApiErrorCard, centerConnectionCard];
     const rows = [
       { kind: "Home Assistant", at: "panel/API/entity", memo: "HA 연결과 custom panel 정적 리소스 상태", state: "정상", tone: "green", icon: "mdi:home-assistant", extraAttrs: 'data-r7-settings-system-integration-row="ha"' },

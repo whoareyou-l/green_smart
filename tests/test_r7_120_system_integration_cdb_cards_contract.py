@@ -34,10 +34,10 @@ def _render_system_integration() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_120_version_surfaces_are_1_14_77():
-    assert '"version": "1.14.77"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.77"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.77"' in _read(REBUILD_PANEL)
+def test_r7_120_version_surfaces_are_1_14_78():
+    assert '"version": "1.14.78"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.78"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.78"' in _read(REBUILD_PANEL)
 
 
 def test_r7_120_system_integration_uses_cdb_layout_and_cards():
@@ -82,7 +82,7 @@ def test_r7_120_system_integration_visible_content_and_secret_boundary():
         'DB 사용', 'DB 버전', 'DB 상태',
         'Center 연결 상태', 'Center API 상태', 'Edge API 상태',
         '업데이트', 'DB/API 오류', 'Center 연결',
-        '기능 보류', '오류 로그 보기', '허용 토큰 연결', 'Center 연결 목록',
+        '업데이트 목록', '오류 작업 보기', '허용 토큰 연결', 'Center 목록',
         '연동 목록', '[REDACTED]',
     ):
         assert text in html
