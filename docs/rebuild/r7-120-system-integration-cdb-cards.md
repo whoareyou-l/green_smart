@@ -1,6 +1,6 @@
 # R7-120 Settings system integration CDB cards
 
-Status: current baseline for `v1.14.72`.
+Status: current baseline for `v1.14.73`.
 
 ## Scope
 
@@ -17,8 +17,17 @@ Allowed card wrappers:
 ```text
 summary row: 3 summary cards
   - Home Assistant 연동
+    - HA 버전
+    - HACS 버전
+    - GS 버전
   - DB 연결
+    - 전체 DB 상태
+    - HA DB 상태
+    - GS DB 상태
   - API 상태
+    - Center 연결 상태
+    - Center API 상태
+    - Edge API 상태
 
 action row: 3 two-button cards
   - HA 리소스

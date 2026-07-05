@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.72";
+const REBUILD_VERSION = "1.14.73";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2889,9 +2889,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7SettingsSystemIntegrationSubtab() {
     const summaryCards = [
-      this.renderR7CdbSummaryCard({ key: "system-ha-connection", icon: "mdi:home-assistant", title: "Home Assistant 연동", primary: "panel/API/entity 연결 상태", rows: [this._r7SettingsGreenhouseValueRow("패널", "custom panel"), this._r7SettingsGreenhouseValueRow("API", "/api/green_smart"), this._r7SettingsGreenhouseValueRow("Entity", "HA entity")], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="ha-connection"' }),
-      this.renderR7CdbSummaryCard({ key: "system-db-connection", icon: "mdi:database-outline", title: "DB 연결", primary: "MariaDB/recorder 경계", rows: [this._r7SettingsGreenhouseValueRow("운영 DB", "green_smart"), this._r7SettingsGreenhouseValueRow("Recorder", "HA recorder"), this._r7SettingsGreenhouseValueRow("Boundary", "분리 유지")], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="db-connection"' }),
-      this.renderR7CdbSummaryCard({ key: "system-api-status", icon: "mdi:api", title: "API 상태", primary: "내부 API · 센터 API", rows: [this._r7SettingsGreenhouseValueRow("Edge", "실시간 판단"), this._r7SettingsGreenhouseValueRow("Center", "분석/동기화"), this._r7SettingsGreenhouseValueRow("Secret", "[REDACTED]")], tone: "blue", statusKey: "due-today", extraAttrs: 'data-r7-settings-system-summary-card="api-status"' }),
+      this.renderR7CdbSummaryCard({ key: "system-ha-connection", icon: "mdi:home-assistant", title: "Home Assistant 연동", primary: "panel/API/entity 연결 상태", rows: [this._r7SettingsGreenhouseValueRow("HA 버전", "Home Assistant"), this._r7SettingsGreenhouseValueRow("HACS 버전", "HACS"), this._r7SettingsGreenhouseValueRow("GS 버전", REBUILD_VERSION)], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="ha-connection"' }),
+      this.renderR7CdbSummaryCard({ key: "system-db-connection", icon: "mdi:database-outline", title: "DB 연결", primary: "MariaDB/recorder 경계", rows: [this._r7SettingsGreenhouseValueRow("전체 DB 상태", "분리 유지"), this._r7SettingsGreenhouseValueRow("HA DB 상태", "HA recorder"), this._r7SettingsGreenhouseValueRow("GS DB 상태", "green_smart")], tone: "green", statusKey: "normal-ready", extraAttrs: 'data-r7-settings-system-summary-card="db-connection"' }),
+      this.renderR7CdbSummaryCard({ key: "system-api-status", icon: "mdi:api", title: "API 상태", primary: "내부 API · 센터 API", rows: [this._r7SettingsGreenhouseValueRow("Center 연결 상태", "분석/동기화"), this._r7SettingsGreenhouseValueRow("Center API 상태", "센터 API"), this._r7SettingsGreenhouseValueRow("Edge API 상태", "실시간 판단")], tone: "blue", statusKey: "due-today", extraAttrs: 'data-r7-settings-system-summary-card="api-status"' }),
     ];
     const actionCard = ({ kind, title, icon, primary, note, firstLabel, firstAttrs, secondLabel, secondAttrs, tone = "blue" }) => this.renderR7CdbButtonTwoCard({ kind, icon, title, primary, note, statusKey: "due-today", tone, firstLabel, firstIcon: "mdi:open-in-new", firstTone: "green", firstAttrs: `${firstAttrs} data-r7-settings-modal-skip-record-binding="true"`, secondLabel, secondIcon: "mdi:format-list-bulleted", secondTone: "blue", secondAttrs: `${secondAttrs} data-r7-settings-modal-skip-record-binding="true"`, extraAttrs: `data-r7-settings-system-action-card="${kind}"` });
     const actionCards = [

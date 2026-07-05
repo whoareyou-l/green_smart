@@ -34,10 +34,10 @@ def _render_system_integration() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_120_version_surfaces_are_1_14_72():
-    assert '"version": "1.14.72"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.72"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.72"' in _read(REBUILD_PANEL)
+def test_r7_120_version_surfaces_are_1_14_73():
+    assert '"version": "1.14.73"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.73"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.73"' in _read(REBUILD_PANEL)
 
 
 def test_r7_120_system_integration_uses_cdb_layout_and_cards():
@@ -71,10 +71,15 @@ def test_r7_120_system_integration_visible_content_and_secret_boundary():
     html = _render_system_integration()
     for text in (
         'Home Assistant 연동', 'DB 연결', 'API 상태',
+        'HA 버전', 'HACS 버전', 'GS 버전',
+        '전체 DB 상태', 'HA DB 상태', 'GS DB 상태',
+        'Center 연결 상태', 'Center API 상태', 'Edge API 상태',
         'HA 리소스', 'DB 경계', 'Secret redaction',
         '연동 목록', 'panel/API/entity 연결 상태', 'MariaDB/recorder 경계', '[REDACTED]',
     ):
         assert text in html
+    for old_label in ('>패널<', '>API<', '>Entity<', '>운영 DB<', '>Recorder<', '>Boundary<', '>Edge<', '>Center<', '>Secret<'):
+        assert old_label not in html
     assert 'Secret values render as [REDACTED] only' in html
     assert 'data-r7-settings-system-integration-card="ha"' not in html
     assert 'data-r7-settings-system-integration-card="db"' not in html

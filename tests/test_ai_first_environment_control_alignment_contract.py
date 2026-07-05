@@ -18,9 +18,9 @@ def _method(panel: str, start: str, end: str) -> str:
 def test_v1103_ai_first_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.14.72"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.72"' in panel
-    assert 'v1.14.72' in panel[:200]
+    assert '"version": "1.14.73"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.73"' in panel
+    assert 'v1.14.73' in panel[:200]
     assert "v1.10.9 AI-first control tab alignment" in docs
 
 

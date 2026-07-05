@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_118_version_surfaces_are_1_14_72():
-    assert '"version": "1.14.72"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.72"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.72"' in _read(PANEL)
+def test_r7_118_version_surfaces_are_1_14_73():
+    assert '"version": "1.14.73"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.73"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.73"' in _read(PANEL)
 
 
 def test_r7_118_db_has_real_device_and_group_tables():

@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_054_version_surfaces_are_1_12_89():
-    assert '"version": "1.14.72"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.72"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.72"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.73"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.73"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.73"' in _read(REBUILD_PANEL)
 
 
 def test_r7_054_records_workflow_bypasses_190px_subtab_grid_wrapper():
