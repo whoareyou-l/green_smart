@@ -43,12 +43,11 @@ def test_r7_124_system_common_modal_close_buttons_include_record_shell_x():
 def test_r7_124_cards_show_real_action_summary_and_center_list_label():
     panel = _read(PANEL)
     for marker in (
-        'this._r7SettingsGreenhouseValueRow("Green Smart", system.gsUpdateStatus || "최신 확인 중")',
-        'this._r7SettingsGreenhouseValueRow("HACS", system.hacsUpdateStatus || "최신 확인 중")',
-        'this._r7SettingsGreenhouseValueRow("HA/DB", "Update Agent 도입 후")',
+        'const updateRows = [["Green Smart", system.gsUpdateStatus || "최신 확인 중"], ["HACS", system.hacsUpdateStatus || "최신 확인 중"], ["HA/DB", system.haDbUpdateStatus || "Update Agent 도입 후"]]',
+        'rows: updateRows.map(([label, value]) => this._r7SettingsGreenhouseValueRow(label, value))',
         'buttonLabel: "업데이트 목록"',
-        'this._r7SettingsGreenhouseValueRow("작업", "로그 조회 · watchdog 재검사")',
-        'this._r7SettingsGreenhouseValueRow("수정", "힌트 확인 후 재검사")',
+        'const errorRows = [["DB", errorLabel(dbErrorCount)], ["Center", errorLabel(centerApiErrorCount)], ["Edge", errorLabel(edgeApiErrorCount)]]',
+        'rows: errorRows.map(([label, value]) => this._r7SettingsGreenhouseValueRow(label, value))',
         'secondLabel: "Center 목록"',
     ):
         assert marker in panel

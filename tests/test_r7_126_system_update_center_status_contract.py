@@ -14,7 +14,7 @@ def test_r7_126_update_card_labels_latest_status():
     for marker in (
         '"Green Smart", system.gsUpdateStatus || "최신 확인 중"',
         '"HACS", system.hacsUpdateStatus || "최신 확인 중"',
-        '"HA/DB", "Update Agent 도입 후"',
+        '"HA/DB", system.haDbUpdateStatus || "Update Agent 도입 후"',
         'data-r7-settings-system-update-row-label="green-smart"',
         'data-r7-settings-system-update-row-label="hacs"',
     ):

@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_078_version_surfaces_are_1_14_3():
-    assert '"version": "1.14.80"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.80"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.80"' in _read(PANEL)
+    assert '"version": "1.14.81"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.81"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.81"' in _read(PANEL)
 
 
 def test_r7_078_approval_all_uses_dedicated_list_modal_not_record_history_or_row_button():
