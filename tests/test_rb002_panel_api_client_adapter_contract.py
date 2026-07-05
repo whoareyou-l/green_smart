@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb002_version_surfaces_are_v1116():
-    assert '"version": "1.14.74"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.74"' in _read(PANEL)
-    assert "v1.14.74" in _read(FRONTEND_PLAN)
+    assert '"version": "1.14.75"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.75"' in _read(PANEL)
+    assert "v1.14.75" in _read(FRONTEND_PLAN)
 
 
 def test_rb002_core_api_client_module_exists_and_exports_contract():
@@ -78,7 +78,7 @@ def test_rb002_frontend_plan_records_adapter_completion_and_boundaries():
     plan = _read(FRONTEND_PLAN)
     for marker in (
         "RB-002 Panel API client adapter",
-        "v1.14.74",
+        "v1.14.75",
         "core/api-client.js",
         "Adapter-first targeted call sites only",
         "response shape 변경 없음",

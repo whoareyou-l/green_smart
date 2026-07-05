@@ -19,9 +19,9 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1106_versions_and_docs_for_hidden_storage_scope():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER) + "\n" + _read(PLAN)
-    assert '"version": "1.14.74"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.74"' in panel
-    assert 'v1.14.74' in panel[:200]
+    assert '"version": "1.14.75"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.75"' in panel
+    assert 'v1.14.75' in panel[:200]
     assert "v1.10.9 Environment storage target moved to docs" in docs
     assert "green_smart_zone_control_settings" in docs
     assert "crop_season_id + zone_id + domain" in docs

@@ -1,6 +1,6 @@
 # R7-120 Settings system integration CDB cards
 
-Status: current baseline for `v1.14.74`.
+Status: current baseline for `v1.14.75`.
 
 ## Scope
 
@@ -29,10 +29,10 @@ summary row: 3 summary cards
     - Center API 상태: 정상 또는 오류 N건
     - Edge API 상태: 정상 또는 오류 N건
 
-action row: 3 two-button cards
-  - HA 리소스
-  - DB 경계
-  - Secret redaction
+action row: 2 one-button cards + 1 two-button card
+  - 업데이트: button-one, DB/HA/HACS/GS 업데이트 기능은 Update Agent 도입 전까지 기능 보류
+  - DB/API 오류: button-one, watchdog DB/API 오류 로그 확인 및 수정 진입점
+  - Center 연결: button-two, 허용 토큰 연결 + Center 연결 목록
 
 list row: 1 list card
   - 연동 목록
@@ -57,9 +57,9 @@ Summary cards:
 
 Action cards:
 
-- `data-r7-settings-system-action-card="system-ha-resources"`
-- `data-r7-settings-system-action-card="system-db-boundary"`
-- `data-r7-settings-system-action-card="system-secret-redaction"`
+- `data-r7-settings-system-action-card="system-update-deferred"`
+- `data-r7-settings-system-action-card="system-db-api-errors"`
+- `data-r7-settings-system-action-card="system-center-connection"`
 
 List rows:
 

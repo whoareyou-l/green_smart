@@ -1,6 +1,6 @@
 # RS-014 Rebuild Home Context API Source Adapter
 
-> 기준 버전: `v1.14.74`
+> 기준 버전: `v1.14.75`
 > Status: active API source adapter boundary
 > 목적: `GET /api/green_smart/rebuild/home/context` route shape는 유지하면서 response source를 static fixture에서 RS-013 read-only DB adapter service로 전환한다.
 

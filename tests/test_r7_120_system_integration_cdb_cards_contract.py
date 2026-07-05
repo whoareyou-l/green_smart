@@ -34,10 +34,10 @@ def _render_system_integration() -> str:
     return json.loads(result.stdout)["html"]
 
 
-def test_r7_120_version_surfaces_are_1_14_74():
-    assert '"version": "1.14.74"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.74"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.74"' in _read(REBUILD_PANEL)
+def test_r7_120_version_surfaces_are_1_14_75():
+    assert '"version": "1.14.75"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.75"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.75"' in _read(REBUILD_PANEL)
 
 
 def test_r7_120_system_integration_uses_cdb_layout_and_cards():
@@ -48,7 +48,8 @@ def test_r7_120_system_integration_uses_cdb_layout_and_cards():
     assert 'data-r7-cdb-layout-row="actions"' in html
     assert 'data-r7-cdb-layout-row="list"' in html
     assert html.count('data-r7-cdb-card-type="summary"') >= 3
-    assert html.count('data-r7-cdb-card-type="button-two"') >= 3
+    assert html.count('data-r7-cdb-card-type="button-one"') >= 2
+    assert html.count('data-r7-cdb-card-type="button-two"') >= 1
     assert html.count('data-r7-cdb-card-type="list"') >= 1
     for card in ('ha-connection', 'db-connection', 'api-status'):
         marker_at = html.index(f'data-r7-settings-system-summary-card="{card}"')
@@ -57,14 +58,20 @@ def test_r7_120_system_integration_uses_cdb_layout_and_cards():
         snippet = html[start:end]
         assert 'data-r7-cdb-card-type="summary"' in snippet
         assert 'data-r7-cdb-common-card="summary-card"' in snippet
-    for card in ('system-ha-resources', 'system-db-boundary', 'system-secret-redaction'):
+    for card in ('system-update-deferred', 'system-db-api-errors'):
         marker_at = html.index(f'data-r7-settings-system-action-card="{card}"')
         start = html.rindex('<article', 0, marker_at)
         end = html.index('</article>', marker_at)
         snippet = html[start:end]
-        assert 'data-r7-cdb-card-type="button-two"' in snippet
-        assert 'data-r7-common-card-subtitle' in snippet
-        assert 'data-r7-cdb-button-two-subtitle="present"' in snippet
+        assert 'data-r7-cdb-card-type="button-one"' in snippet
+        assert 'data-r7-cdb-button-role="list"' in snippet
+    marker_at = html.index('data-r7-settings-system-action-card="system-center-connection"')
+    start = html.rindex('<article', 0, marker_at)
+    end = html.index('</article>', marker_at)
+    snippet = html[start:end]
+    assert 'data-r7-cdb-card-type="button-two"' in snippet
+    assert 'data-r7-common-card-subtitle' in snippet
+    assert 'data-r7-cdb-button-two-subtitle="present"' in snippet
 
 
 def test_r7_120_system_integration_visible_content_and_secret_boundary():
@@ -74,11 +81,12 @@ def test_r7_120_system_integration_visible_content_and_secret_boundary():
         'HA 버전', 'HACS 버전', 'GS 버전',
         'DB 사용', 'DB 버전', 'DB 상태',
         'Center 연결 상태', 'Center API 상태', 'Edge API 상태',
-        'HA 리소스', 'DB 경계', 'Secret redaction',
-        '연동 목록', 'panel/API/entity 연결 상태', 'MariaDB/recorder 경계', '[REDACTED]',
+        '업데이트', 'DB/API 오류', 'Center 연결',
+        '기능 보류', '오류 로그 보기', '허용 토큰 연결', 'Center 연결 목록',
+        '연동 목록', '[REDACTED]',
     ):
         assert text in html
-    for old_label in ('>패널<', '>API<', '>Entity<', '>운영 DB<', '>Recorder<', '>Boundary<', '>전체 DB 상태<', '>HA DB 상태<', '>GS DB 상태<', '>Edge<', '>Center<', '>Secret<'):
+    for old_label in ('>패널<', '>API<', '>Entity<', '>운영 DB<', '>Recorder<', '>Boundary<', '>전체 DB 상태<', '>HA DB 상태<', '>GS DB 상태<', '>Edge<', '>Center<', '>Secret<', '>HA 리소스<', '>DB 경계<', '>Secret redaction<'):
         assert old_label not in html
     assert 'Secret values render as [REDACTED] only' in html
     assert 'data-r7-settings-system-integration-card="ha"' not in html
@@ -89,5 +97,5 @@ def test_r7_120_system_integration_visible_content_and_secret_boundary():
 
 def test_r7_120_documented():
     doc = _read(DOC)
-    for phrase in ('시스템·연동', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card', 'Secret values render as [REDACTED] only'):
+    for phrase in ('시스템·연동', 'summary row: 3 summary cards', 'action row: 2 one-button cards + 1 two-button card', 'list row: 1 list card', 'Secret values render as [REDACTED] only'):
         assert phrase in doc
