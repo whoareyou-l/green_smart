@@ -18,6 +18,10 @@ try:
 except Exception:  # isolated contract tests may stub homeassistant as a non-package
     def async_get_clientsession(hass):
         raise RuntimeError("Home Assistant aiohttp client session unavailable")
+try:
+    from homeassistant.helpers.storage import Store
+except Exception:  # isolated contract tests may stub homeassistant as a non-package
+    Store = None
 
 try:
     from .const import DOMAIN
@@ -522,6 +526,134 @@ async def system_integration_watchdog_response(hass) -> dict[str, Any]:
     return snapshot
 
 
+def _update_entity_dto(entity_id: str, state_obj: Any) -> dict[str, Any]:
+    attrs = getattr(state_obj, "attributes", {}) or {}
+    return {
+        "entityId": entity_id,
+        "state": getattr(state_obj, "state", "unknown"),
+        "installedVersion": attrs.get("installed_version") or attrs.get("installedVersion") or "",
+        "latestVersion": attrs.get("latest_version") or attrs.get("latestVersion") or "",
+        "title": attrs.get("friendly_name") or entity_id,
+    }
+
+
+def _discover_update_entities(hass) -> dict[str, list[dict[str, Any]]]:
+    states = getattr(hass, "states", None)
+    async_all = getattr(states, "async_all", None)
+    all_states = async_all("update") if callable(async_all) else []
+    targets = {"gs": [], "hacs": []}
+    for state_obj in all_states or []:
+        entity_id = str(getattr(state_obj, "entity_id", ""))
+        attrs = getattr(state_obj, "attributes", {}) or {}
+        haystack = " ".join([entity_id, str(attrs.get("friendly_name", "")), str(attrs.get("title", ""))]).lower()
+        dto = _update_entity_dto(entity_id, state_obj)
+        if "green_smart" in haystack or "green smart" in haystack:
+            targets["gs"].append(dto)
+        if "hacs" in haystack:
+            targets["hacs"].append(dto)
+    return targets
+
+
+async def system_update_response(hass, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """GS/HACS only update status/action response; HA/DB stay deferred until Update Agent.
+
+    HA service contracts used here: homeassistant.update_entity and update.install.
+    """
+    payload = payload or {}
+    action = str(payload.get("action") or "status")
+    target = str(payload.get("target") or "").lower()
+    discovered = _discover_update_entities(hass)
+    components = [
+        {"target": "gs", "label": "GS", "supported": bool(discovered["gs"]), "entities": discovered["gs"], "state": "ready" if discovered["gs"] else "deferred"},
+        {"target": "hacs", "label": "HACS", "supported": bool(discovered["hacs"]), "entities": discovered["hacs"], "state": "ready" if discovered["hacs"] else "deferred"},
+        {"target": "ha", "label": "Home Assistant", "supported": False, "state": "deferred", "reason": "Update Agent required"},
+        {"target": "db", "label": "MariaDB", "supported": False, "state": "deferred", "reason": "Update Agent required"},
+    ]
+    if action in {"check", "install"} and target in {"gs", "hacs"}:
+        entities = discovered.get(target) or []
+        if not entities:
+            return {"ok": True, "target": target, "action": action, "supported": False, "state": "deferred", "message": "GS/HACS only via HA update entity; no matching update entity found", "components": components}
+        entity_id = entities[0]["entityId"]
+        if action == "check":
+            await hass.services.async_call("homeassistant", "update_entity", {"entity_id": entity_id}, blocking=True)
+        else:
+            await hass.services.async_call("update", "install", {"entity_id": entity_id}, blocking=True)
+        return {"ok": True, "target": target, "action": action, "supported": True, "state": "requested", "entityId": entity_id, "components": components}
+    return {"ok": True, "source": "system_update_response", "components": components, "note": "GS/HACS only; HA/DB updates are deferred to Update Agent"}
+
+
+def _error_row(scope: str, status: str, count: int, hints: list[str]) -> dict[str, Any]:
+    return {"scope": scope, "status": status, "count": int(count or 0), "hints": hints}
+
+
+async def system_errors_response(hass, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    action = str(payload.get("action") or "inspect")
+    snapshot = await system_integration_watchdog_response(hass) if action == "refresh-watchdog" else (hass.data.setdefault(DOMAIN, {}).get("system_integration_watchdog_snapshot") or await system_integration_watchdog_response(hass))
+    errors = [
+        _error_row("db", snapshot.get("dbStatus") or "확인 중", int(snapshot.get("dbErrorCount") or 0), ["DB 컨테이너 상태 확인", "SELECT VERSION() 재검사", "MariaDB 연결 환경변수 확인"]),
+        _error_row("center", snapshot.get("centerApiStatus") or "확인 중", int(snapshot.get("centerApiErrorCount") or 0), ["Center 연결 설정 확인", "허용 토큰 재연결", "Center /health 응답 확인"]),
+        _error_row("edge", snapshot.get("edgeApiStatus") or "확인 중", int(snapshot.get("edgeApiErrorCount") or 0), ["settings snapshot API 재호출", "Home Assistant 로그 확인", "Green Smart API route 등록 확인"]),
+    ]
+    return {"ok": True, "checkedAt": snapshot.get("checkedAt"), "actions": ["refresh-watchdog", "inspect-center", "inspect-db", "inspect-edge"], "errors": errors, "snapshot": {k: snapshot.get(k) for k in ("dbStatus", "centerConnectionStatus", "centerApiStatus", "edgeApiStatus")}}
+
+
+def _center_connection_store(hass):
+    if Store is None:
+        return None
+    return Store(hass, 1, "green_smart_center_connection")
+
+
+async def _load_center_connection(hass) -> dict[str, Any]:
+    store = _center_connection_store(hass)
+    if store is None:
+        return hass.data.setdefault(DOMAIN, {}).get("center_connection_config") or {}
+    data = await store.async_load()
+    return data if isinstance(data, dict) else {}
+
+
+async def _save_center_connection(hass, data: dict[str, Any]) -> None:
+    hass.data.setdefault(DOMAIN, {})["center_connection_config"] = data
+    store = _center_connection_store(hass)
+    if store is not None:
+        await store.async_save(data)
+
+
+def _redacted_center_connection(data: dict[str, Any], status: str = "미연결") -> dict[str, Any]:
+    return {"baseUrl": data.get("baseUrl") or data.get("base_url") or "", "enabled": bool(data.get("enabled", True)), "credentialState": "configured" if data.get("credential") else "missing", "connectionStatus": status, "credentialPreview": "[REDACTED]" if data.get("credential") else ""}
+
+
+async def system_center_connection_response(hass, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    current = await _load_center_connection(hass)
+    if payload:
+        base_url = str(payload.get("baseUrl") or payload.get("base_url") or current.get("baseUrl") or "http://127.0.0.1:18000").rstrip("/")
+        credential = str(payload.get("allowedCredential") or payload.get("credential") or current.get("credential") or "")
+        current = {"baseUrl": base_url, "credential": credential, "enabled": bool(payload.get("enabled", True))}
+        await _save_center_connection(hass, current)
+        if credential:
+            try:
+                from .central_store import CentralTokenStore
+                await CentralTokenStore(hass).save_token_pair(base_url=base_url, installation_id="settings-center-connection", access_token=credential, refresh_token=credential, token_type="bearer", expires_in=31536000)
+            except Exception:
+                pass
+    status = "미연결"
+    if current.get("baseUrl"):
+        headers = {"Authorization": f"Bearer {current['credential']}"} if current.get("credential") else {}
+        try:
+            session = async_get_clientsession(hass)
+            for path in ("/health", "/status"):
+                async with session.get(f"{str(current['baseUrl']).rstrip('/')}{path}", headers=headers, timeout=ClientTimeout(total=3)) as response:
+                    if response.status < 500:
+                        status = "연결"
+                        break
+        except Exception:
+            status = "미연결"
+    redacted = _redacted_center_connection(current, status)
+    hass.data.setdefault(DOMAIN, {})["center_connection"] = redacted
+    return {"ok": True, "centerConnection": redacted}
+
+
 async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
     greenhouses = await list_settings_greenhouses(hass, farm_id)
     zones = await list_settings_zones(hass, farm_id)
@@ -551,6 +683,42 @@ class RebuildSettingsSnapshotView(HomeAssistantView):
 
     async def get(self, request: web.Request) -> web.Response:
         return self.json(await settings_snapshot_response(request.app["hass"]))
+
+
+class RebuildSettingsSystemUpdateView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/system/update"
+    name = "api:green_smart:rebuild:settings:system_update"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        return self.json(await system_update_response(request.app["hass"]))
+
+    async def post(self, request: web.Request) -> web.Response:
+        return self.json(await system_update_response(request.app["hass"], await _settings_payload(request)))
+
+
+class RebuildSettingsSystemErrorsView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/system/errors"
+    name = "api:green_smart:rebuild:settings:system_errors"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        return self.json(await system_errors_response(request.app["hass"]))
+
+    async def post(self, request: web.Request) -> web.Response:
+        return self.json(await system_errors_response(request.app["hass"], await _settings_payload(request)))
+
+
+class RebuildSettingsSystemCenterConnectionView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/system/center-connection"
+    name = "api:green_smart:rebuild:settings:system_center_connection"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        return self.json(await system_center_connection_response(request.app["hass"]))
+
+    async def post(self, request: web.Request) -> web.Response:
+        return self.json(await system_center_connection_response(request.app["hass"], await _settings_payload(request)))
 
 
 class RebuildSettingsGreenhouseCreateView(HomeAssistantView):

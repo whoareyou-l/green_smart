@@ -33,9 +33,9 @@ def _render(record_type="growth-survey"):
 
 
 def test_r7_064_version_surfaces_are_1_12_99():
-    assert '"version": "1.14.75"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.75"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.75"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.76"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.76"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.76"' in _read(REBUILD_PANEL)
 
 
 def test_r7_064_growth_modal_uses_single_full_width_grid_not_nested_two_column_wrapper():

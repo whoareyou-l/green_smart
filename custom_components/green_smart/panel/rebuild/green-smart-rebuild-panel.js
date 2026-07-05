@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.75";
+const REBUILD_VERSION = "1.14.76";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -70,6 +70,9 @@ const REBUILD_SETTINGS_DEVICE_CREATE_API_PATH = "green_smart/rebuild/settings/de
 const REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/device-groups";
 const REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH = "green_smart/rebuild/settings/device-sensor-mappings";
 const REBUILD_SETTINGS_SNAPSHOT_API_PATH = "green_smart/rebuild/settings/snapshot";
+const REBUILD_SETTINGS_SYSTEM_UPDATE_API_PATH = "green_smart/rebuild/settings/system/update";
+const REBUILD_SETTINGS_SYSTEM_ERRORS_API_PATH = "green_smart/rebuild/settings/system/errors";
+const REBUILD_SETTINGS_SYSTEM_CENTER_CONNECTION_API_PATH = "green_smart/rebuild/settings/system/center-connection";
 const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
   prefix: "/api/green_smart/rebuild/crop-records",
   endpoints: ["get /history", "get /history/{recordType}", "get /latest/{recordType}", "post /growth-survey", "post /pest-scouting", "post /control-treatment", "patch /{recordType}/{recordId}", "post /pls-check"],
@@ -283,6 +286,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
+    this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
     this._settingsRolePermissionEditModal = { open: false, state: "idle" };
     this._settingsUsersPermissionsLoadState = "loading";
     this._settingsUsersPermissionsLoadError = null;
@@ -725,6 +729,90 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _openSettingsEquipmentInfoSplitModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "equipment-info" };
+    this.render();
+  }
+
+  async _openSettingsSystemUpdateModal() {
+    this._settingsSystemActionModal = { open: true, kind: "update", state: "loading", data: null, error: "" };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_UPDATE_API_PATH);
+      this._settingsSystemActionModal = { open: true, kind: "update", state: "ready", data, error: "" };
+    } catch (error) {
+      this._settingsSystemActionModal = { open: true, kind: "update", state: "error", data: null, error: error?.message || "system-update-load-failed" };
+    }
+    this.render();
+  }
+
+  async _openSettingsSystemErrorsModal() {
+    this._settingsSystemActionModal = { open: true, kind: "errors", state: "loading", data: null, error: "" };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_ERRORS_API_PATH);
+      this._settingsSystemActionModal = { open: true, kind: "errors", state: "ready", data, error: "" };
+    } catch (error) {
+      this._settingsSystemActionModal = { open: true, kind: "errors", state: "error", data: null, error: error?.message || "system-errors-load-failed" };
+    }
+    this.render();
+  }
+
+  async _openSettingsSystemCenterConnectionModal() {
+    this._settingsSystemActionModal = { open: true, kind: "center", state: "loading", data: null, error: "" };
+    this.render();
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_CENTER_CONNECTION_API_PATH);
+      this._settingsSystemActionModal = { open: true, kind: "center", state: "ready", data, error: "" };
+    } catch (error) {
+      this._settingsSystemActionModal = { open: true, kind: "center", state: "error", data: null, error: error?.message || "system-center-load-failed" };
+    }
+    this.render();
+  }
+
+  _closeSettingsSystemActionModal() {
+    this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
+    this.render();
+  }
+
+  async _submitSettingsSystemUpdateAction(target, action = "check") {
+    this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "update", state: "saving", error: "" };
+    this.render();
+    try {
+      const data = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_SYSTEM_UPDATE_API_PATH, { target, action });
+      this._settingsSystemActionModal = { open: true, kind: "update", state: "ready", data, error: "" };
+      await this._loadSettingsGreenhouseZoneData();
+    } catch (error) {
+      this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "update", state: "error", error: error?.message || "system-update-action-failed" };
+    }
+    this.render();
+  }
+
+  async _submitSettingsSystemErrorsAction(action = "refresh-watchdog") {
+    this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "errors", state: "saving", error: "" };
+    this.render();
+    try {
+      const data = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_SYSTEM_ERRORS_API_PATH, { action });
+      this._settingsSystemActionModal = { open: true, kind: "errors", state: "ready", data, error: "" };
+      await this._loadSettingsGreenhouseZoneData();
+    } catch (error) {
+      this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "errors", state: "error", error: error?.message || "system-errors-action-failed" };
+    }
+    this.render();
+  }
+
+  async _submitSettingsSystemCenterConnectionForm(form) {
+    const payload = this._settingsFormPayload(form);
+    this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "center", state: "saving", error: "" };
+    this.render();
+    try {
+      const data = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_SYSTEM_CENTER_CONNECTION_API_PATH, payload);
+      this._settingsSystemActionModal = { open: true, kind: "center", state: "ready", data, error: "" };
+      await this._loadSettingsGreenhouseZoneData();
+    } catch (error) {
+      this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "center", state: "error", error: error?.message || "system-center-save-failed" };
+    }
     this.render();
   }
 
@@ -1533,6 +1621,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("[data-r7-settings-device-group-create-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsDeviceGroupCreateModal(); });
     });
+    this.querySelectorAll("[data-r7-settings-system-update-deferred-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsSystemUpdateModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-system-db-api-error-log-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsSystemErrorsModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-system-center-auth-connect-button], [data-r7-settings-system-center-connection-list-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsSystemCenterConnectionModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-system-action-modal-close]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsSystemActionModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-system-update-action]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._submitSettingsSystemUpdateAction(button.getAttribute("data-r7-settings-system-update-target") || "gs", button.getAttribute("data-r7-settings-system-update-action") || "check"); });
+    });
+    this.querySelectorAll("[data-r7-settings-system-errors-action]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._submitSettingsSystemErrorsAction(button.getAttribute("data-r7-settings-system-errors-action") || "refresh-watchdog"); });
+    });
+    this.querySelectorAll("form[data-r7-settings-system-center-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsSystemCenterConnectionForm(form); }));
     this.querySelectorAll("[data-r7-settings-detail-action-modal-close]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsDetailActionModal(button.getAttribute("data-r7-settings-detail-action-modal-close") || "all"); });
     });
@@ -2571,6 +2678,23 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7SettingsShortcutCdaSplitModal() {
     return this.renderR7SettingsShortcutReviewLikeModal();
+  }
+
+  renderR7SettingsSystemActionModal() {
+    const modal = this._settingsSystemActionModal || { open: false };
+    if (!modal.open) return `<template data-r7-settings-system-action-modal="true" data-r7-settings-system-action-modal-open="false"></template>`;
+    const data = modal.data || {};
+    const title = modal.kind === "update" ? "업데이트" : modal.kind === "errors" ? "DB/API 오류" : "Center 연결";
+    const error = modal.error ? `<div data-r7-settings-system-action-error style="padding:10px;border-radius:10px;background:#fff4f2;color:#9b1c1c;font-weight:800;">${modal.error}</div>` : "";
+    const updateRows = Array.isArray(data.components) ? data.components.map((item) => `<tr><td>${item.label || item.target}</td><td>${item.state || "확인"}</td><td>${item.supported ? "지원" : "보류"}</td><td><button type="button" data-r7-settings-system-update-action="check" data-r7-settings-system-update-target="${item.target}" ${item.target === "gs" || item.target === "hacs" ? "" : "disabled"}>확인</button> <button type="button" data-r7-settings-system-update-action="install" data-r7-settings-system-update-target="${item.target}" ${item.target === "gs" || item.target === "hacs" ? "" : "disabled"}>업데이트</button></td></tr>`).join("") : "";
+    const errorRows = Array.isArray(data.errors) ? data.errors.map((item) => `<tr><td>${item.scope}</td><td>${item.status}</td><td>${item.count}건</td><td>${(item.hints || []).join(" · ")}</td></tr>`).join("") : "";
+    const center = data.centerConnection || {};
+    const body = modal.kind === "update"
+      ? `<div data-r7-settings-system-update-modal><p>GS/HACS만 이 화면에서 요청합니다. HA/DB는 Update Agent 도입 후 지원합니다.</p><table style="width:100%;border-collapse:collapse;"><tbody>${updateRows}</tbody></table></div>`
+      : modal.kind === "errors"
+        ? `<div data-r7-settings-system-errors-modal><button type="button" data-r7-settings-system-errors-action="refresh-watchdog">watchdog 재검사</button><table style="width:100%;border-collapse:collapse;margin-top:10px;"><tbody>${errorRows}</tbody></table></div>`
+        : `<form data-r7-settings-system-center-form style="display:grid;gap:10px;"><label>Center URL<input name="baseUrl" value="${center.baseUrl || "http://127.0.0.1:18000"}" style="width:100%;padding:8px;border:1px solid #d8e2dc;border-radius:8px;"></label><label>허용 토큰<input name="allowedCredential" value="" placeholder="저장 시 [REDACTED]로만 표시" style="width:100%;padding:8px;border:1px solid #d8e2dc;border-radius:8px;"></label><div>상태: ${center.connectionStatus || "미연결"} · 인증: ${center.credentialState || "missing"}</div><button type="submit">Center 연결 저장/검증</button></form>`;
+    return `<div data-r7-settings-system-action-modal="true" data-r7-settings-system-action-modal-kind="${modal.kind}" style="position:fixed;inset:0;background:rgba(15,23,42,.38);z-index:50;display:grid;place-items:center;padding:20px;"><section style="width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;background:#fff;border-radius:18px;padding:18px;box-shadow:0 18px 50px rgba(15,23,42,.24);display:grid;gap:12px;"><header style="display:flex;justify-content:space-between;gap:12px;align-items:center;"><div><h3 style="margin:0;font-size:20px;">${title}</h3><p style="margin:4px 0 0;color:#607066;">상태: ${modal.state || "idle"}</p></div><button type="button" data-r7-settings-system-action-modal-close>닫기</button></header>${error}${body}</section></div>`;
   }
 
   renderR7SettingsRolePermissionEditModal() {
@@ -4445,6 +4569,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7SettingsDeviceGroupCreateModal()}
       ${this.renderR7SettingsDeviceSensorMappingModal()}
       ${this.renderR7SettingsShortcutCdaSplitModal()}
+      ${this.renderR7SettingsSystemActionModal()}
     `;
     this._bindR7DomainNavigation();
     this._bindR7DomainSubtabs();
