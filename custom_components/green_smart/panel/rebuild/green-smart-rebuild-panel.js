@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.92";
+const REBUILD_VERSION = "1.14.93";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -3818,16 +3818,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7UnifiedDomainContentCard(domainKey, tabs, activeTab, panels) {
-    return `<section data-r7-domain-content-card="tabs-zone-content" data-r7-domain-content-card-unified="true" data-r7-domain-content-card-domain="${domainKey}" style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:14px;box-shadow:0 8px 24px rgba(49,82,59,.05);">
+    return `<section data-r7-domain-content-card="tabs-zone-content" data-r7-domain-content-card-unified="true" data-r7-domain-content-card-width="viewport" data-r7-domain-card-width-policy="fill-available-content-column" data-r7-domain-content-card-domain="${domainKey}" style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:14px;box-shadow:0 8px 24px rgba(49,82,59,.05);width:100%;min-width:0;max-width:none;box-sizing:border-box;justify-self:stretch;align-self:stretch;">
       <div data-r7-domain-content-card-section="subtabs">${this.renderR7DomainSubtabs(domainKey, tabs, activeTab, true)}</div>
       <div data-r7-domain-content-card-section="zone">${this.renderR7DomainZoneContextBar(domainKey, true)}</div>
-      <div data-r7-domain-content-card-section="panel" style="border-top:1px solid #e5f0e8;padding-top:14px;display:grid;gap:10px;">${panels}</div>
+      <div data-r7-domain-content-card-section="panel" data-r7-domain-content-panel-width="viewport" style="border-top:1px solid #e5f0e8;padding-top:14px;display:grid;gap:10px;width:100%;min-width:0;max-width:none;box-sizing:border-box;grid-template-columns:minmax(0,1fr);">${panels}</div>
     </section>`;
   }
 
   renderR7DomainVisualFrame({ domainKey, title, kicker, summary, status, tabs, activeTab, panels }) {
-    return `<section data-r7-domain-visual-frame data-r7-domain-visual-frame-version="1" data-r7-domain-visual-frame-domain="${domainKey}" data-r7-domain-frame-order="title-unified-card" data-r7-domain-previous-frame-order="title-subtabs-zone-content" data-r7-domain-top-env-metrics="removed" style="display:grid;gap:14px;">
-      <section data-r7-domain-visual-hero style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#ffffff,#eaf6ee);padding:18px;display:grid;gap:12px;"><div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">${kicker}</p><h3 style="margin:6px 0 0;color:#24323f;font-size:24px;">${title}</h3><p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${summary}</p></div>${this.renderR7StatusBadge(status || "attention", status === "normal" ? "정상" : "주의")}</div></section>
+    return `<section data-r7-domain-visual-frame data-r7-domain-frame-width="viewport" data-r7-domain-visual-frame-version="1" data-r7-domain-visual-frame-domain="${domainKey}" data-r7-domain-frame-order="title-unified-card" data-r7-domain-previous-frame-order="title-subtabs-zone-content" data-r7-domain-top-env-metrics="removed" style="display:grid;gap:14px;width:100%;min-width:0;max-width:none;box-sizing:border-box;justify-self:stretch;align-self:stretch;grid-template-columns:minmax(0,1fr);">
+      <section data-r7-domain-visual-hero data-r7-domain-visual-hero-width="viewport" style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#ffffff,#eaf6ee);padding:18px;display:grid;gap:12px;width:100%;min-width:0;max-width:none;box-sizing:border-box;justify-self:stretch;align-self:stretch;"><div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">${kicker}</p><h3 style="margin:6px 0 0;color:#24323f;font-size:24px;">${title}</h3><p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${summary}</p></div>${this.renderR7StatusBadge(status || "attention", status === "normal" ? "정상" : "주의")}</div></section>
       ${this.renderR7UnifiedDomainContentCard(domainKey, tabs, activeTab, panels)}
     </section>`;
   }
