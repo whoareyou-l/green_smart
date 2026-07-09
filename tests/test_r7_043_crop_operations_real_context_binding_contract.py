@@ -24,9 +24,9 @@ def _load_service_module():
 
 
 def test_r7_043_version_surfaces_are_1_12_78():
-    assert '"version": "1.14.91"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.91"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.91"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.92"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.92"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.92"' in _read(REBUILD_PANEL)
 
 
 def test_r7_043_backend_normalizes_recent_crop_record_summary():

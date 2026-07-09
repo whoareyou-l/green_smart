@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_129_version_surfaces_are_1_14_87():
-    assert '"version": "1.14.91"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.91"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.91"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.92"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.92"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.92"' in _read(REBUILD_PANEL)
 
 
 def test_r7_129_version_footer_source_is_inside_content_column_not_sidebar_grid_footer():
@@ -55,11 +55,11 @@ def test_r7_129_node_smoke_version_footer_renders_after_page_shell_inside_main_c
       if (mainStart < 0 || pageShell < 0 || footer < 0) {{ console.error('missing footer/main markers'); process.exit(1); }}
       if (!(sidebar < mainStart && mainStart < pageShell && pageShell < footer)) {{ console.error(JSON.stringify({{sidebar, mainStart, pageShell, footer}})); process.exit(1); }}
       const required = [
-        'data-rebuild-version="1.14.91"',
+        'data-rebuild-version="1.14.92"',
         'data-r7-content-version-footer="true"',
         'data-r7-version-footer-placement="content-bottom-outside-cards"',
         'data-r7-version-footer-not-under-sidebar="true"',
-        'Green Smart 1.14.91'
+        'Green Smart 1.14.92'
       ];
       const missing = required.filter((item) => !html.includes(item));
       if (missing.length) {{ console.error(JSON.stringify({{missing}})); process.exit(1); }}

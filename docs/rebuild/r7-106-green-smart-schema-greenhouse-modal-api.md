@@ -1,6 +1,6 @@
 # R7-106 Green Smart schema + greenhouse modal API
 
-Version: v1.14.91
+Version: v1.14.92
 Status: prod verified
 
 ## Scope
