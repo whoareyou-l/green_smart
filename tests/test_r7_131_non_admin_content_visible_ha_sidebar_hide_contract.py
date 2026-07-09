@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_131_version_surfaces_are_1_14_90():
-    assert '"version": "1.14.90"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.90"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.90"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.91"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.91"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.91"' in _read(REBUILD_PANEL)
 
 
 def test_r7_131_source_never_display_none_app_shell_drawers():
@@ -26,8 +26,10 @@ def test_r7_131_source_never_display_none_app_shell_drawers():
     policy_css = source[style_start:style_end]
     assert 'body.green-smart-hide-ha-sidebar ha-sidebar' in policy_css
     assert 'body.green-smart-hide-ha-sidebar hui-sidebar { display:none !important;' in policy_css
-    assert 'body.green-smart-hide-ha-sidebar app-drawer,\n          body.green-smart-hide-ha-sidebar ha-drawer { --mdc-drawer-width:0px; --sidebar-width:0px; }' in policy_css
+    assert 'body.green-smart-hide-ha-sidebar app-drawer,\n          body.green-smart-hide-ha-sidebar ha-drawer { --mdc-drawer-width:0px; --sidebar-width:0px; --app-drawer-width:0px; width:0 !important; min-width:0 !important; max-width:0 !important; flex:0 0 0px !important; margin:0 !important; padding:0 !important; border:0 !important; }' in policy_css
     assert 'body.green-smart-hide-ha-sidebar app-drawer,\n          body.green-smart-hide-ha-sidebar ha-drawer { display:none' not in policy_css
+    assert 'data-r7-ha-sidebar-blank-space-collapsed' in source
+    assert 'data-green-smart-ha-sidebar-space-collapsed' in source
 
 
 def test_r7_131_node_smoke_non_admin_keeps_green_smart_content_visible():
@@ -59,6 +61,7 @@ def test_r7_131_node_smoke_non_admin_keeps_green_smart_content_visible():
         head: {{ appendChild(){{}} }},
         querySelectorAll(sel){{
           if (sel === 'ha-sidebar,hui-sidebar') return [haSidebar, huiSidebar];
+          if (sel === 'app-drawer,ha-drawer') return [appDrawer, haDrawer];
           if (sel === '*') return [];
           return [];
         }}
@@ -78,6 +81,8 @@ def test_r7_131_node_smoke_non_admin_keeps_green_smart_content_visible():
       }}
       for (const el of [appDrawer, haDrawer]) {{
         if (el.style.values.display?.[0] === 'none') {{ console.error('app shell drawer was hidden'); process.exit(4); }}
+        if (el.style.values.width?.[0] !== '0px' || el.style.values['max-width']?.[0] !== '0px' || el.style.values.flex?.[0] !== '0 0 0px') {{ console.error('app shell drawer blank space was not collapsed'); process.exit(5); }}
+        if (el.getAttribute('data-r7-ha-sidebar-blank-space-collapsed') !== 'true') {{ console.error('blank space marker missing'); process.exit(6); }}
       }}
       console.log(JSON.stringify({{ok:true}}));
     """

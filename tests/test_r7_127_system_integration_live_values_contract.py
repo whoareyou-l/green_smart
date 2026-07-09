@@ -31,7 +31,7 @@ def test_r7_127_system_cards_use_live_snapshot_values_not_hardcoded_copy():
     html = _render_with_system({
         "haVersion": "HA-LIVE-2026.7.1",
         "hacsVersion": "HACS-LIVE-3.0.0",
-        "gsVersion": "GS-LIVE-1.14.90",
+        "gsVersion": "GS-LIVE-1.14.91",
         "dbUse": "MariaDB",
         "dbVersion": "MariaDB-LIVE-11.9",
         "dbStatus": "정상",
@@ -48,7 +48,7 @@ def test_r7_127_system_cards_use_live_snapshot_values_not_hardcoded_copy():
     for expected in (
         "HA-LIVE-2026.7.1",
         "HACS-LIVE-3.0.0",
-        "GS-LIVE-1.14.90",
+        "GS-LIVE-1.14.91",
         "DB 종류",
         "MariaDB-LIVE-11.9",
         "업데이트 가능",

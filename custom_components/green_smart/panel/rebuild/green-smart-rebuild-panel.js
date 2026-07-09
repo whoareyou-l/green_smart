@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.90";
+const REBUILD_VERSION = "1.14.91";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1533,6 +1533,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return "ha-sidebar,hui-sidebar";
   }
 
+  _r7HaSidebarShellSpaceTargets() {
+    return "app-drawer,ha-drawer";
+  }
+
   _applyR7HASidebarDomVisibility(hide) {
     if (typeof document === "undefined") return;
     const applyTarget = (el) => {
@@ -1553,9 +1557,31 @@ class GreenSmartRebuildPanel extends HTMLElement {
         el.style.removeProperty?.("min-width");
       }
     };
+    const applyShellSpaceTarget = (el) => {
+      if (!el?.style) return;
+      if (hide) {
+        el.setAttribute?.("data-green-smart-ha-sidebar-space-collapsed", "true");
+        el.setAttribute?.("data-r7-ha-sidebar-blank-space-collapsed", "true");
+        el.style.setProperty?.("--mdc-drawer-width", "0px");
+        el.style.setProperty?.("--sidebar-width", "0px");
+        el.style.setProperty?.("--app-drawer-width", "0px");
+        el.style.setProperty?.("width", "0px", "important");
+        el.style.setProperty?.("min-width", "0px", "important");
+        el.style.setProperty?.("max-width", "0px", "important");
+        el.style.setProperty?.("flex", "0 0 0px", "important");
+        el.style.setProperty?.("margin", "0px", "important");
+        el.style.setProperty?.("padding", "0px", "important");
+        el.style.setProperty?.("border", "0px", "important");
+      } else if (el.getAttribute?.("data-green-smart-ha-sidebar-space-collapsed") === "true") {
+        el.removeAttribute?.("data-green-smart-ha-sidebar-space-collapsed");
+        el.removeAttribute?.("data-r7-ha-sidebar-blank-space-collapsed");
+        ["--mdc-drawer-width", "--sidebar-width", "--app-drawer-width", "width", "min-width", "max-width", "flex", "margin", "padding", "border"].forEach((name) => el.style.removeProperty?.(name));
+      }
+    };
     const visitRoot = (root, depth = 0) => {
       if (!root || depth > 6) return;
       root.querySelectorAll?.(this._r7HaSidebarDomTargets()).forEach(applyTarget);
+      root.querySelectorAll?.(this._r7HaSidebarShellSpaceTargets()).forEach(applyShellSpaceTarget);
       root.querySelectorAll?.("*").forEach((el) => {
         if (el.shadowRoot) visitRoot(el.shadowRoot, depth + 1);
       });
@@ -1597,8 +1623,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
           body.green-smart-hide-ha-sidebar ha-sidebar,
           body.green-smart-hide-ha-sidebar hui-sidebar { display:none !important; width:0 !important; min-width:0 !important; }
           body.green-smart-hide-ha-sidebar app-drawer,
-          body.green-smart-hide-ha-sidebar ha-drawer { --mdc-drawer-width:0px; --sidebar-width:0px; }
-          body.green-smart-hide-ha-sidebar { --mdc-drawer-width:0px; --sidebar-width:0px; }
+          body.green-smart-hide-ha-sidebar ha-drawer { --mdc-drawer-width:0px; --sidebar-width:0px; --app-drawer-width:0px; width:0 !important; min-width:0 !important; max-width:0 !important; flex:0 0 0px !important; margin:0 !important; padding:0 !important; border:0 !important; }
+          body.green-smart-hide-ha-sidebar { --mdc-drawer-width:0px; --sidebar-width:0px; --app-drawer-width:0px; }
           body.green-smart-hide-ha-sidebar green-smart-rebuild-panel { margin-left:0 !important; }
         `;
         document.head?.appendChild?.(style);
