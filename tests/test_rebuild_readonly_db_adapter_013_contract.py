@@ -29,11 +29,11 @@ def _load_module(path: Path, name: str):
 
 
 def test_rs013_version_surfaces_are_aligned_to_1_12_12():
-    assert '"version": "1.14.87"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.87"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.87"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.88"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.88"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.88"' in _read(REBUILD_PANEL)
     for path in (INTERFACE_SPEC, DB_SCHEMA, LEGACY_INVENTORY, PRODUCT_PLAN, DB_ADAPTER_DOC):
-        assert "v1.14.87" in _read(path)
+        assert "v1.14.88" in _read(path)
 
 
 def test_readonly_db_adapter_document_declares_legacy_physical_to_target_dto_boundary():
@@ -161,7 +161,7 @@ def test_master_docs_inventory_and_plan_promote_rs013_completion():
     assert "Rebuild home context API source adapter" in inventory
     for marker in (
         "Phase R4.9 — Read-only DB adapter",
-        "Status:** `v1.14.87`에서 legacy physical DB → crop_cycle/currentCrop DTO read-only adapter 완료",
+        "Status:** `v1.14.88`에서 legacy physical DB → crop_cycle/currentCrop DTO read-only adapter 완료",
         "No production route removal in RS-013",
         "No DB migration in RS-013",
     ):

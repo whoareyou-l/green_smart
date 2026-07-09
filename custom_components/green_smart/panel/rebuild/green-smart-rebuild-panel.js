@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.87";
+const REBUILD_VERSION = "1.14.88";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1518,12 +1518,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _currentGreenSmartRole() {
     const contextRole = this._homeContext?.actorRole || this._homeContext?.actor?.role || this._homeContext?.currentUser?.role;
     const hassRole = this.hass?.user?.green_smart_role || this.hass?.user?.role;
-    const role = String(contextRole || hassRole || (this.hass?.user?.is_admin ? "operator" : "farm_staff") || "farm_staff").trim();
+    const role = String(contextRole || hassRole || (this.hass?.user?.is_admin ? "admin" : "farm_staff") || "farm_staff").trim();
     return role || "farm_staff";
   }
 
+  _isCurrentUserHaSidebarAdmin() {
+    const user = this.hass?.user || {};
+    const role = String(this._currentGreenSmartRole() || "").trim().toLowerCase();
+    const adminRoles = new Set(["admin", "administrator", "farm_owner", "owner", "super_admin", "관리자"]);
+    return Boolean(user.is_admin) || adminRoles.has(role);
+  }
+
   _r7SidebarLayoutMode() {
-    return this._currentGreenSmartRole() === "operator" ? "operator-ha-adjacent" : "full-left-no-ha-sidebar";
+    return this._isCurrentUserHaSidebarAdmin() ? "operator-ha-adjacent" : "full-left-no-ha-sidebar";
   }
 
   _applyR7HASidebarPolicy() {
@@ -2127,6 +2134,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7CommonSidebarComponent({ collapsed = Boolean(this._r7SidebarCollapsed), layoutMode = this._r7SidebarLayoutMode() } = {}) {
     const haSidebarPolicy = layoutMode === "operator-ha-adjacent" ? "keep" : "hide";
+    const haSidebarAdminSource = this.hass?.user?.is_admin ? "ha-user-is-admin" : this._isCurrentUserHaSidebarAdmin() ? "green-smart-admin-role" : "non-admin-hidden";
     const referenceSlimRail = layoutMode === "operator-ha-adjacent" && Boolean(collapsed);
     const width = collapsed ? "64px" : "256px";
     const railAttrs = referenceSlimRail ? 'data-r7-sidebar-rail-style="reference-slim-operator" data-r7-sidebar-compact-rail="true" data-r7-sidebar-rail-width="64"' : 'data-r7-sidebar-rail-style="standard"';
@@ -2136,7 +2144,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const baseStyle = this._r7SidebarBaseStyle(width);
     const navAria = referenceSlimRail ? 'aria-label="Green Smart compact navigation"' : "";
     const navStyle = referenceSlimRail ? "display:grid;gap:4px;justify-items:stretch;" : "display:grid;gap:4px;";
-    return `<aside data-r7-sidebar data-r7-sidebar-component="common" data-r7-sidebar-component-version="r7-127" data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" ${railAttrs} ${fixedAttrs} ${visualAttrs} ${placementAttrs} style="${baseStyle}">
+    return `<aside data-r7-sidebar data-r7-sidebar-component="common" data-r7-sidebar-component-version="r7-127" data-r7-ha-sidebar-admin-only-policy="true" data-r7-ha-sidebar-admin-source="${haSidebarAdminSource}" data-r7-sidebar-primary-groups data-r7-manual-first-sidebar="true" data-r7-sidebar-layout-mode="${layoutMode}" data-r7-ha-sidebar-policy="${haSidebarPolicy}" data-r7-sidebar-collapsed="${collapsed ? "true" : "false"}" ${railAttrs} ${fixedAttrs} ${visualAttrs} ${placementAttrs} style="${baseStyle}">
       ${this.renderR7SidebarBrand({ collapsed, referenceSlimRail })}
       <template data-r7-deprecated-sidebar-groups>${R7_DEPRECATED_SIDEBAR_GROUPS.map((group) => `data-r7-sidebar-group="${group.key}" ${group.label} → ${group.replacement}`).join(" | ")}</template>
       <nav data-r7-sidebar-nav-list data-r7-sidebar-main-domain-list="without-settings-admin" ${navAria} style="${navStyle}">
