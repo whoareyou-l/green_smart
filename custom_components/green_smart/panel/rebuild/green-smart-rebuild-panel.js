@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.86";
+const REBUILD_VERSION = "1.14.87";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -4785,9 +4785,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
         <div style="max-width:none;margin:0;display:grid;gap:0;">
           <section data-r7-ha-adjacent-layout="true" data-r7-sidebar-shell-component="common-sidebar" style="display:grid;grid-template-columns:${sidebarTrack} minmax(0,1fr);column-gap:0;gap:0;align-items:start;">
             ${this.renderR7Sidebar()}
-            <section data-rebuild-shell-main style="padding:24px;">${this.renderR7PageShell()}</section>
+            <section data-rebuild-shell-main style="padding:24px;display:grid;gap:18px;align-content:start;">
+              ${this.renderR7PageShell()}
+              <footer data-rebuild-version="${REBUILD_VERSION}" data-r7-content-version-footer="true" data-r7-version-footer-placement="content-bottom-outside-cards" data-r7-version-footer-not-under-sidebar="true" style="font-size:12px;color:#78927f;text-align:center;padding:4px 0 0;">Green Smart ${REBUILD_VERSION}</footer>
+            </section>
           </section>
-          <div data-rebuild-version="${REBUILD_VERSION}" style="font-size:12px;color:#78927f;">Green Smart ${REBUILD_VERSION}</div>
         </div>
       </main>
       ${this.renderZoneDetailModal()}
