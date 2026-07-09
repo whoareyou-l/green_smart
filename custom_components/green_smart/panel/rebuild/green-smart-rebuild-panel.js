@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.89";
+const REBUILD_VERSION = "1.14.90";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1530,7 +1530,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7HaSidebarDomTargets() {
-    return "ha-sidebar,hui-sidebar,app-drawer,ha-drawer";
+    return "ha-sidebar,hui-sidebar";
   }
 
   _applyR7HASidebarDomVisibility(hide) {
@@ -1595,9 +1595,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
         style.id = "green-smart-r7-ha-sidebar-policy";
         style.textContent = `
           body.green-smart-hide-ha-sidebar ha-sidebar,
-          body.green-smart-hide-ha-sidebar hui-sidebar,
+          body.green-smart-hide-ha-sidebar hui-sidebar { display:none !important; width:0 !important; min-width:0 !important; }
           body.green-smart-hide-ha-sidebar app-drawer,
-          body.green-smart-hide-ha-sidebar ha-drawer { display:none !important; width:0 !important; min-width:0 !important; }
+          body.green-smart-hide-ha-sidebar ha-drawer { --mdc-drawer-width:0px; --sidebar-width:0px; }
           body.green-smart-hide-ha-sidebar { --mdc-drawer-width:0px; --sidebar-width:0px; }
           body.green-smart-hide-ha-sidebar green-smart-rebuild-panel { margin-left:0 !important; }
         `;
