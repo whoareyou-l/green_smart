@@ -11,16 +11,17 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_133_version_surfaces_are_1_14_94():
-    assert '"version": "1.14.94"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.94"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.94"' in _read(REBUILD_PANEL)
+def test_r7_133_version_surfaces_are_1_14_95():
+    assert '"version": "1.14.95"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.95"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.95"' in _read(REBUILD_PANEL)
 
 
-def test_r7_133_source_domain_frames_use_safe_natural_width_not_forced_stretch():
+def test_r7_133_source_domain_frames_fill_outer_card_only_without_forced_stretch():
     source = _read(REBUILD_PANEL)
     for marker in (
-        'data-r7-domain-frame-width="safe-natural"',
+        'data-r7-domain-frame-width="safe-fill"',
+        'data-r7-domain-content-card-width="safe-fill"',
         'data-r7-domain-visual-hero-width="safe-natural"',
         'data-r7-content-width-policy="adaptive-viewport-fill"',
         'data-r7-shell-grid-width-policy="sidebar-aware-fill"',
@@ -37,8 +38,14 @@ def test_r7_133_source_domain_frames_use_safe_natural_width_not_forced_stretch()
         'data-r7-domain-content-panel-width="viewport"',
         'width:100%;min-width:0;max-width:none;box-sizing:border-box;justify-self:stretch;align-self:stretch;',
         'grid-template-columns:minmax(0,1fr);">\n      <section data-r7-domain-visual-hero',
+        'max-width:none',
+        '100dvw',
+        'justify-self:stretch',
+        'align-self:stretch',
     ):
         assert bad not in frame_block
+    assert 'style="display:grid;gap:14px;min-width:0;width:100%;max-width:100%;box-sizing:border-box;"' in frame_block
+    assert 'data-r7-domain-visual-hero data-r7-domain-visual-hero-width="safe-natural" style="border:1px solid #cfe5d4' in frame_block
 
 
 def test_r7_133_node_smoke_settings_domain_hero_does_not_vertical_shred():
@@ -62,7 +69,8 @@ def test_r7_133_node_smoke_settings_domain_hero_does_not_vertical_shred():
       const html = panel.innerHTML;
       const required = [
         'data-r7-content-width-mode="ha-sidebar-hidden"',
-        'data-r7-domain-frame-width="safe-natural"',
+        'data-r7-domain-frame-width="safe-fill"',
+        'data-r7-domain-content-card-width="safe-fill"',
         'data-r7-domain-visual-hero-width="safe-natural"',
         '자동화 제어',
         '구역별 자동화 제어 후보',
@@ -76,7 +84,11 @@ def test_r7_133_node_smoke_settings_domain_hero_does_not_vertical_shred():
         'data-r7-domain-card-width-policy="fill-available-content-column"',
         'data-r7-domain-content-card-width="viewport"',
         'data-r7-domain-content-panel-width="viewport"',
-        'width:100%;min-width:0;max-width:none;box-sizing:border-box;justify-self:stretch;align-self:stretch;'
+        'width:100%;min-width:0;max-width:none;box-sizing:border-box;justify-self:stretch;align-self:stretch;',
+        'max-width:none',
+        '100dvw',
+        'justify-self:stretch',
+        'align-self:stretch'
       ].filter((needle) => frame.includes(needle));
       if (bad.length) {{ console.error(JSON.stringify({{bad}})); process.exit(2); }}
       console.log(JSON.stringify({{ok:true}}));

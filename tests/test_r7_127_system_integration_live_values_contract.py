@@ -4,6 +4,11 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
+WRITE_VIEWS = ROOT / "custom_components/green_smart/rebuild_settings_write_views.py"
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
 
 
 def _render_with_system(system: dict) -> str:
@@ -31,7 +36,7 @@ def test_r7_127_system_cards_use_live_snapshot_values_not_hardcoded_copy():
     html = _render_with_system({
         "haVersion": "HA-LIVE-2026.7.1",
         "hacsVersion": "HACS-LIVE-3.0.0",
-        "gsVersion": "GS-LIVE-1.14.94",
+        "gsVersion": "GS-LIVE-1.14.95",
         "dbUse": "MariaDB",
         "dbVersion": "MariaDB-LIVE-11.9",
         "dbStatus": "정상",
@@ -48,7 +53,7 @@ def test_r7_127_system_cards_use_live_snapshot_values_not_hardcoded_copy():
     for expected in (
         "HA-LIVE-2026.7.1",
         "HACS-LIVE-3.0.0",
-        "GS-LIVE-1.14.94",
+        "GS-LIVE-1.14.95",
         "DB 종류",
         "MariaDB-LIVE-11.9",
         "업데이트 가능",
@@ -75,3 +80,20 @@ def test_r7_127_zero_errors_show_normal_and_positive_errors_show_count_per_domai
     assert "DB" in html and "정상" in html
     assert "Center" in html and "오류 1건" in html
     assert "Edge" in html and "오류 3건" in html
+
+
+def test_r7_127_watchdog_manifest_versions_use_executor_not_event_loop_read_text():
+    source = _read(WRITE_VIEWS)
+    for marker in (
+        "async def _manifest_version_async",
+        "async_add_executor_job",
+        "async def _hacs_version_status",
+        "async def _gs_version_status",
+        '"hacsVersion": await _hacs_version_status(hass)',
+        '"gsVersion": await _gs_version_status(hass)',
+    ):
+        assert marker in source
+    watchdog_start = source.index("async def system_integration_watchdog_response")
+    watchdog_block = source[watchdog_start: source.index("def _update_entity_dto", watchdog_start)]
+    assert '"hacsVersion": _hacs_version_status(hass)' not in watchdog_block
+    assert '"gsVersion": _gs_version_status(hass)' not in watchdog_block

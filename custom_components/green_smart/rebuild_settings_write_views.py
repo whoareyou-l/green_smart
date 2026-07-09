@@ -451,18 +451,24 @@ def _manifest_version(path: Path, default: str = "미설치") -> str:
         return default
 
 
+async def _manifest_version_async(hass, path: Path, default: str = "미설치") -> str:
+    if hasattr(hass, "async_add_executor_job"):
+        return await hass.async_add_executor_job(_manifest_version, path, default)
+    return _manifest_version(path, default)
+
+
 def _ha_version_status(hass) -> str:
     return str(HA_VERSION or "unknown")
 
 
-def _hacs_version_status(hass) -> str:
+async def _hacs_version_status(hass) -> str:
     hacs_manifest = Path(hass.config.path("custom_components", "hacs", "manifest.json")) if hasattr(hass, "config") else Path("/config/custom_components/hacs/manifest.json")
-    return _manifest_version(hacs_manifest, default="미설치")
+    return await _manifest_version_async(hass, hacs_manifest, default="미설치")
 
 
-def _gs_version_status(hass) -> str:
+async def _gs_version_status(hass) -> str:
     gs_manifest = Path(__file__).with_name("manifest.json")
-    return _manifest_version(gs_manifest, default="unknown")
+    return await _manifest_version_async(hass, gs_manifest, default="unknown")
 
 
 async def _db_watchdog_status(hass) -> dict[str, Any]:
@@ -538,8 +544,8 @@ async def system_integration_watchdog_response(hass) -> dict[str, Any]:
     update_entities = _discover_update_entities(hass)
     snapshot = {
         "haVersion": _ha_version_status(hass),
-        "hacsVersion": _hacs_version_status(hass),
-        "gsVersion": _gs_version_status(hass),
+        "hacsVersion": await _hacs_version_status(hass),
+        "gsVersion": await _gs_version_status(hass),
         "gsUpdateStatus": _update_status_label(update_entities.get("gs", [])),
         "hacsUpdateStatus": _update_status_label(update_entities.get("hacs", [])),
         "haDbUpdateStatus": "Update Agent 도입 후",

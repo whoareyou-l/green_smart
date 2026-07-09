@@ -11,10 +11,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_132_version_surfaces_are_1_14_92():
-    assert '"version": "1.14.94"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.94"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.94"' in _read(REBUILD_PANEL)
+def test_r7_132_version_surfaces_are_1_14_95():
+    assert '"version": "1.14.95"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.95"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.95"' in _read(REBUILD_PANEL)
 
 
 def test_r7_132_source_has_adaptive_content_width_policy_markers():
