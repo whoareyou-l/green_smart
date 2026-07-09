@@ -1,6 +1,6 @@
 # R7-038 HA MDI Sidebar Icons
 
-> 기준 버전: `v1.14.85`
+> 기준 버전: `v1.14.86`
 > Status: R7-038 planned
 > Purpose: 사이드바 로고와 도메인 아이콘을 사용자가 지정한 Home Assistant `ha-icon`/MDI 아이콘으로 교체한다.
 

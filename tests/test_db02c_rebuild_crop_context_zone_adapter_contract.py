@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_db02c_version_surfaces_are_1_14_35():
-    assert '"version": "1.14.85"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.85"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.85"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.86"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.86"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.86"' in _read(REBUILD_PANEL)
 
 
 def test_db02c_zone_adapter_owns_rebuild_crop_context_join_fragments():
