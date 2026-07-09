@@ -18,9 +18,9 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1104_interlock_safety_split_versions_and_docs():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.14.88"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.88"' in panel
-    assert 'v1.14.88' in panel[:200]
+    assert '"version": "1.14.89"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.89"' in panel
+    assert 'v1.14.89' in panel[:200]
     assert "v1.10.9 Environment interlock/safety tab split" in docs
 
 

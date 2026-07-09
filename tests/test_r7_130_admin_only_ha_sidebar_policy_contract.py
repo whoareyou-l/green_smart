@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_130_version_surfaces_are_1_14_88():
-    assert '"version": "1.14.88"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.88"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.88"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.89"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.89"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.89"' in _read(REBUILD_PANEL)
 
 
 def test_r7_130_source_documents_admin_only_ha_sidebar_policy():
@@ -25,6 +25,10 @@ def test_r7_130_source_documents_admin_only_ha_sidebar_policy():
         "data-r7-ha-sidebar-admin-source",
         "green-smart-hide-ha-sidebar",
         "green-smart-operator-ha-sidebar-adjacent",
+        "_applyR7HASidebarDomVisibility",
+        "data-green-smart-ha-sidebar-hidden",
+        "data-r7-ha-sidebar-shadow-dom-force-hide",
+        "_ensureR7HASidebarPolicyObserver",
     ):
         assert marker in source
     assert 'this._currentGreenSmartRole() === "operator" ? "operator-ha-adjacent"' not in source
@@ -51,7 +55,7 @@ def test_r7_130_node_smoke_only_admin_keeps_ha_sidebar():
         {{ label: 'ha-admin', user: {{ is_admin: true, green_smart_role: 'farm_staff' }}, context: {{ actorRole: 'farm_staff' }}, mode: 'operator-ha-adjacent', policy: 'keep', hide: false }},
         {{ label: 'gs-admin-role', user: {{ is_admin: false, green_smart_role: 'admin' }}, context: {{ actorRole: 'admin' }}, mode: 'operator-ha-adjacent', policy: 'keep', hide: false }},
         {{ label: 'operator-not-admin', user: {{ is_admin: false, green_smart_role: 'operator' }}, context: {{ actorRole: 'operator' }}, mode: 'full-left-no-ha-sidebar', policy: 'hide', hide: true }},
-        {{ label: 'farm-owner-not-ha-admin-but-gs-admin', user: {{ is_admin: false, green_smart_role: 'farm_owner' }}, context: {{ actorRole: 'farm_owner' }}, mode: 'operator-ha-adjacent', policy: 'keep', hide: false }},
+        {{ label: 'farm-owner-not-admin', user: {{ is_admin: false, green_smart_role: 'farm_owner' }}, context: {{ actorRole: 'farm_owner' }}, mode: 'full-left-no-ha-sidebar', policy: 'hide', hide: true }},
         {{ label: 'staff', user: {{ is_admin: false, green_smart_role: 'farm_staff' }}, context: {{ actorRole: 'farm_staff' }}, mode: 'full-left-no-ha-sidebar', policy: 'hide', hide: true }},
       ];
       for (const item of cases) {{

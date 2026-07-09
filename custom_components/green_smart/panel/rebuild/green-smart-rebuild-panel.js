@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.88";
+const REBUILD_VERSION = "1.14.89";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1525,8 +1525,50 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _isCurrentUserHaSidebarAdmin() {
     const user = this.hass?.user || {};
     const role = String(this._currentGreenSmartRole() || "").trim().toLowerCase();
-    const adminRoles = new Set(["admin", "administrator", "farm_owner", "owner", "super_admin", "관리자"]);
+    const adminRoles = new Set(["admin", "administrator", "관리자"]);
     return Boolean(user.is_admin) || adminRoles.has(role);
+  }
+
+  _r7HaSidebarDomTargets() {
+    return "ha-sidebar,hui-sidebar,app-drawer,ha-drawer";
+  }
+
+  _applyR7HASidebarDomVisibility(hide) {
+    if (typeof document === "undefined") return;
+    const applyTarget = (el) => {
+      if (!el?.style) return;
+      if (hide) {
+        el.setAttribute?.("data-green-smart-ha-sidebar-hidden", "true");
+        el.setAttribute?.("data-r7-ha-sidebar-shadow-dom-force-hide", "true");
+        el.setAttribute?.("aria-hidden", "true");
+        el.style.setProperty?.("display", "none", "important");
+        el.style.setProperty?.("width", "0px", "important");
+        el.style.setProperty?.("min-width", "0px", "important");
+      } else if (el.getAttribute?.("data-green-smart-ha-sidebar-hidden") === "true") {
+        el.removeAttribute?.("data-green-smart-ha-sidebar-hidden");
+        el.removeAttribute?.("data-r7-ha-sidebar-shadow-dom-force-hide");
+        el.removeAttribute?.("aria-hidden");
+        el.style.removeProperty?.("display");
+        el.style.removeProperty?.("width");
+        el.style.removeProperty?.("min-width");
+      }
+    };
+    const visitRoot = (root, depth = 0) => {
+      if (!root || depth > 6) return;
+      root.querySelectorAll?.(this._r7HaSidebarDomTargets()).forEach(applyTarget);
+      root.querySelectorAll?.("*").forEach((el) => {
+        if (el.shadowRoot) visitRoot(el.shadowRoot, depth + 1);
+      });
+    };
+    visitRoot(document);
+  }
+
+  _ensureR7HASidebarPolicyObserver() {
+    if (typeof MutationObserver === "undefined" || typeof document === "undefined" || !document?.body || this._r7HaSidebarPolicyObserver) return;
+    this._r7HaSidebarPolicyObserver = new MutationObserver(() => {
+      this._applyR7HASidebarDomVisibility(this._r7SidebarLayoutMode() === "full-left-no-ha-sidebar");
+    });
+    this._r7HaSidebarPolicyObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   _r7SidebarLayoutMode() {
@@ -1545,6 +1587,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     setBodyClass("green-smart-operator-ha-sidebar-adjacent", mode === "operator-ha-adjacent");
     if (mode === "full-left-no-ha-sidebar") document.body.classList.remove?.("green-smart-operator-ha-sidebar-adjacent");
     if (mode === "operator-ha-adjacent") document.body.classList.remove?.("green-smart-hide-ha-sidebar");
+    this._applyR7HASidebarDomVisibility(mode === "full-left-no-ha-sidebar");
+    this._ensureR7HASidebarPolicyObserver();
     if (!document.getElementById?.("green-smart-r7-ha-sidebar-policy")) {
       const style = document.createElement?.("style");
       if (style) {
