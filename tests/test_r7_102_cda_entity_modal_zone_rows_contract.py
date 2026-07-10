@@ -33,9 +33,9 @@ def _render(zones_js: str) -> str:
 
 
 def test_r7_102_version_surfaces_are_1_14_27():
-    assert '"version": "1.15.13"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.13"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.13"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.14"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.14"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.14"' in _read(REBUILD_PANEL)
 
 
 def test_r7_102_source_has_reusable_zone_entity_schema_not_review_like_dump():

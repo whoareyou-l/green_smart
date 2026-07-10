@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.13";
+const REBUILD_VERSION = "1.15.14";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1555,10 +1555,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _openR7SettingsDomainFromMobile() {
     this.setAttribute?.("data-r7-mobile-settings-route", "dedicated-internal-action");
     this.setAttribute?.("data-r7-mobile-fast-panel-mode", "active-panel-only");
+    this.setAttribute?.("data-r7-mobile-settings-render-mode", "workspace-patch-no-full-render");
     this._r7MobileSettingsFastLanding = true;
     this._r7MobileFastPanelMode = true;
     this._activeR7Domain = "settings-admin";
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": "greenhouse-zones" };
+    if (this._patchR7MobileActiveDomainPage()) return;
     this.render();
   }
 
@@ -1609,6 +1611,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<span data-r7-mobile-active-panel-only="true" data-r7-mobile-immediate-panel-render="true" data-r7-mobile-active-panel-domain="${domainKey}" data-r7-mobile-active-panel-key="${activeKey}" data-r7-mobile-panel-hydration-state="not-used-immediate" style="display:none;"></span>${activePanel}${deferred}`;
   }
 
+  _r7TabsForDomain(domain) {
+    const commonTabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
+    if (domain === "settings-admin") return [["greenhouse-zones", "온실·구역"], ["device-sensor-mapping", "장치 연결 작성"], ["users-permissions", "사용자·권한"], ["system-integration", "시스템·연동"]];
+    if (domain === "crop-operations") return [["status-summary", "상태 요약"], ["crop-cycle", "작기·등록"], ["growth-target", "생육목표"], ["records-workflow", "기록·조사"], ["model-assist", "모델·진단"], ["trend-evidence", "추세·근거"]];
+    if (domain === "safety-history") return [["status-summary", "상태 요약"], ["block-allow", "차단·허용"], ["event-history", "이벤트"], ["operation-history", "조작 이력"], ["audit-evidence", "감사 근거"], ["trend-evidence", "추세·근거"]];
+    return commonTabs;
+  }
+
   _renderR7SubtabPanelForDomain(domain, tabKey) {
     const activeTab = tabKey;
     const selectedZone = this._r7PrimaryZoneForDomain();
@@ -1633,19 +1643,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _patchR7MobileSubtabPanel(domain, tabKey) {
     const panelHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
     if (!panelHtml) return false;
-    const tabsRoot = this.querySelector?.(`[data-r7-domain-subtabs-for="${domain}"]`);
-    tabsRoot?.querySelectorAll?.("button[data-r7-domain-subtab]").forEach((button) => {
-      const selected = button.getAttribute("data-r7-domain-subtab-key") === tabKey;
-      button.setAttribute("aria-selected", selected ? "true" : "false");
-      button.setAttribute("data-r7-domain-subtab-active", selected ? "true" : "false");
-      if (selected) button.setAttribute("data-r7-mobile-patched-active-subtab", "true");
-      else button.removeAttribute?.("data-r7-mobile-patched-active-subtab");
-    });
-    const currentPanel = this.querySelector?.(`[data-r7-domain-subtab-panel][data-r7-domain-subtab-panel-key]`);
-    if (!currentPanel) return false;
-    currentPanel.outerHTML = panelHtml;
+    const frame = this.querySelector?.(`[data-r7-domain-visual-frame-domain="${domain}"]`);
+    const subtabSection = frame?.querySelector?.('[data-r7-domain-content-card-section="subtabs"]');
+    const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
+    if (!frame || !subtabSection || !panelSection) return false;
+    subtabSection.innerHTML = this.renderR7DomainSubtabs(domain, this._r7TabsForDomain(domain), tabKey, true);
+    panelSection.innerHTML = panelHtml;
+    frame.setAttribute?.("data-r7-mobile-frame-scoped-subtab-patch", "true");
     this.setAttribute?.("data-r7-mobile-dom-patch-subtab", "true");
-    this.setAttribute?.("data-r7-mobile-subtab-render-mode", "panel-outerhtml-only");
+    this.setAttribute?.("data-r7-mobile-subtab-render-mode", "frame-scoped-subtabs-and-panel");
     this._bindR7PatchedInteractiveActions();
     this._scheduleR7MobileActiveSubtabScroll();
     return true;

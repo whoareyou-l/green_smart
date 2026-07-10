@@ -11,11 +11,11 @@ def source() -> str:
 
 def test_v1_15_13_mobile_subtab_uses_panel_outerhtml_patch_before_full_render():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.13"' in text
+    assert 'const REBUILD_VERSION = "1.15.14"' in text
     assert '_patchR7MobileSubtabPanel(domain, tabKey)' in text
     assert 'data-r7-mobile-dom-patch-subtab", "true"' in text
-    assert 'data-r7-mobile-subtab-render-mode", "panel-outerhtml-only"' in text
-    assert 'currentPanel.outerHTML = panelHtml;' in text
+    assert 'data-r7-mobile-subtab-render-mode", "frame-scoped-subtabs-and-panel"' in text
+    assert 'panelSection.innerHTML = panelHtml;' in text
     assert 'if (mobileFast && this._patchR7MobileSubtabPanel(domain, tabKey)) return true;' in text
 
 
