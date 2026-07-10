@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_023_version_surfaces_are_1_12_57():
-    assert '"version": "1.15.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.10"' in _read(REBUILD_PANEL)
-    assert "v1.15.10" in _read(DOC)
+    assert '"version": "1.15.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.11"' in _read(REBUILD_PANEL)
+    assert "v1.15.11" in _read(DOC)
 
 
 def test_r7_023_doc_records_crop_operations_inventory_and_forward_plan():

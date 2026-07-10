@@ -11,10 +11,11 @@ def source() -> str:
 
 def test_v1_15_10_mobile_click_uses_two_phase_panel_hydration():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.10"' in text
+    assert 'const REBUILD_VERSION = "1.15.11"' in text
     assert '_requestR7MobilePanelHydration(domainKey, tabKey)' in text
     assert 'data-r7-mobile-panel-hydration", "pending"' in text
-    assert 'requestAnimationFrame' in text and 'setTimeout(hydrate, 80)' in text
+    assert 'requestAnimationFrame' in text and 'setTimeout(hydrate, 120)' in text
+    assert 'setTimeout(hydrate, 650)' in text
     assert 'data-r7-mobile-panel-hydration", "hydrated"' in text
     assert 'this._requestR7MobilePanelHydration(nextDomain, activeTab);' in text
     assert 'this._requestR7MobilePanelHydration(domain, tabKey);' in text

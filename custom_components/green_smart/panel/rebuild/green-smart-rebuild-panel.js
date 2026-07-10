@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.10";
+const REBUILD_VERSION = "1.15.11";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -305,6 +305,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7MobileActiveSubtabScrollRaf = 0;
     this._r7MobilePanelHydration = null;
     this._r7MobilePanelHydrationTimer = 0;
+    this._r7MobilePanelHydrationWatchdog = 0;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -1589,18 +1590,28 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _requestR7MobilePanelHydration(domainKey, tabKey) {
     const domain = this._normalizeR7Domain(domainKey);
     const tab = tabKey || this._activeR7DomainSubtabs[domain] || "status-summary";
-    this._r7MobilePanelHydration = { domain, tab, pending: true };
+    const nonce = `${domain}:${tab}:${Date.now()}`;
+    this._r7MobilePanelHydration = { domain, tab, pending: true, nonce, requestedAt: Date.now() };
     this.setAttribute?.("data-r7-mobile-panel-hydration", "pending");
+    this.setAttribute?.("data-r7-mobile-panel-hydration-fallback", "timer-watchdog");
     if (this._r7MobilePanelHydrationTimer) clearTimeout(this._r7MobilePanelHydrationTimer);
+    if (this._r7MobilePanelHydrationWatchdog) clearTimeout(this._r7MobilePanelHydrationWatchdog);
     const hydrate = () => {
+      if (!this._r7MobilePanelHydration || this._r7MobilePanelHydration.nonce !== nonce) return;
       this._r7MobilePanelHydrationTimer = 0;
-      if (!this._r7MobilePanelHydration || this._r7MobilePanelHydration.domain !== domain || this._r7MobilePanelHydration.tab !== tab) return;
+      this._r7MobilePanelHydrationWatchdog = 0;
       this._r7MobilePanelHydration = null;
       this.setAttribute?.("data-r7-mobile-panel-hydration", "hydrated");
       this.render();
     };
-    const schedule = () => { this._r7MobilePanelHydrationTimer = setTimeout(hydrate, 80); };
-    globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(schedule) : schedule();
+    const scheduleTimer = () => {
+      if (!this._r7MobilePanelHydration || this._r7MobilePanelHydration.nonce !== nonce) return;
+      if (this._r7MobilePanelHydrationTimer) clearTimeout(this._r7MobilePanelHydrationTimer);
+      this._r7MobilePanelHydrationTimer = setTimeout(hydrate, 60);
+    };
+    this._r7MobilePanelHydrationTimer = setTimeout(hydrate, 120);
+    this._r7MobilePanelHydrationWatchdog = setTimeout(hydrate, 650);
+    try { globalThis.requestAnimationFrame?.(scheduleTimer); } catch (_error) { scheduleTimer(); }
   }
 
   renderR7MobilePanelHydrationPlaceholder(domainKey, activeKey) {
@@ -1610,6 +1621,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7PanelsForDomain(domainKey, tabs, activeTab, renderer, fullRenderer) {
     if (!this._r7MobileFastPanelMode) return fullRenderer();
     const activeKey = tabs.some(([key]) => key === activeTab) ? activeTab : tabs[0]?.[0];
+    if (this._r7MobilePanelHydration?.pending && Date.now() - Number(this._r7MobilePanelHydration.requestedAt || 0) > 900) this._r7MobilePanelHydration = null;
     const hydrationPending = this._r7MobilePanelHydration?.pending && this._r7MobilePanelHydration.domain === domainKey && this._r7MobilePanelHydration.tab === activeKey;
     const activePanel = hydrationPending ? this.renderR7MobilePanelHydrationPlaceholder(domainKey, activeKey) : (activeKey ? renderer(activeKey) : "");
     const deferred = tabs.filter(([key]) => key !== activeKey).map(([key]) => `<template data-r7-mobile-deferred-subtab-panel="${key}" data-r7-mobile-fast-panel-mode="active-panel-only" data-r7-mobile-deferred-domain="${domainKey}"></template>`).join("");

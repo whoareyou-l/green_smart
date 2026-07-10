@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_082_version_surfaces_are_1_14_7():
-    assert '"version": "1.15.10"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.10"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.10"' in _read(PANEL)
+    assert '"version": "1.15.11"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.11"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.11"' in _read(PANEL)
 
 
 def test_r7_082_cda_primitives_exist_small_to_large():
