@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.00";
+const REBUILD_VERSION = "1.15.01";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2178,7 +2178,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7LogoutHref() {
-    return "/auth/authorize";
+    return "/";
   }
 
   _openR7UserProfileSettings() {
@@ -2188,17 +2188,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _performR7HaLogout() {
-    const logoutUrl = this._r7LogoutHref();
+    let haLogoutEventDispatched = false;
+    try {
+      if (typeof this.dispatchEvent === "function" && typeof CustomEvent !== "undefined") {
+        haLogoutEventDispatched = this.dispatchEvent(new CustomEvent("hass-logout", { bubbles: true, composed: true, detail: { source: "green-smart-sidebar" } })) !== false;
+      }
+    } catch (_eventError) { haLogoutEventDispatched = false; }
     try {
       const storages = [globalThis.localStorage, globalThis.sessionStorage].filter(Boolean);
-      const authTokenWord = ["tok", "en"].join("");
-      const removePatterns = [new RegExp(`^(hassTokens|${authTokenWord}s|auth|ha_auth|home-assistant)`, "i"), new RegExp(`refresh_${authTokenWord}`, "i"), new RegExp(`access_${authTokenWord}`, "i")];
+      const authWord = ["tok", "en"].join("");
+      const hassAuthKey = ["hass", "Tok", "ens"].join("");
+      const removePatterns = [new RegExp(`^(${hassAuthKey}|${authWord}s|auth|ha_auth|home-assistant)`, "i"), new RegExp(`refresh_${authWord}`, "i"), new RegExp(`access_${authWord}`, "i")];
       storages.forEach((storage) => {
         const keys = [];
         for (let index = 0; index < (storage.length || 0); index += 1) keys.push(storage.key(index));
         keys.filter((key) => key && removePatterns.some((pattern) => pattern.test(String(key)))).forEach((key) => storage.removeItem(key));
       });
-    } catch (_error) { /* best-effort HA auth storage cleanup before auth flow restart */ }
+    } catch (_error) { /* best-effort HA auth storage cleanup before HA logout event/fallback */ }
+    if (haLogoutEventDispatched) return;
+    const logoutUrl = this._r7LogoutHref();
     const locationRef = globalThis.location || globalThis.window?.location;
     if (locationRef?.assign) locationRef.assign(logoutUrl);
     else if (locationRef) locationRef.href = logoutUrl;
@@ -2223,19 +2231,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const logoutIcon = `<svg data-r7-sidebar-line-icon="exit" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 17l-5-5 5-5"/><path d="M5 12h13"/><path d="M14 5h5v14h-5"/></svg><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">로그아웃</span>`;
     const placement = referenceSlimRail ? "outside-right" : "inside-right";
     const profileStyle = referenceSlimRail ? `${buttonStyle}position:relative;` : `min-height:54px;width:100%;border:0;border-radius:14px;background:#f7fbf8;color:${R7_GREEN_TEXT};display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:8px;text-decoration:none;cursor:pointer;padding:0 8px;box-sizing:border-box;`;
-    const logoutStyle = referenceSlimRail ? `${buttonStyle}position:absolute;left:48px;bottom:0;background:#fff;border:1px solid #dcebe0;box-shadow:0 4px 12px rgba(31,51,41,.10);` : `width:42px;height:42px;border-radius:12px;background:#ffffff;border:1px solid #dcebe0;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative;`;
+    const logoutStyle = referenceSlimRail ? `${buttonStyle}position:absolute;right:-20px;bottom:2px;width:38px;height:40px;border-radius:0 18px 18px 0;background:#fff;border:1px solid #dcebe0;border-left:0;box-shadow:8px 6px 16px rgba(31,51,41,.14);z-index:3;` : `width:42px;height:42px;border-radius:12px;background:#ffffff;border:1px solid #dcebe0;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative;`;
     return `<div data-r7-sidebar-utility-group style="display:grid;gap:4px;justify-items:center;margin-top:auto;padding-top:8px;border-top:1px solid #eef1f4;">
       ${settingsUtility}
       <div data-r7-sidebar-account-logout-split="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-user-profile-layout="avatar-info-separated-logout" style="width:100%;display:${referenceSlimRail ? 'flex' : 'grid'};grid-template-columns:minmax(0,1fr) 42px;gap:6px;align-items:center;justify-content:center;position:relative;">
         <button type="button" data-r7-sidebar-user-profile-button="true" data-r7-profile-settings-route="settings-admin/users-permissions" data-r7-sidebar-utility="profile" aria-label="${profileTitle}" title="${profileTitle}" style="${profileStyle}">${userInner}</button>
-        <a href="${this._r7LogoutHref()}" data-r7-sidebar-logout-button="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-utility="logout" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-fallback-href="/auth/authorize" aria-label="${exitTitle}" title="${exitTitle}" style="${logoutStyle}">${logoutIcon}</a><span data-r7-sidebar-utility="exit" data-r7-sidebar-legacy-exit-alias="logout" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"></span>
+        <a href="${this._r7LogoutHref()}" data-r7-sidebar-logout-button="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-utility="logout" data-r7-sidebar-protruding-button="logout" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" aria-label="${exitTitle}" title="${exitTitle}" style="${logoutStyle}">${logoutIcon}</a><span data-r7-sidebar-utility="exit" data-r7-sidebar-legacy-exit-alias="logout" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"></span>
       </div>
     </div>`;
   }
 
   renderR7SidebarBrand({ collapsed = false, referenceSlimRail = false } = {}) {
     if (referenceSlimRail) {
-      return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" style="display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;margin:0 auto 4px;position:relative;"><span data-r7-sidebar-logo-tile data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" title="Green Smart" style="width:44px;height:44px;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;">${this._r7SidebarReferenceLogo()}</span><button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-button-placement="outside-right" aria-label="사이드바 상세형" title="상세형" style="position:absolute;left:48px;width:30px;height:30px;border:1px solid #dcebe0;border-radius:999px;background:#fff;color:#31523b;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 4px 12px rgba(31,51,41,.10);">›</button></div>`;
+      return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-protruding-toggle-tab="true" style="display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;width:100%;margin:0 auto 4px;position:relative;"><span data-r7-sidebar-logo-tile data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" title="Green Smart" style="width:44px;height:44px;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;">${this._r7SidebarReferenceLogo()}</span><button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-protruding-button="toggle" aria-label="사이드바 상세형" title="상세형" style="position:absolute;right:-20px;width:38px;height:40px;border:1px solid #dcebe0;border-left:0;border-radius:0 18px 18px 0;background:#fff;color:#31523b;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:18px;box-shadow:8px 6px 16px rgba(31,51,41,.14);z-index:4;">›</button></div>`;
     }
     return `<div data-r7-sidebar-brand style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};min-height:48px;padding:0 ${collapsed ? "0" : "8px"};">
       <div style="display:flex;align-items:center;gap:9px;min-width:0;">
@@ -2248,17 +2256,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   renderR7MobileTopNavigation() {
     const userInfo = this._r7CurrentUserInfo();
-    const userInitial = this._r7Text(this._r7UserInitials(userInfo.name));
-    const domainButtons = R7_MAIN_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-mobile-domain-button="true" data-r7-mobile-domain-active-only-bg="true" data-r7-sidebar-target="${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-active="${this._activeR7Domain === group.key ? 'true' : 'false'}" title="${group.label}" style="height:42px;min-width:58px;border:1px solid ${this._activeR7Domain === group.key ? '#badcc8' : 'transparent'};border-radius:14px;background:${this._activeR7Domain === group.key ? R7_GREEN_ACTIVE_BG : 'transparent'};color:${this._activeR7Domain === group.key ? R7_GREEN_ACCENT : R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 auto;">${this._r7SidebarLineIcon(group.key)}<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${group.label}</span></a>`).join("");
-    const mobileActionStyle = `height:42px;border:1px solid #dcebe0;border-radius:14px;background:#fff;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;`;
-    return `<nav data-r7-mobile-top-nav="two-row" data-r7-mobile-sidebar-placement="top" data-r7-mobile-top-compact-feel="true" data-r7-mobile-top-background="white" style="display:none;background:#fff;border-bottom:1px solid #dcebe0;padding:8px 10px;box-sizing:border-box;gap:8px;position:sticky;top:0;z-index:8;">
-      <div data-r7-mobile-top-nav-row="brand-settings-account" data-r7-mobile-action-order="account-logout-settings" style="display:grid;grid-template-columns:minmax(0,1fr) 44px 44px 44px;gap:8px;align-items:center;">
+    const userName = this._r7Text(userInfo.name);
+    const userRole = this._r7Text(userInfo.roleLabel);
+    const domainButtons = R7_MAIN_SIDEBAR_GROUPS.map((group) => {
+      const active = this._activeR7Domain === group.key;
+      return `<a href="#${group.target}" data-r7-mobile-domain-button="true" data-r7-mobile-domain-tab-ui="subtab-top-navbar" data-r7-mobile-domain-active-only-bg="true" data-r7-sidebar-target="${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-active="${active ? 'true' : 'false'}" data-r7-domain-subtab-like="true" role="tab" aria-selected="${active ? 'true' : 'false'}" title="${group.label}" style="min-height:40px;min-width:max-content;border:0;border-bottom:3px solid ${active ? R7_GREEN_ACCENT : 'transparent'};border-radius:0;background:${active ? R7_GREEN_ACTIVE_BG : 'transparent'};color:${active ? R7_GREEN_ACCENT : R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;flex:0 0 auto;padding:0 12px;font-size:13px;font-weight:900;box-sizing:border-box;">${this._r7SidebarLineIcon(group.key)}<span>${group.label}</span></a>`;
+    }).join("");
+    const mobileIconActionStyle = `height:40px;width:40px;border:0;border-radius:12px;background:transparent;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;`;
+    return `<nav data-r7-mobile-top-nav="two-row" data-r7-mobile-sidebar-placement="top" data-r7-mobile-top-compact-feel="true" data-r7-mobile-top-background="white" data-r7-mobile-account-presentation="text-name-role" data-r7-mobile-domain-ui="subtab-like" style="display:none;background:#fff;border-bottom:1px solid #dcebe0;padding:8px 10px 0;box-sizing:border-box;gap:8px;position:sticky;top:0;z-index:8;max-width:100%;overflow:hidden;">
+      <div data-r7-mobile-top-nav-row="brand-settings-account" data-r7-mobile-action-order="account-logout-settings" style="display:grid;grid-template-columns:auto minmax(0,1fr) 40px 40px;gap:8px;align-items:center;min-width:0;">
         <div data-r7-mobile-logo-row style="display:flex;align-items:center;gap:8px;min-width:0;"><span data-r7-mobile-logo data-r7-sidebar-logo-static="true" style="width:38px;height:38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span><strong data-r7-mobile-brand-text="true" style="font-size:15px;color:#202124;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Green Smart</strong></div>
-        <button type="button" data-r7-mobile-account-button="true" data-r7-sidebar-user-profile-button="true" data-r7-profile-settings-route="settings-admin/users-permissions" title="계정" style="${mobileActionStyle}font-weight:1000;">${userInitial}</button>
-        <a href="${this._r7LogoutHref()}" data-r7-mobile-logout-button="true" data-r7-sidebar-logout-button="true" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-fallback-href="/auth/authorize" title="로그아웃" style="${mobileActionStyle}">${this._r7SidebarLineIcon("exit")}</a>
-        <a href="#settings-admin" data-r7-mobile-settings-button="true" data-r7-sidebar-target="settings-admin" title="설정" style="${mobileActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</a>
+        <button type="button" data-r7-mobile-account-text="true" data-r7-mobile-account-button="true" data-r7-sidebar-user-profile-button="true" data-r7-profile-settings-route="settings-admin/users-permissions" title="사용자 정보" style="border:0;background:transparent;color:#24323f;display:grid;gap:2px;text-align:left;min-width:0;padding:0;cursor:pointer;">
+          <strong data-r7-mobile-user-name style="font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userName}</strong>
+          <small data-r7-mobile-user-role style="font-size:11px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userRole}</small>
+        </button>
+        <button type="button" data-r7-mobile-logout-button="true" data-r7-sidebar-logout-button="true" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" title="로그아웃" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("exit")}</button>
+        <a href="#settings-admin" data-r7-mobile-settings-button="true" data-r7-sidebar-target="settings-admin" title="설정" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</a>
       </div>
-      <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" style="display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:2px;">${domainButtons}</div>
+      <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" data-r7-mobile-domain-tablist="true" role="tablist" style="display:flex;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid #edf4ef;margin:4px -10px 0;padding:0 10px;">${domainButtons}</div>
     </nav>`;
   }
 
@@ -4944,7 +4959,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const contentWidthAttrs = this._r7ContentWidthPolicyAttrs(contentWidthMode), rootWidthStyle = this._r7RootWidthVarsStyle(contentWidthMode), contentColumnWidthStyle = this._r7ContentColumnWidthVarsStyle(contentWidthMode);
     this.innerHTML = `
       <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-root-width-policy="ha-sidebar-aware-shell" data-r7-root-width-mode="${contentWidthMode}" data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:0;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;${rootWidthStyle}">
-        <style data-r7-responsive-sidebar-style>@media (max-width: 760px) {[data-r7-mobile-top-nav="two-row"] { display:grid !important; } [data-r7-sidebar][data-r7-sidebar-component="common"] { display:none !important; } [data-r7-ha-adjacent-layout="true"] { display:grid !important; grid-template-columns:minmax(0,1fr) !important; } [data-r7-mobile-content-main="true"] { padding:12px !important; } } @media (min-width: 761px) {[data-r7-mobile-top-nav="two-row"] { display:none !important; }}</style>
         ${this.renderR7MobileTopNavigation()}
         <div style="max-width:none;margin:0;display:grid;gap:0;width:100%;min-width:0;">
           <section data-r7-ha-adjacent-layout="true" data-r7-sidebar-shell-component="common-sidebar" data-r7-shell-grid-width-policy="sidebar-aware-fill" style="display:grid;grid-template-columns:${sidebarTrack} minmax(0,1fr);column-gap:0;gap:0;align-items:start;width:100%;min-width:0;max-width:none;">
@@ -4952,6 +4966,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
             <section data-rebuild-shell-main data-r7-mobile-content-main="true" ${contentWidthAttrs} style="padding:24px;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);gap:18px;align-content:start;justify-self:stretch;align-self:stretch;${contentColumnWidthStyle}">
               ${this.renderR7PageShell()}
               <footer data-rebuild-version="${REBUILD_VERSION}" data-r7-content-version-footer="true" data-r7-version-footer-placement="content-bottom-outside-cards" data-r7-version-footer-not-under-sidebar="true" style="font-size:12px;color:#78927f;text-align:center;padding:4px 0 0;">Green Smart ${REBUILD_VERSION}</footer>
+                      <style data-r7-responsive-sidebar-style data-r7-mobile-responsive-overflow-fix="true">@media (max-width: 760px) {[data-r7-mobile-top-nav="two-row"] { display:grid !important; } [data-r7-sidebar][data-r7-sidebar-component="common"] { display:none !important; } [data-r7-ha-adjacent-layout="true"] { display:grid !important; grid-template-columns:minmax(0,1fr) !important; max-width:100% !important; overflow-x:hidden !important; } [data-r7-mobile-content-main="true"] { padding:12px !important; max-width:100% !important; min-width:0 !important; overflow-x:hidden !important; } [data-r7-page-shell], [data-r7-page-workspace], [data-r7-domain-page-shell], [data-r7-domain-visual-frame], [data-r7-domain-content-card="tabs-zone-content"], [data-r7-domain-subtab-panel] { max-width:100% !important; min-width:0 !important; overflow-x:hidden !important; box-sizing:border-box !important; } [data-r7-domain-visual-hero] { padding:14px !important; max-width:100% !important; min-width:0 !important; box-sizing:border-box !important; } [data-r7-cdb-layout-row="summary"], [data-r7-cdb-layout-row="actions"], [data-r7-settings-device-summary-grid], [data-r7-settings-device-action-row], [data-r7-settings-greenhouse-summary-grid] { grid-template-columns:minmax(0,1fr) !important; max-width:100% !important; min-width:0 !important; } [data-r7-zone-selector] { display:flex !important; grid-template-columns:none !important; overflow-x:auto !important; overscroll-behavior-x:contain !important; scrollbar-width:thin !important; flex-wrap:nowrap !important; max-width:100% !important; } [data-r7-zone-card] { flex:0 0 min(220px,82vw) !important; min-width:0 !important; } [data-r7-domain-subtabs] { overflow-x:auto !important; overscroll-behavior-x:contain !important; max-width:100% !important; } [data-r7-domain-subtab] { flex:0 0 auto !important; min-width:max-content !important; } } @media (min-width: 761px) {[data-r7-mobile-top-nav="two-row"] { display:none !important; }}</style>
             </section>
           </section>
         </div>

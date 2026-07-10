@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_135_version_surfaces_are_1_15_00():
-    assert '"version": "1.15.00"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.00"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.00"' in _read(REBUILD_PANEL)
-    assert "v1.15.00" in _read(PLAN)
+    assert '"version": "1.15.01"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.01"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.01"' in _read(REBUILD_PANEL)
+    assert "v1.15.01" in _read(PLAN)
 
 
 def test_r7_135_source_has_ha_sidebar_aware_width_logout_and_mobile_polish():
@@ -27,7 +27,7 @@ def test_r7_135_source_has_ha_sidebar_aware_width_logout_and_mobile_polish():
         'contentWidthMode === "ha-sidebar-visible" ? "100%" : "100dvw"',
         'data-r7-sidebar-button-placement="outside-right"',
         'data-r7-sidebar-button-placement="inside-right"',
-        'data-r7-sidebar-logout-fallback-href="/auth/authorize"',
+        'data-r7-sidebar-logout-fallback-href="/"',
         'data-r7-mobile-top-background="white"',
         'background:#fff',
         'data-r7-mobile-brand-text="true"',
@@ -35,7 +35,7 @@ def test_r7_135_source_has_ha_sidebar_aware_width_logout_and_mobile_polish():
         'data-r7-mobile-action-order="account-logout-settings"',
         'data-r7-mobile-logout-button="true"',
         'data-r7-mobile-domain-active-only-bg="true"',
-        "background:${this._activeR7Domain === group.key ? R7_GREEN_ACTIVE_BG : 'transparent'}",
+        "background:${active ? R7_GREEN_ACTIVE_BG : 'transparent'}",
     ):
         assert marker in source
     for forbidden in (
@@ -79,7 +79,7 @@ def test_r7_135_render_admin_uses_100_percent_root_non_admin_uses_dvw_and_button
           `data-r7-root-width-mode="${{item.mode}}"`,
           item.root,
           `data-r7-sidebar-button-placement="${{item.placement}}"`,
-          'data-r7-sidebar-logout-fallback-href="/auth/authorize"',
+          'data-r7-sidebar-logout-fallback-href="/"',
           'data-r7-mobile-top-background="white"',
           'data-r7-mobile-brand-text="true"',
           'data-r7-mobile-action-order="account-logout-settings"',
@@ -111,9 +111,9 @@ def test_r7_135_logout_clears_auth_state_and_redirects_to_authorize_not_404_rout
       globalThis.customElements = {{ _items:new Map(), get(n){{return this._items.get(n)}}, define(n,c){{this._items.set(n,c)}} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const panel = new mod.GreenSmartRebuildPanel();
-      if (panel._r7LogoutHref() !== '/auth/authorize') {{ console.error('bad href'); process.exit(1); }}
+      if (panel._r7LogoutHref() !== '/') {{ console.error('bad href'); process.exit(1); }}
       panel._performR7HaLogout();
-      if (assignedUrl !== '/auth/authorize') {{ console.error(JSON.stringify({{assignedUrl}})); process.exit(2); }}
+      if (assignedUrl !== '/') {{ console.error(JSON.stringify({{assignedUrl}})); process.exit(2); }}
       if (localStorage._data.has('hassTokens') || localStorage._data.has('refresh_token') || sessionStorage._data.has('access_token')) {{ console.error('auth leftovers'); process.exit(3); }}
       if (!localStorage._data.has('keep')) {{ console.error('unrelated key removed'); process.exit(4); }}
       console.log(JSON.stringify({{ok:true}}));
