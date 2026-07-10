@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_14_settings_button_uses_workspace_patch_no_full_render_first():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.14"' in text
+    assert 'const REBUILD_VERSION = "1.15.15"' in text
     block = text[text.index('_openR7SettingsDomainFromMobile()'):text.index('_scheduleR7MobileActiveDomainButtonScroll()', text.index('_openR7SettingsDomainFromMobile()'))]
     assert 'data-r7-mobile-settings-render-mode", "workspace-patch-no-full-render"' in block
     assert 'if (this._patchR7MobileActiveDomainPage()) return;' in block
@@ -24,9 +24,9 @@ def test_v1_15_14_subtab_patch_is_frame_scoped_and_rerenders_tabbar_style():
     assert 'data-r7-domain-content-card-section="subtabs"' in block
     assert 'data-r7-domain-content-card-section="panel"' in block
     assert 'subtabSection.innerHTML = this.renderR7DomainSubtabs(domain, this._r7TabsForDomain(domain), tabKey, true);' in block
-    assert 'panelSection.innerHTML = panelHtml;' in block
+    assert 'panelSection.innerHTML = this._renderR7MobileLightSubtabPanel(domain, tabKey);' in block
     assert 'data-r7-mobile-frame-scoped-subtab-patch", "true"' in block
-    assert 'frame-scoped-subtabs-and-panel' in block
+    assert 'light-first-paint-then-full-hydrate' in block
 
 
 def test_v1_15_14_domain_tabs_helper_keeps_settings_labels_for_rerendered_mobile_tabbar():

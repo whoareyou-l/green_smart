@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.14";
+const REBUILD_VERSION = "1.15.15";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1619,6 +1619,38 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return commonTabs;
   }
 
+  _r7SubtabLabel(domain, tabKey) {
+    const found = this._r7TabsForDomain(domain).find(([key]) => key === tabKey);
+    return found?.[1] || tabKey;
+  }
+
+  _renderR7MobileLightSubtabPanel(domain, tabKey) {
+    const label = this._r7SubtabLabel(domain, tabKey);
+    const domainLabel = (R7_DETAIL_SUBPAGES.find((item) => item.key === domain)?.label) || "도메인";
+    const summary = domain === "settings-admin"
+      ? `${label} 설정 기준을 먼저 표시합니다. 상세 카드와 목록은 이어서 정리됩니다.`
+      : `${domainLabel}의 ${label} 화면으로 이동했습니다. 현재 선택 탭의 핵심 내용을 먼저 표시합니다.`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-mobile-light-subtab-panel="true" data-r7-mobile-light-subtab-domain="${domain}" data-r7-mobile-light-subtab-key="${tabKey}" data-r7-mobile-subtab-first-paint="summary" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:16px;">${label}</strong><span style="color:#4ca66a;font-size:12px;font-weight:950;">즉시 표시</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">${summary}</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">선택 탭 · ${label}</span><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">도메인 · ${domainLabel}</span></div></section>`;
+  }
+
+  _scheduleR7MobileFullSubtabHydration(domain, tabKey) {
+    if (this._r7MobileSubtabHydrationTimer) clearTimeout(this._r7MobileSubtabHydrationTimer);
+    const stamp = `${domain}:${tabKey}:${Date.now()}`;
+    this._r7MobileSubtabHydrationStamp = stamp;
+    this._r7MobileSubtabHydrationTimer = setTimeout(() => {
+      if (this._r7MobileSubtabHydrationStamp !== stamp) return;
+      const frame = this.querySelector?.(`[data-r7-domain-visual-frame-domain="${domain}"]`);
+      const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
+      if (!panelSection) return;
+      const fullHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
+      if (!fullHtml) return;
+      panelSection.innerHTML = fullHtml;
+      frame.setAttribute?.("data-r7-mobile-full-subtab-hydrated", "true");
+      this.setAttribute?.("data-r7-mobile-subtab-hydration-mode", "delayed-full-after-light-first-paint");
+      this._bindR7PatchedInteractiveActions();
+    }, 120);
+  }
+
   _renderR7SubtabPanelForDomain(domain, tabKey) {
     const activeTab = tabKey;
     const selectedZone = this._r7PrimaryZoneForDomain();
@@ -1648,12 +1680,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
     if (!frame || !subtabSection || !panelSection) return false;
     subtabSection.innerHTML = this.renderR7DomainSubtabs(domain, this._r7TabsForDomain(domain), tabKey, true);
-    panelSection.innerHTML = panelHtml;
+    panelSection.innerHTML = this._renderR7MobileLightSubtabPanel(domain, tabKey);
     frame.setAttribute?.("data-r7-mobile-frame-scoped-subtab-patch", "true");
     this.setAttribute?.("data-r7-mobile-dom-patch-subtab", "true");
-    this.setAttribute?.("data-r7-mobile-subtab-render-mode", "frame-scoped-subtabs-and-panel");
+    this.setAttribute?.("data-r7-mobile-subtab-render-mode", "light-first-paint-then-full-hydrate");
     this._bindR7PatchedInteractiveActions();
     this._scheduleR7MobileActiveSubtabScroll();
+    this._scheduleR7MobileFullSubtabHydration(domain, tabKey);
     return true;
   }
 
@@ -3770,7 +3803,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const activeTab = tabs.some(([key]) => key === requestedActiveTab) ? requestedActiveTab : "greenhouse-zones";
     const panelsFull = () => tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
     const panels = this._r7MobileSettingsFastLanding
-      ? `<section data-r7-mobile-settings-fast-landing="true" data-r7-settings-admin-subtab="greenhouse-zones" data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="greenhouse-zones" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">설정</strong><span style="color:#78927f;font-size:12px;">빠른 진입</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">설정 도메인으로 이동했습니다. 필요한 하위탭을 선택하면 해당 설정 내용을 불러옵니다.</p><div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px;">${this.renderR7SettingsGreenhouseZonesSubtab(this._zonesForRender?.() || [])}</div></section><template data-r7-mobile-settings-heavy-panels-deferred="true" data-r7-settings-admin-subtab="users-permissions" data-r7-settings-admin-subtab="system-integration"></template>`
+      ? `${this._renderR7MobileLightSubtabPanel("settings-admin", "greenhouse-zones")}<template data-r7-mobile-settings-heavy-panels-deferred="true" data-r7-mobile-settings-fast-landing="true" data-r7-settings-admin-subtab="users-permissions" data-r7-settings-admin-subtab="system-integration"></template>`
       : this.renderR7PanelsForDomain("settings-admin", tabs, activeTab, (key) => this.renderR7SettingsAdminSubtabPanel(key, activeTab), panelsFull);
     return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 장치 연결 작성, 사용자·권한, 시스템·연동의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 4개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
   }

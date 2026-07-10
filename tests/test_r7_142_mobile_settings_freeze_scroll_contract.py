@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_08_mobile_settings_uses_dedicated_internal_action():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.14"' in text
+    assert 'const REBUILD_VERSION = "1.15.15"' in text
     assert 'data-r7-mobile-settings-action="open-settings-domain"' in text
     assert 'data-r7-mobile-route-mode="dedicated-internal-button-no-hash"' in text
     assert '<a href="#settings-admin" data-r7-mobile-settings-button="true"' not in text
@@ -25,7 +25,7 @@ def test_v1_15_08_mobile_settings_fast_landing_defers_heavy_settings_panels():
     assert 'this._r7MobileSettingsFastLanding = true;' in text
     assert 'data-r7-mobile-settings-fast-landing="true"' in text
     assert 'data-r7-mobile-settings-heavy-panels-deferred="true"' in text
-    assert '설정 도메인으로 이동했습니다' in text
+    assert '즉시 표시' in text
     assert 'if (domain === "settings-admin") this._r7MobileSettingsFastLanding = false;' in text
     assert ': this.renderR7PanelsForDomain("settings-admin", tabs, activeTab, (key) => this.renderR7SettingsAdminSubtabPanel(key, activeTab), panelsFull);' in text
 
