@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.07";
+const REBUILD_VERSION = "1.15.08";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -299,6 +299,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7SidebarExternalControlResizeObserver = null;
     this._r7SidebarExternalControlMutationObserver = null;
     this._r7SidebarExternalControlResizeHandler = null;
+    this._r7MobileActiveDomainScrollRaf = 0;
+    this._r7MobileSettingsFastLanding = false;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -1523,6 +1525,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   setR7ActiveDomain(domainKey) {
     const nextDomain = this._normalizeR7Domain(domainKey);
+    if (nextDomain !== "settings-admin") this._r7MobileSettingsFastLanding = false;
     if (this._activeR7Domain === nextDomain) return;
     this._activeR7Domain = nextDomain;
     this.render();
@@ -1531,9 +1534,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _activateR7DomainFromNavigation(domainKey) {
     const nextDomain = this._normalizeR7Domain(domainKey);
     this.setAttribute?.("data-r7-mobile-domain-transition", "instant-internal-button");
-    if (this._activeR7Domain === nextDomain) return;
+    this.setAttribute?.("data-r7-mobile-active-domain-scroll-align", "right-edge");
+    if (this._activeR7Domain === nextDomain) { this._scheduleR7MobileActiveDomainButtonScroll(); return; }
     this._activeR7Domain = nextDomain;
     this.render();
+  }
+
+  _openR7SettingsDomainFromMobile() {
+    this.setAttribute?.("data-r7-mobile-settings-route", "dedicated-internal-action");
+    this._r7MobileSettingsFastLanding = true;
+    this._activeR7Domain = "settings-admin";
+    this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": "greenhouse-zones" };
+    this.render();
+  }
+
+  _scheduleR7MobileActiveDomainButtonScroll() {
+    if (this._r7MobileActiveDomainScrollRaf) return;
+    const run = () => {
+      this._r7MobileActiveDomainScrollRaf = 0;
+    this._r7MobileSettingsFastLanding = false;
+      const row = this.querySelector?.('[data-r7-mobile-domain-tablist="true"]');
+      const active = row?.querySelector?.('[data-r7-mobile-domain-button="true"][data-r7-sidebar-active="true"]');
+      if (!row || !active) return;
+      const targetLeft = active.offsetLeft + active.offsetWidth - row.clientWidth;
+      row.scrollTo ? row.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" }) : (row.scrollLeft = Math.max(0, targetLeft));
+    };
+    this._r7MobileActiveDomainScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
 
   setR7DomainSubtab(domainKey, tabKey) {
@@ -1545,6 +1571,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tabDomains = ["environment-control", "irrigation-fertigation", "device-control", "recommendation-automation"];
     const allowed = domain === "crop-operations" ? cropTabs : domain === "safety-history" ? safetyTabs : domain === "settings-admin" ? settingsTabs : tabDomains.includes(domain) ? commonTabs : [];
     if (!allowed.includes(tabKey)) return false;
+    if (domain === "settings-admin") this._r7MobileSettingsFastLanding = false;
     if (this._activeR7DomainSubtabs[domain] === tabKey) return true;
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, [domain]: tabKey };
     this.render();
@@ -1878,6 +1905,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
         event.preventDefault();
         event.stopPropagation();
         this._activateR7DomainFromNavigation(link.dataset.r7SidebarTarget);
+      }, { passive: false });
+    });
+    this.querySelectorAll('[data-r7-mobile-settings-action="open-settings-domain"]').forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._openR7SettingsDomainFromMobile();
       }, { passive: false });
     });
     this.querySelectorAll("[data-r7-sidebar-user-profile-button]").forEach((button) => {
@@ -2311,7 +2345,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const userRole = this._r7Text(userInfo.roleLabel);
     const domainButtons = R7_MAIN_SIDEBAR_GROUPS.map((group) => {
       const active = this._activeR7Domain === group.key;
-      return `<button type="button" data-r7-mobile-domain-button="true" data-r7-mobile-route-mode="internal-button-no-hash" data-r7-mobile-domain-tab-ui="subtab-top-navbar" data-r7-mobile-domain-active-only-bg="true" data-r7-sidebar-target="${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-active="${active ? 'true' : 'false'}" data-r7-domain-subtab-like="true" role="tab" aria-selected="${active ? 'true' : 'false'}" title="${group.label}" style="min-height:40px;min-width:max-content;border:0;border-bottom:3px solid ${active ? R7_GREEN_ACCENT : 'transparent'};border-radius:0;background:${active ? R7_GREEN_ACTIVE_BG : 'transparent'};color:${active ? R7_GREEN_ACCENT : R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;flex:0 0 auto;padding:0 12px;font-size:13px;font-weight:900;box-sizing:border-box;cursor:pointer;touch-action:manipulation;">${this._r7SidebarLineIcon(group.key)}<span>${group.label}</span></button>`;
+      return `<button type="button" data-r7-mobile-domain-button="true" data-r7-mobile-route-mode="internal-button-no-hash" data-r7-mobile-active-domain-scroll-align="right-edge" data-r7-mobile-domain-tab-ui="subtab-top-navbar" data-r7-mobile-domain-active-only-bg="true" data-r7-sidebar-target="${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-active="${active ? 'true' : 'false'}" data-r7-domain-subtab-like="true" role="tab" aria-selected="${active ? 'true' : 'false'}" title="${group.label}" style="min-height:40px;min-width:max-content;border:0;border-bottom:3px solid ${active ? R7_GREEN_ACCENT : 'transparent'};border-radius:0;background:${active ? R7_GREEN_ACTIVE_BG : 'transparent'};color:${active ? R7_GREEN_ACCENT : R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;flex:0 0 auto;padding:0 12px;font-size:13px;font-weight:900;box-sizing:border-box;cursor:pointer;touch-action:manipulation;">${this._r7SidebarLineIcon(group.key)}<span>${group.label}</span></button>`;
     }).join("");
     const mobileIconActionStyle = `height:40px;width:40px;border:0;border-radius:12px;background:transparent;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;`;
     return `<nav data-r7-mobile-top-nav="two-row" data-r7-mobile-sidebar-placement="top" data-r7-mobile-top-compact-feel="true" data-r7-mobile-top-background="white" data-r7-mobile-account-presentation="text-name-role" data-r7-mobile-domain-ui="subtab-like" style="display:none;background:#fff;border-bottom:1px solid #dcebe0;padding:8px 10px 0;box-sizing:border-box;gap:8px;position:sticky;top:0;z-index:8;max-width:100%;overflow:hidden;">
@@ -2322,9 +2356,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
           <small data-r7-mobile-user-role style="font-size:11px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${userRole}</small>
         </button>
         <button type="button" data-r7-mobile-logout-button="true" data-r7-sidebar-logout-button="true" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" title="로그아웃" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("logout")}</button>
-        <button type="button" data-r7-mobile-settings-button="true" data-r7-mobile-route-mode="internal-button-no-hash" data-r7-sidebar-target="settings-admin" title="설정" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</button>
+        <button type="button" data-r7-mobile-settings-button="true" data-r7-mobile-settings-action="open-settings-domain" data-r7-mobile-route-mode="dedicated-internal-button-no-hash" title="설정" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</button>
       </div>
-      <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" data-r7-mobile-domain-tablist="true" role="tablist" style="display:flex;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid #edf4ef;margin:4px -10px 0;padding:0 10px;">${domainButtons}</div>
+      <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" data-r7-mobile-domain-tablist="true" data-r7-mobile-active-domain-scroll-align="right-edge" role="tablist" style="display:flex;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid #edf4ef;margin:4px -10px 0;padding:0 10px;">${domainButtons}</div>
     </nav>`;
   }
 
@@ -3607,7 +3641,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const legacyTabs = [["domain-ownership", "도메인 소유권"], ["role-permissions", "역할·권한"], ["mapping-devices", "매핑·장치"], ["system-security", "시스템·보안"], ["rbac-policy", "RBAC 정책"]];
     const requestedActiveTab = this._activeR7DomainSubtabs["settings-admin"] || "greenhouse-zones";
     const activeTab = tabs.some(([key]) => key === requestedActiveTab) ? requestedActiveTab : "greenhouse-zones";
-    const panels = tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
+    const panels = this._r7MobileSettingsFastLanding
+      ? `<section data-r7-mobile-settings-fast-landing="true" data-r7-settings-admin-subtab="greenhouse-zones" data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="greenhouse-zones" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">설정</strong><span style="color:#78927f;font-size:12px;">빠른 진입</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">설정 도메인으로 이동했습니다. 필요한 하위탭을 선택하면 해당 설정 내용을 불러옵니다.</p><div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px;">${this.renderR7SettingsGreenhouseZonesSubtab(this._zonesForRender?.() || [])}</div></section><template data-r7-mobile-settings-heavy-panels-deferred="true" data-r7-settings-admin-subtab="users-permissions" data-r7-settings-admin-subtab="system-integration"></template>`
+      : tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
     return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 장치 연결 작성, 사용자·권한, 시스템·연동의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 4개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
   }
 
@@ -3960,6 +3996,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <div data-r7-domain-content-card-section="zone">${this.renderR7DomainZoneContextBar(domainKey, true)}</div>
       <div data-r7-domain-content-card-section="panel" style="border-top:1px solid #e5f0e8;padding-top:14px;display:grid;gap:10px;">${panels}</div>
     </section>`;
+  }
+
+  renderR7ActiveOnlySubtabPanels(tabs, activeTab, renderer, markerAttrs = "") {
+    const activeKey = tabs.some(([key]) => key === activeTab) ? activeTab : tabs[0]?.[0];
+    const activePanel = activeKey ? renderer(activeKey) : "";
+    const deferred = tabs
+      .filter(([key]) => key !== activeKey)
+      .map(([key, label]) => `<template data-r7-deferred-subtab-panel="${key}" data-r7-deferred-subtab-label="${label}" ${markerAttrs}></template>`)
+      .join("");
+    return `<span data-r7-active-only-subtab-panels="true" data-r7-active-subtab-panel-key="${activeKey}" style="display:none;"></span>${activePanel}${deferred}`;
   }
 
   renderR7DomainVisualFrame({ domainKey, title, kicker, summary, status, tabs, activeTab, panels }) {
@@ -5039,6 +5085,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindZoneTabs();
     this._bindR7RecordWorkflowActions();
     this._bindSettingsApprovalActions();
+    this._scheduleR7MobileActiveDomainButtonScroll();
   }
 }
 

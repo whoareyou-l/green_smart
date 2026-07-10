@@ -1,6 +1,6 @@
 # R7-024 Safety/History Detail Absorption
 
-> 기준 버전: v1.15.07
+> 기준 버전: v1.15.08
 > Status: planned via RED contract
 > Scope: 안전 제어 도메인을 zone-scoped visual 하위탭으로 전환
 
