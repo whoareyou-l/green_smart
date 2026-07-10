@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_db02b_version_surfaces_are_1_14_34():
-    assert '"version": "1.14.99"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.99"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.99"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.00"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.00"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.00"' in _read(REBUILD_PANEL)
 
 
 def test_db02b_zone_adapter_owns_crop_season_legacy_join_fragments():

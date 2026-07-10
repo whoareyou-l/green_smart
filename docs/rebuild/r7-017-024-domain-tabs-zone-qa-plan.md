@@ -1,6 +1,6 @@
 # R7-017~R7-024 Domain Tabs, Zone Context, and Browser QA Plan
 
-> 기준 버전: after `v1.14.99`
+> 기준 버전: after `v1.15.00`
 > Status: corrected forward plan
 > Purpose: User-corrected R7 direction after R7-016. Domain visual rewrites must not become long one-page documents, and detailed work must be zone-scoped even though the main IA remains crop-centered.
 

@@ -50,9 +50,9 @@ def _section(html: str, key: str) -> str:
 
 
 def test_r7_105_version_surfaces_are_1_14_30():
-    assert '"version": "1.14.99"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.99"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.99"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.00"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.00"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.00"' in _read(REBUILD_PANEL)
 
 
 def test_r7_105_zone_create_header_has_product_ready_copy_not_internal_settings_trace():

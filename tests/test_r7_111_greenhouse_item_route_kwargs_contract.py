@@ -11,9 +11,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_111_version_surfaces_are_1_14_42():
-    assert '"version": "1.14.99"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.99"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.99"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.00"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.00"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.00"' in _read(REBUILD_PANEL)
 
 
 def test_r7_111_greenhouse_item_view_accepts_ha_route_kwargs_for_patch_and_delete():

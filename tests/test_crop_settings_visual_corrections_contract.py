@@ -97,10 +97,10 @@ def test_v1973_crop_visual_corrections_version_and_plan_shift():
     docs = _read(UI_DOC)
     plan = _read(PLAN)
 
-    assert '"version": "1.14.99"' in manifest
-    assert 'const VERSION = "1.14.99"' in panel
-    assert 'v1.14.99' in panel[:200]
+    assert '"version": "1.15.00"' in manifest
+    assert 'const VERSION = "1.15.00"' in panel
+    assert 'v1.15.00' in panel[:200]
     assert 'EDGE_VERSION = "1.9.96"' in central
-    assert '기준 버전: `v1.14.99`' in docs
+    assert '기준 버전: `v1.15.00`' in docs
     assert 'UI Hotfix | v1.9.73 | 작물 설정 시각/표기/수정 UX 보정' in plan
     assert 'UI Slice 3 | v1.9.74 | AI 전략' in plan

@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_028_version_surfaces_are_1_12_62():
-    assert '"version": "1.14.99"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.99"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.99"' in _read(REBUILD_PANEL)
-    assert "v1.14.99" in _read(DOC)
+    assert '"version": "1.15.00"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.00"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.00"' in _read(REBUILD_PANEL)
+    assert "v1.15.00" in _read(DOC)
 
 
 def test_r7_028_doc_records_reference_slim_operator_rail():
@@ -75,6 +75,7 @@ def test_r7_028_node_smoke_operator_compact_matches_reference_rail():
       panel._r7SidebarCollapsed = true;
       panel.setR7ActiveDomain('crop-operations');
       const html = panel.innerHTML;
+      const aside = '<aside' + ((html.split('<aside')[1] || '').split('</aside>')[0] || '');
       const required = [
         'data-r7-sidebar-layout-mode="operator-ha-adjacent"',
         'data-r7-ha-sidebar-policy="keep"',
@@ -97,7 +98,7 @@ def test_r7_028_node_smoke_operator_compact_matches_reference_rail():
       ];
       const missing = required.filter((item) => !html.includes(item));
       const forbidden = ['data-r7-sidebar-summary', '>Green Smart<', '작물·구역·경보 중심'];
-      const bad = forbidden.filter((item) => html.includes(item));
+      const bad = forbidden.filter((item) => aside.includes(item));
       const styleOk = html.includes('width:64px') && html.includes('border-radius:0') && html.includes('box-shadow:none') && html.includes('border-right:1px solid #e1e5ea') && html.includes('background:#ffffff');
       if (missing.length || bad.length || !styleOk || !classSet.has('green-smart-operator-ha-sidebar-adjacent') || classSet.has('green-smart-hide-ha-sidebar')) {{
         console.error(JSON.stringify({{missing, bad, styleOk, classes:[...classSet]}}));

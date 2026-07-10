@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.99";
+const REBUILD_VERSION = "1.15.00";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2178,7 +2178,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7LogoutHref() {
-    return "/auth/logout";
+    return "/auth/authorize";
   }
 
   _openR7UserProfileSettings() {
@@ -2198,7 +2198,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         for (let index = 0; index < (storage.length || 0); index += 1) keys.push(storage.key(index));
         keys.filter((key) => key && removePatterns.some((pattern) => pattern.test(String(key)))).forEach((key) => storage.removeItem(key));
       });
-    } catch (_error) { /* best-effort HA auth storage cleanup before /auth/logout */ }
+    } catch (_error) { /* best-effort HA auth storage cleanup before auth flow restart */ }
     const locationRef = globalThis.location || globalThis.window?.location;
     if (locationRef?.assign) locationRef.assign(logoutUrl);
     else if (locationRef) locationRef.href = logoutUrl;
@@ -2221,39 +2221,42 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ? `<span data-r7-sidebar-user-avatar style="width:32px;height:32px;border-radius:999px;background:${R7_GREEN_ACCENT};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:1000;font-size:13px;">${userInitial}</span><span data-r7-sidebar-user-name style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userName}</span><span data-r7-sidebar-user-role style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userRole}</span>`
       : `<span data-r7-sidebar-user-avatar style="width:36px;height:36px;border-radius:999px;background:${R7_GREEN_ACCENT};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:1000;font-size:14px;flex:0 0 36px;">${userInitial}</span><span data-r7-sidebar-user-info style="display:grid;gap:1px;min-width:0;text-align:left;flex:1 1 auto;"><strong data-r7-sidebar-user-name style="font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userName}</strong><small data-r7-sidebar-user-role style="font-size:10px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userRole}</small></span>`;
     const logoutIcon = `<svg data-r7-sidebar-line-icon="exit" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 17l-5-5 5-5"/><path d="M5 12h13"/><path d="M14 5h5v14h-5"/></svg><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">로그아웃</span>`;
+    const placement = referenceSlimRail ? "outside-right" : "inside-right";
     const profileStyle = referenceSlimRail ? `${buttonStyle}position:relative;` : `min-height:54px;width:100%;border:0;border-radius:14px;background:#f7fbf8;color:${R7_GREEN_TEXT};display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:8px;text-decoration:none;cursor:pointer;padding:0 8px;box-sizing:border-box;`;
-    const logoutStyle = referenceSlimRail ? `${buttonStyle}position:relative;background:#fff;border:1px solid #dcebe0;` : `width:42px;height:42px;border-radius:12px;background:#ffffff;border:1px solid #dcebe0;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative;`;
+    const logoutStyle = referenceSlimRail ? `${buttonStyle}position:absolute;left:48px;bottom:0;background:#fff;border:1px solid #dcebe0;box-shadow:0 4px 12px rgba(31,51,41,.10);` : `width:42px;height:42px;border-radius:12px;background:#ffffff;border:1px solid #dcebe0;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative;`;
     return `<div data-r7-sidebar-utility-group style="display:grid;gap:4px;justify-items:center;margin-top:auto;padding-top:8px;border-top:1px solid #eef1f4;">
       ${settingsUtility}
-      <div data-r7-sidebar-account-logout-split="true" data-r7-sidebar-user-profile-layout="avatar-info-separated-logout" style="width:100%;display:${referenceSlimRail ? 'flex' : 'grid'};grid-template-columns:minmax(0,1fr) 42px;gap:6px;align-items:center;justify-content:center;">
+      <div data-r7-sidebar-account-logout-split="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-user-profile-layout="avatar-info-separated-logout" style="width:100%;display:${referenceSlimRail ? 'flex' : 'grid'};grid-template-columns:minmax(0,1fr) 42px;gap:6px;align-items:center;justify-content:center;position:relative;">
         <button type="button" data-r7-sidebar-user-profile-button="true" data-r7-profile-settings-route="settings-admin/users-permissions" data-r7-sidebar-utility="profile" aria-label="${profileTitle}" title="${profileTitle}" style="${profileStyle}">${userInner}</button>
-        <a href="${this._r7LogoutHref()}" data-r7-sidebar-logout-button="true" data-r7-sidebar-utility="logout" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-href="/auth/logout" aria-label="${exitTitle}" title="${exitTitle}" style="${logoutStyle}">${logoutIcon}</a><span data-r7-sidebar-utility="exit" data-r7-sidebar-legacy-exit-alias="logout" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"></span>
+        <a href="${this._r7LogoutHref()}" data-r7-sidebar-logout-button="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-utility="logout" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-fallback-href="/auth/authorize" aria-label="${exitTitle}" title="${exitTitle}" style="${logoutStyle}">${logoutIcon}</a><span data-r7-sidebar-utility="exit" data-r7-sidebar-legacy-exit-alias="logout" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"></span>
       </div>
     </div>`;
   }
 
   renderR7SidebarBrand({ collapsed = false, referenceSlimRail = false } = {}) {
     if (referenceSlimRail) {
-      return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" style="display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;margin:0 auto 4px;position:relative;"><span data-r7-sidebar-logo-tile data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" title="Green Smart" style="width:44px;height:44px;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;">${this._r7SidebarReferenceLogo()}</span><button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" aria-label="사이드바 상세형" title="상세형" style="position:absolute;left:48px;width:30px;height:30px;border:1px solid #dcebe0;border-radius:999px;background:#fff;color:#31523b;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 4px 12px rgba(31,51,41,.10);">›</button></div>`;
+      return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" style="display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;margin:0 auto 4px;position:relative;"><span data-r7-sidebar-logo-tile data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" title="Green Smart" style="width:44px;height:44px;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;">${this._r7SidebarReferenceLogo()}</span><button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-button-placement="outside-right" aria-label="사이드바 상세형" title="상세형" style="position:absolute;left:48px;width:30px;height:30px;border:1px solid #dcebe0;border-radius:999px;background:#fff;color:#31523b;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 4px 12px rgba(31,51,41,.10);">›</button></div>`;
     }
     return `<div data-r7-sidebar-brand style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};min-height:48px;padding:0 ${collapsed ? "0" : "8px"};">
       <div style="display:flex;align-items:center;gap:9px;min-width:0;">
         <span data-r7-sidebar-logo-image data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" style="width:40px;height:40px;border-radius:12px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span>
         ${collapsed ? "" : `<div style="min-width:0;"><div style="font-weight:700;color:#202124;font-size:16px;line-height:1;">Green Smart</div><p style="margin:4px 0 0;color:#6f7782;font-size:12px;line-height:1.35;">작물·구역·경보 중심</p></div>`}
       </div>
-      <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" aria-label="${collapsed ? "사이드바 상세형" : "사이드바 간략형"}" title="${collapsed ? "상세형" : "간략형"}" style="border:1px solid #dcebe0;border-radius:999px;background:#fff;color:#31523b;width:34px;height:34px;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(31,51,41,.08);">${collapsed ? "›" : "‹"}</button>
+      <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-button-placement="inside-right" aria-label="${collapsed ? "사이드바 상세형" : "사이드바 간략형"}" title="${collapsed ? "상세형" : "간략형"}" style="border:1px solid #dcebe0;border-radius:999px;background:#fff;color:#31523b;width:34px;height:34px;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(31,51,41,.08);">${collapsed ? "›" : "‹"}</button>
     </div>`;
   }
 
   renderR7MobileTopNavigation() {
     const userInfo = this._r7CurrentUserInfo();
     const userInitial = this._r7Text(this._r7UserInitials(userInfo.name));
-    const domainButtons = R7_MAIN_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-mobile-domain-button="true" data-r7-sidebar-target="${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-active="${this._activeR7Domain === group.key ? 'true' : 'false'}" title="${group.label}" style="height:42px;min-width:58px;border:1px solid ${this._activeR7Domain === group.key ? '#badcc8' : '#dcebe0'};border-radius:14px;background:${this._activeR7Domain === group.key ? R7_GREEN_ACTIVE_BG : '#fff'};color:${this._activeR7Domain === group.key ? R7_GREEN_ACCENT : R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 auto;">${this._r7SidebarLineIcon(group.key)}<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${group.label}</span></a>`).join("");
-    return `<nav data-r7-mobile-top-nav="two-row" data-r7-mobile-sidebar-placement="top" data-r7-mobile-top-compact-feel="true" style="display:none;background:#f7faf7;border-bottom:1px solid #dcebe0;padding:8px 10px;box-sizing:border-box;gap:8px;position:sticky;top:0;z-index:8;">
-      <div data-r7-mobile-top-nav-row="brand-settings-account" style="display:grid;grid-template-columns:minmax(0,1fr) 44px 44px;gap:8px;align-items:center;">
-        <div data-r7-mobile-logo-row style="display:flex;align-items:center;gap:8px;min-width:0;"><span data-r7-mobile-logo data-r7-sidebar-logo-static="true" style="width:38px;height:38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span><strong style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">GS</strong></div>
-        <a href="#settings-admin" data-r7-mobile-settings-button="true" data-r7-sidebar-target="settings-admin" title="설정" style="height:42px;border:1px solid #dcebe0;border-radius:14px;background:#fff;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">${this._r7SidebarLineIcon("settings-admin")}</a>
-        <button type="button" data-r7-mobile-account-button="true" data-r7-sidebar-user-profile-button="true" data-r7-profile-settings-route="settings-admin/users-permissions" title="계정" style="height:42px;border:1px solid #dcebe0;border-radius:14px;background:#fff;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;font-weight:1000;">${userInitial}</button>
+    const domainButtons = R7_MAIN_SIDEBAR_GROUPS.map((group) => `<a href="#${group.target}" data-r7-mobile-domain-button="true" data-r7-mobile-domain-active-only-bg="true" data-r7-sidebar-target="${group.target}" data-r7-sidebar-group="${group.key}" data-r7-sidebar-active="${this._activeR7Domain === group.key ? 'true' : 'false'}" title="${group.label}" style="height:42px;min-width:58px;border:1px solid ${this._activeR7Domain === group.key ? '#badcc8' : 'transparent'};border-radius:14px;background:${this._activeR7Domain === group.key ? R7_GREEN_ACTIVE_BG : 'transparent'};color:${this._activeR7Domain === group.key ? R7_GREEN_ACCENT : R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 auto;">${this._r7SidebarLineIcon(group.key)}<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${group.label}</span></a>`).join("");
+    const mobileActionStyle = `height:42px;border:1px solid #dcebe0;border-radius:14px;background:#fff;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;`;
+    return `<nav data-r7-mobile-top-nav="two-row" data-r7-mobile-sidebar-placement="top" data-r7-mobile-top-compact-feel="true" data-r7-mobile-top-background="white" style="display:none;background:#fff;border-bottom:1px solid #dcebe0;padding:8px 10px;box-sizing:border-box;gap:8px;position:sticky;top:0;z-index:8;">
+      <div data-r7-mobile-top-nav-row="brand-settings-account" data-r7-mobile-action-order="account-logout-settings" style="display:grid;grid-template-columns:minmax(0,1fr) 44px 44px 44px;gap:8px;align-items:center;">
+        <div data-r7-mobile-logo-row style="display:flex;align-items:center;gap:8px;min-width:0;"><span data-r7-mobile-logo data-r7-sidebar-logo-static="true" style="width:38px;height:38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span><strong data-r7-mobile-brand-text="true" style="font-size:15px;color:#202124;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Green Smart</strong></div>
+        <button type="button" data-r7-mobile-account-button="true" data-r7-sidebar-user-profile-button="true" data-r7-profile-settings-route="settings-admin/users-permissions" title="계정" style="${mobileActionStyle}font-weight:1000;">${userInitial}</button>
+        <a href="${this._r7LogoutHref()}" data-r7-mobile-logout-button="true" data-r7-sidebar-logout-button="true" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-fallback-href="/auth/authorize" title="로그아웃" style="${mobileActionStyle}">${this._r7SidebarLineIcon("exit")}</a>
+        <a href="#settings-admin" data-r7-mobile-settings-button="true" data-r7-sidebar-target="settings-admin" title="설정" style="${mobileActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</a>
       </div>
       <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" style="display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:2px;">${domainButtons}</div>
     </nav>`;
@@ -4925,7 +4928,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _r7ContentWidthMode() { return this._r7SidebarLayoutMode() === "operator-ha-adjacent" ? "ha-sidebar-visible" : "ha-sidebar-hidden"; }
   _r7ContentWidthPolicyAttrs(contentWidthMode = this._r7ContentWidthMode()) { return `data-r7-content-width-policy="grid-contained-fill" data-r7-content-width-mode="${contentWidthMode}" data-r7-content-width-fills-viewport="true" data-r7-content-width-contained="true" data-r7-content-width-uses-dvw="false"`; }
   _r7RootWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
-    return "--r7-root-viewport-width:100dvw;--r7-content-viewport-width:100%;width:var(--r7-root-viewport-width);min-width:0;max-width:100dvw;box-sizing:border-box;overflow-x:clip;";
+    const rootWidth = contentWidthMode === "ha-sidebar-visible" ? "100%" : "100dvw";
+    return `--r7-root-viewport-width:${rootWidth};--r7-content-viewport-width:100%;width:var(--r7-root-viewport-width);min-width:0;max-width:${rootWidth};box-sizing:border-box;overflow-x:clip;`;
   }
 
   _r7ContentColumnWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
@@ -4939,7 +4943,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const sidebarTrack = this._r7SidebarCollapsed ? "64px" : "256px", layoutMode = this._r7SidebarLayoutMode(), contentWidthMode = this._r7ContentWidthMode();
     const contentWidthAttrs = this._r7ContentWidthPolicyAttrs(contentWidthMode), rootWidthStyle = this._r7RootWidthVarsStyle(contentWidthMode), contentColumnWidthStyle = this._r7ContentColumnWidthVarsStyle(contentWidthMode);
     this.innerHTML = `
-      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-root-width-policy="viewport-shell" data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:0;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;${rootWidthStyle}">
+      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-root-width-policy="ha-sidebar-aware-shell" data-r7-root-width-mode="${contentWidthMode}" data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:0;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;${rootWidthStyle}">
         <style data-r7-responsive-sidebar-style>@media (max-width: 760px) {[data-r7-mobile-top-nav="two-row"] { display:grid !important; } [data-r7-sidebar][data-r7-sidebar-component="common"] { display:none !important; } [data-r7-ha-adjacent-layout="true"] { display:grid !important; grid-template-columns:minmax(0,1fr) !important; } [data-r7-mobile-content-main="true"] { padding:12px !important; } } @media (min-width: 761px) {[data-r7-mobile-top-nav="two-row"] { display:none !important; }}</style>
         ${this.renderR7MobileTopNavigation()}
         <div style="max-width:none;margin:0;display:grid;gap:0;width:100%;min-width:0;">

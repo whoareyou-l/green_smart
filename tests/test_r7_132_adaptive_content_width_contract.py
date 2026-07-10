@@ -11,10 +11,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_132_version_surfaces_are_1_14_98():
-    assert '"version": "1.14.99"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.99"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.99"' in _read(REBUILD_PANEL)
+def test_r7_132_version_surfaces_are_1_15_00():
+    assert '"version": "1.15.00"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.00"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.00"' in _read(REBUILD_PANEL)
 
 
 def test_r7_132_source_has_adaptive_content_width_policy_markers():
@@ -28,7 +28,9 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
         'data-r7-host-width-policy',
         "viewport-fill",
         "block-fill",
-        'data-r7-root-width-policy="viewport-shell"',
+        'data-r7-root-width-policy="ha-sidebar-aware-shell"',
+        'data-r7-root-width-mode="${contentWidthMode}"',
+        'contentWidthMode === "ha-sidebar-visible" ? "100%" : "100dvw"',
         'data-r7-content-width-policy="grid-contained-fill"',
         'data-r7-content-width-mode="${contentWidthMode}"',
         'data-r7-content-width-fills-viewport="true"',
@@ -38,9 +40,9 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
         'data-r7-page-shell-width="viewport"',
         'data-r7-page-workspace-width="viewport"',
         'data-r7-domain-page-width="viewport"',
-        '--r7-root-viewport-width:100dvw',
+        '--r7-root-viewport-width:${rootWidth}',
         'width:var(--r7-root-viewport-width)',
-        'max-width:100dvw',
+        'max-width:${rootWidth}',
         '--r7-content-viewport-width:100%',
         '--r7-content-main-width:${mainWidth}',
         'grid-template-columns:${sidebarTrack} minmax(0,1fr)',
@@ -73,8 +75,8 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
       globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const cases = [
-        {{ label: 'admin-ha-visible', user: {{ is_admin: true, green_smart_role: 'admin' }}, role: 'admin', mode: 'ha-sidebar-visible' }},
-        {{ label: 'staff-ha-hidden', user: {{ is_admin: false, green_smart_role: 'farm_staff' }}, role: 'farm_staff', mode: 'ha-sidebar-hidden' }},
+        {{ label: 'admin-ha-visible', user: {{ is_admin: true, green_smart_role: 'admin' }}, role: 'admin', mode: 'ha-sidebar-visible', rootWidth: '100%' }},
+        {{ label: 'staff-ha-hidden', user: {{ is_admin: false, green_smart_role: 'farm_staff' }}, role: 'farm_staff', mode: 'ha-sidebar-hidden', rootWidth: '100dvw' }},
       ];
       for (const item of cases) {{
         classSet = new Set();
@@ -84,7 +86,8 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
         panel.setR7ActiveDomain('safety-history');
         const html = panel.innerHTML;
         const required = [
-          'data-r7-root-width-policy="viewport-shell"',
+          'data-r7-root-width-policy="ha-sidebar-aware-shell"',
+          `data-r7-root-width-mode="${{item.mode}}"`,
           'data-r7-content-width-policy="grid-contained-fill"',
           `data-r7-content-width-mode="${{item.mode}}"`,
           'data-r7-content-width-fills-viewport="true"',
@@ -94,9 +97,9 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
           'data-r7-page-shell-width="viewport"',
           'data-r7-page-workspace-width="viewport"',
           'data-r7-domain-page-width="viewport"',
-          '--r7-root-viewport-width:100dvw',
+          `--r7-root-viewport-width:${{item.rootWidth}}`,
           'width:var(--r7-root-viewport-width)',
-          'max-width:100dvw',
+          `max-width:${{item.rootWidth}}`,
           '--r7-content-viewport-width:100%',
           '--r7-content-main-width:100%',
           'width:var(--r7-content-main-width)',

@@ -2,9 +2,9 @@
 
 > **For Hermes:** Continue the records-workflow vertical slice. Do not restore old content-card wrappers. The previous visible cards are reference-only. Add UI-only flow skeletons for write/history/edit/PLS destinations so the product layout has real operator pathways before backend write APIs are connected.
 
-**Target version:** v1.14.99
+**Target version:** v1.15.00
 **Scope:** `작물 운영 > 기록·작업` subtab only
-**Previous baseline:** v1.14.99 removed old records content-card wrappers from visible UI.
+**Previous baseline:** v1.15.00 removed old records content-card wrappers from visible UI.
 
 ---
 
@@ -237,7 +237,7 @@ tests/test_r7_051_records_workflow_flow_skeleton_contract.py
 
 It must verify:
 
-1. Version surfaces are `1.14.99`.
+1. Version surfaces are `1.15.00`.
 2. This plan exists.
 3. Rendered records-workflow contains the flow skeleton region.
 4. All three write modal skeletons exist with field labels.

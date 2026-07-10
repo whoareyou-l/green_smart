@@ -12,11 +12,11 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_134_version_surfaces_are_1_14_99():
-    assert '"version": "1.14.99"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.99"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.99"' in _read(REBUILD_PANEL)
-    assert "v1.14.99" in _read(PLAN)
+def test_r7_134_version_surfaces_are_1_15_00():
+    assert '"version": "1.15.00"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.00"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.00"' in _read(REBUILD_PANEL)
+    assert "v1.15.00" in _read(PLAN)
 
 
 def test_r7_134_source_separates_user_profile_logout_toggle_and_mobile_nav():
@@ -39,6 +39,7 @@ def test_r7_134_source_separates_user_profile_logout_toggle_and_mobile_nav():
         'data-r7-mobile-domain-scroll="horizontal"',
         'data-r7-mobile-settings-button="true"',
         'data-r7-mobile-account-button="true"',
+        'data-r7-mobile-logout-button="true"',
         '@media (max-width: 760px)',
         '[data-r7-sidebar][data-r7-sidebar-component="common"] { display:none !important; }',
         'overflow-x:auto',
@@ -111,7 +112,7 @@ def test_r7_134_render_and_click_behaviors_for_profile_logout_and_mobile_top_nav
       panel._openR7UserProfileSettings();
       if (panel._activeR7Domain !== 'settings-admin' || panel._activeR7DomainSubtabs['settings-admin'] !== 'users-permissions') {{ console.error('profile route failed'); process.exit(2); }}
       panel._performR7HaLogout();
-      if (assignedUrl !== '/auth/logout') {{ console.error(JSON.stringify({{assignedUrl}})); process.exit(3); }}
+      if (assignedUrl !== '/auth/authorize') {{ console.error(JSON.stringify({{assignedUrl}})); process.exit(3); }}
       if (globalThis.localStorage._data.has('hassTokens') || globalThis.localStorage._data.has('refresh_token') || globalThis.sessionStorage._data.has('access_token')) {{ console.error('auth storage not cleared'); process.exit(4); }}
       if (!globalThis.localStorage._data.has('keep')) {{ console.error('unrelated storage removed'); process.exit(5); }}
       console.log(JSON.stringify({{ok:true}}));
