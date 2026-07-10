@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_084_version_surfaces_are_1_14_9():
-    assert '"version": "1.15.02"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.02"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.02"' in _read(PANEL)
+    assert '"version": "1.15.03"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.03"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.03"' in _read(PANEL)
 
 
 def test_r7_084_settings_audit_button_skips_record_workflow_binding():

@@ -11,13 +11,13 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_137_version_surfaces_are_1_15_02():
-    assert '"version": "1.15.02"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.02"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.02"' in _read(REBUILD_PANEL)
+def test_r7_137_version_surfaces_are_1_15_03():
+    assert '"version": "1.15.03"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.03"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.03"' in _read(REBUILD_PANEL)
 
 
-def test_r7_137_source_has_pc_trapezoid_toggle_logout_right_aligned_user_and_mobile_inner_overflow_fix():
+def test_r7_137_source_has_pc_trapezoid_controls_mobile_right_user_logout_icon_and_inner_overflow_fix():
     source = _read(REBUILD_PANEL)
     for marker in (
         'data-r7-sidebar-toggle-position="logo-right-outside"',
@@ -26,9 +26,14 @@ def test_r7_137_source_has_pc_trapezoid_toggle_logout_right_aligned_user_and_mob
         'const toggleGlyph = collapsed ? "›" : "‹"',
         'data-r7-sidebar-logout-shape="trapezoid-wide-left"',
         'data-r7-sidebar-protruding-button="logout"',
-        'data-r7-sidebar-user-text-align="right-near-logout"',
+        'data-r7-sidebar-user-layout="pc-previous-avatar-left"',
+        'grid-template-columns:36px minmax(0,1fr)',
+        'data-r7-mobile-user-text-align="right-near-logout"',
         'text-align:right;justify-items:end',
+        'logout: "mdi:logout"',
+        'exit: "mdi:logout"',
         'data-r7-sidebar-line-icon="logout"',
+        'this._r7SidebarLineIcon("logout")',
         'overflow-y:auto;overflow-x:visible',
         '[data-r7-cdb-common-card], [data-r7-cdb-card-type]',
         '[data-r7-cdb-common-card] * { max-width:100% !important;',
@@ -36,13 +41,16 @@ def test_r7_137_source_has_pc_trapezoid_toggle_logout_right_aligned_user_and_mob
     ):
         assert marker in source
     for forbidden in (
+        'data-r7-sidebar-user-text-align="right-near-logout"',
         'data-r7-sidebar-line-icon="exit"',
+        'grid-template-columns:minmax(0,1fr) 36px',
+        'this._r7SidebarLineIcon("exit")',
         'grid-template-columns:minmax(0,1fr) 42px;gap:6px;align-items:center;justify-content:center;position:relative;',
     ):
         assert forbidden not in source
 
 
-def test_r7_137_render_pc_expanded_and_compact_use_outside_trapezoid_controls():
+def test_r7_137_render_pc_expanded_and_compact_keep_trapezoid_controls_and_mobile_right_user():
     script = """
       let classSet = new Set();
       globalThis.MutationObserver = class { constructor(fn){ this.fn = fn; } observe(){} };
@@ -72,12 +80,15 @@ def test_r7_137_render_pc_expanded_and_compact_use_outside_trapezoid_controls():
           'data-r7-sidebar-button-placement="outside-right"',
           'clip-path:polygon(0 0,100% 18%,100% 82%,0 100%)',
           'data-r7-sidebar-line-icon="logout"',
+          'data-r7-mobile-user-text-align="right-near-logout"',
+          'data-r7-sidebar-ha-icon="logout"',
           'data-r7-mobile-responsive-overflow-fix="true"',
           '[data-r7-cdb-common-card] * { max-width:100% !important;',
         ];
-        const expandedRequired = collapsed ? [] : ['data-r7-sidebar-user-text-align="right-near-logout"'];
+        const expandedRequired = collapsed ? [] : ['data-r7-sidebar-user-layout="pc-previous-avatar-left"'];
         const missing = [...required, ...expandedRequired].filter((needle) => !html.includes(needle));
-        if (missing.length) { console.error(JSON.stringify({collapsed, missing})); process.exit(1); }
+        const forbidden = ['data-r7-sidebar-user-text-align="right-near-logout"'].filter((needle) => html.includes(needle));
+        if (missing.length || forbidden.length) { console.error(JSON.stringify({collapsed, missing, forbidden})); process.exit(1); }
         if (collapsed && !html.includes('>›</button>')) { console.error('collapsed must show detail glyph'); process.exit(2); }
         if (!collapsed && !html.includes('>‹</button>')) { console.error('expanded must show collapse glyph'); process.exit(3); }
       }

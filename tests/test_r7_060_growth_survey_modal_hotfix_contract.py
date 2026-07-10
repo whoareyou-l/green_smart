@@ -40,9 +40,9 @@ def _render(extra="") -> str:
 
 
 def test_r7_060_version_surfaces_are_1_12_95():
-    assert '"version": "1.15.02"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.02"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.02"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.03"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.03"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.03"' in _read(REBUILD_PANEL)
 
 
 def test_r7_060_modal_is_wider_and_measurement_grid_does_not_crush_inputs():

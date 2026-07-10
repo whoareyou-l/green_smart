@@ -1,6 +1,6 @@
 # R7-063 Records modal common responsive shell
 
-Status: current baseline for `v1.15.02`.
+Status: current baseline for `v1.15.03`.
 
 ## Scope
 
