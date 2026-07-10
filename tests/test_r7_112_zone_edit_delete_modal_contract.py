@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_112_version_surfaces_are_1_14_43():
-    assert '"version": "1.14.97"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.97"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.97"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.98"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.98"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.98"' in _read(REBUILD_PANEL)
 
 
 def test_r7_112_zone_backend_has_patch_delete_item_route_with_route_kwargs_and_hard_delete():

@@ -1,6 +1,6 @@
 # R7-089 Settings greenhouse/zone simplified cards
 
-Status: current baseline for `v1.14.97`.
+Status: current baseline for `v1.14.98`.
 
 ## Scope
 

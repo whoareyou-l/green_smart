@@ -11,10 +11,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_132_version_surfaces_are_1_14_97():
-    assert '"version": "1.14.97"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.97"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.97"' in _read(REBUILD_PANEL)
+def test_r7_132_version_surfaces_are_1_14_98():
+    assert '"version": "1.14.98"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.98"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.98"' in _read(REBUILD_PANEL)
 
 
 def test_r7_132_source_has_adaptive_content_width_policy_markers():
@@ -22,11 +22,13 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
     for marker in (
         "_r7ContentWidthMode",
         "_r7ContentWidthPolicyAttrs",
-        "_r7ContentWidthVarsStyle",
+        "_r7RootWidthVarsStyle",
+        "_r7ContentColumnWidthVarsStyle",
         "_applyR7HostWidthPolicy",
         'data-r7-host-width-policy',
         "viewport-fill",
         "block-fill",
+        'data-r7-root-width-policy="viewport-shell"',
         'data-r7-content-width-policy="grid-contained-fill"',
         'data-r7-content-width-mode="${contentWidthMode}"',
         'data-r7-content-width-fills-viewport="true"',
@@ -36,6 +38,9 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
         'data-r7-page-shell-width="viewport"',
         'data-r7-page-workspace-width="viewport"',
         'data-r7-domain-page-width="viewport"',
+        '--r7-root-viewport-width:100dvw',
+        'width:var(--r7-root-viewport-width)',
+        'max-width:100dvw',
         '--r7-content-viewport-width:100%',
         '--r7-content-main-width:${mainWidth}',
         'grid-template-columns:${sidebarTrack} minmax(0,1fr)',
@@ -48,6 +53,7 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
         'contentWidthMode === "ha-sidebar-hidden" ? "100dvw" : "100%"',
         '--r7-content-main-width:100dvw',
         'data-r7-content-width-uses-dvw="true"',
+        'const contentWidthAttrs = this._r7ContentWidthPolicyAttrs(contentWidthMode), contentWidthStyle = this._r7ContentWidthVarsStyle();',
     ):
         assert bad not in source
 
@@ -78,6 +84,7 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
         panel.setR7ActiveDomain('safety-history');
         const html = panel.innerHTML;
         const required = [
+          'data-r7-root-width-policy="viewport-shell"',
           'data-r7-content-width-policy="grid-contained-fill"',
           `data-r7-content-width-mode="${{item.mode}}"`,
           'data-r7-content-width-fills-viewport="true"',
@@ -87,6 +94,9 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
           'data-r7-page-shell-width="viewport"',
           'data-r7-page-workspace-width="viewport"',
           'data-r7-domain-page-width="viewport"',
+          '--r7-root-viewport-width:100dvw',
+          'width:var(--r7-root-viewport-width)',
+          'max-width:100dvw',
           '--r7-content-viewport-width:100%',
           '--r7-content-main-width:100%',
           'width:var(--r7-content-main-width)',
@@ -98,6 +108,11 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
         if (missing.length) {{ console.error(JSON.stringify({{label:item.label, missing}})); process.exit(1); }}
         const bad = ['--r7-content-main-width:100dvw', 'data-r7-content-width-uses-dvw="true"'].filter((needle) => html.includes(needle));
         if (bad.length) {{ console.error(JSON.stringify({{label:item.label, bad}})); process.exit(7); }}
+        const mainStart = html.indexOf('data-rebuild-shell-main');
+        const mainEnd = html.indexOf('data-r7-page-shell', mainStart);
+        const shellMain = html.slice(mainStart, mainEnd);
+        if (shellMain.includes('100dvw') || shellMain.includes('r7-root-viewport-width')) {{ console.error(JSON.stringify({{label:item.label, shellMain}})); process.exit(8); }}
+        if (!shellMain.includes('--r7-content-main-width:100%') || !shellMain.includes('max-width:100%')) {{ console.error(JSON.stringify({{label:item.label, shellMainMissing:true}})); process.exit(9); }}
         if (panel.getAttribute('data-r7-host-width-policy') !== 'viewport-fill') {{ console.error('host width attr missing'); process.exit(4); }}
         if (panel.getAttribute('data-r7-host-display') !== 'block-fill') {{ console.error('host display attr missing'); process.exit(5); }}
         if (panel.style.display !== 'block' || panel.style.width !== '100%' || panel.style.maxWidth !== '100%') {{ console.error(JSON.stringify({{hostStyle: panel.style}})); process.exit(6); }}

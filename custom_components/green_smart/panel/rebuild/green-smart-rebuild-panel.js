@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.97";
+const REBUILD_VERSION = "1.14.98";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -4869,7 +4869,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _r7ContentWidthMode() { return this._r7SidebarLayoutMode() === "operator-ha-adjacent" ? "ha-sidebar-visible" : "ha-sidebar-hidden"; }
   _r7ContentWidthPolicyAttrs(contentWidthMode = this._r7ContentWidthMode()) { return `data-r7-content-width-policy="grid-contained-fill" data-r7-content-width-mode="${contentWidthMode}" data-r7-content-width-fills-viewport="true" data-r7-content-width-contained="true" data-r7-content-width-uses-dvw="false"`; }
-  _r7ContentWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
+  _r7RootWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
+    return "--r7-root-viewport-width:100dvw;--r7-content-viewport-width:100%;width:var(--r7-root-viewport-width);min-width:0;max-width:100dvw;box-sizing:border-box;overflow-x:clip;";
+  }
+
+  _r7ContentColumnWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
     const mainWidth = "100%";
     return `--r7-content-viewport-width:100%;--r7-content-main-width:${mainWidth};width:var(--r7-content-main-width);min-width:0;max-width:100%;box-sizing:border-box;overflow-x:clip;`;
   }
@@ -4878,13 +4882,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._applyR7HostWidthPolicy();
     this._applyR7HASidebarPolicy();
     const sidebarTrack = this._r7SidebarCollapsed ? "64px" : "256px", layoutMode = this._r7SidebarLayoutMode(), contentWidthMode = this._r7ContentWidthMode();
-    const contentWidthAttrs = this._r7ContentWidthPolicyAttrs(contentWidthMode), contentWidthStyle = this._r7ContentWidthVarsStyle();
+    const contentWidthAttrs = this._r7ContentWidthPolicyAttrs(contentWidthMode), rootWidthStyle = this._r7RootWidthVarsStyle(contentWidthMode), contentColumnWidthStyle = this._r7ContentColumnWidthVarsStyle(contentWidthMode);
     this.innerHTML = `
-      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:0;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;${contentWidthStyle}">
+      <main data-rebuild-root data-rebuild-blank-page data-r7-app-shell data-r7-root-width-policy="viewport-shell" data-r7-app-shell-layout-mode="${layoutMode}" style="min-height:100vh;padding:0;background:#f7faf7;color:#1f2a24;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;${rootWidthStyle}">
         <div style="max-width:none;margin:0;display:grid;gap:0;width:100%;min-width:0;">
           <section data-r7-ha-adjacent-layout="true" data-r7-sidebar-shell-component="common-sidebar" data-r7-shell-grid-width-policy="sidebar-aware-fill" style="display:grid;grid-template-columns:${sidebarTrack} minmax(0,1fr);column-gap:0;gap:0;align-items:start;width:100%;min-width:0;max-width:none;">
             ${this.renderR7Sidebar()}
-            <section data-rebuild-shell-main ${contentWidthAttrs} style="padding:24px;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);gap:18px;align-content:start;justify-self:stretch;align-self:stretch;${contentWidthStyle}">
+            <section data-rebuild-shell-main ${contentWidthAttrs} style="padding:24px;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);gap:18px;align-content:start;justify-self:stretch;align-self:stretch;${contentColumnWidthStyle}">
               ${this.renderR7PageShell()}
               <footer data-rebuild-version="${REBUILD_VERSION}" data-r7-content-version-footer="true" data-r7-version-footer-placement="content-bottom-outside-cards" data-r7-version-footer-not-under-sidebar="true" style="font-size:12px;color:#78927f;text-align:center;padding:4px 0 0;">Green Smart ${REBUILD_VERSION}</footer>
             </section>
