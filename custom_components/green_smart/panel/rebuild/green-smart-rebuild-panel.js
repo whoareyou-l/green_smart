@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.08";
+const REBUILD_VERSION = "1.15.09";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -301,6 +301,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7SidebarExternalControlResizeHandler = null;
     this._r7MobileActiveDomainScrollRaf = 0;
     this._r7MobileSettingsFastLanding = false;
+    this._r7MobileFastPanelMode = false;
+    this._r7MobileActiveSubtabScrollRaf = 0;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -1526,6 +1528,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
   setR7ActiveDomain(domainKey) {
     const nextDomain = this._normalizeR7Domain(domainKey);
     if (nextDomain !== "settings-admin") this._r7MobileSettingsFastLanding = false;
+    this._r7MobileFastPanelMode = false;
+    this._r7MobileActiveSubtabScrollRaf = 0;
     if (this._activeR7Domain === nextDomain) return;
     this._activeR7Domain = nextDomain;
     this.render();
@@ -1535,6 +1539,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const nextDomain = this._normalizeR7Domain(domainKey);
     this.setAttribute?.("data-r7-mobile-domain-transition", "instant-internal-button");
     this.setAttribute?.("data-r7-mobile-active-domain-scroll-align", "right-edge");
+    this.setAttribute?.("data-r7-mobile-fast-panel-mode", "active-panel-only");
+    this._r7MobileFastPanelMode = true;
     if (this._activeR7Domain === nextDomain) { this._scheduleR7MobileActiveDomainButtonScroll(); return; }
     this._activeR7Domain = nextDomain;
     this.render();
@@ -1542,7 +1548,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _openR7SettingsDomainFromMobile() {
     this.setAttribute?.("data-r7-mobile-settings-route", "dedicated-internal-action");
+    this.setAttribute?.("data-r7-mobile-fast-panel-mode", "active-panel-only");
     this._r7MobileSettingsFastLanding = true;
+    this._r7MobileFastPanelMode = true;
     this._activeR7Domain = "settings-admin";
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": "greenhouse-zones" };
     this.render();
@@ -1552,7 +1560,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._r7MobileActiveDomainScrollRaf) return;
     const run = () => {
       this._r7MobileActiveDomainScrollRaf = 0;
-    this._r7MobileSettingsFastLanding = false;
       const row = this.querySelector?.('[data-r7-mobile-domain-tablist="true"]');
       const active = row?.querySelector?.('[data-r7-mobile-domain-button="true"][data-r7-sidebar-active="true"]');
       if (!row || !active) return;
@@ -1562,7 +1569,28 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7MobileActiveDomainScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
 
-  setR7DomainSubtab(domainKey, tabKey) {
+  _scheduleR7MobileActiveSubtabScroll() {
+    if (this._r7MobileActiveSubtabScrollRaf) return;
+    const run = () => {
+      this._r7MobileActiveSubtabScrollRaf = 0;
+      const row = this.querySelector?.(`[data-r7-domain-subtabs-for="${this._activeR7Domain}"]`);
+      const active = row?.querySelector?.('[data-r7-domain-subtab-active="true"]');
+      if (!row || !active) return;
+      const targetLeft = active.offsetLeft + active.offsetWidth - row.clientWidth;
+      row.scrollTo ? row.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" }) : (row.scrollLeft = Math.max(0, targetLeft));
+    };
+    this._r7MobileActiveSubtabScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
+  }
+
+  renderR7PanelsForDomain(domainKey, tabs, activeTab, renderer, fullRenderer) {
+    if (!this._r7MobileFastPanelMode) return fullRenderer();
+    const activeKey = tabs.some(([key]) => key === activeTab) ? activeTab : tabs[0]?.[0];
+    const activePanel = activeKey ? renderer(activeKey) : "";
+    const deferred = tabs.filter(([key]) => key !== activeKey).map(([key]) => `<template data-r7-mobile-deferred-subtab-panel="${key}" data-r7-mobile-fast-panel-mode="active-panel-only" data-r7-mobile-deferred-domain="${domainKey}"></template>`).join("");
+    return `<span data-r7-mobile-active-panel-only="true" data-r7-mobile-active-panel-domain="${domainKey}" data-r7-mobile-active-panel-key="${activeKey}" style="display:none;"></span>${activePanel}${deferred}`;
+  }
+
+  setR7DomainSubtab(domainKey, tabKey, mobileFast = false) {
     const domain = this._normalizeR7Domain(domainKey);
     const commonTabs = ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"];
     const cropTabs = ["status-summary", "crop-cycle", "growth-target", "records-workflow", "model-assist", "trend-evidence"];
@@ -1571,8 +1599,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tabDomains = ["environment-control", "irrigation-fertigation", "device-control", "recommendation-automation"];
     const allowed = domain === "crop-operations" ? cropTabs : domain === "safety-history" ? safetyTabs : domain === "settings-admin" ? settingsTabs : tabDomains.includes(domain) ? commonTabs : [];
     if (!allowed.includes(tabKey)) return false;
+    if (mobileFast) {
+      this.setAttribute?.("data-r7-mobile-fast-panel-mode", "active-panel-only");
+      this._r7MobileFastPanelMode = true;
+    }
     if (domain === "settings-admin") this._r7MobileSettingsFastLanding = false;
-    if (this._activeR7DomainSubtabs[domain] === tabKey) return true;
+    if (this._activeR7DomainSubtabs[domain] === tabKey) { this._scheduleR7MobileActiveSubtabScroll(); return true; }
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, [domain]: tabKey };
     this.render();
     return true;
@@ -1706,8 +1738,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("button[data-r7-domain-subtab][data-r7-domain-subtab-key]").forEach((button) => {
       button.addEventListener("click", (event) => {
         event.preventDefault();
-        this.setR7DomainSubtab(button.dataset.r7DomainSubtabFor, button.dataset.r7DomainSubtabKey);
-      });
+        event.stopPropagation();
+        this.setAttribute?.("data-r7-mobile-subtab-route", "no-bubble-active-panel-only");
+        this._r7MobileFastPanelMode = true;
+        this.setR7DomainSubtab(button.dataset.r7DomainSubtabFor, button.dataset.r7DomainSubtabKey, true);
+      }, { passive: false });
     });
   }
 
@@ -3641,9 +3676,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const legacyTabs = [["domain-ownership", "도메인 소유권"], ["role-permissions", "역할·권한"], ["mapping-devices", "매핑·장치"], ["system-security", "시스템·보안"], ["rbac-policy", "RBAC 정책"]];
     const requestedActiveTab = this._activeR7DomainSubtabs["settings-admin"] || "greenhouse-zones";
     const activeTab = tabs.some(([key]) => key === requestedActiveTab) ? requestedActiveTab : "greenhouse-zones";
+    const panelsFull = () => tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
     const panels = this._r7MobileSettingsFastLanding
       ? `<section data-r7-mobile-settings-fast-landing="true" data-r7-settings-admin-subtab="greenhouse-zones" data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="greenhouse-zones" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">설정</strong><span style="color:#78927f;font-size:12px;">빠른 진입</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">설정 도메인으로 이동했습니다. 필요한 하위탭을 선택하면 해당 설정 내용을 불러옵니다.</p><div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px;">${this.renderR7SettingsGreenhouseZonesSubtab(this._zonesForRender?.() || [])}</div></section><template data-r7-mobile-settings-heavy-panels-deferred="true" data-r7-settings-admin-subtab="users-permissions" data-r7-settings-admin-subtab="system-integration"></template>`
-      : tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join("");
+      : this.renderR7PanelsForDomain("settings-admin", tabs, activeTab, (key) => this.renderR7SettingsAdminSubtabPanel(key, activeTab), panelsFull);
     return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 장치 연결 작성, 사용자·권한, 시스템·연동의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 4개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
   }
 
@@ -3914,7 +3950,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "현재 안전 상태"], ["block-allow", "차단·허용 이유"], ["event-history", "이벤트 이력"], ["operation-history", "운영 이력"], ["audit-evidence", "감사·근거"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["safety-history"] || "status-summary";
-    const panels = tabs.map(([key]) => this.renderR7SafetySubtabPanel(key, selectedZone, activeTab)).join("");
+    const panelsFull = () => tabs.map(([key]) => this.renderR7SafetySubtabPanel(key, selectedZone, activeTab)).join("");
+    const panels = this.renderR7PanelsForDomain("safety-history", tabs, activeTab, (key) => this.renderR7SafetySubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-safety-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "safety-history", title: "안전 제어", kicker: "구역 기준 안전 제어", summary: "Safety, Interlock, Fail Safe, 차단·허용 이유, 수동/자동/AI 이력, audit evidence를 구역 기준으로 확인합니다.", status: "blocked", tabs, activeTab, panels })}<section style="display:none;">Safety 상태 · Interlock 상태 · Fail Safe 상태 · 차단 이유 · 허용 이유 · 센서 stale 이력 · 오류/Traceback/통신 장애 · 수동 조작 이력 · 기본 자동제어 이력 · AI 추천 이력 · AI 적용/미적용 이력 · 장치 명령 후보 이력 · 실제 실행 이력, later only · authoritative allow/block history · read-only</section></section>`;
   }
 
@@ -4789,7 +4826,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["crop-cycle", "작기·현재작물"], ["growth-target", "생육목표"], ["records-workflow", "기록·작업"], ["model-assist", "모델·추천"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["crop-operations"] || "status-summary";
-    const panels = tabs.map(([key]) => this.renderR7CropSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panelsFull = () => tabs.map(([key]) => this.renderR7CropSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panels = this.renderR7PanelsForDomain("crop-operations", tabs, activeTab, (key) => this.renderR7CropSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-crop-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "crop-operations", title: "작물 운영", kicker: "구역 기준 작물 운영", summary: "현재 작물, 작기, 생육목표, 생육조사, 병해충 예찰, 방제 기록, crop model evidence를 구역 기준으로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">작물 운영 · currentCrop · crop_cycle · growthTargetProjection · 생육조사 · 병해충 예찰 · 방제 기록 · crop model evidence · 진단·위험·조치 추천</section></section>`;
   }
 
@@ -4834,7 +4872,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["environment-control"] || "status-summary";
-    const panels = tabs.map(([key]) => this.renderR7EnvironmentSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panelsFull = () => tabs.map(([key]) => this.renderR7EnvironmentSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panels = this.renderR7PanelsForDomain("environment-control", tabs, activeTab, (key) => this.renderR7EnvironmentSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-environment-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "environment-control", title: "환경 제어", kicker: "구역별 환경 상태", summary: "온도·습도·VPD·CO₂·광/DLI 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "attention", tabs, activeTab, panels })}<section style="display:none;">구역별 환경 상태 · 현재 선택 구역 · 환기 후보 · Safety/Interlock 우선 · 센서 freshness</section></section>`;
   }
 
@@ -4879,7 +4918,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["irrigation-fertigation"] || "status-summary";
-    const panels = tabs.map(([key]) => this.renderR7IrrigationSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panelsFull = () => tabs.map(([key]) => this.renderR7IrrigationSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panels = this.renderR7PanelsForDomain("irrigation-fertigation", tabs, activeTab, (key) => this.renderR7IrrigationSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-irrigation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "irrigation-fertigation", title: "관수 제어", kicker: "구역별 관수 제어 상태", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">구역별 관수 제어 상태 · 현재 선택 구역 · 관수 후보 · Safety clamp 우선 · 센서 신선도</section></section>`;
   }
 
@@ -4924,7 +4964,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["device-control"] || "status-summary";
-    const panels = tabs.map(([key]) => this.renderR7DeviceSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panelsFull = () => tabs.map(([key]) => this.renderR7DeviceSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panels = this.renderR7PanelsForDomain("device-control", tabs, activeTab, (key) => this.renderR7DeviceSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-device-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "device-control", title: "장치 제어", kicker: "구역별 장치 상태", summary: "수동/자동/잠금/점검 모드, 장치 매핑, 모드 gate, 인터록, AI hint-only 상태를 구역별로 확인합니다.", status: "warning", tabs, activeTab, panels })}<section style="display:none;">구역별 장치 상태 · 현재 선택 구역 · mode gate · HA entity mapping · MQTT topic mapping later only · Physical MQTT/device hookup remains blocked</section></section>`;
   }
 
@@ -4969,7 +5010,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     const activeTab = this._activeR7DomainSubtabs["recommendation-automation"] || "status-summary";
-    const panels = tabs.map(([key]) => this.renderR7RecommendationSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panelsFull = () => tabs.map(([key]) => this.renderR7RecommendationSubtabPanel(key, selectedZone, activeTab)).join("");
+    const panels = this.renderR7PanelsForDomain("recommendation-automation", tabs, activeTab, (key) => this.renderR7RecommendationSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-recommendation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "recommendation-automation", title: "자동화 제어", kicker: "구역별 자동화 제어 후보", summary: "수동 기준값, 기본 자동화 후보, AI 추천·보정, fallback, Safety-final 후보를 구역별로 비교합니다. 최종 명령 권한은 없습니다.", status: "attention", tabs, activeTab, panels })}<section style="display:none;">구역별 자동화 제어 후보 · Manual baseline · rule/schedule candidate · AI recommendation/correction · final command authority none</section></section>`;
   }
 
@@ -5086,6 +5128,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindR7RecordWorkflowActions();
     this._bindSettingsApprovalActions();
     this._scheduleR7MobileActiveDomainButtonScroll();
+    this._scheduleR7MobileActiveSubtabScroll();
   }
 }
 

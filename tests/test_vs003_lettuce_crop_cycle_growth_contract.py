@@ -21,10 +21,10 @@ def test_vs003_version_surfaces_are_current():
     manifest = _read(MANIFEST)
     docs = _read(README) + _read(INTERFACE) + _read(DBDOC) + _read(WORKFLOW)
 
-    assert '"version": "1.15.08"' in manifest
-    assert 'const VERSION = "1.15.08"' in panel
-    assert "v1.15.08" in panel[:200]
-    assert "기준 버전: `v1.15.08`" in docs
+    assert '"version": "1.15.09"' in manifest
+    assert 'const VERSION = "1.15.09"' in panel
+    assert "v1.15.09" in panel[:200]
+    assert "기준 버전: `v1.15.09`" in docs
 
 
 def test_vs003_backend_persists_lettuce_crop_cycle_and_growth_metrics_contract():
