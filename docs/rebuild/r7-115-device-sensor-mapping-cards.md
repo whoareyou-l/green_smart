@@ -1,9 +1,9 @@
 # R7-115 Device/Sensor mapping cards
 
-Version: v1.15.05
+Version: v1.15.06
 Status: prod verification pending
 
-## User correction in v1.15.05
+## User correction in v1.15.06
 
 The Settings → `장치·센서 매핑` subtab was corrected again after the v1.14.48 common-card update.
 
@@ -110,7 +110,7 @@ data-r7-settings-device-action-card="mapping"
 data-r7-settings-device-mapping-list-panel
 ```
 
-## CDB card grammar hotfix in v1.15.05
+## CDB card grammar hotfix in v1.15.06
 
 The device/sensor mapping subtab was corrected to use only the four CDB card wrappers.
 
@@ -137,9 +137,9 @@ Important correction:
 - The second row must contain 3 `renderR7CdbButtonTwoCard()` cards.
 - The previous/current device-add action position is now the `연결` card, with a new `장치 추가` card inserted on its left.
 
-## Device/group DB-backed save in v1.15.05
+## Device/group DB-backed save in v1.15.06
 
-The v1.15.05 slice converted `장치 추가` and `그룹 추가` from UI-only saved states to real DB/API writes.
+The v1.15.06 slice converted `장치 추가` and `그룹 추가` from UI-only saved states to real DB/API writes.
 
 Added backend storage:
 

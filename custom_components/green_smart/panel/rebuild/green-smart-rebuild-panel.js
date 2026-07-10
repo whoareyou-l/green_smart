@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.05";
+const REBUILD_VERSION = "1.15.06";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -295,6 +295,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._activeR7DomainSubtabs = { "crop-operations": "status-summary", "environment-control": "status-summary", "irrigation-fertigation": "status-summary", "device-control": "status-summary", "recommendation-automation": "status-summary", "safety-history": "status-summary", "settings-admin": "greenhouse-zones" };
     this._r7SidebarCollapsed = false;
     this._r7RecordModal = null;
+    this._r7SidebarExternalControlSyncRaf = 0;
+    this._r7SidebarExternalControlResizeObserver = null;
+    this._r7SidebarExternalControlMutationObserver = null;
+    this._r7SidebarExternalControlResizeHandler = null;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -313,9 +317,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
   connectedCallback() {
     this._applyR7HostWidthPolicy();
     this.render();
+    this._ensureR7SidebarExternalControlObservers();
     this._loadHomeContext();
     this._loadSettingsUsersPermissions();
     this._loadSettingsGreenhouseZoneData();
+  }
+
+  disconnectedCallback() {
+    this._r7SidebarExternalControlResizeObserver?.disconnect?.();
+    this._r7SidebarExternalControlMutationObserver?.disconnect?.();
+    if (this._r7SidebarExternalControlResizeHandler) globalThis.window?.removeEventListener?.("resize", this._r7SidebarExternalControlResizeHandler);
+    if (this._r7SidebarExternalControlSyncRaf && globalThis.cancelAnimationFrame) globalThis.cancelAnimationFrame(this._r7SidebarExternalControlSyncRaf);
+    this._r7SidebarExternalControlResizeObserver = null; this._r7SidebarExternalControlMutationObserver = null; this._r7SidebarExternalControlResizeHandler = null; this._r7SidebarExternalControlSyncRaf = 0;
   }
 
   r7SettingsGreenhouseZoneData() {
@@ -1608,8 +1621,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (typeof MutationObserver === "undefined" || typeof document === "undefined" || !document?.body || this._r7HaSidebarPolicyObserver) return;
     this._r7HaSidebarPolicyObserver = new MutationObserver(() => {
       this._applyR7HASidebarDomVisibility(this._r7SidebarLayoutMode() === "full-left-no-ha-sidebar");
+      this._scheduleR7SidebarExternalControlPositionSync();
     });
-    this._r7HaSidebarPolicyObserver.observe(document.body, { childList: true, subtree: true });
+    this._r7HaSidebarPolicyObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "open", "expanded"] });
   }
 
   _r7SidebarLayoutMode() {
@@ -2212,6 +2226,28 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const locationRef = globalThis.location || globalThis.window?.location;
     if (locationRef?.assign) locationRef.assign(logoutUrl);
     else if (locationRef) locationRef.href = logoutUrl;
+  }
+
+  _scheduleR7SidebarExternalControlPositionSync() {
+    if (this._r7SidebarExternalControlSyncRaf) return;
+    const run = () => { this._r7SidebarExternalControlSyncRaf = 0; this._syncR7SidebarExternalControlPosition(); };
+    this._r7SidebarExternalControlSyncRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
+  }
+
+  _ensureR7SidebarExternalControlObservers() {
+    if (!this._r7SidebarExternalControlResizeHandler) {
+      this._r7SidebarExternalControlResizeHandler = () => this._scheduleR7SidebarExternalControlPositionSync();
+      globalThis.window?.addEventListener?.("resize", this._r7SidebarExternalControlResizeHandler, { passive: true });
+    }
+    if (!this._r7SidebarExternalControlResizeObserver && typeof ResizeObserver !== "undefined") {
+      this._r7SidebarExternalControlResizeObserver = new ResizeObserver(() => this._scheduleR7SidebarExternalControlPositionSync());
+      [this, document?.body, this.querySelector?.('[data-r7-sidebar][data-r7-sidebar-component="common"]')].filter(Boolean).forEach((el) => this._r7SidebarExternalControlResizeObserver.observe(el));
+    }
+    if (!this._r7SidebarExternalControlMutationObserver && typeof MutationObserver !== "undefined" && document?.body) {
+      this._r7SidebarExternalControlMutationObserver = new MutationObserver(() => this._scheduleR7SidebarExternalControlPositionSync());
+      this._r7SidebarExternalControlMutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "open", "expanded"] });
+    }
+    this._scheduleR7SidebarExternalControlPositionSync();
   }
 
   _syncR7SidebarExternalControlPosition() {

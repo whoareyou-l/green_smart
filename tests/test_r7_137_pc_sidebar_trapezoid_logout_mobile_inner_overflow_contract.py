@@ -11,10 +11,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_137_version_surfaces_are_1_15_05():
-    assert '"version": "1.15.05"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.05"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.05"' in _read(REBUILD_PANEL)
+def test_r7_137_version_surfaces_are_1_15_06():
+    assert '"version": "1.15.06"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.06"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.06"' in _read(REBUILD_PANEL)
 
 
 def test_r7_137_source_has_fixed_overlay_pc_trapezoids_mobile_right_user_and_inner_overflow_fix():
@@ -24,6 +24,12 @@ def test_r7_137_source_has_fixed_overlay_pc_trapezoids_mobile_right_user_and_inn
         'data-r7-sidebar-toggle-shape="trapezoid-wide-left"',
         'data-r7-sidebar-control-position="fixed-outside-overlay"',
         '_syncR7SidebarExternalControlPosition',
+        '_scheduleR7SidebarExternalControlPositionSync',
+        '_ensureR7SidebarExternalControlObservers',
+        'new ResizeObserver(() => this._scheduleR7SidebarExternalControlPositionSync())',
+        'new MutationObserver(() => this._scheduleR7SidebarExternalControlPositionSync())',
+        'addEventListener?.("resize", this._r7SidebarExternalControlResizeHandler',
+        'attributeFilter: ["class", "style", "open", "expanded"]',
         '--r7-sidebar-external-left',
         '--r7-sidebar-external-toggle-top',
         '--r7-sidebar-external-logout-top',

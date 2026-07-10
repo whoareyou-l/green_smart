@@ -1,6 +1,6 @@
 # R7-073 Common recent default limit policy
 
-Status: current baseline for `v1.15.05`.
+Status: current baseline for `v1.15.06`.
 
 ## Why
 

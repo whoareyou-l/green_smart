@@ -19,11 +19,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_004_version_surfaces_are_1_12_38():
-    assert '"version": "1.15.05"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.05"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.05"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.06"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.06"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.06"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_003_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.15.05" in _read(path)
+        assert "v1.15.06" in _read(path)
 
 
 def test_r7_004_doc_declares_user_selected_settings_admin_scope_and_boundaries():
