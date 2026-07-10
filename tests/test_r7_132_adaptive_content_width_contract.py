@@ -11,10 +11,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_132_version_surfaces_are_1_14_96():
-    assert '"version": "1.14.96"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.96"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.96"' in _read(REBUILD_PANEL)
+def test_r7_132_version_surfaces_are_1_14_97():
+    assert '"version": "1.14.97"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.97"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.97"' in _read(REBUILD_PANEL)
 
 
 def test_r7_132_source_has_adaptive_content_width_policy_markers():
@@ -27,22 +27,29 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
         'data-r7-host-width-policy',
         "viewport-fill",
         "block-fill",
-        'contentWidthMode === "ha-sidebar-hidden" ? "100dvw" : "100%"',
-        'data-r7-content-width-policy="adaptive-viewport-fill"',
+        'data-r7-content-width-policy="grid-contained-fill"',
         'data-r7-content-width-mode="${contentWidthMode}"',
         'data-r7-content-width-fills-viewport="true"',
-        'data-r7-content-width-uses-dvw="true"',
+        'data-r7-content-width-contained="true"',
+        'data-r7-content-width-uses-dvw="false"',
         'data-r7-shell-grid-width-policy="sidebar-aware-fill"',
         'data-r7-page-shell-width="viewport"',
         'data-r7-page-workspace-width="viewport"',
         'data-r7-domain-page-width="viewport"',
-        '--r7-content-viewport-width:100dvw',
+        '--r7-content-viewport-width:100%',
         '--r7-content-main-width:${mainWidth}',
         'grid-template-columns:${sidebarTrack} minmax(0,1fr)',
         'width:var(--r7-content-main-width)',
-        'max-width:none',
+        'max-width:100%',
+        'overflow-x:clip',
     ):
         assert marker in source
+    for bad in (
+        'contentWidthMode === "ha-sidebar-hidden" ? "100dvw" : "100%"',
+        '--r7-content-main-width:100dvw',
+        'data-r7-content-width-uses-dvw="true"',
+    ):
+        assert bad not in source
 
 
 def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
@@ -71,25 +78,29 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
         panel.setR7ActiveDomain('safety-history');
         const html = panel.innerHTML;
         const required = [
-          'data-r7-content-width-policy="adaptive-viewport-fill"',
+          'data-r7-content-width-policy="grid-contained-fill"',
           `data-r7-content-width-mode="${{item.mode}}"`,
           'data-r7-content-width-fills-viewport="true"',
-          'data-r7-content-width-uses-dvw="true"',
+          'data-r7-content-width-contained="true"',
+          'data-r7-content-width-uses-dvw="false"',
           'data-r7-shell-grid-width-policy="sidebar-aware-fill"',
           'data-r7-page-shell-width="viewport"',
           'data-r7-page-workspace-width="viewport"',
           'data-r7-domain-page-width="viewport"',
-          '--r7-content-viewport-width:100dvw',
-          `--r7-content-main-width:${{item.mode === 'ha-sidebar-hidden' ? '100dvw' : '100%'}}`,
+          '--r7-content-viewport-width:100%',
+          '--r7-content-main-width:100%',
           'width:var(--r7-content-main-width)',
           'grid-template-columns:minmax(0,1fr)',
-          'max-width:none',
+          'max-width:100%',
+          'overflow-x:clip',
         ];
         const missing = required.filter((needle) => !html.includes(needle));
         if (missing.length) {{ console.error(JSON.stringify({{label:item.label, missing}})); process.exit(1); }}
+        const bad = ['--r7-content-main-width:100dvw', 'data-r7-content-width-uses-dvw="true"'].filter((needle) => html.includes(needle));
+        if (bad.length) {{ console.error(JSON.stringify({{label:item.label, bad}})); process.exit(7); }}
         if (panel.getAttribute('data-r7-host-width-policy') !== 'viewport-fill') {{ console.error('host width attr missing'); process.exit(4); }}
         if (panel.getAttribute('data-r7-host-display') !== 'block-fill') {{ console.error('host display attr missing'); process.exit(5); }}
-        if (panel.style.display !== 'block' || panel.style.width !== '100%' || panel.style.maxWidth !== 'none') {{ console.error(JSON.stringify({{hostStyle: panel.style}})); process.exit(6); }}
+        if (panel.style.display !== 'block' || panel.style.width !== '100%' || panel.style.maxWidth !== '100%') {{ console.error(JSON.stringify({{hostStyle: panel.style}})); process.exit(6); }}
         if (item.mode === 'ha-sidebar-hidden' && !classSet.has('green-smart-hide-ha-sidebar')) {{ console.error('hide class missing'); process.exit(2); }}
         if (item.mode === 'ha-sidebar-visible' && !classSet.has('green-smart-operator-ha-sidebar-adjacent')) {{ console.error('admin adjacent class missing'); process.exit(3); }}
       }}

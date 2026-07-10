@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.14.96";
+const REBUILD_VERSION = "1.14.97";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -302,7 +302,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.style.display = "block";
     this.style.width = "100%";
     this.style.minWidth = "0";
-    this.style.maxWidth = "none";
+    this.style.maxWidth = "100%";
     this.style.boxSizing = "border-box";
     this.style.flex = "1 1 auto";
     this.style.alignSelf = "stretch";
@@ -4868,10 +4868,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7ContentWidthMode() { return this._r7SidebarLayoutMode() === "operator-ha-adjacent" ? "ha-sidebar-visible" : "ha-sidebar-hidden"; }
-  _r7ContentWidthPolicyAttrs(contentWidthMode = this._r7ContentWidthMode()) { return `data-r7-content-width-policy="adaptive-viewport-fill" data-r7-content-width-mode="${contentWidthMode}" data-r7-content-width-fills-viewport="true" data-r7-content-width-uses-dvw="true"`; }
+  _r7ContentWidthPolicyAttrs(contentWidthMode = this._r7ContentWidthMode()) { return `data-r7-content-width-policy="grid-contained-fill" data-r7-content-width-mode="${contentWidthMode}" data-r7-content-width-fills-viewport="true" data-r7-content-width-contained="true" data-r7-content-width-uses-dvw="false"`; }
   _r7ContentWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
-    const mainWidth = contentWidthMode === "ha-sidebar-hidden" ? "100dvw" : "100%";
-    return `--r7-content-viewport-width:100dvw;--r7-content-main-width:${mainWidth};width:var(--r7-content-main-width);min-width:0;max-width:none;box-sizing:border-box;`;
+    const mainWidth = "100%";
+    return `--r7-content-viewport-width:100%;--r7-content-main-width:${mainWidth};width:var(--r7-content-main-width);min-width:0;max-width:100%;box-sizing:border-box;overflow-x:clip;`;
   }
 
   render() {
