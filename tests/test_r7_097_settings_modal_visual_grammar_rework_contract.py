@@ -34,9 +34,9 @@ def _render_with_modal(open_call: str) -> str:
 
 
 def test_r7_097_version_surfaces_are_1_14_22():
-    assert '"version": "1.15.11"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.11"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.11"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.12"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.12"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.12"' in _read(REBUILD_PANEL)
 
 
 def test_r7_097_create_modals_feel_like_growth_survey_write_modal():

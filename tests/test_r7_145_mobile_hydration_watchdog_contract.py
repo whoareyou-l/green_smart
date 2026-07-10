@@ -8,19 +8,20 @@ def source() -> str:
     return PANEL.read_text()
 
 
-def test_v1_15_11_mobile_hydration_has_direct_timer_and_watchdog_fallback():
+def test_v1_15_12_mobile_hydration_timers_removed_for_immediate_user_feedback():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.11"' in text
-    assert 'data-r7-mobile-panel-hydration-fallback", "timer-watchdog"' in text
-    assert 'this._r7MobilePanelHydrationTimer = setTimeout(hydrate, 120);' in text
-    assert 'this._r7MobilePanelHydrationWatchdog = setTimeout(hydrate, 650);' in text
-    assert 'globalThis.requestAnimationFrame?.(scheduleTimer)' in text
-    assert 'catch (_error) { scheduleTimer(); }' in text
+    assert 'const REBUILD_VERSION = "1.15.12"' in text
+    assert 'data-r7-mobile-immediate-panel-render", "true"' in text
+    assert 'data-r7-mobile-panel-hydration", "not-used-immediate"' in text
+    assert 'setTimeout(hydrate' not in text
+    assert 'timer-watchdog' not in text
+    assert 'requestedAt: Date.now()' not in text
 
 
-def test_v1_15_11_pending_placeholder_cannot_become_permanent_on_future_render():
+def test_v1_15_12_request_hydration_is_safe_noop_for_backward_handlers():
     text = source()
-    assert 'requestedAt: Date.now()' in text
-    assert 'Date.now() - Number(this._r7MobilePanelHydration.requestedAt || 0) > 900' in text
+    assert '_requestR7MobilePanelHydration(domainKey, tabKey)' in text
     assert 'this._r7MobilePanelHydration = null;' in text
-    assert 'data-r7-mobile-panel-hydration-state="${hydrationPending ? "pending" : "hydrated"}"' in text
+    assert 'clearTimeout(this._r7MobilePanelHydrationTimer)' in text
+    assert 'clearTimeout(this._r7MobilePanelHydrationWatchdog)' in text
+    assert 'data-r7-mobile-immediate-panel-render", "true"' in text

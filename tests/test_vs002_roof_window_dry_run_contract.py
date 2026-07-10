@@ -19,11 +19,11 @@ def test_vs002_version_surfaces_are_current():
     readme = _read(README)
     workflow = _read(WORKFLOW)
 
-    assert '"version": "1.15.11"' in manifest
-    assert 'const VERSION = "1.15.11"' in panel
-    assert "v1.15.11" in panel[:200]
-    assert "기준 버전: `v1.15.11`" in readme
-    assert "기준 버전: `v1.15.11`" in workflow
+    assert '"version": "1.15.12"' in manifest
+    assert 'const VERSION = "1.15.12"' in panel
+    assert "v1.15.12" in panel[:200]
+    assert "기준 버전: `v1.15.12`" in readme
+    assert "기준 버전: `v1.15.12`" in workflow
 
 
 def test_vs002_backend_has_roof_window_dry_run_contract_markers():
