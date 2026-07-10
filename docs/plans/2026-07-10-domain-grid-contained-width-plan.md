@@ -1,8 +1,8 @@
-# v1.15.04 도메인 화면 폭 grid-contained 맞춤 계획
+# v1.15.05 도메인 화면 폭 grid-contained 맞춤 계획
 
 ## 증상
 
-v1.15.04에서 `ha-sidebar-hidden` 모드의 content width를 `100dvw`로 바꾼 결과, 실제 화면에서 오른쪽 content가 화면 폭을 넘어가며 하단 horizontal scrollbar가 생겼다.
+v1.15.05에서 `ha-sidebar-hidden` 모드의 content width를 `100dvw`로 바꾼 결과, 실제 화면에서 오른쪽 content가 화면 폭을 넘어가며 하단 horizontal scrollbar가 생겼다.
 
 스크린샷 기준 계산은 다음과 같았다.
 
@@ -49,4 +49,4 @@ Green Smart sidebar 256px + content 100dvw + padding = viewport 초과
 
 - 화면 오른쪽 content가 viewport를 넘어가지 않는다.
 - 도메인 카드가 content column 안에서 꽉 찬다.
-- Prod served smoke에서 v1.15.04 marker와 금지 패턴 부재를 확인한다.
+- Prod served smoke에서 v1.15.05 marker와 금지 패턴 부재를 확인한다.

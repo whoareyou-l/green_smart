@@ -11,10 +11,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_137_version_surfaces_are_1_15_04():
-    assert '"version": "1.15.04"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.04"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.04"' in _read(REBUILD_PANEL)
+def test_r7_137_version_surfaces_are_1_15_05():
+    assert '"version": "1.15.05"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.05"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.05"' in _read(REBUILD_PANEL)
 
 
 def test_r7_137_source_has_fixed_overlay_pc_trapezoids_mobile_right_user_and_inner_overflow_fix():
@@ -28,6 +28,11 @@ def test_r7_137_source_has_fixed_overlay_pc_trapezoids_mobile_right_user_and_inn
         '--r7-sidebar-external-toggle-top',
         '--r7-sidebar-external-logout-top',
         'position:fixed;left:var(--r7-sidebar-external-left',
+        'width:18px;height:34px',
+        'width="13" height="13"',
+        'font-size:12px',
+        'data-r7-mobile-nested-content-overflow-fix="true"',
+        '[data-r7-domain-content-card="tabs-zone-content"] :where(article,section,div)',
         'overflow-y:auto;overflow-x:hidden',
         'clip-path:polygon(0 0,100% 18%,100% 82%,0 100%)',
         'toggleGlyph = collapsed ? "›" : "‹"',
@@ -52,6 +57,9 @@ def test_r7_137_source_has_fixed_overlay_pc_trapezoids_mobile_right_user_and_inn
         'grid-template-columns:minmax(0,1fr) 36px',
         'this._r7SidebarLineIcon("exit")',
         'position:absolute;right:-34px',
+        'width:36px;height:42px',
+        'font-size:19px',
+        'width="19" height="19"',
         'overflow-y:auto;overflow-x:visible',
         'grid-template-columns:minmax(0,1fr) 42px;gap:6px;align-items:center;justify-content:center;position:relative;',
     ):
@@ -88,6 +96,10 @@ def test_r7_137_render_pc_expanded_and_compact_use_fixed_overlay_not_sidebar_ove
           'data-r7-sidebar-protruding-button="logout"',
           'data-r7-sidebar-button-placement="outside-right"',
           'position:fixed;left:var(--r7-sidebar-external-left',
+          'width:18px;height:34px',
+          'width="13" height="13"',
+          'font-size:12px',
+          'data-r7-mobile-nested-content-overflow-fix="true"',
           'overflow-y:auto;overflow-x:hidden',
           'clip-path:polygon(0 0,100% 18%,100% 82%,0 100%)',
           'data-r7-sidebar-line-icon="logout"',

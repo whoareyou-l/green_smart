@@ -50,9 +50,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.04"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.04"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.04"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.05"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.05"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.05"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():

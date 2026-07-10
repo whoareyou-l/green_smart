@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb001_version_surfaces_are_v1115():
-    assert '"version": "1.15.04"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.04"' in _read(PANEL)
-    assert "v1.15.04" in _read(FRONTEND_PLAN)
+    assert '"version": "1.15.05"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.05"' in _read(PANEL)
+    assert "v1.15.05" in _read(FRONTEND_PLAN)
 
 
 def test_rb001_admin_module_exists_and_exports_shell_renderers():
@@ -68,7 +68,7 @@ def test_rb001_frontend_plan_records_admin_shell_extraction_done_and_boundaries(
     plan = _read(FRONTEND_PLAN)
     for marker in (
         "RB-001 Admin/System shell 분리",
-        "v1.15.04",
+        "v1.15.05",
         "domains/admin/admin-page.js",
         "Admin/System render boundary extracted",
         "API route/DB/prod 변경 없음",
