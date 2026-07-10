@@ -33,9 +33,9 @@ def _render(mappings_js: str) -> str:
 
 
 def test_r7_103_version_surfaces_are_1_14_28():
-    assert '"version": "1.15.03"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.03"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.03"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.04"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.04"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.04"' in _read(REBUILD_PANEL)
 
 
 def test_r7_103_source_has_reusable_equipment_entity_schema_not_review_like_dump():

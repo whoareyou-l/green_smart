@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.03";
+const REBUILD_VERSION = "1.15.04";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2118,7 +2118,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _r7SidebarFixedViewportStyle() {
-    return "height:100vh;max-height:100vh;position:sticky;top:0;overflow-y:auto;overflow-x:visible;overscroll-behavior:contain;";
+    return "height:100vh;max-height:100vh;position:sticky;top:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;";
   }
 
   _r7SidebarVisualAttrs(collapsed) {
@@ -2214,6 +2214,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     else if (locationRef) locationRef.href = logoutUrl;
   }
 
+  _syncR7SidebarExternalControlPosition() {
+    try {
+      const sidebar = this.querySelector?.('[data-r7-sidebar][data-r7-sidebar-component="common"]'); if (!sidebar?.getBoundingClientRect || !this.style?.setProperty) return;
+      const sidebarRect = sidebar.getBoundingClientRect(), brandRect = sidebar.querySelector?.('[data-r7-sidebar-brand]')?.getBoundingClientRect?.(), accountRect = sidebar.querySelector?.('[data-r7-sidebar-account-logout-split]')?.getBoundingClientRect?.();
+      this.style.setProperty('--r7-sidebar-external-left', `${Math.max(0, Math.round(sidebarRect.right - 1))}px`); if (brandRect) this.style.setProperty('--r7-sidebar-external-toggle-top', `${Math.max(0, Math.round(brandRect.top + 3))}px`); if (accountRect) this.style.setProperty('--r7-sidebar-external-logout-top', `${Math.max(0, Math.round(accountRect.top + 7))}px`);
+    } catch (_error) { /* geometry best-effort only */ }
+  }
+
   renderR7SidebarUtilityGroup(referenceSlimRail) {
     const buttonStyle = `width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;`;
     const userInfo = this._r7CurrentUserInfo();
@@ -2230,35 +2238,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const userInner = referenceSlimRail
       ? `<span data-r7-sidebar-user-avatar style="width:32px;height:32px;border-radius:999px;background:${R7_GREEN_ACCENT};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:1000;font-size:13px;">${userInitial}</span><span data-r7-sidebar-user-name style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userName}</span><span data-r7-sidebar-user-role style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">${userRole}</span>`
       : `<span data-r7-sidebar-user-avatar style="width:36px;height:36px;border-radius:999px;background:${R7_GREEN_ACCENT};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:1000;font-size:14px;flex:0 0 36px;">${userInitial}</span><span data-r7-sidebar-user-info data-r7-sidebar-user-layout="pc-previous-avatar-left" style="display:grid;gap:1px;min-width:0;text-align:left;flex:1 1 auto;"><strong data-r7-sidebar-user-name style="font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userName}</strong><small data-r7-sidebar-user-role style="font-size:10px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${userRole}</small></span>`;
-    const logoutIcon = `<svg data-r7-sidebar-line-icon="logout" aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 5H6.8C5.8 5 5 5.8 5 6.8v10.4C5 18.2 5.8 19 6.8 19H10"/><path d="M13 8l4 4-4 4"/><path d="M17 12H9"/></svg><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">로그아웃</span>`;
     const placement = "outside-right";
     const profileStyle = referenceSlimRail ? `${buttonStyle}position:relative;` : `min-height:54px;width:100%;border:0;border-radius:14px;background:#f7fbf8;color:${R7_GREEN_TEXT};display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:8px;text-decoration:none;cursor:pointer;padding:0 8px;box-sizing:border-box;`;
-    const logoutTrapezoidStyle = `${buttonStyle}position:absolute;right:-34px;top:${referenceSlimRail ? '2px' : '7px'};width:36px;height:42px;border:1px solid #dcebe0;border-left:0;border-radius:0 10px 10px 0;background:#fff;color:${R7_GREEN_TEXT};font-weight:1000;box-shadow:8px 6px 16px rgba(31,51,41,.14);z-index:4;clip-path:polygon(0 0,100% 18%,100% 82%,0 100%);`;
-    const logoutStyle = logoutTrapezoidStyle;
     return `<div data-r7-sidebar-utility-group style="display:grid;gap:4px;justify-items:center;margin-top:auto;padding-top:8px;border-top:1px solid #eef1f4;">
       ${settingsUtility}
-      <div data-r7-sidebar-account-logout-split="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-user-profile-layout="avatar-info-separated-logout" data-r7-sidebar-logout-shape="trapezoid-wide-left" style="width:100%;display:${referenceSlimRail ? 'flex' : 'grid'};grid-template-columns:minmax(0,1fr);gap:6px;align-items:center;justify-content:center;position:relative;overflow:visible;">
+      <div data-r7-sidebar-account-logout-split="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-user-profile-layout="avatar-info-separated-logout" style="width:100%;display:${referenceSlimRail ? 'flex' : 'grid'};grid-template-columns:minmax(0,1fr);gap:6px;align-items:center;justify-content:center;position:relative;overflow:hidden;">
         <button type="button" data-r7-sidebar-user-profile-button="true" data-r7-profile-settings-route="settings-admin/users-permissions" data-r7-sidebar-utility="profile" aria-label="${profileTitle}" title="${profileTitle}" style="${profileStyle}">${userInner}</button>
-        <a href="${this._r7LogoutHref()}" data-r7-sidebar-logout-button="true" data-r7-sidebar-button-placement="${placement}" data-r7-sidebar-utility="logout" data-r7-sidebar-protruding-button="logout" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" aria-label="${exitTitle}" title="${exitTitle}" style="${logoutStyle}">${logoutIcon}</a><span data-r7-sidebar-utility="exit" data-r7-sidebar-legacy-exit-alias="logout" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"></span>
+        <span data-r7-sidebar-utility="exit" data-r7-sidebar-legacy-exit-alias="logout" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"></span>
       </div>
     </div>`;
   }
 
   renderR7SidebarBrand({ collapsed = false, referenceSlimRail = false } = {}) {
-    const toggleGlyph = collapsed ? "›" : "‹";
-    const toggleTitle = collapsed ? "상세형" : "간략형";
-    const toggleLabel = collapsed ? "사이드바 상세형" : "사이드바 간략형";
-    const trapezoidToggleStyle = "position:absolute;right:-34px;top:3px;width:36px;height:42px;border:1px solid #dcebe0;border-left:0;border-radius:0 10px 10px 0;background:#fff;color:#31523b;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:19px;box-shadow:8px 6px 16px rgba(31,51,41,.14);z-index:4;clip-path:polygon(0 0,100% 18%,100% 82%,0 100%);";
-    if (referenceSlimRail) {
-      return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" data-r7-sidebar-protruding-toggle-tab="true" style="display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;width:100%;margin:0 auto 4px;position:relative;"><span data-r7-sidebar-logo-tile data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" title="Green Smart" style="width:44px;height:44px;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;">${this._r7SidebarReferenceLogo()}</span><button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-protruding-button="toggle" aria-label="${toggleLabel}" title="${toggleTitle}" style="${trapezoidToggleStyle}">${toggleGlyph}</button></div>`;
-    }
-    return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};min-height:48px;padding:0 ${collapsed ? "0" : "8px"};position:relative;">
-      <div style="display:flex;align-items:center;gap:9px;min-width:0;">
-        <span data-r7-sidebar-logo-image data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" style="width:40px;height:40px;border-radius:12px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span>
-        ${collapsed ? "" : `<div style="min-width:0;"><div style="font-weight:700;color:#202124;font-size:16px;line-height:1;">Green Smart</div><p style="margin:4px 0 0;color:#6f7782;font-size:12px;line-height:1.35;">작물·구역·경보 중심</p></div>`}
-      </div>
-      <button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-protruding-button="toggle" aria-label="${toggleLabel}" title="${toggleTitle}" style="${trapezoidToggleStyle}">${toggleGlyph}</button>
-    </div>`;
+    if (referenceSlimRail) return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" data-r7-sidebar-protruding-toggle-tab="true" style="display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;width:100%;margin:0 auto 4px;position:relative;"><span data-r7-sidebar-logo-tile data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" title="Green Smart" style="width:44px;height:44px;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;">${this._r7SidebarReferenceLogo()}</span></div>`;
+    return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};min-height:48px;padding:0 ${collapsed ? "0" : "8px"};position:relative;"><div style="display:flex;align-items:center;gap:9px;min-width:0;"><span data-r7-sidebar-logo-image data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" style="width:40px;height:40px;border-radius:12px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span>${collapsed ? "" : `<div style="min-width:0;"><div style="font-weight:700;color:#202124;font-size:16px;line-height:1;">Green Smart</div><p style="margin:4px 0 0;color:#6f7782;font-size:12px;line-height:1.35;">작물·구역·경보 중심</p></div>`}</div></div>`;
+  }
+
+  renderR7SidebarExternalControls({ collapsed = Boolean(this._r7SidebarCollapsed), layoutMode = this._r7SidebarLayoutMode() } = {}) {
+    const referenceSlimRail = layoutMode === "operator-ha-adjacent" && Boolean(collapsed), toggleGlyph = collapsed ? "›" : "‹", toggleTitle = collapsed ? "상세형" : "간략형", toggleLabel = collapsed ? "사이드바 상세형" : "사이드바 간략형";
+    const tabBase = "position:fixed;left:var(--r7-sidebar-external-left, 255px);width:36px;height:42px;border:1px solid #dcebe0;border-left:0;border-radius:0 10px 10px 0;background:#fff;color:#31523b;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:8px 6px 16px rgba(31,51,41,.14);z-index:40;clip-path:polygon(0 0,100% 18%,100% 82%,0 100%);box-sizing:border-box;text-decoration:none;", logoutIcon = `<svg data-r7-sidebar-line-icon="logout" aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 5H6.8C5.8 5 5 5.8 5 6.8v10.4C5 18.2 5.8 19 6.8 19H10"/><path d="M13 8l4 4-4 4"/><path d="M17 12H9"/></svg><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">로그아웃</span>`;
+    return `<div data-r7-sidebar-external-controls-shell="true" data-r7-sidebar-controls-owner="outside-aside" data-r7-sidebar-controls-layout-exclusion="true" data-r7-sidebar-external-overlay="fixed-sibling" data-r7-sidebar-external-controls-mode="${referenceSlimRail ? 'compact' : 'expanded'}" style="display:contents;"><button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-control-position="fixed-outside-overlay" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-protruding-button="toggle" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" aria-label="${toggleLabel}" title="${toggleTitle}" style="${tabBase}top:var(--r7-sidebar-external-toggle-top, 11px);font-size:19px;">${toggleGlyph}</button><a href="${this._r7LogoutHref()}" data-r7-sidebar-logout-button="true" data-r7-sidebar-control-position="fixed-outside-overlay" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-utility="logout" data-r7-sidebar-protruding-button="logout" data-r7-sidebar-logout-shape="trapezoid-wide-left" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" aria-label="Home Assistant 로그아웃" title="Home Assistant 로그아웃" style="${tabBase}top:var(--r7-sidebar-external-logout-top, calc(100vh - 72px));">${logoutIcon}</a></div>`;
   }
 
   renderR7MobileTopNavigation() {
@@ -4970,6 +4969,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         <div style="max-width:none;margin:0;display:grid;gap:0;width:100%;min-width:0;">
           <section data-r7-ha-adjacent-layout="true" data-r7-sidebar-shell-component="common-sidebar" data-r7-shell-grid-width-policy="sidebar-aware-fill" style="display:grid;grid-template-columns:${sidebarTrack} minmax(0,1fr);column-gap:0;gap:0;align-items:start;width:100%;min-width:0;max-width:none;">
             ${this.renderR7Sidebar()}
+            ${this.renderR7SidebarExternalControls({ collapsed: this._r7SidebarCollapsed, layoutMode })}
             <section data-rebuild-shell-main data-r7-mobile-content-main="true" ${contentWidthAttrs} style="padding:24px;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);gap:18px;align-content:start;justify-self:stretch;align-self:stretch;${contentColumnWidthStyle}">
               ${this.renderR7PageShell()}
               <footer data-rebuild-version="${REBUILD_VERSION}" data-r7-content-version-footer="true" data-r7-version-footer-placement="content-bottom-outside-cards" data-r7-version-footer-not-under-sidebar="true" style="font-size:12px;color:#78927f;text-align:center;padding:4px 0 0;">Green Smart ${REBUILD_VERSION}</footer>
@@ -4988,6 +4988,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7SettingsShortcutCdaSplitModal()}
       ${this.renderR7SettingsSystemActionModal()}
     `;
+    this._syncR7SidebarExternalControlPosition();
     this._bindR7DomainNavigation();
     this._bindR7DomainSubtabs();
     this._bindZoneTabs();

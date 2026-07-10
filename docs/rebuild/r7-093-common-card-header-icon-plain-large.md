@@ -1,6 +1,6 @@
 # R7-093 Common card header icon plain large
 
-Status: current baseline for `v1.15.03`.
+Status: current baseline for `v1.15.04`.
 
 ## Change
 

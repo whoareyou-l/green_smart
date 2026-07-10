@@ -41,9 +41,9 @@ def _zone_create_fragment(html: str) -> str:
 
 
 def test_r7_091_version_surfaces_are_1_14_16():
-    assert '"version": "1.15.03"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.03"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.03"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.04"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.04"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.04"' in _read(REBUILD_PANEL)
 
 
 def test_r7_091_zone_create_matches_image_like_common_card_shape():

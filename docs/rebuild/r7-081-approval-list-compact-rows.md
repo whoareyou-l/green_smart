@@ -1,6 +1,6 @@
 # R7-081 Approval list compact rows
 
-Status: current baseline for `v1.15.03`.
+Status: current baseline for `v1.15.04`.
 
 ## Problem
 
