@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.09";
+const REBUILD_VERSION = "1.15.10";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -303,6 +303,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7MobileSettingsFastLanding = false;
     this._r7MobileFastPanelMode = false;
     this._r7MobileActiveSubtabScrollRaf = 0;
+    this._r7MobilePanelHydration = null;
+    this._r7MobilePanelHydrationTimer = 0;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -1541,6 +1543,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-mobile-active-domain-scroll-align", "right-edge");
     this.setAttribute?.("data-r7-mobile-fast-panel-mode", "active-panel-only");
     this._r7MobileFastPanelMode = true;
+    const activeTab = this._activeR7DomainSubtabs[nextDomain] || "status-summary";
+    this._requestR7MobilePanelHydration(nextDomain, activeTab);
     if (this._activeR7Domain === nextDomain) { this._scheduleR7MobileActiveDomainButtonScroll(); return; }
     this._activeR7Domain = nextDomain;
     this.render();
@@ -1582,12 +1586,34 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7MobileActiveSubtabScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
 
+  _requestR7MobilePanelHydration(domainKey, tabKey) {
+    const domain = this._normalizeR7Domain(domainKey);
+    const tab = tabKey || this._activeR7DomainSubtabs[domain] || "status-summary";
+    this._r7MobilePanelHydration = { domain, tab, pending: true };
+    this.setAttribute?.("data-r7-mobile-panel-hydration", "pending");
+    if (this._r7MobilePanelHydrationTimer) clearTimeout(this._r7MobilePanelHydrationTimer);
+    const hydrate = () => {
+      this._r7MobilePanelHydrationTimer = 0;
+      if (!this._r7MobilePanelHydration || this._r7MobilePanelHydration.domain !== domain || this._r7MobilePanelHydration.tab !== tab) return;
+      this._r7MobilePanelHydration = null;
+      this.setAttribute?.("data-r7-mobile-panel-hydration", "hydrated");
+      this.render();
+    };
+    const schedule = () => { this._r7MobilePanelHydrationTimer = setTimeout(hydrate, 80); };
+    globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(schedule) : schedule();
+  }
+
+  renderR7MobilePanelHydrationPlaceholder(domainKey, activeKey) {
+    return `<section data-r7-mobile-panel-placeholder="true" data-r7-mobile-panel-hydration="pending" data-r7-mobile-panel-placeholder-domain="${domainKey}" data-r7-mobile-panel-placeholder-tab="${activeKey}" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;min-height:120px;align-content:center;"><strong style="color:#24323f;font-size:15px;">화면을 전환하는 중입니다</strong><span style="color:#5d6f62;font-size:13px;line-height:1.55;">선택한 탭을 먼저 표시하고 내용을 이어서 불러옵니다.</span></section>`;
+  }
+
   renderR7PanelsForDomain(domainKey, tabs, activeTab, renderer, fullRenderer) {
     if (!this._r7MobileFastPanelMode) return fullRenderer();
     const activeKey = tabs.some(([key]) => key === activeTab) ? activeTab : tabs[0]?.[0];
-    const activePanel = activeKey ? renderer(activeKey) : "";
+    const hydrationPending = this._r7MobilePanelHydration?.pending && this._r7MobilePanelHydration.domain === domainKey && this._r7MobilePanelHydration.tab === activeKey;
+    const activePanel = hydrationPending ? this.renderR7MobilePanelHydrationPlaceholder(domainKey, activeKey) : (activeKey ? renderer(activeKey) : "");
     const deferred = tabs.filter(([key]) => key !== activeKey).map(([key]) => `<template data-r7-mobile-deferred-subtab-panel="${key}" data-r7-mobile-fast-panel-mode="active-panel-only" data-r7-mobile-deferred-domain="${domainKey}"></template>`).join("");
-    return `<span data-r7-mobile-active-panel-only="true" data-r7-mobile-active-panel-domain="${domainKey}" data-r7-mobile-active-panel-key="${activeKey}" style="display:none;"></span>${activePanel}${deferred}`;
+    return `<span data-r7-mobile-active-panel-only="true" data-r7-mobile-active-panel-domain="${domainKey}" data-r7-mobile-active-panel-key="${activeKey}" data-r7-mobile-panel-hydration-state="${hydrationPending ? "pending" : "hydrated"}" style="display:none;"></span>${activePanel}${deferred}`;
   }
 
   setR7DomainSubtab(domainKey, tabKey, mobileFast = false) {
@@ -1602,6 +1628,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (mobileFast) {
       this.setAttribute?.("data-r7-mobile-fast-panel-mode", "active-panel-only");
       this._r7MobileFastPanelMode = true;
+      this._requestR7MobilePanelHydration(domain, tabKey);
     }
     if (domain === "settings-admin") this._r7MobileSettingsFastLanding = false;
     if (this._activeR7DomainSubtabs[domain] === tabKey) { this._scheduleR7MobileActiveSubtabScroll(); return true; }

@@ -1,6 +1,6 @@
 # Green Smart UI Information Architecture and RBAC Baseline
 
-> 기준 버전: `v1.15.09`
+> 기준 버전: `v1.15.10`
 > 리빌딩 단계: `R1 — 제품 IA/RBAC baseline`
 > 목적: Green Smart 화면을 농장 운영 흐름과 역할 권한 기준으로 재정렬한다. 모든 UI 요소는 `조회 / 기록 / 전략 / 실행 / 안전 / 고급설정` 중 하나로 분류하고, `admin / farm_owner / farm_staff` 역할별 표시·실행 상태를 명확히 한다.
 
