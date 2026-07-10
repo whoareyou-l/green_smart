@@ -1,0 +1,87 @@
+from pathlib import Path
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[1]
+MANIFEST = ROOT / "custom_components/green_smart/manifest.json"
+LEGACY_PANEL = ROOT / "custom_components/green_smart/panel/green-smart-panel.js"
+REBUILD_PANEL = ROOT / "custom_components/green_smart/panel/rebuild/green-smart-rebuild-panel.js"
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def test_r7_137_version_surfaces_are_1_15_02():
+    assert '"version": "1.15.02"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.02"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.02"' in _read(REBUILD_PANEL)
+
+
+def test_r7_137_source_has_pc_trapezoid_toggle_logout_right_aligned_user_and_mobile_inner_overflow_fix():
+    source = _read(REBUILD_PANEL)
+    for marker in (
+        'data-r7-sidebar-toggle-position="logo-right-outside"',
+        'data-r7-sidebar-toggle-shape="trapezoid-wide-left"',
+        'clip-path:polygon(0 0,100% 18%,100% 82%,0 100%)',
+        'const toggleGlyph = collapsed ? "›" : "‹"',
+        'data-r7-sidebar-logout-shape="trapezoid-wide-left"',
+        'data-r7-sidebar-protruding-button="logout"',
+        'data-r7-sidebar-user-text-align="right-near-logout"',
+        'text-align:right;justify-items:end',
+        'data-r7-sidebar-line-icon="logout"',
+        'overflow-y:auto;overflow-x:visible',
+        '[data-r7-cdb-common-card], [data-r7-cdb-card-type]',
+        '[data-r7-cdb-common-card] * { max-width:100% !important;',
+        '[data-r7-cdb-common-card] [style*="grid-template-columns:repeat"]',
+    ):
+        assert marker in source
+    for forbidden in (
+        'data-r7-sidebar-line-icon="exit"',
+        'grid-template-columns:minmax(0,1fr) 42px;gap:6px;align-items:center;justify-content:center;position:relative;',
+    ):
+        assert forbidden not in source
+
+
+def test_r7_137_render_pc_expanded_and_compact_use_outside_trapezoid_controls():
+    script = """
+      let classSet = new Set();
+      globalThis.MutationObserver = class { constructor(fn){ this.fn = fn; } observe(){} };
+      globalThis.document = {
+        body: { classList: { add(c){ classSet.add(c); }, remove(c){ classSet.delete(c); }, contains(c){ return classSet.has(c); }, toggle(c, enabled){ if (enabled) classSet.add(c); else classSet.delete(c); } } },
+        getElementById(){ return null; },
+        createElement(){ return { id: '', textContent: '', setAttribute(){}, appendChild(){} }; },
+        head: { appendChild(){} },
+        querySelectorAll(){ return []; }
+      };
+      globalThis.HTMLElement = class { constructor(){ this.innerHTML=''; this.style={ setProperty(k,v){ this[k]=v; } }; this._attrs={}; } setAttribute(k,v){ this._attrs[k]=String(v); } getAttribute(k){ return this._attrs[k]; } querySelectorAll(){ return []; } querySelector(){ return null; } addEventListener(){} };
+      globalThis.customElements = { _items:new Map(), get(n){return this._items.get(n)}, define(n,c){this._items.set(n,c)} };
+      const mod = await import(__REBUILD__);
+      const panel = new mod.GreenSmartRebuildPanel();
+      panel.hass = { user: { name:'admin', is_admin:true, green_smart_role:'operator' }, callApi: async () => ({ actorRole:'operator', zones: [] }) };
+      panel._homeContext = { actorRole:'operator', zones: [] };
+      for (const collapsed of [false, true]) {
+        panel._r7SidebarCollapsed = collapsed;
+        panel.render();
+        const html = panel.innerHTML;
+        const required = [
+          'data-r7-sidebar-toggle-position="logo-right-outside"',
+          'data-r7-sidebar-toggle-shape="trapezoid-wide-left"',
+          'data-r7-sidebar-protruding-button="toggle"',
+          'data-r7-sidebar-logout-shape="trapezoid-wide-left"',
+          'data-r7-sidebar-protruding-button="logout"',
+          'data-r7-sidebar-button-placement="outside-right"',
+          'clip-path:polygon(0 0,100% 18%,100% 82%,0 100%)',
+          'data-r7-sidebar-line-icon="logout"',
+          'data-r7-mobile-responsive-overflow-fix="true"',
+          '[data-r7-cdb-common-card] * { max-width:100% !important;',
+        ];
+        const expandedRequired = collapsed ? [] : ['data-r7-sidebar-user-text-align="right-near-logout"'];
+        const missing = [...required, ...expandedRequired].filter((needle) => !html.includes(needle));
+        if (missing.length) { console.error(JSON.stringify({collapsed, missing})); process.exit(1); }
+        if (collapsed && !html.includes('>›</button>')) { console.error('collapsed must show detail glyph'); process.exit(2); }
+        if (!collapsed && !html.includes('>‹</button>')) { console.error('expanded must show collapse glyph'); process.exit(3); }
+      }
+      console.log(JSON.stringify({ok:true}));
+    """.replace("__REBUILD__", repr(str(REBUILD_PANEL)))
+    result = subprocess.run(["node", "--input-type=module", "-e", script], text=True, capture_output=True, cwd=ROOT)
+    assert result.returncode == 0, result.stderr + result.stdout

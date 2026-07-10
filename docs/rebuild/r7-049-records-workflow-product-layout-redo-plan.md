@@ -2,9 +2,9 @@
 
 > **For Hermes:** This plan supersedes the shallow R7-048 records-workflow value-card slice. Do not implement by simply displaying DTO values. First decide what each record/work element needs: write CTA, history view, edit affordance, settings, safety/approval boundary, or read-only source summary.
 
-**Target version:** v1.15.01
+**Target version:** v1.15.02
 **Scope:** `작물 운영 > 기록·작업` subtab only
-**Redo required:** Yes. The previous `v1.15.01` implementation must be treated as baseline evidence, not as the final product layout.
+**Redo required:** Yes. The previous `v1.15.02` implementation must be treated as baseline evidence, not as the final product layout.
 
 ---
 
@@ -38,7 +38,7 @@ existing content / operation context inventory
 → implement the layout and affordances
 ```
 
-Therefore `v1.15.01` must be redone as `v1.15.01` with a real product workflow layout.
+Therefore `v1.15.02` must be redone as `v1.15.02` with a real product workflow layout.
 
 ---
 
@@ -525,7 +525,7 @@ tests/test_r7_049_records_workflow_product_layout_contract.py
 
 Must verify:
 
-1. Version surfaces are `1.15.01`.
+1. Version surfaces are `1.15.02`.
 2. This plan exists and says R7-048 must be redone.
 3. `records-workflow` has product layout marker:
    - `data-r7-records-workflow-product-layout="write-history-review"`
@@ -582,7 +582,7 @@ Prod verification:
 ```text
 HA check_config
 restart HA
-served-source smoke: v1.15.01 + R7-049 markers
+served-source smoke: v1.15.02 + R7-049 markers
 render smoke: records-workflow write/history/review affordances
 recent HA log scan
 ```

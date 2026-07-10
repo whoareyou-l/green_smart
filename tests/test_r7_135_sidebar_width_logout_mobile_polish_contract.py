@@ -13,10 +13,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_135_version_surfaces_are_1_15_00():
-    assert '"version": "1.15.01"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.01"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.01"' in _read(REBUILD_PANEL)
-    assert "v1.15.01" in _read(PLAN)
+    assert '"version": "1.15.02"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.02"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.02"' in _read(REBUILD_PANEL)
+    assert "v1.15.02" in _read(PLAN)
 
 
 def test_r7_135_source_has_ha_sidebar_aware_width_logout_and_mobile_polish():
@@ -26,7 +26,6 @@ def test_r7_135_source_has_ha_sidebar_aware_width_logout_and_mobile_polish():
         'data-r7-root-width-mode="${contentWidthMode}"',
         'contentWidthMode === "ha-sidebar-visible" ? "100%" : "100dvw"',
         'data-r7-sidebar-button-placement="outside-right"',
-        'data-r7-sidebar-button-placement="inside-right"',
         'data-r7-sidebar-logout-fallback-href="/"',
         'data-r7-mobile-top-background="white"',
         'background:#fff',
@@ -63,9 +62,9 @@ def test_r7_135_render_admin_uses_100_percent_root_non_admin_uses_dvw_and_button
       globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const cases = [
-        {{ label: 'admin-expanded', collapsed: false, user: {{ is_admin: true, green_smart_role: 'admin', name: 'Admin' }}, role: 'admin', mode: 'ha-sidebar-visible', root: '--r7-root-viewport-width:100%', placement: 'inside-right' }},
+        {{ label: 'admin-expanded', collapsed: false, user: {{ is_admin: true, green_smart_role: 'admin', name: 'Admin' }}, role: 'admin', mode: 'ha-sidebar-visible', root: '--r7-root-viewport-width:100%', placement: 'outside-right' }},
         {{ label: 'admin-collapsed', collapsed: true, user: {{ is_admin: true, green_smart_role: 'admin', name: 'Admin' }}, role: 'admin', mode: 'ha-sidebar-visible', root: '--r7-root-viewport-width:100%', placement: 'outside-right' }},
-        {{ label: 'staff-expanded', collapsed: false, user: {{ is_admin: false, green_smart_role: 'farm_staff', name: 'Staff' }}, role: 'farm_staff', mode: 'ha-sidebar-hidden', root: '--r7-root-viewport-width:100dvw', placement: 'inside-right' }},
+        {{ label: 'staff-expanded', collapsed: false, user: {{ is_admin: false, green_smart_role: 'farm_staff', name: 'Staff' }}, role: 'farm_staff', mode: 'ha-sidebar-hidden', root: '--r7-root-viewport-width:100dvw', placement: 'outside-right' }},
       ];
       for (const item of cases) {{
         classSet = new Set();
