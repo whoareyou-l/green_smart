@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_133_version_surfaces_are_1_14_95():
-    assert '"version": "1.15.12"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.12"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.12"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.13"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.13"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.13"' in _read(REBUILD_PANEL)
 
 
 def test_r7_133_source_domain_frames_fill_outer_card_only_without_forced_stretch():

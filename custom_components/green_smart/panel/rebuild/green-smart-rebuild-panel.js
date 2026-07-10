@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.12";
+const REBUILD_VERSION = "1.15.13";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1548,6 +1548,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._requestR7MobilePanelHydration(nextDomain, activeTab);
     if (this._activeR7Domain === nextDomain) { this._scheduleR7MobileActiveDomainButtonScroll(); return; }
     this._activeR7Domain = nextDomain;
+    if (this._patchR7MobileActiveDomainPage()) return;
     this.render();
   }
 
@@ -1608,6 +1609,67 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<span data-r7-mobile-active-panel-only="true" data-r7-mobile-immediate-panel-render="true" data-r7-mobile-active-panel-domain="${domainKey}" data-r7-mobile-active-panel-key="${activeKey}" data-r7-mobile-panel-hydration-state="not-used-immediate" style="display:none;"></span>${activePanel}${deferred}`;
   }
 
+  _renderR7SubtabPanelForDomain(domain, tabKey) {
+    const activeTab = tabKey;
+    const selectedZone = this._r7PrimaryZoneForDomain();
+    if (domain === "settings-admin") return this.renderR7SettingsAdminSubtabPanel(tabKey, activeTab);
+    if (domain === "crop-operations") return this.renderR7CropSubtabPanel(tabKey, selectedZone, activeTab);
+    if (domain === "environment-control") return this.renderR7EnvironmentSubtabPanel(tabKey, selectedZone, activeTab);
+    if (domain === "irrigation-fertigation") return this.renderR7IrrigationSubtabPanel(tabKey, selectedZone, activeTab);
+    if (domain === "device-control") return this.renderR7DeviceSubtabPanel(tabKey, selectedZone, activeTab);
+    if (domain === "recommendation-automation") return this.renderR7RecommendationSubtabPanel(tabKey, selectedZone, activeTab);
+    if (domain === "safety-history") return this.renderR7SafetySubtabPanel(tabKey, selectedZone, activeTab);
+    return "";
+  }
+
+  _bindR7PatchedInteractiveActions() {
+    this["_bindR7DomainNavigation"]?.();
+    this["_bindR7DomainSubtabs"]?.();
+    this["_bindZoneTabs"]?.();
+    this["_bindR7RecordWorkflowActions"]?.();
+    this["_bindSettingsApprovalActions"]?.();
+  }
+
+  _patchR7MobileSubtabPanel(domain, tabKey) {
+    const panelHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
+    if (!panelHtml) return false;
+    const tabsRoot = this.querySelector?.(`[data-r7-domain-subtabs-for="${domain}"]`);
+    tabsRoot?.querySelectorAll?.("button[data-r7-domain-subtab]").forEach((button) => {
+      const selected = button.getAttribute("data-r7-domain-subtab-key") === tabKey;
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+      button.setAttribute("data-r7-domain-subtab-active", selected ? "true" : "false");
+      if (selected) button.setAttribute("data-r7-mobile-patched-active-subtab", "true");
+      else button.removeAttribute?.("data-r7-mobile-patched-active-subtab");
+    });
+    const currentPanel = this.querySelector?.(`[data-r7-domain-subtab-panel][data-r7-domain-subtab-panel-key]`);
+    if (!currentPanel) return false;
+    currentPanel.outerHTML = panelHtml;
+    this.setAttribute?.("data-r7-mobile-dom-patch-subtab", "true");
+    this.setAttribute?.("data-r7-mobile-subtab-render-mode", "panel-outerhtml-only");
+    this._bindR7PatchedInteractiveActions();
+    this._scheduleR7MobileActiveSubtabScroll();
+    return true;
+  }
+
+  _patchR7MobileActiveDomainPage() {
+    const workspace = this.querySelector?.("[data-r7-page-workspace]");
+    if (!workspace) return false;
+    workspace.innerHTML = this.renderR7ActiveDomainPage();
+    const activeDomain = this._activeR7Domain;
+    this.querySelectorAll?.("[data-r7-sidebar-target]").forEach((button) => {
+      const selected = button.getAttribute("data-r7-sidebar-target") === activeDomain;
+      button.setAttribute("data-r7-sidebar-active", selected ? "true" : "false");
+      if (selected) button.setAttribute("aria-current", "page");
+      else button.removeAttribute?.("aria-current");
+    });
+    this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
+    this.setAttribute?.("data-r7-mobile-domain-render-mode", "workspace-innerhtml-only");
+    this._bindR7PatchedInteractiveActions();
+    this._scheduleR7MobileActiveDomainButtonScroll();
+    this._scheduleR7MobileActiveSubtabScroll();
+    return true;
+  }
+
   setR7DomainSubtab(domainKey, tabKey, mobileFast = false) {
     const domain = this._normalizeR7Domain(domainKey);
     const commonTabs = ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"];
@@ -1625,6 +1687,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (domain === "settings-admin") this._r7MobileSettingsFastLanding = false;
     if (this._activeR7DomainSubtabs[domain] === tabKey) { this._scheduleR7MobileActiveSubtabScroll(); return true; }
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, [domain]: tabKey };
+    if (mobileFast && this._patchR7MobileSubtabPanel(domain, tabKey)) return true;
     this.render();
     return true;
   }
@@ -1755,6 +1818,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _bindR7DomainSubtabs() {
     this.querySelectorAll("button[data-r7-domain-subtab][data-r7-domain-subtab-key]").forEach((button) => {
+      if (button.getAttribute("data-r7-subtab-bound") === "true") return;
+      button.setAttribute("data-r7-subtab-bound", "true");
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1955,6 +2020,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _bindR7DomainNavigation() {
     this.querySelectorAll("[data-r7-sidebar-target]").forEach((link) => {
+      if (link.getAttribute("data-r7-domain-navigation-bound") === "true") return;
+      link.setAttribute("data-r7-domain-navigation-bound", "true");
       link.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
