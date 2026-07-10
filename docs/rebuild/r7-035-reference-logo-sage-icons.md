@@ -1,6 +1,6 @@
 # R7-035 Reference Logo + Sage Sidebar Icons
 
-> 기준 버전: `v1.14.95`
+> 기준 버전: `v1.14.96`
 > Status: R7-035 planned
 > Purpose: 사용자가 제공한 사이드바 이미지 기준으로 Green Smart 로고와 sidebar icon visual style을 맞춘다.
 

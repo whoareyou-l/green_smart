@@ -26,10 +26,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_041_version_surfaces_are_1_12_76():
-    assert '"version": "1.14.95"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.95"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.95"' in _read(REBUILD_PANEL)
-    assert "v1.14.95" in _read(DOC)
+    assert '"version": "1.14.96"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.96"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.96"' in _read(REBUILD_PANEL)
+    assert "v1.14.96" in _read(DOC)
 
 
 def test_r7_041_doc_records_qa_scope_and_boundary():
@@ -37,7 +37,7 @@ def test_r7_041_doc_records_qa_scope_and_boundary():
     for token in [
         "R7-041 End-to-End UI QA Baseline",
         "actual HA URL: http://127.0.0.1:8123/",
-        "served rebuild panel JS version: 1.14.95",
+        "served rebuild panel JS version: 1.14.96",
         "no old pill-cluster subtab style is rendered",
         "no old emoji sidebar icons are rendered",
         "No API route" if False else "new API route",

@@ -11,10 +11,10 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_r7_132_version_surfaces_are_1_14_95():
-    assert '"version": "1.14.95"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.95"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.95"' in _read(REBUILD_PANEL)
+def test_r7_132_version_surfaces_are_1_14_96():
+    assert '"version": "1.14.96"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.96"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.96"' in _read(REBUILD_PANEL)
 
 
 def test_r7_132_source_has_adaptive_content_width_policy_markers():
@@ -23,6 +23,11 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
         "_r7ContentWidthMode",
         "_r7ContentWidthPolicyAttrs",
         "_r7ContentWidthVarsStyle",
+        "_applyR7HostWidthPolicy",
+        'data-r7-host-width-policy',
+        "viewport-fill",
+        "block-fill",
+        'contentWidthMode === "ha-sidebar-hidden" ? "100dvw" : "100%"',
         'data-r7-content-width-policy="adaptive-viewport-fill"',
         'data-r7-content-width-mode="${contentWidthMode}"',
         'data-r7-content-width-fills-viewport="true"',
@@ -32,7 +37,7 @@ def test_r7_132_source_has_adaptive_content_width_policy_markers():
         'data-r7-page-workspace-width="viewport"',
         'data-r7-domain-page-width="viewport"',
         '--r7-content-viewport-width:100dvw',
-        '--r7-content-main-width:100%',
+        '--r7-content-main-width:${mainWidth}',
         'grid-template-columns:${sidebarTrack} minmax(0,1fr)',
         'width:var(--r7-content-main-width)',
         'max-width:none',
@@ -51,7 +56,7 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
         head: {{ appendChild(){{}} }},
         querySelectorAll(sel){{ return []; }}
       }};
-      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{ setProperty(){{}} }}; this._listeners = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(type, fn){{ this._listeners[type] = fn; }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = ''; this.dataset = {{}}; this.style = {{ setProperty(k,v){{ this[k]=v; }} }}; this._listeners = {{}}; this._attrs = {{}}; }} setAttribute(k,v){{ this._attrs[k]=String(v); }} getAttribute(k){{ return this._attrs[k]; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(type, fn){{ this._listeners[type] = fn; }} }};
       globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
       const mod = await import({str(REBUILD_PANEL)!r});
       const cases = [
@@ -75,13 +80,16 @@ def test_r7_132_node_smoke_content_width_adapts_for_ha_sidebar_modes():
           'data-r7-page-workspace-width="viewport"',
           'data-r7-domain-page-width="viewport"',
           '--r7-content-viewport-width:100dvw',
-          '--r7-content-main-width:100%',
+          `--r7-content-main-width:${{item.mode === 'ha-sidebar-hidden' ? '100dvw' : '100%'}}`,
           'width:var(--r7-content-main-width)',
           'grid-template-columns:minmax(0,1fr)',
           'max-width:none',
         ];
         const missing = required.filter((needle) => !html.includes(needle));
         if (missing.length) {{ console.error(JSON.stringify({{label:item.label, missing}})); process.exit(1); }}
+        if (panel.getAttribute('data-r7-host-width-policy') !== 'viewport-fill') {{ console.error('host width attr missing'); process.exit(4); }}
+        if (panel.getAttribute('data-r7-host-display') !== 'block-fill') {{ console.error('host display attr missing'); process.exit(5); }}
+        if (panel.style.display !== 'block' || panel.style.width !== '100%' || panel.style.maxWidth !== 'none') {{ console.error(JSON.stringify({{hostStyle: panel.style}})); process.exit(6); }}
         if (item.mode === 'ha-sidebar-hidden' && !classSet.has('green-smart-hide-ha-sidebar')) {{ console.error('hide class missing'); process.exit(2); }}
         if (item.mode === 'ha-sidebar-visible' && !classSet.has('green-smart-operator-ha-sidebar-adjacent')) {{ console.error('admin adjacent class missing'); process.exit(3); }}
       }}

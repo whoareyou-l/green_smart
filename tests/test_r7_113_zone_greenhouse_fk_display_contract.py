@@ -13,9 +13,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_113_version_surfaces_are_1_14_44():
-    assert '"version": "1.14.95"' in _read(MANIFEST)
-    assert 'const VERSION = "1.14.95"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.14.95"' in _read(REBUILD_PANEL)
+    assert '"version": "1.14.96"' in _read(MANIFEST)
+    assert 'const VERSION = "1.14.96"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.14.96"' in _read(REBUILD_PANEL)
 
 
 def test_r7_113_zone_api_joins_greenhouse_name_and_orders_by_stable_ids():

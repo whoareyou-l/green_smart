@@ -1,6 +1,6 @@
 # R7-108 Zone detail DB alignment and Korean labels
 
-Version: v1.14.95
+Version: v1.14.96
 Status: prod verified
 
 ## Scope
