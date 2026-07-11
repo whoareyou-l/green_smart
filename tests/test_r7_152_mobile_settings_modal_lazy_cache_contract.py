@@ -17,7 +17,7 @@ def block(text: str, start: str, end: str) -> str:
 
 def test_v1_15_18_declares_lazy_modal_root_mount_and_hide_helpers():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.18"' in text
+    assert 'const REBUILD_VERSION = "1.15.19"' in text
     for marker in [
         '_ensureR7SettingsModalRoot()',
         'data-r7-settings-modal-root="lazy-cache"',

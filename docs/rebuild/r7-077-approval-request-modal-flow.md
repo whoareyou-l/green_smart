@@ -1,6 +1,6 @@
 # R7-077 Approval request + admin modal flow
 
-Status: current baseline for `v1.15.18`.
+Status: current baseline for `v1.15.19`.
 
 ## Flow
 

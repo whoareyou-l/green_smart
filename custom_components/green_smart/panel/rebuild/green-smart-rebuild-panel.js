@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.18";
+const REBUILD_VERSION = "1.15.19";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1698,6 +1698,107 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return panel;
   }
 
+  _r7CachedSettingsPanelMetricModel(tabKey) {
+    const settings = this.r7SettingsGreenhouseZoneData();
+    const users = this.r7SettingsUsersPermissionsData();
+    const system = settings.systemIntegration || {};
+    const metric = (label, value, tone = "green") => ({ label, value: String(value ?? "0"), tone });
+    if (tabKey === ["users", "permissions"].join("-")) return {
+      title: "사용자·권한",
+      subtitle: "사용자, 승인 요청, 역할 권한을 캐시된 DOM에서 값만 갱신합니다.",
+      metrics: [metric("사용자", users?.counts?.users || users?.users?.length || 0), metric("승인", users?.counts?.approvals || users?.approvalRows?.length || 0, Number(users?.counts?.approvals || 0) ? "amber" : "green"), metric("권한", users?.counts?.rolePermissions || users?.rolePermissions?.length || 0)],
+      actions: [["approval-list", "승인 목록"], ["audit-log", "감사 로그"], ["permission-matrix", "권한 매트릭스"]],
+    };
+    if (tabKey === "system-integration") {
+      const errors = Number(system.dbErrorCount || 0) + Number(system.centerApiErrorCount || 0) + Number(system.edgeApiErrorCount || 0);
+      return { title: "시스템·연동", subtitle: "DB, Center, Edge 상태를 작은 상태 카드로 갱신합니다.", metrics: [metric("DB", system.dbStatus || "확인", Number(system.dbErrorCount || 0) ? "amber" : "green"), metric("Center", system.centerConnectionStatus || system.centerApiStatus || "미연결", Number(system.centerApiErrorCount || 0) ? "amber" : "green"), metric("오류", errors, errors ? "amber" : "green")], actions: [["system-refresh", "상태 갱신"], ["center-list", "Center 목록"]] };
+    }
+    if (tabKey === "device-sensor-mapping") return { title: "장치 연결 작성", subtitle: "장치·그룹·매핑 수를 캐시 DOM에서 갱신합니다.", metrics: [metric("장치", settings.devices?.length || 0), metric("그룹", settings.deviceGroups?.length || 0), metric("매핑", settings.deviceSensorMappings?.length || 0)], actions: [["device-list", "장치 목록"], ["group-list", "그룹 목록"]] };
+    return { title: "온실·구역", subtitle: "온실, 구역, 매핑 수를 캐시 DOM에서 갱신합니다.", metrics: [metric("온실", settings.greenhouses?.length || 0), metric("구역", settings.zones?.length || 0), metric("매핑", settings.deviceSensorMappings?.length || 0)], actions: [["greenhouse-list", "온실 목록"], ["zone-list", "구역 목록"]] };
+  }
+
+  _buildR7CachedSettingsPanelPatchNode(tabKey) {
+    const model = this._r7CachedSettingsPanelMetricModel(tabKey);
+    const section = document.createElement("section");
+    section.dataset.r7SettingsCachedPatchPanel = tabKey;
+    section.dataset.r7SettingsPanelPatchMode = "summary-card-dirty-patch";
+    section.dataset.r7SettingsPanelFullHydrate = "not-used-compact-patch";
+    section.setAttribute("data-r7-settings-cached-patch-panel", tabKey);
+    section.setAttribute("data-r7-settings-panel-patch-mode", "summary-card-dirty-patch");
+    section.setAttribute("data-r7-settings-panel-full-hydrate", "not-used-compact-patch");
+    section.style.cssText = "display:grid;gap:12px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;";
+    const header = document.createElement("header");
+    header.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;gap:10px;";
+    const titleWrap = document.createElement("span");
+    titleWrap.style.cssText = "display:grid;gap:4px;min-width:0;";
+    const title = document.createElement("strong");
+    title.dataset.r7SettingsCachedTitle = "true";
+    title.style.cssText = "color:#24323f;font-size:16px;";
+    title.textContent = model.title;
+    const subtitle = document.createElement("span");
+    subtitle.dataset.r7SettingsCachedSubtitle = "true";
+    subtitle.style.cssText = "color:#5d6f62;font-size:12px;line-height:1.5;";
+    subtitle.textContent = model.subtitle;
+    titleWrap.append(title, subtitle);
+    const badge = document.createElement("span");
+    badge.dataset.r7SettingsCachedPatchBadge = "true";
+    badge.style.cssText = "color:#4ca66a;font-size:12px;font-weight:950;white-space:nowrap;";
+    badge.textContent = "캐시 패치";
+    header.append(titleWrap, badge);
+    const grid = document.createElement("div");
+    grid.dataset.r7SettingsCachedMetricGrid = "true";
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;";
+    model.metrics.forEach((item, index) => {
+      const card = document.createElement("span");
+      card.dataset.r7SettingsCachedMetric = item.label;
+      card.dataset.r7SettingsCachedMetricIndex = String(index);
+      card.dataset.r7Tone = item.tone;
+      card.style.cssText = "border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;display:grid;gap:4px;";
+      const label = document.createElement("small");
+      label.style.cssText = "font-size:11px;color:#6d7a70;font-weight:800;";
+      label.textContent = item.label;
+      const value = document.createElement("b");
+      value.dataset.r7SettingsCachedMetricValue = item.label;
+      value.setAttribute("data-r7-settings-cached-metric-value", item.label);
+      value.style.cssText = "font-size:14px;color:#1f3329;";
+      value.textContent = item.value;
+      card.append(label, value);
+      grid.appendChild(card);
+    });
+    const actions = document.createElement("div");
+    actions.dataset.r7SettingsCachedActionRow = "true";
+    actions.style.cssText = "display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;";
+    model.actions.forEach(([kind, label]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.r7SettingsCachedAction = kind;
+      button.dataset.r7OpenSettingsModal = kind;
+      button.setAttribute("data-r7-settings-cached-action", kind);
+      button.setAttribute("data-r7-open-settings-modal", kind);
+      button.style.cssText = "border:1px solid #dcebe0;border-radius:999px;background:#fff;color:#31523b;font-size:12px;font-weight:950;padding:8px 10px;white-space:nowrap;";
+      button.textContent = label;
+      actions.appendChild(button);
+    });
+    section.append(header, grid, actions);
+    return section;
+  }
+
+  _patchR7CachedSettingsPanelMetricValues(tabKey) {
+    const panel = this._r7SettingsPanelCache?.get?.(`settings:${tabKey}`);
+    const patchPanel = panel?.querySelector?.('[data-r7-settings-cached-patch-panel]');
+    if (!patchPanel) return false;
+    const model = this._r7CachedSettingsPanelMetricModel(tabKey);
+    patchPanel.querySelector('[data-r7-settings-cached-title]').textContent = model.title;
+    patchPanel.querySelector('[data-r7-settings-cached-subtitle]').textContent = model.subtitle;
+    model.metrics.forEach((item) => {
+      const value = patchPanel.querySelector(`[data-r7-settings-cached-metric-value="${item.label}"]`);
+      if (value) value.textContent = item.value;
+    });
+    patchPanel.dataset.r7SettingsPanelDirtyPatch = "true";
+    this.setAttribute?.("data-r7-settings-panel-compact-dirty-patch", "true");
+    return true;
+  }
+
   _patchR7CachedSettingsPanelData(tabKey) {
     const panel = this._r7SettingsPanelCache?.get?.(`settings:${tabKey}`);
     if (!panel) return false;
@@ -1726,16 +1827,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (!panel) return false;
     if (panel.dataset.r7CachedPanelHydrated === "true" && !this._r7SettingsPanelDirty?.has?.(tabKey)) {
       this._patchR7CachedSettingsPanelData(tabKey);
+      this._patchR7CachedSettingsPanelMetricValues(tabKey);
       return true;
     }
-    const fullHtml = this._renderR7SubtabPanelForDomain("settings-admin", tabKey);
-    if (!fullHtml) return false;
-    panel.innerHTML = fullHtml;
+    const patchNode = this._buildR7CachedSettingsPanelPatchNode(tabKey);
+    panel.replaceChildren(patchNode);
     panel.dataset.r7CachedPanelHydrated = "true";
     panel.dataset.r7SettingsPanelCache = "persistent-dom";
     panel.dataset.r7SettingsModalCache = "lazy-on-open";
+    panel.dataset.r7SettingsPanelFullHydrate = "not-used-compact-patch";
     this._patchR7CachedSettingsPanelData(tabKey);
+    this._patchR7CachedSettingsPanelMetricValues(tabKey);
     this.setAttribute?.("data-r7-settings-panel-cache-hydrated", tabKey);
+    this.setAttribute?.("data-r7-settings-panel-hydrate-mode", "compact-node-dirty-patch");
     return true;
   }
 
@@ -2082,6 +2186,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _bindSettingsApprovalActions() {
+    this.querySelectorAll("[data-r7-open-settings-modal]").forEach((button) => {
+      if (button.getAttribute("data-r7-cached-action-bound") === "true") return;
+      button.setAttribute("data-r7-cached-action-bound", "true");
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const kind = button.getAttribute("data-r7-open-settings-modal") || "";
+        if (kind === "approval-list") this._openSettingsApprovalListModal();
+        else if (kind === "audit-log") this._openSettingsAuditLogModal();
+        else if (kind === "permission-matrix") this._openSettingsPermissionMatrixModal();
+        else if (kind === "system-refresh") this._markR7SettingsPanelDirty("system-integration");
+        else this.setAttribute?.("data-r7-settings-cached-action-last", kind);
+      });
+    });
     this.querySelectorAll("[data-r7-approval-request-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._submitApprovalRequest(); });
     });
