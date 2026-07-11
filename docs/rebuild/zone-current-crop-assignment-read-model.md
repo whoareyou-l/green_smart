@@ -1,6 +1,6 @@
 # RS-017 Zone Current Crop Assignment Read Model
 
-> 기준 버전: `v1.15.15`
+> 기준 버전: `v1.15.16`
 > Status: zone current crop assignment read model
 > 목적: 구역별 currentCrop 배정 상태를 `currentCropAssignment` 읽기 전용 read model로 분리해 frontend와 API DTO가 같은 경계를 보도록 한다.
 

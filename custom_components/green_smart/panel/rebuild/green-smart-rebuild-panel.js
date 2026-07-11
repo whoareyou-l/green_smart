@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.15";
+const REBUILD_VERSION = "1.15.16";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -338,6 +338,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7SidebarExternalControlResizeObserver = null; this._r7SidebarExternalControlMutationObserver = null; this._r7SidebarExternalControlResizeHandler = null; this._r7SidebarExternalControlSyncRaf = 0;
   }
 
+  _refreshR7MobileSettingsPanelAfterDataLoad() {
+    if (this._activeR7Domain !== "settings-admin") return false;
+    const frame = this.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
+    if (!frame || !this._r7MobileFastPanelMode) return false;
+    const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
+    this.setAttribute?.("data-r7-mobile-settings-data-refresh-mode", "active-panel-hydrate-no-full-render");
+    this._scheduleR7MobileFullSubtabHydration("settings-admin", activeTab);
+    return true;
+  }
+
   r7SettingsGreenhouseZoneData() {
     return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], systemIntegration: {} };
   }
@@ -365,7 +375,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._settingsGreenhouseZoneLoadState = "error";
       this._settingsGreenhouseZoneLoadError = error?.message || "settings-snapshot-load-failed";
     }
-    this.render();
+    if (!this._refreshR7MobileSettingsPanelAfterDataLoad()) this.render();
   }
 
   r7SettingsUsersPermissionsData() {
@@ -376,7 +386,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const requestId = ++this._settingsUsersPermissionsRequestId;
     this._settingsUsersPermissionsLoadState = "loading";
     this._settingsUsersPermissionsLoadError = null;
-    this.render();
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi("GET", REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH);
@@ -402,7 +411,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._settingsUsersPermissionsLoadState = "error";
       this._settingsUsersPermissionsLoadError = error?.message || "settings-users-permissions-load-failed";
     }
-    this.render();
+    if (this.r7SettingsUsersPermissionsData()?.approvalRequired || !this._refreshR7MobileSettingsPanelAfterDataLoad()) this.render();
   }
 
   async _submitApprovalRequest() {
@@ -1630,7 +1639,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const summary = domain === "settings-admin"
       ? `${label} 설정 기준을 먼저 표시합니다. 상세 카드와 목록은 이어서 정리됩니다.`
       : `${domainLabel}의 ${label} 화면으로 이동했습니다. 현재 선택 탭의 핵심 내용을 먼저 표시합니다.`;
-    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-mobile-light-subtab-panel="true" data-r7-mobile-light-subtab-domain="${domain}" data-r7-mobile-light-subtab-key="${tabKey}" data-r7-mobile-subtab-first-paint="summary" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:16px;">${label}</strong><span style="color:#4ca66a;font-size:12px;font-weight:950;">즉시 표시</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">${summary}</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">선택 탭 · ${label}</span><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">도메인 · ${domainLabel}</span></div></section>`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-mobile-light-subtab-panel="true" data-r7-mobile-light-subtab-domain="${domain}" data-r7-mobile-light-subtab-key="${tabKey}" data-r7-mobile-subtab-first-paint="summary" data-r7-mobile-subtab-sla="under-2s" data-r7-mobile-first-paint-target-ms="100" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:16px;">${label}</strong><span style="color:#4ca66a;font-size:12px;font-weight:950;">즉시 표시</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">${summary}</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">선택 탭 · ${label}</span><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">도메인 · ${domainLabel}</span></div></section>`;
   }
 
   _scheduleR7MobileFullSubtabHydration(domain, tabKey) {
@@ -1646,7 +1655,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       if (!fullHtml) return;
       panelSection.innerHTML = fullHtml;
       frame.setAttribute?.("data-r7-mobile-full-subtab-hydrated", "true");
+      frame.setAttribute?.("data-r7-mobile-full-hydrate-target-ms", "2000");
       this.setAttribute?.("data-r7-mobile-subtab-hydration-mode", "delayed-full-after-light-first-paint");
+      this.setAttribute?.("data-r7-mobile-subtab-sla", "under-2s");
       this._bindR7PatchedInteractiveActions();
     }, 120);
   }
@@ -1673,8 +1684,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _patchR7MobileSubtabPanel(domain, tabKey) {
-    const panelHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
-    if (!panelHtml) return false;
     const frame = this.querySelector?.(`[data-r7-domain-visual-frame-domain="${domain}"]`);
     const subtabSection = frame?.querySelector?.('[data-r7-domain-content-card-section="subtabs"]');
     const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
