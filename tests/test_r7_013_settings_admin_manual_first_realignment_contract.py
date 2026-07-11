@@ -15,10 +15,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_013_version_surfaces_are_1_12_45():
-    assert '"version": "1.15.26"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.26"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.26"' in _read(REBUILD_PANEL)
-    assert "v1.15.26" in _read(DOC)
+    assert '"version": "1.15.27"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.27"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.27"' in _read(REBUILD_PANEL)
+    assert "v1.15.27" in _read(DOC)
 
 
 def test_r7_013_doc_declares_manual_first_settings_admin_realignment():
@@ -167,7 +167,8 @@ def test_r7_013_node_smoke_renders_realigned_settings_admin_detail():
       panel.hass = {{ callApi: async () => ({{ contextSource: 'r7-013-readonly-smoke', zones: [] }}) }};
       panel.connectedCallback();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      panel.setR7ActiveDomain('settings-admin');
+      panel._activeR7Domain = 'settings-admin';
+      panel.render();
       const html = panel.innerHTML;
       const required = [
         'data-r7-detail-subpage="settings-admin"',

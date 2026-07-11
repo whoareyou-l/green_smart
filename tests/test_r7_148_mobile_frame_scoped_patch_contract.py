@@ -10,11 +10,11 @@ def source() -> str:
 
 def test_v1_15_14_settings_button_uses_workspace_patch_no_full_render_first():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.26"' in text
+    assert 'const REBUILD_VERSION = "1.15.27"' in text
     block = text[text.index('_openR7SettingsDomainFromMobile()'):text.index('_scheduleR7MobileActiveDomainButtonScroll()', text.index('_openR7SettingsDomainFromMobile()'))]
-    assert 'data-r7-mobile-settings-render-mode", "workspace-patch-no-full-render"' in block
-    assert 'if (this._patchR7MobileActiveDomainPage()) return;' in block
-    assert block.index('if (this._patchR7MobileActiveDomainPage()) return;') < block.index('this.render();')
+    assert 'return this._openR7SettingsDomainFromCache("mobile-settings-button");' in block
+    assert 'data-r7-mobile-settings-render-mode", "cache-shell-no-render-fallback"' in block
+    assert 'this.render();' not in block
 
 
 def test_v1_15_14_subtab_patch_is_frame_scoped_and_rerenders_tabbar_style():

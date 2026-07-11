@@ -19,11 +19,11 @@ def _read(path: Path) -> str:
 
 
 def test_r7_004_version_surfaces_are_1_12_38():
-    assert '"version": "1.15.26"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.26"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.26"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.27"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.27"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.27"' in _read(REBUILD_PANEL)
     for path in (DOC, R7_003_DOC, R7_000_DOC, CURRENT_UI, PRODUCT_PLAN, TARGET_ARCH):
-        assert "v1.15.26" in _read(path)
+        assert "v1.15.27" in _read(path)
 
 
 def test_r7_004_doc_declares_user_selected_settings_admin_scope_and_boundaries():
@@ -147,7 +147,8 @@ def test_r7_004_node_smoke_renders_settings_admin_detail_with_dashboard_preserve
       await new Promise((resolve) => setTimeout(resolve, 0));
       const homeHtml = panel.innerHTML;
       if (!homeHtml.includes('data-r7-main-dashboard')) {{ console.error('data-r7-main-dashboard'); process.exit(1); }}
-      panel.setR7ActiveDomain('settings-admin');
+      panel._activeR7Domain = 'settings-admin';
+      panel.render();
       const html = panel.innerHTML;
       const required = [
         'data-r7-settings-admin-detail',

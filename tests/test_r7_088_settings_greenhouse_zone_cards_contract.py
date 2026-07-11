@@ -35,9 +35,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_088_version_surfaces_are_current():
-    assert '"version": "1.15.26"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.26"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.26"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.27"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.27"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.27"' in _read(REBUILD_PANEL)
 
 
 def test_r7_088_greenhouse_zone_subtab_keeps_reference_card_foundation_after_simplification():

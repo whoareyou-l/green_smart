@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.26";
+const REBUILD_VERSION = "1.15.27";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -1559,7 +1559,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   setR7ActiveDomain(domainKey) {
     const nextDomain = this._normalizeR7Domain(domainKey);
-    if (nextDomain !== "settings-admin") this._r7MobileSettingsFastLanding = false;
+    if (nextDomain === "settings-admin") return this._openR7SettingsDomainFromCache("set-active-domain");
+    this._r7MobileSettingsFastLanding = false;
     this._r7MobileFastPanelMode = false;
     this._r7MobileActiveSubtabScrollRaf = 0;
     if (this._activeR7Domain === nextDomain) return;
@@ -1582,15 +1583,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _openR7SettingsDomainFromMobile() {
+    return this._openR7SettingsDomainFromCache("mobile-settings-button");
+  }
+
+  _openR7SettingsDomainFromCache(source = "settings-navigation") {
+    this.setAttribute?.("data-r7-settings-domain-entry-source", source);
     this.setAttribute?.("data-r7-mobile-settings-route", "dedicated-internal-action");
     this.setAttribute?.("data-r7-mobile-fast-panel-mode", "active-panel-only");
-    this.setAttribute?.("data-r7-mobile-settings-render-mode", "workspace-patch-no-full-render");
+    this.setAttribute?.("data-r7-mobile-settings-render-mode", "cache-shell-no-render-fallback");
     this._r7MobileSettingsFastLanding = true;
     this._r7MobileFastPanelMode = true;
     this._activeR7Domain = "settings-admin";
-    this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": "greenhouse-zones" };
-    if (this._patchR7MobileActiveDomainPage()) return;
-    this.render();
+    this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones" };
+    const patched = this._patchR7MobileActiveDomainPage();
+    this.setAttribute?.("data-r7-settings-domain-cache-entry-result", patched ? "attached" : "missing-workspace");
+    return patched;
   }
 
   _scheduleR7MobileActiveDomainButtonScroll() {
@@ -2070,10 +2077,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (usedSettingsShellCache) {
       this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
       this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
+    } else if (this._activeR7Domain === "settings-admin") {
+      this.setAttribute?.("data-r7-settings-domain-cache-entry-result", "attach-failed-no-render-fallback");
+      this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-cache-attach-failed");
+      return false;
     } else {
       workspace.innerHTML = this.renderR7ActiveDomainPage();
-      if (this._activeR7Domain === "settings-admin") this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-full-render-fallback");
-      else this.setAttribute?.("data-r7-mobile-domain-render-mode", "workspace-innerhtml-only");
+      this.setAttribute?.("data-r7-mobile-domain-render-mode", "workspace-innerhtml-only");
     }
     const activeDomain = this._activeR7Domain;
     this.querySelectorAll?.("[data-r7-sidebar-target]").forEach((button) => {
@@ -2933,9 +2943,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _openR7UserProfileSettings() {
-    this._activeR7Domain = "settings-admin";
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": "users-permissions" };
-    this.render();
+    return this._openR7SettingsDomainFromCache("user-profile-settings");
   }
 
   _performR7HaLogout() {
@@ -5792,8 +5801,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
 if (!customElements.get(REBUILD_ELEMENT_NAME)) {
   customElements.define(REBUILD_ELEMENT_NAME, GreenSmartRebuildPanel);
 }
+class GreenSmartRebuildPanelVersioned extends GreenSmartRebuildPanel {}
 if (!customElements.get(REBUILD_VERSIONED_ELEMENT_NAME)) {
-  customElements.define(REBUILD_VERSIONED_ELEMENT_NAME, GreenSmartRebuildPanel);
+  customElements.define(REBUILD_VERSIONED_ELEMENT_NAME, GreenSmartRebuildPanelVersioned);
 }
 
-export { GreenSmartRebuildPanel, REBUILD_ELEMENT_NAME, REBUILD_VERSIONED_ELEMENT_NAME, REBUILD_PAGES, REBUILD_VERSION, REBUILD_ZONE_CONTEXTS, REBUILD_STAGE_DETAILS };
+export { GreenSmartRebuildPanel, GreenSmartRebuildPanelVersioned, REBUILD_ELEMENT_NAME, REBUILD_VERSIONED_ELEMENT_NAME, REBUILD_PAGES, REBUILD_VERSION, REBUILD_ZONE_CONTEXTS, REBUILD_STAGE_DETAILS };

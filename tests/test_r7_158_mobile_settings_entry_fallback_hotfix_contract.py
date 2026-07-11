@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_24_settings_shell_cache_is_built_from_direct_settings_detail_subpage():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.26"' in text
+    assert 'const REBUILD_VERSION = "1.15.27"' in text
     block = text[text.index('_getOrCreateR7CachedSettingsDomainShell()'):text.index('_attachR7CachedSettingsDomainShell(workspace)', text.index('_getOrCreateR7CachedSettingsDomainShell()'))]
     assert 'R7_DETAIL_SUBPAGES.find((item) => item.key === "settings-admin")' in block
     assert 'template.innerHTML = this.renderR7DomainPageShell(subpage, this.renderR7DetailSubpage(subpage));' in block
@@ -35,5 +35,7 @@ def test_v1_15_24_settings_mobile_entry_prefers_fixed_cache_shell_not_fallback()
     block = text[text.index('_patchR7MobileActiveDomainPage()'):text.index('setR7DomainSubtab', text.index('_patchR7MobileActiveDomainPage()'))]
     assert 'const usedSettingsShellCache = this._activeR7Domain === "settings-admin" && this._attachR7CachedSettingsDomainShell(workspace);' in block
     assert 'settings-shell-cache-show-hide' in block
-    assert 'settings-full-render-fallback' in block
-    assert block.index('usedSettingsShellCache') < block.index('workspace.innerHTML = this.renderR7ActiveDomainPage();')
+    assert 'settings-full-render-fallback' not in block
+    assert 'attach-failed-no-render-fallback' in block
+    settings_fail_block = block[block.index('} else if (this._activeR7Domain === "settings-admin")'):block.index('} else {', block.index('} else if (this._activeR7Domain === "settings-admin")'))]
+    assert 'workspace.innerHTML = this.renderR7ActiveDomainPage();' not in settings_fail_block

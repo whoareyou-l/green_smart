@@ -1,6 +1,6 @@
 # R7-110 Greenhouse Korean status, hard delete, and edit modal
 
-Version: v1.15.26
+Version: v1.15.27
 Status: prod verified
 
 ## Scope

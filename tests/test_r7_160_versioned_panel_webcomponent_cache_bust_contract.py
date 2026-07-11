@@ -17,9 +17,12 @@ def test_v1_15_26_frontend_registers_versioned_webcomponent_name_to_bust_mobile_
 
 def test_v1_15_26_js_defines_base_and_versioned_custom_elements():
     text = PANEL.read_text()
-    assert 'const REBUILD_VERSION = "1.15.26"' in text
+    assert 'const REBUILD_VERSION = "1.15.27"' in text
     assert 'const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";' in text
     assert 'const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;' in text
     assert 'customElements.define(REBUILD_ELEMENT_NAME, GreenSmartRebuildPanel);' in text
-    assert 'customElements.define(REBUILD_VERSIONED_ELEMENT_NAME, GreenSmartRebuildPanel);' in text
+    assert 'class GreenSmartRebuildPanelVersioned extends GreenSmartRebuildPanel {}' in text
+    assert 'customElements.define(REBUILD_VERSIONED_ELEMENT_NAME, GreenSmartRebuildPanelVersioned);' in text
+    assert 'customElements.define(REBUILD_VERSIONED_ELEMENT_NAME, GreenSmartRebuildPanel);' not in text
+    assert 'GreenSmartRebuildPanelVersioned' in text.split('export {', 1)[1]
     assert 'REBUILD_VERSIONED_ELEMENT_NAME' in text.split('export {', 1)[1]
