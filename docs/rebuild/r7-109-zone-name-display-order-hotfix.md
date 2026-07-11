@@ -1,6 +1,6 @@
 # R7-109 Zone name display-order hotfix
 
-Version: v1.15.35
+Version: v1.15.36
 Status: prod verified
 
 ## Problem

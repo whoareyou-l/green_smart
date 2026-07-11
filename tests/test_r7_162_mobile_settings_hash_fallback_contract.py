@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_28_mobile_settings_is_anchor_hash_fallback_not_button_only():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.35"' in text
+    assert 'const REBUILD_VERSION = "1.15.36"' in text
     assert '<a href="#settings-admin" role="button" data-r7-mobile-settings-button="true"' in text
     assert 'data-r7-mobile-route-mode="dedicated-internal-anchor-hash-cache"' in text
     assert 'data-r7-sidebar-target="settings-admin"' in text
