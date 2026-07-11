@@ -1,8 +1,8 @@
-# v1.15.25 HA sidebar-aware width, logout, and mobile nav polish plan
+# v1.15.26 HA sidebar-aware width, logout, and mobile nav polish plan
 
 ## Problems
 
-1. Admin accounts keep the Home Assistant sidebar visible. v1.15.25 root width still uses `100dvw`, so admin mode can become `HA sidebar + Green Smart 100dvw`, pushing domain pages to the right.
+1. Admin accounts keep the Home Assistant sidebar visible. v1.15.26 root width still uses `100dvw`, so admin mode can become `HA sidebar + Green Smart 100dvw`, pushing domain pages to the right.
 2. Collapsed sidebar action buttons should sit immediately outside the sidebar on the right; expanded mode buttons should sit immediately inside the sidebar right edge.
 3. `/auth/logout` and `/logout` return 404 in the running HA container. HA logout must clear frontend auth/session state and restart the auth flow, not navigate to a missing route.
 4. Mobile top nav works but needs visual polish: white background, visible `Green Smart` text, controls order `사용자 → 로그아웃 → 설정`, active-only domain background, and a mobile logout button.

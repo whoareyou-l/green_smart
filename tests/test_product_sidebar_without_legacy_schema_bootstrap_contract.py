@@ -13,9 +13,9 @@ def _read(path: Path) -> str:
 
 
 def test_version_surfaces_are_1_14_36():
-    assert '"version": "1.15.25"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.25"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.25"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.26"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.26"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.26"' in _read(REBUILD_PANEL)
 
 
 def test_schema_bootstrap_is_disabled_by_default_but_explicitly_opt_in():
@@ -35,7 +35,8 @@ def test_schema_bootstrap_is_disabled_by_default_but_explicitly_opt_in():
 
 def test_product_sidebar_only_registers_main_panel_not_legacy_sidebar():
     source = _read(FRONTEND_PANEL)
-    assert "await _register_panel(hass, panel_js_url)" in source
+    assert "panel_component = await hass.async_add_executor_job(_get_panel_component_name)" in source
+    assert "await _register_panel(hass, panel_js_url, panel_component)" in source
     assert "Green Smart" in source
     assert "green_smart main rebuild panel registered successfully" in source
     assert "await _register_legacy_panel" not in source

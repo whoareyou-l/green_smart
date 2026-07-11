@@ -16,18 +16,29 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 _PANEL_URL_PATH = "green_smart"
-_PANEL_COMPONENT = "green-smart-rebuild-panel"
+_PANEL_COMPONENT_BASE = "green-smart-rebuild-panel"
 _PANEL_TITLE = "Green Smart"
 _PANEL_ICON = "mdi:greenhouse"
 _PANEL_STATIC_DIR = Path(__file__).parent / "panel"
 
-def _get_panel_js_url() -> str:
-    """Return main rebuild JS URL with version query string for cache busting."""
+def _get_panel_version() -> str:
+    """Return manifest version for panel cache-busting and versioned custom element names."""
     try:
         manifest = json.loads((Path(__file__).parent / "manifest.json").read_text())
-        version = manifest.get("version", "0")
+        return str(manifest.get("version", "0"))
     except Exception:
-        version = "0"
+        return "0"
+
+
+def _get_panel_component_name(version: str | None = None) -> str:
+    """Return a versioned web component name so HA mobile WebView cannot reuse an old class."""
+    safe_version = str(version or _get_panel_version()).replace(".", "-").replace("_", "-")
+    return f"{_PANEL_COMPONENT_BASE}-v{safe_version}"
+
+
+def _get_panel_js_url() -> str:
+    """Return main rebuild JS URL with version query string for cache busting."""
+    version = _get_panel_version()
     return f"/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v={version}"
 
 
@@ -43,7 +54,8 @@ async def async_setup_panel(hass: HomeAssistant) -> None:
     # URL을 setup 시마다 새로 계산 — Python 모듈 캐시 문제 방지.
     # manifest.json sync read는 executor에서 실행해 HA event loop blocking 경고를 피한다.
     panel_js_url = await hass.async_add_executor_job(_get_panel_js_url)
-    await _register_panel(hass, panel_js_url)
+    panel_component = await hass.async_add_executor_job(_get_panel_component_name)
+    await _register_panel(hass, panel_js_url, panel_component)
 
 
 async def _register_static_path(hass: HomeAssistant) -> None:
@@ -63,12 +75,12 @@ async def _register_static_path(hass: HomeAssistant) -> None:
         _LOGGER.warning("Could not register static path: %s", exc)
 
 
-async def _register_panel(hass: HomeAssistant, module_url: str) -> None:
+async def _register_panel(hass: HomeAssistant, module_url: str, component_name: str) -> None:
     try:
         from homeassistant.components.panel_custom import async_register_panel
         await async_register_panel(
             hass,
-            webcomponent_name=_PANEL_COMPONENT,
+            webcomponent_name=component_name,
             frontend_url_path=_PANEL_URL_PATH,
             sidebar_title=_PANEL_TITLE,
             sidebar_icon=_PANEL_ICON,

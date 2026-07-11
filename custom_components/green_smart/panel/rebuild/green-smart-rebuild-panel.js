@@ -53,8 +53,9 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.25";
+const REBUILD_VERSION = "1.15.26";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
+const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
 const REBUILD_SETTINGS_APPROVAL_REQUEST_API_PATH = "green_smart/rebuild/settings/approval-request";
@@ -5791,5 +5792,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
 if (!customElements.get(REBUILD_ELEMENT_NAME)) {
   customElements.define(REBUILD_ELEMENT_NAME, GreenSmartRebuildPanel);
 }
+if (!customElements.get(REBUILD_VERSIONED_ELEMENT_NAME)) {
+  customElements.define(REBUILD_VERSIONED_ELEMENT_NAME, GreenSmartRebuildPanel);
+}
 
-export { GreenSmartRebuildPanel, REBUILD_ELEMENT_NAME, REBUILD_PAGES, REBUILD_VERSION, REBUILD_ZONE_CONTEXTS, REBUILD_STAGE_DETAILS };
+export { GreenSmartRebuildPanel, REBUILD_ELEMENT_NAME, REBUILD_VERSIONED_ELEMENT_NAME, REBUILD_PAGES, REBUILD_VERSION, REBUILD_ZONE_CONTEXTS, REBUILD_STAGE_DETAILS };

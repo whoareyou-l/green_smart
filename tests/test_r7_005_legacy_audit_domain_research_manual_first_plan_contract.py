@@ -36,7 +36,8 @@ def test_r7_005_audits_legacy_influence_without_calling_main_panel_legacy():
     rebuild = _read(REBUILD_PANEL)
     legacy = _read(LEGACY_PANEL)
 
-    assert '_PANEL_COMPONENT = "green-smart-rebuild-panel"' in frontend
+    assert '_PANEL_COMPONENT_BASE = "green-smart-rebuild-panel"' in frontend
+    assert 'webcomponent_name=component_name' in frontend
     assert '_LEGACY_PANEL_COMPONENT = "green-smart-panel"' not in frontend
     assert "main panel is not the legacy panel" in text
     assert "legacy panel remains a file-only reference asset" in text

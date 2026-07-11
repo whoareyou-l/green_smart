@@ -12,12 +12,14 @@ def _read(path: Path) -> str:
 
 def test_main_sidebar_registers_rebuild_panel_not_legacy_panel():
     source = _read(FRONTEND_PANEL)
-    assert '_PANEL_COMPONENT = "green-smart-rebuild-panel"' in source
+    assert '_PANEL_COMPONENT_BASE = "green-smart-rebuild-panel"' in source
     assert '_PANEL_URL_PATH = "green_smart"' in source
     assert '_PANEL_TITLE = "Green Smart"' in source
     assert 'return f"/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v={version}"' in source
+    assert 'def _get_panel_component_name(version: str | None = None) -> str:' in source
+    assert 'return f"{_PANEL_COMPONENT_BASE}-v{safe_version}"' in source
     register_section = source.split("async def _register_panel", 1)[1].split("def _register_ws_commands", 1)[0]
-    assert "webcomponent_name=_PANEL_COMPONENT" in register_section
+    assert "webcomponent_name=component_name" in register_section
     assert "frontend_url_path=_PANEL_URL_PATH" in register_section
 
 
@@ -41,7 +43,8 @@ def test_setup_registers_only_main_product_panel():
     source = _read(FRONTEND_PANEL)
     setup_section = source.split("async def async_setup_panel", 1)[1].split("async def _register_static_path", 1)[0]
     assert "panel_js_url = await hass.async_add_executor_job(_get_panel_js_url)" in setup_section
-    assert "await _register_panel(hass, panel_js_url)" in setup_section
+    assert "panel_component = await hass.async_add_executor_job(_get_panel_component_name)" in setup_section
+    assert "await _register_panel(hass, panel_js_url, panel_component)" in setup_section
     assert "legacy_panel_js_url" not in setup_section
     assert "await _register_legacy_panel" not in setup_section
 
