@@ -1,6 +1,6 @@
 # RS-019 Environment Impact Read-only Projection
 
-> 기준 버전: `v1.15.34`
+> 기준 버전: `v1.15.35`
 > Status: environment impact read-only projection
 > 목적: `currentCropAssignment + equipmentProfile + dataAvailability`를 기반으로 `영향지도` 화면에 구역별 환경·관수·장치 영향 상태를 읽기 전용 projection으로 표시한다.
 

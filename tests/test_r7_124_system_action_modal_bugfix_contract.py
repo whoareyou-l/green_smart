@@ -33,8 +33,9 @@ def test_r7_124_system_common_modal_close_buttons_include_record_shell_x():
     for marker in (
         'data-r7-record-modal-type="${modal.recordType}"',
         'data-r7-record-modal-close',
-        'closest?.("[data-r7-record-modal-type=\\"system-center-connection\\"]")',
-        'this._closeSettingsDetailActionModal("system-action")',
+        'this._closeR7SettingsRecordModalFromButton(button)',
+        '"system-center-connection": "system-action"',
+        'this._closeSettingsDetailActionModal(closeKind || "all")',
         '[data-r7-settings-system-action-modal-close]',
     ):
         assert marker in panel

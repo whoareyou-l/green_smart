@@ -1,6 +1,6 @@
 # R7-127 Common Sticky Sidebar Component
 
-> 기준 버전: `v1.15.34`
+> 기준 버전: `v1.15.35`
 > Status: planned
 > Purpose: Green Smart rebuild shell sidebar를 공통 컴포넌트 렌더러로 분리하고, 화면을 위/아래로 스크롤해도 자기 grid column 옆에 따라 붙어 있도록 sticky/follow-scroll 정책을 명시한다.
 

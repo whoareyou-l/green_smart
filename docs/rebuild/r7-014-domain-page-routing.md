@@ -1,6 +1,6 @@
 # R7-014 Domain Page Routing
 
-> 기준 버전: `v1.15.34`
+> 기준 버전: `v1.15.35`
 > Status: R7-014 complete
 > Purpose: R7 manual-first domains를 운영 홈 아래에 누적 렌더하지 않고, sidebar/mobile nav 선택에 따라 각 도메인을 실제 page/detail view로 전환한다.
 

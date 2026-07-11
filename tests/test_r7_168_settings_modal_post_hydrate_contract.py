@@ -11,8 +11,8 @@ def source() -> str:
 
 def test_v1_15_34_declares_settings_post_modal_refresh_without_full_render():
     text = source()
-    assert '"version": "1.15.34"' in MANIFEST.read_text()
-    assert 'const REBUILD_VERSION = "1.15.34"' in text
+    assert '"version": "1.15.35"' in MANIFEST.read_text()
+    assert 'const REBUILD_VERSION = "1.15.35"' in text
     assert '_refreshR7SettingsSideModalRootWithoutFullRender(reason = "settings-state-change")' in text
     assert '_refreshR7ActiveSettingsPanelWithoutFullRender(reason = "settings-state-change", tabKey = "")' in text
     assert '_renderOrRefreshR7SettingsPanel(reason = "settings-state-change", tabKey = "")' in text
@@ -62,12 +62,38 @@ def test_v1_15_34_settings_modal_state_changes_use_refresh_helper_not_direct_ren
         assert marker in block
 
 
-def test_v1_15_34_real_card_hydration_path_remains_summary_patch_free():
+def test_v1_15_35_settings_record_modal_x_close_uses_cache_only_refresh_route():
     text = source()
-    hydrate_start = text.index('  _hydrateR7CachedSettingsPanel(tabKey)')
-    hydrate_block = text[hydrate_start:text.index('  _ensureR7SettingsModalRoot()', hydrate_start)]
-    assert 'const fullHtml = this._renderR7SubtabPanelForDomain("settings-admin", tabKey);' in hydrate_block
-    assert 'panel.replaceChildren(...Array.from(template.content.childNodes));' in hydrate_block
-    assert 'real-settings-detail-card' in hydrate_block
-    assert '_buildR7CachedSettingsPanelPatchNode(tabKey)' not in hydrate_block
-    assert 'summary-card-dirty-patch' not in hydrate_block
+    assert 'const REBUILD_VERSION = "1.15.35"' in text
+    assert '_closeR7SettingsRecordModalFromButton(button)' in text
+    block = text[text.index('  _closeR7SettingsRecordModalFromButton'):text.index('  _openSettingsGreenhouseInfoSplitModal()', text.index('  _closeR7SettingsRecordModalFromButton'))]
+    for marker in [
+        '"greenhouse-create": "greenhouse"',
+        '"zone-create": "zone"',
+        '"device-create": "device"',
+        '"device-group-create": "device-group"',
+        '"device-sensor-mapping": "mapping"',
+        '"system-center-connection": "system-action"',
+        'data-r7-settings-record-modal-close-type',
+        'this._closeSettingsDetailActionModal(closeKind || "all");',
+    ]:
+        assert marker in block
+    close_block = text[text.index('  _closeSettingsDetailActionModal(kind = "all")'):text.index('  _closeR7SettingsRecordModalFromButton', text.index('  _closeSettingsDetailActionModal(kind = "all")'))]
+    assert 'data-r7-settings-modal-close-route' in close_block
+    assert 'this._renderOrRefreshR7SettingsPanel("settings-modal-close-cache-only");' in close_block
+
+
+def test_v1_15_35_both_direct_and_delegated_record_close_bindings_use_settings_cache_close():
+    text = source()
+    delegated = text[text.index('  _handleR7SettingsDelegatedClick(event)'):text.index('  _bindR7SettingsDelegatedEvents', text.index('  _handleR7SettingsDelegatedClick(event)'))]
+    direct = text[text.index('  _bindSettingsApprovalActions()'):text.index('  _bindR7DomainNavigation()', text.index('  _bindSettingsApprovalActions()'))]
+    assert "closest('[data-r7-record-modal-close]')" in delegated
+    assert 'this._closeR7SettingsRecordModalFromButton(settingsRecordClose)' in delegated
+    assert 'this.querySelectorAll("[data-r7-record-modal-close]")' in direct
+    assert 'this._closeR7SettingsRecordModalFromButton(button)' in direct
+    assert 'event.stopPropagation();' in direct
+    record_start = text.index('  _bindR7RecordWorkflowActions()')
+    record_block = text[record_start:text.index('  renderR7RecordCommonModalShell', record_start)]
+    assert 'button.closest?.(\'[data-r7-record-modal-mode="settings-create"]\')' in record_block
+    assert 'this.closeR7RecordWorkflowModal();' in record_block
+    assert 'data-r7-record-modal-type=\\"system-center-connection\\"' not in direct

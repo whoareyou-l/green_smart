@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.34";
+const REBUILD_VERSION = "1.15.35";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -842,7 +842,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (kind === "audit-log-edit" || kind === "all") this._settingsAuditLogEditModal = { open: false, state: "idle" };
     if (kind === "role-permission" || kind === "all") this._settingsRolePermissionEditModal = { open: false, state: "idle" };
     if (kind === "system-action" || kind === "all") this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
-    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
+    this.setAttribute?.("data-r7-settings-modal-close-route", `cache-only:${kind}`);
+    this._renderOrRefreshR7SettingsPanel("settings-modal-close-cache-only");
+  }
+
+  _closeR7SettingsRecordModalFromButton(button) {
+    const modal = button?.closest?.("[data-r7-record-modal-type]");
+    const type = modal?.getAttribute?.("data-r7-record-modal-type") || "";
+    const mode = modal?.getAttribute?.("data-r7-record-modal-mode") || "";
+    const closeKind = {
+      "greenhouse-create": "greenhouse",
+      "zone-create": "zone",
+      "device-create": "device",
+      "device-group-create": "device-group",
+      "device-sensor-mapping": "mapping",
+      "system-center-connection": "system-action",
+    }[type] || "";
+    if (!closeKind && mode !== "settings-create") return false;
+    this.setAttribute?.("data-r7-settings-record-modal-close-type", type || mode || "settings-create");
+    this._closeSettingsDetailActionModal(closeKind || "all");
+    return true;
   }
 
 
@@ -2646,6 +2665,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (permissionBucket) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsPermissionMatrixBucket(permissionBucket.getAttribute("data-r7-settings-permission-edit")); return true; }
     const permissionRole = closest('[data-r7-settings-role-permission-list-item-button]');
     if (permissionRole) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsPermissionMatrixRole(permissionRole.getAttribute("data-r7-settings-role-permission-list-item-button") || "admin"); return true; }
+    const settingsRecordClose = closest('[data-r7-record-modal-close]');
+    if (settingsRecordClose && this._closeR7SettingsRecordModalFromButton(settingsRecordClose)) { event.preventDefault?.(); event.stopPropagation?.(); return true; }
     return false;
   }
 
@@ -2778,9 +2799,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this.querySelectorAll("[data-r7-record-modal-close]").forEach((button) => {
       button.addEventListener("click", (event) => {
-        if (button.closest?.("[data-r7-record-modal-type=\"system-center-connection\"]")) {
+        if (this._closeR7SettingsRecordModalFromButton(button)) {
           event.preventDefault();
-          this._closeSettingsDetailActionModal("system-action");
+          event.stopPropagation();
         }
       });
     });
@@ -2807,7 +2828,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this.querySelectorAll("form[data-r7-settings-system-center-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsSystemCenterConnectionForm(form); }));
     this.querySelectorAll("[data-r7-settings-detail-action-modal-close]").forEach((button) => {
-      button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsDetailActionModal(button.getAttribute("data-r7-settings-detail-action-modal-close") || "all"); });
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._closeSettingsDetailActionModal(button.getAttribute("data-r7-settings-detail-action-modal-close") || "all");
+      });
     });
     this.querySelectorAll("form[data-r7-settings-greenhouse-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsGreenhouseCreateForm(form); }));
     this.querySelectorAll("form[data-r7-settings-role-permission-edit-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsRolePermissionEditForm(form); }));
@@ -5380,7 +5405,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
         this.openR7RecordWorkflowModal({ mode: button.dataset.r7RecordActionMode, recordType: button.dataset.r7RecordActionType, seasonId: button.dataset.r7RecordActionSeasonId });
       });
     });
-    this.querySelectorAll("[data-r7-record-modal-close]").forEach((button) => button.addEventListener("click", () => this.closeR7RecordWorkflowModal()));
+    this.querySelectorAll("[data-r7-record-modal-close]").forEach((button) => button.addEventListener("click", (event) => {
+      if (button.closest?.('[data-r7-record-modal-mode="settings-create"]')) return;
+      this.closeR7RecordWorkflowModal();
+    }));
     this.querySelectorAll("[data-r7-growth-survey-image-upload]").forEach((button) => button.addEventListener("click", () => {
       const input = this.querySelector("[data-r7-growth-survey-image-input]");
       input?.click?.();
