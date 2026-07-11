@@ -1,6 +1,6 @@
 # RS-015 Rebuild Panel Async Context Loading
 
-> 기준 버전: `v1.15.16`
+> 기준 버전: `v1.15.17`
 > Status: active frontend async context loading boundary
 > 목적: rebuild panel이 static fixture에만 의존하지 않고 protected home context API를 비동기로 호출해 `crop_cycle/currentCrop` context를 렌더링한다.
 

@@ -1,8 +1,8 @@
 # R7-034 Settings Utility Title + Profile Logout Layout
 
-> 기준 버전: `v1.15.16`
+> 기준 버전: `v1.15.17`
 > Status: R7-034 planned
-> Purpose: 하단으로 이동한 설정 utility가 상세형 사이드바에서도 제목/설명을 갖도록 보정하고, v1.15.16부터 프로필 버튼과 Home Assistant 로그아웃 버튼을 분리한다.
+> Purpose: 하단으로 이동한 설정 utility가 상세형 사이드바에서도 제목/설명을 갖도록 보정하고, v1.15.17부터 프로필 버튼과 Home Assistant 로그아웃 버튼을 분리한다.
 
 ## User request
 

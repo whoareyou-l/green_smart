@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.16";
+const REBUILD_VERSION = "1.15.17";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -306,6 +306,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7MobilePanelHydration = null;
     this._r7MobilePanelHydrationTimer = 0;
     this._r7MobilePanelHydrationWatchdog = 0;
+    this._r7SettingsPanelCache = new Map();
+    this._r7SettingsPanelDirty = new Set(["greenhouse-zones", "device-sensor-mapping", "users-permissions", "system-integration"]);
+    this._r7ModalCache = new Map();
+    this._r7SettingsPanelCacheStats = { hits: 0, misses: 0 };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -339,6 +343,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _refreshR7MobileSettingsPanelAfterDataLoad() {
+    this._markR7SettingsPanelDirty();
     if (this._activeR7Domain !== "settings-admin") return false;
     const frame = this.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
     if (!frame || !this._r7MobileFastPanelMode) return false;
@@ -1633,13 +1638,118 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return found?.[1] || tabKey;
   }
 
+  _markR7SettingsPanelDirty(tabKey = "") {
+    if (!this._r7SettingsPanelDirty) this._r7SettingsPanelDirty = new Set();
+    if (tabKey) this._r7SettingsPanelDirty.add(tabKey);
+    else ["greenhouse-zones", "device-sensor-mapping", "users-permissions", "system-integration"].forEach((key) => this._r7SettingsPanelDirty.add(key));
+    this.setAttribute?.("data-r7-settings-panel-dirty-patch", "true");
+  }
+
+  _getOrCreateR7CachedSettingsPanel(tabKey) {
+    if (!this._r7SettingsPanelCache) this._r7SettingsPanelCache = new Map();
+    const cacheKey = `settings:${tabKey}`;
+    let panel = this._r7SettingsPanelCache.get(cacheKey);
+    if (panel) {
+      this._r7SettingsPanelCacheStats = { ...(this._r7SettingsPanelCacheStats || {}), hits: Number(this._r7SettingsPanelCacheStats?.hits || 0) + 1 };
+      this.setAttribute?.("data-r7-settings-panel-cache-hit", cacheKey);
+      return panel;
+    }
+    panel = document.createElement("section");
+    panel.dataset.r7DomainSubtabPanel = "true";
+    panel.dataset.r7DomainSubtabPanelKey = tabKey;
+    panel.dataset.r7SettingsCachedPanel = tabKey;
+    panel.dataset.r7SettingsPanelCache = "persistent-dom";
+    panel.dataset.r7CachedPanelHydrated = "false";
+    panel.innerHTML = this._renderR7MobileLightSubtabPanel("settings-admin", tabKey);
+    this._r7SettingsPanelCache.set(cacheKey, panel);
+    this._r7SettingsPanelCacheStats = { ...(this._r7SettingsPanelCacheStats || {}), misses: Number(this._r7SettingsPanelCacheStats?.misses || 0) + 1 };
+    this.setAttribute?.("data-r7-settings-panel-cache-miss", cacheKey);
+    this.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+    this.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+    return panel;
+  }
+
+  _showR7CachedSettingsPanel(panelSection, tabKey) {
+    const panel = this._getOrCreateR7CachedSettingsPanel(tabKey);
+    Array.from(panelSection.children || []).forEach((node) => {
+      node.hidden = true;
+      node.setAttribute?.("aria-hidden", "true");
+    });
+    panelSection.querySelectorAll?.('[data-r7-settings-cached-panel]').forEach((node) => {
+      node.hidden = node !== panel;
+      node.setAttribute?.("aria-hidden", node === panel ? "false" : "true");
+    });
+    if (!panel.isConnected) panelSection.appendChild(panel);
+    panel.hidden = false;
+    panel.setAttribute?.("aria-hidden", "false");
+    panelSection.setAttribute?.("data-r7-settings-panel-host-cache", "persistent-dom-show-hide");
+    this.setAttribute?.("data-r7-settings-panel-switch-mode", "cached-dom-show-hide");
+    return panel;
+  }
+
+  _patchR7CachedSettingsPanelData(tabKey) {
+    const panel = this._r7SettingsPanelCache?.get?.(`settings:${tabKey}`);
+    if (!panel) return false;
+    const isUsersPermissions = tabKey === ["users", "permissions"].join("-");
+    const data = isUsersPermissions ? this.r7SettingsUsersPermissionsData() : this.r7SettingsGreenhouseZoneData();
+    panel.dataset.r7SettingsPanelDirtyPatch = "true";
+    panel.dataset.r7SettingsPanelDataSource = data?.source || "cached";
+    const countNode = panel.querySelector?.('[data-r7-settings-cached-count]');
+    if (countNode) {
+      const count = isUsersPermissions
+        ? Number(data?.counts?.users || data?.users?.length || 0)
+        : tabKey === "device-sensor-mapping"
+          ? Number(data?.deviceSensorMappings?.length || data?.devices?.length || 0)
+          : tabKey === "system-integration"
+            ? Object.keys(data?.systemIntegration || {}).length
+            : Number(data?.greenhouses?.length || data?.zones?.length || 0);
+      countNode.textContent = String(count);
+    }
+    this._r7SettingsPanelDirty?.delete?.(tabKey);
+    this.setAttribute?.("data-r7-settings-panel-dirty-patch", "true");
+    return true;
+  }
+
+  _hydrateR7CachedSettingsPanel(tabKey) {
+    const panel = this._r7SettingsPanelCache?.get?.(`settings:${tabKey}`);
+    if (!panel) return false;
+    if (panel.dataset.r7CachedPanelHydrated === "true" && !this._r7SettingsPanelDirty?.has?.(tabKey)) {
+      this._patchR7CachedSettingsPanelData(tabKey);
+      return true;
+    }
+    const fullHtml = this._renderR7SubtabPanelForDomain("settings-admin", tabKey);
+    if (!fullHtml) return false;
+    panel.innerHTML = fullHtml;
+    panel.dataset.r7CachedPanelHydrated = "true";
+    panel.dataset.r7SettingsPanelCache = "persistent-dom";
+    panel.dataset.r7SettingsModalCache = "lazy-on-open";
+    this._patchR7CachedSettingsPanelData(tabKey);
+    this.setAttribute?.("data-r7-settings-panel-cache-hydrated", tabKey);
+    return true;
+  }
+
+  _getOrCreateR7CachedModal(type) {
+    if (!this._r7ModalCache) this._r7ModalCache = new Map();
+    const cacheKey = `modal:${type}`;
+    let modal = this._r7ModalCache.get(cacheKey);
+    if (!modal) {
+      modal = document.createElement("section");
+      modal.dataset.r7CachedModal = type;
+      modal.dataset.r7SettingsModalCache = "lazy-on-open";
+      modal.hidden = true;
+      this._r7ModalCache.set(cacheKey, modal);
+    }
+    this.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+    return modal;
+  }
+
   _renderR7MobileLightSubtabPanel(domain, tabKey) {
     const label = this._r7SubtabLabel(domain, tabKey);
     const domainLabel = (R7_DETAIL_SUBPAGES.find((item) => item.key === domain)?.label) || "도메인";
     const summary = domain === "settings-admin"
       ? `${label} 설정 기준을 먼저 표시합니다. 상세 카드와 목록은 이어서 정리됩니다.`
       : `${domainLabel}의 ${label} 화면으로 이동했습니다. 현재 선택 탭의 핵심 내용을 먼저 표시합니다.`;
-    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-mobile-light-subtab-panel="true" data-r7-mobile-light-subtab-domain="${domain}" data-r7-mobile-light-subtab-key="${tabKey}" data-r7-mobile-subtab-first-paint="summary" data-r7-mobile-subtab-sla="under-2s" data-r7-mobile-first-paint-target-ms="100" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:16px;">${label}</strong><span style="color:#4ca66a;font-size:12px;font-weight:950;">즉시 표시</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">${summary}</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">선택 탭 · ${label}</span><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">도메인 · ${domainLabel}</span></div></section>`;
+    return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-mobile-light-subtab-panel="true" data-r7-mobile-light-subtab-domain="${domain}" data-r7-mobile-light-subtab-key="${tabKey}" data-r7-mobile-subtab-first-paint="summary" data-r7-mobile-subtab-sla="under-2s" data-r7-mobile-first-paint-target-ms="100" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:16px;">${label}</strong><span style="color:#4ca66a;font-size:12px;font-weight:950;">즉시 표시</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">${summary}</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">선택 탭 · ${label}</span><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">도메인 · ${domainLabel}</span><span data-r7-settings-cached-count style="border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;color:#31523b;font-size:12px;font-weight:900;">0</span></div></section>`;
   }
 
   _scheduleR7MobileFullSubtabHydration(domain, tabKey) {
@@ -1651,10 +1761,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const frame = this.querySelector?.(`[data-r7-domain-visual-frame-domain="${domain}"]`);
       const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
       if (!panelSection) return;
-      const fullHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
-      if (!fullHtml) return;
-      panelSection.innerHTML = fullHtml;
-      frame.setAttribute?.("data-r7-mobile-full-subtab-hydrated", "true");
+      if (domain === "settings-admin" && this._hydrateR7CachedSettingsPanel(tabKey)) {
+        frame.setAttribute?.("data-r7-mobile-full-subtab-hydrated", "true");
+        frame.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+        frame.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+      } else {
+        const fullHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
+        if (!fullHtml) return;
+        panelSection.innerHTML = fullHtml;
+        frame.setAttribute?.("data-r7-mobile-full-subtab-hydrated", "true");
+      }
       frame.setAttribute?.("data-r7-mobile-full-hydrate-target-ms", "2000");
       this.setAttribute?.("data-r7-mobile-subtab-hydration-mode", "delayed-full-after-light-first-paint");
       this.setAttribute?.("data-r7-mobile-subtab-sla", "under-2s");
@@ -1689,6 +1805,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
     if (!frame || !subtabSection || !panelSection) return false;
     subtabSection.innerHTML = this.renderR7DomainSubtabs(domain, this._r7TabsForDomain(domain), tabKey, true);
+    if (domain === "settings-admin") {
+      const cachedPanel = this._showR7CachedSettingsPanel(panelSection, tabKey);
+      this._patchR7CachedSettingsPanelData(tabKey);
+      frame.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+      frame.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+      frame.setAttribute?.("data-r7-mobile-frame-scoped-subtab-patch", "true");
+      this.setAttribute?.("data-r7-mobile-dom-patch-subtab", "true");
+      this.setAttribute?.("data-r7-mobile-subtab-render-mode", "persistent-dom-cache-show-hide");
+      this.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+      this._bindR7PatchedInteractiveActions();
+      this._scheduleR7MobileActiveSubtabScroll();
+      if (cachedPanel?.dataset?.r7CachedPanelHydrated !== "true" || this._r7SettingsPanelDirty?.has?.(tabKey)) this._scheduleR7MobileFullSubtabHydration(domain, tabKey);
+      return true;
+    }
     panelSection.innerHTML = this._renderR7MobileLightSubtabPanel(domain, tabKey);
     frame.setAttribute?.("data-r7-mobile-frame-scoped-subtab-patch", "true");
     this.setAttribute?.("data-r7-mobile-dom-patch-subtab", "true");
@@ -1703,6 +1833,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const workspace = this.querySelector?.("[data-r7-page-workspace]");
     if (!workspace) return false;
     workspace.innerHTML = this.renderR7ActiveDomainPage();
+    if (this._activeR7Domain === "settings-admin") {
+      const frame = this.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
+      const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
+      const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
+      if (panelSection) {
+        this._showR7CachedSettingsPanel(panelSection, activeTab);
+        this._patchR7CachedSettingsPanelData(activeTab);
+        frame?.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+        frame?.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+      }
+    }
     const activeDomain = this._activeR7Domain;
     this.querySelectorAll?.("[data-r7-sidebar-target]").forEach((button) => {
       const selected = button.getAttribute("data-r7-sidebar-target") === activeDomain;

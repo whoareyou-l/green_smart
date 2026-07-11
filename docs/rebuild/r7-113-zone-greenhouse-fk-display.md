@@ -1,6 +1,6 @@
 # R7-113 Zone greenhouse FK display and stable ordering
 
-Version: v1.15.16
+Version: v1.15.17
 Status: prod verified
 
 ## User report
@@ -92,5 +92,5 @@ Stable log window: no errors.
 - Focused contracts: pass
 - Full suite: `1508 passed`
 - HA config check: pass
-- Served prod asset marker: `REBUILD_VERSION = "1.15.16"`
+- Served prod asset marker: `REBUILD_VERSION = "1.15.17"`
 - Prod FK display smoke: pass

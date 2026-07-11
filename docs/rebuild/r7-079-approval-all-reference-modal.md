@@ -1,6 +1,6 @@
 # R7-079 Approval-all reference modal
 
-Status: current baseline for `v1.15.16`.
+Status: current baseline for `v1.15.17`.
 
 ## Goal
 
