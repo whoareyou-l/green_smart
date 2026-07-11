@@ -1,6 +1,6 @@
 # R7-027 Sidebar Role Layout and Settings Subtab Hotfix
 
-> 기준 버전: `v1.15.17`
+> 기준 버전: `v1.15.18`
 > Status: R7-027 planned
 > Purpose: 사용자 QA에서 확인된 설정 하위탭 미동작과 sidebar UX 요구를 수정한다.
 

@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_09_mobile_fast_panel_mode_is_lazy_not_eager():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.17"' in text
+    assert 'const REBUILD_VERSION = "1.15.18"' in text
     assert 'this._r7MobileFastPanelMode = false;' in text
     assert 'data-r7-mobile-fast-panel-mode", "active-panel-only"' in text
     assert 'renderR7PanelsForDomain(domainKey, tabs, activeTab, renderer, fullRenderer) {' in text

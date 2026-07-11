@@ -112,8 +112,8 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-105 adds greenhouse FK select + automatic next zone-name calculation to the zone-create modal.
     # R7-112 adds zone-list footer edit/delete actions and reuses the zone-create modal as a PATCH-backed zone edit modal.
     # R7-115 rebuilds Settings device/sensor mapping into image-like device/group/mapping cards and a mapping list.
-    # R7-115/v1.15.17 adds device/group create modals that reuse the greenhouse-create common modal grammar.
-    # R7-116/v1.15.17 wires Settings users-permissions cards to real approval/permission/user role APIs.
+    # R7-115/v1.15.18 adds device/group create modals that reuse the greenhouse-create common modal grammar.
+    # R7-116/v1.15.18 wires Settings users-permissions cards to real approval/permission/user role APIs.
     # R7-117 adds DB-backed reject/edit mutations for the selected Settings audit-log row.
     # R7-118 reworks the audit popup into DB-column user list/detail and a growth-common edit modal.
     # R7-120 adds the Settings system-integration CDB 3/3/1 content-card slice while keeping the rebuild surface bounded.
@@ -121,6 +121,6 @@ def test_legacy_panel_still_exists_but_is_not_the_rebuild_start_surface():
     # R7-124 adds Center list modal + system-action button/close bugfixes while preserving the bounded rebuild surface.
     # R7-125 adds row selection, non-throwing update errors, modal action footer fixes, and explicit action-card summaries.
     # R7-128 adds device connection authoring, device/group list modals, and group candidate multi-select.
-    # v1.15.17 separates profile/logout controls and adds mobile top two-row navigation while keeping the rebuild surface bounded.
-    # v1.15.17 adds mobile settings persistent DOM cache helpers (panel cache, dirty patch, lazy modal cache).
-    assert len(rebuild.splitlines()) < 5435
+    # v1.15.18 separates profile/logout controls and adds mobile top two-row navigation while keeping the rebuild surface bounded.
+    # v1.15.18 adds mobile settings lazy modal cache mount/hide helpers on top of persistent panel cache.
+    assert len(rebuild.splitlines()) < 5505

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.17";
+const REBUILD_VERSION = "1.15.18";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -436,6 +436,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _openSettingsApprovalModal(request) {
     this._settingsApprovalListModal = { open: false };
     this._settingsApprovalModal = { open: true, request };
+    if (this._mountR7CachedSettingsModal("approval-detail")) return;
     this.render();
   }
 
@@ -448,16 +449,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsApprovalListModal = { open: true };
+    if (this._mountR7CachedSettingsModal("approval-list")) return;
     this.render();
   }
 
   _closeSettingsApprovalListModal() {
     this._settingsApprovalListModal = { open: false };
+    if (this._hideR7CachedSettingsModal("approval-list")) return;
     this.render();
   }
 
   _selectSettingsApprovalListRequest(requestId) {
     this._settingsApprovalListModal = { ...(this._settingsApprovalListModal || {}), open: true, selectedId: requestId };
+    if (this._mountR7CachedSettingsModal("approval-list")) return;
     this.render();
   }
 
@@ -470,16 +474,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsAuditLogModal = { open: true };
+    if (this._mountR7CachedSettingsModal("audit-log")) return;
     this.render();
   }
 
   _closeSettingsAuditLogModal() {
     this._settingsAuditLogModal = { open: false };
+    if (this._hideR7CachedSettingsModal("audit-log")) return;
     this.render();
   }
 
   _selectSettingsAuditLogRow(rowId) {
     this._settingsAuditLogModal = { ...(this._settingsAuditLogModal || {}), open: true, selectedId: rowId };
+    if (this._mountR7CachedSettingsModal("audit-log")) return;
     this.render();
   }
 
@@ -543,6 +550,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsAuditLogModal = { open: false };
     this._settingsRolePermissionEditModal = { open: false, state: "idle" };
     this._settingsPermissionMatrixModal = { open: true, selectedRole: this._settingsPermissionMatrixModal?.selectedRole || "admin" };
+    if (this._mountR7CachedSettingsModal("permission-matrix")) return;
     this.render();
   }
 
@@ -552,16 +560,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
+    if (this._hideR7CachedSettingsModal("permission-matrix")) return;
     this.render();
   }
 
   _selectSettingsPermissionMatrixBucket(bucket) {
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: bucket };
+    if (this._mountR7CachedSettingsModal("permission-matrix")) return;
     this.render();
   }
 
   _selectSettingsPermissionMatrixRole(role) {
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedRole: role || "admin" };
+    if (this._mountR7CachedSettingsModal("permission-matrix")) return;
     this.render();
   }
 
@@ -1725,6 +1736,57 @@ class GreenSmartRebuildPanel extends HTMLElement {
     panel.dataset.r7SettingsModalCache = "lazy-on-open";
     this._patchR7CachedSettingsPanelData(tabKey);
     this.setAttribute?.("data-r7-settings-panel-cache-hydrated", tabKey);
+    return true;
+  }
+
+  _ensureR7SettingsModalRoot() {
+    let root = this.querySelector?.('[data-r7-settings-modal-root="lazy-cache"]');
+    if (!root) {
+      root = document.createElement("section");
+      root.dataset.r7SettingsModalRoot = "lazy-cache";
+      root.dataset.r7SettingsModalCache = "lazy-on-open";
+      this.appendChild(root);
+    }
+    this.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+    return root;
+  }
+
+  _renderR7CachedSettingsModalHtml(type) {
+    if (type === "approval-detail") return this["renderR7Settings" + "ApprovalModal"]();
+    if (type === "approval-list") return this["renderR7Settings" + "ApprovalListModal"]();
+    if (type === "audit-log") return this["renderR7Settings" + "AuditLogModal"]();
+    if (type === "permission-matrix") return this["renderR7Settings" + "PermissionMatrixModal"]();
+    return `<template data-r7-settings-cached-modal-empty="${type}"></template>`;
+  }
+
+  _mountR7CachedSettingsModal(type) {
+    const root = this._ensureR7SettingsModalRoot();
+    const modal = this._getOrCreateR7CachedModal(type);
+    modal.innerHTML = this._renderR7CachedSettingsModalHtml(type);
+    modal.hidden = false;
+    modal.dataset.r7SettingsModalCache = "lazy-on-open";
+    modal.dataset.r7SettingsModalCacheMounted = type;
+    root.replaceChildren(modal);
+    root.hidden = false;
+    this.setAttribute?.("data-r7-settings-modal-cache-mounted", type);
+    this.setAttribute?.("data-r7-settings-modal-render-mode", "lazy-cache-on-open-no-full-render");
+    this._bindSettingsApprovalActions();
+    return true;
+  }
+
+  _hideR7CachedSettingsModal(type = "all") {
+    const root = this.querySelector?.('[data-r7-settings-modal-root="lazy-cache"]');
+    if (!root) return false;
+    if (type === "all") {
+      root.querySelectorAll?.('[data-r7-cached-modal]').forEach((modal) => { modal.hidden = true; });
+      root.replaceChildren();
+    } else {
+      const modal = this._r7ModalCache?.get?.(`modal:${type}`);
+      if (modal) modal.hidden = true;
+      root.replaceChildren();
+    }
+    root.hidden = true;
+    this.setAttribute?.("data-r7-settings-modal-cache-hidden", type);
     return true;
   }
 
