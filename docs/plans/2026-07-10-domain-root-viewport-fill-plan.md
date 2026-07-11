@@ -1,8 +1,8 @@
-# v1.15.37 도메인 루트 viewport fill 계획
+# v1.15.38 도메인 루트 viewport fill 계획
 
 ## 현재 증상
 
-v1.15.37에서 도메인 카드 외곽(`data-r7-domain-visual-frame`, `data-r7-domain-content-card`)에는 안전한 `width:100%; max-width:100%; box-sizing:border-box;`를 적용했다. 그러나 실제 화면에서는 카드가 여전히 약 600px 폭에서 멈추고 오른쪽에 큰 빈 영역이 남았다.
+v1.15.38에서 도메인 카드 외곽(`data-r7-domain-visual-frame`, `data-r7-domain-content-card`)에는 안전한 `width:100%; max-width:100%; box-sizing:border-box;`를 적용했다. 그러나 실제 화면에서는 카드가 여전히 약 600px 폭에서 멈추고 오른쪽에 큰 빈 영역이 남았다.
 
 스크린샷 기준으로 카드 내부는 찢어지지 않았고, 카드도 자기 부모 안에서는 정상적으로 채워져 있다. 문제는 카드 내부가 아니라 더 상위의 Green Smart custom element / root main / HA sidebar hidden mode 폭 계산이다.
 
@@ -56,7 +56,7 @@ box-sizing:border-box;
 
 ### 3. 내부 card 안전 규칙 유지
 
-v1.15.37의 안전 규칙은 유지한다.
+v1.15.38의 안전 규칙은 유지한다.
 
 - domain frame/content card: `safe-fill`
 - hero: `safe-natural`
@@ -76,7 +76,7 @@ v1.15.37의 안전 규칙은 유지한다.
 3. Focused pytest + JS/Python syntax.
 4. Full pytest.
 5. Prod 반영 후 served smoke:
-   - version 1.15.37
+   - version 1.15.38
    - host policy marker 존재
    - hidden mode width policy marker 존재
    - safe-fill/safe-natural 유지

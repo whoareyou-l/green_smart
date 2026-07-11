@@ -41,9 +41,9 @@ def _fragment(html: str, marker: str, next_marker: str) -> str:
 
 
 def test_r7_092_version_surfaces_are_1_14_17():
-    assert '"version": "1.15.37"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.37"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.37"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.38"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.38"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.38"' in _read(REBUILD_PANEL)
 
 
 def test_r7_092_info_card_headers_have_common_status_badges():
@@ -83,7 +83,7 @@ def test_r7_092_card_layout_is_two_rows_then_full_width_zone_list():
         'data-r7-settings-info-card="equipment-composition"',
         'data-r7-record-card-shell="settings-greenhouse-create"',
         'data-r7-record-card-shell="settings-zone-create"',
-        'data-r7-record-card-shell="settings-equipment-mapping"',
+        'data-r7-record-card-shell="settings-equipment-check"',
         'data-r7-common-recent-panel="settings-zone-list"',
     ]
     positions = [html.index(marker) for marker in order]
@@ -95,11 +95,18 @@ def test_r7_092_required_cards_exist_with_expected_titles():
     for marker in [
         'data-r7-settings-info-card="equipment-composition"',
         'data-r7-record-card-shell="settings-greenhouse-create"',
-        'data-r7-record-card-shell="settings-equipment-mapping"',
+        'data-r7-record-card-shell="settings-equipment-check"',
     ]:
         assert marker in html
-    for phrase in ['장비 구성', '온실 생성', '구역 생성', '장치 연결 작성', '+ 새 온실 추가', '+ 새 구역 추가', '장치 연결 작성']:
+    for phrase in ['장비 구성', '온실 생성', '구역 생성', '장치 확인', '+ 새 온실 추가', '+ 새 구역 추가']:
         assert phrase in html
+    marker_at = html.index('data-r7-record-card-shell="settings-equipment-check"')
+    start = html.rindex('<article', 0, marker_at)
+    end = html.index('</article>', marker_at)
+    equipment_check = html[start:end]
+    assert 'data-r7-cdb-card-type="button-one"' in equipment_check
+    assert 'data-r7-settings-equipment-info-shortcut-button' in equipment_check
+    assert 'data-r7-settings-device-sensor-mapping-button' not in equipment_check
 
 
 def test_r7_092_documented():

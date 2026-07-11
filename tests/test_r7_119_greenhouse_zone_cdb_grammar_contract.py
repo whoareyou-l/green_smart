@@ -41,9 +41,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_119_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.37"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.37"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.37"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.38"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.38"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.38"' in _read(REBUILD_PANEL)
 
 
 def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
@@ -55,7 +55,8 @@ def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
     assert 'data-r7-cdb-layout-row="list"' in html
     assert html.count('data-r7-cdb-common-card="summary-card"') >= 3
     assert html.count('data-r7-cdb-card-type="summary"') >= 3
-    assert html.count('data-r7-cdb-card-type="button-two"') >= 3
+    assert html.count('data-r7-cdb-card-type="button-two"') >= 2
+    assert html.count('data-r7-cdb-card-type="button-one"') >= 1
     assert html.count('data-r7-cdb-card-type="list"') >= 1
     for card in ('greenhouse-basic-info', 'zone-basic-info', 'equipment-composition'):
         start = html.index(f'data-r7-settings-greenhouse-summary-card="{card}"')
@@ -63,34 +64,47 @@ def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
         snippet = html[start:end]
         assert 'data-r7-cdb-card-type="summary"' in snippet
         assert 'data-r7-cdb-common-card="summary-card"' in snippet
-    for card in ('settings-greenhouse-create', 'settings-zone-create', 'settings-equipment-mapping'):
+    for card in ('settings-greenhouse-create', 'settings-zone-create'):
         marker_at = html.index(f'data-r7-settings-create-card="{card}"')
         start = html.rindex('<article', 0, marker_at)
         end = html.index('</article>', marker_at)
         snippet = html[start:end]
         assert 'data-r7-cdb-card-type="button-two"' in snippet
         assert 'data-r7-cdb-common-card="button-2-card"' in snippet
+    marker_at = html.index('data-r7-settings-check-card="settings-equipment-check"')
+    start = html.rindex('<article', 0, marker_at)
+    end = html.index('</article>', marker_at)
+    snippet = html[start:end]
+    assert 'data-r7-cdb-card-type="button-one"' in snippet
+    assert 'data-r7-cdb-common-card="button-1-card"' in snippet
+    assert 'data-r7-settings-device-sensor-mapping-button' not in snippet
+    assert 'data-r7-settings-equipment-info-shortcut-button' in snippet
 
 
-def test_r7_119_greenhouse_zone_action_row_is_three_button_cards_in_order():
+def test_r7_119_greenhouse_zone_action_row_has_two_create_cards_then_equipment_check():
     html = _render_greenhouse_zones()
     greenhouse = 'data-r7-settings-create-card="settings-greenhouse-create"'
     zone = 'data-r7-settings-create-card="settings-zone-create"'
-    mapping = 'data-r7-settings-create-card="settings-equipment-mapping"'
+    mapping = 'data-r7-settings-check-card="settings-equipment-check"'
     assert greenhouse in html
     assert zone in html
     assert mapping in html
     assert html.index(greenhouse) < html.index(zone) < html.index(mapping)
-    for text in ('온실 생성', '+ 새 온실 추가', '온실 정보', '구역 생성', '+ 새 구역 추가', '구역 목록', '장치 연결 작성', '장치 연결 작성', '장치 목록'):
+    for text in ('온실 생성', '+ 새 온실 추가', '온실 정보', '구역 생성', '+ 새 구역 추가', '구역 목록', '장치 확인'):
         assert text in html
+    mapping_at = html.index(mapping)
+    mapping_start = html.rindex('<article', 0, mapping_at)
+    mapping_end = html.index('</article>', mapping_at)
+    mapping_snippet = html[mapping_start:mapping_end]
+    assert '장치 연결 작성' not in mapping_snippet
+    assert '장치 목록' not in mapping_snippet
 
 
-def test_r7_119_greenhouse_zone_button_two_cards_have_common_subtitles():
+def test_r7_119_greenhouse_zone_action_cards_have_common_subtitles():
     html = _render_greenhouse_zones()
     expectations = {
         'settings-greenhouse-create': '새 온실 없음',
         'settings-zone-create': '새 구역 없음',
-        'settings-equipment-mapping': '매핑 확인 필요',
     }
     for card, subtitle in expectations.items():
         marker_at = html.index(f'data-r7-settings-create-card="{card}"')
@@ -100,9 +114,16 @@ def test_r7_119_greenhouse_zone_button_two_cards_have_common_subtitles():
         assert 'data-r7-cdb-card-type="button-two"' in snippet
         assert 'data-r7-common-card-subtitle' in snippet
         assert subtitle in snippet
+    marker_at = html.index('data-r7-settings-check-card="settings-equipment-check"')
+    start = html.rindex('<article', 0, marker_at)
+    end = html.index('</article>', marker_at)
+    snippet = html[start:end]
+    assert 'data-r7-cdb-card-type="button-one"' in snippet
+    assert 'data-r7-common-card-subtitle' in snippet
+    assert '선택 구역 장치' in snippet
 
 
 def test_r7_119_documented():
     doc = _read(DOC)
-    for phrase in ('CDB card grammar hotfix in v1.15.37', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card'):
+    for phrase in ('CDB card grammar hotfix in v1.15.38', 'summary row: 3 summary cards', 'action row: 2 two-button cards + 1 one-button equipment check card', 'list row: 1 list card'):
         assert phrase in doc

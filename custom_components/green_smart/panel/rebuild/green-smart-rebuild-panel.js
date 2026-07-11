@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.37";
+const REBUILD_VERSION = "1.15.38";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -4398,7 +4398,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const createCards = [
       createCard({ kind: "settings-greenhouse-create", title: "온실 생성", icon: "mdi:greenhouse", primary: "새 온실 없음", note: "온실을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 온실 추가", addAttr: 'data-r7-settings-greenhouse-create-button', shortcutLabel: "온실 정보", shortcutAttr: 'data-r7-settings-greenhouse-info-shortcut-button' }),
       createCard({ kind: "settings-zone-create", title: "구역 생성", icon: "mdi:plus-circle-outline", primary: "새 구역 없음", note: "구역을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 구역 추가", addAttr: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button', shortcutLabel: "구역 목록", shortcutAttr: 'data-r7-settings-zone-list-shortcut-button' }),
-      createCard({ kind: "settings-equipment-mapping", title: "장치 연결 작성", icon: "mdi:devices", primary: "매핑 확인 필요", note: "선택 구역의 장치와 그룹을 확인합니다", addLabel: "장치 연결 작성", addAttr: 'data-r7-settings-device-sensor-mapping-button', shortcutLabel: "장치 목록", shortcutAttr: 'data-r7-settings-equipment-info-shortcut-button' }),
+      this.renderR7CdbButtonOneCard({ kind: "settings-equipment-check", section: "settings-equipment-check", icon: "mdi:devices", title: "장치 확인", subtitle: "선택 구역 장치", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", tone: selectedUnmapped ? "amber" : "blue", rows: [this._r7SettingsGreenhouseValueRow("센서", `${selectedSensors}개`), this._r7SettingsGreenhouseValueRow("장치", `${selectedDevices}개`), this._r7SettingsGreenhouseValueRow("미연결", `${selectedUnmapped}개`)], rowKind: "settings-equipment-check", buttonLabel: "장치 확인", buttonIcon: "mdi:devices", buttonTone: "blue", buttonAttrs: 'data-r7-settings-equipment-info-shortcut-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-check-card="settings-equipment-check" data-r7-settings-greenhouse-summary-card="equipment-check" data-r7-settings-equipment-check-card="one-button"' }),
     ].join("");
     const zoneRows = normalized.map((zone, index) => ({
       kind: zone.zoneName,

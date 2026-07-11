@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 def test_v1998_environment_final_qa_versions_and_docs():
     panel = _read(PANEL)
-    assert '"version": "1.15.37"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.37"' in panel
-    assert 'v1.15.37' in panel[:200]
+    assert '"version": "1.15.38"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.38"' in panel
+    assert 'v1.15.38' in panel[:200]
     plan = _read(PLAN)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
     assert "Status: implemented in `v1.10.9`" in plan

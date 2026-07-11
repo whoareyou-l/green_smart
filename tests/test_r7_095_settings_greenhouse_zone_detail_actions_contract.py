@@ -37,9 +37,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_095_version_surfaces_are_1_14_20():
-    assert '"version": "1.15.37"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.37"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.37"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.38"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.38"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.38"' in _read(REBUILD_PANEL)
 
 
 def test_r7_095_backend_api_views_exist_and_are_registered():
@@ -72,12 +72,17 @@ def test_r7_095_equipment_card_is_selected_zone_status_counts():
     assert 'data-r7-settings-equipment-unmapped-count' in html
 
 
-def test_r7_095_equipment_create_card_becomes_device_sensor_mapping_entry():
+def test_r7_095_equipment_check_card_opens_device_list_only():
     html = _render_greenhouse_zones()
-    assert 'data-r7-record-card-shell="settings-equipment-mapping"' in html
-    assert '장치 연결 작성' in html
-    assert '장치 연결 작성' in html
-    assert 'data-r7-settings-device-sensor-mapping-button' in html
+    assert 'data-r7-record-card-shell="settings-equipment-check"' in html
+    marker_at = html.index('data-r7-record-card-shell="settings-equipment-check"')
+    start = html.rindex('<article', 0, marker_at)
+    end = html.index('</article>', marker_at)
+    equipment_check = html[start:end]
+    assert '장치 확인' in equipment_check
+    assert 'data-r7-cdb-card-type="button-one"' in equipment_check
+    assert 'data-r7-settings-equipment-info-shortcut-button' in equipment_check
+    assert 'data-r7-settings-device-sensor-mapping-button' not in equipment_check
     assert '+ 새 장비 추가' not in html
 
 
