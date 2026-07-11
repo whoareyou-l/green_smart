@@ -1,6 +1,6 @@
 # R7-068 Settings users-permissions image layout
 
-Status: current baseline for `v1.15.28`.
+Status: current baseline for `v1.15.29`.
 
 ## Scope
 

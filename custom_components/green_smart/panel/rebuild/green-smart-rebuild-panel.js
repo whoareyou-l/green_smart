@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.28";
+const REBUILD_VERSION = "1.15.29";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -315,6 +315,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7DomainShellCacheStats = { hits: 0, misses: 0 };
     this._r7SettingsPerf = { eventKind: "idle", startedAt: 0, samples: {} };
     this._r7SettingsHashRouteHandler = () => this._handleR7SettingsHashRoute("hashchange");
+    this._r7SettingsCachePrewarmTimer = 0;
+    this._r7SettingsCachePrewarmIdle = 0;
+    this._r7SettingsCachePrewarmed = false;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -335,6 +338,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     globalThis.window?.addEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
     this.render();
     this._handleR7SettingsHashRoute("connected");
+    this._scheduleR7SettingsCachePrewarm("connected-idle");
     this._ensureR7SidebarExternalControlObservers();
     this._loadHomeContext();
     this._loadSettingsUsersPermissions();
@@ -343,6 +347,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   disconnectedCallback() {
     globalThis.window?.removeEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
+    this._cancelR7SettingsCachePrewarm();
     this._r7SidebarExternalControlResizeObserver?.disconnect?.();
     this._r7SidebarExternalControlMutationObserver?.disconnect?.();
     if (this._r7SidebarExternalControlResizeHandler) globalThis.window?.removeEventListener?.("resize", this._r7SidebarExternalControlResizeHandler);
@@ -1597,6 +1602,48 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return this._openR7SettingsDomainFromCache(`hash-${source}`);
   }
 
+  _cancelR7SettingsCachePrewarm() {
+    if (this._r7SettingsCachePrewarmIdle && globalThis.cancelIdleCallback) globalThis.cancelIdleCallback(this._r7SettingsCachePrewarmIdle);
+    if (this._r7SettingsCachePrewarmTimer) clearTimeout(this._r7SettingsCachePrewarmTimer);
+    this._r7SettingsCachePrewarmIdle = 0;
+    this._r7SettingsCachePrewarmTimer = 0;
+  }
+
+  _scheduleR7SettingsCachePrewarm(source = "idle") {
+    const probe = globalThis.document?.createElement?.("section");
+    if (!probe?.dataset || !globalThis.document?.createElement?.("template")?.content) {
+      this.setAttribute?.("data-r7-settings-cache-prewarm", "skipped-no-dom");
+      return false;
+    }
+    if (this._r7SettingsCachePrewarmed || this._r7SettingsCachePrewarmIdle || this._r7SettingsCachePrewarmTimer) return false;
+    this.setAttribute?.("data-r7-settings-cache-prewarm", "scheduled");
+    this.setAttribute?.("data-r7-settings-cache-prewarm-source", source);
+    const run = () => this._runR7SettingsCachePrewarm(source);
+    if (globalThis.requestIdleCallback) this._r7SettingsCachePrewarmIdle = globalThis.requestIdleCallback(run, { timeout: 600 });
+    else this._r7SettingsCachePrewarmTimer = setTimeout(run, 120);
+    return true;
+  }
+
+  _runR7SettingsCachePrewarm(source = "idle") {
+    this._r7SettingsCachePrewarmIdle = 0;
+    this._r7SettingsCachePrewarmTimer = 0;
+    const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
+    const shell = this._getOrCreateR7CachedSettingsDomainShell();
+    const panel = this._getOrCreateR7CachedSettingsPanel(activeTab);
+    if (!shell || !panel) {
+      this.setAttribute?.("data-r7-settings-cache-prewarm", "failed");
+      return false;
+    }
+    this._patchR7CachedSettingsPanelData(activeTab);
+    this._r7SettingsCachePrewarmed = true;
+    this.setAttribute?.("data-r7-settings-cache-prewarm", "done");
+    this.setAttribute?.("data-r7-settings-cache-prewarm-source", source);
+    this.setAttribute?.("data-r7-settings-cache-prewarm-tab", activeTab);
+    this.setAttribute?.("data-r7-settings-domain-shell-prewarmed", "true");
+    this.setAttribute?.("data-r7-settings-panel-prewarmed", activeTab);
+    return true;
+  }
+
   _openR7SettingsDomainFromCache(source = "settings-navigation") {
     this.setAttribute?.("data-r7-settings-domain-entry-source", source);
     this.setAttribute?.("data-r7-mobile-settings-route", "dedicated-internal-action");
@@ -1605,6 +1652,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7MobileSettingsFastLanding = true;
     this._r7MobileFastPanelMode = true;
     this._activeR7Domain = "settings-admin";
+    this.setAttribute?.("data-r7-active-domain", "settings-admin");
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones" };
     const patched = this._patchR7MobileActiveDomainPage();
     this.setAttribute?.("data-r7-settings-domain-cache-entry-result", patched ? "attached" : "missing-workspace");
@@ -2051,6 +2099,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   _attachR7CachedSettingsDomainShell(workspace) {
+    const cacheKey = "domain:settings-admin";
+    const hadShellBeforeAttach = Boolean(this._r7DomainShellCache?.get?.(cacheKey));
+    const wasPrewarmed = Boolean(this._r7SettingsCachePrewarmed && hadShellBeforeAttach);
     const shell = this._getOrCreateR7CachedSettingsDomainShell();
     if (!shell || !workspace) return false;
     const frame = shell.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
@@ -2067,6 +2118,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (!shell.isConnected) workspace.appendChild(shell);
     shell.hidden = false;
     shell.setAttribute("aria-hidden", "false");
+    this.setAttribute?.("data-r7-settings-domain-shell-attach-cache-state", wasPrewarmed ? "hit-prewarmed" : hadShellBeforeAttach ? "hit" : "miss-created");
+    shell.setAttribute?.("data-r7-settings-domain-shell-attach-cache-state", wasPrewarmed ? "hit-prewarmed" : hadShellBeforeAttach ? "hit" : "miss-created");
     this._bindR7SettingsDelegatedEvents(shell);
     workspace.setAttribute("data-r7-settings-domain-shell-host-cache", "persistent-dom-show-hide");
     const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";

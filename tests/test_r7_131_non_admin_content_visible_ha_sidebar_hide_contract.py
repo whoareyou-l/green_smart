@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_131_version_surfaces_are_1_14_90():
-    assert '"version": "1.15.28"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.28"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.28"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.29"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.29"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.29"' in _read(REBUILD_PANEL)
 
 
 def test_r7_131_source_never_display_none_app_shell_drawers():

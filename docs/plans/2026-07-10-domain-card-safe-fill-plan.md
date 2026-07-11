@@ -1,10 +1,10 @@
-# v1.15.28 도메인 카드 안전 가로폭 채우기 계획
+# v1.15.29 도메인 카드 안전 가로폭 채우기 계획
 
 ## 문제
 
 v1.14.93에서는 도메인 카드 가로폭을 채우기 위해 hero/card/panel 내부까지 `width:100%`, `max-width:none`, `justify-self:stretch`, `align-self:stretch`, `grid-template-columns:minmax(0,1fr)`를 강제로 적용했다. 실제 Home Assistant shell/grid 안에서는 일부 영역이 shrink-to-fit/0폭 기준으로 계산되어 hero 텍스트가 세로로 찢어지는 회귀가 발생했다.
 
-v1.15.28에서 해당 강제 stretch를 되돌려 UI는 안정화했지만, 도메인 카드 외곽이 사용 가능한 가로폭을 충분히 쓰지 못하는 문제가 남았다.
+v1.15.29에서 해당 강제 stretch를 되돌려 UI는 안정화했지만, 도메인 카드 외곽이 사용 가능한 가로폭을 충분히 쓰지 못하는 문제가 남았다.
 
 ## 목표
 
@@ -64,7 +64,7 @@ Hero marker는 계속 `data-r7-domain-visual-hero-width="safe-natural"`로 둔�
 4. 관련 집중 pytest
 5. 전체 pytest
 6. Prod 반영 후 served smoke
-   - manifest/panel version `1.15.28`.
+   - manifest/panel version `1.15.29`.
    - safe-fill marker 존재.
    - bad marker/style 부재.
 7. HA readiness + 안정 로그 확인
