@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.19";
+const REBUILD_VERSION = "1.15.20";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -309,7 +309,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7SettingsPanelCache = new Map();
     this._r7SettingsPanelDirty = new Set(["greenhouse-zones", "device-sensor-mapping", "users-permissions", "system-integration"]);
     this._r7ModalCache = new Map();
+    this._r7DomainShellCache = new Map();
     this._r7SettingsPanelCacheStats = { hits: 0, misses: 0 };
+    this._r7DomainShellCacheStats = { hits: 0, misses: 0 };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -1995,20 +1997,63 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return true;
   }
 
+  _getOrCreateR7CachedSettingsDomainShell() {
+    if (!this._r7DomainShellCache) this._r7DomainShellCache = new Map();
+    const cacheKey = "domain:settings-admin";
+    let shell = this._r7DomainShellCache.get(cacheKey);
+    if (shell) {
+      this._r7DomainShellCacheStats = { ...(this._r7DomainShellCacheStats || {}), hits: Number(this._r7DomainShellCacheStats?.hits || 0) + 1 };
+      this.setAttribute?.("data-r7-settings-domain-shell-cache-hit", cacheKey);
+      return shell;
+    }
+    const template = document.createElement("template");
+    template.innerHTML = this.renderR7ActiveDomainPage();
+    shell = template.content?.firstElementChild || null;
+    if (!shell) return null;
+    shell.setAttribute("data-r7-settings-domain-shell-cache", "persistent-dom");
+    shell.setAttribute("data-r7-settings-domain-shell-cache-key", cacheKey);
+    shell.setAttribute("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
+    this._r7DomainShellCache.set(cacheKey, shell);
+    this._r7DomainShellCacheStats = { ...(this._r7DomainShellCacheStats || {}), misses: Number(this._r7DomainShellCacheStats?.misses || 0) + 1 };
+    this.setAttribute?.("data-r7-settings-domain-shell-cache-miss", cacheKey);
+    this.setAttribute?.("data-r7-settings-domain-shell-cache", "persistent-dom");
+    return shell;
+  }
+
+  _attachR7CachedSettingsDomainShell(workspace) {
+    const shell = this._getOrCreateR7CachedSettingsDomainShell();
+    if (!shell || !workspace) return false;
+    Array.from(workspace.children || []).forEach((node) => {
+      node.hidden = node !== shell;
+      node.setAttribute?.("aria-hidden", node === shell ? "false" : "true");
+    });
+    if (!shell.isConnected) workspace.appendChild(shell);
+    shell.hidden = false;
+    shell.setAttribute("aria-hidden", "false");
+    workspace.setAttribute("data-r7-settings-domain-shell-host-cache", "persistent-dom-show-hide");
+    const frame = shell.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
+    const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
+    const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
+    if (panelSection) {
+      this._showR7CachedSettingsPanel(panelSection, activeTab);
+      this._patchR7CachedSettingsPanelData(activeTab);
+      this._hydrateR7CachedSettingsPanel(activeTab);
+      frame?.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+      frame?.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+    }
+    this.setAttribute?.("data-r7-settings-domain-shell-cache", "persistent-dom");
+    this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
+    return true;
+  }
+
   _patchR7MobileActiveDomainPage() {
     const workspace = this.querySelector?.("[data-r7-page-workspace]");
     if (!workspace) return false;
-    workspace.innerHTML = this.renderR7ActiveDomainPage();
-    if (this._activeR7Domain === "settings-admin") {
-      const frame = this.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
-      const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
-      const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
-      if (panelSection) {
-        this._showR7CachedSettingsPanel(panelSection, activeTab);
-        this._patchR7CachedSettingsPanelData(activeTab);
-        frame?.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
-        frame?.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
-      }
+    if (this._activeR7Domain === "settings-admin" && this._attachR7CachedSettingsDomainShell(workspace)) {
+      this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
+      this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
+    } else {
+      workspace.innerHTML = this.renderR7ActiveDomainPage();
     }
     const activeDomain = this._activeR7Domain;
     this.querySelectorAll?.("[data-r7-sidebar-target]").forEach((button) => {

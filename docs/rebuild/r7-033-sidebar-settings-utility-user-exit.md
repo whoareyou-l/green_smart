@@ -1,8 +1,8 @@
 # R7-033 Sidebar Settings Utility + User Exit
 
-> 기준 버전: `v1.15.19`
+> 기준 버전: `v1.15.20`
 > Status: R7-033 planned
-> Purpose: 설정 도메인을 사이드바 메인 탭 목록에서 제거하고 하단 두 번째 utility로 제공한다. v1.15.19부터 하단 사용자 영역과 Home Assistant 로그아웃 버튼을 분리한다.
+> Purpose: 설정 도메인을 사이드바 메인 탭 목록에서 제거하고 하단 두 번째 utility로 제공한다. v1.15.20부터 하단 사용자 영역과 Home Assistant 로그아웃 버튼을 분리한다.
 
 ## User request
 

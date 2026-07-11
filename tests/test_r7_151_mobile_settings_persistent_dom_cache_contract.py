@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_17_declares_persistent_settings_panel_cache_stores():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.19"' in text
+    assert 'const REBUILD_VERSION = "1.15.20"' in text
     for marker in [
         'this._r7SettingsPanelCache = new Map();',
         'this._r7SettingsPanelDirty = new Set',
@@ -51,11 +51,11 @@ def test_v1_15_17_cache_helpers_hide_show_and_patch_dirty_values():
 
 def test_v1_15_17_settings_entry_attaches_cached_active_panel_after_workspace_patch():
     text = source()
-    block = text[text.index('_patchR7MobileActiveDomainPage()'):text.index('setR7DomainSubtab', text.index('_patchR7MobileActiveDomainPage()'))]
-    assert 'workspace.innerHTML = this.renderR7ActiveDomainPage();' in block
-    assert 'if (this._activeR7Domain === "settings-admin")' in block
+    assert '_attachR7CachedSettingsDomainShell(workspace)' in text
+    block = text[text.index('_attachR7CachedSettingsDomainShell(workspace)'):text.index('_patchR7MobileActiveDomainPage()', text.index('_attachR7CachedSettingsDomainShell(workspace)'))]
     assert '_showR7CachedSettingsPanel(panelSection, activeTab)' in block
     assert '_patchR7CachedSettingsPanelData(activeTab)' in block
+    assert '_hydrateR7CachedSettingsPanel(activeTab)' in block
 
 
 def test_v1_15_17_modal_cache_is_lazy_on_open_marker_and_plan_documents_it():
@@ -63,5 +63,5 @@ def test_v1_15_17_modal_cache_is_lazy_on_open_marker_and_plan_documents_it():
     assert '_getOrCreateR7CachedModal(type)' in text
     assert 'data-r7-settings-modal-cache", "lazy-on-open"' in text
     plan = PLAN.read_text()
-    for marker in ['persistent DOM cache', 'show/hide', 'dirty patch', '모달 lazy cache', 'GitHub Release v1.15.19']:
+    for marker in ['persistent DOM cache', 'show/hide', 'dirty patch', '모달 lazy cache', 'GitHub Release v1.15.20']:
         assert marker in plan
