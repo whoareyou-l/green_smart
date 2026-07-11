@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.21";
+const REBUILD_VERSION = "1.15.22";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -312,6 +312,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7DomainShellCache = new Map();
     this._r7SettingsPanelCacheStats = { hits: 0, misses: 0 };
     this._r7DomainShellCacheStats = { hits: 0, misses: 0 };
+    this._r7SettingsPerf = { eventKind: "idle", startedAt: 0 };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -1697,6 +1698,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     panel.setAttribute?.("aria-hidden", "false");
     panelSection.setAttribute?.("data-r7-settings-panel-host-cache", "persistent-dom-show-hide");
     this.setAttribute?.("data-r7-settings-panel-switch-mode", "cached-dom-show-hide");
+    this._recordR7SettingsPerf("panel-visible", 150);
     return panel;
   }
 
@@ -1798,6 +1800,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     patchPanel.dataset.r7SettingsPanelDirtyPatch = "true";
     this.setAttribute?.("data-r7-settings-panel-compact-dirty-patch", "true");
+    this._recordR7SettingsPerf("dirty-patch", 500);
+    this._recordR7SettingsPerf("interaction-complete", 2000);
     return true;
   }
 
@@ -1878,6 +1882,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindR7SettingsDelegatedEvents(modal);
     this.setAttribute?.("data-r7-settings-modal-cache-mounted", type);
     this.setAttribute?.("data-r7-settings-modal-render-mode", "lazy-cache-on-open-no-full-render");
+    this._recordR7SettingsPerf("modal-open", 500);
+    this._recordR7SettingsPerf("interaction-complete", 2000);
     this._bindSettingsApprovalActions();
     return true;
   }
@@ -2047,6 +2053,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this.setAttribute?.("data-r7-settings-domain-shell-cache", "persistent-dom");
     this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
+    this._recordR7SettingsPerf("shell-visible", 150);
     return true;
   }
 
@@ -2234,6 +2241,31 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
   }
 
+  _nowR7Perf() {
+    const perfNow = globalThis.performance?.now?.bind?.(globalThis.performance);
+    return Math.round(perfNow ? perfNow() : Date.now());
+  }
+
+  _startR7SettingsPerf(kind = "interaction") {
+    const now = this._nowR7Perf();
+    this._r7SettingsPerf = { eventKind: kind, startedAt: now };
+    this.setAttribute?.("data-r7-perf-settings-event-kind", kind);
+    this.setAttribute?.("data-r7-perf-settings-start-ms", String(now));
+    return now;
+  }
+
+  _recordR7SettingsPerf(label, targetMs = 2000) {
+    const now = this._nowR7Perf();
+    const startedAt = Number(this._r7SettingsPerf?.startedAt || now);
+    const elapsed = Math.max(0, Math.round(now - startedAt));
+    const attr = `data-r7-perf-settings-${label}-ms`;
+    const slaAttr = `data-r7-perf-settings-${label}-sla`;
+    this.setAttribute?.(attr, String(elapsed));
+    this.setAttribute?.(slaAttr, elapsed <= Number(targetMs) ? `under-${targetMs}ms` : `over-${targetMs}ms`);
+    this.setAttribute?.("data-r7-perf-settings-last-label", label);
+    return elapsed;
+  }
+
   _handleR7SettingsDelegatedClick(event) {
     const target = event?.target;
     const closest = (selector) => target?.closest?.(selector);
@@ -2241,10 +2273,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (settingsSubtab) {
       event.preventDefault?.();
       event.stopPropagation?.();
+      this._startR7SettingsPerf("subtab");
       this.setAttribute?.("data-r7-settings-delegated-event", "subtab");
       this.setAttribute?.("data-r7-mobile-subtab-route", "delegated-settings-shell-cache");
       this._r7MobileFastPanelMode = true;
       this.setR7DomainSubtab("settings-admin", settingsSubtab.getAttribute("data-r7-domain-subtab-key"), true);
+      this._recordR7SettingsPerf("tab-active", 100);
       return true;
     }
     const cachedAction = closest('[data-r7-open-settings-modal]');
@@ -2252,6 +2286,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       event.preventDefault?.();
       event.stopPropagation?.();
       const kind = cachedAction.getAttribute("data-r7-open-settings-modal") || "";
+      this._startR7SettingsPerf(kind || "cached-action");
       this.setAttribute?.("data-r7-settings-delegated-event", kind || "cached-action");
       if (kind === "approval-list") this._openSettingsApprovalListModal();
       else if (kind === "audit-log") this._openSettingsAuditLogModal();
@@ -2261,11 +2296,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       return true;
     }
     const approvalListButton = closest('[data-r7-settings-approval-list-button]');
-    if (approvalListButton) { event.preventDefault?.(); event.stopPropagation?.(); this.setAttribute?.("data-r7-settings-delegated-event", "approval-list-button"); this._openSettingsApprovalListModal(); return true; }
+    if (approvalListButton) { event.preventDefault?.(); event.stopPropagation?.(); this._startR7SettingsPerf("approval-list-button"); this.setAttribute?.("data-r7-settings-delegated-event", "approval-list-button"); this._openSettingsApprovalListModal(); return true; }
     const auditLogButton = closest('[data-r7-settings-audit-log-button]');
-    if (auditLogButton) { event.preventDefault?.(); event.stopPropagation?.(); this.setAttribute?.("data-r7-settings-delegated-event", "audit-log-button"); this._openSettingsAuditLogModal(); return true; }
+    if (auditLogButton) { event.preventDefault?.(); event.stopPropagation?.(); this._startR7SettingsPerf("audit-log-button"); this.setAttribute?.("data-r7-settings-delegated-event", "audit-log-button"); this._openSettingsAuditLogModal(); return true; }
     const permissionMatrixButton = closest('[data-r7-settings-permission-matrix-button]');
-    if (permissionMatrixButton) { event.preventDefault?.(); event.stopPropagation?.(); this.setAttribute?.("data-r7-settings-delegated-event", "permission-matrix-button"); this._openSettingsPermissionMatrixModal(); return true; }
+    if (permissionMatrixButton) { event.preventDefault?.(); event.stopPropagation?.(); this._startR7SettingsPerf("permission-matrix-button"); this.setAttribute?.("data-r7-settings-delegated-event", "permission-matrix-button"); this._openSettingsPermissionMatrixModal(); return true; }
     const approvalListClose = closest('[data-r7-settings-approval-list-close-button]');
     if (approvalListClose) { event.preventDefault?.(); event.stopPropagation?.(); this._closeSettingsApprovalListModal(); return true; }
     const auditLogClose = closest('[data-r7-settings-audit-log-close-button]');

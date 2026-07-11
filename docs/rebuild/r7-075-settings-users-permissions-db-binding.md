@@ -1,6 +1,6 @@
 # R7-075/R7-116 Settings users-permissions DB binding
 
-Status: current baseline for `v1.15.21`.
+Status: current baseline for `v1.15.22`.
 
 ## Why
 
