@@ -10,8 +10,9 @@ def source() -> str:
 
 def test_v1_15_24_settings_shell_cache_is_built_from_direct_settings_detail_subpage():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.32"' in text
-    block = text[text.index('_getOrCreateR7CachedSettingsDomainShell()'):text.index('_attachR7CachedSettingsDomainShell(workspace)', text.index('_getOrCreateR7CachedSettingsDomainShell()'))]
+    assert 'const REBUILD_VERSION = "1.15.33"' in text
+    start = text.index('  _getOrCreateR7CachedSettingsDomainShell()')
+    block = text[start:text.index('  _attachR7CachedSettingsDomainShell(workspace)', start)]
     assert 'R7_DETAIL_SUBPAGES.find((item) => item.key === "settings-admin")' in block
     assert 'template.innerHTML = this.renderR7DomainPageShell(subpage, this.renderR7DetailSubpage(subpage));' in block
     assert 'data-r7-settings-domain-shell-source", "direct-settings-detail-subpage"' in block
@@ -20,7 +21,8 @@ def test_v1_15_24_settings_shell_cache_is_built_from_direct_settings_detail_subp
 
 def test_v1_15_24_settings_shell_cache_validates_frame_and_panel_before_success():
     text = source()
-    block = text[text.index('_attachR7CachedSettingsDomainShell(workspace)'):text.index('_patchR7MobileActiveDomainPage()', text.index('_attachR7CachedSettingsDomainShell(workspace)'))]
+    start = text.index('  _attachR7CachedSettingsDomainShell(workspace)')
+    block = text[start:text.index('  _patchR7MobileActiveDomainPage()', start)]
     assert 'const frame = shell.querySelector?.(\'[data-r7-domain-visual-frame-domain="settings-admin"]\')' in block
     assert 'const panelSection = frame?.querySelector?.(\'[data-r7-domain-content-card-section="panel"]\')' in block
     assert 'if (!frame || !panelSection)' in block

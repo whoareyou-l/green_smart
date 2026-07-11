@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_13_mobile_subtab_uses_panel_outerhtml_patch_before_full_render():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.32"' in text
+    assert 'const REBUILD_VERSION = "1.15.33"' in text
     assert '_patchR7MobileSubtabPanel(domain, tabKey)' in text
     assert 'data-r7-mobile-dom-patch-subtab", "true"' in text
     assert 'data-r7-mobile-subtab-render-mode", "light-first-paint-then-full-hydrate"' in text
@@ -19,13 +19,15 @@ def test_v1_15_13_mobile_subtab_uses_panel_outerhtml_patch_before_full_render():
     assert 'if (mobileFast && this._patchR7MobileSubtabPanel(domain, tabKey)) return true;' in text
 
 
-def test_v1_15_13_mobile_domain_uses_workspace_innerhtml_patch_not_full_shell_render():
+def test_v1_15_33_mobile_domain_uses_domain_shell_cache_before_fragment_fallback():
     text = source()
     assert '_patchR7MobileActiveDomainPage()' in text
     assert 'const workspace = this.querySelector?.("[data-r7-page-workspace]");' in text
-    assert 'workspace.innerHTML = this.renderR7ActiveDomainPage();' in text
+    assert 'this._attachR7CachedDomainShell(workspace, this._activeR7Domain)' in text
+    assert 'data-r7-mobile-domain-render-mode", "domain-shell-cache-show-hide"' in text
+    assert 'workspace.replaceChildren?.(document.createRange().createContextualFragment(this.renderR7ActiveDomainPage()))' in text
+    assert 'data-r7-mobile-domain-render-mode", "workspace-replace-fragment-fallback"' in text
     assert 'data-r7-mobile-dom-patch-domain", "true"' in text
-    assert 'data-r7-mobile-domain-render-mode", "workspace-innerhtml-only"' in text
     assert 'if (this._patchR7MobileActiveDomainPage()) return;' in text
 
 

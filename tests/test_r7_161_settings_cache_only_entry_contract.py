@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_27_settings_entry_uses_one_cache_function_for_mobile_pc_and_profile():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.32"' in text
+    assert 'const REBUILD_VERSION = "1.15.33"' in text
     assert '_openR7SettingsDomainFromCache(source = "settings-navigation")' in text
     assert 'return this._openR7SettingsDomainFromCache("mobile-settings-button");' in text
     assert 'return this._openR7SettingsDomainFromCache("set-active-domain");' in text
@@ -31,9 +31,11 @@ def test_v1_15_27_settings_admin_has_no_render_or_innerhtml_fallback_in_patch_pa
     assert 'this.render();' not in settings_fail_block
 
 
-def test_v1_15_27_non_settings_domains_keep_workspace_patch_only_outside_settings_branch():
+def test_v1_15_33_non_settings_domains_use_domain_cache_before_fragment_fallback_outside_settings_branch():
     text = source()
     block = text[text.index('_patchR7MobileActiveDomainPage()'):text.index('setR7DomainSubtab', text.index('_patchR7MobileActiveDomainPage()'))]
-    assert 'workspace.innerHTML = this.renderR7ActiveDomainPage();' in block
-    assert 'data-r7-mobile-domain-render-mode", "workspace-innerhtml-only"' in block
-    assert block.index('} else if (this._activeR7Domain === "settings-admin")') < block.index('workspace.innerHTML = this.renderR7ActiveDomainPage();')
+    assert 'this._attachR7CachedDomainShell(workspace, this._activeR7Domain)' in block
+    assert 'data-r7-mobile-domain-render-mode", "domain-shell-cache-show-hide"' in block
+    assert 'workspace.replaceChildren?.(document.createRange().createContextualFragment(this.renderR7ActiveDomainPage()))' in block
+    assert 'data-r7-mobile-domain-render-mode", "workspace-replace-fragment-fallback"' in block
+    assert block.index('} else if (this._activeR7Domain === "settings-admin")') < block.index('workspace.replaceChildren?.(document.createRange().createContextualFragment(this.renderR7ActiveDomainPage()))')

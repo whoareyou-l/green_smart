@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_08_mobile_settings_uses_dedicated_internal_action():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.32"' in text
+    assert 'const REBUILD_VERSION = "1.15.33"' in text
     assert 'data-r7-mobile-settings-action="open-settings-domain"' in text
     assert 'data-r7-mobile-route-mode="dedicated-internal-anchor-hash-cache"' in text
     assert '<a href="#settings-admin" role="button" data-r7-mobile-settings-button="true"' in text
@@ -36,8 +36,10 @@ def test_v1_15_08_mobile_active_domain_button_aligns_to_right_edge():
     assert 'data-r7-mobile-active-domain-scroll-align="right-edge"' in text
     assert '_scheduleR7MobileActiveDomainButtonScroll()' in text
     assert '[data-r7-mobile-domain-button="true"][data-r7-sidebar-active="true"]' in text
-    assert 'active.offsetLeft + active.offsetWidth - row.clientWidth' in text
-    assert 'row.scrollTo ? row.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" })' in text
+    assert 'const targetLeft = Math.max(0, active.offsetLeft + active.offsetWidth - row.clientWidth);' in text
+    assert 'row.scrollLeft = targetLeft;' in text
+    assert 'row.scrollTo?.({ left: targetLeft, behavior: "auto" });' in text
+    assert 'data-r7-mobile-active-domain-scroll-left' in text
     assert 'this._scheduleR7MobileActiveDomainButtonScroll();' in text
 
 

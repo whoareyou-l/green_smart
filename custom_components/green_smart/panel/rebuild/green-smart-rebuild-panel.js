@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.32";
+const REBUILD_VERSION = "1.15.33";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -1588,7 +1588,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7MobileFastPanelMode = true;
     const activeTab = this._activeR7DomainSubtabs[nextDomain] || "status-summary";
     this._requestR7MobilePanelHydration(nextDomain, activeTab);
-    if (this._activeR7Domain === nextDomain) { this._scheduleR7MobileActiveDomainButtonScroll(); return; }
+    if (this._activeR7Domain === nextDomain) { this._syncR7MobileDomainActiveVisualState(nextDomain); this._scheduleR7MobileActiveDomainButtonScroll(); return; }
     this._activeR7Domain = nextDomain;
     if (this._patchR7MobileActiveDomainPage()) return;
     this.render();
@@ -1672,17 +1672,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
     const shell = this._getOrCreateR7CachedSettingsDomainShell();
     const panel = this._getOrCreateR7CachedSettingsPanel(activeTab);
-    if (!shell || !panel) {
+    const prewarmedDomains = R7_DETAIL_SUBPAGES.map((item) => item.key).filter((key) => this._getOrCreateR7CachedDomainShell(key));
+    if (!shell || !panel || !prewarmedDomains.includes("settings-admin")) {
       this.setAttribute?.("data-r7-settings-cache-prewarm", "failed");
       return false;
     }
     this._patchR7CachedSettingsPanelData(activeTab);
     this._r7SettingsCachePrewarmed = true;
+    this._r7AllDomainShellCachePrewarmed = true;
     this.setAttribute?.("data-r7-settings-cache-prewarm", "done");
     this.setAttribute?.("data-r7-settings-cache-prewarm-source", source);
     this.setAttribute?.("data-r7-settings-cache-prewarm-tab", activeTab);
     this.setAttribute?.("data-r7-settings-domain-shell-prewarmed", "true");
     this.setAttribute?.("data-r7-settings-panel-prewarmed", activeTab);
+    this.setAttribute?.("data-r7-all-domain-shell-cache-prewarm", "done");
+    this.setAttribute?.("data-r7-all-domain-shell-cache-count", String(prewarmedDomains.length));
     return true;
   }
 
@@ -1701,6 +1705,32 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return patched;
   }
 
+  _syncR7MobileDomainActiveVisualState(activeDomain = this._activeR7Domain) {
+    this.querySelectorAll?.('[data-r7-mobile-domain-button="true"]').forEach((button) => {
+      const selected = button.getAttribute("data-r7-sidebar-target") === activeDomain;
+      button.setAttribute("data-r7-sidebar-active", selected ? "true" : "false");
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+      if (selected) button.setAttribute("aria-current", "page");
+      else button.removeAttribute?.("aria-current");
+      if (button.style) {
+        button.style.borderBottomColor = selected ? R7_GREEN_ACCENT : "transparent";
+        button.style.background = selected ? R7_GREEN_ACTIVE_BG : "transparent";
+        button.style.color = selected ? R7_GREEN_ACCENT : R7_GREEN_TEXT;
+      }
+    });
+    this.querySelectorAll?.('[data-r7-mobile-settings-button="true"]').forEach((button) => {
+      const selected = activeDomain === "settings-admin";
+      button.setAttribute("data-r7-sidebar-active", selected ? "true" : "false");
+      if (selected) button.setAttribute("aria-current", "page");
+      else button.removeAttribute?.("aria-current");
+      if (button.style) {
+        button.style.background = selected ? R7_GREEN_ACTIVE_BG : "transparent";
+        button.style.color = selected ? R7_GREEN_ACCENT : R7_GREEN_TEXT;
+      }
+    });
+    this.setAttribute?.("data-r7-mobile-domain-active-visual-sync", activeDomain);
+  }
+
   _scheduleR7MobileActiveDomainButtonScroll() {
     if (this._r7MobileActiveDomainScrollRaf) return;
     const run = () => {
@@ -1708,8 +1738,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const row = this.querySelector?.('[data-r7-mobile-domain-tablist="true"]');
       const active = row?.querySelector?.('[data-r7-mobile-domain-button="true"][data-r7-sidebar-active="true"]');
       if (!row || !active) return;
-      const targetLeft = active.offsetLeft + active.offsetWidth - row.clientWidth;
-      row.scrollTo ? row.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" }) : (row.scrollLeft = Math.max(0, targetLeft));
+      const targetLeft = Math.max(0, active.offsetLeft + active.offsetWidth - row.clientWidth);
+      row.scrollLeft = targetLeft;
+      row.scrollTo?.({ left: targetLeft, behavior: "auto" });
+      this.setAttribute?.("data-r7-mobile-active-domain-scroll-left", String(targetLeft));
     };
     this._r7MobileActiveDomainScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
@@ -1721,8 +1753,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       const row = this.querySelector?.(`[data-r7-domain-subtabs-for="${this._activeR7Domain}"]`);
       const active = row?.querySelector?.('[data-r7-domain-subtab-active="true"]');
       if (!row || !active) return;
-      const targetLeft = active.offsetLeft + active.offsetWidth - row.clientWidth;
-      row.scrollTo ? row.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" }) : (row.scrollLeft = Math.max(0, targetLeft));
+      const targetLeft = Math.max(0, active.offsetLeft + active.offsetWidth - row.clientWidth);
+      row.scrollLeft = targetLeft;
+      row.scrollTo?.({ left: targetLeft, behavior: "auto" });
+      this.setAttribute?.("data-r7-mobile-active-domain-scroll-left", String(targetLeft));
     };
     this._r7MobileActiveSubtabScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
@@ -2121,6 +2155,62 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return true;
   }
 
+  _renderR7CachedDomainShellBody(domainKey, subpage) {
+    if (domainKey === "operations-home") return this.renderOperatingHome();
+    return this.renderR7DetailSubpage(subpage);
+  }
+
+  _getOrCreateR7CachedDomainShell(domainKey) {
+    if (!this._r7DomainShellCache) this._r7DomainShellCache = new Map();
+    const domain = this._normalizeR7Domain(domainKey);
+    if (domain === "settings-admin") return this._getOrCreateR7CachedSettingsDomainShell();
+    const cacheKey = `domain:${domain}`;
+    let shell = this._r7DomainShellCache.get(cacheKey);
+    if (shell) {
+      this.setAttribute?.("data-r7-domain-shell-cache-hit", cacheKey);
+      return shell;
+    }
+    const subpage = R7_DETAIL_SUBPAGES.find((item) => item.key === domain) || R7_DETAIL_SUBPAGES[0];
+    const template = document.createElement("template");
+    template.innerHTML = this.renderR7DomainPageShell(subpage, this._renderR7CachedDomainShellBody(domain, subpage));
+    shell = template.content?.firstElementChild || null;
+    if (!shell) return null;
+    shell.setAttribute("data-r7-domain-shell-cache", "persistent-dom");
+    shell.setAttribute("data-r7-domain-shell-cache-key", cacheKey);
+    shell.setAttribute("data-r7-domain-shell-source", "all-domain-prewarm-detail-subpage");
+    shell.setAttribute("data-r7-mobile-domain-render-mode", "domain-shell-cache-show-hide");
+    this._r7DomainShellCache.set(cacheKey, shell);
+    this.setAttribute?.("data-r7-domain-shell-cache-miss", cacheKey);
+    return shell;
+  }
+
+  _attachR7CachedDomainShell(workspace, domainKey) {
+    const domain = this._normalizeR7Domain(domainKey);
+    if (domain === "settings-admin") return this._attachR7CachedSettingsDomainShell(workspace);
+    const cacheKey = `domain:${domain}`;
+    const hadShellBeforeAttach = Boolean(this._r7DomainShellCache?.get?.(cacheKey));
+    const wasPrewarmed = Boolean(this._r7AllDomainShellCachePrewarmed && hadShellBeforeAttach);
+    const shell = this._getOrCreateR7CachedDomainShell(domain);
+    if (!shell || !workspace) return false;
+    workspace.replaceChildren?.(shell);
+    if (shell.parentElement !== workspace) {
+      Array.from(workspace.children || []).forEach((node) => node.remove?.());
+      workspace.appendChild(shell);
+    }
+    shell.hidden = false;
+    shell.style && (shell.style.display = "");
+    shell.setAttribute("aria-hidden", "false");
+    workspace.setAttribute?.("data-r7-domain-shell-attach-mode", "replace-children-single-domain-shell");
+    workspace.setAttribute?.("data-r7-domain-shell-host-cache", "persistent-dom-show-hide");
+    this.setAttribute?.("data-r7-domain-shell-attach-cache-state", wasPrewarmed ? "hit-prewarmed" : hadShellBeforeAttach ? "hit" : "miss-created");
+    this.setAttribute?.("data-r7-mobile-domain-render-mode", "domain-shell-cache-show-hide");
+    if (domain !== "operations-home") {
+      const activeTab = this._activeR7DomainSubtabs?.[domain] || this._r7TabsForDomain(domain)?.[0]?.[0] || "status-summary";
+      this._scheduleR7MobileFullSubtabHydration(domain, activeTab);
+    }
+    return true;
+  }
+
   _getOrCreateR7CachedSettingsDomainShell() {
     if (!this._r7DomainShellCache) this._r7DomainShellCache = new Map();
     const cacheKey = "domain:settings-admin";
@@ -2188,24 +2278,31 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const workspace = this.querySelector?.("[data-r7-page-workspace]");
     if (!workspace) return false;
     const usedSettingsShellCache = this._activeR7Domain === "settings-admin" && this._attachR7CachedSettingsDomainShell(workspace);
+    const usedDomainShellCache = !usedSettingsShellCache && this._activeR7Domain !== "settings-admin" && this._attachR7CachedDomainShell(workspace, this._activeR7Domain);
     if (usedSettingsShellCache) {
       this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
       this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
+    } else if (usedDomainShellCache) {
+      this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
+      this.setAttribute?.("data-r7-mobile-domain-render-mode", "domain-shell-cache-show-hide");
     } else if (this._activeR7Domain === "settings-admin") {
       this.setAttribute?.("data-r7-settings-domain-cache-entry-result", "attach-failed-no-render-fallback");
       this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-cache-attach-failed");
       return false;
     } else {
-      workspace.innerHTML = this.renderR7ActiveDomainPage();
-      this.setAttribute?.("data-r7-mobile-domain-render-mode", "workspace-innerhtml-only");
+      workspace.replaceChildren?.(document.createRange().createContextualFragment(this.renderR7ActiveDomainPage()));
+      if (!workspace.children?.length) workspace.innerHTML = this.renderR7ActiveDomainPage();
+      this.setAttribute?.("data-r7-mobile-domain-render-mode", "workspace-replace-fragment-fallback");
     }
     const activeDomain = this._activeR7Domain;
     this.querySelectorAll?.("[data-r7-sidebar-target]").forEach((button) => {
       const selected = button.getAttribute("data-r7-sidebar-target") === activeDomain;
       button.setAttribute("data-r7-sidebar-active", selected ? "true" : "false");
+      if (button.hasAttribute?.("data-r7-mobile-domain-button")) button.setAttribute("aria-selected", selected ? "true" : "false");
       if (selected) button.setAttribute("aria-current", "page");
       else button.removeAttribute?.("aria-current");
     });
+    this._syncR7MobileDomainActiveVisualState(activeDomain);
     this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
     this._bindR7PatchedInteractiveActions();
     this._scheduleR7MobileActiveDomainButtonScroll();
@@ -5907,6 +6004,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindZoneTabs();
     this._bindR7RecordWorkflowActions();
     this._bindSettingsApprovalActions();
+    this._syncR7MobileDomainActiveVisualState(this._activeR7Domain);
     this._scheduleR7MobileActiveDomainButtonScroll();
     this._scheduleR7MobileActiveSubtabScroll();
   }

@@ -33,9 +33,9 @@ def _render() -> str:
 
 
 def test_r7_101_version_surfaces_are_1_14_26():
-    assert '"version": "1.15.32"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.32"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.32"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.33"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.33"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.33"' in _read(REBUILD_PANEL)
 
 
 def test_r7_101_greenhouse_edit_delete_are_detail_footer_actions_before_close():
