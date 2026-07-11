@@ -3,13 +3,13 @@
 > **For Hermes:** Do not implement from vague card names. Use this document as the design contract before touching UI code.
 
 **Status:** corrective detailed plan after user review
-**Target version:** v1.15.29 corrective slice
+**Target version:** v1.15.30 corrective slice
 **Scope:** Crop Operations subtabs only
 **Primary correction:** Do not wrap `기록·작업` inside another visible title like `기록·작업 운영 화면`. The subtab already provides the screen context. Inside each subtab, render the actual product cards/sections directly.
 
 ---
 
-## 0. What went wrong in v1.15.29
+## 0. What went wrong in v1.15.30
 
 The previous implementation made a generic `ProductScreen` wrapper and then rendered duplicate labels such as:
 
@@ -789,7 +789,7 @@ pytest -q
 
 ---
 
-## 6. Acceptance criteria for v1.15.29
+## 6. Acceptance criteria for v1.15.30
 
 - No visible duplicate `... 운영 화면` heading.
 - `기록·작업` body starts with `오늘 할 일`, not `기록·작업 운영 화면`.

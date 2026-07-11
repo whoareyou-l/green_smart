@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.29";
+const REBUILD_VERSION = "1.15.30";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -315,6 +315,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7DomainShellCacheStats = { hits: 0, misses: 0 };
     this._r7SettingsPerf = { eventKind: "idle", startedAt: 0, samples: {} };
     this._r7SettingsHashRouteHandler = () => this._handleR7SettingsHashRoute("hashchange");
+    this._r7SettingsEntryCaptureHandler = (event) => this._routeR7SettingsEntryEvent(event);
     this._r7SettingsCachePrewarmTimer = 0;
     this._r7SettingsCachePrewarmIdle = 0;
     this._r7SettingsCachePrewarmed = false;
@@ -336,6 +337,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   connectedCallback() {
     this._applyR7HostWidthPolicy();
     globalThis.window?.addEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
+    this._bindR7SettingsEntryCaptureListeners();
     this.render();
     this._handleR7SettingsHashRoute("connected");
     this._scheduleR7SettingsCachePrewarm("connected-idle");
@@ -347,6 +349,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   disconnectedCallback() {
     globalThis.window?.removeEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
+    this._unbindR7SettingsEntryCaptureListeners();
     this._cancelR7SettingsCachePrewarm();
     this._r7SidebarExternalControlResizeObserver?.disconnect?.();
     this._r7SidebarExternalControlMutationObserver?.disconnect?.();
@@ -1593,6 +1596,45 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _openR7SettingsDomainFromMobile() {
     return this._openR7SettingsDomainFromCache("mobile-settings-button");
+  }
+
+  _bindR7SettingsEntryCaptureListeners() {
+    if (this._r7SettingsEntryCaptureBound) return;
+    ["pointerdown", "touchstart", "click"].forEach((type) => this.addEventListener?.(type, this._r7SettingsEntryCaptureHandler, { capture: true, passive: false }));
+    this._r7SettingsEntryCaptureBound = true;
+    this.setAttribute?.("data-r7-settings-entry-capture", "bound");
+  }
+
+  _unbindR7SettingsEntryCaptureListeners() {
+    if (!this._r7SettingsEntryCaptureBound) return;
+    ["pointerdown", "touchstart", "click"].forEach((type) => this.removeEventListener?.(type, this._r7SettingsEntryCaptureHandler, { capture: true }));
+    this._r7SettingsEntryCaptureBound = false;
+  }
+
+  _eventR7SettingsEntryTarget(event) {
+    const path = typeof event?.composedPath === "function" ? event.composedPath() : [];
+    for (const node of path) {
+      if (node?.closest) {
+        const found = node.closest('[data-r7-sidebar-target="settings-admin"],[data-r7-mobile-settings-action="open-settings-domain"],a[href="#settings-admin"]');
+        if (found) return found;
+      }
+      if (node?.getAttribute?.("data-r7-sidebar-target") === "settings-admin") return node;
+      if (node?.getAttribute?.("data-r7-mobile-settings-action") === "open-settings-domain") return node;
+      if (node?.getAttribute?.("href") === "#settings-admin") return node;
+    }
+    const target = event?.target;
+    return target?.closest?.('[data-r7-sidebar-target="settings-admin"],[data-r7-mobile-settings-action="open-settings-domain"],a[href="#settings-admin"]') || null;
+  }
+
+  _routeR7SettingsEntryEvent(event) {
+    const target = this._eventR7SettingsEntryTarget(event);
+    if (!target) return false;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+    this.setAttribute?.("data-r7-settings-entry-capture-last", event?.type || "unknown");
+    this.setAttribute?.("data-r7-settings-entry-capture-target", target.getAttribute?.("data-r7-sidebar-target") || target.getAttribute?.("href") || "settings-admin");
+    return this._openR7SettingsDomainFromCache(`capture-${event?.type || "event"}`);
   }
 
   _handleR7SettingsHashRoute(source = "hashchange") {

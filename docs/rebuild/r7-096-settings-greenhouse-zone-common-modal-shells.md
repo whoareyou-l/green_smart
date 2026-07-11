@@ -1,6 +1,6 @@
 # R7-096 Settings greenhouse/zone common modal shells
 
-Status: current baseline for `v1.15.29`.
+Status: current baseline for `v1.15.30`.
 
 ## Rule
 

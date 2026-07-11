@@ -47,14 +47,18 @@ async def async_setup_panel(hass: HomeAssistant) -> None:
     _LOGGER.warning("green_smart panel setup started")
     domain_data = hass.data.setdefault(DOMAIN, {})
     _register_ws_commands(hass, domain_data)
-    if domain_data.get("_panel_registered"):
-        return
-    domain_data["_panel_registered"] = True
     await _register_static_path(hass)
     # URL을 setup 시마다 새로 계산 — Python 모듈 캐시 문제 방지.
     # manifest.json sync read는 executor에서 실행해 HA event loop blocking 경고를 피한다.
     panel_js_url = await hass.async_add_executor_job(_get_panel_js_url)
     panel_component = await hass.async_add_executor_job(_get_panel_component_name)
+    registered_url = domain_data.get("_panel_registered_module_url")
+    registered_component = domain_data.get("_panel_registered_component")
+    if domain_data.get("_panel_registered") and registered_url == panel_js_url and registered_component == panel_component:
+        return
+    domain_data["_panel_registered"] = True
+    domain_data["_panel_registered_module_url"] = panel_js_url
+    domain_data["_panel_registered_component"] = panel_component
     await _register_panel(hass, panel_js_url, panel_component)
 
 
