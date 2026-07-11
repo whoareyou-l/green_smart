@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.23";
+const REBUILD_VERSION = "1.15.24";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2016,11 +2016,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
       return shell;
     }
     const template = document.createElement("template");
-    template.innerHTML = this.renderR7ActiveDomainPage();
+    const subpage = R7_DETAIL_SUBPAGES.find((item) => item.key === "settings-admin") || { key: "settings-admin" };
+    template.innerHTML = this.renderR7DomainPageShell(subpage, this.renderR7DetailSubpage(subpage));
     shell = template.content?.firstElementChild || null;
     if (!shell) return null;
     shell.setAttribute("data-r7-settings-domain-shell-cache", "persistent-dom");
     shell.setAttribute("data-r7-settings-domain-shell-cache-key", cacheKey);
+    shell.setAttribute("data-r7-settings-domain-shell-source", "direct-settings-detail-subpage");
     shell.setAttribute("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
     this._r7DomainShellCache.set(cacheKey, shell);
     this._r7DomainShellCacheStats = { ...(this._r7DomainShellCacheStats || {}), misses: Number(this._r7DomainShellCacheStats?.misses || 0) + 1 };
@@ -2032,6 +2034,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _attachR7CachedSettingsDomainShell(workspace) {
     const shell = this._getOrCreateR7CachedSettingsDomainShell();
     if (!shell || !workspace) return false;
+    const frame = shell.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
+    const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
+    if (!frame || !panelSection) {
+      this._r7DomainShellCache?.delete?.("domain:settings-admin");
+      this.setAttribute?.("data-r7-settings-domain-shell-cache-fallback", "missing-frame-or-panel");
+      return false;
+    }
     Array.from(workspace.children || []).forEach((node) => {
       node.hidden = node !== shell;
       node.setAttribute?.("aria-hidden", node === shell ? "false" : "true");
@@ -2041,16 +2050,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     shell.setAttribute("aria-hidden", "false");
     this._bindR7SettingsDelegatedEvents(shell);
     workspace.setAttribute("data-r7-settings-domain-shell-host-cache", "persistent-dom-show-hide");
-    const frame = shell.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
-    const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
     const activeTab = this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
-    if (panelSection) {
-      this._showR7CachedSettingsPanel(panelSection, activeTab);
-      this._patchR7CachedSettingsPanelData(activeTab);
-      this._hydrateR7CachedSettingsPanel(activeTab);
-      frame?.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
-      frame?.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
-    }
+    this._showR7CachedSettingsPanel(panelSection, activeTab);
+    this._patchR7CachedSettingsPanelData(activeTab);
+    this._hydrateR7CachedSettingsPanel(activeTab);
+    frame?.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+    frame?.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
     this.setAttribute?.("data-r7-settings-domain-shell-cache", "persistent-dom");
     this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
     this._recordR7SettingsPerf("shell-visible", 150);
@@ -2060,11 +2065,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _patchR7MobileActiveDomainPage() {
     const workspace = this.querySelector?.("[data-r7-page-workspace]");
     if (!workspace) return false;
-    if (this._activeR7Domain === "settings-admin" && this._attachR7CachedSettingsDomainShell(workspace)) {
+    const usedSettingsShellCache = this._activeR7Domain === "settings-admin" && this._attachR7CachedSettingsDomainShell(workspace);
+    if (usedSettingsShellCache) {
       this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
       this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-shell-cache-show-hide");
     } else {
       workspace.innerHTML = this.renderR7ActiveDomainPage();
+      if (this._activeR7Domain === "settings-admin") this.setAttribute?.("data-r7-mobile-domain-render-mode", "settings-full-render-fallback");
+      else this.setAttribute?.("data-r7-mobile-domain-render-mode", "workspace-innerhtml-only");
     }
     const activeDomain = this._activeR7Domain;
     this.querySelectorAll?.("[data-r7-sidebar-target]").forEach((button) => {
@@ -2074,7 +2082,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       else button.removeAttribute?.("aria-current");
     });
     this.setAttribute?.("data-r7-mobile-dom-patch-domain", "true");
-    this.setAttribute?.("data-r7-mobile-domain-render-mode", "workspace-innerhtml-only");
     this._bindR7PatchedInteractiveActions();
     this._scheduleR7MobileActiveDomainButtonScroll();
     this._scheduleR7MobileActiveSubtabScroll();

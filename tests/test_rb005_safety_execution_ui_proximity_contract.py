@@ -18,11 +18,11 @@ def _section(text: str, start: str, end: str) -> str:
 
 
 def test_rb005_version_surfaces_are_v11116():
-    assert '"version": "1.15.23"' in _read(MANIFEST)
+    assert '"version": "1.15.24"' in _read(MANIFEST)
     panel = _read(PANEL)
-    assert 'const VERSION = "1.15.23"' in panel
-    assert "v1.15.23" in panel[:240]
-    assert "v1.15.23" in _read(PRODUCT_PLAN)
+    assert 'const VERSION = "1.15.24"' in panel
+    assert "v1.15.24" in panel[:240]
+    assert "v1.15.24" in _read(PRODUCT_PLAN)
 
 
 def test_rb005_adds_execution_proximity_safety_summary_helper():
@@ -101,7 +101,7 @@ def test_rb005_docs_record_safety_execution_ui_proximity_scope():
     combined = "\n".join(_read(path) for path in (PRODUCT_PLAN, FRONTEND_PLAN, UI_DOC, PROJECT_MASTER))
     for marker in (
         "RB-005 Safety/Execution UI proximity",
-        "v1.15.23",
+        "v1.15.24",
         "data-zone-execution-proximity-safety-summary",
         "SafetyGuard/Interlock/Fail Safe summary near execution-capable controls",
         "실행 semantics 변경 없음",
