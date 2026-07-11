@@ -41,9 +41,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_119_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.36"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.36"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.36"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.37"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.37"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.37"' in _read(REBUILD_PANEL)
 
 
 def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
@@ -104,5 +104,5 @@ def test_r7_119_greenhouse_zone_button_two_cards_have_common_subtitles():
 
 def test_r7_119_documented():
     doc = _read(DOC)
-    for phrase in ('CDB card grammar hotfix in v1.15.36', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card'):
+    for phrase in ('CDB card grammar hotfix in v1.15.37', 'summary row: 3 summary cards', 'action row: 3 two-button cards', 'list row: 1 list card'):
         assert phrase in doc

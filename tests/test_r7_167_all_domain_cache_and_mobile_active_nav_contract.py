@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_33_all_domains_use_prewarmed_shell_cache_not_innerhtml_append():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.36"' in text
+    assert 'const REBUILD_VERSION = "1.15.37"' in text
     assert '_getOrCreateR7CachedDomainShell(domainKey)' in text
     assert '_attachR7CachedDomainShell(workspace, domainKey)' in text
     assert 'data-r7-all-domain-shell-cache-prewarm", "done"' in text

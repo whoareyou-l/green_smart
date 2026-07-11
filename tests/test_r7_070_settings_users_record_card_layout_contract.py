@@ -50,9 +50,9 @@ def _render_users_permissions(open_permission_matrix=False):
 
 
 def test_r7_070_version_surfaces_are_1_13_5():
-    assert '"version": "1.15.36"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.36"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.36"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.37"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.37"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.37"' in _read(REBUILD_PANEL)
 
 
 def test_r7_070_users_permissions_uses_record_workflow_card_grammar_and_order():
