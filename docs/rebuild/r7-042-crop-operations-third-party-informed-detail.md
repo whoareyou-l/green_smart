@@ -1,6 +1,6 @@
 # R7-042 Crop Operations Detail — Third-party Informed Design
 
-> 기준 버전: `v1.15.31`
+> 기준 버전: `v1.15.32`
 > Status: planned
 > Purpose: 타사 온실/환경제어 프로그램의 작물·재배 운영 패턴을 조사하고, Green Smart `작물 운영` 하위탭을 실제 운영자용 상세 페이지로 발전시킨다.
 

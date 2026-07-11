@@ -15,9 +15,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_080_version_surfaces_are_1_14_5():
-    assert '"version": "1.15.31"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.31"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.31"' in _read(PANEL)
+    assert '"version": "1.15.32"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.32"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.32"' in _read(PANEL)
 
 
 def test_r7_080_backend_exposes_approval_detail_fields_not_only_label_meta():

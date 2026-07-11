@@ -33,10 +33,10 @@ def _render_records_workflow_html() -> str:
 
 
 def test_r7_052_version_surfaces_are_1_12_88_after_r7_053_supersession():
-    assert '"version": "1.15.31"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.31"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.31"' in _read(REBUILD_PANEL)
-    assert "v1.15.31" in _read(DOC)
+    assert '"version": "1.15.32"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.32"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.32"' in _read(REBUILD_PANEL)
+    assert "v1.15.32" in _read(DOC)
 
 
 def test_r7_052_api_contract_doc_is_implemented_by_r7_057_wrapper():
@@ -67,7 +67,7 @@ def test_r7_052_render_contract_is_superseded_by_r7_053_image_dashboard():
     ]:
         assert required in html
     for forbidden in [
-        'data-r7-record-api-contract="planned-v1.15.31"',
+        'data-r7-record-api-contract="planned-v1.15.32"',
         'data-r7-record-flow-skeleton="write-history-pls"',
         'planned-contract-only',
     ]:

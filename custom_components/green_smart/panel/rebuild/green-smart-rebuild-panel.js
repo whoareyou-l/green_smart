@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.31";
+const REBUILD_VERSION = "1.15.32";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -1945,19 +1945,22 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (!panel) return false;
     if (panel.dataset.r7CachedPanelHydrated === "true" && !this._r7SettingsPanelDirty?.has?.(tabKey)) {
       this._patchR7CachedSettingsPanelData(tabKey);
-      this._patchR7CachedSettingsPanelMetricValues(tabKey);
       return true;
     }
-    const patchNode = this._buildR7CachedSettingsPanelPatchNode(tabKey);
-    panel.replaceChildren(patchNode);
+    const fullHtml = this._renderR7SubtabPanelForDomain("settings-admin", tabKey);
+    if (!fullHtml) return false;
+    const template = document.createElement("template");
+    template.innerHTML = fullHtml;
+    panel.replaceChildren(...Array.from(template.content.childNodes));
     panel.dataset.r7CachedPanelHydrated = "true";
     panel.dataset.r7SettingsPanelCache = "persistent-dom";
     panel.dataset.r7SettingsModalCache = "lazy-on-open";
-    panel.dataset.r7SettingsPanelFullHydrate = "not-used-compact-patch";
+    panel.dataset.r7SettingsPanelFullHydrate = "real-settings-detail-card";
+    panel.dataset.r7SettingsPanelHydrateMode = "real-detail-subpage-html";
     this._patchR7CachedSettingsPanelData(tabKey);
-    this._patchR7CachedSettingsPanelMetricValues(tabKey);
     this.setAttribute?.("data-r7-settings-panel-cache-hydrated", tabKey);
-    this.setAttribute?.("data-r7-settings-panel-hydrate-mode", "compact-node-dirty-patch");
+    this.setAttribute?.("data-r7-settings-panel-hydrate-mode", "real-detail-subpage-html");
+    this.setAttribute?.("data-r7-settings-panel-summary-patch-replaced", "true");
     return true;
   }
 

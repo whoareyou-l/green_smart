@@ -9,15 +9,17 @@ def source() -> str:
     return PANEL.read_text()
 
 
-def test_v1_15_19_cached_settings_hydrate_uses_compact_node_not_full_html():
+def test_v1_15_32_cached_settings_hydrate_uses_real_cards_not_compact_summary():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.31"' in text
+    assert 'const REBUILD_VERSION = "1.15.32"' in text
     block = text[text.index('_hydrateR7CachedSettingsPanel(tabKey)'):text.index('_ensureR7SettingsModalRoot()', text.index('_hydrateR7CachedSettingsPanel(tabKey)'))]
-    assert '_buildR7CachedSettingsPanelPatchNode(tabKey)' in block
-    assert 'panel.replaceChildren(patchNode);' in block
-    assert 'compact-node-dirty-patch' in block
-    assert '_renderR7SubtabPanelForDomain("settings-admin", tabKey)' not in block
-    assert 'panel.innerHTML = fullHtml;' not in block
+    assert '_renderR7SubtabPanelForDomain("settings-admin", tabKey)' in block
+    assert 'template.innerHTML = fullHtml;' in block
+    assert 'panel.replaceChildren(...Array.from(template.content.childNodes));' in block
+    assert 'real-detail-subpage-html' in block
+    assert '_buildR7CachedSettingsPanelPatchNode(tabKey)' not in block
+    assert 'panel.replaceChildren(patchNode);' not in block
+    assert 'compact-node-dirty-patch' not in block
 
 
 def test_v1_15_19_compact_patch_builds_summary_metric_cards_and_actions():
@@ -61,5 +63,5 @@ def test_v1_15_19_cached_action_buttons_are_bound_to_lazy_modal_or_dirty_patch()
 
 def test_v1_15_19_plan_documents_no_full_panel_hydrate():
     plan = PLAN.read_text()
-    for marker in ['full hydrate 분해', 'panel.innerHTML = fullHtml', 'summary-card-dirty-patch', 'not-used-compact-patch', 'GitHub Release v1.15.31']:
+    for marker in ['full hydrate 분해', 'panel.innerHTML = fullHtml', 'summary-card-dirty-patch', 'not-used-compact-patch', 'GitHub Release v1.15.32']:
         assert marker in plan
