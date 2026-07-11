@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.27";
+const REBUILD_VERSION = "1.15.28";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -314,6 +314,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7SettingsPanelCacheStats = { hits: 0, misses: 0 };
     this._r7DomainShellCacheStats = { hits: 0, misses: 0 };
     this._r7SettingsPerf = { eventKind: "idle", startedAt: 0, samples: {} };
+    this._r7SettingsHashRouteHandler = () => this._handleR7SettingsHashRoute("hashchange");
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -331,7 +332,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   connectedCallback() {
     this._applyR7HostWidthPolicy();
+    globalThis.window?.addEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
     this.render();
+    this._handleR7SettingsHashRoute("connected");
     this._ensureR7SidebarExternalControlObservers();
     this._loadHomeContext();
     this._loadSettingsUsersPermissions();
@@ -339,6 +342,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   disconnectedCallback() {
+    globalThis.window?.removeEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
     this._r7SidebarExternalControlResizeObserver?.disconnect?.();
     this._r7SidebarExternalControlMutationObserver?.disconnect?.();
     if (this._r7SidebarExternalControlResizeHandler) globalThis.window?.removeEventListener?.("resize", this._r7SidebarExternalControlResizeHandler);
@@ -1584,6 +1588,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _openR7SettingsDomainFromMobile() {
     return this._openR7SettingsDomainFromCache("mobile-settings-button");
+  }
+
+  _handleR7SettingsHashRoute(source = "hashchange") {
+    const hash = String(globalThis.window?.location?.hash || "").replace(/^#/, "");
+    if (hash !== "settings-admin") return false;
+    this.setAttribute?.("data-r7-settings-hash-route", source);
+    return this._openR7SettingsDomainFromCache(`hash-${source}`);
   }
 
   _openR7SettingsDomainFromCache(source = "settings-navigation") {
@@ -3057,7 +3068,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
           <small data-r7-mobile-user-role style="font-size:11px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${userRole}</small>
         </button>
         <button type="button" data-r7-mobile-logout-button="true" data-r7-sidebar-logout-button="true" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" title="로그아웃" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("logout")}</button>
-        <button type="button" data-r7-mobile-settings-button="true" data-r7-mobile-settings-action="open-settings-domain" data-r7-mobile-route-mode="dedicated-internal-button-no-hash" data-r7-sidebar-target="settings-admin" data-r7-sidebar-active="${this._activeR7Domain === "settings-admin" ? "true" : "false"}" title="설정" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</button>
+        <a href="#settings-admin" role="button" data-r7-mobile-settings-button="true" data-r7-mobile-settings-action="open-settings-domain" data-r7-mobile-route-mode="dedicated-internal-anchor-hash-cache" data-r7-sidebar-target="settings-admin" data-r7-sidebar-active="${this._activeR7Domain === "settings-admin" ? "true" : "false"}" aria-label="설정" title="설정" style="${mobileIconActionStyle}text-decoration:none;">${this._r7SidebarLineIcon("settings-admin")}</a>
       </div>
       <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" data-r7-mobile-domain-tablist="true" data-r7-mobile-active-domain-scroll-align="right-edge" role="tablist" style="display:flex;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid #edf4ef;margin:4px -10px 0;padding:0 10px;">${domainButtons}</div>
     </nav>`;

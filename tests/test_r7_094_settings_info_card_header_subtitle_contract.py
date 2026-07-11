@@ -39,9 +39,9 @@ def _card(html: str, marker: str, next_marker: str) -> str:
 
 
 def test_r7_094_version_surfaces_are_1_14_19():
-    assert '"version": "1.15.27"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.27"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.27"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.28"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.28"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.28"' in _read(REBUILD_PANEL)
 
 
 def test_r7_094_settings_info_subtitle_is_inside_header_headline_next_to_icon():

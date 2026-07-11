@@ -35,9 +35,9 @@ def _render_settings():
 
 
 def test_r7_067_version_surfaces_are_1_13_2():
-    assert '"version": "1.15.27"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.27"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.27"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.28"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.28"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.28"' in _read(REBUILD_PANEL)
 
 
 def test_r7_067_visible_settings_tabs_are_only_current_four_tabs():

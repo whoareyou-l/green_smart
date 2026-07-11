@@ -1,6 +1,6 @@
 # R7-120 Settings system integration CDB cards
 
-Status: current baseline for `v1.15.27`.
+Status: current baseline for `v1.15.28`.
 
 ## Scope
 

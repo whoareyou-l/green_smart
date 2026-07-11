@@ -44,9 +44,9 @@ def _render_script() -> str:
 
 
 def test_r7_053_version_surfaces_are_1_12_88():
-    assert '"version": "1.15.27"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.27"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.27"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.28"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.28"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.28"' in _read(REBUILD_PANEL)
 
 
 def test_r7_053_records_workflow_renders_image_like_dashboard_cards():
@@ -79,7 +79,7 @@ def test_r7_053_records_workflow_deletes_previous_visible_card_content_and_skele
         'data-r7-record-section="missing-attention"',
         'data-r7-record-section="record-source"',
         'data-r7-record-flow-skeleton="write-history-pls"',
-        'data-r7-record-api-contract="planned-v1.15.27"',
+        'data-r7-record-api-contract="planned-v1.15.28"',
         'data-r7-record-api-prefix="/api/green_smart/rebuild/crop-records"',
         '작성·히스토리 플로우',
         '생육조사 작성 플로우',

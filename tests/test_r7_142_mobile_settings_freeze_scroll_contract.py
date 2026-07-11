@@ -11,13 +11,14 @@ def source() -> str:
 
 def test_v1_15_08_mobile_settings_uses_dedicated_internal_action():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.27"' in text
+    assert 'const REBUILD_VERSION = "1.15.28"' in text
     assert 'data-r7-mobile-settings-action="open-settings-domain"' in text
-    assert 'data-r7-mobile-route-mode="dedicated-internal-button-no-hash"' in text
-    assert '<a href="#settings-admin" data-r7-mobile-settings-button="true"' not in text
+    assert 'data-r7-mobile-route-mode="dedicated-internal-anchor-hash-cache"' in text
+    assert '<a href="#settings-admin" role="button" data-r7-mobile-settings-button="true"' in text
     assert '_openR7SettingsDomainFromMobile()' in text
+    assert '_handleR7SettingsHashRoute(source = "hashchange")' in text
+    assert 'return this._openR7SettingsDomainFromCache(`hash-${source}`);' in text
     assert 'this._activeR7Domain = "settings-admin"' in text
-    assert '"settings-admin": "greenhouse-zones"' in text
 
 
 def test_v1_15_08_mobile_settings_fast_landing_defers_heavy_settings_panels():

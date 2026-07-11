@@ -1,6 +1,6 @@
 # R7-083 Settings audit CDA modal
 
-Status: current baseline for `v1.15.27`.
+Status: current baseline for `v1.15.28`.
 
 ## Problem
 

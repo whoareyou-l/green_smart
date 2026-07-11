@@ -10,18 +10,18 @@ def source() -> str:
 
 def test_v1_15_07_mobile_hides_pc_external_protruding_controls():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.27"' in text
+    assert 'const REBUILD_VERSION = "1.15.28"' in text
     assert '[data-r7-sidebar-external-controls-shell="true"], [data-r7-sidebar-external-controls-shell="true"] * { display:none !important; pointer-events:none !important; visibility:hidden !important; }' in text
     assert 'data-r7-sidebar-external-controls-shell="true"' in text
 
 
-def test_v1_15_07_mobile_domain_and_settings_are_internal_buttons_not_hash_links():
+def test_v1_15_07_mobile_domain_buttons_are_internal_and_settings_has_hash_fallback():
     text = source()
     assert 'data-r7-mobile-route-mode="internal-button-no-hash"' in text
     assert '<button type="button" data-r7-mobile-domain-button="true"' in text
-    assert '<button type="button" data-r7-mobile-settings-button="true"' in text
+    assert '<a href="#settings-admin" role="button" data-r7-mobile-settings-button="true"' in text
+    assert 'data-r7-mobile-route-mode="dedicated-internal-anchor-hash-cache"' in text
     assert '<a href="#${group.target}" data-r7-mobile-domain-button="true"' not in text
-    assert '<a href="#settings-admin" data-r7-mobile-settings-button="true"' not in text
 
 
 def test_v1_15_07_mobile_navigation_uses_internal_router_without_hash_scroll():
