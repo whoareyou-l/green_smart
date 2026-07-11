@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_07_mobile_hides_pc_external_protruding_controls():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.22"' in text
+    assert 'const REBUILD_VERSION = "1.15.23"' in text
     assert '[data-r7-sidebar-external-controls-shell="true"], [data-r7-sidebar-external-controls-shell="true"] * { display:none !important; pointer-events:none !important; visibility:hidden !important; }' in text
     assert 'data-r7-sidebar-external-controls-shell="true"' in text
 

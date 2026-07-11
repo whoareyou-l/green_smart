@@ -1,6 +1,6 @@
 # R7-074 Common body row grammar
 
-Status: current baseline for `v1.15.22`.
+Status: current baseline for `v1.15.23`.
 
 ## Why
 

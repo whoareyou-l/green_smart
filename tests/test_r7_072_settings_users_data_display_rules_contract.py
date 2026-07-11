@@ -51,9 +51,9 @@ def _render_users_permissions():
 
 
 def test_r7_072_version_surfaces_are_1_13_7():
-    assert '"version": "1.15.22"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.22"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.22"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.23"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.23"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.23"' in _read(REBUILD_PANEL)
 
 
 def test_r7_072_approval_card_has_no_inline_allow_reject_buttons():

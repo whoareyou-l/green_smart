@@ -1,6 +1,6 @@
 # R7-087 Permission matrix ha-icon and edit action hotfix
 
-Status: current baseline for `v1.15.22`.
+Status: current baseline for `v1.15.23`.
 
 ## Scope
 

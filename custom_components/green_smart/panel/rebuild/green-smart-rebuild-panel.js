@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.22";
+const REBUILD_VERSION = "1.15.23";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -312,7 +312,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7DomainShellCache = new Map();
     this._r7SettingsPanelCacheStats = { hits: 0, misses: 0 };
     this._r7DomainShellCacheStats = { hits: 0, misses: 0 };
-    this._r7SettingsPerf = { eventKind: "idle", startedAt: 0 };
+    this._r7SettingsPerf = { eventKind: "idle", startedAt: 0, samples: {} };
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
 
@@ -2260,10 +2260,58 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const elapsed = Math.max(0, Math.round(now - startedAt));
     const attr = `data-r7-perf-settings-${label}-ms`;
     const slaAttr = `data-r7-perf-settings-${label}-sla`;
+    const sla = elapsed <= Number(targetMs) ? `under-${targetMs}ms` : `over-${targetMs}ms`;
+    if (!this._r7SettingsPerf) this._r7SettingsPerf = { eventKind: "unknown", startedAt: now, samples: {} };
+    if (!this._r7SettingsPerf.samples) this._r7SettingsPerf.samples = {};
+    this._r7SettingsPerf.samples[label] = { elapsed, targetMs: Number(targetMs), sla };
     this.setAttribute?.(attr, String(elapsed));
-    this.setAttribute?.(slaAttr, elapsed <= Number(targetMs) ? `under-${targetMs}ms` : `over-${targetMs}ms`);
+    this.setAttribute?.(slaAttr, sla);
     this.setAttribute?.("data-r7-perf-settings-last-label", label);
+    this._updateR7SettingsPerfSnapshot();
     return elapsed;
+  }
+
+  _snapshotR7SettingsPerf() {
+    const read = (label) => ({
+      ms: this.getAttribute?.(`data-r7-perf-settings-${label}-ms`) || "",
+      sla: this.getAttribute?.(`data-r7-perf-settings-${label}-sla`) || "",
+    });
+    const labels = ["tab-active", "panel-visible", "shell-visible", "dirty-patch", "modal-open", "interaction-complete"];
+    const values = Object.fromEntries(labels.map((label) => [label, read(label)]));
+    const recorded = labels.filter((label) => values[label].ms !== "");
+    const over = recorded.filter((label) => String(values[label].sla).startsWith("over-"));
+    const summary = recorded.length === 0 ? "no-samples" : over.length ? "has-over-sla" : "all-under-sla";
+    return {
+      eventKind: this.getAttribute?.("data-r7-perf-settings-event-kind") || this._r7SettingsPerf?.eventKind || "idle",
+      lastLabel: this.getAttribute?.("data-r7-perf-settings-last-label") || "",
+      summary,
+      recorded,
+      over,
+      values,
+    };
+  }
+
+  _updateR7SettingsPerfSnapshot() {
+    const snapshot = this._snapshotR7SettingsPerf();
+    this.setAttribute?.("data-r7-perf-settings-summary", snapshot.summary);
+    this.setAttribute?.("data-r7-perf-settings-snapshot-updated", "true");
+    try {
+      this.setAttribute?.("data-r7-perf-settings-snapshot-json", JSON.stringify(snapshot));
+    } catch (_err) {
+      this.setAttribute?.("data-r7-perf-settings-snapshot-json", "{}");
+    }
+    return snapshot;
+  }
+
+  _runR7SettingsPerfMarkerSmoke() {
+    this._startR7SettingsPerf("self-smoke");
+    this._recordR7SettingsPerf("tab-active", 100);
+    this._recordR7SettingsPerf("panel-visible", 150);
+    this._recordR7SettingsPerf("dirty-patch", 500);
+    this._recordR7SettingsPerf("modal-open", 500);
+    this._recordR7SettingsPerf("interaction-complete", 2000);
+    this.setAttribute?.("data-r7-perf-settings-self-smoke", "ok");
+    return this._updateR7SettingsPerfSnapshot();
   }
 
   _handleR7SettingsDelegatedClick(event) {
