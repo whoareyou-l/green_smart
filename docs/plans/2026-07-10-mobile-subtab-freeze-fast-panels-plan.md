@@ -1,14 +1,14 @@
-# v1.15.30 모바일 하위탭/도메인 전환 freeze 제거 계획
+# v1.15.31 모바일 하위탭/도메인 전환 freeze 제거 계획
 
 ## 사용자 증상
 
-- v1.15.30 이후 모바일 설정 도메인 페이지 진입은 가능하다.
+- v1.15.31 이후 모바일 설정 도메인 페이지 진입은 가능하다.
 - 그러나 설정 하위탭을 누르면 이전 페이지에서 약 1분 정도 멈춘 뒤 이전 화면에서 동작하는 것처럼 보인다.
 - 다른 설명/도메인 페이지 이동도 일정 시간 멈춘 뒤 설정 페이지로 이동한다.
 
 ## 확인한 원인
 
-### 1. v1.15.30 fast landing은 설정 최초 진입에만 적용됨
+### 1. v1.15.31 fast landing은 설정 최초 진입에만 적용됨
 
 `_openR7SettingsDomainFromMobile()`은 `data-r7-mobile-settings-fast-landing`을 켜지만, 하위탭 클릭 경로인 `setR7DomainSubtab()`에는 같은 fast path가 없다.
 
@@ -24,7 +24,7 @@ tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join(
 
 ### 3. 기존 전체 테스트는 데스크톱/계약 렌더에서 모든 marker가 HTML에 존재해야 한다
 
-따라서 전체 렌더를 전역 active-only로 바꾸면 과거 계약이 깨진다. v1.15.30 시도에서 실제로 기존 도메인 marker 계약들과 충돌했다.
+따라서 전체 렌더를 전역 active-only로 바꾸면 과거 계약이 깨진다. v1.15.31 시도에서 실제로 기존 도메인 marker 계약들과 충돌했다.
 
 ## 수정 방침
 
@@ -55,9 +55,9 @@ tabs.map(([key]) => this.renderR7SettingsAdminSubtabPanel(key, activeTab)).join(
 
 - 계약 테스트: 모바일 fast panel mode marker, active-only helper, subtab event stopPropagation, deferred template 존재 확인.
 - 기존 전체 테스트: 데스크톱/일반 렌더는 full panels 유지하므로 통과해야 한다.
-- Prod served smoke: v1.15.30, mobile fast panel mode, deferred subtab panel, subtab no-bubble marker, right-edge scroll marker 확인.
+- Prod served smoke: v1.15.31, mobile fast panel mode, deferred subtab panel, subtab no-bubble marker, right-edge scroll marker 확인.
 - HA restart 후 stable log 확인.
-- commit/tag/push/GitHub Release v1.15.30 생성.
+- commit/tag/push/GitHub Release v1.15.31 생성.
 
 ## 성공 기준
 

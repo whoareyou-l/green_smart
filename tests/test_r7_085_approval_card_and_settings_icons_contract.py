@@ -22,9 +22,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_085_version_surfaces_are_1_14_10():
-    assert '"version": "1.15.30"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.30"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.30"' in _read(PANEL)
+    assert '"version": "1.15.31"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.31"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.31"' in _read(PANEL)
 
 
 def test_r7_085_approval_needed_card_has_no_inline_confirm_button():

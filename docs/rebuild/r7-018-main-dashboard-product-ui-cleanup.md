@@ -1,6 +1,6 @@
 # R7-018 Main Dashboard Product UI Cleanup
 
-> 기준 버전: `v1.15.30`
+> 기준 버전: `v1.15.31`
 > Status: R7-018 complete
 > Purpose: Rework the operations-home dashboard so rendered UI is operator-facing product UI, not a roadmap/development explanation surface.
 
@@ -100,5 +100,5 @@ Default operations-home render has no visible dev/roadmap terms
 R7-014~R7-017 contracts still pass
 Full pytest passes
 node --check passes for both panel files
-Prod static smoke verifies v1.15.30 and R7-018 markers
+Prod static smoke verifies v1.15.31 and R7-018 markers
 ```

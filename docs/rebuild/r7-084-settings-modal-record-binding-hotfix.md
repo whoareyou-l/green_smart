@@ -1,6 +1,6 @@
 # R7-084 Settings modal record binding hotfix
 
-Status: current baseline for `v1.15.30`.
+Status: current baseline for `v1.15.31`.
 
 ## Problem
 

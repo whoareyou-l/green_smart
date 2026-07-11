@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.30";
+const REBUILD_VERSION = "1.15.31";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -1795,17 +1795,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
   _showR7CachedSettingsPanel(panelSection, tabKey) {
     const panel = this._getOrCreateR7CachedSettingsPanel(tabKey);
     Array.from(panelSection.children || []).forEach((node) => {
+      if (!node.matches?.('[data-r7-settings-cached-panel]')) {
+        node.remove?.();
+        return;
+      }
       node.hidden = true;
+      node.style && (node.style.display = "none");
       node.setAttribute?.("aria-hidden", "true");
-    });
-    panelSection.querySelectorAll?.('[data-r7-settings-cached-panel]').forEach((node) => {
-      node.hidden = node !== panel;
-      node.setAttribute?.("aria-hidden", node === panel ? "false" : "true");
     });
     if (!panel.isConnected) panelSection.appendChild(panel);
     panel.hidden = false;
+    panel.style && (panel.style.display = "");
     panel.setAttribute?.("aria-hidden", "false");
     panelSection.setAttribute?.("data-r7-settings-panel-host-cache", "persistent-dom-show-hide");
+    panelSection.setAttribute?.("data-r7-settings-panel-host-content", "cached-panels-only-no-full-detail-children");
     this.setAttribute?.("data-r7-settings-panel-switch-mode", "cached-dom-show-hide");
     this._recordR7SettingsPerf("panel-visible", 150);
     return panel;
@@ -2153,13 +2156,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.setAttribute?.("data-r7-settings-domain-shell-cache-fallback", "missing-frame-or-panel");
       return false;
     }
-    Array.from(workspace.children || []).forEach((node) => {
-      node.hidden = node !== shell;
-      node.setAttribute?.("aria-hidden", node === shell ? "false" : "true");
-    });
-    if (!shell.isConnected) workspace.appendChild(shell);
+    workspace.replaceChildren?.(shell);
+    if (shell.parentElement !== workspace) {
+      Array.from(workspace.children || []).forEach((node) => node.remove?.());
+      workspace.appendChild(shell);
+    }
     shell.hidden = false;
+    shell.style && (shell.style.display = "");
     shell.setAttribute("aria-hidden", "false");
+    workspace.setAttribute?.("data-r7-settings-domain-shell-attach-mode", "replace-children-single-settings-shell");
     this.setAttribute?.("data-r7-settings-domain-shell-attach-cache-state", wasPrewarmed ? "hit-prewarmed" : hadShellBeforeAttach ? "hit" : "miss-created");
     shell.setAttribute?.("data-r7-settings-domain-shell-attach-cache-state", wasPrewarmed ? "hit-prewarmed" : hadShellBeforeAttach ? "hit" : "miss-created");
     this._bindR7SettingsDelegatedEvents(shell);
