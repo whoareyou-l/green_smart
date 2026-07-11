@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.24";
+const REBUILD_VERSION = "1.15.25";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -2590,10 +2590,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
       link.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        this._activateR7DomainFromNavigation(link.dataset.r7SidebarTarget);
+        const target = link.dataset.r7SidebarTarget;
+        if (target === "settings-admin") this._openR7SettingsDomainFromMobile();
+        else this._activateR7DomainFromNavigation(target);
       }, { passive: false });
     });
     this.querySelectorAll('[data-r7-mobile-settings-action="open-settings-domain"]').forEach((button) => {
+      if (button.getAttribute("data-r7-sidebar-target") === "settings-admin") return;
+      if (button.getAttribute("data-r7-mobile-settings-bound") === "true") return;
+      button.setAttribute("data-r7-mobile-settings-bound", "true");
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -3042,7 +3047,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
           <small data-r7-mobile-user-role style="font-size:11px;line-height:1.2;color:#6f7f72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${userRole}</small>
         </button>
         <button type="button" data-r7-mobile-logout-button="true" data-r7-sidebar-logout-button="true" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" title="로그아웃" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("logout")}</button>
-        <button type="button" data-r7-mobile-settings-button="true" data-r7-mobile-settings-action="open-settings-domain" data-r7-mobile-route-mode="dedicated-internal-button-no-hash" title="설정" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</button>
+        <button type="button" data-r7-mobile-settings-button="true" data-r7-mobile-settings-action="open-settings-domain" data-r7-mobile-route-mode="dedicated-internal-button-no-hash" data-r7-sidebar-target="settings-admin" data-r7-sidebar-active="${this._activeR7Domain === "settings-admin" ? "true" : "false"}" title="설정" style="${mobileIconActionStyle}">${this._r7SidebarLineIcon("settings-admin")}</button>
       </div>
       <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" data-r7-mobile-domain-tablist="true" data-r7-mobile-active-domain-scroll-align="right-edge" role="tablist" style="display:flex;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid #edf4ef;margin:4px -10px 0;padding:0 10px;">${domainButtons}</div>
     </nav>`;

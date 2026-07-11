@@ -80,8 +80,8 @@ def test_v11023_versions_and_docs_record_operator_label_hotfix():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.15.24"' in manifest
-    assert 'const VERSION = "1.15.24"' in panel
+    assert '"version": "1.15.25"' in manifest
+    assert 'const VERSION = "1.15.25"' in panel
     assert "v1.10.23 Crop summary operator labels" in docs
     for marker in (
         "data-crop-ai-summary-environment-label",
