@@ -1,6 +1,6 @@
 # R7-057 Records Workflow status, modal, and API vertical slice
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.15.20`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.15.21`.
 
 ## Scope
 

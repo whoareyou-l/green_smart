@@ -1,6 +1,6 @@
 # R7-065 Growth survey plant object selector
 
-Status: current baseline for `v1.15.20`.
+Status: current baseline for `v1.15.21`.
 
 ## Scope
 

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.20";
+const REBUILD_VERSION = "1.15.21";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
 const REBUILD_SETTINGS_USERS_PERMISSIONS_API_PATH = "green_smart/rebuild/settings/users-permissions";
@@ -1874,6 +1874,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     modal.dataset.r7SettingsModalCacheMounted = type;
     root.replaceChildren(modal);
     root.hidden = false;
+    this._bindR7SettingsDelegatedEvents(root);
+    this._bindR7SettingsDelegatedEvents(modal);
     this.setAttribute?.("data-r7-settings-modal-cache-mounted", type);
     this.setAttribute?.("data-r7-settings-modal-render-mode", "lazy-cache-on-open-no-full-render");
     this._bindSettingsApprovalActions();
@@ -1982,6 +1984,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.setAttribute?.("data-r7-mobile-dom-patch-subtab", "true");
       this.setAttribute?.("data-r7-mobile-subtab-render-mode", "persistent-dom-cache-show-hide");
       this.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+      this.setAttribute?.("data-r7-settings-patched-bindings", "fallback-after-delegation");
       this._bindR7PatchedInteractiveActions();
       this._scheduleR7MobileActiveSubtabScroll();
       if (cachedPanel?.dataset?.r7CachedPanelHydrated !== "true" || this._r7SettingsPanelDirty?.has?.(tabKey)) this._scheduleR7MobileFullSubtabHydration(domain, tabKey);
@@ -2030,6 +2033,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (!shell.isConnected) workspace.appendChild(shell);
     shell.hidden = false;
     shell.setAttribute("aria-hidden", "false");
+    this._bindR7SettingsDelegatedEvents(shell);
     workspace.setAttribute("data-r7-settings-domain-shell-host-cache", "persistent-dom-show-hide");
     const frame = shell.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
     const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
@@ -2228,6 +2232,64 @@ class GreenSmartRebuildPanel extends HTMLElement {
         this.setR7DomainSubtab(button.dataset.r7DomainSubtabFor, button.dataset.r7DomainSubtabKey, true);
       }, { passive: false });
     });
+  }
+
+  _handleR7SettingsDelegatedClick(event) {
+    const target = event?.target;
+    const closest = (selector) => target?.closest?.(selector);
+    const settingsSubtab = closest('button[data-r7-domain-subtab][data-r7-domain-subtab-for="settings-admin"][data-r7-domain-subtab-key]');
+    if (settingsSubtab) {
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      this.setAttribute?.("data-r7-settings-delegated-event", "subtab");
+      this.setAttribute?.("data-r7-mobile-subtab-route", "delegated-settings-shell-cache");
+      this._r7MobileFastPanelMode = true;
+      this.setR7DomainSubtab("settings-admin", settingsSubtab.getAttribute("data-r7-domain-subtab-key"), true);
+      return true;
+    }
+    const cachedAction = closest('[data-r7-open-settings-modal]');
+    if (cachedAction) {
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      const kind = cachedAction.getAttribute("data-r7-open-settings-modal") || "";
+      this.setAttribute?.("data-r7-settings-delegated-event", kind || "cached-action");
+      if (kind === "approval-list") this._openSettingsApprovalListModal();
+      else if (kind === "audit-log") this._openSettingsAuditLogModal();
+      else if (kind === "permission-matrix") this._openSettingsPermissionMatrixModal();
+      else if (kind === "system-refresh") { this._markR7SettingsPanelDirty("system-integration"); this._hydrateR7CachedSettingsPanel("system-integration"); }
+      else this.setAttribute?.("data-r7-settings-cached-action-last", kind);
+      return true;
+    }
+    const approvalListButton = closest('[data-r7-settings-approval-list-button]');
+    if (approvalListButton) { event.preventDefault?.(); event.stopPropagation?.(); this.setAttribute?.("data-r7-settings-delegated-event", "approval-list-button"); this._openSettingsApprovalListModal(); return true; }
+    const auditLogButton = closest('[data-r7-settings-audit-log-button]');
+    if (auditLogButton) { event.preventDefault?.(); event.stopPropagation?.(); this.setAttribute?.("data-r7-settings-delegated-event", "audit-log-button"); this._openSettingsAuditLogModal(); return true; }
+    const permissionMatrixButton = closest('[data-r7-settings-permission-matrix-button]');
+    if (permissionMatrixButton) { event.preventDefault?.(); event.stopPropagation?.(); this.setAttribute?.("data-r7-settings-delegated-event", "permission-matrix-button"); this._openSettingsPermissionMatrixModal(); return true; }
+    const approvalListClose = closest('[data-r7-settings-approval-list-close-button]');
+    if (approvalListClose) { event.preventDefault?.(); event.stopPropagation?.(); this._closeSettingsApprovalListModal(); return true; }
+    const auditLogClose = closest('[data-r7-settings-audit-log-close-button]');
+    if (auditLogClose) { event.preventDefault?.(); event.stopPropagation?.(); this._closeSettingsAuditLogModal(); return true; }
+    const permissionMatrixClose = closest('[data-r7-settings-permission-matrix-close-button]');
+    if (permissionMatrixClose) { event.preventDefault?.(); event.stopPropagation?.(); this._closeSettingsPermissionMatrixModal(); return true; }
+    const approvalRow = closest('[data-r7-settings-approval-list-item-button]');
+    if (approvalRow) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsApprovalListRequest(approvalRow.getAttribute("data-r7-settings-approval-list-item-button")); return true; }
+    const auditRow = closest('[data-r7-settings-audit-log-list-item-button]');
+    if (auditRow) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsAuditLogRow(auditRow.getAttribute("data-r7-settings-audit-log-list-item-button")); return true; }
+    const permissionBucket = closest('[data-r7-settings-permission-edit]');
+    if (permissionBucket) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsPermissionMatrixBucket(permissionBucket.getAttribute("data-r7-settings-permission-edit")); return true; }
+    const permissionRole = closest('[data-r7-settings-role-permission-list-item-button]');
+    if (permissionRole) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsPermissionMatrixRole(permissionRole.getAttribute("data-r7-settings-role-permission-list-item-button") || "admin"); return true; }
+    return false;
+  }
+
+  _bindR7SettingsDelegatedEvents(root = this) {
+    if (!root || root.getAttribute?.("data-r7-settings-delegated-events-bound") === "true") return false;
+    root.setAttribute?.("data-r7-settings-delegated-events-bound", "true");
+    root.setAttribute?.("data-r7-settings-event-mode", "delegated-single-listener");
+    root.addEventListener?.("click", (event) => this._handleR7SettingsDelegatedClick(event), { capture: true });
+    this.setAttribute?.("data-r7-settings-event-mode", "delegated-single-listener");
+    return true;
   }
 
   _bindSettingsApprovalActions() {
