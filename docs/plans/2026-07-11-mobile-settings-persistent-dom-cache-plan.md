@@ -1,4 +1,4 @@
-# v1.15.33 모바일 설정 persistent DOM cache 전환 계획
+# v1.15.34 모바일 설정 persistent DOM cache 전환 계획
 
 ## 배경
 
@@ -8,9 +8,9 @@
 - `render`/`innerHTML`로 갈아끼우는 방식이 아니라, 큰 틀과 변경 틀을 캐시하고 변경된 부분만 반영하는 구조를 원한다.
 - 모달은 버튼을 눌렀을 때만 생성하고, 생성한 모달도 캐시해야 한다.
 
-## 현재 v1.15.33 구조의 한계
+## 현재 v1.15.34 구조의 한계
 
-v1.15.33은 전체 `this.render()`는 많이 줄였지만, 모바일 하위탭 전환은 여전히 다음 구조다.
+v1.15.34은 전체 `this.render()`는 많이 줄였지만, 모바일 하위탭 전환은 여전히 다음 구조다.
 
 ```text
 하위탭 클릭
@@ -125,7 +125,7 @@ if (panel.dataset.r7CachedPanelHydrated !== "true" || dirty) {
 
 ### 6. 모달 lazy cache
 
-v1.15.33에서는 먼저 cache 기반 modal root와 marker를 도입한다.
+v1.15.34에서는 먼저 cache 기반 modal root와 marker를 도입한다.
 
 - 탭 전환 경로에서 모달을 생성하지 않는 marker를 둔다.
 - 모달 open 함수는 이후 단계에서 cached modal로 확장 가능한 `_getOrCreateR7CachedModal(type)` 경로를 사용한다.
@@ -140,4 +140,4 @@ v1.15.33에서는 먼저 cache 기반 modal root와 marker를 도입한다.
 - `data-r7-settings-modal-cache="lazy-on-open"` marker가 존재한다.
 - 전체 테스트 통과.
 - Prod served smoke 통과.
-- GitHub Release v1.15.33 생성.
+- GitHub Release v1.15.34 생성.

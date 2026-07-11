@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.33";
+const REBUILD_VERSION = "1.15.34";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -369,6 +369,60 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return true;
   }
 
+  _refreshR7SettingsSideModalRootWithoutFullRender(reason = "settings-state-change") {
+    let root = this.querySelector?.('[data-r7-settings-side-modal-root="no-full-render"]');
+    if (!root) {
+      root = document.createElement("section");
+      root.dataset.r7SettingsSideModalRoot = "no-full-render";
+      this.appendChild(root);
+    }
+    root.dataset.r7SettingsSideModalRefresh = reason;
+    root.innerHTML = [
+      this.renderR7SettingsGreenhouseCreateModal(),
+      this.renderR7SettingsZoneCreateModal(),
+      this.renderR7SettingsDeviceCreateModal(),
+      this.renderR7SettingsDeviceGroupCreateModal(),
+      this.renderR7SettingsDeviceSensorMappingModal(),
+      this.renderR7SettingsShortcutCdaSplitModal(),
+      this.renderR7SettingsSystemActionModal(),
+    ].join("");
+    this.setAttribute?.("data-r7-settings-side-modal-refresh", reason);
+    this._bindSettingsApprovalActions();
+    this._bindR7SettingsDelegatedEvents(root);
+    return true;
+  }
+
+  _refreshR7ActiveSettingsPanelWithoutFullRender(reason = "settings-state-change", tabKey = "") {
+    if (this._activeR7Domain !== "settings-admin") return false;
+    const activeTab = tabKey || this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
+    const frame = this.querySelector?.('[data-r7-domain-visual-frame-domain="settings-admin"]');
+    const panelSection = frame?.querySelector?.('[data-r7-domain-content-card-section="panel"]');
+    if (!frame || !panelSection) return false;
+    this._markR7SettingsPanelDirty(activeTab);
+    const panel = this._showR7CachedSettingsPanel(panelSection, activeTab);
+    const hydrated = this._hydrateR7CachedSettingsPanel(activeTab);
+    if (!panel || !hydrated) return false;
+    frame.setAttribute?.("data-r7-settings-panel-cache", "persistent-dom");
+    frame.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
+    frame.setAttribute?.("data-r7-settings-panel-post-modal-hydrate", "real-detail-subpage-html");
+    this.setAttribute?.("data-r7-settings-panel-post-modal-refresh", reason);
+    this.setAttribute?.("data-r7-settings-panel-post-modal-tab", activeTab);
+    this.setAttribute?.("data-r7-settings-panel-hydrate-mode", "real-detail-subpage-html");
+    this.setAttribute?.("data-r7-settings-panel-summary-patch-replaced", "true");
+    this._bindR7PatchedInteractiveActions();
+    this._bindR7SettingsDelegatedEvents(frame);
+    return true;
+  }
+
+  _renderOrRefreshR7SettingsPanel(reason = "settings-state-change", tabKey = "") {
+    if (this._refreshR7ActiveSettingsPanelWithoutFullRender(reason, tabKey)) {
+      this._refreshR7SettingsSideModalRootWithoutFullRender(reason);
+      return true;
+    }
+    this.render();
+    return false;
+  }
+
   r7SettingsGreenhouseZoneData() {
     return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], systemIntegration: {} };
   }
@@ -437,7 +491,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   async _submitApprovalRequest() {
     this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), requestState: "submitting" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_APPROVAL_REQUEST_API_PATH, {});
@@ -445,7 +499,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       await this._loadSettingsUsersPermissions();
     } catch (error) {
       this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), requestState: "error", requestError: error?.message || "approval-request-failed" };
-      this.render();
+      this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
 
@@ -453,7 +507,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsApprovalListModal = { open: false };
     this._settingsApprovalModal = { open: true, request };
     if (this._mountR7CachedSettingsModal("approval-detail")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsApprovalListModal() {
@@ -466,19 +520,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsApprovalListModal = { open: true };
     if (this._mountR7CachedSettingsModal("approval-list")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsApprovalListModal() {
     this._settingsApprovalListModal = { open: false };
     if (this._hideR7CachedSettingsModal("approval-list")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsApprovalListRequest(requestId) {
     this._settingsApprovalListModal = { ...(this._settingsApprovalListModal || {}), open: true, selectedId: requestId };
     if (this._mountR7CachedSettingsModal("approval-list")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsAuditLogModal() {
@@ -491,30 +545,30 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsAuditLogModal = { open: true };
     if (this._mountR7CachedSettingsModal("audit-log")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsAuditLogModal() {
     this._settingsAuditLogModal = { open: false };
     if (this._hideR7CachedSettingsModal("audit-log")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsAuditLogRow(rowId) {
     this._settingsAuditLogModal = { ...(this._settingsAuditLogModal || {}), open: true, selectedId: rowId };
     if (this._mountR7CachedSettingsModal("audit-log")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsAuditLogEditModal(auditId) {
     if (!auditId) return;
     this._settingsAuditLogEditModal = { open: true, selectedId: auditId, state: "idle", error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsAuditLogEditModal() {
     this._settingsAuditLogEditModal = { open: false };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsAuditLogEditForm(form) {
@@ -528,7 +582,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       permissionSummary: String(data.get("permissionSummary") || ""),
     };
     this._settingsAuditLogEditModal = { ...(this._settingsAuditLogEditModal || {}), open: true, selectedId: auditId, state: "saving", error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       await this.hass.callApi("PATCH", `${REBUILD_SETTINGS_USER_ROLE_API_PREFIX}${encodeURIComponent(auditId)}`, payload);
@@ -537,7 +591,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       await this._loadSettingsUsersPermissions();
     } catch (error) {
       this._settingsAuditLogEditModal = { ...(this._settingsAuditLogEditModal || {}), open: true, selectedId: auditId, state: "error", error: error?.message || "audit-log-edit-failed" };
-      this.render();
+      this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
 
@@ -548,7 +602,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ? `거부됨: ${current.summary || current.action || auditId}`
       : `수정됨: ${current.summary || current.action || auditId}`;
     this._settingsAuditLogModal = { ...(this._settingsAuditLogModal || {}), open: true, selectedId: auditId, actionState: "saving", actionDecision: decision };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       await this.hass.callApi("PATCH", `${REBUILD_SETTINGS_AUDIT_LOG_API_PREFIX}${encodeURIComponent(auditId)}`, { decision, memo });
@@ -556,7 +610,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       await this._loadSettingsUsersPermissions();
     } catch (error) {
       this._settingsAuditLogModal = { ...(this._settingsAuditLogModal || {}), open: true, selectedId: auditId, actionState: "error", actionError: error?.message || "audit-log-update-failed" };
-      this.render();
+      this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
 
@@ -567,7 +621,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsRolePermissionEditModal = { open: false, state: "idle" };
     this._settingsPermissionMatrixModal = { open: true, selectedRole: this._settingsPermissionMatrixModal?.selectedRole || "admin" };
     if (this._mountR7CachedSettingsModal("permission-matrix")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsPermissionMatrixModal() {
@@ -577,19 +631,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     if (this._hideR7CachedSettingsModal("permission-matrix")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsPermissionMatrixBucket(bucket) {
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: bucket };
     if (this._mountR7CachedSettingsModal("permission-matrix")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsPermissionMatrixRole(role) {
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedRole: role || "admin" };
     if (this._mountR7CachedSettingsModal("permission-matrix")) return;
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _r7SettingsRolePermissionRows() {
@@ -625,7 +679,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsRolePermissionEditModal = { open: true, mode: "create", selectedRole: seed.role, state: "idle", values: { ...seed, role: seed.role === "admin" ? "new_role" : `${seed.role}_copy`, roleLabel: `${seed.roleLabel || seed.title || seed.role} 복사`, note: "역할 권한 추가" } };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsRolePermissionEditModal(role) {
@@ -639,13 +693,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsRolePermissionEditModal = { open: true, mode: "edit", selectedRole: row.role, state: "idle", values: { ...row, note: row.note || "역할 권한 수정" } };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _deleteSettingsRolePermission(role) {
     if (!role || !this.hass?.callApi) return;
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedRole: role, actionState: "deleting" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       const response = await this.hass.callApi(["DEL", "ETE"].join(""), `${REBUILD_SETTINGS_ROLE_PERMISSIONS_API_PREFIX}${encodeURIComponent(role)}`);
       if (response?.settingsUsersPermissions) this._settingsUsersPermissions = response.settingsUsersPermissions;
@@ -654,7 +708,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedRole: role, actionState: "error", actionError: error?.message || "role-permission-delete-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsRolePermissionEditForm(form) {
@@ -662,7 +716,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const modal = this._settingsRolePermissionEditModal || {};
     const isEdit = modal.mode === "edit" && modal.selectedRole;
     this._settingsRolePermissionEditModal = { ...modal, open: true, state: "saving", error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const method = isEdit ? ["PAT", "CH"].join("") : ["P", "OST"].join("");
@@ -675,19 +729,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsRolePermissionEditModal = { ...modal, open: true, state: "error", error: error?.message || "role-permission-save-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsApprovalModal() {
     this._settingsApprovalModal = { open: false, request: null };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _approveSettingsApprovalRequest(requestId, decision = "approve") {
     if (!requestId) return;
     const memo = this.querySelector?.("[data-r7-settings-approval-decision-memo]")?.value || "";
     this._settingsApprovalModal = { ...(this._settingsApprovalModal || {}), approving: true, decision };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       await this.hass.callApi(["P", "OST"].join(""), `${REBUILD_SETTINGS_APPROVAL_DECISION_API_PREFIX}${requestId}/decision`, decision === "reject" ? { decision: "reject", memo } : { decision: "approve", memo });
@@ -696,14 +750,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
       await this._loadSettingsUsersPermissions();
     } catch (error) {
       this._settingsApprovalModal = { ...(this._settingsApprovalModal || {}), approving: false, error: error?.message || "approval-decision-failed" };
-      this.render();
+      this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
 
   async _requestSettingsPermissionBucketChange(bucket = "") {
     const targetBucket = bucket || this._settingsPermissionMatrixModal?.selectedBucket || "권한 버킷";
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: targetBucket, requestState: "submitting" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_PERMISSION_CHANGE_REQUEST_API_PATH, { bucket: targetBucket, requestedRole: "farm_staff", note: `${targetBucket} 권한 변경 요청` });
@@ -711,21 +765,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
       await this._loadSettingsUsersPermissions();
     } catch (error) {
       this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: targetBucket, requestState: "error", error: error?.message || "permission-change-request-failed" };
-      this.render();
+      this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
 
   async _updateSettingsUserRole(haUserId, role = "farm_staff", status = "active") {
     if (!haUserId) return;
     this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), userUpdateState: "submitting", updatingHaUserId: haUserId };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       await this.hass.callApi("PATCH", `${REBUILD_SETTINGS_USER_ROLE_API_PREFIX}${encodeURIComponent(haUserId)}`, { role, status });
       await this._loadSettingsUsersPermissions();
     } catch (error) {
       this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), userUpdateState: "error", userUpdateError: error?.message || "settings-user-role-update-failed" };
-      this.render();
+      this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
 
@@ -737,7 +791,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsZoneCreateModal() {
@@ -747,7 +801,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsDeviceSensorMappingModal() {
@@ -756,7 +810,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceCreateModal = { open: false, state: "idle" };
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: true, state: "idle" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsDeviceCreateModal() {
@@ -766,7 +820,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsDeviceCreateModal = { open: true, state: "idle", values: {} };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsDeviceGroupCreateModal() {
@@ -776,7 +830,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsDeviceGroupCreateModal = { open: true, state: "idle", values: {} };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsDetailActionModal(kind = "all") {
@@ -788,23 +842,23 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (kind === "audit-log-edit" || kind === "all") this._settingsAuditLogEditModal = { open: false, state: "idle" };
     if (kind === "role-permission" || kind === "all") this._settingsRolePermissionEditModal = { open: false, state: "idle" };
     if (kind === "system-action" || kind === "all") this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
 
   _openSettingsGreenhouseInfoSplitModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "greenhouse-info" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsZoneListSplitModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "zone-list" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsEquipmentInfoSplitModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "equipment-info" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _openSettingsDeviceListModal() {
@@ -813,12 +867,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   _openSettingsDeviceGroupListModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "device-group-list" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _openSettingsSystemUpdateModal() {
     this._settingsSystemActionModal = { open: true, kind: "update", state: "loading", data: null, error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_UPDATE_API_PATH);
@@ -826,12 +880,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsSystemActionModal = { open: true, kind: "update", state: "error", data: null, error: error?.message || "system-update-load-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _openSettingsSystemErrorsModal() {
     this._settingsSystemActionModal = { open: true, kind: "errors", state: "loading", data: null, error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_ERRORS_API_PATH);
@@ -839,12 +893,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsSystemActionModal = { open: true, kind: "errors", state: "error", data: null, error: error?.message || "system-errors-load-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _openSettingsSystemCenterConnectionModal() {
     this._settingsSystemActionModal = { open: true, kind: "center", state: "loading", data: null, error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_CENTER_CONNECTION_API_PATH);
@@ -852,12 +906,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsSystemActionModal = { open: true, kind: "center", state: "error", data: null, error: error?.message || "system-center-load-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _openSettingsSystemCenterListModal() {
     this._settingsSystemActionModal = { open: true, kind: "center-list", state: "loading", data: null, error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const data = await this.hass.callApi("GET", REBUILD_SETTINGS_SYSTEM_CENTER_CONNECTION_API_PATH);
@@ -865,37 +919,37 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsSystemActionModal = { open: true, kind: "center-list", state: "error", data: null, error: error?.message || "system-center-list-load-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsSystemActionModal() {
     this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsSystemUpdateTarget(target = "gs") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "update", selectedTarget: target };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsSystemErrorScope(scope = "db") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "errors", selectedScope: scope };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsSystemCenterRow(centerId = "primary") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "center-list", selectedCenterId: centerId };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _deleteSettingsSystemCenterConnection() {
     this._settingsSystemActionModal = { open: true, kind: "center-list", state: "deleted", data: { centerConnection: { baseUrl: "", connectionStatus: "미연결", credentialState: "missing" } }, selectedCenterId: "primary", error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsSystemUpdateAction(target, action = "check") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "update", state: "saving", error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       const data = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_SYSTEM_UPDATE_API_PATH, { target, action });
       this._settingsSystemActionModal = { open: true, kind: "update", selectedTarget: target, state: data?.ok === false ? "error" : "ready", data, error: data?.ok === false ? (data.message || "system-update-action-failed") : "" };
@@ -903,12 +957,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "update", state: "error", error: error?.message || "system-update-action-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsSystemErrorsAction(action = "refresh-watchdog") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "errors", state: "saving", error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       const data = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_SYSTEM_ERRORS_API_PATH, { action });
       this._settingsSystemActionModal = { open: true, kind: "errors", state: "ready", data, error: "" };
@@ -916,13 +970,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "errors", state: "error", error: error?.message || "system-errors-action-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsSystemCenterConnectionForm(form) {
     const payload = this._settingsFormPayload(form);
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "center", state: "saving", error: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       const data = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_SYSTEM_CENTER_CONNECTION_API_PATH, payload);
       this._settingsSystemActionModal = { open: true, kind: "center", state: "ready", data, error: "" };
@@ -930,17 +984,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "center", state: "error", error: error?.message || "system-center-save-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _closeSettingsShortcutCdaSplitModal() {
     this._settingsShortcutCdaModal = { open: false, kind: "" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _selectSettingsGreenhouseInfoRow(greenhouseId) {
     this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: greenhouseId };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _greenhouseById(greenhouseId) {
@@ -958,7 +1012,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       name: greenhouse.name || "제1온실", location: greenhouse.location || "", installType: greenhouse.installType || "NUC edge",
       operatingStatus: greenhouse.operatingStatus || "운영중", timezone: greenhouse.timezone || "Asia/Seoul", status: greenhouse.status || "정상", note: greenhouse.creationReason || greenhouse.note || "",
     } };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _deleteSettingsGreenhouse(greenhouseId) {
@@ -967,10 +1021,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
     await this._loadSettingsGreenhouseZoneData();
     this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: "", actionState: "deleted" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
-  _selectSettingsZoneListRow(zoneId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: zoneId }; this.render(); }
+  _selectSettingsZoneListRow(zoneId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: zoneId }; this._renderOrRefreshR7SettingsPanel("settings-modal-state-change"); }
 
   _zoneById(zoneId) {
     const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().zones) ? this.r7SettingsGreenhouseZoneData().zones : [];
@@ -987,7 +1041,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsZoneCreateModal = { open: true, mode: "edit", zoneId, state: "idle", values: {
       greenhouseId: zone.greenhouseId || zone.greenhouse_id || "", name: zone.zoneName || zone.name || "1구역", purpose: zone.purpose || "재배 구역", area: String(zone.area || "").replace(/[^0-9.]/g, ""), bedCount: rawBedCount, status: zone.status || "정상", note: zone.note || "",
     } };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _deleteSettingsZone(zoneId) {
@@ -996,7 +1050,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
     await this._loadSettingsGreenhouseZoneData();
     this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: "", actionState: "deleted" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   _settingsFormPayload(form) {
@@ -1008,7 +1062,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const modal = this._settingsGreenhouseCreateModal || {};
     const isEdit = modal.mode === "edit" && modal.greenhouseId;
     this._settingsGreenhouseCreateModal = { ...modal, open: true, state: "saving" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const method = isEdit ? "PATCH" : ["P", "OST"].join("");
@@ -1020,7 +1074,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsGreenhouseCreateModal = { ...modal, open: true, state: "error", error: error?.message || (isEdit ? "greenhouse-edit-failed" : "greenhouse-create-failed") };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsZoneCreateForm(form) {
@@ -1028,7 +1082,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const modal = this._settingsZoneCreateModal || {};
     const isEdit = modal.mode === "edit" && modal.zoneId;
     this._settingsZoneCreateModal = { ...modal, open: true, state: "saving" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const method = isEdit ? "PATCH" : ["P", "OST"].join("");
@@ -1040,13 +1094,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsZoneCreateModal = { ...modal, open: true, state: "error", error: error?.message || (isEdit ? "zone-edit-failed" : "zone-create-failed") };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsDeviceSensorMappingForm(form) {
     const payload = this._settingsFormPayload(form);
     this._settingsDeviceSensorMappingModal = { ...(this._settingsDeviceSensorMappingModal || {}), open: true, state: "saving" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH, payload);
@@ -1056,14 +1110,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsDeviceSensorMappingModal = { open: true, state: "error", error: error?.message || "device-sensor-mapping-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsDeviceCreateForm(form) {
     const payload = this._settingsFormPayload(form);
     const modal = this._settingsDeviceCreateModal || {};
     this._settingsDeviceCreateModal = { ...modal, open: true, state: "saving" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_CREATE_API_PATH, payload);
@@ -1073,7 +1127,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsDeviceCreateModal = { ...modal, open: true, state: "error", error: error?.message || "device-create-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _submitSettingsDeviceGroupCreateForm(form) {
@@ -1081,7 +1135,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     payload.deviceIds = Array.from(form.querySelectorAll?.('input[name="deviceIds"]:checked') || []).map((input) => input.value);
     const modal = this._settingsDeviceGroupCreateModal || {};
     this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saving" };
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
       const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH, payload);
@@ -1091,7 +1145,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "error", error: error?.message || "device-group-create-failed" };
     }
-    this.render();
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
   async _loadHomeContext() {

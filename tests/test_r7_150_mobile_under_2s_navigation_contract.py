@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_16_subtab_click_does_not_build_full_panel_before_light_first_paint():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.33"' in text
+    assert 'const REBUILD_VERSION = "1.15.34"' in text
     block = text[text.index('_patchR7MobileSubtabPanel(domain, tabKey)'):text.index('_patchR7MobileActiveDomainPage()', text.index('_patchR7MobileSubtabPanel(domain, tabKey)'))]
     before_light = block[:block.index('panelSection.innerHTML = this._renderR7MobileLightSubtabPanel(domain, tabKey);')]
     assert '_renderR7SubtabPanelForDomain' not in before_light

@@ -13,9 +13,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_113_version_surfaces_are_1_14_44():
-    assert '"version": "1.15.33"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.33"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.33"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.34"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.34"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.34"' in _read(REBUILD_PANEL)
 
 
 def test_r7_113_zone_api_joins_greenhouse_name_and_orders_by_stable_ids():
@@ -42,6 +42,6 @@ def test_r7_113_frontend_zone_normalizer_resolves_greenhouse_name_from_fk_snapsh
 
 def test_r7_113_zone_create_greenhouse_display_number_is_stable_id_order_not_api_updated_order():
     panel = _read(REBUILD_PANEL)
-    body = panel[panel.index("renderR7SettingsZoneCreateModal"):panel.index("renderR7SettingsDeviceSensorMappingModal")]
+    body = panel[panel.index("  renderR7SettingsZoneCreateModal"):panel.index("  renderR7SettingsDeviceSensorMappingModal")]
     assert "sort((a, b) => Number(a.id || a.greenhouseId || 0) - Number(b.id || b.greenhouseId || 0))" in body
     assert "displayNumber: greenhouse.displayNumber || greenhouse.display_number || index + 1" in body

@@ -17,7 +17,7 @@ def block(text: str, start: str, end: str) -> str:
 
 def test_v1_15_18_declares_lazy_modal_root_mount_and_hide_helpers():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.33"' in text
+    assert 'const REBUILD_VERSION = "1.15.34"' in text
     for marker in [
         '_ensureR7SettingsModalRoot()',
         'data-r7-settings-modal-root="lazy-cache"',
@@ -47,7 +47,9 @@ def test_v1_15_18_representative_modal_open_paths_mount_cache_before_full_render
     for fn, call in expectations.items():
         fn_block = text[text.index(fn):text.index('\n  }', text.index(fn))]
         assert call in fn_block
-        assert fn_block.index(call) < fn_block.index('this.render();')
+        refresh = 'this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");'
+        assert refresh in fn_block
+        assert fn_block.index(call) < fn_block.index(refresh)
 
 
 def test_v1_15_18_representative_modal_close_paths_hide_cache_before_full_render():
@@ -60,7 +62,9 @@ def test_v1_15_18_representative_modal_close_paths_hide_cache_before_full_render
     for fn, call in expectations.items():
         fn_block = text[text.index(fn):text.index('\n  }', text.index(fn))]
         assert call in fn_block
-        assert fn_block.index(call) < fn_block.index('this.render();')
+        refresh = 'this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");'
+        assert refresh in fn_block
+        assert fn_block.index(call) < fn_block.index(refresh)
 
 
 def test_v1_15_18_plan_documents_modal_lazy_cache_scope():

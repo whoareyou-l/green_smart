@@ -34,9 +34,9 @@ def _render_with_modal(open_call: str) -> str:
 
 
 def test_r7_096_version_surfaces_are_1_14_21():
-    assert '"version": "1.15.33"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.33"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.33"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.34"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.34"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.34"' in _read(REBUILD_PANEL)
 
 
 def test_r7_096_create_modals_use_record_common_modal_shell_not_direct_cda_overlay():
@@ -45,8 +45,8 @@ def test_r7_096_create_modals_use_record_common_modal_shell_not_direct_cda_overl
     assert 'renderR7RecordCommonModalShell(modalModel, summary, body)' in source
     assert 'data-r7-settings-create-record-common-modal' in source
     assert 'data-r7-settings-create-record-kind' in source
-    detail_start = source.index('renderR7SettingsDetailActionModal')
-    detail_end = source.index('renderR7SettingsGreenhouseCreateModal')
+    detail_start = source.index('  renderR7SettingsDetailActionModal')
+    detail_end = source.index('  renderR7SettingsGreenhouseCreateModal')
     detail_source = source[detail_start:detail_end]
     assert 'renderR7RecordCommonModalShell' in detail_source
     assert 'renderR7CdaModalOverlay' not in detail_source
