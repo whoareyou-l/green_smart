@@ -93,10 +93,10 @@ def test_v11025_versions_and_docs_record_interlock_modal():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.15.46"' in manifest
-    assert 'const VERSION = "1.15.46"' in panel
+    assert '"version": "1.15.47"' in manifest
+    assert 'const VERSION = "1.15.47"' in panel
     assert "v1.10.25 Interlock detail modal" in docs
-    assert "v1.15.46 Interlock detail modal hidden hotfix" in docs
+    assert "v1.15.47 Interlock detail modal hidden hotfix" in docs
     for marker in (
         "data-crop-ai-error-count-open",
         "data-crop-ai-interlock-detail-modal",

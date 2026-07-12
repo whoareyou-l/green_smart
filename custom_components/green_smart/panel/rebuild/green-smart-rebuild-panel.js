@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.46";
+const REBUILD_VERSION = "1.15.47";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -4597,12 +4597,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     const selected = normalized[0];
     const selectedUnmapped = selected.labels.filter((label) => /미연결|unmapped|누락|missing/i.test(String(label))).length;
-    const selectedSensors = selected.sensors;
     const selectedDevices = selected.devices;
     const greenhouseInfo = this.renderR7CdbSummaryCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 정보", primary: "온실 운영 기준", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green", statusKey: "normal-ready" });
     const zoneInfo = this.renderR7CdbSummaryCard({ key: "zone-basic-info", icon: "mdi:view-grid-outline", title: "구역 정보", primary: selected.zoneName, rows: [this._r7SettingsGreenhouseValueRow("구역 용도", selected.purpose), this._r7SettingsGreenhouseValueRow("면적", selected.area), this._r7SettingsGreenhouseValueRow("배드 수", selected.bedCount)], tone: selected.statusTone === "amber" ? "amber" : "green", statusKey: selected.statusTone === "amber" ? "needs-verification" : "normal-ready" });
     const irrigationGroupCount = Math.max(0, selected.labels.filter((label) => /관수|irrigation|밸브|valve/i.test(String(label))).length || Math.min(selectedDevices, 1));
-    const equipmentInfo = this.renderR7CdbSummaryCard({ key: "equipment-composition", icon: "mdi:water-pump", title: "관수그룹 정보", primary: `${selected.zoneName} · 관수그룹 상태`, rows: [this._r7SettingsGreenhouseValueRow("관수그룹", `${irrigationGroupCount}개`, 'data-r7-settings-irrigation-group-count'), this._r7SettingsGreenhouseValueRow("연결 장치", `${selectedDevices}개`, 'data-r7-settings-irrigation-group-device-count'), this._r7SettingsGreenhouseValueRow("미연결", `${selectedUnmapped}개`, 'data-r7-settings-irrigation-group-unmapped-count')], tone: selectedUnmapped ? "amber" : "green", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-equipment-status-card="selected-zone" data-r7-settings-irrigation-group-info-card="true"' });
+    const irrigationMethodLabel = selected.labels.find((label) => /점적|drip|스프링클러|sprinkler|분무|mist|fog|양액|nutrient/i.test(String(label)));
+    const irrigationMethod = irrigationMethodLabel ? String(irrigationMethodLabel).replace(/\s*(관수|irrigation|방식|method)\s*/gi, "").trim() || "점적" : "점적";
+    const outletCount = Math.max(0, selected.labels.filter((label) => /토출|outlet|밸브|valve/i.test(String(label))).length || selectedDevices || irrigationGroupCount);
+    const equipmentInfo = this.renderR7CdbSummaryCard({ key: "equipment-composition", icon: "mdi:water-pump", title: "관수그룹 정보", primary: `${selected.zoneName} · 관수그룹 상태`, rows: [this._r7SettingsGreenhouseValueRow("그룹 수", `${irrigationGroupCount}개`, 'data-r7-settings-irrigation-group-count'), this._r7SettingsGreenhouseValueRow("관수 방식", irrigationMethod, 'data-r7-settings-irrigation-method'), this._r7SettingsGreenhouseValueRow("토출구 수", `${outletCount}개`, 'data-r7-settings-irrigation-outlet-count')], tone: selectedUnmapped ? "amber" : "green", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-equipment-status-card="selected-zone" data-r7-settings-irrigation-group-info-card="true"' });
     const createCard = ({ kind, title, icon, primary, note, addLabel, addAttr, shortcutLabel, shortcutAttr, tone = "blue" }) => this.renderR7CdbButtonTwoCard({ kind, icon, title, statusKey: "due-today", tone, primary, note, firstLabel: addLabel, firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: `${addAttr} data-r7-settings-modal-skip-record-binding="true"`, secondLabel: shortcutLabel, secondIcon: "mdi:history", secondTone: "blue", secondAttrs: `${shortcutAttr} data-r7-settings-modal-skip-record-binding="true"`, extraAttrs: `data-r7-settings-create-card="${kind}" data-r7-settings-greenhouse-summary-card="${kind.replace('settings-', '').replace('-create', '')}-create" data-r7-settings-zone-create-reference-card="image-like-common-card"` });
     const createCards = [
       createCard({ kind: "settings-greenhouse-create", title: "온실 생성", icon: "mdi:greenhouse", primary: "새 온실 없음", note: "온실을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 온실 추가", addAttr: 'data-r7-settings-greenhouse-create-button', shortcutLabel: "온실 정보", shortcutAttr: 'data-r7-settings-greenhouse-info-shortcut-button' }),

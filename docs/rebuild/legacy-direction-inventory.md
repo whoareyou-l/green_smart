@@ -1,6 +1,6 @@
 # RS-009 Legacy Direction Inventory
 
-> 기준 버전: `v1.15.46` / updated in `v1.15.46`
+> 기준 버전: `v1.15.47` / updated in `v1.15.47`
 > Status: active boundary contract
 > 목적: Green Smart rebuild에서 legacy가 제품 방향성으로 남지 않도록, historical reference / adapter-only / legacy panel / current source of truth 경계를 명확히 한다.
 

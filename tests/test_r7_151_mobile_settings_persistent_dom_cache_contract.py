@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_17_declares_persistent_settings_panel_cache_stores():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.46"' in text
+    assert 'const REBUILD_VERSION = "1.15.47"' in text
     for marker in [
         'this._r7SettingsPanelCache = new Map();',
         'this._r7SettingsPanelDirty = new Set',
@@ -63,5 +63,5 @@ def test_v1_15_17_modal_cache_is_lazy_on_open_marker_and_plan_documents_it():
     assert '_getOrCreateR7CachedModal(type)' in text
     assert 'data-r7-settings-modal-cache", "lazy-on-open"' in text
     plan = PLAN.read_text()
-    for marker in ['persistent DOM cache', 'show/hide', 'dirty patch', '모달 lazy cache', 'GitHub Release v1.15.46']:
+    for marker in ['persistent DOM cache', 'show/hide', 'dirty patch', '모달 lazy cache', 'GitHub Release v1.15.47']:
         assert marker in plan

@@ -41,9 +41,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_119_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.46"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.46"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.46"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.47"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.47"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.47"' in _read(REBUILD_PANEL)
 
 
 def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
@@ -61,7 +61,7 @@ def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
     assert action_snippet.count('data-r7-cdb-card-type="button-two"') >= 3
     assert 'data-r7-cdb-card-type="button-one"' not in action_snippet
     assert html.count('data-r7-cdb-card-type="list"') >= 1
-    for text in ('온실 정보', '구역 정보', '관수그룹 정보', '관수그룹', '연결 장치'):
+    for text in ('온실 정보', '구역 정보', '관수그룹 정보', '그룹 수', '관수 방식', '토출구 수'):
         assert text in html
     for old_text in ('온실 기본 정보', '구역 기본 정보', '장비 구성'):
         assert old_text not in html
@@ -71,6 +71,11 @@ def test_r7_119_greenhouse_zone_uses_only_cdb_card_grammar_for_rows():
         snippet = html[start:end]
         assert 'data-r7-cdb-card-type="summary"' in snippet
         assert 'data-r7-cdb-common-card="summary-card"' in snippet
+        if card == 'equipment-composition':
+            for text in ('그룹 수', '관수 방식', '토출구 수'):
+                assert text in snippet
+            for old_text in ('연결 장치', '미연결'):
+                assert old_text not in snippet
     for card in ('settings-greenhouse-create', 'settings-zone-create'):
         marker_at = html.index(f'data-r7-settings-create-card="{card}"')
         start = html.rindex('<article', 0, marker_at)
@@ -134,5 +139,5 @@ def test_r7_119_greenhouse_zone_action_cards_have_common_subtitles():
 
 def test_r7_119_documented():
     doc = _read(DOC)
-    for phrase in ('CDB card grammar hotfix in v1.15.46', 'summary row: 3 summary cards', 'action row: 3 two-button cards including irrigation group create', 'list row: 1 list card'):
+    for phrase in ('CDB card grammar hotfix in v1.15.47', 'summary row: 3 summary cards', 'action row: 3 two-button cards including irrigation group create', 'list row: 1 list card'):
         assert phrase in doc
