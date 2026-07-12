@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.48"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.48"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.48"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.49"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.49"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.49"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -234,16 +234,22 @@ def test_r7_128_group_create_modal_creates_irrigation_group_master_without_devic
         'data-r7-settings-irrigation-group-auto-name-preview',
         'data-r7-settings-irrigation-method-select',
         'data-r7-settings-irrigation-method-detail-select',
+        'data-r7-settings-irrigation-circulation-type-select',
+        'data-r7-settings-irrigation-drainage-reuse-select',
         'data-r7-settings-irrigation-outlet-count-input',
         'data-r7-settings-irrigation-flow-rate-input',
         'data-r7-settings-irrigation-flow-rate-unit',
         'data-r7-settings-irrigation-bed-count-input',
+        'data-r7-settings-irrigation-bed-count-max',
     ):
         assert marker in html
-    for phrase in ('관수그룹 생성', '관수그룹 저장', '관수방법', '순수경', '배지경', 'DFT', 'NFT', '분무수경', '코코피트', '암면', '펄라이트', '토출구 수', '기준 유량', 'L/h', '배드 수', '장치는 장치 하위탭에서 관수그룹 FK로 연결'):
+    for phrase in ('관수그룹 생성', '관수그룹 저장', '관수방법', '순수경', '배지경', '코코피트', '암면', '펄라이트', '순환 방식', '배액 재활용', '토출구 수', '기준 유량', 'L/h', '배드 수', '구역 선택값에 따라 관수그룹명이 자동 변경', '같거나 낮아야 합니다', '장치는 장치 하위탭에서 관수그룹 FK로 연결'):
         assert phrase in html
-    for forbidden in ('data-r7-settings-device-group-candidate-checkbox', 'name="deviceIds"', 'data-r7-settings-device-group-ungrouped-only="true"', '그룹 장치 선택', '공급 방식', '배액 관리', '물량 계산 기준'):
+    for forbidden in ('data-r7-settings-device-group-candidate-checkbox', 'name="deviceIds"', 'data-r7-settings-device-group-ungrouped-only="true"', '그룹 장치 선택', '공급 방식', '물량 계산 기준'):
         assert forbidden not in html
+    source = _read(REBUILD_PANEL)
+    for literal in ('_handleSettingsIrrigationGroupDynamicFields', 'data-r7-settings-next-irrigation-group-name', 'data-r7-settings-zone-bed-count', 'detailSelect.innerHTML', 'bedInput.max', 'payload.bedCount = String(Math.min', '"순수경": ["DFT", "NFT", "분무수경", "담액수경", "박막수경", "기타"]'):
+        assert literal in source
 
 
 def test_r7_128_group_list_button_opens_group_list_cda_modal():

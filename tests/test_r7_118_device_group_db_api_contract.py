@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_118_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.48"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.48"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.48"' in _read(PANEL)
+    assert '"version": "1.15.49"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.49"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.49"' in _read(PANEL)
 
 
 def test_r7_118_db_has_real_device_and_group_tables():
@@ -31,6 +31,8 @@ def test_r7_118_db_has_real_device_and_group_tables():
         "UNIQUE KEY uniq_settings_device_group_zone_name (farm_id, zone_id, group_name)",
         "UNIQUE KEY uniq_settings_irrigation_group_zone_no (farm_id, zone_id, irrigation_group_no)",
         "irrigation_method_detail VARCHAR(64) NOT NULL",
+        "circulation_type VARCHAR(64) NOT NULL DEFAULT '해당 없음'",
+        "drainage_reuse VARCHAR(64) NOT NULL DEFAULT '배액 재활용 안함'",
         "outlet_count INT NOT NULL DEFAULT 0",
         "flow_rate_per_outlet DECIMAL(10,3) NOT NULL DEFAULT 0",
         "flow_rate_unit VARCHAR(16) NOT NULL DEFAULT 'L/h'",
@@ -53,6 +55,9 @@ def test_r7_118_backend_exposes_device_and_group_create_apis():
         "ensure_settings_device_ha_device_fk_schema",
         "list_settings_device_groups",
         "list_settings_irrigation_groups",
+        "ensure_settings_irrigation_group_schema",
+        "circulation_type",
+        "drainage_reuse",
         "green_smart_settings_devices",
         "green_smart_settings_device_groups",
         "green_smart_settings_irrigation_groups",

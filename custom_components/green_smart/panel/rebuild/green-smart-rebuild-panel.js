@@ -50,10 +50,8 @@
 // Compatibility contract markers retained after adapter extraction:
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
-
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
-
-const REBUILD_VERSION = "1.15.48";
+const REBUILD_VERSION = "1.15.49";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -87,7 +85,6 @@ const R7_RECORDS_WORKFLOW_API_CONTRACT = Object.freeze({
   writeImplementationEnabled: true,
   executionEnabled: false,
 });
-
 const R7_SETTINGS_GREENHOUSE_LIST_COLUMNS = Object.freeze(["온실명", "위치", "설치유형", "운영상태", "상태"]);
 const R7_SETTINGS_GREENHOUSE_DETAIL_FIELD_ORDER = Object.freeze([
   ["name", "온실명"],
@@ -138,7 +135,6 @@ const REBUILD_PAGES = Object.freeze([
   { key: "influence-map", label: "영향지도", description: "환경·관수·장치가 작물에 주는 영향을 봅니다." },
   { key: "recommend-act", label: "자동화 제어", description: "수동 기준 대비 AI/자동화 보조 차이를 검토합니다." },
 ]);
-
 const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
   { key: "operations-home", label: "운영 홈", replacement: "operations-home" },
   { key: "crop-centered", label: "작물 중심 운영", replacement: "crop-operations" },
@@ -146,7 +142,6 @@ const R7_DEPRECATED_SIDEBAR_GROUPS = Object.freeze([
   { key: "recommendation-review", label: "추천·실행 검토", replacement: "recommendation-automation" },
   { key: "settings-admin", label: "설정", replacement: "settings-admin" },
 ]);
-
 const R7_GREEN_ACCENT = "#43ad5e";
 const R7_GREEN_ACTIVE_BG = "#e3f4e6";
 const R7_GREEN_TEXT = "#31523b";
@@ -166,7 +161,6 @@ const R7_HA_MDI_ICONS = Object.freeze({
   logout: "mdi:logout",
   exit: "mdi:logout",
 });
-
 const R7_DOMAIN_SUBTAB_ICONS = Object.freeze({
   "status-summary": "mdi:view-dashboard-outline",
   "crop-cycle": "mdi:sprout-outline",
@@ -202,7 +196,6 @@ const R7_DOMAIN_SUBTAB_ICONS = Object.freeze({
   "system-security": "mdi:security",
   "rbac-policy": "mdi:shield-account-outline",
 });
-
 const R7_SIDEBAR_GROUPS = Object.freeze([
   { key: "operations-home", label: "운영 홈", summary: "오늘 운영 상태·fallback·우선 확인", target: "operations-home" },
   { key: "crop-operations", label: "작물 운영", summary: "currentCrop·crop_cycle·생육목표", target: "crop-operations" },
@@ -213,9 +206,7 @@ const R7_SIDEBAR_GROUPS = Object.freeze([
   { key: "safety-history", label: "안전 제어", summary: "Safety·Interlock·Fail Safe·감사", target: "safety-history" },
   { key: "settings-admin", label: "설정", summary: "RBAC·HA 매핑·진단·secret redaction", target: "settings-admin" },
 ]);
-
 const R7_MAIN_SIDEBAR_GROUPS = Object.freeze(R7_SIDEBAR_GROUPS.filter((group) => group.key !== "settings-admin"));
-
 const R7_DETAIL_SUBPAGES = Object.freeze([
   { key: "operations-home", label: "운영 홈", summary: "오늘의 운영 모드, AI fallback, 우선 확인 구역을 읽기 전용으로 요약합니다.", manualBase: "현재 수동/자동 운영 기준과 fallback 기준", automation: "도메인별 정상/주의 상태 요약", aiAssist: "AI 사용 가능 여부와 보조 적용 상태", safety: "차단 알람과 Fail Safe 상태 우선 표시", source: "currentCropAssignment + dataAvailability + domainHealthSummary", zoneScope: "전체 구역 우선, 필요한 구역은 각 도메인에서 확인" },
   { key: "crop-operations", label: "작물 운영", summary: "currentCrop, crop_cycle, 생육목표, 작물 기록을 운영 기준으로 정리합니다.", manualBase: "작물별 기준 범위와 생육목표", automation: "작기 상태/기록 기반 read-only workflow", aiAssist: "생육단계·상태·위험·진단·조치 추천 evidence", safety: "작물 운영은 환경/관수/장치 명령을 직접 실행하지 않음", source: "currentCropAssignment + growthTargetProjection + crop model evidence", zoneScope: "zone parent + currentCrop attached" },
@@ -226,7 +217,6 @@ const R7_DETAIL_SUBPAGES = Object.freeze([
   { key: "safety-history", label: "안전 제어", summary: "Safety, Interlock, Fail Safe, 알람, 차단 이유, 수동/자동/AI 이력을 모읍니다.", manualBase: "operator-visible block reasons and logs", automation: "rule/schedule automation history", aiAssist: "AI may add evidence only", safety: "authoritative allow/block history", source: "safetyInterlockReadOnlyAdapter + audit/log evidence", zoneScope: "구역별 차단·경보·stale 이력" },
   { key: "settings-admin", label: "설정", summary: "RBAC, HA entity mapping, 시스템 설정, 진단, 백업, secret redaction을 관리합니다.", manualBase: "users, mapping, system config", automation: "configuration ownership boundary", aiAssist: "admin/model diagnostics only", safety: "admin audit/config boundary; no mutation in this slice", source: "RBAC/config documentation baseline", zoneScope: "관리 설정은 zone data를 직접 변경하지 않음" },
 ]);
-
 const REBUILD_HOME_CONTEXT = Object.freeze({
   contextSource: "static-fixture-before-api",
   greenhouseId: "greenhouse-main",
@@ -241,9 +231,7 @@ const REBUILD_HOME_CONTEXT = Object.freeze({
     { id: "zone-error", name: "점검", currentCrop: { cropSeasonId: null, cropType: null, cropLabelKo: "확인 필요", growthStage: "데이터 오류" }, equipmentProfile: { labels: ["상태 확인 필요"] }, dataAvailability: { state: "error", freshnessMinutes: null, note: "데이터를 읽지 못했습니다. 연결 상태를 확인합니다." } },
   ],
 });
-
 const REBUILD_ZONE_CONTEXTS = Object.freeze(getRebuildHomeContext(REBUILD_HOME_CONTEXT).zones);
-
 const REBUILD_STAGE_DETAILS = Object.freeze({
   "crop-status": {
     title: "구역별 작물상태",
@@ -270,7 +258,6 @@ const REBUILD_STAGE_DETAILS = Object.freeze({
     metric: (zone) => zone.id === "all" ? "수동 기준 대비 차이" : "구역 보조 후보",
   },
 });
-
 class GreenSmartRebuildPanel extends HTMLElement {
   constructor() {
     super();
@@ -329,7 +316,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7SettingsCachePrewarmed = false;
     this._selectedZoneId = Object.fromEntries(Object.keys(REBUILD_STAGE_DETAILS).map((stageKey) => [stageKey, "all"]));
   }
-
   _applyR7HostWidthPolicy() {
     this.setAttribute?.("data-r7-host-width-policy", "viewport-fill");
     this.setAttribute?.("data-r7-host-display", "block-fill");
@@ -341,7 +327,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.style.flex = "1 1 auto";
     this.style.alignSelf = "stretch";
   }
-
   connectedCallback() {
     this._applyR7HostWidthPolicy();
     globalThis.window?.addEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
@@ -354,7 +339,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._loadSettingsUsersPermissions();
     this._loadSettingsGreenhouseZoneData();
   }
-
   disconnectedCallback() {
     globalThis.window?.removeEventListener?.("hashchange", this._r7SettingsHashRouteHandler);
     this._unbindR7SettingsEntryCaptureListeners();
@@ -365,7 +349,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._r7SidebarExternalControlSyncRaf && globalThis.cancelAnimationFrame) globalThis.cancelAnimationFrame(this._r7SidebarExternalControlSyncRaf);
     this._r7SidebarExternalControlResizeObserver = null; this._r7SidebarExternalControlMutationObserver = null; this._r7SidebarExternalControlResizeHandler = null; this._r7SidebarExternalControlSyncRaf = 0;
   }
-
   _refreshR7MobileSettingsPanelAfterDataLoad() {
     this._markR7SettingsPanelDirty();
     if (this._activeR7Domain !== "settings-admin") return false;
@@ -376,7 +359,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._scheduleR7MobileFullSubtabHydration("settings-admin", activeTab);
     return true;
   }
-
   _refreshR7SettingsSideModalRootWithoutFullRender(reason = "settings-state-change") {
     let root = this.querySelector?.('[data-r7-settings-side-modal-root="no-full-render"]');
     if (!root) {
@@ -400,7 +382,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindR7SettingsDelegatedEvents(root);
     return true;
   }
-
   _refreshR7ActiveSettingsPanelWithoutFullRender(reason = "settings-state-change", tabKey = "") {
     if (this._activeR7Domain !== "settings-admin") return false;
     const activeTab = tabKey || this._activeR7DomainSubtabs?.["settings-admin"] || "greenhouse-zones";
@@ -422,7 +403,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindR7SettingsDelegatedEvents(frame);
     return true;
   }
-
   _renderOrRefreshR7SettingsPanel(reason = "settings-state-change", tabKey = "") {
     if (this._refreshR7ActiveSettingsPanelWithoutFullRender(reason, tabKey)) {
       this._refreshR7SettingsSideModalRootWithoutFullRender(reason);
@@ -431,11 +411,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
     return false;
   }
-
   r7SettingsGreenhouseZoneData() {
     return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], systemIntegration: {} };
   }
-
   async _loadSettingsGreenhouseZoneData() {
     const requestId = ++this._settingsGreenhouseZoneRequestId;
     this._settingsGreenhouseZoneLoadState = "loading";
@@ -461,11 +439,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     if (!this._refreshR7MobileSettingsPanelAfterDataLoad()) this.render();
   }
-
   r7SettingsUsersPermissionsData() {
     return this._settingsUsersPermissions || { source: "loading", users: [], approvalRows: [], auditRows: [], rolePermissions: [], counts: { users: 0, approvals: 0, audits: 0, rolePermissions: 0 } };
   }
-
   async _loadSettingsUsersPermissions() {
     const requestId = ++this._settingsUsersPermissionsRequestId;
     this._settingsUsersPermissionsLoadState = "loading";
@@ -497,7 +473,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     if (this.r7SettingsUsersPermissionsData()?.approvalRequired || !this._refreshR7MobileSettingsPanelAfterDataLoad()) this.render();
   }
-
   async _submitApprovalRequest() {
     this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), requestState: "submitting" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -511,14 +486,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
-
   _openSettingsApprovalModal(request) {
     this._settingsApprovalListModal = { open: false };
     this._settingsApprovalModal = { open: true, request };
     if (this._mountR7CachedSettingsModal("approval-detail")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsApprovalListModal() {
     this._settingsApprovalModal = { open: false, request: null };
     this._settingsAuditLogModal = { open: false };
@@ -531,19 +504,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._mountR7CachedSettingsModal("approval-list")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsApprovalListModal() {
     this._settingsApprovalListModal = { open: false };
     if (this._hideR7CachedSettingsModal("approval-list")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsApprovalListRequest(requestId) {
     this._settingsApprovalListModal = { ...(this._settingsApprovalListModal || {}), open: true, selectedId: requestId };
     if (this._mountR7CachedSettingsModal("approval-list")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsAuditLogModal() {
     this._settingsApprovalModal = { open: false, request: null };
     this._settingsApprovalListModal = { open: false };
@@ -556,30 +526,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._mountR7CachedSettingsModal("audit-log")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsAuditLogModal() {
     this._settingsAuditLogModal = { open: false };
     if (this._hideR7CachedSettingsModal("audit-log")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsAuditLogRow(rowId) {
     this._settingsAuditLogModal = { ...(this._settingsAuditLogModal || {}), open: true, selectedId: rowId };
     if (this._mountR7CachedSettingsModal("audit-log")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsAuditLogEditModal(auditId) {
     if (!auditId) return;
     this._settingsAuditLogEditModal = { open: true, selectedId: auditId, state: "idle", error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsAuditLogEditModal() {
     this._settingsAuditLogEditModal = { open: false };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsAuditLogEditForm(form) {
     const auditId = this._settingsAuditLogEditModal?.selectedId || form?.getAttribute?.("data-r7-settings-audit-log-edit-form") || "";
     if (!auditId) return;
@@ -603,7 +568,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
-
   async _updateSettingsAuditLogRow(auditId, decision = "edit") {
     if (!auditId) return;
     const current = (this.r7SettingsUsersPermissionsData().auditRows || []).find((row) => String(row.id || row.auditId || "") === String(auditId)) || {};
@@ -622,7 +586,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
-
   _openSettingsPermissionMatrixModal() {
     this._settingsApprovalModal = { open: false, request: null };
     this._settingsApprovalListModal = { open: false };
@@ -632,7 +595,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._mountR7CachedSettingsModal("permission-matrix")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsPermissionMatrixModal() {
     this._settingsPermissionMatrixModal = { open: false };
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
@@ -642,19 +604,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._hideR7CachedSettingsModal("permission-matrix")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsPermissionMatrixBucket(bucket) {
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: bucket };
     if (this._mountR7CachedSettingsModal("permission-matrix")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsPermissionMatrixRole(role) {
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedRole: role || "admin" };
     if (this._mountR7CachedSettingsModal("permission-matrix")) return;
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _r7SettingsRolePermissionRows() {
     const fallbackRoles = [
       { role: "admin", roleLabel: "관리자", permissionSummary: "전체 권한 · 시스템 설정", tone: "blue", status: "active" },
@@ -671,12 +630,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ...row,
     }));
   }
-
   _rolePermissionById(role) {
     const rows = this._r7SettingsRolePermissionRows();
     return rows.find((row) => String(row.role || row.id) === String(role)) || null;
   }
-
   _openSettingsRolePermissionCreateModal(seedRole = "farm_staff") {
     const seed = this._rolePermissionById(seedRole) || { role: seedRole || "farm_staff", roleLabel: "신규 역할", permissionSummary: "조회 · 기록", viewPermission: "allowed", recordPermission: "allowed", strategyPermission: "readonly", executionPermission: "request", safetyPermission: "readonly", settingsPermission: "none", status: "active" };
     this._settingsPermissionMatrixModal = { open: false };
@@ -690,7 +647,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsRolePermissionEditModal = { open: true, mode: "create", selectedRole: seed.role, state: "idle", values: { ...seed, role: seed.role === "admin" ? "new_role" : `${seed.role}_copy`, roleLabel: `${seed.roleLabel || seed.title || seed.role} 복사`, note: "역할 권한 추가" } };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsRolePermissionEditModal(role) {
     const row = this._rolePermissionById(role) || { role: role || "farm_staff", roleLabel: role || "역할", permissionSummary: "조회 · 기록", viewPermission: "allowed", recordPermission: "allowed", strategyPermission: "readonly", executionPermission: "request", safetyPermission: "readonly", settingsPermission: "none", status: "active" };
     this._settingsPermissionMatrixModal = { open: false };
@@ -704,7 +660,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsRolePermissionEditModal = { open: true, mode: "edit", selectedRole: row.role, state: "idle", values: { ...row, note: row.note || "역할 권한 수정" } };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _deleteSettingsRolePermission(role) {
     if (!role || !this.hass?.callApi) return;
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedRole: role, actionState: "deleting" };
@@ -719,7 +674,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsRolePermissionEditForm(form) {
     const payload = this._settingsFormPayload(form);
     const modal = this._settingsRolePermissionEditModal || {};
@@ -740,12 +694,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsApprovalModal() {
     this._settingsApprovalModal = { open: false, request: null };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _approveSettingsApprovalRequest(requestId, decision = "approve") {
     if (!requestId) return;
     const memo = this.querySelector?.("[data-r7-settings-approval-decision-memo]")?.value || "";
@@ -762,7 +714,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
-
   async _requestSettingsPermissionBucketChange(bucket = "") {
     const targetBucket = bucket || this._settingsPermissionMatrixModal?.selectedBucket || "권한 버킷";
     this._settingsPermissionMatrixModal = { ...(this._settingsPermissionMatrixModal || {}), open: true, selectedBucket: targetBucket, requestState: "submitting" };
@@ -777,7 +728,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
-
   async _updateSettingsUserRole(haUserId, role = "farm_staff", status = "active") {
     if (!haUserId) return;
     this._settingsUsersPermissions = { ...this.r7SettingsUsersPermissionsData(), userUpdateState: "submitting", updatingHaUserId: haUserId };
@@ -791,8 +741,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     }
   }
-
-
   _openSettingsGreenhouseCreateModal() {
     this._settingsGreenhouseCreateModal = { open: true, mode: "create", state: "idle", values: {} };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
@@ -802,7 +750,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsZoneCreateModal() {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: true, mode: "create", state: "idle", values: {} };
@@ -812,7 +759,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsDeviceSensorMappingModal() {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
@@ -826,7 +772,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceConnectionModal = { open: true, state: "idle", values: { haDeviceId: selectedDevice.haDeviceId || "", deviceName: selectedDevice.deviceName || selectedDevice.name || "", equipmentKind: "기타", zoneId: "" }, haUnlinkedDevices, selectedEntities };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsDeviceCreateModal() {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
@@ -838,7 +783,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceCreateModal = { open: true, state: "idle", values: {} };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsHaDevicesPageModal() {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
@@ -850,13 +794,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-ha-devices-page-open", "true");
     this._renderOrRefreshR7SettingsPanel("settings-ha-devices-page-modal-open");
   }
-
   _closeSettingsHaDevicesPageModal() {
     this._settingsHaDevicesPageModal = { open: false };
     this.setAttribute?.("data-r7-settings-ha-devices-page-open", "false");
     this._renderOrRefreshR7SettingsPanel("settings-ha-devices-page-modal-close-cache-only");
   }
-
   _openSettingsDeviceGroupCreateModal() {
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
@@ -866,7 +808,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceGroupCreateModal = { open: true, state: "idle", values: {} };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsDetailActionModal(kind = "all") {
     if (kind === "greenhouse" || kind === "all") this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     if (kind === "zone" || kind === "all") this._settingsZoneCreateModal = { open: false, state: "idle" };
@@ -883,7 +824,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-modal-close-route", `cache-only:${kind}`);
     this._renderOrRefreshR7SettingsPanel("settings-modal-close-cache-only");
   }
-
   _closeR7SettingsRecordModalFromButton(button) {
     const modal = button?.closest?.("[data-r7-record-modal-type]");
     const type = modal?.getAttribute?.("data-r7-record-modal-type") || "";
@@ -901,32 +841,25 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._closeSettingsDetailActionModal(closeKind || "all");
     return true;
   }
-
-
   _openSettingsGreenhouseInfoSplitModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "greenhouse-info" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsZoneListSplitModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "zone-list" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsEquipmentInfoSplitModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "equipment-info" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _openSettingsDeviceListModal() {
     this._openSettingsEquipmentInfoSplitModal();
   }
-
   _openSettingsDeviceGroupListModal() {
     this._settingsShortcutCdaModal = { open: true, kind: "device-group-list" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _openSettingsSystemUpdateModal() {
     this._settingsSystemActionModal = { open: true, kind: "update", state: "loading", data: null, error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -939,7 +872,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _openSettingsSystemErrorsModal() {
     this._settingsSystemActionModal = { open: true, kind: "errors", state: "loading", data: null, error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -952,7 +884,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _openSettingsSystemCenterConnectionModal() {
     this._settingsSystemActionModal = { open: true, kind: "center", state: "loading", data: null, error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -965,7 +896,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _openSettingsSystemCenterListModal() {
     this._settingsSystemActionModal = { open: true, kind: "center-list", state: "loading", data: null, error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -978,32 +908,26 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsSystemActionModal() {
     this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsSystemUpdateTarget(target = "gs") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "update", selectedTarget: target };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsSystemErrorScope(scope = "db") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "errors", selectedScope: scope };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsSystemCenterRow(centerId = "primary") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "center-list", selectedCenterId: centerId };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _deleteSettingsSystemCenterConnection() {
     this._settingsSystemActionModal = { open: true, kind: "center-list", state: "deleted", data: { centerConnection: { baseUrl: "", connectionStatus: "미연결", credentialState: "missing" } }, selectedCenterId: "primary", error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsSystemUpdateAction(target, action = "check") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "update", state: "saving", error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -1016,7 +940,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsSystemErrorsAction(action = "refresh-watchdog") {
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "errors", state: "saving", error: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -1029,7 +952,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsSystemCenterConnectionForm(form) {
     const payload = this._settingsFormPayload(form);
     this._settingsSystemActionModal = { ...(this._settingsSystemActionModal || {}), open: true, kind: "center", state: "saving", error: "" };
@@ -1043,22 +965,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _closeSettingsShortcutCdaSplitModal() {
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsGreenhouseInfoRow(greenhouseId) {
     this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: greenhouseId };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _greenhouseById(greenhouseId) {
     const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().greenhouses) ? this.r7SettingsGreenhouseZoneData().greenhouses : [];
     return rows.find((row) => String(row.id) === String(greenhouseId)) || rows[0] || null;
   }
-
   async _editSettingsGreenhouse(greenhouseId) {
     const greenhouse = this._greenhouseById(greenhouseId);
     if (!greenhouse) return;
@@ -1071,7 +989,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _deleteSettingsGreenhouse(greenhouseId) {
     if (!greenhouseId || !this.hass?.callApi) return;
     const response = await this.hass.callApi(["DEL", "ETE"].join(""), REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH + `/${greenhouseId}`);
@@ -1080,14 +997,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "greenhouse-info", selectedGreenhouseId: "", actionState: "deleted" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _selectSettingsZoneListRow(zoneId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: zoneId }; this._renderOrRefreshR7SettingsPanel("settings-modal-state-change"); }
-
   _zoneById(zoneId) {
     const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().zones) ? this.r7SettingsGreenhouseZoneData().zones : [];
     return rows.find((row) => String(row.id || row.zoneId) === String(zoneId)) || rows[0] || null;
   }
-
   async _editSettingsZone(zoneId) {
     const zone = this._zoneById(zoneId);
     if (!zone) return;
@@ -1100,7 +1014,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _deleteSettingsZone(zoneId) {
     if (!zoneId || !this.hass?.callApi) return;
     const response = await this.hass.callApi(["DEL", "ETE"].join(""), REBUILD_SETTINGS_ZONE_CREATE_API_PATH + `/${zoneId}`);
@@ -1109,11 +1022,35 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: "", actionState: "deleted" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   _settingsFormPayload(form) {
     return Object.fromEntries(new FormData(form).entries());
   }
-
+  _handleSettingsIrrigationGroupDynamicFields(form, changed = null) {
+    const zoneSelect = form?.querySelector?.('[data-r7-settings-irrigation-group-zone-fk-select]');
+    const preview = form?.querySelector?.('[data-r7-settings-irrigation-group-auto-name-preview]');
+    const bedInput = form?.querySelector?.('[data-r7-settings-irrigation-bed-count-input]');
+    const option = zoneSelect?.options?.[zoneSelect.selectedIndex];
+    const zoneBedCount = Number(option?.getAttribute?.('data-r7-settings-zone-bed-count') || option?.dataset?.r7SettingsZoneBedCount || 0);
+    if (preview && option) preview.value = option.getAttribute('data-r7-settings-next-irrigation-group-name') || option.dataset?.r7SettingsNextIrrigationGroupName || preview.value;
+    if (bedInput && zoneBedCount >= 0) {
+      bedInput.max = String(zoneBedCount);
+      bedInput.setAttribute('data-r7-settings-irrigation-bed-count-max', String(zoneBedCount));
+      if (!bedInput.value || Number(bedInput.value) > zoneBedCount) bedInput.value = String(zoneBedCount);
+    }
+    const methodSelect = form?.querySelector?.('[data-r7-settings-irrigation-method-select]');
+    const detailSelect = form?.querySelector?.('[data-r7-settings-irrigation-method-detail-select]');
+    const circulationSelect = form?.querySelector?.('[data-r7-settings-irrigation-circulation-type-select]');
+    const details = { "순수경": ["DFT", "NFT", "분무수경", "담액수경", "박막수경", "기타"], "배지경": ["코코피트", "암면", "펄라이트", "피트모스", "혼합배지", "토양", "기타"] };
+    const method = methodSelect?.value || "배지경";
+    if (detailSelect) {
+      const current = detailSelect.value;
+      const options = details[method] || details["배지경"];
+      detailSelect.innerHTML = options.map((label) => `<option value="${label}">${label}</option>`).join("");
+      detailSelect.value = options.includes(current) ? current : options[0];
+      detailSelect.setAttribute('data-r7-settings-irrigation-method-detail-source', method);
+    }
+    if (circulationSelect && changed === methodSelect && !circulationSelect.value) circulationSelect.value = method === "순수경" ? "순환식" : "비순환식";
+  }
   async _submitSettingsGreenhouseCreateForm(form) {
     const payload = this._settingsFormPayload(form);
     const modal = this._settingsGreenhouseCreateModal || {};
@@ -1133,7 +1070,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsZoneCreateForm(form) {
     const payload = this._settingsFormPayload(form);
     const modal = this._settingsZoneCreateModal || {};
@@ -1153,7 +1089,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsDeviceSensorMappingForm(form) {
     const formPayload = this._settingsFormPayload(form);
     const modal = this._settingsDeviceConnectionModal || this._settingsDeviceSensorMappingModal || {};
@@ -1206,10 +1141,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsDeviceGroupCreateForm(form) {
     const payload = this._settingsFormPayload(form);
     payload.flowRateUnit = "L/h";
+    const maxBed = Number(form.querySelector?.('[data-r7-settings-irrigation-bed-count-input]')?.getAttribute?.('max') || payload.bedCount || 0);
+    if (maxBed >= 0) payload.bedCount = String(Math.min(Number(payload.bedCount || 0), maxBed));
     const modal = this._settingsDeviceGroupCreateModal || {};
     this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saving" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
@@ -1224,7 +1160,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _loadHomeContext() {
     const requestId = ++this._contextRequestId;
     this._contextLoadState = "loading";
@@ -1245,37 +1180,30 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this.render();
   }
-
   _zoneStateTone(state) {
     return ({ ok: "#2f7d46", partial: "#8a6d1d", stale: "#a35f00", empty: "#6b7280", loading: "#3b6ea8", error: "#b42318" })[state] || "#6b7280";
   }
-
   _zoneStateLabel(state) {
     return ({ ok: "정상", partial: "부분 데이터", stale: "오래됨", empty: "데이터 없음", loading: "불러오는 중", error: "오류" })[state] || "상태 확인";
   }
-
   renderStateBadge(status) {
     const state = status?.state || "empty";
     const tone = this._zoneStateTone(state);
     return `<span data-cba-component="COM-StateBadge" data-zone-state-badge data-zone-state="${state}" style="display:inline-flex;align-items:center;border:1px solid ${tone};border-radius:999px;color:${tone};background:#fff;padding:4px 9px;font-size:12px;font-weight:800;">${this._zoneStateLabel(state)}</span>`;
   }
-
   renderDataFreshnessPill(status) {
     const minutes = status?.freshnessMinutes;
     const label = Number.isFinite(minutes) ? `${minutes}분 전 갱신` : "갱신 시각 없음";
     return `<span data-cba-component="COM-DataFreshnessPill" data-zone-freshness-pill style="display:inline-flex;align-items:center;border-radius:999px;background:#f3f7f4;color:#5d6f62;padding:4px 9px;font-size:12px;font-weight:700;">${label}</span>`;
   }
-
   renderLoadingSkeleton(status) {
     if (status?.state !== "loading") return "";
     return `<div data-cba-component="COM-LoadingSkeleton" data-zone-loading-skeleton style="margin-top:10px;border-radius:12px;background:linear-gradient(90deg,#eef5f0,#f8fcf9,#eef5f0);padding:12px;color:#78927f;font-size:12px;">구역 정보를 불러오는 중입니다.</div>`;
   }
-
   renderEmptyState(status) {
     if (!["empty", "error"].includes(status?.state)) return "";
     return `<div data-cba-component="COM-EmptyState" data-zone-empty-state style="margin-top:10px;border:1px dashed #d7e8db;border-radius:12px;background:#fbfdfb;padding:12px;color:#5d6f62;font-size:12px;line-height:1.5;">${status.note}</div>`;
   }
-
   renderCropCycleReadOnlyCard(zone, stageKey) {
     if (!["crop-status", "growth-goal"].includes(stageKey)) return "";
     const crop = zone.currentCrop || {};
@@ -1301,7 +1229,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderCurrentCropAssignmentReadModel(zone) {
     const assignment = zone.currentCropAssignment || {};
     const state = assignment.assignmentState || (zone.currentCrop?.crop_cycle_id ? "assigned" : "unassigned");
@@ -1325,7 +1252,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderGrowthTargetProjection(zone, stageKey) {
     if (!["growth-goal"].includes(stageKey)) return "";
     const projection = zone.growthTargetProjection || {};
@@ -1348,7 +1274,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderEnvironmentImpactProjection(zone, stageKey) {
     if (!["influence-map"].includes(stageKey)) return "";
     const projection = zone.environmentImpactProjection || {};
@@ -1371,7 +1296,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderRecommendationReviewProjection(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const projection = zone.recommendationReviewProjection || {};
@@ -1397,7 +1321,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderOperatorApprovalScaffold(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const scaffold = zone.operatorApprovalScaffold || {};
@@ -1420,7 +1343,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderSafetyInterlockPreflightProjection(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const projection = zone.safetyInterlockPreflightProjection || {};
@@ -1446,7 +1368,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderVirtualExecutionRehearsalScaffold(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const scaffold = zone.virtualExecutionRehearsalScaffold || {};
@@ -1471,7 +1392,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderRehearsalResultReviewProjection(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const review = zone.rehearsalResultReviewProjection || {};
@@ -1496,7 +1416,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderVirtualRunnerInputContract(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const contract = zone.virtualRunnerInputContract || {};
@@ -1521,7 +1440,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderVirtualRunnerDryRunResultAdapter(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const adapter = zone.virtualRunnerDryRunResultAdapter || {};
@@ -1546,7 +1464,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderVirtualRehearsalPassFailReviewProjection(zone, stageKey) {
     if (!["recommend-act"].includes(stageKey)) return "";
     const projection = zone.virtualRehearsalPassFailReviewProjection || {};
@@ -1571,19 +1488,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   _zonesForRender() {
     return this._homeContext?.zones || [];
   }
-
   _findZoneForRender(zoneId) {
     return this._zonesForRender().find((item) => item.id === zoneId) || this._zonesForRender()[0];
   }
-
   _contextMetaForRender() {
     return this._homeContext || getRebuildHomeContext(REBUILD_HOME_CONTEXT);
   }
-
   renderContextLoadNotice() {
     if (this._contextLoadState === "ready") return "";
     const message = this._contextLoadState === "loading"
@@ -1591,7 +1504,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       : "실제 데이터를 읽지 못해 읽기 전용 기본 화면으로 표시합니다.";
     return `<aside data-rebuild-context-load-notice data-rebuild-context-error="${this._contextLoadError || ""}" style="border:1px solid #d7e8db;border-radius:14px;background:#fbfdfb;color:#5d6f62;padding:12px;font-size:12px;line-height:1.5;">${message}</aside>`;
   }
-
   renderR7SourceShapesSummary() {
     return `
       <section data-r7-source-shapes data-r7-readonly-boundary="true" style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:16px;display:grid;gap:10px;">
@@ -1611,7 +1523,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderZoneTabs(stageKey) {
     const selectedZoneId = this._selectedZoneId[stageKey] || "all";
     return `
@@ -1633,7 +1544,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </div>
     `;
   }
-
   renderZonePanel(stageKey) {
     const config = REBUILD_STAGE_DETAILS[stageKey];
     const selectedZoneId = this._selectedZoneId[stageKey] || "all";
@@ -1683,7 +1593,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </div>
     `;
   }
-
   renderZoneDrilldown(stageKey) {
     const config = REBUILD_STAGE_DETAILS[stageKey];
     return `
@@ -1695,11 +1604,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </div>
     `;
   }
-
   _normalizeR7Domain(domainKey) {
     return R7_DETAIL_SUBPAGES.some((subpage) => subpage.key === domainKey) ? domainKey : "operations-home";
   }
-
   setR7ActiveDomain(domainKey) {
     const nextDomain = this._normalizeR7Domain(domainKey);
     if (nextDomain === "settings-admin") return this._openR7SettingsDomainFromCache("set-active-domain");
@@ -1710,7 +1617,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._activeR7Domain = nextDomain;
     this.render();
   }
-
   _activateR7DomainFromNavigation(domainKey) {
     const nextDomain = this._normalizeR7Domain(domainKey);
     this.setAttribute?.("data-r7-mobile-domain-transition", "instant-internal-button");
@@ -1724,24 +1630,20 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (this._patchR7MobileActiveDomainPage()) return;
     this.render();
   }
-
   _openR7SettingsDomainFromMobile() {
     return this._openR7SettingsDomainFromCache("mobile-settings-button");
   }
-
   _bindR7SettingsEntryCaptureListeners() {
     if (this._r7SettingsEntryCaptureBound) return;
     ["pointerdown", "touchstart", "click"].forEach((type) => this.addEventListener?.(type, this._r7SettingsEntryCaptureHandler, { capture: true, passive: false }));
     this._r7SettingsEntryCaptureBound = true;
     this.setAttribute?.("data-r7-settings-entry-capture", "bound");
   }
-
   _unbindR7SettingsEntryCaptureListeners() {
     if (!this._r7SettingsEntryCaptureBound) return;
     ["pointerdown", "touchstart", "click"].forEach((type) => this.removeEventListener?.(type, this._r7SettingsEntryCaptureHandler, { capture: true }));
     this._r7SettingsEntryCaptureBound = false;
   }
-
   _eventR7SettingsEntryTarget(event) {
     const path = typeof event?.composedPath === "function" ? event.composedPath() : [];
     for (const node of path) {
@@ -1756,7 +1658,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const target = event?.target;
     return target?.closest?.('[data-r7-sidebar-target="settings-admin"],[data-r7-mobile-settings-action="open-settings-domain"],a[href="#settings-admin"]') || null;
   }
-
   _routeR7SettingsEntryEvent(event) {
     const target = this._eventR7SettingsEntryTarget(event);
     if (!target) return false;
@@ -1767,21 +1668,18 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-entry-capture-target", target.getAttribute?.("data-r7-sidebar-target") || target.getAttribute?.("href") || "settings-admin");
     return this._openR7SettingsDomainFromCache(`capture-${event?.type || "event"}`);
   }
-
   _handleR7SettingsHashRoute(source = "hashchange") {
     const hash = String(globalThis.window?.location?.hash || "").replace(/^#/, "");
     if (hash !== "settings-admin") return false;
     this.setAttribute?.("data-r7-settings-hash-route", source);
     return this._openR7SettingsDomainFromCache(`hash-${source}`);
   }
-
   _cancelR7SettingsCachePrewarm() {
     if (this._r7SettingsCachePrewarmIdle && globalThis.cancelIdleCallback) globalThis.cancelIdleCallback(this._r7SettingsCachePrewarmIdle);
     if (this._r7SettingsCachePrewarmTimer) clearTimeout(this._r7SettingsCachePrewarmTimer);
     this._r7SettingsCachePrewarmIdle = 0;
     this._r7SettingsCachePrewarmTimer = 0;
   }
-
   _scheduleR7SettingsCachePrewarm(source = "idle") {
     const probe = globalThis.document?.createElement?.("section");
     if (!probe?.dataset || !globalThis.document?.createElement?.("template")?.content) {
@@ -1796,7 +1694,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     else this._r7SettingsCachePrewarmTimer = setTimeout(run, 120);
     return true;
   }
-
   _runR7SettingsCachePrewarm(source = "idle") {
     this._r7SettingsCachePrewarmIdle = 0;
     this._r7SettingsCachePrewarmTimer = 0;
@@ -1820,7 +1717,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-all-domain-shell-cache-count", String(prewarmedDomains.length));
     return true;
   }
-
   _openR7SettingsDomainFromCache(source = "settings-navigation") {
     this.setAttribute?.("data-r7-settings-domain-entry-source", source);
     this.setAttribute?.("data-r7-mobile-settings-route", "dedicated-internal-action");
@@ -1835,7 +1731,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-domain-cache-entry-result", patched ? "attached" : "missing-workspace");
     return patched;
   }
-
   _syncR7MobileDomainActiveVisualState(activeDomain = this._activeR7Domain) {
     this.querySelectorAll?.('[data-r7-mobile-domain-button="true"]').forEach((button) => {
       const selected = button.getAttribute("data-r7-sidebar-target") === activeDomain;
@@ -1861,7 +1756,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this.setAttribute?.("data-r7-mobile-domain-active-visual-sync", activeDomain);
   }
-
   _scheduleR7MobileActiveDomainButtonScroll() {
     if (this._r7MobileActiveDomainScrollRaf) return;
     const run = () => {
@@ -1876,7 +1770,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     };
     this._r7MobileActiveDomainScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
-
   _scheduleR7MobileActiveSubtabScroll() {
     if (this._r7MobileActiveSubtabScrollRaf) return;
     const run = () => {
@@ -1891,7 +1784,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     };
     this._r7MobileActiveSubtabScrollRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
-
   _requestR7MobilePanelHydration(domainKey, tabKey) {
     this._r7MobilePanelHydration = null;
     if (this._r7MobilePanelHydrationTimer) clearTimeout(this._r7MobilePanelHydrationTimer);
@@ -1901,7 +1793,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-mobile-panel-hydration", "not-used-immediate");
     this.setAttribute?.("data-r7-mobile-immediate-panel-render", "true");
   }
-
   renderR7PanelsForDomain(domainKey, tabs, activeTab, renderer, fullRenderer) {
     if (!this._r7MobileFastPanelMode) return fullRenderer();
     const activeKey = tabs.some(([key]) => key === activeTab) ? activeTab : tabs[0]?.[0];
@@ -1912,7 +1803,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const deferred = tabs.filter(([key]) => key !== activeKey).map(([key]) => `<template data-r7-mobile-deferred-subtab-panel="${key}" data-r7-mobile-fast-panel-mode="active-panel-only" data-r7-mobile-deferred-domain="${domainKey}"></template>`).join("");
     return `<span data-r7-mobile-active-panel-only="true" data-r7-mobile-immediate-panel-render="true" data-r7-mobile-active-panel-domain="${domainKey}" data-r7-mobile-active-panel-key="${activeKey}" data-r7-mobile-panel-hydration-state="not-used-immediate" style="display:none;"></span>${activePanel}${deferred}`;
   }
-
   _r7TabsForDomain(domain) {
     const commonTabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
     if (domain === "settings-admin") return [["greenhouse-zones", "온실·구역"], ["device-sensor-mapping", "장치 연결 작성"], ["users-permissions", "사용자·권한"], ["system-integration", "시스템·연동"]];
@@ -1920,19 +1810,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (domain === "safety-history") return [["status-summary", "상태 요약"], ["block-allow", "차단·허용"], ["event-history", "이벤트"], ["operation-history", "조작 이력"], ["audit-evidence", "감사 근거"], ["trend-evidence", "추세·근거"]];
     return commonTabs;
   }
-
   _r7SubtabLabel(domain, tabKey) {
     const found = this._r7TabsForDomain(domain).find(([key]) => key === tabKey);
     return found?.[1] || tabKey;
   }
-
   _markR7SettingsPanelDirty(tabKey = "") {
     if (!this._r7SettingsPanelDirty) this._r7SettingsPanelDirty = new Set();
     if (tabKey) this._r7SettingsPanelDirty.add(tabKey);
     else ["greenhouse-zones", "device-sensor-mapping", "users-permissions", "system-integration"].forEach((key) => this._r7SettingsPanelDirty.add(key));
     this.setAttribute?.("data-r7-settings-panel-dirty-patch", "true");
   }
-
   _getOrCreateR7CachedSettingsPanel(tabKey) {
     if (!this._r7SettingsPanelCache) this._r7SettingsPanelCache = new Map();
     const cacheKey = `settings:${tabKey}`;
@@ -1956,7 +1843,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
     return panel;
   }
-
   _showR7CachedSettingsPanel(panelSection, tabKey) {
     const panel = this._getOrCreateR7CachedSettingsPanel(tabKey);
     Array.from(panelSection.children || []).forEach((node) => {
@@ -1978,7 +1864,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._recordR7SettingsPerf("panel-visible", 150);
     return panel;
   }
-
   _r7CachedSettingsPanelMetricModel(tabKey) {
     const settings = this.r7SettingsGreenhouseZoneData();
     const users = this.r7SettingsUsersPermissionsData();
@@ -1997,7 +1882,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (tabKey === "device-sensor-mapping") return { title: "장치 연결 작성", subtitle: "장치·그룹·매핑 수를 캐시 DOM에서 갱신합니다.", metrics: [metric("장치", settings.devices?.length || 0), metric("그룹", settings.deviceGroups?.length || 0), metric("매핑", settings.deviceSensorMappings?.length || 0)], actions: [["device-list", "장치 목록"], ["group-list", "그룹 목록"]] };
     return { title: "온실·구역", subtitle: "온실, 구역, 매핑 수를 캐시 DOM에서 갱신합니다.", metrics: [metric("온실", settings.greenhouses?.length || 0), metric("구역", settings.zones?.length || 0), metric("매핑", settings.deviceSensorMappings?.length || 0)], actions: [["greenhouse-list", "온실 목록"], ["zone-list", "구역 목록"]] };
   }
-
   _buildR7CachedSettingsPanelPatchNode(tabKey) {
     const model = this._r7CachedSettingsPanelMetricModel(tabKey);
     const section = document.createElement("section");
@@ -2063,7 +1947,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     section.append(header, grid, actions);
     return section;
   }
-
   _patchR7CachedSettingsPanelMetricValues(tabKey) {
     const panel = this._r7SettingsPanelCache?.get?.(`settings:${tabKey}`);
     const patchPanel = panel?.querySelector?.('[data-r7-settings-cached-patch-panel]');
@@ -2081,7 +1964,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._recordR7SettingsPerf("interaction-complete", 2000);
     return true;
   }
-
   _patchR7CachedSettingsPanelData(tabKey) {
     const panel = this._r7SettingsPanelCache?.get?.(`settings:${tabKey}`);
     if (!panel) return false;
@@ -2104,7 +1986,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-panel-dirty-patch", "true");
     return true;
   }
-
   _hydrateR7CachedSettingsPanel(tabKey) {
     const panel = this._r7SettingsPanelCache?.get?.(`settings:${tabKey}`);
     if (!panel) return false;
@@ -2128,7 +2009,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-panel-summary-patch-replaced", "true");
     return true;
   }
-
   _ensureR7SettingsModalRoot() {
     let root = this.querySelector?.('[data-r7-settings-modal-root="lazy-cache"]');
     if (!root) {
@@ -2140,7 +2020,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
     return root;
   }
-
   _renderR7CachedSettingsModalHtml(type) {
     if (type === "approval-detail") return this["renderR7Settings" + "ApprovalModal"]();
     if (type === "approval-list") return this["renderR7Settings" + "ApprovalListModal"]();
@@ -2148,7 +2027,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (type === "permission-matrix") return this["renderR7Settings" + "PermissionMatrixModal"]();
     return `<template data-r7-settings-cached-modal-empty="${type}"></template>`;
   }
-
   _mountR7CachedSettingsModal(type) {
     const root = this._ensureR7SettingsModalRoot();
     const modal = this._getOrCreateR7CachedModal(type);
@@ -2167,7 +2045,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._bindSettingsApprovalActions();
     return true;
   }
-
   _hideR7CachedSettingsModal(type = "all") {
     const root = this.querySelector?.('[data-r7-settings-modal-root="lazy-cache"]');
     if (!root) return false;
@@ -2183,7 +2060,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-modal-cache-hidden", type);
     return true;
   }
-
   _getOrCreateR7CachedModal(type) {
     if (!this._r7ModalCache) this._r7ModalCache = new Map();
     const cacheKey = `modal:${type}`;
@@ -2198,7 +2074,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-modal-cache", "lazy-on-open");
     return modal;
   }
-
   _renderR7MobileLightSubtabPanel(domain, tabKey) {
     const label = this._r7SubtabLabel(domain, tabKey);
     const domainLabel = (R7_DETAIL_SUBPAGES.find((item) => item.key === domain)?.label) || "도메인";
@@ -2207,7 +2082,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       : `${domainLabel}의 ${label} 화면으로 이동했습니다. 현재 선택 탭의 핵심 내용을 먼저 표시합니다.`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-mobile-light-subtab-panel="true" data-r7-mobile-light-subtab-domain="${domain}" data-r7-mobile-light-subtab-key="${tabKey}" data-r7-mobile-subtab-first-paint="summary" data-r7-mobile-subtab-sla="under-2s" data-r7-mobile-first-paint-target-ms="100" style="display:grid;gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:16px;">${label}</strong><span style="color:#4ca66a;font-size:12px;font-weight:950;">즉시 표시</span></header><p style="margin:0;color:#5d6f62;font-size:13px;line-height:1.6;">${summary}</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;"><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">선택 탭 · ${label}</span><span style="border:1px solid #e2eee5;border-radius:12px;background:#f8fcf9;padding:10px;color:#31523b;font-size:12px;font-weight:900;">도메인 · ${domainLabel}</span><span data-r7-settings-cached-count style="border:1px solid #e2eee5;border-radius:12px;background:#fff;padding:10px;color:#31523b;font-size:12px;font-weight:900;">0</span></div></section>`;
   }
-
   _scheduleR7MobileFullSubtabHydration(domain, tabKey) {
     if (this._r7MobileSubtabHydrationTimer) clearTimeout(this._r7MobileSubtabHydrationTimer);
     const stamp = `${domain}:${tabKey}:${Date.now()}`;
@@ -2233,7 +2107,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._bindR7PatchedInteractiveActions();
     }, 120);
   }
-
   _renderR7SubtabPanelForDomain(domain, tabKey) {
     const activeTab = tabKey;
     const selectedZone = this._r7PrimaryZoneForDomain();
@@ -2246,7 +2119,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (domain === "safety-history") return this.renderR7SafetySubtabPanel(tabKey, selectedZone, activeTab);
     return "";
   }
-
   _bindR7PatchedInteractiveActions() {
     this["_bindR7DomainNavigation"]?.();
     this["_bindR7DomainSubtabs"]?.();
@@ -2254,7 +2126,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this["_bindR7RecordWorkflowActions"]?.();
     this["_bindSettingsApprovalActions"]?.();
   }
-
   _patchR7MobileSubtabPanel(domain, tabKey) {
     const frame = this.querySelector?.(`[data-r7-domain-visual-frame-domain="${domain}"]`);
     const subtabSection = frame?.querySelector?.('[data-r7-domain-content-card-section="subtabs"]');
@@ -2285,12 +2156,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._scheduleR7MobileFullSubtabHydration(domain, tabKey);
     return true;
   }
-
   _renderR7CachedDomainShellBody(domainKey, subpage) {
     if (domainKey === "operations-home") return this.renderOperatingHome();
     return this.renderR7DetailSubpage(subpage);
   }
-
   _getOrCreateR7CachedDomainShell(domainKey) {
     if (!this._r7DomainShellCache) this._r7DomainShellCache = new Map();
     const domain = this._normalizeR7Domain(domainKey);
@@ -2314,7 +2183,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-domain-shell-cache-miss", cacheKey);
     return shell;
   }
-
   _attachR7CachedDomainShell(workspace, domainKey) {
     const domain = this._normalizeR7Domain(domainKey);
     if (domain === "settings-admin") return this._attachR7CachedSettingsDomainShell(workspace);
@@ -2341,7 +2209,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     return true;
   }
-
   _getOrCreateR7CachedSettingsDomainShell() {
     if (!this._r7DomainShellCache) this._r7DomainShellCache = new Map();
     const cacheKey = "domain:settings-admin";
@@ -2366,7 +2233,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-domain-shell-cache", "persistent-dom");
     return shell;
   }
-
   _attachR7CachedSettingsDomainShell(workspace) {
     const cacheKey = "domain:settings-admin";
     const hadShellBeforeAttach = Boolean(this._r7DomainShellCache?.get?.(cacheKey));
@@ -2404,7 +2270,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._recordR7SettingsPerf("shell-visible", 150);
     return true;
   }
-
   _patchR7MobileActiveDomainPage() {
     const workspace = this.querySelector?.("[data-r7-page-workspace]");
     if (!workspace) return false;
@@ -2440,7 +2305,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._scheduleR7MobileActiveSubtabScroll();
     return true;
   }
-
   setR7DomainSubtab(domainKey, tabKey, mobileFast = false) {
     const domain = this._normalizeR7Domain(domainKey);
     const commonTabs = ["status-summary", "base-settings", "rule-schedule", "interlock-block", "assist-fallback", "trend-evidence"];
@@ -2462,29 +2326,24 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.render();
     return true;
   }
-
   _currentGreenSmartRole() {
     const contextRole = this._homeContext?.actorRole || this._homeContext?.actor?.role || this._homeContext?.currentUser?.role;
     const hassRole = this.hass?.user?.green_smart_role || this.hass?.user?.role;
     const role = String(contextRole || hassRole || (this.hass?.user?.is_admin ? "admin" : "farm_staff") || "farm_staff").trim();
     return role || "farm_staff";
   }
-
   _isCurrentUserHaSidebarAdmin() {
     const user = this.hass?.user || {};
     const role = String(this._currentGreenSmartRole() || "").trim().toLowerCase();
     const adminRoles = new Set(["admin", "administrator", "관리자"]);
     return Boolean(user.is_admin) || adminRoles.has(role);
   }
-
   _r7HaSidebarDomTargets() {
     return "ha-sidebar,hui-sidebar";
   }
-
   _r7HaSidebarShellSpaceTargets() {
     return "app-drawer,ha-drawer";
   }
-
   _applyR7HASidebarDomVisibility(hide) {
     if (typeof document === "undefined") return;
     const applyTarget = (el) => {
@@ -2536,7 +2395,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     };
     visitRoot(document);
   }
-
   _ensureR7HASidebarPolicyObserver() {
     if (typeof MutationObserver === "undefined" || typeof document === "undefined" || !document?.body || this._r7HaSidebarPolicyObserver) return;
     this._r7HaSidebarPolicyObserver = new MutationObserver(() => {
@@ -2545,11 +2403,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this._r7HaSidebarPolicyObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "open", "expanded"] });
   }
-
   _r7SidebarLayoutMode() {
     return this._isCurrentUserHaSidebarAdmin() ? "operator-ha-adjacent" : "full-left-no-ha-sidebar";
   }
-
   _applyR7HASidebarPolicy() {
     if (typeof document === "undefined" || !document?.body?.classList) return;
     const mode = this._r7SidebarLayoutMode();
@@ -2580,13 +2436,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       }
     }
   }
-
   toggleR7SidebarCollapsed() {
     this._r7SidebarCollapsed = !this._r7SidebarCollapsed;
     this.render();
     return this._r7SidebarCollapsed;
   }
-
   _bindR7DomainSubtabs() {
     this.querySelectorAll("button[data-r7-domain-subtab][data-r7-domain-subtab-key]").forEach((button) => {
       if (button.getAttribute("data-r7-subtab-bound") === "true") return;
@@ -2600,12 +2454,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       }, { passive: false });
     });
   }
-
   _nowR7Perf() {
     const perfNow = globalThis.performance?.now?.bind?.(globalThis.performance);
     return Math.round(perfNow ? perfNow() : Date.now());
   }
-
   _startR7SettingsPerf(kind = "interaction") {
     const now = this._nowR7Perf();
     this._r7SettingsPerf = { eventKind: kind, startedAt: now };
@@ -2613,7 +2465,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-perf-settings-start-ms", String(now));
     return now;
   }
-
   _recordR7SettingsPerf(label, targetMs = 2000) {
     const now = this._nowR7Perf();
     const startedAt = Number(this._r7SettingsPerf?.startedAt || now);
@@ -2630,7 +2481,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._updateR7SettingsPerfSnapshot();
     return elapsed;
   }
-
   _snapshotR7SettingsPerf() {
     const read = (label) => ({
       ms: this.getAttribute?.(`data-r7-perf-settings-${label}-ms`) || "",
@@ -2650,7 +2500,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       values,
     };
   }
-
   _updateR7SettingsPerfSnapshot() {
     const snapshot = this._snapshotR7SettingsPerf();
     this.setAttribute?.("data-r7-perf-settings-summary", snapshot.summary);
@@ -2662,7 +2511,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     return snapshot;
   }
-
   _runR7SettingsPerfMarkerSmoke() {
     this._startR7SettingsPerf("self-smoke");
     this._recordR7SettingsPerf("tab-active", 100);
@@ -2673,7 +2521,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-perf-settings-self-smoke", "ok");
     return this._updateR7SettingsPerfSnapshot();
   }
-
   _handleR7SettingsDelegatedClick(event) {
     const target = event?.target;
     const closest = (selector) => target?.closest?.(selector);
@@ -2729,7 +2576,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (settingsDetailActionClose) { event.preventDefault?.(); event.stopPropagation?.(); this._closeSettingsDetailActionModal(settingsDetailActionClose.getAttribute("data-r7-settings-detail-action-modal-close") || "all"); return true; }
     return false;
   }
-
   _bindR7SettingsDelegatedEvents(root = this) {
     if (!root || root.getAttribute?.("data-r7-settings-delegated-events-bound") === "true") return false;
     root.setAttribute?.("data-r7-settings-delegated-events-bound", "true");
@@ -2738,7 +2584,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.setAttribute?.("data-r7-settings-event-mode", "delegated-single-listener");
     return true;
   }
-
   _bindSettingsApprovalActions() {
     this.querySelectorAll("[data-r7-open-settings-modal]").forEach((button) => {
       if (button.getAttribute("data-r7-cached-action-bound") === "true") return;
@@ -2914,7 +2759,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("form[data-r7-settings-zone-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsZoneCreateForm(form); }));
     this.querySelectorAll("form[data-r7-settings-device-sensor-mapping-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceSensorMappingForm(form); }));
     this.querySelectorAll("form[data-r7-settings-device-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceCreateForm(form); }));
-    this.querySelectorAll("form[data-r7-settings-device-group-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceGroupCreateForm(form); }));
+    this.querySelectorAll("form[data-r7-settings-device-group-create-form]").forEach((form) => {
+      this._handleSettingsIrrigationGroupDynamicFields(form);
+      form.querySelectorAll('[data-r7-settings-irrigation-group-zone-fk-select], [data-r7-settings-irrigation-method-select]').forEach((input) => input.addEventListener("change", () => this._handleSettingsIrrigationGroupDynamicFields(form, input)));
+      form.querySelectorAll('[data-r7-settings-irrigation-bed-count-input]').forEach((input) => input.addEventListener("input", () => this._handleSettingsIrrigationGroupDynamicFields(form, input)));
+      form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceGroupCreateForm(form); });
+    });
     this.querySelectorAll("[data-r7-settings-greenhouse-info-shortcut-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsGreenhouseInfoSplitModal(); });
     });
@@ -2949,7 +2799,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       button.addEventListener("click", (event) => { event.preventDefault(); this._deleteSettingsZone(button.getAttribute("data-r7-settings-zone-delete-button")); });
     });
   }
-
   _bindR7DomainNavigation() {
     this.querySelectorAll("[data-r7-sidebar-target]").forEach((link) => {
       if (link.getAttribute("data-r7-domain-navigation-bound") === "true") return;
@@ -2991,7 +2840,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       });
     });
   }
-
   _bindZoneTabs() {
     this.querySelectorAll("[data-zone-tab]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -3016,7 +2864,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       if (event.key === "Escape") this._closeZoneDetailModal();
     });
   }
-
   _setSelectedZone(stageKey, zoneId) {
     this._selectedZoneId[stageKey] = zoneId;
     const panelsRoot = this.querySelector(`[data-zone-panel-stage="${stageKey}"][data-zone-panels]`);
@@ -3031,7 +2878,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       panel.hidden = panel.dataset.zonePanelId !== zoneId;
     });
   }
-
   _openZoneDetailModal(stageKey, zoneId) {
     const zone = this._findZoneForRender(zoneId);
     const config = REBUILD_STAGE_DETAILS[stageKey];
@@ -3050,7 +2896,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     document.body.classList.add("gs-modal-open");
     modal.querySelector("[data-zone-detail-modal-close]")?.focus();
   }
-
   _closeZoneDetailModal() {
     const modal = this.querySelector("[data-zone-detail-modal]");
     if (modal) {
@@ -3059,7 +2904,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     document.body.classList.remove("gs-modal-open");
   }
-
   renderR7StatusBadge(status, label) {
     const palette = {
       normal: ["#e5f6e8", "#21653a"],
@@ -3071,12 +2915,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const [background, color] = palette[status] || palette.unknown;
     return `<span data-r7-status-badge data-r7-status="${status}" style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:${background};color:${color};padding:6px 10px;font-size:12px;font-weight:1000;">${label}</span>`;
   }
-
   renderR7FreshnessPill(state, label) {
     const color = state === "fresh" ? "#21653a" : state === "delay" ? "#8a5a00" : state === "stale" ? "#a54600" : "#a51f2b";
     return `<span data-r7-freshness-pill data-r7-freshness="${state}" style="display:inline-flex;border:1px solid #dcebe0;border-radius:999px;background:#fff;color:${color};padding:5px 9px;font-size:11px;font-weight:900;">${label}</span>`;
   }
-
   renderR7SeverityCard(severity, title, value, note) {
     const palette = {
       green: ["#e8f6ea", "#78a87e"],
@@ -3088,11 +2930,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const [background, border] = palette[severity] || palette.gray;
     return `<article data-r7-severity-card data-r7-severity="${severity}" style="border:1px solid ${border};border-radius:18px;background:${background};padding:14px;box-shadow:0 10px 26px rgba(49,82,59,.08);"><p style="margin:0;color:#5d6f62;font-size:12px;font-weight:900;">${title}</p><strong style="display:block;margin-top:8px;color:#24323f;font-size:22px;">${value}</strong><span style="display:block;margin-top:6px;color:#5d6f62;font-size:12px;line-height:1.5;">${note}</span></article>`;
   }
-
   renderR7MetricCard(label, currentValue, targetValue, delta, statusLabel) {
     return `<article data-r7-metric-card style="border:1px solid #dcebe0;border-radius:16px;background:#fff;padding:14px;display:grid;gap:8px;"><strong style="color:#24323f;font-size:14px;">${label}</strong><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;"><span><b style="display:block;color:#78927f;font-size:11px;">현재값</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${currentValue}</em></span><span><b style="display:block;color:#78927f;font-size:11px;">목표값</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${targetValue}</em></span><span><b style="display:block;color:#78927f;font-size:11px;">편차</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${delta}</em></span><span><b style="display:block;color:#78927f;font-size:11px;">상태</b><em style="font-style:normal;color:#24323f;font-weight:1000;">${statusLabel}</em></span></div></article>`;
   }
-
   renderR7DomainHealthStrip() {
     const items = [
       ["crop-operations", "작물", "normal", "정상"],
@@ -3104,15 +2944,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return `<section data-r7-domain-health-strip style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">도메인 상태 스트립</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;">${items.map(([key, label, status, text]) => `<div data-r7-domain-health-item="${key}" style="border:1px solid #edf4ef;border-radius:14px;background:#fbfdfb;padding:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="font-weight:900;color:#31523b;font-size:12px;">${label}</span>${this.renderR7StatusBadge(status, text)}</div>`).join("")}</div></section>`;
   }
-
   renderR7AlertBanner(severity, title, body) {
     return `<article data-r7-alert-banner data-r7-severity="${severity}" style="border:1px solid ${severity === "red" ? "#d35151" : severity === "orange" ? "#e28534" : "#e3b341"};border-radius:16px;background:${severity === "red" ? "#fff0f0" : severity === "orange" ? "#fff4e9" : "#fff9e8"};padding:13px;display:grid;gap:4px;"><strong style="color:#24323f;font-size:14px;">${title}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${body}</span></article>`;
   }
-
   renderR7MiniTrendChart(label, stateLabel) {
     return `<article data-r7-mini-trend-chart style="border:1px solid #dcebe0;border-radius:16px;background:linear-gradient(180deg,#fff,#f8fcf9);padding:14px;display:grid;gap:10px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:13px;">${label}</strong>${this.renderR7FreshnessPill("fresh", stateLabel)}</div><svg viewBox="0 0 180 54" role="img" aria-label="${label} trend placeholder" style="width:100%;height:54px;"><polyline points="4,42 36,34 68,38 100,24 132,28 176,14" fill="none" stroke="#78a87e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline><line x1="4" y1="44" x2="176" y2="44" stroke="#dcebe0" stroke-width="2"></line></svg><span style="color:#78927f;font-size:11px;">최근 추세를 간단히 표시합니다</span></article>`;
   }
-
   renderR7VisualDashboard() {
     return `<section data-r7-visual-system="true" style="display:grid;gap:14px;">
       <section data-r7-dashboard-visual-hero style="border:1px solid #dcebe0;border-radius:22px;background:linear-gradient(135deg,#f8fffa,#e9f6ed);padding:18px;display:grid;gap:14px;">
@@ -3126,11 +2963,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <section style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("관수 추세", "최신")}</section>
     </section>`;
   }
-
   renderR7TrendBoard() {
     return `<section data-r7-trend-board data-r7-main-trends style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;"><strong style="color:#24323f;font-size:15px;">추세</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("관수 추세", "최신")}</div></section>`;
   }
-
   renderR7CommandCenterHero() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     return `<section data-r7-command-center-hero data-r7-main-product-hero style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#f8fffa,#e5f4eb);padding:20px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.9fr);gap:16px;align-items:stretch;">
@@ -3138,11 +2973,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <aside data-r7-main-zone-focus style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:14px;">현재 선택 구역</strong><span style="color:#5d6f62;font-size:13px;line-height:1.55;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span>${this.renderR7StatusBadge("warning", "장치 응답 확인")}</aside>
     </section>`;
   }
-
   renderR7TodayPriorityPanel() {
     return `<section data-r7-today-priority-panel data-r7-main-priority-checks style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:10px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">우선 확인</strong>${this.renderR7StatusBadge("attention", "주의")}</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">${this.renderR7SeverityCard("red", "안전 판단", "차단", "현장 안전 상태 확인")}${this.renderR7SeverityCard("orange", "장치 응답", "경고", "창/팬 응답 지연")}${this.renderR7SeverityCard("yellow", "환경 편차", "주의", "야간 습도와 VPD 확인")}</div></section>`;
   }
-
   renderR7KpiRail() {
     const items = [
       ["전체 상태", "주의", "정상 3 · 주의 2 · 차단 1"],
@@ -3153,7 +2986,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return `<section data-r7-kpi-rail data-r7-main-kpi-grid style="display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">핵심 지표</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">${items.map(([label, value, note]) => `<article data-r7-kpi-rail-item data-r7-metric-card style="border:1px solid #dcebe0;border-radius:18px;background:#fff;padding:13px;display:grid;gap:7px;"><span style="color:#78927f;font-size:11px;font-weight:1000;">${label}</span><strong style="color:#24323f;font-size:20px;">${value}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.45;">${note}</span><small style="color:#78927f;font-size:11px;">현재값 · 목표값 · 편차 · 상태</small></article>`).join("")}</div></section>`;
   }
-
   renderR7DomainBoard() {
     const domainCards = [
       ["crop-operations", "작물 상태", "normal", "정상", "작물상태/생육목표는 안정권"],
@@ -3170,11 +3002,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }).join("");
     return `<section data-r7-domain-board data-r7-domain-health-strip data-r7-main-zone-status-grid style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:12px;"><strong style="color:#24323f;font-size:15px;">구역별 상태</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">${zoneCards}${domainCards.map(([key, title, status, label, note]) => `<article data-r7-domain-board-card="${key}" data-r7-domain-health-item="${key}" style="border:1px solid #edf4ef;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:8px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong style="color:#31523b;font-size:13px;">${title}</strong>${this.renderR7StatusBadge(status, label)}</div><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${note}</span></article>`).join("")}</div></section>`;
   }
-
   renderR7AlertStack() {
     return `<section data-r7-alert-stack data-r7-main-alerts style="border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;display:grid;gap:10px;"><strong style="color:#24323f;font-size:15px;">경보</strong>${this.renderR7AlertBanner("red", "차단", "현장 안전 상태를 먼저 확인하세요.")}${this.renderR7AlertBanner("orange", "센서 오류", "센서 오류와 지연은 운영자가 먼저 확인해야 합니다.")}${this.renderR7AlertBanner("yellow", "인터록 확인", "인터록 상태와 현장 알람을 함께 확인하세요.")}</section>`;
   }
-
   renderR7OperationsDashboardRewrite() {
     return `<section data-r7-operations-dashboard-rewrite="true" data-r7-main-product-dashboard="true" data-r7-visual-system="true" data-r7-dashboard-visual-hero style="display:grid;gap:14px;">
       ${this.renderR7CommandCenterHero()}
@@ -3184,7 +3014,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7TrendBoard()}
     </section>`;
   }
-
   renderOperatingHome() {
     const contextMeta = this._contextMetaForRender();
     return `
@@ -3209,7 +3038,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     `;
   }
-
   renderZoneDetailModal() {
     return `
       <div data-cba-component="COM-ZoneDetailModal" data-zone-detail-modal role="dialog" aria-modal="true" aria-labelledby="zone-detail-modal-title" hidden style="display:none;position:fixed;inset:0;background:rgba(31,42,36,.38);z-index:10000;align-items:center;justify-content:center;padding:18px;">
@@ -3223,56 +3051,43 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </div>
     `;
   }
-
   _isR7ReferenceSlimRail() {
     return this._r7SidebarLayoutMode() === "operator-ha-adjacent" && Boolean(this._r7SidebarCollapsed);
   }
-
   _r7SidebarFixedViewportAttrs() {
     return 'data-r7-sidebar-fixed-viewport="true" data-r7-sidebar-height-policy="100vh-sticky" data-r7-sidebar-scroll-policy="internal-auto" data-r7-sidebar-position-policy="sticky-grid-safe" data-r7-sidebar-follow-scroll="sticky"';
   }
-
   _r7SidebarFixedViewportStyle() {
     return "height:100vh;max-height:100vh;position:sticky;top:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;";
   }
-
   _r7SidebarVisualAttrs(collapsed) {
     return `data-r7-sidebar-visual-style="ha-like" data-r7-sidebar-surface="vertical-rail" data-r7-sidebar-compact-width="64" data-r7-sidebar-expanded-width="256" data-r7-sidebar-active-indicator="left-bar" data-r7-sidebar-active-icon-tile="soft-mint" data-r7-sidebar-active-icon-bg="#eef8ee" data-r7-sidebar-icon-style="ha-mdi" data-r7-sidebar-visual-density="${collapsed ? "compact" : "expanded"}"`;
   }
-
   _r7SidebarPlacementAttrs() {
     return 'data-r7-ha-adjacent-placement="right-of-ha-sidebar" data-r7-sidebar-adjacent-gap="0" data-r7-sidebar-main-color="green" data-r7-sidebar-accent-color="#43ad5e"';
   }
-
   _r7SidebarBaseStyle(width) {
     return `width:${width};min-height:100vh;${this._r7SidebarFixedViewportStyle()}margin-left:0;border:0;border-left:0;border-right:1px solid #e1e5ea;border-radius:0;box-shadow:none;background:#ffffff;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-self:stretch;box-sizing:border-box;`;
   }
-
   _r7SidebarNavItemStyle(active, collapsed) {
     return `position:relative;display:flex;align-items:center;gap:12px;justify-content:${collapsed ? "center" : "flex-start"};min-height:44px;border:0;border-radius:10px;background:${active ? R7_REFERENCE_ACTIVE_ICON_BG : "transparent"};color:${R7_REFERENCE_SAGE_ICON};text-decoration:none;padding:${collapsed ? "0" : "0 12px 0 14px"};font-weight:${active ? "800" : "600"};box-sizing:border-box;`;
   }
-
   _r7SidebarActiveIndicator(active) {
     return active ? `<span data-r7-sidebar-active-left-bar aria-hidden="true" style="position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 999px 999px 0;background:${R7_GREEN_ACCENT};"></span>` : "";
   }
-
   _r7SidebarReferenceLogo() {
     return `<span data-r7-sidebar-logo-style="ha-mdi-leaf" data-r7-sidebar-logo-leaf="true" aria-label="Green Smart 로고" title="Green Smart" style="width:40px;height:40px;border-radius:12px;background:${R7_REFERENCE_LOGO_TILE};color:#ffffff;display:inline-flex;align-items:center;justify-content:center;"><ha-icon icon="mdi:leaf" style="--mdc-icon-size:26px;width:26px;height:26px;"></ha-icon></span>`;
   }
-
   _r7SidebarHaIcon(key) {
     const icon = R7_HA_MDI_ICONS[key] || R7_HA_MDI_ICONS["operations-home"];
     return `<ha-icon icon="${icon}" data-r7-sidebar-ha-icon="${key}" data-r7-sidebar-icon-style="ha-mdi" aria-hidden="true" style="--mdc-icon-size:22px;width:22px;height:22px;color:${R7_REFERENCE_SAGE_ICON};display:inline-flex;align-items:center;justify-content:center;"></ha-icon>`;
   }
-
   _r7SidebarReferenceIcon(key) {
     return this._r7SidebarHaIcon(key);
   }
-
   _r7SidebarLineIcon(key) {
     return this._r7SidebarReferenceIcon(key);
   }
-
   _r7Text(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -3280,7 +3095,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
-
   _r7CurrentUserInfo() {
     const user = this.hass?.user || {};
     const name = user.name || user.display_name || user.id || "로그인 사용자";
@@ -3288,21 +3102,17 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const adminLabel = user.is_admin ? "관리자" : "사용자";
     return { name, role, roleLabel: `${adminLabel} · ${role}` };
   }
-
   _r7UserInitials(name) {
     const text = String(name || "U").trim();
     return (text[0] || "U").toUpperCase();
   }
-
   _r7LogoutHref() {
     return "/";
   }
-
   _openR7UserProfileSettings() {
     this._activeR7DomainSubtabs = { ...this._activeR7DomainSubtabs, "settings-admin": "users-permissions" };
     return this._openR7SettingsDomainFromCache("user-profile-settings");
   }
-
   _performR7HaLogout() {
     let haLogoutEventDispatched = false;
     try {
@@ -3327,13 +3137,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (locationRef?.assign) locationRef.assign(logoutUrl);
     else if (locationRef) locationRef.href = logoutUrl;
   }
-
   _scheduleR7SidebarExternalControlPositionSync() {
     if (this._r7SidebarExternalControlSyncRaf) return;
     const run = () => { this._r7SidebarExternalControlSyncRaf = 0; this._syncR7SidebarExternalControlPosition(); };
     this._r7SidebarExternalControlSyncRaf = globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(run) : setTimeout(run, 0);
   }
-
   _ensureR7SidebarExternalControlObservers() {
     if (!this._r7SidebarExternalControlResizeHandler) {
       this._r7SidebarExternalControlResizeHandler = () => this._scheduleR7SidebarExternalControlPositionSync();
@@ -3349,7 +3157,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._scheduleR7SidebarExternalControlPositionSync();
   }
-
   _syncR7SidebarExternalControlPosition() {
     try {
       const sidebar = this.querySelector?.('[data-r7-sidebar][data-r7-sidebar-component="common"]'); if (!sidebar?.getBoundingClientRect || !this.style?.setProperty) return;
@@ -3357,7 +3164,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.style.setProperty('--r7-sidebar-external-left', `${Math.max(0, Math.round(sidebarRect.right - 1))}px`); if (brandRect) this.style.setProperty('--r7-sidebar-external-toggle-top', `${Math.max(0, Math.round(brandRect.top + 3))}px`); if (accountRect) this.style.setProperty('--r7-sidebar-external-logout-top', `${Math.max(0, Math.round(accountRect.top + 7))}px`);
     } catch (_error) { /* geometry best-effort only */ }
   }
-
   renderR7SidebarUtilityGroup(referenceSlimRail) {
     const buttonStyle = `width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:${R7_GREEN_TEXT};display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;`;
     const userInfo = this._r7CurrentUserInfo();
@@ -3384,18 +3190,15 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </div>
     </div>`;
   }
-
   renderR7SidebarBrand({ collapsed = false, referenceSlimRail = false } = {}) {
     if (referenceSlimRail) return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" data-r7-sidebar-protruding-toggle-tab="true" style="display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;width:100%;margin:0 auto 4px;position:relative;"><span data-r7-sidebar-logo-tile data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" title="Green Smart" style="width:44px;height:44px;border-radius:12px;background:transparent;display:inline-flex;align-items:center;justify-content:center;padding:0;">${this._r7SidebarReferenceLogo()}</span></div>`;
     return `<div data-r7-sidebar-brand data-r7-sidebar-brand-toggle-separated="true" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" style="display:flex;align-items:center;gap:10px;justify-content:${collapsed ? "center" : "space-between"};min-height:48px;padding:0 ${collapsed ? "0" : "8px"};position:relative;"><div style="display:flex;align-items:center;gap:9px;min-width:0;"><span data-r7-sidebar-logo-image data-r7-sidebar-logo-static="true" aria-label="Green Smart 로고" style="width:40px;height:40px;border-radius:12px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;">${this._r7SidebarReferenceLogo()}</span>${collapsed ? "" : `<div style="min-width:0;"><div style="font-weight:700;color:#202124;font-size:16px;line-height:1;">Green Smart</div><p style="margin:4px 0 0;color:#6f7782;font-size:12px;line-height:1.35;">작물·구역·경보 중심</p></div>`}</div></div>`;
   }
-
   renderR7SidebarExternalControls({ collapsed = Boolean(this._r7SidebarCollapsed), layoutMode = this._r7SidebarLayoutMode() } = {}) {
     const referenceSlimRail = layoutMode === "operator-ha-adjacent" && Boolean(collapsed), toggleGlyph = collapsed ? "›" : "‹", toggleTitle = collapsed ? "상세형" : "간략형", toggleLabel = collapsed ? "사이드바 상세형" : "사이드바 간략형";
     const tabBase = "position:fixed;left:var(--r7-sidebar-external-left, 255px);width:18px;height:34px;border:1px solid #dcebe0;border-left:0;border-radius:0 7px 7px 0;background:#fff;color:#31523b;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:5px 4px 10px rgba(31,51,41,.12);z-index:40;clip-path:polygon(0 0,100% 18%,100% 82%,0 100%);box-sizing:border-box;text-decoration:none;", logoutIcon = `<svg data-r7-sidebar-line-icon="logout" aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M10 5H6.8C5.8 5 5 5.8 5 6.8v10.4C5 18.2 5.8 19 6.8 19H10"/><path d="M13 8l4 4-4 4"/><path d="M17 12H9"/></svg><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">로그아웃</span>`;
     return `<div data-r7-sidebar-external-controls-shell="true" data-r7-sidebar-controls-owner="outside-aside" data-r7-sidebar-controls-layout-exclusion="true" data-r7-sidebar-external-overlay="fixed-sibling" data-r7-sidebar-external-controls-mode="${referenceSlimRail ? 'compact' : 'expanded'}" style="display:contents;"><button type="button" data-r7-sidebar-collapse-toggle data-r7-sidebar-external-toggle="true" data-r7-sidebar-control-position="fixed-outside-overlay" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-protruding-button="toggle" data-r7-sidebar-toggle-position="logo-right-outside" data-r7-sidebar-toggle-shape="trapezoid-wide-left" aria-label="${toggleLabel}" title="${toggleTitle}" style="${tabBase}top:var(--r7-sidebar-external-toggle-top, 11px);font-size:12px;">${toggleGlyph}</button><a href="${this._r7LogoutHref()}" data-r7-sidebar-logout-button="true" data-r7-sidebar-control-position="fixed-outside-overlay" data-r7-sidebar-button-placement="outside-right" data-r7-sidebar-utility="logout" data-r7-sidebar-protruding-button="logout" data-r7-sidebar-logout-shape="trapezoid-wide-left" data-r7-sidebar-logout-action="ha-auth-logout" data-r7-sidebar-logout-event="hass-logout" data-r7-sidebar-logout-fallback-href="/" aria-label="Home Assistant 로그아웃" title="Home Assistant 로그아웃" style="${tabBase}top:var(--r7-sidebar-external-logout-top, calc(100vh - 72px));">${logoutIcon}</a></div>`;
   }
-
   renderR7MobileTopNavigation() {
     const userInfo = this._r7CurrentUserInfo();
     const userName = this._r7Text(userInfo.name);
@@ -3418,7 +3221,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <div data-r7-mobile-top-nav-row="domain-scroll" data-r7-mobile-domain-scroll="horizontal" data-r7-mobile-domain-tablist="true" data-r7-mobile-active-domain-scroll-align="right-edge" role="tablist" style="display:flex;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid #edf4ef;margin:4px -10px 0;padding:0 10px;">${domainButtons}</div>
     </nav>`;
   }
-
   renderR7SidebarNavItems({ collapsed = false, referenceSlimRail = false } = {}) {
     return R7_MAIN_SIDEBAR_GROUPS.map((group) => {
       const active = this._activeR7Domain === group.key;
@@ -3429,7 +3231,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       return `<a href="#${group.target}" data-r7-sidebar-nav-icon-button data-r7-sidebar-group="${group.key}" data-r7-sidebar-target="${group.target}" data-r7-sidebar-active="${active ? "true" : "false"}" data-r7-sidebar-active-icon-tile="${active ? "true" : "false"}" aria-current="${active ? "page" : "false"}" ${labelAttrs} title="${group.label}" style="${this._r7SidebarNavItemStyle(active, compact)}">${this._r7SidebarActiveIndicator(active)}${icon}${summary}</a>`;
     }).join("");
   }
-
   renderR7CommonSidebarComponent({ collapsed = Boolean(this._r7SidebarCollapsed), layoutMode = this._r7SidebarLayoutMode() } = {}) {
     const haSidebarPolicy = layoutMode === "operator-ha-adjacent" ? "keep" : "hide";
     const haSidebarAdminSource = this.hass?.user?.is_admin ? "ha-user-is-admin" : this._isCurrentUserHaSidebarAdmin() ? "green-smart-admin-role" : "non-admin-hidden";
@@ -3451,47 +3252,36 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7SidebarUtilityGroup(referenceSlimRail)}
     </aside>`;
   }
-
   renderR7Sidebar() {
     return this.renderR7CommonSidebarComponent();
   }
-
   renderR7SettingsAdminCard(marker, title, value, note, extraAttrs = "") {
     return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:14px;font-weight:1000;line-height:1.4;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
   }
-
   renderR7CdaModalOverlay({ open = true, attrs = "", zIndex = 50, body = "" } = {}) {
     return `<div data-r7-cda-modal-overlay ${attrs} style="position:fixed;inset:0;background:rgba(20,32,24,.30);display:${open ? 'flex' : 'none'};align-items:center;justify-content:center;z-index:${zIndex};padding:18px;box-sizing:border-box;">${body}</div>`;
   }
-
   renderR7CdaModalCard({ attrs = "", width = "min(1120px,96vw)", maxHeight = "90vh", rows = "auto auto minmax(0,1fr) auto", body = "" } = {}) {
     return `<article data-r7-cda-modal-card ${attrs} style="background:#fff;border-radius:20px;border:1px solid #dcebe0;box-shadow:0 20px 60px rgba(18,32,24,.18);width:${width};max-height:${maxHeight};padding:18px;display:grid;grid-template-rows:${rows};gap:14px;color:#24323f;box-sizing:border-box;overflow:hidden;">${body}</article>`;
   }
-
   renderR7CdaModalHeader({ icon = "mdi:information-outline", title = "", subtitle = "", closeAttr = "", attrs = "" } = {}) {
     return `<header data-r7-cda-modal-header ${attrs} style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;min-width:0;"><div style="display:flex;gap:12px;align-items:center;min-width:0;">${this.renderR7CommonHaIcon(icon, { size: 34 })}<div style="min-width:0;"><h2 style="margin:0;font-size:20px;line-height:1.2;color:#24323f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</h2><p style="margin:4px 0 0;color:#5d6f62;font-size:13px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${subtitle}</p></div></div><button type="button" ${closeAttr} style="border:0;background:#fff;color:#24323f;font-size:20px;line-height:1;cursor:pointer;padding:4px;">×</button></header>`;
   }
-
   renderR7CdaSearchFilterBar({ searchAttr = "", searchPlaceholder = "검색", filters = [], attrs = "" } = {}) {
     return `<nav data-r7-cda-search-filter-bar ${attrs} style="display:flex;gap:10px;align-items:center;border:1px solid #edf4ef;border-radius:14px;padding:9px;background:#fbfdfb;overflow:auto;"><label style="height:34px;min-width:250px;border:1px solid #e2eee5;border-radius:10px;background:#fff;display:flex;align-items:center;gap:7px;padding:0 10px;color:#78927f;font-size:12px;">${this.renderR7CommonHaIcon("mdi:magnify", { size: 15 })}<input ${searchAttr} placeholder="${searchPlaceholder}" style="border:0;outline:0;min-width:0;width:100%;font-size:12px;"></label>${filters.map((filter) => `<button type="button" ${filter.attrs || ""} style="height:34px;border:1px solid ${filter.active ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${filter.tone === 'red' ? '#fff5f5' : filter.active ? '#f0fbf4' : '#fff'};color:${filter.tone === 'red' ? '#d92d20' : '#31523b'};padding:0 14px;font-size:12px;font-weight:950;white-space:nowrap;">${filter.label}</button>`).join("")}</nav>`;
   }
-
   renderR7CdaCompactListRow({ attrs = "", columns = [], selected = false } = {}) {
     return `<button type="button" data-r7-cda-compact-list-row ${attrs} style="width:100%;min-height:42px;max-height:54px;border:1px solid ${selected ? '#badcc8' : '#edf4ef'};border-radius:10px;background:${selected ? '#f6fbf7' : '#fff'};padding:7px 9px;display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;align-items:center;text-align:left;color:#24323f;font-size:11px;cursor:pointer;box-shadow:${selected ? '0 6px 14px rgba(37,128,74,.07)' : 'none'};overflow:hidden;">${columns.join("")}<span style="font-weight:1000;color:#31523b;">›</span></button>`;
   }
-
   renderR7CdaListPanel({ title = "", columns = [], rowsHtml = "", footer = "", attrs = "" } = {}) {
     return `<section data-r7-cda-list-panel ${attrs} style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;"><h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;">${title}</h3><div style="display:grid;grid-template-columns:1fr .72fr .56fr 1.05fr .8fr 18px;gap:8px;padding:0 14px 8px;color:#5d6f62;font-size:11px;font-weight:950;">${columns.map((col) => `<span>${col}</span>`).join("")}<span></span></div><div data-r7-cda-list-body style="display:grid;gap:6px;overflow:auto;padding:0 10px 10px;align-content:start;grid-auto-rows:max-content;">${rowsHtml}</div><footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding:10px 14px;color:#5d6f62;font-size:12px;">${footer}</footer></section>`;
   }
-
   renderR7CdaDetailSection({ title = "", body = "", attrs = "" } = {}) {
     return `<section data-r7-cda-detail-section ${attrs}><b>${title}</b>${body}</section>`;
   }
-
   renderR7CdaDetailPanel({ title = "", badge = "", body = "", footer = "", attrs = "" } = {}) {
     return `<section data-r7-cda-detail-panel ${attrs} style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;"><h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${title}</span>${badge}</h3><div style="overflow:auto;padding:0 14px 12px;display:grid;gap:12px;font-size:12px;">${body}</div>${footer}</section>`;
   }
-
   renderR7CdaEntityRows({ entityType = "entity", rows = [], selectedId = "", rowAttr = "" } = {}) {
     return rows.map((row) => this.renderR7CdaCompactListRow({
       selected: String(row.id) === String(selectedId),
@@ -3505,12 +3295,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ],
     })).join("");
   }
-
   renderR7CdaEntityDetailFields({ entityType = "entity", entity = {}, fields = [] } = {}) {
     const fieldHtml = fields.map(([key, label]) => `<span style="padding:8px;background:#fbfdfb;font-weight:950;">${label}</span><span data-r7-cda-entity-detail-field="${key}" data-r7-settings-greenhouse-detail-field="${key}" style="padding:8px;">${entity?.[key] || '미등록'}</span>`).join("");
     return `<div data-r7-cda-entity-detail-fields="${entityType}" style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;">${fieldHtml}</div>`;
   }
-
   renderR7CdaEntityListDetailModal({ entityType = "entity", modalOpen = true, icon = "mdi:information-outline", title = "", subtitle = "", rows = [], selectedId = "", listColumns = [], detailFields = [], detailSectionTitle = "1. 선택 항목 상세 정보", detailPanelAttrs = "", rowAttr = "", entityFooterActions = [], closeAttr = "", marker = "", zIndex = 44, suppressCloseButtons = false, detailExtraHtml = "" } = {}) {
     const selected = rows.find((row) => String(row.id) === String(selectedId)) || rows[0] || {};
     const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-shortcut-search-input", searchPlaceholder: `${title} 검색`, filters: [["all","전체"],["needs-review","검토 필요"],["normal","정상"],["evidence","감사 근거"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "needs-review" ? "red" : "green", attrs: `data-r7-settings-shortcut-filter="${key}"` })) });
@@ -3523,7 +3311,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const footer = suppressCloseButtons ? `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ CDA entity 공통 팝업 모달은 엔티티별 row와 선택 엔티티 상세를 같은 문법으로 재사용합니다.</span></footer>` : `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ CDA entity 공통 팝업 모달은 엔티티별 row와 선택 엔티티 상세를 같은 문법으로 재사용합니다.</span><button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modalOpen, zIndex, overlayAttrs: `${marker} data-r7-cda-entity-modal="${entityType}" data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-review-like-modal="approval-audit" data-r7-settings-shortcut-cda-split-kind="${entityType}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${entityType}"`, header, search, left: listPanel, right: detailPanel, footer });
   }
-
   normalizeR7SettingsGreenhouseEntityRows(greenhouses = []) {
     const rows = Array.isArray(greenhouses) ? greenhouses : [];
     return rows.map((greenhouse, index) => {
@@ -3589,7 +3376,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       };
     });
   }
-
   normalizeR7SettingsEquipmentEntityRows(mappings = [], zones = []) {
     const rows = Array.isArray(mappings) ? mappings : [];
     return rows.map((mapping, index) => {
@@ -3627,7 +3413,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       };
     });
   }
-
   _r7SettingsHaDeviceRows() {
     const data = this.r7SettingsGreenhouseZoneData();
     const rows = Array.isArray(data.haDevices) ? data.haDevices : [];
@@ -3655,17 +3440,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     return [...byId.values()];
   }
-
   _r7SettingsHaDeviceCardSummaryRows(limit = 3) {
     const rows = this._r7SettingsHaDeviceRows();
     if (!rows.length) return [this._r7SettingsGreenhouseValueRow("HA 기기", "불러오는 중", 'data-r7-settings-ha-device-list-empty="true"'), this._r7SettingsGreenhouseValueRow("연동 방식", "HA 기기 페이지")];
     return rows.slice(0, limit).map((device, index) => this._r7SettingsGreenhouseValueRow(device.deviceName || `HA 기기 ${index + 1}`, `${device.entityCount || 0} entities`, `data-r7-settings-ha-device-card-row="${device.haDeviceId}" data-r7-settings-ha-device-id="${device.haDeviceId}"`));
   }
-
   _r7SettingsEquipmentKindOptions() {
     return ["온습도 센서", "CO2 센서", "일사 센서", "VWC 센서", "천창 장치", "측창 장치", "스크린 장치", "유동팬 장치", "배기팬 장치", "관수 장치"].map((label) => ({ value: label, label }));
   }
-
   _r7SettingsDeviceLatestMap(values = []) {
     const byEntity = new Map();
     (Array.isArray(values) ? values : []).forEach((value) => {
@@ -3674,7 +3456,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     return byEntity;
   }
-
   renderR7SettingsDeviceEntityTable(device = {}) {
     const entities = Array.isArray(device.entities) ? device.entities : [];
     const latestByEntity = this._r7SettingsDeviceLatestMap(device.latestValues || []);
@@ -3688,7 +3469,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }).join("") : `<tr data-r7-settings-device-list-entity-row="empty"><td colspan="6" style="padding:10px;border-top:1px solid #edf4ef;color:#78927f;">연결된 Entity가 없습니다.</td></tr>`;
     return `<section data-r7-settings-device-list-entity-table="true" style="border:1px solid #edf4ef;border-radius:12px;overflow:hidden;background:#fff;"><header style="padding:9px 10px;background:#fbfdfb;font-weight:950;color:#31523b;">2. 연결 Entity 및 현재값</header><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#fbfdfb;color:#5d6f62;text-align:left;"><th style="padding:8px;">Entity ID</th><th style="padding:8px;">종류</th><th style="padding:8px;">단위</th><th style="padding:8px;">역할</th><th style="padding:8px;">현재값</th><th style="padding:8px;">freshness</th></tr></thead><tbody>${rows}</tbody></table></section>`;
   }
-
   _r7SettingsConnectedDeviceRows() {
     const data = this.r7SettingsGreenhouseZoneData();
     const zones = Array.isArray(data.zones) ? data.zones : [];
@@ -3757,7 +3537,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     return [...byEntity.values()];
   }
-
   _r7SettingsRegisteredGroupDeviceIds() {
     const data = this.r7SettingsGreenhouseZoneData();
     const ids = new Set();
@@ -3768,12 +3547,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._r7SettingsConnectedDeviceRows().forEach((row) => { if (row.groupId) ids.add(String(row.id)); });
     return ids;
   }
-
   _r7SettingsUngroupedConnectedDeviceRows() {
     const grouped = this._r7SettingsRegisteredGroupDeviceIds();
     return this._r7SettingsConnectedDeviceRows().filter((row) => !grouped.has(String(row.id)) && !["inactive", "deleted", "비활성", "삭제됨"].includes(String(row.status || "").toLowerCase()));
   }
-
   _r7SettingsUnlinkedHaEntityOptions() {
     const data = this.r7SettingsGreenhouseZoneData();
     const used = new Set(this._r7SettingsConnectedDeviceRows().flatMap((row) => [row.entityId, row.deviceEntity, row.sensorEntity].filter(Boolean).map(String)));
@@ -3784,17 +3561,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     [...entities, ...fallback].forEach((item) => { if (item.entity_id && !used.has(String(item.entity_id))) byId.set(item.entity_id, item); });
     return [...byId.values()].map((item) => ({ value: item.entity_id, label: `${item.name} · ${item.entity_id}`, attrs: 'data-r7-settings-unlinked-ha-entity-option="true"' }));
   }
-
   renderR7CdaActionFooter({ left = "", actions = [], attrs = "" } = {}) {
     return `<footer data-r7-cda-action-footer data-r7-cdb-list-modal-action-footer="positive-negative" ${attrs} style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #edf4ef;padding:10px 14px;">${left}<span style="flex:1"></span>${actions.join("")}</footer>`;
   }
-
   renderR7CdaSplitModal({ open = true, overlayAttrs = "", cardAttrs = "", header = "", search = "", left = "", right = "", footer = "", zIndex = 50, width = "min(1120px,96vw)" } = {}) {
     const mobileStackStyle = `<style data-r7-cda-split-mobile-stack-style>@media (max-width: 860px) {[data-r7-cda-split-modal] { width: calc(100vw - 20px) !important; max-height: calc(100vh - 20px) !important; }[data-r7-cda-split-modal-main="list-detail"] { grid-template-columns:1fr !important; grid-auto-flow:row !important; overflow:auto !important; }[data-r7-cda-split-modal-main="list-detail"] > [data-r7-cda-list-panel], [data-r7-cda-split-modal-main="list-detail"] > [data-r7-cda-detail-panel] { min-width:0 !important; width:100% !important; max-width:100% !important; box-sizing:border-box !important; }[data-r7-cda-split-modal-main="list-detail"] [data-r7-cda-list-header], [data-r7-cda-split-modal-main="list-detail"] [data-r7-cda-list-row] { min-width:max-content; }}</style>`;
     const body = this.renderR7CdaModalCard({ attrs: `data-r7-cda-split-modal ${cardAttrs}`, width, body: `${mobileStackStyle}${header}${search}<main data-r7-cda-split-modal-main="list-detail" data-r7-mobile-modal-sections="stack-1col" style="display:grid;grid-template-columns:minmax(430px,.98fr) minmax(450px,1.02fr);gap:14px;min-height:0;">${left}${right}</main>${footer}` });
     return this.renderR7CdaModalOverlay({ open, zIndex, attrs: overlayAttrs, body });
   }
-
   _r7ApprovalStageForStatus(status = "") {
     const normalized = String(status || "pending").toLowerCase();
     if (["pending", "requested"].includes(normalized)) return { key: "review-pending", label: "승인 대기", tone: "amber" };
@@ -3802,7 +3576,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (["rejected", "denied"].includes(normalized)) return { key: "rejected", label: "반려", tone: "red" };
     return { key: "unknown", label: "상태 미확인", tone: "gray" };
   }
-
   _r7ApprovalTypeForRow(row = {}) {
     const explicit = row.approvalType || row.requestType || row.request_type || row.label || "";
     const text = `${explicit} ${row.note || ""} ${row.meta || ""}`;
@@ -3812,7 +3585,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (text.includes("권한") || text.includes("역할") || text.includes("사용자") || row.requestedRole || row.requested_role) return "권한 변경";
     return explicit || "유형 미지정";
   }
-
   _r7ApprovalRiskModel(row = {}) {
     const explicit = row.riskLevel || row.risk_level || "";
     const text = `${explicit} ${row.tone || ""} ${row.note || ""} ${row.meta || ""} ${row.status || ""}`;
@@ -3824,7 +3596,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (row.tone === "green") return { level: "낮음", tone: "green" };
     return { level: "중간", tone: "amber" };
   }
-
   _normalizeR7ApprovalRequest(row = {}) {
     const type = this._r7ApprovalTypeForRow(row);
     const stage = this._r7ApprovalStageForStatus(row.status);
@@ -3840,7 +3611,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const decisionEnabled = ["pending", "requested"].includes(String(row.status || "pending").toLowerCase()) && Boolean(row.id);
     return { id: row.id || "", raw: row, approvalType: type, requestedAt, requester, requestedRole, summary, target, beforeValue, afterValue, scope, status: row.status || "pending", stage, risk, decisionEnabled };
   }
-
   _r7ApprovalImpactBadges(model) {
     const badges = [];
     badges.push({ label: model.risk.level === "높음" ? "리스크 영향 있음" : model.risk.level === "중간" ? "검토 필요" : "영향 낮음", tone: model.risk.tone, icon: model.risk.level === "높음" ? "mdi:alert-outline" : "mdi:information-outline" });
@@ -3850,7 +3620,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (model.approvalType === "안전 확인") badges.push({ label: "Safety/Interlock 확인 필요", tone: "amber", icon: "mdi:shield-alert-outline" });
     return badges;
   }
-
   _r7ApprovalValidationChecks(model) {
     return [
       { key: "requester", label: model.requester === "요청자 미확인" ? "요청자 미확인" : "요청자 확인됨", state: model.requester === "요청자 미확인" ? "missing" : "ok" },
@@ -3859,7 +3628,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       { key: "memo", label: "승인자 메모 필요", state: "optional" },
     ];
   }
-
   _r7ApprovalToneStyle(tone, variant = "soft") {
     const palette = {
       red: ["#fff5f5", "#f1b8b8", "#d92d20"],
@@ -3871,7 +3639,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (variant === "solid") return `background:${palette[2]};border-color:${palette[2]};color:#fff;`;
     return `background:${palette[0]};border-color:${palette[1]};color:${palette[2]};`;
   }
-
   _normalizeR7SettingsUserRow(row = {}, index = 0) {
     const haUserId = row.haUserId || row.ha_user_id || row.id || `user-${index + 1}`;
     const displayName = row.displayName || row.display_name || row.kind || haUserId || "사용자";
@@ -3884,7 +3651,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tone = row.tone || (status === "active" ? "green" : status === "rejected" ? "red" : "amber");
     return { id: String(haUserId), dbId: row.id || "", haUserId: String(haUserId), displayName, role, status, permissionSummary, lastSeenAt, createdAt, updatedAt, tone, raw: row };
   }
-
   _normalizeR7SettingsAuditRow(row = {}, index = 0) {
     const id = row.id || row.auditId || row.createdAt || row.created_at || row.actor || `audit-${index + 1}`;
     const action = row.action || row.raw?.action || "audit";
@@ -3899,7 +3665,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const state = result;
     return { id: String(id), title, actor, action, at, summary, target, targetRef, result, tone, state, raw: row };
   }
-
   _r7PermissionMatrixStateCell(state) {
     const meta = {
       allowed: { icon: "mdi:check-circle-outline", label: "허용", tone: "green" },
@@ -3911,8 +3676,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const tone = this._r7ApprovalToneStyle(meta.tone);
     return `<span data-r7-settings-permission-state="${state}" data-r7-settings-permission-state-icon="${meta.icon}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid;border-radius:999px;padding:4px 7px;font-weight:950;${tone}">${this.renderR7CommonHaIcon(meta.icon, { size: 14 })}<span>${meta.label}</span></span>`;
   }
-
-
   renderR7SettingsCreatePreSaveChecklist(kind, title) {
     const model = {
       "greenhouse-create": [
@@ -3956,7 +3719,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <template data-r7-settings-create-reference-modal="growth-survey-write">${title} · 생육조사 작성 모달 문법</template>
     </aside>`;
   }
-
   renderR7SettingsCreateGrowthLikeModal({ open, kind, title, subtitle, formAttr, closeKind, sections, submitLabel, state = "idle", error = "" }) {
     if (!open) return `<template data-r7-settings-${kind}-modal="true" data-r7-settings-${kind}-modal-open="false"></template>`;
     const statusText = state === "saving" ? "저장 중" : state === "saved" ? "저장 완료" : state === "error" ? "오류" : "입력 가능";
@@ -3968,39 +3730,31 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const body = `<form ${formAttr} data-r7-settings-create-record-form="${kind}" style="display:grid;gap:12px;min-width:0;"><div data-r7-settings-create-form-layout="growth-like" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);gap:16px;align-items:start;width:100%;box-sizing:border-box;">${leftForm}${this.renderR7SettingsCreatePreSaveChecklist(kind, title)}</div>${stateHtml}${actionRow}</form>`;
     return this.renderR7RecordCommonModalShell(modalModel, summary, body);
   }
-
   renderR7SettingsCreateRecordCommonModal(args) {
     return this.renderR7SettingsCreateGrowthLikeModal(args);
   }
-
   renderR7SettingsDetailActionModal({ open, kind, title, subtitle, formAttr, closeKind, sections, fields, submitLabel, state = "idle", error = "" }) {
     // R7-095 marker manifest: data-r7-settings-greenhouse-create-modal / data-r7-settings-zone-create-modal / data-r7-settings-device-sensor-mapping-modal / data-r7-settings-greenhouse-create-form / data-r7-settings-zone-create-form / data-r7-settings-device-sensor-mapping-form.
     // R7-096 creation buttons reuse record common modal shell via renderR7RecordCommonModalShell, not direct CDA overlay.
     // R7-097 creation buttons use growth-like sectioned form grammar from 생육조사 작성 모달.
     return this.renderR7SettingsCreateGrowthLikeModal({ open, kind, title, subtitle, formAttr, closeKind, sections: sections || fields || [], submitLabel, state, error });
   }
-
   _r7SettingsCreateField(name, label, value = "", attrs = "") {
     return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><input name="${name}" value="${value}" required ${attrs} style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"></label>`;
   }
-
   _r7SettingsCreateSelect(name, label, options = [], selectedValue = "", attrs = "") {
     const items = options.map(({ value, label: optionLabel, attrs: optionAttrs = "" }) => `<option value="${value}"${String(value) === String(selectedValue) ? " selected" : ""} ${optionAttrs}>${optionLabel}</option>`).join("");
     return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><select name="${name}" required ${attrs} style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;">${items}</select></label>`;
   }
-
   _r7SettingsCreateNumberWithUnit(name, label, value = "", unit = "", attrs = "") {
     return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><span style="display:grid;grid-template-columns:1fr auto;align-items:center;border:1px solid #dcebe0;border-radius:8px;background:#fff;overflow:hidden;"><input name="${name}" type="number" value="${value}" required ${attrs} style="height:36px;border:0;padding:0 9px;background:#fff;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"><span style="border-left:1px solid #edf2ee;padding:0 10px;color:#5d6f62;font-weight:950;">${unit}</span></span></label>`;
   }
-
   _r7SettingsCreateTextarea(name, label, value = "") {
     return `<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>${label}</span><textarea name="${name}" rows="3" style="border:1px solid #dcebe0;border-radius:9px;padding:8px 10px;resize:vertical;box-sizing:border-box;font-size:12px;">${value}</textarea></label>`;
   }
-
   _r7SettingsCreateSection(key, title, body) {
     return `<fieldset data-r7-settings-create-section="${key}" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;background:#fff;"><legend style="font-size:13px;font-weight:950;color:#1f3329;padding:0 4px;">${title}</legend>${body}</fieldset>`;
   }
-
   renderR7SettingsGreenhouseCreateModal() {
     const modal = this._settingsGreenhouseCreateModal || { open: false };
     const values = modal.values || {};
@@ -4027,7 +3781,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "greenhouse-create", title: isEdit ? "온실 수정" : "온실 생성", subtitle: "생육조사 작성 모달처럼 기본 정보와 검증을 나눠 저장합니다", formAttr: "data-r7-settings-greenhouse-create-form", closeKind: "greenhouse", state: modal.state, error: modal.error, submitLabel: isEdit ? "온실 수정" : "온실 저장", sections });
   }
-
   _r7SettingsNextZoneName(greenhouse, zones = []) {
     const greenhouseId = String(greenhouse?.id || greenhouse?.greenhouseId || "1");
     const greenhouseNumber = String(greenhouse?.displayNumber || greenhouse?.display_number || greenhouse?.greenhouseNumber || greenhouse?.number || "1");
@@ -4039,7 +3792,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }, 0);
     return `${greenhouseNumber}-${maxZone + 1}구역`;
   }
-
   renderR7SettingsZoneCreateModal() {
     const modal = this._settingsZoneCreateModal || { open: false };
     const values = modal.values || {};
@@ -4073,7 +3825,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: isEdit ? "구역 수정" : "구역 생성", subtitle: "온실별 재배·운영 공간을 등록하고 저장 전 기준을 확인합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: isEdit ? "구역 수정" : "구역 저장", sections });
   }
-
   renderR7SettingsHaDevicesPageModal() {
     const modal = this._settingsHaDevicesPageModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-ha-devices-page-modal="false"></template>`;
@@ -4088,7 +3839,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const card = this.renderR7CdaModalCard({ attrs: `data-r7-settings-ha-devices-page-card data-r7-settings-ha-devices-page-modal="true" data-r7-settings-ha-devices-page-route="${src}" data-r7-settings-ha-devices-page-layout="cropped-full-height"`, width: "min(1240px,calc(100vw - 16px))", maxHeight: "calc(100vh - 16px)", rows: "auto minmax(0,1fr)", body: `${responsive}${header}${iframe}` }).replace("max-height:calc(100vh - 16px);", "height:calc(100vh - 16px);max-height:calc(100vh - 16px);");
     return this.renderR7CdaModalOverlay({ open: true, zIndex: 52, attrs: `data-r7-settings-ha-devices-page-overlay data-r7-settings-ha-devices-page-modal="true" data-r7-settings-ha-devices-page-route="${src}"`, body: card });
   }
-
   renderR7SettingsDeviceCreateModal() {
     const modal = this._settingsDeviceCreateModal || { open: false };
     const values = modal.values || {};
@@ -4108,21 +3858,27 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const values = modal.values || {};
     const settingsData = this.r7SettingsGreenhouseZoneData();
     const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._homeContext?.zones || [{ id: "zone-a", zoneId: "zone-a", zoneName: "A구역", name: "A구역", bedCount: 2 }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
-    const zoneOptions = zones.map((zone, index) => ({ value: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`, label: this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역` }));
+    const irrigationGroups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
+    const nextNoForZone = (zoneId) => irrigationGroups.filter((group) => String(group.zoneId || group.zone_id || "") === String(zoneId)).reduce((max, group) => Math.max(max, Number(group.irrigationGroupNo || group.irrigation_group_no || 0)), 0) + 1;
+    const zoneOptions = zones.map((zone, index) => { const value = this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`; const label = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역`; const bedCount = Number(zone.bedCount ?? zone.beds ?? zone.bed_count ?? 0); return { value, label, attrs: `data-r7-settings-next-irrigation-group-name="${label} 관수그룹 ${nextNoForZone(value)}" data-r7-settings-zone-bed-count="${bedCount}"` }; });
     const selectedZoneId = values.zoneId || zoneOptions[0]?.value || "zone-a";
     const selectedZone = zones.find((zone) => String(this._r7ZoneId?.(zone) || zone.zoneId || zone.id) === String(selectedZoneId)) || zones[0] || {};
     const selectedZoneName = this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "A구역";
-    const irrigationGroups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
-    const nextNo = irrigationGroups.filter((group) => String(group.zoneId || group.zone_id || "") === String(selectedZoneId)).reduce((max, group) => Math.max(max, Number(group.irrigationGroupNo || group.irrigation_group_no || 0)), 0) + 1;
+    const nextNo = nextNoForZone(selectedZoneId);
     const expectedName = `${selectedZoneName} 관수그룹 ${nextNo}`;
-    const bedDefault = values.bedCount || selectedZone.bedCount || selectedZone.beds || selectedZone.bed_count || 1;
+    const zoneBedMax = Number(selectedZone.bedCount ?? selectedZone.beds ?? selectedZone.bed_count ?? 0);
+    const bedDefault = Math.min(Number(values.bedCount || zoneBedMax || 1), zoneBedMax || Number(values.bedCount || 1));
     const statusOptions = [{ value: "active", label: "사용" }, { value: "inactive", label: "미사용" }, { value: "maintenance", label: "점검" }];
     const methodOptions = [{ value: "순수경", label: "순수경" }, { value: "배지경", label: "배지경" }];
-    const detailOptions = ["DFT", "NFT", "분무수경", "담액수경", "박막수경", "코코피트", "암면", "펄라이트", "피트모스", "혼합배지", "토양", "기타"].map((label) => ({ value: label, label }));
+    const detailMap = { "순수경": ["DFT", "NFT", "분무수경", "담액수경", "박막수경", "기타"], "배지경": ["코코피트", "암면", "펄라이트", "피트모스", "혼합배지", "토양", "기타"] };
+    const selectedMethod = values.irrigationMethod || "배지경";
+    const detailOptions = (detailMap[selectedMethod] || detailMap["배지경"]).map((label) => ({ value: label, label }));
+    const circulationOptions = ["순환식", "비순환식", "해당 없음"].map((label) => ({ value: label, label }));
+    const drainageReuseOptions = ["배액 재활용", "배액 재활용 안함", "해당 없음"].map((label) => ({ value: label, label }));
     const sections = [
-      this._r7SettingsCreateSection("irrigation-group-info", "관수그룹 정보", `<section data-r7-settings-irrigation-group-info-section="true" style="display:grid;gap:10px;"><div style="display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;">${this._r7SettingsCreateSelect("zoneId", "구역", zoneOptions, selectedZoneId, 'data-r7-settings-irrigation-group-zone-fk-select data-r7-settings-device-group-zone-fk-select')}${this._r7SettingsCreateField("irrigationGroupPreview", "관수그룹", expectedName, 'readonly data-r7-settings-irrigation-group-auto-name-preview')}${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "active", 'data-r7-settings-irrigation-group-status-select')}</div><p data-r7-settings-irrigation-group-auto-name-note style="margin:0;color:#6f8875;font-size:12px;">구역 FK 기준으로 저장 직전에 관수그룹 번호와 이름이 자동 생성됩니다.</p></section>`),
-      this._r7SettingsCreateSection("irrigation-method", "관수방법", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("irrigationMethod", "관수방법", methodOptions, values.irrigationMethod || "배지경", 'data-r7-settings-irrigation-method-select')}${this._r7SettingsCreateSelect("irrigationMethodDetail", "관수방법 상세", detailOptions, values.irrigationMethodDetail || "코코피트", 'data-r7-settings-irrigation-method-detail-select')}</div>`),
-      this._r7SettingsCreateSection("irrigation-outlet-cultivation", "토출/재배 기준", `<div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateField("outletCount", "토출구 수", values.outletCount || "0", 'type="number" min="0" data-r7-settings-irrigation-outlet-count-input')}${this._r7SettingsCreateField("flowRatePerOutlet", "기준 유량", values.flowRatePerOutlet || "0", 'type="number" min="0" step="0.001" data-r7-settings-irrigation-flow-rate-input')}<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>유량 단위</span><input name="flowRateUnit" value="L/h" readonly data-r7-settings-irrigation-flow-rate-unit style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7fbf8;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"></label>${this._r7SettingsCreateField("bedCount", "배드 수", bedDefault, 'type="number" min="0" data-r7-settings-irrigation-bed-count-input')}</div><p style="margin:0;color:#6f8875;font-size:12px;">배드 수는 선택 구역의 배드 수를 기본값으로 참고하며, 추후 작기와 연동해 재식 수 판단에 사용합니다.</p>`),
+      this._r7SettingsCreateSection("irrigation-group-info", "관수그룹 정보", `<section data-r7-settings-irrigation-group-info-section="true" style="display:grid;gap:10px;"><div style="display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;">${this._r7SettingsCreateSelect("zoneId", "구역", zoneOptions, selectedZoneId, 'data-r7-settings-irrigation-group-zone-fk-select data-r7-settings-device-group-zone-fk-select')}${this._r7SettingsCreateField("irrigationGroupPreview", "관수그룹", expectedName, 'readonly data-r7-settings-irrigation-group-auto-name-preview')}${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "active", 'data-r7-settings-irrigation-group-status-select')}</div><p data-r7-settings-irrigation-group-auto-name-note style="margin:0;color:#6f8875;font-size:12px;">구역 선택값에 따라 관수그룹명이 자동 변경되고, 저장 직전 구역 FK 기준 번호가 확정됩니다.</p></section>`),
+      this._r7SettingsCreateSection("irrigation-method", "관수방법", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("irrigationMethod", "관수방법", methodOptions, selectedMethod, 'data-r7-settings-irrigation-method-select')}${this._r7SettingsCreateSelect("irrigationMethodDetail", "관수방법 상세", detailOptions, values.irrigationMethodDetail || detailOptions[0]?.value || "코코피트", `data-r7-settings-irrigation-method-detail-select data-r7-settings-irrigation-method-detail-source="${selectedMethod}"`)}${this._r7SettingsCreateSelect("circulationType", "순환 방식", circulationOptions, values.circulationType || (selectedMethod === "순수경" ? "순환식" : "비순환식"), 'data-r7-settings-irrigation-circulation-type-select')}${this._r7SettingsCreateSelect("drainageReuse", "배액 재활용", drainageReuseOptions, values.drainageReuse || "배액 재활용 안함", 'data-r7-settings-irrigation-drainage-reuse-select')}</div>`),
+      this._r7SettingsCreateSection("irrigation-outlet-cultivation", "토출/재배 기준", `<div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateField("outletCount", "토출구 수", values.outletCount || "0", 'type="number" min="0" data-r7-settings-irrigation-outlet-count-input')}${this._r7SettingsCreateField("flowRatePerOutlet", "기준 유량", values.flowRatePerOutlet || "0", 'type="number" min="0" step="0.001" data-r7-settings-irrigation-flow-rate-input')}<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>유량 단위</span><input name="flowRateUnit" value="L/h" readonly data-r7-settings-irrigation-flow-rate-unit style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7fbf8;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"></label>${this._r7SettingsCreateField("bedCount", "배드 수", bedDefault, `type="number" min="0" max="${zoneBedMax}" data-r7-settings-irrigation-bed-count-input data-r7-settings-irrigation-bed-count-max="${zoneBedMax}"`)}</div><p style="margin:0;color:#6f8875;font-size:12px;">배드 수는 연결된 구역의 배드 수와 같거나 낮아야 합니다. 구역 변경 시 최대값과 기본값이 자동 변경됩니다.</p>`),
       this._r7SettingsCreateSection("memo", "운영 메모", this._r7SettingsCreateTextarea("note", "예: A구역 좌측 1~2번 베드, 드립퍼 100개, 기준 유량 2L/h", values.note || "")),
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-group-create", title: "관수그룹 생성", subtitle: "구역 FK 기반으로 관수그룹 마스터를 생성합니다. 장치는 장치 하위탭에서 관수그룹 FK로 연결합니다.", formAttr: "data-r7-settings-device-group-create-form", closeKind: "device-group", state: modal.state, error: modal.error, submitLabel: "관수그룹 저장", sections }).replace('data-r7-record-modal-type="device-group-create"', 'data-r7-record-modal-type="device-group-create" data-r7-settings-irrigation-group-create-modal="true"');
@@ -4170,8 +3926,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return this.renderR7SettingsDetailActionModal({ open, kind: "device-sensor-mapping", title: "장치 연결", subtitle: "HA Device Registry의 미연결 장치를 Green Smart 장치로 저장하고 Entity N개를 역할과 함께 연결합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state || legacyModal.state, error: modal.error || legacyModal.error, submitLabel: "장치 연결 저장", sections }).replace('data-r7-record-modal-type="device-sensor-mapping"', 'data-r7-record-modal-type="device-sensor-mapping" data-r7-device-canonical-connection-modal="true" data-r7-settings-device-connection-authoring-modal="true" data-r7-settings-device-connection-modal-title="장치 연결"');
   }
-
-
   renderR7SettingsShortcutReviewLikeModal() {
     const modal = this._settingsShortcutCdaModal || { open: false, kind: "" };
     if (!modal.open) return `<template data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-cda-split-open="false"></template>`;
@@ -4315,11 +4069,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 목록 버튼은 승인 모달/감사 로그 모달과 같은 검토형 목록 문법을 사용합니다.</span><button type="button" data-r7-settings-shortcut-cda-split-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 44, overlayAttrs: `${meta.marker} data-r7-settings-shortcut-cda-split-modal="true" data-r7-settings-shortcut-review-like-modal="approval-audit" data-r7-settings-shortcut-cda-split-kind="${kind}"`, cardAttrs: `data-r7-settings-shortcut-cda-split-card data-r7-settings-shortcut-cda-split-kind="${kind}"`, header, search, left: listPanel, right: detailPanel, footer });
   }
-
   renderR7SettingsShortcutCdaSplitModal() {
     return this.renderR7SettingsShortcutReviewLikeModal();
   }
-
   renderR7SettingsSystemActionModal() {
     const modal = this._settingsSystemActionModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-system-action-modal="true" data-r7-settings-system-action-modal-open="false"></template>`;
@@ -4368,7 +4120,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const header = this.renderR7CdaModalHeader({ icon: "mdi:update", title: "업데이트 목록", subtitle: "전체 역활별 권한 보기 팝업과 같은 CDA 목록/상세 틀에서 GS/HACS 업데이트를 요청합니다", closeAttr: "data-r7-settings-system-action-modal-close" });
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: 'data-r7-settings-system-update-cda-modal="true" data-r7-settings-system-action-modal="true"', cardAttrs: 'data-r7-settings-system-update-cda-card', header, search, left: listPanel, right: detailPanel, footer: `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ GS/HACS만 이 화면에서 요청합니다. HA/DB는 Update Agent 도입 후 지원합니다.</span><button type="button" data-r7-settings-system-action-modal-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>` });
   }
-
   renderR7SettingsRolePermissionEditModal() {
     const modal = this._settingsRolePermissionEditModal || { open: false };
     const values = modal.values || {};
@@ -4383,7 +4134,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "role-permission-edit", title: isEdit ? "역활별 권한 수정" : "역활별 권한 추가", subtitle: "온실 생성 팝업과 같은 입력 틀에서 gs_role_permissions DB 항목을 저장합니다", formAttr: "data-r7-settings-role-permission-edit-form", closeKind: "role-permission", state: modal.state, error: modal.error, submitLabel: isEdit ? "역할 권한 수정" : "역할 권한 추가", sections });
   }
-
   renderR7SettingsPermissionMatrixModal() {
     const modal = this._settingsPermissionMatrixModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-permission-matrix-cda-modal="true" data-r7-settings-permission-matrix-modal-open="false"></template>`;
@@ -4404,7 +4154,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 유저 목록 팝업과 같은 목록/상세 틀로 역할별 권한을 확인합니다. 변경 요청은 승인 작업에 기록됩니다.</span><button type="button" data-r7-settings-permission-matrix-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: `data-r7-settings-permission-matrix-cda-modal="true" data-r7-settings-permission-matrix-modal-open="true" data-r7-settings-role-permission-modal="true"`, cardAttrs: 'data-r7-settings-role-permission-cda-card', header, search, left: listPanel, right: detailPanel, footer });
   }
-
   renderR7SettingsAuditLogEditModal() {
     const modal = this._settingsAuditLogEditModal || { open: false };
     const rows = (Array.isArray(this.r7SettingsUsersPermissionsData().users) ? this.r7SettingsUsersPermissionsData().users : []).map((row, index) => this._normalizeR7SettingsUserRow(row, index));
@@ -4421,7 +4170,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "audit-log-edit", title: "유저 수정", subtitle: "생육조사 작성 팝업과 같은 공통 모달에서 gs_users DB 항목을 수정합니다", formAttr: `data-r7-settings-audit-log-edit-form="${value(selected.haUserId)}"`, closeKind: "audit-log-edit", state: modal.state || "idle", error: modal.error || "", submitLabel: "유저 수정 저장", sections });
   }
-
   renderR7SettingsAuditLogModal() {
     const modal = this._settingsAuditLogModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-audit-log-cda-modal="true" data-r7-settings-audit-log-modal-open="false"></template>`;
@@ -4463,7 +4211,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 이 모달은 gs_users DB 기준의 유저 목록/상세/수정 흐름입니다. 변경 이력은 감사 로그에 기록됩니다.</span><button type="button" data-r7-settings-audit-log-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: `data-r7-settings-audit-log-cda-modal="true" data-r7-settings-audit-log-modal-open="${modal.open ? 'true' : 'false'}"`, header, search, left: listPanel, right: detailPanel, footer });
   }
-
   // R7-079/R7-080 approval modal marker manifest: data-r7-settings-approval-filter="all" / data-r7-settings-approval-filter="safety" / data-r7-settings-approval-filter="automation" / data-r7-settings-approval-filter="device-mapping" / data-r7-settings-approval-filter="permission" / data-r7-settings-approval-filter="urgent".
   renderR7SettingsApprovalListModal() {
     const modal = this._settingsApprovalListModal || { open: false };
@@ -4511,7 +4258,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const footer = `<footer style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf4ef;padding-top:10px;color:#5d6f62;font-size:12px;"><span>ⓘ 승인/반려 결과는 감사 로그에 저장됩니다. 데이터 없음/미확인 값은 요청 원본에 해당 필드가 없다는 뜻입니다.</span><button type="button" data-r7-settings-approval-list-close-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 14px;font-weight:950;">닫기</button></footer>`;
     return this.renderR7CdaSplitModal({ open: modal.open, zIndex: 31, overlayAttrs: `data-r7-settings-approval-list-modal data-r7-settings-approval-list-modal-open="${modal.open ? 'true' : 'false'}" data-r7-settings-approval-reference-modal="true"`, header, search: filterBar, left: listPanel, right: detailPanel, footer });
   }
-
   renderR7SettingsApprovalModal() {
     const modal = this._settingsApprovalModal || { open: false, request: null };
     const request = modal.request || {};
@@ -4532,16 +4278,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </article>
     </section>`;
   }
-
   _r7SettingsGreenhouseValueRow(label, value, attrs = "") {
     return `<div ${attrs} style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;line-height:1.35;"><span style="color:#53645b;font-weight:850;">${label}</span><b style="color:#24323f;text-align:right;">${value}</b></div>`;
   }
-
   _r7SettingsGreenhousePill(label, tone = "green", attrs = "") {
     const style = this._r7ApprovalToneStyle(tone);
     return `<span ${attrs} style="display:inline-flex;align-items:center;justify-content:center;border:1px solid;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:950;white-space:nowrap;${style}">${label}</span>`;
   }
-
   renderR7SettingsInfoCard({ key, icon, title, primary, rows = [], tone = "green", statusKey = "normal-ready", extraAttrs = "" }) {
     const legacyCard = { "greenhouse-basic-info": "greenhouse-profile", "zone-basic-info": "zone-count", "zone-composition": "zone-count", "zone-current-crop": "zone-current-cycle" }[key];
     const legacyAttr = legacyCard ? `data-r7-settings-greenhouse-card="${legacyCard}"` : "";
@@ -4550,37 +4293,30 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <div data-r7-settings-info-card-body style="display:grid;gap:7px;align-content:start;">${rows.join("")}</div>
     </article>`;
   }
-
   _r7SettingsGreenhouseSummaryCard(args) {
     return this.renderR7CdbSummaryCard(args);
   }
-
   renderR7CdbSummaryCard(args = {}) {
     const extraAttrs = `${args.extraAttrs || ""} data-r7-cdb-card-type="summary" data-r7-cdb-common-card="summary-card"`;
     return this.renderR7SettingsInfoCard({ ...args, extraAttrs });
   }
-
   renderR7CdbButtonOneCard({ kind, section = "", icon, title, subtitle = "", statusKey = "normal-ready", tone = "green", rows = [], rowKind = "common", summaryHtml = "", buttonLabel, buttonIcon = "mdi:open-in-new", buttonTone = "green", buttonAttrs = "", extraAttrs = "" }) {
     const listButtonAttrs = `${buttonAttrs} data-r7-cdb-button-role="list" data-r7-cdb-opens-modal="list"`;
     return this.renderR7CommonCardShell({ kind, section, icon, title, subtitle, statusKey, tone, html: summaryHtml || this.renderR7CommonCardDataRows(rows, { rowKind }), actions: [this.renderR7CommonCardButton({ label: buttonLabel, icon: buttonIcon, tone: buttonTone, extraAttrs: listButtonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-one" data-r7-cdb-common-card="button-1-card"` });
   }
-
   renderR7CdbButtonTwoCard({ kind, icon, title, subtitle = "", statusKey = "due-today", tone = "blue", rows = [], rowKind = "common", primary = "", note = "", firstLabel, firstIcon = "mdi:plus-circle-outline", firstTone = "green", firstAttrs = "", secondLabel, secondIcon = "mdi:history", secondTone = "blue", secondAttrs = "", extraAttrs = "" }) {
     const createButtonAttrs = `${firstAttrs} data-r7-cdb-button-role="create" data-r7-cdb-opens-modal="create"`;
     const listButtonAttrs = `${secondAttrs} data-r7-cdb-button-role="list" data-r7-cdb-opens-modal="list"`;
     const resolvedSubtitle = subtitle || primary;
     return this.renderR7RecordCardShell({ kind, icon, title, subtitle: resolvedSubtitle, statusKey, tone, primary, note, html: rows.length ? this.renderR7CommonCardDataRows(rows, { rowKind }) : "", actions: [this.renderR7CommonCardButton({ label: firstLabel, icon: firstIcon, tone: firstTone, extraAttrs: createButtonAttrs }), this.renderR7CommonCardButton({ label: secondLabel, icon: secondIcon, tone: secondTone, extraAttrs: listButtonAttrs })], extraAttrs: `${extraAttrs} data-r7-cdb-card-type="button-two" data-r7-cdb-common-card="button-2-card" data-r7-cdb-button-two-subtitle="${resolvedSubtitle ? 'present' : 'empty'}"` });
   }
-
   renderR7CdbListCard(args = {}) {
     const extraAttrs = `${args.extraAttrs || ""} data-r7-cdb-card-type="list" data-r7-cdb-common-card="list-card"`;
     return this.renderR7CommonRecentPanel({ ...args, extraAttrs });
   }
-
   renderR7CdbSubtabContentLayout({ summaryCards = [], actionCards = [], listCard = "", modals = "", extraAttrs = "" } = {}) {
     return `<section data-r7-cdb-subtab-content-layout="summary3-action3-list" data-r7-cdb-summary-card-count="3" data-r7-cdb-action-card-count="3" ${extraAttrs} style="display:grid;gap:12px;"><div data-r7-cdb-layout-row="summary" data-r7-settings-info-row="overview" data-r7-settings-greenhouse-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${summaryCards.join("")}</div><div data-r7-cdb-layout-row="actions" data-r7-settings-create-row="create" style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${actionCards.join("")}</div><div data-r7-cdb-layout-row="list">${listCard}</div>${modals}</section>`;
   }
-
   renderR7SettingsGreenhouseZonesSubtab(zones) {
     const sourceZones = zones.length ? zones : [{ id: "zone-1", name: "1구역", purpose: "재배", area: "120㎡", bedCount: 6, currentCrop: { crop_cycle_id: "미연결", crop_label_ko: "작물 없음", growth_stage: "미지정" }, dataAvailability: { state: "unknown", freshnessMinutes: null }, equipmentProfile: { labels: ["센서 미매핑"] } }];
     const normalized = sourceZones.map((zone, index) => {
@@ -4645,7 +4381,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       extraAttrs: 'data-r7-settings-greenhouse-zones data-r7-settings-greenhouse-zones-layout="info-create-equipment-list"',
     });
   }
-
   renderR7SettingsDeviceSensorMappingSubtab(zones = []) {
     const settingsData = this.r7SettingsGreenhouseZoneData();
     const sourceZones = (zones.length ? zones : (Array.isArray(settingsData.zones) ? settingsData.zones : [])).filter((zone) => this._r7ZoneId(zone) !== "all");
@@ -4692,7 +4427,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const deviceList = this.renderR7CdbListCard({ kind: "settings-device-list", title: "장치 목록", icon: "mdi:format-list-bulleted", statusKey: inactiveMappings ? "needs-verification" : "normal-ready", tone: inactiveMappings ? "amber" : "green", rows: listRows, limit: Number.POSITIVE_INFINITY, rowKind: "settings-device-list", extraAttrs: 'data-r7-settings-device-list-panel data-r7-settings-device-table-header data-r7-settings-device-group-link-stage="device-to-group"' });
     return `<section data-r7-settings-device-sensor-mapping data-r7-cdb-subtab-content-layout="summary3-action3-list" data-r7-settings-device-mapping-layout="error-device-group-device-list" style="display:grid;gap:12px;"><div data-r7-cdb-layout-row="summary" data-r7-settings-device-summary-grid style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${errorCard}${deviceCard}${groupCard}</div><div data-r7-cdb-layout-row="actions" data-r7-settings-device-action-row style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;">${actions}</div><div data-r7-cdb-layout-row="list">${deviceList}</div></section>`;
   }
-
   renderR7SettingsSystemIntegrationSubtab() {
     const system = this.r7SettingsGreenhouseZoneData().systemIntegration || {};
     const dbErrorCount = Number(system.dbErrorCount || 0);
@@ -4727,7 +4461,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const listCard = this.renderR7CdbListCard({ kind: "settings-system-integration-list", title: "연동 목록", icon: "mdi:format-list-bulleted", statusKey: totalApiErrorCount ? "needs-verification" : "normal-ready", tone: totalApiErrorCount ? "amber" : "green", rows, limit: Number.POSITIVE_INFINITY, rowKind: "settings-system-integration", note: `${rows.length}건`, extraAttrs: 'data-r7-settings-system-integration-list-panel data-r7-settings-system-integration-table-header' });
     return this.renderR7CdbSubtabContentLayout({ summaryCards, actionCards, listCard, extraAttrs: 'data-r7-settings-system-integration data-r7-settings-system-integration-layout="summary-action-list"' });
   }
-
   renderR7SettingsAdminSubtabPanel(tabKey, activeTab = "greenhouse-zones") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -4846,7 +4579,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const compatibilityHidden = ["domain-ownership", "role-permissions", "mapping-devices", "system-security", "rbac-policy"].includes(tabKey) ? "true" : "false";
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-settings-admin-subtab="${tabKey}" data-r7-settings-admin-detail-absorbed="true" data-r7-settings-legacy-compat-panel="${compatibilityHidden}" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">설정 기준 데이터 · read-only foundation</span></header><div style="display:grid;gap:10px;">${body}</div></section>`;
   }
-
   renderR7SettingsAdminZoneVisual() {
     const tabs = [["greenhouse-zones", "온실·구역"], ["device-sensor-mapping", "장치 연결 작성"], ["users-permissions", "사용자·권한"], ["system-integration", "시스템·연동"]];
     const legacyTabs = [["domain-ownership", "도메인 소유권"], ["role-permissions", "역할·권한"], ["mapping-devices", "매핑·장치"], ["system-security", "시스템·보안"], ["rbac-policy", "RBAC 정책"]];
@@ -4858,7 +4590,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       : this.renderR7PanelsForDomain("settings-admin", tabs, activeTab, (key) => this.renderR7SettingsAdminSubtabPanel(key, activeTab), panelsFull);
     return `<section data-r7-settings-admin-zone-visual="true" data-r7-settings-admin-reclassified="true" data-r7-settings-admin-global-boundary="true" data-r7-settings-admin-manual-first-realigned="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "settings-admin", title: "설정", kicker: "기준 데이터 관리 도메인", summary: "설정은 온실·구역, 장치 연결 작성, 사용자·권한, 시스템·연동의 기준을 read-only로 먼저 정리합니다.", status: "unknown", tabs, activeTab, panels })}<section style="display:none;">구버전 탭 버튼 노출 제거. 4개만 표시. hidden compatibility marker. 도메인 소유권. 역할·권한. 매핑·장치. 시스템·보안. RBAC 정책. 설정는 daily grower workflow가 아닙니다. 운영 홈/작물/환경/관수 제어/장치/자동화 제어/안전 제어의 권한·매핑·설정 ownership을 read-only로 보여줍니다. HA entity mapping은 장치 제어의 상태 판단에 쓰이지만, 매핑 소유권은 설정에 있습니다. edit_entity_mapping belongs to admin. view_audit_logs. This page shows mapping ownership only and does not edit entities. Role/settings mutation remains separately approved work. data-r7-settings-admin-domain-ownership data-r7-settings-admin-domain="environment-control" data-r7-settings-admin-domain="device-control" data-r7-settings-admin-readonly-boundary="true" data-r7-settings-admin-subtab="domain-ownership" data-r7-settings-admin-subtab="role-permissions" data-r7-settings-admin-subtab="mapping-devices" data-r7-settings-admin-subtab="system-security" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-key="rbac-policy" data-r7-settings-admin-subtab="rbac-policy" data-r7-domain-subtab-active="true" data-r7-settings-domain-card data-r7-settings-role-card data-r7-settings-mapping-card data-r7-settings-system-card data-r7-settings-rbac-card data-r7-settings-admin-role-ownership data-r7-settings-admin-permission-buckets data-r7-settings-admin-mapping-boundary data-r7-settings-admin-system-boundary data-r7-settings-admin-area="ha-entity-mapping" data-r7-settings-admin-area="system-config-metadata" data-r7-settings-admin-area="user-role-mapping" data-r7-settings-admin-area="rbac-policy-contract" data-r7-settings-admin-farm-owner-staff-scope data-r7-settings-admin-secret-redaction data-r7-settings-admin-backend-enforcement RBAC_BACKEND_ENFORCED_ACTION_CLASSES Secret values render as [REDACTED] only</section></section>`;
   }
-
   renderR7EnvironmentControlDetail() {
     const manualSettings = [
       ["주간 온도", "24~27℃", "작물 기준 범위 안에서 운영자가 조정"],
@@ -4914,7 +4645,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     </section>`;
   }
-
   renderR7IrrigationFertigationDetail() {
     const manualSettings = [
       ["관수 스케줄", "06:00 / 10:30 / 14:30", "기본 시간 기반 관수 기준"],
@@ -4972,7 +4702,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     </section>`;
   }
-
   renderR7DeviceControlDetail() {
     const manualSettings = [
       ["manual", "수동 모드", "작업자가 현장 기준으로 직접 판단하는 모드 evidence"],
@@ -5030,7 +4759,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     </section>`;
   }
-
   renderR7RecommendationAutomationDetail() {
     const manualBaseline = [
       ["환경 수동 기준", "온도/VPD/습도/CO₂ 기준", "환경 제어 도메인의 manualEnvironmentSettings를 먼저 비교"],
@@ -5083,11 +4811,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </section>
     </section>`;
   }
-
   renderR7SafetyValueCard(marker, title, value, note, extraAttrs = "") {
     return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:15px;font-weight:1000;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
   }
-
   renderR7SafetySubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -5121,7 +4847,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
               : `${this.renderR7MiniTrendChart("Safety 추세", "최근")}${this.renderR7MiniTrendChart("Interlock 추세", "최근")}${this.renderR7MiniTrendChart("Fail Safe 추세", "최근")}${this.renderR7SafetyValueCard("data-r7-safety-trend-evidence", "데이터 근거", freshness, "safetyInterlockReadOnlyAdapter + audit/log evidence")}`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-safety-subtab="${tabKey}" data-r7-safety-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
-
   renderR7SafetyHistoryZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "현재 안전 상태"], ["block-allow", "차단·허용 이유"], ["event-history", "이벤트 이력"], ["operation-history", "운영 이력"], ["audit-evidence", "감사·근거"], ["trend-evidence", "추세·근거"]];
@@ -5130,33 +4855,27 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panels = this.renderR7PanelsForDomain("safety-history", tabs, activeTab, (key) => this.renderR7SafetySubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-safety-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "safety-history", title: "안전 제어", kicker: "구역 기준 안전 제어", summary: "Safety, Interlock, Fail Safe, 차단·허용 이유, 수동/자동/AI 이력, audit evidence를 구역 기준으로 확인합니다.", status: "blocked", tabs, activeTab, panels })}<section style="display:none;">Safety 상태 · Interlock 상태 · Fail Safe 상태 · 차단 이유 · 허용 이유 · 센서 stale 이력 · 오류/Traceback/통신 장애 · 수동 조작 이력 · 기본 자동제어 이력 · AI 추천 이력 · AI 적용/미적용 이력 · 장치 명령 후보 이력 · 실제 실행 이력, later only · authoritative allow/block history · read-only</section></section>`;
   }
-
   _r7ZoneId(zone) {
     return zone?.id || zone?.zoneId || "zone-unknown";
   }
-
   _r7ZoneName(zone) {
     return zone?.name || zone?.zoneName || this._r7ZoneId(zone);
   }
-
   _r7ZoneSortValue(zone) {
     const text = `${this._r7ZoneName(zone)} ${this._r7ZoneId(zone)}`;
     const match = text.match(/(\d+)/);
     return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
   }
-
   _r7SortedZonesForDomain() {
     return this._zonesForRender()
       .filter((zone) => this._r7ZoneId(zone) !== "all")
       .slice()
       .sort((left, right) => this._r7ZoneSortValue(left) - this._r7ZoneSortValue(right) || this._r7ZoneName(left).localeCompare(this._r7ZoneName(right), "ko"));
   }
-
   _r7DefaultZoneForDomain() {
     const zones = this._r7SortedZonesForDomain();
     return zones.find((zone) => this._r7ZoneSortValue(zone) === 1) || zones[0] || this._zonesForRender()[0] || { id: "zone-1", name: "1구역", currentCrop: { cropLabelKo: "토마토" }, dataAvailability: { state: "unknown" } };
   }
-
   _r7ZoneCropLabel(zone) {
     const crop = zone?.currentCrop || {};
     const explicitLabel = crop.cropLabelKo || crop.crop_label_ko || crop.cropName;
@@ -5165,11 +4884,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const labels = { tomato: "토마토", lettuce: "상추", mixed: "전체 작물" };
     return labels[cropType] || cropType || "작물 미지정";
   }
-
   _r7PrimaryZoneForDomain() {
     return this._r7DefaultZoneForDomain();
   }
-
   renderR7DomainZoneContextBar(domainKey, embedded = false) {
     const zones = this._r7SortedZonesForDomain();
     const selectedZone = this._r7DefaultZoneForDomain();
@@ -5186,11 +4903,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
       }).join("")}</div>
     </section>`;
   }
-
   _r7DomainSubtabIcon(domainKey, tabKey) {
     return R7_DOMAIN_SUBTAB_ICONS[tabKey] || R7_HA_MDI_ICONS[domainKey] || "mdi:tab";
   }
-
   renderR7DomainSubtabs(domainKey, tabs, activeKey, embedded = false) {
     const shellStyle = embedded
       ? "display:flex;align-items:stretch;gap:0;border:0;border-bottom:1px solid #dcebe0;background:#fff;padding:0;overflow-x:auto;scrollbar-width:thin;"
@@ -5202,7 +4917,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-layout="nav-item" data-r7-domain-subtab-icon="ha-mdi" data-r7-domain-subtab-for="${domainKey}" data-r7-domain-subtab-key="${key}" data-r7-${domainKey}-subtab="${key}" data-r7-domain-subtab-active="${active ? "true" : "false"}" data-r7-domain-subtab-icon-name="${icon}" ${domainSubtabMarker} role="tab" aria-selected="${active ? "true" : "false"}" title="${label}" style="border:0;border-bottom:${active ? "3px solid #43ad5e" : "3px solid transparent"};background:${active ? "#f2faf3" : "#ffffff"};color:${active ? "#31523b" : "#5d6f62"};padding:11px 14px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:max-content;white-space:nowrap;box-shadow:${active ? "inset 0 -1px 0 #43ad5e" : "none"};"><ha-icon icon="${icon}" data-r7-domain-subtab-ha-icon="${key}" style="--mdc-icon-size:18px;width:18px;height:18px;color:${active ? "#43ad5e" : "#78927f"};"></ha-icon><span data-r7-domain-subtab-title>${label}</span></button>`;
     }).join("")}</nav>`;
   }
-
   renderR7UnifiedDomainContentCard(domainKey, tabs, activeTab, panels) {
     return `<section data-r7-domain-content-card="tabs-zone-content" data-r7-domain-content-card-unified="true" data-r7-domain-content-card-domain="${domainKey}" data-r7-domain-content-card-width="safe-fill" style="border:1px solid #dcebe0;border-radius:22px;background:#fff;padding:14px;display:grid;gap:14px;box-shadow:0 8px 24px rgba(49,82,59,.05);width:100%;max-width:100%;box-sizing:border-box;">
       <div data-r7-domain-content-card-section="subtabs">${this.renderR7DomainSubtabs(domainKey, tabs, activeTab, true)}</div>
@@ -5210,7 +4924,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <div data-r7-domain-content-card-section="panel" style="border-top:1px solid #e5f0e8;padding-top:14px;display:grid;gap:10px;">${panels}</div>
     </section>`;
   }
-
   renderR7ActiveOnlySubtabPanels(tabs, activeTab, renderer, markerAttrs = "") {
     const activeKey = tabs.some(([key]) => key === activeTab) ? activeTab : tabs[0]?.[0];
     const activePanel = activeKey ? renderer(activeKey) : "";
@@ -5220,85 +4933,67 @@ class GreenSmartRebuildPanel extends HTMLElement {
       .join("");
     return `<span data-r7-active-only-subtab-panels="true" data-r7-active-subtab-panel-key="${activeKey}" style="display:none;"></span>${activePanel}${deferred}`;
   }
-
   renderR7DomainVisualFrame({ domainKey, title, kicker, summary, status, tabs, activeTab, panels }) {
     return `<section data-r7-domain-visual-frame data-r7-domain-frame-width="safe-fill" data-r7-domain-visual-frame-version="1" data-r7-domain-visual-frame-domain="${domainKey}" data-r7-domain-frame-order="title-unified-card" data-r7-domain-previous-frame-order="title-subtabs-zone-content" data-r7-domain-top-env-metrics="removed" style="display:grid;gap:14px;min-width:0;width:100%;max-width:100%;box-sizing:border-box;">
       <section data-r7-domain-visual-hero data-r7-domain-visual-hero-width="safe-natural" style="border:1px solid #cfe5d4;border-radius:24px;background:linear-gradient(135deg,#ffffff,#eaf6ee);padding:18px;display:grid;gap:12px;"><div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;"><div><p style="margin:0;color:#5d7d64;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;">${kicker}</p><h3 style="margin:6px 0 0;color:#24323f;font-size:24px;">${title}</h3><p style="margin:8px 0 0;color:#5d6f62;line-height:1.6;">${summary}</p></div>${this.renderR7StatusBadge(status || "attention", status === "normal" ? "정상" : "주의")}</div></section>
       ${this.renderR7UnifiedDomainContentCard(domainKey, tabs, activeTab, panels)}
     </section>`;
   }
-
   renderR7CropValueCard(marker, title, value, note, extraAttrs = "") {
     return `<article ${marker} ${extraAttrs} style="border:1px solid #e2eee5;border-radius:16px;background:#fbfdfb;padding:12px;display:grid;gap:6px;"><strong style="color:#31523b;font-size:13px;">${title}</strong><span style="color:#24323f;font-size:15px;font-weight:1000;">${value}</span><small style="color:#78927f;font-size:11px;line-height:1.45;">${note}</small></article>`;
   }
-
   renderR7CropStatusChip(label, value, tone = "green") {
     const colors = tone === "amber" ? ["#fff4d8", "#8a5a00", "#f0cf83"] : tone === "red" ? ["#ffe5e0", "#9a2d1b", "#efb9ae"] : tone === "blue" ? ["#edf5ff", "#264f73", "#cbdff2"] : ["#edf8ef", "#31523b", "#cae4cf"];
     const state = String(value || "").toLowerCase().includes("attention") || String(value || "").includes("주의") ? "attention" : String(value || "").toLowerCase().includes("fresh") || String(value || "").includes("정상") ? "fresh" : String(value || "").toLowerCase().includes("error") ? "error" : "ready";
     return `<span data-r7-crop-status-chip="${label}" data-r7-product-state="${state}" style="display:inline-flex;align-items:center;gap:5px;border:1px solid ${colors[2]};border-radius:999px;background:${colors[0]};color:${colors[1]};padding:5px 8px;font-size:11px;font-weight:900;"><b>${label}</b>${value ? `<span>${value}</span>` : ""}</span>`;
   }
-
   renderR7CropActionButton(label, targetSubtab, icon = "mdi:arrow-right") {
     return `<button type="button" data-r7-domain-subtab data-r7-domain-subtab-for="crop-operations" data-r7-domain-subtab-key="${targetSubtab}" data-r7-crop-action-target-subtab="${targetSubtab}" style="border:1px solid #cae4cf;border-radius:999px;background:#fff;color:#31523b;padding:7px 10px;font-size:11px;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><ha-icon icon="${icon}" style="--mdc-icon-size:14px;width:14px;height:14px;"></ha-icon>${label}</button>`;
   }
-
   renderR7DomainJumpButton(label, targetDomain, icon = "mdi:open-in-new") {
     return `<button type="button" data-r7-sidebar-target="${targetDomain}" data-r7-crop-domain-action-target="${targetDomain}" style="border:1px solid #d8e4f2;border-radius:999px;background:#fff;color:#264f73;padding:7px 10px;font-size:11px;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><ha-icon icon="${icon}" style="--mdc-icon-size:14px;width:14px;height:14px;"></ha-icon>${label}</button>`;
   }
-
   renderR7ProductCardHeader({ icon = "mdi:leaf", title, subtitle = "", statusHtml = "" }) {
     return `<header data-r7-product-card-header style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;"><div style="display:flex;align-items:flex-start;gap:9px;min-width:0;"><span style="width:32px;height:32px;border-radius:12px;background:#edf8ef;color:#31523b;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;"><ha-icon icon="${icon}" style="--mdc-icon-size:18px;width:18px;height:18px;"></ha-icon></span><div style="display:grid;gap:2px;min-width:0;"><strong style="color:#24323f;font-size:14px;line-height:1.25;">${title}</strong>${subtitle ? `<small style="color:#78927f;font-size:11px;line-height:1.35;">${subtitle}</small>` : ""}</div></div><div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;">${statusHtml}</div></header>`;
   }
-
   renderR7ProductCardBody({ primary = "", secondary = "", html = "" }) {
     return `<div data-r7-product-card-body style="display:grid;gap:7px;min-width:0;">${primary ? `<div style="color:#24323f;font-size:18px;font-weight:1000;line-height:1.28;word-break:keep-all;">${primary}</div>` : ""}${secondary ? `<div style="color:#5d6f62;font-size:12px;line-height:1.5;">${secondary}</div>` : ""}${html}</div>`;
   }
-
   renderR7ProductCardEvidence(items = [], tone = "green") {
     const visible = (items || []).filter((item) => item !== null && item !== undefined && String(item).trim() !== "");
     if (!visible.length) return this.renderR7ProductEmptyState("근거 없음", "현재 context에서 표시할 근거가 없습니다.");
     return `<div data-r7-product-card-evidence style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${visible.map((item) => `<span data-r7-crop-factor-chip data-r7-product-evidence-chip style="border:1px solid ${tone === "amber" ? "#f0cf83" : tone === "red" ? "#efb9ae" : tone === "blue" ? "#cbdff2" : "#cae4cf"};border-radius:999px;background:#fff;color:${tone === "red" ? "#8a3322" : tone === "blue" ? "#264f73" : tone === "amber" ? "#815516" : "#31523b"};padding:5px 8px;font-size:11px;font-weight:900;">${item}</span>`).join("")}</div>`;
   }
-
   renderR7ProductCardActionRow(actions = []) {
     return `<div data-r7-product-card-action-row style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px;">${actions.filter(Boolean).join("")}</div>`;
   }
-
   renderR7ProductEmptyState(title = "데이터 없음", note = "연결된 데이터가 들어오면 자동으로 채워집니다.") {
     return `<div data-r7-product-empty-state style="border:1px dashed #d7e8db;border-radius:12px;background:#fbfdfb;color:#78927f;padding:8px 10px;font-size:11px;line-height:1.45;"><strong style="color:#5d6f62;">${title}</strong><br>${note}</div>`;
   }
-
   renderR7ProductCard({ kind, tone = "green", state = "ready", legacyMarkers = "", header, body, evidence = "", actions = "" }) {
     const border = tone === "amber" ? "#f2d3a5" : tone === "red" ? "#f0c9c0" : tone === "blue" ? "#d8e4f2" : "#dcebe0";
     const bg = tone === "amber" ? "#fff9ef" : tone === "red" ? "#fff6f3" : tone === "blue" ? "#f8fbff" : "#fbfdfb";
     return `<article data-r7-product-card data-r7-product-card-kind="${kind}" data-r7-product-state="${state}" data-r7-product-responsive="mobile-first" data-r7-product-component-version="1" ${legacyMarkers} style="border:1px solid ${border};border-radius:20px;background:${bg};padding:14px;display:grid;gap:12px;align-content:start;min-width:0;box-shadow:0 6px 18px rgba(49,82,59,.04);">${header}${body}${evidence}${actions}</article>`;
   }
-
   renderR7ProductScreenHeader({ title, intent, chips = [] }) {
     return `<header data-r7-product-screen-header style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;"><div style="display:grid;gap:4px;"><strong style="color:#24323f;font-size:16px;line-height:1.25;">${title}</strong><span style="color:#5d6f62;font-size:12px;line-height:1.5;">${intent}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${chips.join("")}</div></header>`;
   }
-
   renderR7ProductScreenPrimaryPanel({ title, primary, secondary = "", tone = "green", markers = "" }) {
     const color = tone === "amber" ? "#815516" : tone === "red" ? "#8a3322" : tone === "blue" ? "#264f73" : "#31523b";
     return `<section data-r7-product-screen-primary-panel ${markers}><span>${title}</span><strong style="color:${color};">${primary}</strong>${secondary ? `<p>${secondary}</p>` : ""}</section>`;
   }
-
   renderR7ProductScreenEvidenceRail(items = [], tone = "green") {
     return `<section data-r7-product-screen-evidence-rail>${this.renderR7ProductCardEvidence(items, tone)}</section>`;
   }
-
   renderR7ProductScreenActionBar(actions = []) {
     return `<footer data-r7-product-screen-action-bar>${actions.filter(Boolean).join("")}</footer>`;
   }
-
   renderR7ProductScreen({ kind, title = "", intent = "", state = "ready", tone = "green", chips = [], primary = {}, evidence = [], actions = [], legacyMarkers = "" }) {
     return `<template data-r7-product-screen data-r7-product-screen-kind="${kind}" data-r7-crop-product-subtab-screen="${kind}" data-r7-product-state="${state}" data-r7-product-responsive="mobile-first" data-r7-product-component-version="1" ${legacyMarkers}>${this.renderR7ProductScreenHeader({ title, intent, chips })}${this.renderR7ProductScreenPrimaryPanel({ ...primary, tone })}${this.renderR7ProductScreenEvidenceRail(evidence, tone)}${this.renderR7ProductScreenActionBar(actions)}</template>`;
   }
-
   renderR7ProductCardCompatibilityTemplate() {
     return `<template data-r7-product-card-compatibility="status-summary-v1"><article data-r7-product-card data-r7-product-card-kind="current-crop" data-r7-product-responsive="mobile-first" data-r7-product-component-version="1"><header data-r7-product-card-header></header><div data-r7-product-card-body></div><div data-r7-product-card-evidence></div><div data-r7-product-card-action-row></div></article><article data-r7-product-card data-r7-product-card-kind="priority-check" data-r7-product-state="attention"></article><article data-r7-product-card data-r7-product-card-kind="record-health"></article><article data-r7-product-card data-r7-product-card-kind="influence"></article><article data-r7-product-card data-r7-product-card-kind="recommendation"></article></template>`;
   }
-
   renderR7CropProductCard({ kind, label, primary, secondary = "", state = "ready", tone = "green", evidence = [], actions = [], markers = "", full = false }) {
     const header = this.renderR7ProductCardHeader({ icon: tone === "red" ? "mdi:shield-alert-outline" : tone === "amber" ? "mdi:alert-circle-outline" : tone === "blue" ? "mdi:chart-line" : "mdi:leaf", title: label, subtitle: secondary, statusHtml: this.renderR7CropStatusChip("상태", state, tone) });
     const body = this.renderR7ProductCardBody({ primary });
@@ -5306,15 +5001,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const actionHtml = this.renderR7ProductCardActionRow(actions);
     return this.renderR7ProductCard({ kind, tone, state, legacyMarkers: `${markers} ${full ? 'data-r7-crop-product-card-wide="true"' : ''}`, header, body, evidence: evidenceHtml, actions: actionHtml });
   }
-
   renderR7CropProductCardGrid(tabKey, cards) {
     return `<div data-r7-crop-product-direct-cards="${tabKey}" data-r7-crop-product-card-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;width:100%;">${cards.join("")}</div><template data-r7-product-empty-state></template><template data-r7-product-screen data-r7-product-screen-kind="${tabKey}" data-r7-crop-product-subtab-screen="${tabKey}" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
   }
-
   r7RecordMissingItems(ctx) {
     return ctx.workMissingItems === "누락 항목 없음" ? [] : String(ctx.workMissingItems || "").split(",").map((item) => item.trim()).filter(Boolean);
   }
-
   r7RecordCardState(record, kind = "record") {
     const label = String(record?.latestLabel || "");
     const severity = String(record?.latest?.severity || "").toLowerCase();
@@ -5322,7 +5014,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (severity.includes("high") || severity.includes("severe") || severity.includes("심")) return "attention";
     return record?.staleState || "empty";
   }
-
   r7RecordEvidence(record, kind = "record") {
     const latest = record?.latest || {};
     if (kind === "growth-survey") return [latest.date, latest.height !== undefined ? `초장 ${latest.height}cm` : "", latest.leafCount !== undefined ? `엽수 ${latest.leafCount}` : ""];
@@ -5330,12 +5021,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (kind === "control-treatment") return [latest.date, latest.pesticides?.[0]?.name, latest.pesticides?.[0]?.pls === true ? "PLS 적합" : latest.pesticides?.[0]?.pls === false ? "PLS 확인 필요" : ""];
     return [];
   }
-
   r7RecordActionButton({ label, target, state = "pending-api", tone = "green", icon = "mdi:plus-circle-outline", attr = "data-r7-record-action" }) {
     const stateTemplate = '<template data-r7-record-action-state="pending-api" data-r7-record-action-state="navigation-only"></template>';
     return `${stateTemplate}<button type="button" ${attr}="${target}" data-r7-record-action-state="${state}" data-r7-record-action-tone="${tone}" style="border:1px solid ${tone === 'amber' ? '#e0b24f' : tone === 'blue' ? '#8fb4dc' : '#9fceb5'};background:${state === 'navigation-only' ? '#f4f8fb' : '#f7fbf8'};border-radius:999px;padding:6px 9px;font-size:12px;font-weight:700;color:#274033;display:inline-flex;gap:5px;align-items:center;cursor:pointer;"><ha-icon icon="${icon}" style="width:14px;height:14px;"></ha-icon>${label}</button>`;
   }
-
   r7RecordActionsForMissingItems(missingItems) {
     const actions = [];
     const text = missingItems.join(" ");
@@ -5345,17 +5034,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     actions.push(this.r7RecordActionButton({ label: "전체 기록 보기", target: "record-history", state: "navigation-only", tone: "blue", icon: "mdi:history", attr: "data-r7-record-action-secondary" }));
     return actions.join("");
   }
-
   r7RecordPlsRequiresCheck(controlTreatment) {
     const label = String(controlTreatment?.latestLabel || "");
     const pesticide = controlTreatment?.latest?.pesticides?.[0] || {};
     return label.includes("PLS 확인 필요") || pesticide.pls === false || pesticide.pls === undefined;
   }
-
   renderR7RecordProductSection({ section, title, primary, secondary = "", state = "ready", tone = "green", facts = [], actions = "", markers = "", wide = false }) {
     return `<section data-r7-record-section="${section}" data-r7-product-state="${state}" ${markers} style="background:#fff;border:1px solid ${tone === 'amber' ? '#efd58a' : tone === 'blue' ? '#b9d4ee' : '#b8dec5'};border-radius:16px;padding:13px;display:grid;gap:9px;${wide ? 'grid-column:1/-1;' : ''}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><div style="font-size:14px;font-weight:800;color:#1f3329;">${title}</div>${secondary ? `<div style="font-size:12px;color:#667569;margin-top:2px;">${secondary}</div>` : ''}</div>${this.renderR7CropStatusChip("상태", state, tone)}</div><div style="font-size:16px;font-weight:800;color:#17251d;line-height:1.35;">${primary}</div>${facts.filter(Boolean).length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;">${facts.filter(Boolean).map((fact) => `<span style="border:1px solid #d8e5dc;background:#f7fbf8;border-radius:999px;padding:3px 7px;font-size:11px;color:#486255;">${fact}</span>`).join("")}</div>` : ''}${actions ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${actions}</div>` : ''}</section>`;
   }
-
   r7RecordToneColor(tone = "green", slot = "text") {
     const palette = {
       green: { text: "#2b6943", icon: "#43ad5e", badgeBg: "#e8f7ee", badgeText: "#25804a", border: "#badcc8" },
@@ -5365,16 +5051,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
     };
     return (palette[tone] || palette.green)[slot] || palette.green.text;
   }
-
   r7RecordStatus(statusKey = "normal-ready") {
     return R7_RECORD_STATUS_DEFINITIONS[statusKey] || R7_RECORD_STATUS_DEFINITIONS["normal-ready"];
   }
-
   renderR7CommonHaIcon(icon = "mdi:circle-outline", { size = 17, color = "currentColor", extraAttrs = "" } = {}) {
     const mdiIcon = String(icon || "mdi:circle-outline").startsWith("mdi:") ? icon : "mdi:circle-outline";
     return `<ha-icon icon="${mdiIcon}" data-r7-common-ha-icon-policy="mdi-only" ${extraAttrs} style="--mdc-icon-size:${size}px;width:${size}px;height:${size}px;flex:0 0 auto;color:${color};"></ha-icon>`;
   }
-
   renderR7CommonCardHeader({ icon = "mdi:card-text-outline", title = "", subtitle = "", statusKey = "normal-ready", tone = "green", extraAttrs = "" }) {
     return `<header data-r7-common-card-header ${extraAttrs} style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0;">
       <div data-r7-common-card-headline data-r7-record-card-headline style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
@@ -5387,17 +5070,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7RecordCardBadge(statusKey)}
     </header>`;
   }
-
   renderR7CommonCardButton({ label, icon = "mdi:arrow-right", tone = "green", mode = "navigation", target = "", recordType = "", seasonId = "", extraAttrs = "" }) {
     return `<button type="button" data-r7-common-card-button data-r7-common-button-order="icon-text" data-r7-record-card-button data-r7-record-image-action="${label}" data-r7-record-action-mode="${mode}" data-r7-record-action-type="${recordType}" data-r7-record-action-season-id="${seasonId}" ${extraAttrs} style="height:34px;min-width:0;width:100%;border:1px solid ${this.r7RecordToneColor(tone, "border")};background:#fff;border-radius:9px;padding:0 10px;font-size:12px;font-weight:900;color:${this.r7RecordToneColor(tone, "text")};display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center;white-space:nowrap;line-height:1;box-sizing:border-box;cursor:pointer;">${this.renderR7CommonHaIcon(icon, { size: 15 })}<span data-r7-common-button-label style="min-width:0;overflow:hidden;text-overflow:ellipsis;">${label}</span></button>`;
   }
-
   renderR7CommonCardActionRow(actions = []) {
     const visible = actions.filter(Boolean);
     if (!visible.length) return "";
     return `<div data-r7-common-card-action-row data-r7-record-card-action-row style="display:grid;grid-template-columns:repeat(${visible.length},minmax(0,1fr));gap:8px;align-items:center;margin-top:auto;">${visible.join("")}</div>`;
   }
-
   renderR7CommonCardBody({ primary = "", note = "", html = "", tone = "green" }) {
     return `<div data-r7-common-card-body data-r7-record-card-body style="display:grid;gap:6px;align-content:start;min-width:0;">
       ${primary ? `<div data-r7-common-card-primary data-r7-record-card-primary style="font-size:15px;font-weight:950;color:${this.r7RecordToneColor(tone, "text")};line-height:1.35;text-align:center;word-break:keep-all;">${primary}</div>` : ""}
@@ -5405,7 +5085,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${html ? `<div data-r7-common-card-html style="display:grid;gap:6px;min-width:0;">${html}</div>` : ""}
     </div>`;
   }
-
   renderR7CommonCardDataRow({ rowKind = "common", label = "", meta = "", icon = "mdi:circle-outline", state = "", tone = "green", extraAttrs = "", actionHtml = "" }) {
     const stateColor = tone === "amber" ? "#9a6b10" : tone === "red" ? "#b4453a" : tone === "blue" ? "#326aa5" : "#31523b";
     return `<div data-r7-common-card-data-row="${rowKind}" ${extraAttrs} style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(92px,.85fr) ${actionHtml ? 'auto' : ''};align-items:center;gap:10px;font-size:12px;line-height:1.35;color:#24323f;min-width:0;border-top:1px solid #edf2ee;padding:7px 0;">
@@ -5414,13 +5093,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${actionHtml || ""}
     </div>`;
   }
-
   renderR7CommonCardDataRows(rows = [], { rowKind = "common", limit = 3, emptyText = "자료 없음." } = {}) {
     const normalizedRows = Array.isArray(rows) ? rows : [], effectiveLimit = Number.isFinite(limit) ? limit : null, visibleRows = effectiveLimit ? normalizedRows.slice(0, effectiveLimit) : normalizedRows;
     if (!visibleRows.length) return `<div data-r7-common-empty-state data-r7-common-card-data-empty="${rowKind}" style="border-top:1px solid #edf2ee;padding:10px 0;font-size:12px;font-weight:850;color:#78927f;text-align:center;">${emptyText}</div>`;
     return visibleRows.map((row) => this.renderR7CommonCardDataRow({ rowKind, ...row })).join("");
   }
-
   renderR7CommonCardShell({ kind, section = "", icon, title, subtitle = "", statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "", wide = false }) {
     const sectionAttr = section ? `data-r7-record-section="${section}"` : "";
     return `<article data-r7-common-card-shell="${kind}" data-r7-record-card-shell="${kind}" data-r7-record-image-card="${kind}" ${sectionAttr} data-r7-product-state="${statusKey}" ${extraAttrs} style="background:#fff;border:1px solid #e5eee7;border-radius:14px;padding:14px;display:grid;grid-template-rows:auto 1fr auto;gap:12px;min-height:142px;box-shadow:0 1px 2px rgba(31,51,41,.04);min-width:0;align-content:stretch;${wide ? 'grid-column:1/-1;' : ''}">
@@ -5429,7 +5106,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7CommonCardActionRow(actions)}
     </article>`;
   }
-
   renderR7CommonRecentRow(row, { rowKind = "records-recent", extraAttrs = "" } = {}) {
     const color = row.tone === "amber" ? "#c28a1a" : row.tone === "red" ? "#c24d43" : "#2f7d48";
     return `<div data-r7-common-recent-row="${rowKind}" ${extraAttrs} style="display:grid;grid-template-columns:minmax(120px,.8fr) minmax(130px,.9fr) minmax(0,2fr) minmax(96px,.7fr) 18px;align-items:center;gap:10px;font-size:11px;color:#53645b;border-top:1px solid #edf2ee;padding:8px 0;min-width:0;">
@@ -5440,14 +5116,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <span aria-hidden="true" style="color:#9aa79f;">›</span>
     </div>`;
   }
-
   r7CommonRecentDefaultLimit(kind = "", rowKind = "") {
     const key = `${kind || ""} ${rowKind || ""}`;
     if (key.includes("settings-user") || key.includes("user-list")) return 3;
     if (key.includes("records-recent") || key.includes("recent-log") || key.includes("최근 기록")) return 3;
     return 3;
   }
-
   renderR7CommonRecentPanel({ kind = "records-recent-log", title = "최근 기록", icon = "mdi:clipboard-text-clock-outline", statusKey = "normal-ready", tone = "green", rows = [], limit = null, extraAttrs = "", rowKind = "records-recent", note = "", emptyText = "자료 없음." }) {
     const normalizedRows = Array.isArray(rows) ? rows : [], effectiveLimit = Number.isFinite(limit) ? limit : this.r7CommonRecentDefaultLimit(kind, rowKind), visibleRows = Number.isFinite(effectiveLimit) ? normalizedRows.slice(0, effectiveLimit) : normalizedRows;
     const limitAttr = Number.isFinite(effectiveLimit) ? `data-r7-common-data-limit="${effectiveLimit}" data-r7-common-table-limit="${effectiveLimit}"` : "";
@@ -5457,7 +5131,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       <div data-r7-common-recent-body data-r7-record-recent-body style="display:grid;gap:0;min-width:0;">${bodyHtml}</div>
     </section>`;
   }
-
   normalizeR7RecordSeasonId(seasonId = "") {
     const raw = String(seasonId || "").trim();
     if (/^\d+$/.test(raw)) return raw;
@@ -5468,7 +5141,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (cycleMatch) return cycleMatch[1];
     return raw;
   }
-
   activeR7RecordSeasonIdForZone(zone = null) {
     const selected = zone || this._r7PrimaryZoneForDomain?.() || this._zonesForRender?.()[0] || {};
     const sourceRowId = selected.currentCropAssignment?.sourceRowId || selected.sourceRowId || "";
@@ -5477,62 +5149,48 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (sourceMatch) return sourceMatch[1];
     return selected.currentCrop?.crop_cycle_id || selected.currentCrop?.cropSeasonId || selected.activeCropCycleId || selected.crop_cycle || "";
   }
-
   activeR7RecordSeasonId() {
     return this.activeR7RecordSeasonIdForZone();
   }
-
   renderR7RecordCardBadge(statusKey = "normal-ready") {
     const status = this.r7RecordStatus(statusKey);
     const label = `${status.label} · ${status.stage}`;
     return `<span data-r7-record-card-badge data-r7-record-status-key="${statusKey}" data-r7-record-status-stage="${status.stage}" aria-label="${label}" title="${label}" style="font-size:11px;font-weight:900;border:1px solid ${status.border};border-radius:999px;padding:4px 8px;background:${status.bg};color:${status.text};line-height:1;white-space:nowrap;display:inline-flex;gap:5px;align-items:center;"><span data-r7-record-badge-visible-label>${status.label}</span></span>`;
   }
-
   renderR7RecordCardHeader({ icon, title, statusKey = "normal-ready", tone = "green", extraAttrs = "" }) {
     return this.renderR7CommonCardHeader({ icon, title, statusKey, tone, extraAttrs: `data-r7-record-card-header ${extraAttrs}` });
   }
-
   renderR7RecordCardBody({ primary = "", note = "", html = "", tone = "green" }) {
     return this.renderR7CommonCardBody({ primary, note, html, tone });
   }
-
   renderR7RecordCardButton({ label, icon = "mdi:arrow-right", tone = "green", mode = "history", recordType = "growth-survey", seasonId = "" }) {
     return this.renderR7CommonCardButton({ label, icon, tone, mode, recordType, seasonId });
   }
-
   renderR7RecordCardActionRow(actions = []) {
     return this.renderR7CommonCardActionRow(actions);
   }
-
   renderR7RecordCardShell({ kind, icon, title, subtitle = "", statusKey = "normal-ready", tone = "green", primary = "", note = "", html = "", actions = [], extraAttrs = "" }) {
     return this.renderR7CommonCardShell({ kind, icon, title, subtitle, statusKey, tone, primary, note, html, actions, extraAttrs });
   }
-
   renderR7RecentRecordRow(row) {
     return this.renderR7CommonRecentRow(row, { rowKind: "records-recent", extraAttrs: 'data-r7-record-recent-row' });
   }
-
   renderR7RecentRecordPanel(recentRows = []) {
     return this.renderR7CommonRecentPanel({ kind: "records-recent-log", title: "최근 기록", icon: "mdi:clipboard-text-clock-outline", statusKey: "normal-ready", tone: "green", rows: recentRows, rowKind: "records-recent", extraAttrs: 'data-r7-record-recent-log-panel' });
   }
-
-
   r7RecordTypeLabel(recordType = "growth-survey") {
     return ({ "growth-survey": "생육조사", "pest-scouting": "병해충 예찰", "control-treatment": "방제 기록" })[recordType] || "기록";
   }
-
   r7RecordModeLabel(mode = "history", recordType = "growth-survey") {
     if (mode === "write") return `${this.r7RecordTypeLabel(recordType)} 작성`;
     if (mode === "verification") return "누락/검증 필요";
     if (mode === "evidence") return "AI 근거 연결";
     return `${this.r7RecordTypeLabel(recordType)} 히스토리`;
   }
-
   async fetchR7RecordHistory(seasonId, recordType) {
     if (!this.hass?.callApi || !seasonId) return { recordType, rows: [] };
     return await this.hass.callApi("GET", `green_smart/rebuild/crop-records/${seasonId}/history/${recordType}`);
   }
-
   createR7RecordPayload(recordType, form) {
     const data = new FormData(form);
     const base = { date: data.get("date") || data.get("surveyDate") || new Date().toISOString().slice(0, 10), note: data.get("note") || "" };
@@ -5565,7 +5223,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (recordType === "pest-scouting") return { ...base, type: data.get("type") || "미지정", location: data.get("location") || "", severity: Number(data.get("severity") || 1) };
     return { ...base, pesticideName: data.get("pesticideName") || "미지정 약제", phiDays: data.get("phiDays") ? Number(data.get("phiDays")) : null, reiHours: data.get("reiHours") ? Number(data.get("reiHours")) : null, pls: data.get("pls") === "true" };
   }
-
   async openR7RecordWorkflowModal({ mode, recordType, seasonId }) {
     const title = this.r7RecordModeLabel(mode, recordType);
     this._r7RecordModal = { mode, recordType, seasonId, title, state: mode === "write" ? "ready" : "loading", rows: [] };
@@ -5580,12 +5237,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.render();
     }
   }
-
   closeR7RecordWorkflowModal() {
     this._r7RecordModal = null;
     this.render();
   }
-
   async submitR7RecordWorkflowForm(form) {
     const modal = this._r7RecordModal;
     if (!modal || !this.hass?.callApi) return;
@@ -5615,7 +5270,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.render();
     }
   }
-
   _bindR7RecordWorkflowActions() {
     this.querySelectorAll("[data-r7-record-card-button][data-r7-record-action-mode]").forEach((button) => {
       if (button.dataset.r7SettingsApprovalSkipRecordBinding === "true") return;
@@ -5639,7 +5293,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }));
     this.querySelectorAll("form[data-r7-record-write-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this.submitR7RecordWorkflowForm(form); }));
   }
-
   renderR7GrowthSurveyImageFields() {
     const today = new Date().toISOString().slice(0, 10);
     const zones = (this._zonesForRender?.() || []).filter((zone) => this._r7ZoneId(zone) !== "all");
@@ -5676,7 +5329,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7RecordPreSaveChecklist("growth-survey", { zoneName: this._r7ZoneName?.(selectedZone) || "현재 구역" })}
     </div>`;
   }
-
   renderR7RecordWriteFields(recordType) {
     const today = new Date().toISOString().slice(0, 10);
     const baseInput = "height:34px;border:1px solid #dcebe0;border-radius:9px;padding:0 10px;background:#fff;box-sizing:border-box;";
@@ -5687,7 +5339,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (recordType === "pest-scouting") return `${common}<fieldset data-r7-record-form-field-group="pest-scouting" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;"><legend style="font-size:12px;font-weight:950;color:#31523b;padding:0 4px;">병해충 예찰</legend><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">병해충/증상<input name="type" required style="${baseInput}"></label><label style="${labelStyle}">심각도<input name="severity" type="number" min="1" max="5" value="1" required style="${baseInput}"></label></div><label style="${labelStyle}">위치<input name="location" style="${baseInput}"></label>${note}</fieldset>`;
     return `${common}<fieldset data-r7-record-form-field-group="control-treatment" style="border:1px solid #edf2ee;border-radius:12px;padding:12px;display:grid;gap:10px;margin:0;"><legend style="font-size:12px;font-weight:950;color:#31523b;padding:0 4px;">방제 기록</legend><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">약제명<input name="pesticideName" required style="${baseInput}"></label><label style="${labelStyle}">PHI(일)<input name="phiDays" type="number" min="0" style="${baseInput}"></label></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><label style="${labelStyle}">REI(시간)<input name="reiHours" type="number" min="0" style="${baseInput}"></label><label style="${labelStyle}">PLS<select name="pls" style="${baseInput}"><option value="true">적합</option><option value="false">확인 필요</option></select></label></div>${note}</fieldset>`;
   }
-
   renderR7RecordPreSaveChecklist(recordType, options = {}) {
     const zoneName = options.zoneName || "현재 구역";
     const baseCards = recordType === "growth-survey"
@@ -5751,7 +5402,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
         <template data-r7-growth-survey-side-item="crop-evidence">작물 근거 · ${zoneName} · 현재 작기 기준 기록입니다.</template>
       </aside>`;
   }
-
   renderR7RecordFormLayout(recordType, fieldsHtml, actionRow, stateHtml = "") {
     const hasReference = fieldsHtml.includes("data-r7-record-mobile-reference-slot");
     if (hasReference) {
@@ -5768,13 +5418,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${actionRow}
     </form>`;
   }
-
   renderR7RecordCommonModalShell(modal, summary, body) {
     const header = this.renderR7CdaModalHeader({ icon: "mdi:history", title: modal.title, subtitle: `작기 ${modal.seasonId} · ${this.r7RecordTypeLabel(modal.recordType)}`, closeAttr: "data-r7-record-modal-close", attrs: "data-r7-record-modal-sticky-header" });
     const card = this.renderR7CdaModalCard({ attrs: `data-r7-record-modal-card data-r7-record-cda-modal-card data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}"`, width: "min(1120px,calc(100vw - 28px))", maxHeight: "88vh", rows: "auto 1fr", body: `<style data-r7-record-modal-responsive-style>@media (max-width: 860px) {[data-r7-record-common-modal-shell] { padding: 10px !important; align-items: stretch !important; }[data-r7-record-common-modal-shell] [data-r7-record-modal-card] { width: 100% !important; max-height: calc(100vh - 20px) !important; border-radius: 14px !important; }[data-r7-record-common-modal-shell] [data-r7-record-form-layout="side-reference"] { grid-template-columns:1fr !important; }[data-r7-record-common-modal-shell] [data-r7-growth-survey-image-modal] { grid-template-columns:1fr !important; }[data-r7-record-common-modal-shell] [data-r7-settings-create-form-layout="growth-like"] { grid-template-columns:1fr !important; gap:12px !important; }[data-r7-record-common-modal-shell] [data-r7-settings-create-pre-save-checklist] { position:static !important; top:auto !important; max-width:none !important; width:100% !important; }[data-r7-record-common-modal-shell] .r7-record-mobile-reference-slot { position: static !important; top:0 !important; order: 2; max-width:none !important; }[data-r7-record-common-modal-shell] .r7-record-modal-actions { grid-template-columns:1fr !important; }[data-r7-record-common-modal-shell] fieldset > div { grid-template-columns:1fr !important; }}</style>${header}<div data-r7-record-modal-scroll-body style="padding:18px;display:grid;gap:14px;min-width:0;overflow:auto;">${summary}${body}</div>` });
     return this.renderR7CdaModalOverlay({ open: true, zIndex: 50, attrs: `data-r7-record-modal-shell data-r7-record-common-modal-shell data-r7-record-modal-mode="${modal.mode}" data-r7-record-modal-type="${modal.recordType}"`, body: card });
   }
-
   renderR7RecordHistoryCdaBody(modal, rows) {
     const selected = rows[0] || {};
     const historyRows = rows.length ? rows.map((row, index) => this.renderR7CdaCompactListRow({ selected: index === 0, attrs: `data-r7-record-history-row data-r7-record-history-row-compact="true" data-r7-record-history-row-selected="${index === 0 ? 'true' : 'false'}"`, columns: [`<span data-r7-record-history-row-date>${row.date || row.createdAt || row.id || '기록'}</span>`, `<b>${this.r7RecordTypeLabel(modal.recordType)}</b>`, `<span style="border:1px solid #badcc8;border-radius:999px;padding:3px 6px;text-align:center;font-weight:1000;background:#f0fbf4;color:#25804a;">정상</span>`, `<span data-r7-record-history-row-summary style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${row.summary || row.note || '상세 기록'}</span>`, `<span>${row.actor || row.observer || '기록자 미확인'}</span>`] })).join("") : `<div data-r7-record-history-empty style="border:1px dashed #dcebe0;border-radius:10px;padding:12px;color:#78927f;font-size:12px;">표시할 기록이 없습니다.</div>`;
@@ -5783,7 +5431,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 기록 상세", attrs: 'data-r7-record-history-detail-panel', badge: `<span style="border:1px solid #badcc8;border-radius:999px;padding:5px 9px;font-size:11px;background:#f0fbf4;color:#25804a;">읽기 전용</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ left: `<button type="button" data-r7-record-history-export style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">내보내기 준비</button>`, actions: [`<button type="button" data-r7-record-modal-close style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`] }) });
     return `<section data-r7-record-history-cda-modal="true" data-r7-record-history-summary data-r7-record-modal-info data-r7-record-modal-mode="${modal.mode}" style="display:grid;gap:10px;">${this.renderR7CdaSplitModal({ open: true, overlayAttrs: 'data-r7-record-history-inner-cda-overlay', cardAttrs: 'data-r7-record-history-inner-cda-card', header: '', search: '', left: listPanel, right: detailPanel, footer: '', width: '100%', zIndex: 1 }).replace('position:fixed;inset:0;', 'position:relative;inset:auto;').replace('background:rgba(20,32,24,.30);', 'background:transparent;').replace('z-index:1;', 'z-index:1;').replace('padding:18px;', 'padding:0;')}</section>`;
   }
-
   renderR7RecordWorkflowModal() {
     const modal = this._r7RecordModal;
     if (!modal) return "";
@@ -5807,7 +5454,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     return this.renderR7RecordCommonModalShell(modal, summary, body);
   }
-
   renderR7RecordsWorkflowProductLayout(ctx) {
     const { pestScouting, controlTreatment } = ctx;
     const pestNeedsCheck = pestScouting?.staleState === "attention" || !pestScouting?.count;
@@ -5835,15 +5481,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </div>
     </div><template data-r7-product-screen data-r7-product-screen-kind="records-workflow" data-r7-crop-product-subtab-screen="records-workflow" data-r7-product-screen-header data-r7-product-screen-primary-panel data-r7-product-screen-evidence-rail data-r7-product-screen-action-bar></template>`;
   }
-
   renderR7CropRecordWorkflowVerticalSlice(ctx) {
     return this.renderR7RecordsWorkflowProductLayout(ctx);
   }
-
   renderR7CropRecordWorkCards(ctx) {
     return [this.renderR7RecordsWorkflowProductLayout(ctx)];
   }
-
   renderR7CropCycleCards(ctx) {
     const { selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, demolishDate, assignmentState, freshness, recordSource } = ctx;
     const cropObjectBadges = [1, 2, 3, 4].map((objectNo) => `${cropCycleId}-${objectNo}`);
@@ -5855,7 +5498,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.renderR7CropProductCard({ kind: "assignment-evidence", label: "구역 배정 근거", primary: this._r7ZoneName(selectedZone), secondary: freshness, state: freshness.includes("fresh") ? "fresh" : "ready", tone: "blue", evidence: [assignmentState, freshness], markers: 'data-r7-crop-assignment-card data-r7-crop-registration-lane' }),
     ];
   }
-
   renderR7CropGrowthTargetCards(ctx) {
     const { cropLabel, variety, growthStage, targetStage, targetFocus, freshness, growthSurvey, workMissingItems, environmentImpactState, environmentImpactFocus, environmentImpactFactors } = ctx;
     const factorItems = String(environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
@@ -5866,7 +5508,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.renderR7CropProductCard({ kind: "target-record-check", label: "기록 확인", primary: growthSurvey.latestLabel || "생육조사 기록 없음", secondary: `생육조사 ${growthSurvey.count ?? 0}건`, state: growthSurvey.staleState || "empty", tone: "amber", evidence: String(workMissingItems || "").split(",").map((item) => item.trim()).filter(Boolean), actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:format-list-bulleted")], markers: 'data-r7-crop-growth-target-card data-r7-crop-work-queue' }),
     ];
   }
-
   renderR7CropModelAssistCards(ctx) {
     const { environmentImpactState, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired } = ctx;
     const factorItems = String(environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
@@ -5877,7 +5518,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.renderR7CropProductCard({ kind: "approval-boundary", label: "승인/실행 경계", primary: approvalLabel, secondary: "작물 운영 화면에서는 실행하지 않음", state: approvalRequired ? "attention" : "ready", tone: "amber", evidence: ["executionEnabled=false", "deviceCommandEnabled=false", "mqttEnabled=false"], markers: 'data-r7-crop-model-card data-r7-crop-model-review-lane' }),
     ];
   }
-
   renderR7CropTrendEvidenceCards(ctx) {
     const { cropLabel, growthStage, freshness, recordSource, growthSurvey, pestScouting, controlTreatment, workMissingItems, environmentImpactState, environmentImpactFocus, environmentImpactFactors } = ctx;
     const missingItems = workMissingItems === "누락 항목 없음" ? [] : String(workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
@@ -5890,7 +5530,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.renderR7CropProductCard({ kind: "data-adequacy", label: "데이터 충분성", primary: adequacy, secondary: missingItems.length ? `${missingItems.length}개 누락` : "누락 없음", state: adequacy === "충분" ? "fresh" : "attention", tone: missingItems.length ? "amber" : "green", evidence: [...missingItems, freshness], actions: [this.renderR7CropActionButton("기록·작업", "records-workflow", "mdi:clipboard-text-clock-outline")], markers: 'data-r7-crop-season-review' }),
     ];
   }
-
   renderR7CropProductCardsForSubtab(tabKey, ctx) {
     const missingItems = ctx.workMissingItems === "누락 항목 없음" ? [] : String(ctx.workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
     const factorItems = String(ctx.environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
@@ -5915,11 +5554,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     return this.renderR7CropProductCardGrid(tabKey, (map[tabKey] || map["status-summary"])());
   }
-
   renderR7CropProductSubtabScreen(tabKey, ctx) {
     return this.renderR7CropProductCardsForSubtab(tabKey, ctx);
   }
-
   renderR7CropStatusSummaryWidgets({ selectedZone, cropCycleId, cropType, cropLabel, growthStage, variety, plantDate, freshness, growthSurvey, pestScouting, controlTreatment, workNextAction, workMissingItems, environmentImpactFocus, environmentImpactFactors, recommendationReviewState, recommendationReviewSummary, approvalRequired }) {
     const missingItems = workMissingItems === "누락 항목 없음" ? [] : String(workMissingItems).split(",").map((item) => item.trim()).filter(Boolean);
     const factorItems = String(environmentImpactFactors || "").split(",").map((item) => item.trim()).filter(Boolean);
@@ -5932,7 +5569,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const recommendationCard = this.renderR7ProductCard({ kind: "recommendation", tone: "red", state: recommendationReviewState, legacyMarkers: "data-r7-crop-status-functional-card data-r7-crop-recommendation-action-card", header: this.renderR7ProductCardHeader({ icon: "mdi:brain", title: "추천 검토", subtitle: "보조 판단 · 실행 권한 없음", statusHtml: this.renderR7CropStatusChip("상태", recommendationReviewState, "red") }), body: this.renderR7ProductCardBody({ primary: recommendationReviewSummary }), evidence: this.renderR7ProductCardEvidence([approvalLabel, "실행 없음"], approvalRequired ? "amber" : "green"), actions: this.renderR7ProductCardActionRow([this.renderR7CropActionButton("모델·추천 검토", "model-assist", "mdi:brain")]) });
     return `${currentCard}${priorityCard}${recordCard}${influenceCard}${recommendationCard}<template data-r7-product-empty-state-template>${this.renderR7ProductEmptyState()}</template>`;
   }
-
   renderR7CropSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -6000,7 +5636,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div>`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-crop-subtab="${tabKey}" data-r7-crop-detail-absorbed="true" ${markers[tabKey]} data-r7-crop-third-party-informed="true" data-r7-crop-real-context-bound="true" data-r7-crop-record-summary-source="${recordSource}" data-r7-crop-environment-impact-source="${environmentImpactState}" data-r7-crop-recommendation-review-source="${recommendationReviewState}" data-r7-crop-vendor-pattern="crop-goal-to-influence-to-action" style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><div style="display:grid;gap:4px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span data-r7-crop-operator-question style="color:#5d6f62;font-size:12px;line-height:1.45;">${operatorQuestions[tabKey]}</span></div><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${cropLabel}</span></header>${content}</section>`;
   }
-
   renderR7CropOperationsZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["crop-cycle", "작기·현재작물"], ["growth-target", "생육목표"], ["records-workflow", "기록·작업"], ["model-assist", "모델·추천"], ["trend-evidence", "추세·근거"]];
@@ -6009,7 +5644,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panels = this.renderR7PanelsForDomain("crop-operations", tabs, activeTab, (key) => this.renderR7CropSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-crop-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "crop-operations", title: "작물 운영", kicker: "구역 기준 작물 운영", summary: "현재 작물, 작기, 생육목표, 생육조사, 병해충 예찰, 방제 기록, crop model evidence를 구역 기준으로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">작물 운영 · currentCrop · crop_cycle · growthTargetProjection · 생육조사 · 병해충 예찰 · 방제 기록 · crop model evidence · 진단·위험·조치 추천</section></section>`;
   }
-
   renderR7EnvironmentSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -6046,7 +5680,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
               : `${this.renderR7MiniTrendChart("온도 추세", "최신")}${this.renderR7MiniTrendChart("습도 추세", "최신")}${this.renderR7MiniTrendChart("VPD 추세", "최신")}${this.renderR7MiniTrendChart("CO₂ 추세", "최신")}`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-environment-subtab="${tabKey}" data-r7-environment-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
-
   renderR7EnvironmentZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
@@ -6055,7 +5688,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panels = this.renderR7PanelsForDomain("environment-control", tabs, activeTab, (key) => this.renderR7EnvironmentSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-environment-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "environment-control", title: "환경 제어", kicker: "구역별 환경 상태", summary: "온도·습도·VPD·CO₂·광/DLI 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "attention", tabs, activeTab, panels })}<section style="display:none;">구역별 환경 상태 · 현재 선택 구역 · 환기 후보 · Safety/Interlock 우선 · 센서 freshness</section></section>`;
   }
-
   renderR7IrrigationSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -6092,7 +5724,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
               : `${this.renderR7MiniTrendChart("EC 추세", "최신")}${this.renderR7MiniTrendChart("pH 추세", "최신")}${this.renderR7MiniTrendChart("배액률 추세", "최신")}${this.renderR7MiniTrendChart("드라이백 추세", "최신")}`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-irrigation-subtab="${tabKey}" data-r7-irrigation-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
-
   renderR7IrrigationZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
@@ -6101,7 +5732,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panels = this.renderR7PanelsForDomain("irrigation-fertigation", tabs, activeTab, (key) => this.renderR7IrrigationSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-irrigation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "irrigation-fertigation", title: "관수 제어", kicker: "구역별 관수 제어 상태", summary: "관수 스케줄, EC/pH, 급액량, 배액률, 드라이백, 레시피 기준과 일정·규칙, 인터록, 추천 보조 상태를 구역별로 확인합니다.", status: "normal", tabs, activeTab, panels })}<section style="display:none;">구역별 관수 제어 상태 · 현재 선택 구역 · 관수 후보 · Safety clamp 우선 · 센서 신선도</section></section>`;
   }
-
   renderR7DeviceSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -6138,7 +5768,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
               : `${this.renderR7MiniTrendChart("장치 응답 추세", "최신")}${this.renderR7MiniTrendChart("모드 변경 이력", "최신")}${this.renderR7MiniTrendChart("매핑 health", "확인")}${this.renderR7MiniTrendChart("차단 이유", "누적")}`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-device-subtab="${tabKey}" data-r7-device-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
-
   renderR7DeviceZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
@@ -6147,7 +5776,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panels = this.renderR7PanelsForDomain("device-control", tabs, activeTab, (key) => this.renderR7DeviceSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-device-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "device-control", title: "장치 제어", kicker: "구역별 장치 상태", summary: "수동/자동/잠금/점검 모드, 장치 매핑, 모드 gate, 인터록, AI hint-only 상태를 구역별로 확인합니다.", status: "warning", tabs, activeTab, panels })}<section style="display:none;">구역별 장치 상태 · 현재 선택 구역 · mode gate · HA entity mapping · MQTT topic mapping later only · Physical MQTT/device hookup remains blocked</section></section>`;
   }
-
   renderR7RecommendationSubtabPanel(tabKey, selectedZone, activeTab = "status-summary") {
     const active = tabKey === activeTab;
     const display = active ? "grid" : "none";
@@ -6184,7 +5812,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
               : `${this.renderR7MiniTrendChart("추천 변화", "최신")}${this.renderR7MiniTrendChart("수동 대비 차이", "최신")}${this.renderR7MiniTrendChart("AI 보조 이력", "후보")}${this.renderR7MiniTrendChart("미적용 이유", "누적")}`;
     return `<section data-r7-domain-subtab-panel data-r7-domain-subtab-panel-key="${tabKey}" data-r7-recommendation-subtab="${tabKey}" data-r7-recommendation-detail-absorbed="true" ${markers[tabKey]} style="display:${display};gap:10px;border:1px solid #dcebe0;border-radius:20px;background:#fff;padding:14px;"><header style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><strong style="color:#24323f;font-size:15px;">${labels[tabKey]}</strong><span style="color:#78927f;font-size:12px;">${this._r7ZoneName(selectedZone)} · ${this._r7ZoneCropLabel(selectedZone)}</span></header><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;">${body}</div></section>`;
   }
-
   renderR7RecommendationZoneVisual() {
     const selectedZone = this._r7PrimaryZoneForDomain();
     const tabs = [["status-summary", "상태 요약"], ["base-settings", "설정값"], ["rule-schedule", "일정·규칙"], ["interlock-block", "인터록·차단"], ["assist-fallback", "추천·보조"], ["trend-evidence", "추세·근거"]];
@@ -6193,7 +5820,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const panels = this.renderR7PanelsForDomain("recommendation-automation", tabs, activeTab, (key) => this.renderR7RecommendationSubtabPanel(key, selectedZone, activeTab), panelsFull);
     return `<section data-r7-recommendation-zone-visual="true" style="display:grid;gap:14px;">${this.renderR7DomainVisualFrame({ domainKey: "recommendation-automation", title: "자동화 제어", kicker: "구역별 자동화 제어 후보", summary: "수동 기준값, 기본 자동화 후보, AI 추천·보정, fallback, Safety-final 후보를 구역별로 비교합니다. 최종 명령 권한은 없습니다.", status: "attention", tabs, activeTab, panels })}<section style="display:none;">구역별 자동화 제어 후보 · Manual baseline · rule/schedule candidate · AI recommendation/correction · final command authority none</section></section>`;
   }
-
   renderR7DetailSubpage(subpage) {
     return `<article id="${subpage.key}" data-r7-detail-subpage="${subpage.key}" data-r7-manual-first-domain="${subpage.key}" data-r7-subpage-readonly-boundary="true" data-r7-subpage-config-placeholder style="display:grid;gap:10px;">
       ${subpage.key === "crop-operations" ? this.renderR7CropOperationsZoneVisual() : ""}
@@ -6205,13 +5831,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${subpage.key === "settings-admin" ? this.renderR7SettingsAdminZoneVisual() : ""}
     </article>`;
   }
-
   renderR7DomainPageShell(subpage, body) {
     return `<section data-r7-domain-page-shell data-r7-domain-page-width="viewport" data-r7-domain-page="${subpage.key}" data-r7-domain-page-active="true" data-r7-domain-page-hidden="false" style="display:grid;gap:14px;width:100%;min-width:0;max-width:none;grid-template-columns:minmax(0,1fr);">
       ${body}
     </section>`;
   }
-
   renderR7ActiveDomainPage() {
     const activeKey = this._normalizeR7Domain(this._activeR7Domain);
     const subpage = R7_DETAIL_SUBPAGES.find((item) => item.key === activeKey) || R7_DETAIL_SUBPAGES[0];
@@ -6230,7 +5854,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
         return this.renderR7DomainPageShell(R7_DETAIL_SUBPAGES[0], this.renderOperatingHome());
     }
   }
-
   renderR7PageShell() {
     const approval = this.r7SettingsUsersPermissionsData();
     if (approval?.approvalRequired) return this.renderR7ApprovalGate(approval);
@@ -6240,7 +5863,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </div>
     </section>`;
   }
-
   renderR7ApprovalGate(approval = {}) {
     const status = approval.approvalStatus || "pending";
     const displayName = approval.displayName || "현재 사용자";
@@ -6257,19 +5879,16 @@ class GreenSmartRebuildPanel extends HTMLElement {
       </article>
     </section>`;
   }
-
   _r7ContentWidthMode() { return this._r7SidebarLayoutMode() === "operator-ha-adjacent" ? "ha-sidebar-visible" : "ha-sidebar-hidden"; }
   _r7ContentWidthPolicyAttrs(contentWidthMode = this._r7ContentWidthMode()) { return `data-r7-content-width-policy="grid-contained-fill" data-r7-content-width-mode="${contentWidthMode}" data-r7-content-width-fills-viewport="true" data-r7-content-width-contained="true" data-r7-content-width-uses-dvw="false"`; }
   _r7RootWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
     const rootWidth = contentWidthMode === "ha-sidebar-visible" ? "100%" : "100dvw";
     return `--r7-root-viewport-width:${rootWidth};--r7-content-viewport-width:100%;width:var(--r7-root-viewport-width);min-width:0;max-width:${rootWidth};box-sizing:border-box;overflow-x:clip;`;
   }
-
   _r7ContentColumnWidthVarsStyle(contentWidthMode = this._r7ContentWidthMode()) {
     const mainWidth = "100%";
     return `--r7-content-viewport-width:100%;--r7-content-main-width:${mainWidth};width:var(--r7-content-main-width);min-width:0;max-width:100%;box-sizing:border-box;overflow-x:clip;`;
   }
-
   render() {
     this._applyR7HostWidthPolicy();
     this._applyR7HASidebarPolicy();
@@ -6312,7 +5931,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._scheduleR7MobileActiveSubtabScroll();
   }
 }
-
 if (!customElements.get(REBUILD_ELEMENT_NAME)) {
   customElements.define(REBUILD_ELEMENT_NAME, GreenSmartRebuildPanel);
 }
@@ -6320,5 +5938,4 @@ class GreenSmartRebuildPanelVersioned extends GreenSmartRebuildPanel {}
 if (!customElements.get(REBUILD_VERSIONED_ELEMENT_NAME)) {
   customElements.define(REBUILD_VERSIONED_ELEMENT_NAME, GreenSmartRebuildPanelVersioned);
 }
-
 export { GreenSmartRebuildPanel, GreenSmartRebuildPanelVersioned, REBUILD_ELEMENT_NAME, REBUILD_VERSIONED_ELEMENT_NAME, REBUILD_PAGES, REBUILD_VERSION, REBUILD_ZONE_CONTEXTS, REBUILD_STAGE_DETAILS };

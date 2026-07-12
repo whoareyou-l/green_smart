@@ -230,6 +230,8 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             irrigation_group_name VARCHAR(128) NOT NULL,
             irrigation_method VARCHAR(32) NOT NULL,
             irrigation_method_detail VARCHAR(64) NOT NULL,
+            circulation_type VARCHAR(64) NOT NULL DEFAULT '해당 없음',
+            drainage_reuse VARCHAR(64) NOT NULL DEFAULT '배액 재활용 안함',
             outlet_count INT NOT NULL DEFAULT 0,
             flow_rate_per_outlet DECIMAL(10,3) NOT NULL DEFAULT 0,
             flow_rate_unit VARCHAR(16) NOT NULL DEFAULT 'L/h',

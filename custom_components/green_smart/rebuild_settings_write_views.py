@@ -264,6 +264,8 @@ def _irrigation_group_dto(row: dict[str, Any]) -> dict[str, Any]:
         "irrigationGroupName": row.get("irrigation_group_name") or "관수그룹",
         "irrigationMethod": row.get("irrigation_method") or "배지경",
         "irrigationMethodDetail": row.get("irrigation_method_detail") or "코코피트",
+        "circulationType": row.get("circulation_type") or "해당 없음",
+        "drainageReuse": row.get("drainage_reuse") or "배액 재활용 안함",
         "outletCount": row.get("outlet_count") or 0,
         "flowRatePerOutlet": row.get("flow_rate_per_outlet") or 0,
         "flowRateUnit": row.get("flow_rate_unit") or "L/h",
@@ -501,11 +503,23 @@ async def create_settings_device_group(hass, payload: dict[str, Any], actor: str
     return next((row for row in rows if row["zoneId"] == zone_id and row["groupName"] == group_name), rows[0] if rows else {"zoneId": zone_id, "groupName": group_name})
 
 
+async def ensure_settings_irrigation_group_schema(hass) -> None:
+    for ddl in (
+        "ALTER TABLE green_smart_settings_irrigation_groups ADD COLUMN circulation_type VARCHAR(64) NOT NULL DEFAULT '해당 없음' AFTER irrigation_method_detail",
+        "ALTER TABLE green_smart_settings_irrigation_groups ADD COLUMN drainage_reuse VARCHAR(64) NOT NULL DEFAULT '배액 재활용 안함' AFTER circulation_type",
+    ):
+        try:
+            await execute(hass, ddl)
+        except Exception:
+            pass
+
+
 async def list_settings_irrigation_groups(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    await ensure_settings_irrigation_group_schema(hass)
     rows = await fetchall(hass, """
         SELECT ig.id, ig.farm_id, ig.zone_id, z.name AS zone_name, ig.irrigation_group_no, ig.irrigation_group_name,
-               ig.irrigation_method, ig.irrigation_method_detail, ig.outlet_count, ig.flow_rate_per_outlet,
-               ig.flow_rate_unit, ig.bed_count, ig.note, ig.status, ig.created_at, ig.updated_at
+               ig.irrigation_method, ig.irrigation_method_detail, ig.circulation_type, ig.drainage_reuse,
+               ig.outlet_count, ig.flow_rate_per_outlet, ig.flow_rate_unit, ig.bed_count, ig.note, ig.status, ig.created_at, ig.updated_at
         FROM green_smart_settings_irrigation_groups ig
         LEFT JOIN green_smart_settings_zones z ON z.farm_id = ig.farm_id AND (CAST(z.id AS CHAR) = ig.zone_id OR CONCAT('settings-zone-', z.id) = ig.zone_id)
         WHERE ig.farm_id = %s AND ig.status NOT IN ('삭제됨', 'deleted')
@@ -522,6 +536,7 @@ def _zone_label_for_irrigation_group(zones: list[dict[str, Any]], zone_id: str) 
 
 
 async def create_settings_irrigation_group(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    await ensure_settings_irrigation_group_schema(hass)
     zone_id = _str(payload, "zoneId", "zone_id", default="zone-1")
     rows = await fetchall(hass, """
         SELECT COALESCE(MAX(irrigation_group_no), 0) + 1 AS next_no
@@ -534,15 +549,17 @@ async def create_settings_irrigation_group(hass, payload: dict[str, Any], actor:
     await execute(hass, """
         INSERT INTO green_smart_settings_irrigation_groups
             (farm_id, zone_id, irrigation_group_no, irrigation_group_name, irrigation_method, irrigation_method_detail,
-             outlet_count, flow_rate_per_outlet, flow_rate_unit, bed_count, note, status, created_by, updated_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'L/h', %s, %s, %s, %s, %s)
+             circulation_type, drainage_reuse, outlet_count, flow_rate_per_outlet, flow_rate_unit, bed_count, note, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'L/h', %s, %s, %s, %s, %s)
         """, (
             farm_id, zone_id, next_no, group_name,
             _str(payload, "irrigationMethod", "irrigation_method", default="배지경"),
             _str(payload, "irrigationMethodDetail", "irrigation_method_detail", default="코코피트"),
+            _str(payload, "circulationType", "circulation_type", default="해당 없음"),
+            _str(payload, "drainageReuse", "drainage_reuse", default="배액 재활용 안함"),
             _int(payload, "outletCount", "outlet_count", default=0),
             _str(payload, "flowRatePerOutlet", "flow_rate_per_outlet", default="0"),
-            _int(payload, "bedCount", "bed_count", default=0),
+            min(_int(payload, "bedCount", "bed_count", default=0), max([int(z.get("bedCount") or z.get("bed_count") or 0) for z in await list_settings_zones(hass, farm_id) if str(z.get("zoneId")) == str(zone_id) or str(z.get("id")) == str(zone_id) or f"settings-zone-{z.get('id')}" == str(zone_id)] or [_int(payload, "bedCount", "bed_count", default=0)])),
             _str(payload, "note"),
             _zone_status_label(payload, "status", "state", default="active"),
             actor, actor,

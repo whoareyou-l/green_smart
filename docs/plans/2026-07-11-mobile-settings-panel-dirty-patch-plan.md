@@ -1,10 +1,10 @@
-# v1.15.48 모바일 설정 panel full hydrate 분해 계획
+# v1.15.49 모바일 설정 panel full hydrate 분해 계획
 
 ## 목표
 
 v1.15.17~18에서 설정 하위탭은 persistent DOM cache/show-hide와 lazy modal cache를 갖췄다. 하지만 cached panel hydrate 단계에는 아직 full panel 문자열 생성/대형 innerHTML 교체가 남아 있다.
 
-v1.15.48 목표는 설정 모바일 cached panel에서 다음 코드를 제거하는 것이다.
+v1.15.49 목표는 설정 모바일 cached panel에서 다음 코드를 제거하는 것이다.
 
 ```js
 const fullHtml = this._renderR7SubtabPanelForDomain("settings-admin", tabKey);
@@ -77,4 +77,4 @@ this._patchR7CachedSettingsPanelData(tabKey)
 - `_hydrateR7CachedSettingsPanel` 안에 `panel.innerHTML = fullHtml`이 없어야 한다.
 - `replaceChildren` 또는 field patch 기반 compact node가 사용되어야 한다.
 - `summary-card-dirty-patch`, `not-used-compact-patch` marker가 served JS에 존재한다.
-- 전체 테스트/Prod smoke/GitHub Release v1.15.48 완료.
+- 전체 테스트/Prod smoke/GitHub Release v1.15.49 완료.

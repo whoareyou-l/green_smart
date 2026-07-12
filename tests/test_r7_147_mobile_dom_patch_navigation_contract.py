@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_13_mobile_subtab_uses_panel_outerhtml_patch_before_full_render():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.48"' in text
+    assert 'const REBUILD_VERSION = "1.15.49"' in text
     assert '_patchR7MobileSubtabPanel(domain, tabKey)' in text
     assert 'data-r7-mobile-dom-patch-subtab", "true"' in text
     assert 'data-r7-mobile-subtab-render-mode", "light-first-paint-then-full-hydrate"' in text
