@@ -69,7 +69,7 @@ Bad data found at $.irrigationGroup.flowRatePerOutlet=3.000(<class 'decimal.Deci
    - JS syntax check
 
 5. Prod 배포 후 실제 served/backend marker와 로그를 확인한다.
-   - v1.15.54 served marker
+   - v1.15.55 served marker
    - backend `_json_number`, `Decimal` marker
    - API auth boundary 401
    - restart 후 stable log에서 JSON serialization error 재발 여부 확인

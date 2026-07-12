@@ -1,6 +1,6 @@
 # R7-064 Records modal overlap/sticky hotfix
 
-Status: current baseline for `v1.15.54`.
+Status: current baseline for `v1.15.55`.
 
 ## Problem
 

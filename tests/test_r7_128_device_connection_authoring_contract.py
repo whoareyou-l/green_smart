@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.54"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.54"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.54"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.55"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.55"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.55"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -346,3 +346,60 @@ def test_r7_128_irrigation_group_list_rows_are_selectable_and_update_detail():
     assert '순환식' in html
     assert '1.5 L/h' in html
     assert '두 번째 그룹' in html
+
+
+
+def test_r7_128_irrigation_group_list_edit_reuses_create_modal_with_values():
+    source = _read(REBUILD_PANEL)
+    for literal in (
+        '_editSettingsIrrigationGroup',
+        '_deleteSettingsIrrigationGroup',
+        'data-r7-settings-irrigation-group-edit-button',
+        'data-r7-settings-irrigation-group-delete-button',
+        'method = isEdit ? "PATCH"',
+        '관수그룹 목록 수정',
+        '관수그룹 수정 저장',
+        'data-r7-settings-irrigation-group-modal-mode=',
+    ):
+        assert literal in source
+    html = _node_render("""(
+        panel._settingsGreenhouseZoneData.zones = [{ id: 'zone-a', zoneId: 'zone-a', zoneName: 'A구역', name: 'A구역', bedCount: 6 }],
+        panel._settingsGreenhouseZoneData.irrigationGroups = [{
+          id: 'ig-2', zoneId: 'zone-a', irrigationGroupName: 'A구역 관수그룹 2', irrigationGroupNo: 2,
+          irrigationMethod: '순수경', irrigationMethodDetail: 'NFT', circulationType: '순환식', drainageReuse: '배액 재활용',
+          outletCount: 40, flowRatePerOutlet: 1.5, flowRateUnit: 'L/h', bedCount: 2, status: 'maintenance', note: '두 번째 그룹'
+        }],
+        panel._editSettingsIrrigationGroup('ig-2'),
+        panel.renderR7SettingsDeviceGroupCreateModal()
+    )""")
+    for marker in (
+        '관수그룹 목록 수정',
+        '관수그룹 수정 저장',
+        'data-r7-settings-irrigation-group-modal-mode="edit"',
+        'A구역 관수그룹 2',
+        'value="순수경" selected',
+        'value="NFT" selected',
+        'value="순환식" selected',
+        'value="배액 재활용" selected',
+        'value="40"',
+        'value="1.5"',
+        'value="2"',
+        '두 번째 그룹',
+    ):
+        assert marker in html
+
+
+def test_r7_128_irrigation_group_item_api_contract_exists():
+    backend = (ROOT / 'custom_components/green_smart/rebuild_settings_write_views.py').read_text(encoding='utf-8')
+    init = (ROOT / 'custom_components/green_smart/__init__.py').read_text(encoding='utf-8')
+    for literal in (
+        'update_settings_irrigation_group',
+        'delete_settings_irrigation_group',
+        'class RebuildSettingsIrrigationGroupItemView',
+        'url = "/api/green_smart/rebuild/settings/irrigation-groups/{irrigation_group_id}"',
+        'async def patch',
+        'async def delete',
+    ):
+        assert literal in backend
+    assert 'RebuildSettingsIrrigationGroupItemView' in init
+    assert 'hass.http.register_view(RebuildSettingsIrrigationGroupItemView())' in init

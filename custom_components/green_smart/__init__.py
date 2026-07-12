@@ -362,7 +362,7 @@ async def async_setup(hass, config):
     )
     from .central_views import CentralWeatherCurrentView, CentralWeatherForecastView, CentralWeatherMidView, CentralPesticideSearchView, CentralCropInterlockSnapshotSyncView, CentralCropInterlockAnalyticsSummaryView
     from .rebuild_views import RebuildHomeContextView
-    from .rebuild_settings_write_views import RebuildSettingsSnapshotView, RebuildSettingsGreenhouseCreateView, RebuildSettingsGreenhouseItemView, RebuildSettingsZoneCreateView, RebuildSettingsZoneItemView, RebuildSettingsDeviceCreateView, RebuildSettingsDeviceGroupCreateView, RebuildSettingsIrrigationGroupCreateView, RebuildSettingsDeviceSensorMappingView, RebuildSettingsSystemUpdateView, RebuildSettingsSystemErrorsView, RebuildSettingsSystemCenterConnectionView, GreenSmartHaUnlinkedDevicesView, GreenSmartHaDeviceEntitiesView, GreenSmartDevicesView, GreenSmartDeviceItemView, GreenSmartDeviceLatestDataView, GreenSmartDeviceDataRefreshView, GreenSmartDeviceSamplesView
+    from .rebuild_settings_write_views import RebuildSettingsSnapshotView, RebuildSettingsGreenhouseCreateView, RebuildSettingsGreenhouseItemView, RebuildSettingsZoneCreateView, RebuildSettingsZoneItemView, RebuildSettingsDeviceCreateView, RebuildSettingsDeviceGroupCreateView, RebuildSettingsIrrigationGroupCreateView, RebuildSettingsIrrigationGroupItemView, RebuildSettingsDeviceSensorMappingView, RebuildSettingsSystemUpdateView, RebuildSettingsSystemErrorsView, RebuildSettingsSystemCenterConnectionView, GreenSmartHaUnlinkedDevicesView, GreenSmartHaDeviceEntitiesView, GreenSmartDevicesView, GreenSmartDeviceItemView, GreenSmartDeviceLatestDataView, GreenSmartDeviceDataRefreshView, GreenSmartDeviceSamplesView
     from .rebuild_settings_views import RebuildSettingsUsersPermissionsView, RebuildSettingsApprovalRequestView, RebuildSettingsApprovalDecisionView, RebuildSettingsPermissionChangeRequestView, RebuildSettingsUserRoleView, RebuildSettingsAuditLogItemView, RebuildSettingsRolePermissionsView, RebuildSettingsRolePermissionItemView
     from .rebuild_crop_records_views import RebuildCropRecordsHistoryView, RebuildCropRecordsWriteView
     from .rbac import GreenSmartAuthMeView, GreenSmartRoleAssignmentView
@@ -392,6 +392,7 @@ async def async_setup(hass, config):
             hass.http.register_view(RebuildSettingsDeviceCreateView())
             hass.http.register_view(RebuildSettingsDeviceGroupCreateView())
             hass.http.register_view(RebuildSettingsIrrigationGroupCreateView())
+            hass.http.register_view(RebuildSettingsIrrigationGroupItemView())
             hass.http.register_view(RebuildSettingsDeviceSensorMappingView())
             hass.http.register_view(GreenSmartHaUnlinkedDevicesView())
             hass.http.register_view(GreenSmartHaDeviceEntitiesView())

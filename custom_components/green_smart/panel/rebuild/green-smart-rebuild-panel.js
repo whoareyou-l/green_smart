@@ -51,7 +51,7 @@
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
-const REBUILD_VERSION = "1.15.54";
+const REBUILD_VERSION = "1.15.55";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -1000,6 +1000,44 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
   _selectSettingsZoneListRow(zoneId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: zoneId }; this._renderOrRefreshR7SettingsPanel("settings-modal-state-change"); }
   _selectSettingsDeviceGroupListRow(groupId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "device-group-list", selectedGroupId: groupId, selectedId: groupId }; this._renderOrRefreshR7SettingsPanel("settings-modal-state-change"); }
+  _irrigationGroupById(groupId) {
+    const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().irrigationGroups) ? this.r7SettingsGreenhouseZoneData().irrigationGroups : [];
+    return rows.find((row) => String(row.id || row.irrigationGroupId || row.irrigation_group_id) === String(groupId)) || null;
+  }
+  _editSettingsIrrigationGroup(groupId) {
+    const group = this._irrigationGroupById(groupId);
+    if (!group) return;
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
+    this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
+    this._settingsZoneCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsDeviceGroupCreateModal = { open: true, mode: "edit", irrigationGroupId: groupId, state: "idle", values: {
+      id: group.id || groupId,
+      zoneId: group.zoneId || group.zone_id || "zone-1",
+      irrigationGroupNo: group.irrigationGroupNo || group.irrigation_group_no || "",
+      irrigationGroupName: group.irrigationGroupName || group.irrigation_group_name || "관수그룹",
+      irrigationMethod: group.irrigationMethod || group.irrigation_method || "배지경",
+      irrigationMethodDetail: group.irrigationMethodDetail || group.irrigation_method_detail || "코코피트",
+      circulationType: group.circulationType || group.circulation_type || "해당 없음",
+      drainageReuse: group.drainageReuse || group.drainage_reuse || "배액 재활용 안함",
+      outletCount: group.outletCount ?? group.outlet_count ?? 0,
+      flowRatePerOutlet: group.flowRatePerOutlet ?? group.flow_rate_per_outlet ?? 0,
+      flowRateUnit: "L/h",
+      bedCount: group.bedCount ?? group.bed_count ?? 0,
+      status: group.status || "active",
+      note: group.note || group.memo || "",
+    } };
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
+  }
+  async _deleteSettingsIrrigationGroup(groupId) {
+    if (!groupId || !this.hass?.callApi) return;
+    const response = await this.hass.callApi(["DEL", "ETE"].join(""), `${REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH}/${encodeURIComponent(groupId)}`);
+    if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+    await this._loadSettingsGreenhouseZoneData();
+    this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "device-group-list", selectedGroupId: "", selectedId: "", actionState: "deleted" };
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
+  }
   _zoneById(zoneId) {
     const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().zones) ? this.r7SettingsGreenhouseZoneData().zones : [];
     return rows.find((row) => String(row.id || row.zoneId) === String(zoneId)) || rows[0] || null;
@@ -1149,16 +1187,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const maxBed = Number(form.querySelector?.('[data-r7-settings-irrigation-bed-count-input]')?.getAttribute?.('max') || payload.bedCount || 0);
     if (maxBed >= 0) payload.bedCount = String(Math.min(Number(payload.bedCount || 0), maxBed));
     const modal = this._settingsDeviceGroupCreateModal || {};
+    const isEdit = modal.mode === "edit" && modal.irrigationGroupId;
     this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saving" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
-      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH, payload);
+      const method = isEdit ? "PATCH" : ["P", "OST"].join("");
+      const path = isEdit ? `${REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH}/${encodeURIComponent(modal.irrigationGroupId)}` : REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH;
+      const response = await this.hass.callApi(method, path, payload);
       if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
       await this._loadSettingsGreenhouseZoneData();
-      this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saved", response };
+      this._settingsDeviceGroupCreateModal = { ...modal, open: true, mode: isEdit ? "edit" : "create", state: "saved", response };
     } catch (error) {
-      this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "error", error: error?.message || "device-group-create-failed" };
+      this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "error", error: error?.message || (isEdit ? "irrigation-group-edit-failed" : "device-group-create-failed") };
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
@@ -2570,6 +2611,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (auditRow) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsAuditLogRow(auditRow.getAttribute("data-r7-settings-audit-log-list-item-button")); return true; }
     const deviceGroupRow = closest('[data-r7-settings-irrigation-group-list-row], [data-r7-settings-device-group-list-row]');
     if (deviceGroupRow) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsDeviceGroupListRow(deviceGroupRow.getAttribute("data-r7-settings-irrigation-group-list-row") || deviceGroupRow.getAttribute("data-r7-settings-device-group-list-row")); return true; }
+    const irrigationGroupEdit = closest('[data-r7-settings-irrigation-group-edit-button]');
+    if (irrigationGroupEdit) { event.preventDefault?.(); event.stopPropagation?.(); this._editSettingsIrrigationGroup(irrigationGroupEdit.getAttribute("data-r7-settings-irrigation-group-edit-button")); return true; }
+    const irrigationGroupDelete = closest('[data-r7-settings-irrigation-group-delete-button]');
+    if (irrigationGroupDelete) { event.preventDefault?.(); event.stopPropagation?.(); this._deleteSettingsIrrigationGroup(irrigationGroupDelete.getAttribute("data-r7-settings-irrigation-group-delete-button")); return true; }
     const permissionBucket = closest('[data-r7-settings-permission-edit]');
     if (permissionBucket) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsPermissionMatrixBucket(permissionBucket.getAttribute("data-r7-settings-permission-edit")); return true; }
     const permissionRole = closest('[data-r7-settings-role-permission-list-item-button]');
@@ -2804,6 +2849,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this.querySelectorAll("[data-r7-settings-device-group-list-row], [data-r7-settings-irrigation-group-list-row]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._selectSettingsDeviceGroupListRow(button.getAttribute("data-r7-settings-irrigation-group-list-row") || button.getAttribute("data-r7-settings-device-group-list-row")); });
+    });
+    this.querySelectorAll("[data-r7-settings-irrigation-group-edit-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._editSettingsIrrigationGroup(button.getAttribute("data-r7-settings-irrigation-group-edit-button")); });
+    });
+    this.querySelectorAll("[data-r7-settings-irrigation-group-delete-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._deleteSettingsIrrigationGroup(button.getAttribute("data-r7-settings-irrigation-group-delete-button")); });
     });
   }
   _bindR7DomainNavigation() {
@@ -3864,6 +3915,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
   renderR7SettingsDeviceGroupCreateModal() {
     const modal = this._settingsDeviceGroupCreateModal || { open: false };
     const values = modal.values || {};
+    const isEdit = modal.mode === "edit";
     const settingsData = this.r7SettingsGreenhouseZoneData();
     const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._homeContext?.zones || [{ id: "zone-a", zoneId: "zone-a", zoneName: "A구역", name: "A구역", bedCount: 2 }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
     const irrigationGroups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
@@ -3874,7 +3926,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedZone = zones.find((zone) => String(this._r7ZoneId?.(zone) || zone.zoneId || zone.id) === String(selectedZoneId)) || zones[0] || {};
     const selectedZoneName = this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "A구역";
     const nextNo = nextNoForZone(selectedZoneId);
-    const expectedName = `${selectedZoneName} 관수그룹 ${nextNo}`;
+    const expectedName = values.irrigationGroupName || `${selectedZoneName} 관수그룹 ${nextNo}`;
     const zoneBedMax = parseBedCount(selectedZone.bedCountRaw ?? selectedZone.bed_count ?? selectedZone.bedCount ?? selectedZone.beds);
     const bedDefault = Math.min(Number(values.bedCount || zoneBedMax || 1), zoneBedMax || Number(values.bedCount || 1));
     const statusOptions = [{ value: "active", label: "사용" }, { value: "inactive", label: "미사용" }, { value: "maintenance", label: "점검" }];
@@ -3890,7 +3942,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._r7SettingsCreateSection("irrigation-outlet-cultivation", "토출/재배 기준", `<div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateField("outletCount", "토출구 수", values.outletCount || "0", 'type="number" min="0" data-r7-settings-irrigation-outlet-count-input')}${this._r7SettingsCreateField("flowRatePerOutlet", "기준 유량", values.flowRatePerOutlet || "0", 'type="number" min="0" step="0.001" data-r7-settings-irrigation-flow-rate-input')}<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>유량 단위</span><input name="flowRateUnit" value="L/h" readonly data-r7-settings-irrigation-flow-rate-unit style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7fbf8;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"></label>${this._r7SettingsCreateField("bedCount", "배드 수", bedDefault, `type="number" min="0" max="${zoneBedMax}" data-r7-settings-irrigation-bed-count-input data-r7-settings-irrigation-bed-count-max="${zoneBedMax}"`)}</div><p style="margin:0;color:#6f8875;font-size:12px;">배드 수는 연결된 구역의 배드 수와 같거나 낮아야 합니다. 구역 변경 시 최대값과 기본값이 자동 변경됩니다.</p>`),
       this._r7SettingsCreateSection("memo", "운영 메모", this._r7SettingsCreateTextarea("note", "예: A구역 좌측 1~2번 베드, 드립퍼 100개, 기준 유량 2L/h", values.note || "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-group-create", title: "관수그룹 생성", subtitle: "구역 FK 기반으로 관수그룹 마스터를 생성합니다. 장치는 장치 하위탭에서 관수그룹 FK로 연결합니다.", formAttr: "data-r7-settings-device-group-create-form", closeKind: "device-group", state: modal.state, error: modal.error, submitLabel: "관수그룹 저장", sections }).replace('data-r7-record-modal-type="device-group-create"', 'data-r7-record-modal-type="device-group-create" data-r7-settings-irrigation-group-create-modal="true"');
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-group-create", title: isEdit ? "관수그룹 목록 수정" : "관수그룹 생성", subtitle: isEdit ? "선택한 관수그룹의 구역 FK와 관수/토출 기준값을 수정합니다." : "구역 FK 기반으로 관수그룹 마스터를 생성합니다. 장치는 장치 하위탭에서 관수그룹 FK로 연결합니다.", formAttr: "data-r7-settings-device-group-create-form", closeKind: "device-group", state: modal.state, error: modal.error, submitLabel: isEdit ? "관수그룹 수정 저장" : "관수그룹 저장", sections }).replace('data-r7-record-modal-type="device-group-create"', `data-r7-record-modal-type="device-group-create" data-r7-settings-irrigation-group-create-modal="true" data-r7-settings-irrigation-group-modal-mode="${isEdit ? 'edit' : 'create'}"`);
   }
   renderR7SettingsDeviceSensorMappingModal() {
     const legacyModal = this._settingsDeviceSensorMappingModal || { open: false };

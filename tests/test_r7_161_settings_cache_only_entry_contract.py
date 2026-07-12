@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_27_settings_entry_uses_one_cache_function_for_mobile_pc_and_profile():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.54"' in text
+    assert 'const REBUILD_VERSION = "1.15.55"' in text
     assert '_openR7SettingsDomainFromCache(source = "settings-navigation")' in text
     assert 'return this._openR7SettingsDomainFromCache("mobile-settings-button");' in text
     assert 'return this._openR7SettingsDomainFromCache("set-active-domain");' in text

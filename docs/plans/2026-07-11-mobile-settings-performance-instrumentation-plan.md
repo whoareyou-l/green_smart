@@ -1,8 +1,8 @@
-# v1.15.54 모바일 설정 성능 계측 계획
+# v1.15.55 모바일 설정 성능 계측 계획
 
 ## 목표
 
-v1.15.17~21에서 모바일 설정 도메인은 persistent shell/panel cache, compact dirty patch, lazy modal cache, delegated event 구조로 전환되었다. v1.15.54의 목표는 이 구조가 실제 사용자 체감 기준을 만족하는지 확인할 수 있도록 DOM marker 기반 성능 계측을 추가하는 것이다.
+v1.15.17~21에서 모바일 설정 도메인은 persistent shell/panel cache, compact dirty patch, lazy modal cache, delegated event 구조로 전환되었다. v1.15.55의 목표는 이 구조가 실제 사용자 체감 기준을 만족하는지 확인할 수 있도록 DOM marker 기반 성능 계측을 추가하는 것이다.
 
 ## 측정 기준
 
@@ -55,4 +55,4 @@ v1.15.17~21에서 모바일 설정 도메인은 persistent shell/panel cache, co
 - 성능 helper와 marker가 served JS에 존재한다.
 - 전체 테스트 통과.
 - Prod served smoke 통과.
-- GitHub Release v1.15.54 완료.
+- GitHub Release v1.15.55 완료.

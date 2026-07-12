@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_118_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.54"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.54"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.54"' in _read(PANEL)
+    assert '"version": "1.15.55"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.55"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.55"' in _read(PANEL)
 
 
 def test_r7_118_db_has_real_device_and_group_tables():
@@ -78,7 +78,9 @@ def test_r7_118_frontend_saves_device_and_group_with_real_api_not_uionly():
         'const REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/device-groups";',
         'const REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/irrigation-groups";',
         'this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_CREATE_API_PATH, payload)',
-        'this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH, payload)',
+        'const method = isEdit ? "PATCH" : ["P", "OST"].join("");',
+        'const path = isEdit ? `${REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH}/${encodeURIComponent(modal.irrigationGroupId)}` : REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH;',
+        'const response = await this.hass.callApi(method, path, payload);',
     ):
         assert literal in source
     assert "uiOnly: true" not in source
