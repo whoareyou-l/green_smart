@@ -1,4 +1,4 @@
-# v1.15.52 HA 기기 페이지 모달 미반영 — HACS 릴리스 기준 분석 계획
+# v1.15.53 HA 기기 페이지 모달 미반영 — HACS 릴리스 기준 분석 계획
 
 ## 사용자 재확인
 
@@ -9,14 +9,14 @@
 ### GitHub/HACS 기준
 
 - GitHub Release `v1.15.38`: 존재
-- GitHub Release `v1.15.52`: 없음, API 404
-- GitHub remote tag `v1.15.52`: 없음
+- GitHub Release `v1.15.53`: 없음, API 404
+- GitHub remote tag `v1.15.53`: 없음
 - `origin/main`: `bd3b15168` / `v1.15.38`
 
 ### 로컬 repo 기준
 
 - 로컬 `main`: `104f828a7 Add HA devices page modal for device creation`
-- 로컬 tag: `v1.15.52`
+- 로컬 tag: `v1.15.53`
 - 로컬 repo JS에는 `data-r7-settings-ha-devices-page-button` 존재
 - 로컬 repo JS에는 새 HA devices iframe modal 코드 존재
 
@@ -31,11 +31,11 @@
 
 ## 결론
 
-현재 사용자 화면에서 `장치 추가` 클릭 시 `장치 생성` 팝업이 뜨는 1차 원인은 **v1.15.52가 HACS/GitHub/운영 served 경로에 릴리스되지 않았기 때문**이다.
+현재 사용자 화면에서 `장치 추가` 클릭 시 `장치 생성` 팝업이 뜨는 1차 원인은 **v1.15.53가 HACS/GitHub/운영 served 경로에 릴리스되지 않았기 때문**이다.
 
 즉 현상은 다음 순서로 설명된다.
 
-1. v1.15.52 구현은 로컬에만 존재한다.
+1. v1.15.53 구현은 로컬에만 존재한다.
 2. GitHub push/release 생성이 인증 실패로 완료되지 않았다.
 3. HACS는 GitHub Release/Tag 기준이므로 v1.15.38까지만 표시한다.
 4. 운영 HA도 v1.15.38 JS를 서빙한다.
@@ -44,7 +44,7 @@
 
 ## 남은 가능성
 
-v1.15.52를 정상 릴리스한 뒤에도 다음 문제가 있을 수 있으므로 추가 검증이 필요하다.
+v1.15.53를 정상 릴리스한 뒤에도 다음 문제가 있을 수 있으므로 추가 검증이 필요하다.
 
 ### A. HA/WebView module cache
 
@@ -67,10 +67,10 @@ v1.15.52를 정상 릴리스한 뒤에도 다음 문제가 있을 수 있으므�
 
 선택지는 2개다.
 
-#### 권장: 새 버전 `v1.15.52` 릴리스
+#### 권장: 새 버전 `v1.15.53` 릴리스
 
-- 이미 v1.15.52는 로컬에서만 실패한 시도라 HACS 사용자 기준으로 혼란이 생겼다.
-- v1.15.52으로 bump하면 WebView/HACS cache bust도 확실하다.
+- 이미 v1.15.53는 로컬에서만 실패한 시도라 HACS 사용자 기준으로 혼란이 생겼다.
+- v1.15.53으로 bump하면 WebView/HACS cache bust도 확실하다.
 - GitHub push/release가 필요하다.
 
 #### 비권장: v1.15.38 재사용/수정
@@ -90,7 +90,7 @@ v1.15.52를 정상 릴리스한 뒤에도 다음 문제가 있을 수 있으므�
 
 ### 3. 코드 보강
 
-- v1.15.52으로 version bump
+- v1.15.53으로 version bump
 - `device-sensor-mapping` 장치 추가 카드가 HA devices modal button만 사용하도록 유지
 - settings cached panel stale old marker 감지 시 강제 rehydrate guard 추가
 

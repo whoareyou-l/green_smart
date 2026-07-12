@@ -51,7 +51,7 @@
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
-const REBUILD_VERSION = "1.15.52";
+const REBUILD_VERSION = "1.15.53";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -412,7 +412,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return false;
   }
   r7SettingsGreenhouseZoneData() {
-    return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], systemIntegration: {} };
+    return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], irrigationGroups: [], systemIntegration: {} };
   }
   async _loadSettingsGreenhouseZoneData() {
     const requestId = ++this._settingsGreenhouseZoneRequestId;
@@ -429,6 +429,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         deviceSensorMappings: Array.isArray(response?.deviceSensorMappings) ? response.deviceSensorMappings : [],
         devices: Array.isArray(response?.devices) ? response.devices : [],
         deviceGroups: Array.isArray(response?.deviceGroups) ? response.deviceGroups : [],
+        irrigationGroups: Array.isArray(response?.irrigationGroups) ? response.irrigationGroups : [],
         systemIntegration: response?.systemIntegration && typeof response.systemIntegration === "object" ? response.systemIntegration : {},
       };
       this._settingsGreenhouseZoneLoadState = "ready";

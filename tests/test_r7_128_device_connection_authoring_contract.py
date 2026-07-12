@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.52"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.52"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.52"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.53"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.53"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.53"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -258,6 +258,12 @@ def test_r7_128_irrigation_group_modal_accepts_display_bed_count_label_without_n
     assert 'max="6"' in html
     assert 'data-r7-settings-irrigation-bed-count-max="6"' in html
     assert 'NaN' not in html
+
+
+def test_r7_128_snapshot_loader_preserves_irrigation_groups_for_list_modal():
+    source = _read(REBUILD_PANEL)
+    assert 'irrigationGroups: Array.isArray(response?.irrigationGroups) ? response.irrigationGroups : []' in source
+    assert 'irrigationGroups: []' in source
 
 
 def test_r7_128_group_list_button_opens_irrigation_group_list_cda_modal():
