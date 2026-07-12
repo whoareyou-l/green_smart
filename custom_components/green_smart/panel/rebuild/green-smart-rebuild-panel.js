@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.38";
+const REBUILD_VERSION = "1.15.39";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -285,7 +285,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsPermissionMatrixModal = { open: false };
     this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
     this._settingsZoneCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsHaDevicesPageModal = { open: false };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
     this._settingsRolePermissionEditModal = { open: false, state: "idle" };
@@ -383,6 +386,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.renderR7SettingsDeviceCreateModal(),
       this.renderR7SettingsDeviceGroupCreateModal(),
       this.renderR7SettingsDeviceSensorMappingModal(),
+      this.renderR7SettingsHaDevicesPageModal(),
       this.renderR7SettingsShortcutCdaSplitModal(),
       this.renderR7SettingsSystemActionModal(),
     ].join("");
@@ -818,9 +822,28 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsHaDevicesPageModal = { open: false };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsDeviceCreateModal = { open: true, state: "idle", values: {} };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
+  }
+
+  _openSettingsHaDevicesPageModal() {
+    this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
+    this._settingsZoneCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
+    this._settingsHaDevicesPageModal = { open: true, src: "/config/devices/dashboard" };
+    this.setAttribute?.("data-r7-settings-ha-devices-page-open", "true");
+    this._renderOrRefreshR7SettingsPanel("settings-ha-devices-page-modal-open");
+  }
+
+  _closeSettingsHaDevicesPageModal() {
+    this._settingsHaDevicesPageModal = { open: false };
+    this.setAttribute?.("data-r7-settings-ha-devices-page-open", "false");
+    this._renderOrRefreshR7SettingsPanel("settings-ha-devices-page-modal-close-cache-only");
   }
 
   _openSettingsDeviceGroupCreateModal() {
@@ -839,6 +862,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (kind === "device" || kind === "all") this._settingsDeviceCreateModal = { open: false, state: "idle" };
     if (kind === "device-group" || kind === "all") this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     if (kind === "mapping" || kind === "all") this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    if (kind === "ha-devices-page" || kind === "all") this._settingsHaDevicesPageModal = { open: false };
     if (kind === "audit-log-edit" || kind === "all") this._settingsAuditLogEditModal = { open: false, state: "idle" };
     if (kind === "role-permission" || kind === "all") this._settingsRolePermissionEditModal = { open: false, state: "idle" };
     if (kind === "system-action" || kind === "all") this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
@@ -2782,6 +2806,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("[data-r7-settings-device-create-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsDeviceCreateModal(); });
     });
+    this.querySelectorAll("[data-r7-settings-ha-devices-page-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsHaDevicesPageModal(); });
+    });
+    this.querySelectorAll("[data-r7-settings-ha-devices-page-close]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._closeSettingsHaDevicesPageModal(); });
+    });
     this.querySelectorAll("[data-r7-settings-device-group-create-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsDeviceGroupCreateModal(); });
     });
@@ -3910,6 +3940,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "zone-create", title: isEdit ? "구역 수정" : "구역 생성", subtitle: "온실별 재배·운영 공간을 등록하고 저장 전 기준을 확인합니다", formAttr: "data-r7-settings-zone-create-form", closeKind: "zone", state: modal.state, error: modal.error, submitLabel: isEdit ? "구역 수정" : "구역 저장", sections });
   }
 
+  renderR7SettingsHaDevicesPageModal() {
+    const modal = this._settingsHaDevicesPageModal || { open: false };
+    if (!modal.open) return `<template data-r7-settings-ha-devices-page-modal="false"></template>`;
+    const src = modal.src || "/config/devices/dashboard";
+    const header = this.renderR7CdaModalHeader({ icon: "mdi:devices", title: "HA 기기 페이지", subtitle: "Home Assistant 기기 페이지를 그대로 열어 기기 추가와 기존 기능을 사용합니다", closeAttr: "data-r7-settings-ha-devices-page-close", attrs: "data-r7-settings-ha-devices-page-header" });
+    const helper = `<div data-r7-settings-ha-devices-page-helper style="border:1px solid #dcebe0;border-radius:12px;background:#fbfdfb;color:#31523b;padding:9px 12px;font-size:12px;display:flex;justify-content:space-between;gap:10px;align-items:center;">
+      <span>이 팝업은 HA <b>설정 › 기기 및 서비스 › 기기</b> 화면을 same-origin iframe으로 표시합니다. 우측 하단 HA의 <b>기기 추가</b> 버튼 등 페이지 기능을 그대로 사용할 수 있습니다.</span>
+      <a href="${src}" target="_blank" rel="noreferrer" data-r7-settings-ha-devices-page-open-new-tab style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:7px 10px;text-decoration:none;font-weight:950;white-space:nowrap;">새 탭</a>
+    </div>`;
+    const iframe = `<iframe title="Home Assistant 기기 페이지" src="${src}" data-r7-settings-ha-devices-page-iframe data-r7-settings-ha-devices-page-src="${src}" style="width:100%;height:100%;min-height:0;border:1px solid #e2eee5;border-radius:14px;background:#fff;box-sizing:border-box;"></iframe>`;
+    const responsive = `<style data-r7-settings-ha-devices-page-responsive-style>@media (max-width: 860px) {[data-r7-settings-ha-devices-page-card] { width: calc(100vw - 16px) !important; height: calc(100vh - 16px) !important; max-height: calc(100vh - 16px) !important; border-radius:14px !important; padding:10px !important; }[data-r7-settings-ha-devices-page-helper] { display:none !important; }[data-r7-settings-ha-devices-page-iframe] { border-radius:10px !important; }}</style>`;
+    const card = this.renderR7CdaModalCard({ attrs: `data-r7-settings-ha-devices-page-card data-r7-settings-ha-devices-page-modal="true" data-r7-settings-ha-devices-page-route="${src}"`, width: "min(1240px,calc(100vw - 24px))", maxHeight: "calc(100vh - 24px)", rows: "auto auto minmax(0,1fr)", body: `${responsive}${header}${helper}${iframe}` });
+    return this.renderR7CdaModalOverlay({ open: true, zIndex: 52, attrs: `data-r7-settings-ha-devices-page-overlay data-r7-settings-ha-devices-page-modal="true" data-r7-settings-ha-devices-page-route="${src}"`, body: card });
+  }
+
   renderR7SettingsDeviceCreateModal() {
     const modal = this._settingsDeviceCreateModal || { open: false };
     const values = modal.values || {};
@@ -4457,7 +4502,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const errorCard = this.renderR7CdbSummaryCard({ key: "error-basic", icon: "mdi:alert-circle-check-outline", title: "오류 기본 정보", primary: `<span data-r7-settings-device-error-primary>${unlinkedCount + communicationErrorCount + deviceErrorCount ? `${unlinkedCount + communicationErrorCount + deviceErrorCount}건 점검` : "오류 없음"}</span>`, rows: [this._r7SettingsGreenhouseValueRow("미연결", `${unlinkedCount}건`, 'data-r7-settings-device-error-row="unlinked"'), this._r7SettingsGreenhouseValueRow("통신 오류", `${communicationErrorCount}건`, 'data-r7-settings-device-error-row="communication"'), this._r7SettingsGreenhouseValueRow("장치 오류", `${deviceErrorCount}건`, 'data-r7-settings-device-error-row="device-error"')], tone: unlinkedCount + communicationErrorCount + deviceErrorCount ? "amber" : "green", statusKey: unlinkedCount + communicationErrorCount + deviceErrorCount ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-device-card="error-basic" data-r7-settings-device-error-common-card="approval-needed" data-r7-settings-device-process="group-device-link" data-r7-settings-device-group-link-stage="device-to-group"' });
     const actionCard = ({ kind, title, icon, primary, note, addLabel, addAttr, shortcutLabel, shortcutAttr, tone = "blue", firstIcon = "mdi:plus-circle-outline", secondIcon = "mdi:history" }) => this.renderR7CdbButtonTwoCard({ kind, icon, title, statusKey: "due-today", tone, primary, note, firstLabel: addLabel, firstIcon, firstTone: "green", firstAttrs: `${addAttr} data-r7-settings-modal-skip-record-binding="true"`, secondLabel: shortcutLabel, secondIcon, secondTone: "blue", secondAttrs: `${shortcutAttr} data-r7-settings-modal-skip-record-binding="true"`, extraAttrs: `data-r7-settings-device-action-card="${kind}"` });
     const actions = [
-      this.renderR7CdbButtonOneCard({ kind: "device-create", section: "device-create", icon: "mdi:devices", title: "장치 추가", subtitle: "먼저 장치를 등록", statusKey: "due-today", tone: "blue", rows: [this._r7SettingsGreenhouseValueRow("대상", "장치"), this._r7SettingsGreenhouseValueRow("방식", "DB 저장")], rowKind: "settings-device-action", buttonLabel: "장치 추가", buttonIcon: "mdi:plus-circle-outline", buttonTone: "green", buttonAttrs: 'data-r7-settings-device-create-button data-r7-settings-device-process="device-add-first" data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-device-action-card="device-create"' }),
+      this.renderR7CdbButtonOneCard({ kind: "device-create", section: "device-create", icon: "mdi:devices", title: "장치 추가", subtitle: "HA 기기 페이지에서 장치를 추가", statusKey: "due-today", tone: "blue", rows: [this._r7SettingsGreenhouseValueRow("대상", "HA 기기"), this._r7SettingsGreenhouseValueRow("방식", "HA 기기 페이지")], rowKind: "settings-device-action", buttonLabel: "장치 추가", buttonIcon: "mdi:plus-circle-outline", buttonTone: "green", buttonAttrs: 'data-r7-settings-ha-devices-page-button data-r7-settings-device-process="ha-devices-page" data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-device-action-card="device-create" data-r7-settings-ha-devices-page-card-entry="true"' }),
       actionCard({ kind: "device-link", title: "장치 연결", icon: "mdi:link-variant", primary: "장치와 센서 연결", note: "등록된 장치와 센서 entity를 구역 기준으로 연결합니다.", addLabel: "장치 연결", firstIcon: "mdi:link-plus", addAttr: 'data-r7-settings-device-sensor-mapping-button data-r7-settings-device-process="group-device-link" data-r7-settings-device-group-link-stage="device-to-group"', shortcutLabel: "장치 목록", shortcutAttr: 'data-r7-settings-equipment-info-shortcut-button' }),
       actionCard({ kind: "group-add", title: "그룹 추가", icon: "mdi:view-grid-plus-outline", primary: "구역 FK 필수", note: "그룹은 구역 FK 기준으로 관리합니다.", addLabel: "그룹 추가", addAttr: 'data-r7-settings-device-group-create-button data-r7-settings-device-process="group-create-zone-fk" data-r7-settings-device-group-zone-fk="required"', shortcutLabel: "그룹 목록", shortcutAttr: 'data-r7-settings-device-group-list-shortcut' }),
     ].join("");
@@ -6078,6 +6123,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7SettingsDeviceCreateModal()}
       ${this.renderR7SettingsDeviceGroupCreateModal()}
       ${this.renderR7SettingsDeviceSensorMappingModal()}
+      ${this.renderR7SettingsHaDevicesPageModal()}
       ${this.renderR7SettingsShortcutCdaSplitModal()}
       ${this.renderR7SettingsSystemActionModal()}
     `;

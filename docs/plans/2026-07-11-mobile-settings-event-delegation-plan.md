@@ -1,10 +1,10 @@
-# v1.15.38 모바일 설정 event delegation 계획
+# v1.15.39 모바일 설정 event delegation 계획
 
 ## 목표
 
 v1.15.17~20에서 설정 도메인은 shell cache, panel cache, dirty patch, lazy modal cache를 갖췄다. 하지만 캐시 DOM을 attach/hydrate한 뒤에도 `_bindR7PatchedInteractiveActions()` → `_bindSettingsApprovalActions()`가 반복 호출되며 다수의 `querySelectorAll(...).addEventListener(...)`가 다시 수행된다.
 
-v1.15.38 목표는 설정 shell/root에 delegated click handler를 1회만 붙여 cached DOM 버튼을 처리하는 것이다.
+v1.15.39 목표는 설정 shell/root에 delegated click handler를 1회만 붙여 cached DOM 버튼을 처리하는 것이다.
 
 ## 현재 문제
 
@@ -48,4 +48,4 @@ _bindR7SettingsDelegatedEvents(root)
 - settings shell attach에서 delegated bind 호출
 - modal mount에서 delegated bind 호출
 - cached action 버튼은 delegated handler로 처리 가능
-- 전체 테스트/Prod smoke/GitHub Release v1.15.38 완료
+- 전체 테스트/Prod smoke/GitHub Release v1.15.39 완료

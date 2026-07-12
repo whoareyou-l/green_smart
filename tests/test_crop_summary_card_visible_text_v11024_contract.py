@@ -57,6 +57,6 @@ def test_v11024_versions_and_docs_record_visible_text_cleanup():
     panel = _read(PANEL)
     manifest = _read(MANIFEST)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.15.38"' in manifest
-    assert 'const VERSION = "1.15.38"' in panel
+    assert '"version": "1.15.39"' in manifest
+    assert 'const VERSION = "1.15.39"' in panel
     assert "v1.10.24 Crop summary visible text cleanup" in docs

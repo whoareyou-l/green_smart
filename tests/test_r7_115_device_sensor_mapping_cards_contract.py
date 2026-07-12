@@ -48,9 +48,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.38"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.38"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.38"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.39"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.39"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.39"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -71,7 +71,8 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
         assert text in html
     for text in ('미연결', '통신 오류', '장치 오류', '센서', '장치', '센서 그룹', '장치 그룹', '관수 그룹', '장치 연결'):
         assert text in html
-    assert 'data-r7-settings-device-create-button' in html
+    assert 'data-r7-settings-ha-devices-page-button' in html
+    assert 'data-r7-settings-device-create-button' not in html
     assert 'data-r7-settings-device-group-create-button' in html
     for forbidden in ('data-r7-settings-device-selected-zone-strip', 'data-r7-settings-device-process-summary', 'data-r7-settings-device-action-card="mapping"', '장치 구성', '그룹 구성', '매핑 목록'):
         assert forbidden not in html
@@ -103,7 +104,7 @@ def test_r7_115_device_mapping_uses_only_cdb_card_grammar_for_rows():
 def test_r7_115_device_button_two_cards_have_common_subtitles():
     html = _render_device_mapping()
     expectations = {
-        'device-create': '먼저 장치를 등록',
+        'device-create': 'HA 기기 페이지에서 장치를 추가',
         'device-link': '장치와 센서 연결',
         'group-add': '구역 FK 필수',
     }
@@ -121,7 +122,7 @@ def test_r7_115_device_button_two_cards_have_common_subtitles():
 def test_r7_115_device_group_process_is_documented_not_rendered_as_guidance_box():
     html = _render_device_mapping()
     for marker in (
-        'data-r7-settings-device-process="device-add-first"',
+        'data-r7-settings-device-process="ha-devices-page"',
         'data-r7-settings-device-process="group-create-zone-fk"',
         'data-r7-settings-device-process="group-device-link"',
         'data-r7-settings-device-group-zone-fk="required"',

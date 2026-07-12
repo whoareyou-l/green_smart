@@ -50,9 +50,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.38"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.38"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.38"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.39"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.39"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.39"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -85,6 +85,26 @@ def test_r7_128_device_connection_modal_has_unlinked_ha_entity_and_equipment_typ
     for option in ('온습도 센서', 'CO2 센서', '일사 센서', 'VWC 센서', '천창 장치', '측창 장치', '스크린 장치', '유동팬 장치', '배기팬 장치', '관수 장치'):
         assert option in html
     assert '역할' not in html
+
+
+def test_r7_128_device_add_card_opens_ha_devices_page_modal():
+    tab_html = _node_render('panel.renderR7SettingsDeviceSensorMappingSubtab(panel._homeContext.zones)')
+    card_start = tab_html.index('data-r7-settings-device-action-card="device-create"')
+    card_end = tab_html.index('</article>', card_start)
+    card_html = tab_html[card_start:card_end]
+    assert 'data-r7-settings-ha-devices-page-button' in card_html
+    assert 'data-r7-settings-device-create-button' not in card_html
+    assert 'HA 기기 페이지' in card_html
+
+    modal_html = _node_render('(panel._openSettingsHaDevicesPageModal(), panel.renderR7SettingsHaDevicesPageModal())')
+    for marker in (
+        'data-r7-settings-ha-devices-page-modal="true"',
+        'data-r7-settings-ha-devices-page-iframe',
+        'src="/config/devices/dashboard"',
+        'data-r7-settings-ha-devices-page-close',
+        'data-r7-settings-ha-devices-page-open-new-tab',
+    ):
+        assert marker in modal_html
 
 
 def test_r7_128_device_list_modal_has_edit_delete_footer_and_no_bottom_close_button():
