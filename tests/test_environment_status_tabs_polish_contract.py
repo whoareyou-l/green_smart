@@ -13,8 +13,8 @@ def panel_text() -> str:
 def test_current_version_is_1_9_97():
     panel = panel_text()
     manifest = MANIFEST.read_text(encoding="utf-8")
-    assert '"version": "1.15.49"' in manifest
-    assert 'const VERSION = "1.15.49"' in panel
+    assert '"version": "1.15.50"' in manifest
+    assert 'const VERSION = "1.15.50"' in panel
 
 
 def test_environment_operations_status_polish_contract():

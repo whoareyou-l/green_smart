@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_14_settings_button_uses_workspace_patch_no_full_render_first():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.49"' in text
+    assert 'const REBUILD_VERSION = "1.15.50"' in text
     block = text[text.index('_openR7SettingsDomainFromMobile()'):text.index('_scheduleR7MobileActiveDomainButtonScroll()', text.index('_openR7SettingsDomainFromMobile()'))]
     assert 'return this._openR7SettingsDomainFromCache("mobile-settings-button");' in block
     assert 'data-r7-mobile-settings-render-mode", "cache-shell-no-render-fallback"' in block

@@ -54,15 +54,24 @@ def _str(payload: dict[str, Any], *keys: str, default: str = "") -> str:
     return default
 
 
+def _coerce_int_value(value: Any, default: int | None = 0) -> int | None:
+    if value is None or value == "":
+        return default
+    text = str(value).replace("㎡", "").replace("개", "").replace(",", "").strip()
+    try:
+        return int(float(text))
+    except Exception:
+        return default
+
+
 def _int(payload: dict[str, Any], *keys: str, default: int = 0) -> int:
     for key in keys:
         value = payload.get(key)
         if value is None or value == "":
             continue
-        try:
-            return int(float(str(value).replace("㎡", "").strip()))
-        except Exception:
-            continue
+        parsed = _coerce_int_value(value, default=None)
+        if parsed is not None:
+            return parsed
     return default
 
 
@@ -559,7 +568,7 @@ async def create_settings_irrigation_group(hass, payload: dict[str, Any], actor:
             _str(payload, "drainageReuse", "drainage_reuse", default="배액 재활용 안함"),
             _int(payload, "outletCount", "outlet_count", default=0),
             _str(payload, "flowRatePerOutlet", "flow_rate_per_outlet", default="0"),
-            min(_int(payload, "bedCount", "bed_count", default=0), max([int(z.get("bedCount") or z.get("bed_count") or 0) for z in await list_settings_zones(hass, farm_id) if str(z.get("zoneId")) == str(zone_id) or str(z.get("id")) == str(zone_id) or f"settings-zone-{z.get('id')}" == str(zone_id)] or [_int(payload, "bedCount", "bed_count", default=0)])),
+            min(_int(payload, "bedCount", "bed_count", default=0), max([int(_coerce_int_value(z.get("bedCountRaw", z.get("bed_count", z.get("bedCount"))), 0) or 0) for z in await list_settings_zones(hass, farm_id) if str(z.get("zoneId")) == str(zone_id) or str(z.get("id")) == str(zone_id) or f"settings-zone-{z.get('id')}" == str(zone_id)] or [_int(payload, "bedCount", "bed_count", default=0)])),
             _str(payload, "note"),
             _zone_status_label(payload, "status", "state", default="active"),
             actor, actor,

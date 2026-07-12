@@ -51,7 +51,7 @@
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
-const REBUILD_VERSION = "1.15.49";
+const REBUILD_VERSION = "1.15.50";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -3860,13 +3860,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._homeContext?.zones || [{ id: "zone-a", zoneId: "zone-a", zoneName: "A구역", name: "A구역", bedCount: 2 }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
     const irrigationGroups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
     const nextNoForZone = (zoneId) => irrigationGroups.filter((group) => String(group.zoneId || group.zone_id || "") === String(zoneId)).reduce((max, group) => Math.max(max, Number(group.irrigationGroupNo || group.irrigation_group_no || 0)), 0) + 1;
-    const zoneOptions = zones.map((zone, index) => { const value = this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`; const label = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역`; const bedCount = Number(zone.bedCount ?? zone.beds ?? zone.bed_count ?? 0); return { value, label, attrs: `data-r7-settings-next-irrigation-group-name="${label} 관수그룹 ${nextNoForZone(value)}" data-r7-settings-zone-bed-count="${bedCount}"` }; });
+    const parseBedCount = (value) => Number(String(value ?? 0).replace("개", "").replace(",", "").trim()) || 0;
+    const zoneOptions = zones.map((zone, index) => { const value = this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`; const label = this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역`; const bedCount = parseBedCount(zone.bedCountRaw ?? zone.bed_count ?? zone.bedCount ?? zone.beds); return { value, label, attrs: `data-r7-settings-next-irrigation-group-name="${label} 관수그룹 ${nextNoForZone(value)}" data-r7-settings-zone-bed-count="${bedCount}"` }; });
     const selectedZoneId = values.zoneId || zoneOptions[0]?.value || "zone-a";
     const selectedZone = zones.find((zone) => String(this._r7ZoneId?.(zone) || zone.zoneId || zone.id) === String(selectedZoneId)) || zones[0] || {};
     const selectedZoneName = this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "A구역";
     const nextNo = nextNoForZone(selectedZoneId);
     const expectedName = `${selectedZoneName} 관수그룹 ${nextNo}`;
-    const zoneBedMax = Number(selectedZone.bedCount ?? selectedZone.beds ?? selectedZone.bed_count ?? 0);
+    const zoneBedMax = parseBedCount(selectedZone.bedCountRaw ?? selectedZone.bed_count ?? selectedZone.bedCount ?? selectedZone.beds);
     const bedDefault = Math.min(Number(values.bedCount || zoneBedMax || 1), zoneBedMax || Number(values.bedCount || 1));
     const statusOptions = [{ value: "active", label: "사용" }, { value: "inactive", label: "미사용" }, { value: "maintenance", label: "점검" }];
     const methodOptions = [{ value: "순수경", label: "순수경" }, { value: "배지경", label: "배지경" }];

@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.49"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.49"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.49"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.50"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.50"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.50"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -250,6 +250,14 @@ def test_r7_128_group_create_modal_creates_irrigation_group_master_without_devic
     source = _read(REBUILD_PANEL)
     for literal in ('_handleSettingsIrrigationGroupDynamicFields', 'data-r7-settings-next-irrigation-group-name', 'data-r7-settings-zone-bed-count', 'detailSelect.innerHTML', 'bedInput.max', 'payload.bedCount = String(Math.min', '"순수경": ["DFT", "NFT", "분무수경", "담액수경", "박막수경", "기타"]'):
         assert literal in source
+
+
+def test_r7_128_irrigation_group_modal_accepts_display_bed_count_label_without_nan():
+    html = _node_render("""(panel._settingsGreenhouseZoneData.zones = [{ id: 'zone-a', zoneId: 'zone-a', zoneName: 'A구역', name: 'A구역', bedCount: '6개' }], panel._openSettingsDeviceGroupCreateModal(), panel.renderR7SettingsDeviceGroupCreateModal())""")
+    assert 'data-r7-settings-zone-bed-count="6"' in html
+    assert 'max="6"' in html
+    assert 'data-r7-settings-irrigation-bed-count-max="6"' in html
+    assert 'NaN' not in html
 
 
 def test_r7_128_group_list_button_opens_group_list_cda_modal():

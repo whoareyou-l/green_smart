@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_118_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.49"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.49"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.49"' in _read(PANEL)
+    assert '"version": "1.15.50"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.50"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.50"' in _read(PANEL)
 
 
 def test_r7_118_db_has_real_device_and_group_tables():
@@ -50,6 +50,8 @@ def test_r7_118_backend_exposes_device_and_group_create_apis():
         "create_settings_device",
         "create_settings_device_group",
         "create_settings_irrigation_group",
+        "_coerce_int_value",
+        "bedCountRaw",
         "list_settings_devices",
         "list_ha_device_registry_summary",
         "ensure_settings_device_ha_device_fk_schema",
