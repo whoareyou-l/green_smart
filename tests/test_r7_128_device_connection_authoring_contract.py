@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.43"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.43"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.43"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.44"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.44"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.44"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -95,6 +95,36 @@ def test_r7_128_device_connection_modal_has_unlinked_ha_device_and_entity_role_g
     assert '이미 연결된 HA 온도센서' not in html
     for option in ('온습도 센서', 'CO2 센서', 'CO₂ 센서', '광량 센서', '천창', '측창', '차광커튼', '순환팬', '배기팬', '관수밸브'):
         assert option in html
+
+
+def test_r7_128_device_connection_modal_x_and_cancel_close_canonical_state():
+    script = f"""
+      const classSet = new Set();
+      globalThis.location = {{ pathname: '/green_smart', search: '', hash: '#settings-admin' }};
+      globalThis.innerWidth = 1280;
+      globalThis.document = {{ body: {{ classList: {{ add(c){{ classSet.add(c); }}, remove(c){{ classSet.delete(c); }}, contains(c){{ return classSet.has(c); }} }} }}, getElementById(){{ return null; }}, createElement(){{ return {{ id: '', textContent: '', setAttribute(){{}}, appendChild(){{}} }}; }}, head: {{ appendChild(){{}} }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = '';this.dataset = {{}};this.style = {{}};this._attrs = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} setAttribute(k,v){{ this._attrs[k]=v; }} getAttribute(k){{ return this._attrs[k]; }} }};
+      globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
+      const mod = await import({str(REBUILD_PANEL)!r});
+      const panel = new mod.GreenSmartRebuildPanel();
+      panel._renderOrRefreshR7SettingsPanel = () => {{}};
+      panel._settingsDeviceSensorMappingModal = {{ open: true, state: 'idle' }};
+      panel._settingsDeviceConnectionModal = {{ open: true, state: 'idle', values: {{ haDeviceId: 'ha-device-roof-window' }}, haUnlinkedDevices: [{{ haDeviceId: 'ha-device-roof-window' }}], selectedEntities: [{{ entityId: 'cover.roof' }}] }};
+      panel._closeSettingsDetailActionModal('mapping');
+      const cancelClosed = !panel._settingsDeviceSensorMappingModal.open && !panel._settingsDeviceConnectionModal.open && Object.keys(panel._settingsDeviceConnectionModal.values || {{}}).length === 0;
+      panel._settingsDeviceSensorMappingModal = {{ open: true, state: 'idle' }};
+      panel._settingsDeviceConnectionModal = {{ open: true, state: 'idle', values: {{ haDeviceId: 'ha-device-roof-window' }}, haUnlinkedDevices: [{{ haDeviceId: 'ha-device-roof-window' }}], selectedEntities: [{{ entityId: 'cover.roof' }}] }};
+      const fakeModal = {{ getAttribute(name){{ return name === 'data-r7-record-modal-type' ? 'device-sensor-mapping' : ''; }} }};
+      const fakeButton = {{ closest(sel){{ return sel === '[data-r7-record-modal-type]' ? fakeModal : null; }} }};
+      const handled = panel._closeR7SettingsRecordModalFromButton(fakeButton);
+      const xClosed = handled && !panel._settingsDeviceSensorMappingModal.open && !panel._settingsDeviceConnectionModal.open && panel._attrs['data-r7-settings-record-modal-close-type'] === 'device-sensor-mapping';
+      console.log(JSON.stringify({{ cancelClosed, xClosed }}));
+    """
+    result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["cancelClosed"] is True
+    assert payload["xClosed"] is True
 
 
 def test_r7_128_device_add_card_opens_ha_devices_page_modal():

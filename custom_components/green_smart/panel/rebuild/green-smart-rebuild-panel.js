@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.43";
+const REBUILD_VERSION = "1.15.44";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -871,7 +871,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (kind === "zone" || kind === "all") this._settingsZoneCreateModal = { open: false, state: "idle" };
     if (kind === "device" || kind === "all") this._settingsDeviceCreateModal = { open: false, state: "idle" };
     if (kind === "device-group" || kind === "all") this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
-    if (kind === "mapping" || kind === "all") this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    if (kind === "mapping" || kind === "all") {
+      this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+      this._settingsDeviceConnectionModal = { open: false, state: "idle", values: {}, haUnlinkedDevices: [], selectedEntities: [] };
+    }
     if (kind === "ha-devices-page" || kind === "all") this._settingsHaDevicesPageModal = { open: false };
     if (kind === "audit-log-edit" || kind === "all") this._settingsAuditLogEditModal = { open: false, state: "idle" };
     if (kind === "role-permission" || kind === "all") this._settingsRolePermissionEditModal = { open: false, state: "idle" };
@@ -2722,6 +2725,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (permissionRole) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsPermissionMatrixRole(permissionRole.getAttribute("data-r7-settings-role-permission-list-item-button") || "admin"); return true; }
     const settingsRecordClose = closest('[data-r7-record-modal-close]');
     if (settingsRecordClose && this._closeR7SettingsRecordModalFromButton(settingsRecordClose)) { event.preventDefault?.(); event.stopPropagation?.(); return true; }
+    const settingsDetailActionClose = closest('[data-r7-settings-detail-action-modal-close]');
+    if (settingsDetailActionClose) { event.preventDefault?.(); event.stopPropagation?.(); this._closeSettingsDetailActionModal(settingsDetailActionClose.getAttribute("data-r7-settings-detail-action-modal-close") || "all"); return true; }
     return false;
   }
 

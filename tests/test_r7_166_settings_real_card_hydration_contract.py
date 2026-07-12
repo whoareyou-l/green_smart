@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_32_settings_hydrate_uses_real_detail_subpage_not_summary_patch():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.43"' in text
+    assert 'const REBUILD_VERSION = "1.15.44"' in text
     start = text.index('  _hydrateR7CachedSettingsPanel(tabKey)')
     block = text[start:text.index('  _ensureR7SettingsModalRoot()', start)]
     assert 'const fullHtml = this._renderR7SubtabPanelForDomain("settings-admin", tabKey);' in block
