@@ -42,9 +42,9 @@ def _render_settings(active_tab="greenhouse-zones", open_permission_matrix=False
 
 
 def test_r7_066_version_surfaces_are_1_13_1():
-    assert '"version": "1.15.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.45"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.46"' in _read(REBUILD_PANEL)
 
 
 def test_r7_066_settings_new_tabs_replace_admin_explanation_first_tabs():
@@ -69,8 +69,8 @@ def test_r7_066_greenhouse_zones_tab_contains_required_greenhouse_zone_baseline_
         'data-r7-settings-greenhouse-card="zone-count"',
         'data-r7-settings-zone-row="zone-1"',
         'data-r7-settings-zone-row="zone-2"',
-        '온실 기본 정보',
-        '구역 기본 정보',
+        '온실 정보',
+        '구역 정보',
         '현재 작기',
         '1구역',
         '2구역',

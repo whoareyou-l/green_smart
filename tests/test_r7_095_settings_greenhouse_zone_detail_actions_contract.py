@@ -37,9 +37,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_095_version_surfaces_are_1_14_20():
-    assert '"version": "1.15.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.45"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.46"' in _read(REBUILD_PANEL)
 
 
 def test_r7_095_backend_api_views_exist_and_are_registered():
@@ -65,24 +65,25 @@ def test_r7_095_backend_api_views_exist_and_are_registered():
 def test_r7_095_equipment_card_is_selected_zone_status_counts():
     html = _render_greenhouse_zones()
     assert 'data-r7-settings-info-card="equipment-composition"' in html
-    assert '선택 구역 상태' in html
-    for phrase in ['센서', '장비', '미연결']:
+    assert '관수그룹 상태' in html
+    for phrase in ['관수그룹', '연결 장치', '미연결']:
         assert phrase in html
     assert 'data-r7-settings-equipment-status-card="selected-zone"' in html
-    assert 'data-r7-settings-equipment-unmapped-count' in html
+    assert 'data-r7-settings-irrigation-group-unmapped-count' in html
 
 
-def test_r7_095_equipment_check_card_opens_device_list_only():
+def test_r7_095_irrigation_group_card_opens_group_create_and_list():
     html = _render_greenhouse_zones()
-    assert 'data-r7-record-card-shell="settings-equipment-check"' in html
-    marker_at = html.index('data-r7-record-card-shell="settings-equipment-check"')
+    assert 'data-r7-record-card-shell="settings-irrigation-group-create"' in html
+    marker_at = html.index('data-r7-record-card-shell="settings-irrigation-group-create"')
     start = html.rindex('<article', 0, marker_at)
     end = html.index('</article>', marker_at)
     equipment_check = html[start:end]
-    assert '장치 확인' in equipment_check
-    assert 'data-r7-cdb-card-type="button-one"' in equipment_check
-    assert 'data-r7-settings-equipment-info-shortcut-button' in equipment_check
-    assert 'data-r7-settings-device-sensor-mapping-button' not in equipment_check
+    assert '관수그룹 생성' in equipment_check
+    assert 'data-r7-cdb-card-type="button-two"' in equipment_check
+    assert 'data-r7-settings-device-group-create-button' in equipment_check
+    assert 'data-r7-settings-device-group-list-shortcut' in equipment_check
+    assert 'data-r7-settings-equipment-info-shortcut-button' not in equipment_check
     assert '+ 새 장비 추가' not in html
 
 
@@ -116,5 +117,5 @@ def test_r7_095_modals_and_frontend_api_boundaries_exist():
 
 def test_r7_095_documented():
     doc = _read(DOC)
-    for phrase in ['선택 구역 상태', '센서, 장비, 미연결', '장치 연결 작성', '팝업 모달', 'API']:
+    for phrase in ['관수그룹 상태', '관수그룹, 연결 장치, 미연결', '관수그룹 생성', '팝업 모달', 'API']:
         assert phrase in doc

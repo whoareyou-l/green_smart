@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_08_mobile_settings_uses_dedicated_internal_action():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.45"' in text
+    assert 'const REBUILD_VERSION = "1.15.46"' in text
     assert 'data-r7-mobile-settings-action="open-settings-domain"' in text
     assert 'data-r7-mobile-route-mode="dedicated-internal-anchor-hash-cache"' in text
     assert '<a href="#settings-admin" role="button" data-r7-mobile-settings-button="true"' in text

@@ -1,6 +1,6 @@
 # R7-061 Records workflow save + button labels
 
-Status: current baseline for `crop-operations.records-workflow` as of `v1.15.45`.
+Status: current baseline for `crop-operations.records-workflow` as of `v1.15.46`.
 
 ## Scope
 

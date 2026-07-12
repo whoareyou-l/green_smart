@@ -1,6 +1,6 @@
 # R7-000 Main Dashboard / Sidebar / Detail Page IA Blueprint
 
-> 기준 버전: `v1.15.45`
+> 기준 버전: `v1.15.46`
 > Status: R7-000 complete
 > 목적: R6 read-only adapter 3종 완료 후, 실제 화면 구현 전에 메인 대시보드/사이드바/상세페이지/하위페이지 IA를 고정한다.
 
@@ -191,7 +191,7 @@ R7-001 may implement the first operator-visible crop-centered dashboard, but it 
 
 ## R7-001 Main Dashboard Redesign
 
-`v1.15.45`에서 R7-001 main dashboard redesign을 완료했다.
+`v1.15.46`에서 R7-001 main dashboard redesign을 완료했다.
 
 Reference:
 
@@ -216,7 +216,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-001
 
 ## R7-002 Sidebar Navigation + Page Shell
 
-`v1.15.45`에서 R7-002 sidebar navigation + page shell을 완료했다.
+`v1.15.46`에서 R7-002 sidebar navigation + page shell을 완료했다.
 
 Reference:
 
@@ -240,7 +240,7 @@ No SafetyGuard/Interlock runtime behavior change in R7-002
 
 ## R7-003 Detail/Configuration Subpages Baseline
 
-`v1.15.45`에서 R7-003 detail/configuration subpages baseline을 완료했다.
+`v1.15.46`에서 R7-003 detail/configuration subpages baseline을 완료했다.
 
 Reference:
 
@@ -265,7 +265,7 @@ No MQTT/device command in R7-003
 
 ## R7-004 Settings/Admin Read-only Detail
 
-`v1.15.45`에서 R7-004 settings/admin read-only detail을 완료했다.
+`v1.15.46`에서 R7-004 settings/admin read-only detail을 완료했다.
 
 Reference:
 

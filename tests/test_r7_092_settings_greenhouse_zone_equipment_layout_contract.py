@@ -41,9 +41,9 @@ def _fragment(html: str, marker: str, next_marker: str) -> str:
 
 
 def test_r7_092_version_surfaces_are_1_14_17():
-    assert '"version": "1.15.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.45"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.45"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.46"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.46"' in _read(REBUILD_PANEL)
 
 
 def test_r7_092_info_card_headers_have_common_status_badges():
@@ -61,11 +61,11 @@ def test_r7_092_info_card_bodies_show_only_requested_values():
     html = _render_greenhouse_zones()
     greenhouse = _fragment(html, 'data-r7-settings-info-card="greenhouse-basic-info"', 'data-r7-settings-info-card="zone-basic-info"')
     zone = _fragment(html, 'data-r7-settings-info-card="zone-basic-info"', 'data-r7-settings-info-card="equipment-composition"')
-    for phrase in ['온실 기본 정보', '온실명', '제1온실', '위치', '경기 화성', '설치유형', 'NUC edge']:
+    for phrase in ['온실 정보', '온실명', '제1온실', '위치', '경기 화성', '설치유형', 'NUC edge']:
         assert phrase in greenhouse
     for forbidden in ['운영상태', '활성</b>']:
         assert forbidden not in greenhouse
-    for phrase in ['구역 기본 정보', '구역 용도', '재배', '면적', '120㎡', '배드 수', '6']:
+    for phrase in ['구역 정보', '구역 용도', '재배', '면적', '120㎡', '배드 수', '6']:
         assert phrase in zone
     for forbidden in ['작물 연결', '미지정', '확인 필요', '구역 구성']:
         assert forbidden not in zone
@@ -83,7 +83,7 @@ def test_r7_092_card_layout_is_two_rows_then_full_width_zone_list():
         'data-r7-settings-info-card="equipment-composition"',
         'data-r7-record-card-shell="settings-greenhouse-create"',
         'data-r7-record-card-shell="settings-zone-create"',
-        'data-r7-record-card-shell="settings-equipment-check"',
+        'data-r7-record-card-shell="settings-irrigation-group-create"',
         'data-r7-common-recent-panel="settings-zone-list"',
     ]
     positions = [html.index(marker) for marker in order]
@@ -95,21 +95,22 @@ def test_r7_092_required_cards_exist_with_expected_titles():
     for marker in [
         'data-r7-settings-info-card="equipment-composition"',
         'data-r7-record-card-shell="settings-greenhouse-create"',
-        'data-r7-record-card-shell="settings-equipment-check"',
+        'data-r7-record-card-shell="settings-irrigation-group-create"',
     ]:
         assert marker in html
-    for phrase in ['장비 구성', '온실 생성', '구역 생성', '장치 확인', '+ 새 온실 추가', '+ 새 구역 추가']:
+    for phrase in ['관수그룹 정보', '온실 생성', '구역 생성', '관수그룹 생성', '+ 새 온실 추가', '+ 새 구역 추가']:
         assert phrase in html
-    marker_at = html.index('data-r7-record-card-shell="settings-equipment-check"')
+    marker_at = html.index('data-r7-record-card-shell="settings-irrigation-group-create"')
     start = html.rindex('<article', 0, marker_at)
     end = html.index('</article>', marker_at)
     equipment_check = html[start:end]
-    assert 'data-r7-cdb-card-type="button-one"' in equipment_check
-    assert 'data-r7-settings-equipment-info-shortcut-button' in equipment_check
-    assert 'data-r7-settings-device-sensor-mapping-button' not in equipment_check
+    assert 'data-r7-cdb-card-type="button-two"' in equipment_check
+    assert 'data-r7-settings-device-group-create-button' in equipment_check
+    assert 'data-r7-settings-device-group-list-shortcut' in equipment_check
+    assert 'data-r7-settings-equipment-info-shortcut-button' not in equipment_check
 
 
 def test_r7_092_documented():
     doc = _read(DOC)
-    for phrase in ['온실 기본 정보, 구역 기본 정보, 장비 구성', '온실 생성, 구역 생성, 장비 생성', '구역 목록', '상태 뱃지']:
+    for phrase in ['온실 정보, 구역 정보, 관수그룹 정보', '온실 생성, 구역 생성, 관수그룹 생성', '구역 목록', '상태 뱃지']:
         assert phrase in doc

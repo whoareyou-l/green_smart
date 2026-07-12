@@ -1,6 +1,6 @@
 # R7-095 Settings greenhouse/zone detail actions
 
-Status: current baseline for `v1.15.45`.
+Status: current baseline for `v1.15.46`.
 
 ## Scope
 
@@ -8,11 +8,11 @@ Status: current baseline for `v1.15.45`.
 
 ## Equipment composition
 
-`장치 목록`은 전체 합계가 아니라 선택 구역 상태 카드다. 표시 값은 `센서, 장비, 미연결`이다.
+`관수그룹 정보`는 선택 구역의 관수그룹 상태 카드다. 표시 값은 `관수그룹, 연결 장치, 미연결`이다.
 
 ## Device/sensor mapping
 
-기존 `장비 생성` 카드는 `장치 연결 작성` 진입 카드로 변경한다. 주요 버튼은 `장치 연결 작성`이며 장치 연결 작성 팝업 모달을 연다.
+기존 `장비 생성` 카드는 `관수그룹 생성` 진입 카드로 변경한다. 주요 버튼은 `관수그룹 생성`이며 관수그룹 생성 팝업 모달을 연다.
 
 ## Modals and API
 

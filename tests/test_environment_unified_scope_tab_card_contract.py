@@ -18,9 +18,9 @@ def _section(text: str, start: str, end: str) -> str:
 def test_v1105_versions_and_docs_for_env_unified_scope_tab_card():
     panel = _read(PANEL)
     docs = _read(UI_DOC) + "\n" + _read(MASTER)
-    assert '"version": "1.15.45"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.45"' in panel
-    assert 'v1.15.45' in panel[:200]
+    assert '"version": "1.15.46"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.46"' in panel
+    assert 'v1.15.46' in panel[:200]
     assert "v1.10.9 Environment unified scope/tab card" in docs
 
 

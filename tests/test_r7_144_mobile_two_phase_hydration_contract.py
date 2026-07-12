@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_12_mobile_click_uses_immediate_panel_render_instead_of_placeholder():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.45"' in text
+    assert 'const REBUILD_VERSION = "1.15.46"' in text
     assert '_requestR7MobilePanelHydration(domainKey, tabKey)' in text
     assert 'data-r7-mobile-panel-hydration", "not-used-immediate"' in text
     assert 'data-r7-mobile-immediate-panel-render' in text

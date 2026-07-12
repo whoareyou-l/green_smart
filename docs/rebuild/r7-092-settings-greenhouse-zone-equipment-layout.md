@@ -1,12 +1,12 @@
 # R7-092 Settings greenhouse/zone/equipment layout
 
-Status: current baseline for `v1.15.45`.
+Status: current baseline for `v1.15.46`.
 
 ## Required layout
 
 ```text
-온실 기본 정보, 구역 기본 정보, 장비 구성
-온실 생성, 구역 생성, 장비 생성
+온실 정보, 구역 정보, 관수그룹 정보
+온실 생성, 구역 생성, 관수그룹 생성
 구역 목록—————————————————————
 ```
 

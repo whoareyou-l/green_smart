@@ -1,6 +1,6 @@
 # RS-011 RBAC Permission Naming Boundary
 
-> 기준 버전: `v1.15.45`
+> 기준 버전: `v1.15.46`
 > Status: active boundary contract
 > 목적: 기존 role/permission 문자열이 새 제품 권한 모델로 보이지 않도록 compatibility alias와 `gs_permissions.code` target permission 경계를 고정한다.
 
