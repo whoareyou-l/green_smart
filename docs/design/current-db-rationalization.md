@@ -1,6 +1,6 @@
 # Current DB Rationalization
 
-Version: `1.15.42`
+Version: `1.15.43`
 
 운영 DB 구조 변경 없음. 이 문서는 DB-00/DB-01 baseline으로, 현재 운영 MariaDB `homeassistant` DB의 59개 테이블을 HA 기본 테이블, Green Smart 레거시/호환 테이블, Green Smart 현재/신규 테이블로 분류하고 레거시 사용 금지 경계를 고정한다.
 

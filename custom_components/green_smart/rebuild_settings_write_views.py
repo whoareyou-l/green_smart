@@ -499,6 +499,333 @@ async def create_settings_device_sensor_mapping(hass, payload: dict[str, Any], a
     return next((row for row in rows if row["zoneId"] == zone_id and row["sensorEntity"] == sensor_entity and row["deviceEntity"] == device_entity), rows[0] if rows else {"zoneId": zone_id})
 
 
+def _entity_domain(entity_id: str) -> str:
+    return str(entity_id or "").split(".", 1)[0] if "." in str(entity_id or "") else ""
+
+
+def infer_green_smart_read_write_mode(domain: str) -> str:
+    domain = str(domain or "").lower()
+    if domain in {"sensor", "binary_sensor"}:
+        return "readonly"
+    if domain in {"number", "select", "input_number", "input_select"}:
+        return "setpoint"
+    if domain in {"button", "scene", "script"}:
+        return "command"
+    if domain in {"switch", "cover", "fan", "valve", "climate", "light"}:
+        return "controllable"
+    return "readonly"
+
+
+def infer_green_smart_entity_role(entity_id: str = "", *, domain: str = "", unit: str = "", device_class: str = "", name: str = "") -> dict[str, str]:
+    text = " ".join(str(v or "").lower() for v in (entity_id, unit, device_class, name))
+    device_class = str(device_class or "").lower()
+    unit = str(unit or "")
+    domain = str(domain or _entity_domain(entity_id) or "").lower()
+    rules = [
+        (("temperature", "temp", "온도"), "온도", "temperature"),
+        (("humidity", "humid", "습도"), "습도", "humidity"),
+        (("carbon_dioxide", "co2", "carbon", "ppm"), "CO₂", "co2"),
+        (("illuminance", "lux", "light", "광량"), "광량", "light"),
+        (("moisture", "soil", "vwc", "수분", "배지"), "배지수분", "substrate_moisture"),
+        (("ec",), "EC", "ec"),
+        (("ph",), "pH", "ph"),
+        (("wind_speed", "풍속", "m/s"), "풍속", "wind_speed"),
+        (("rain", "강우", "mm"), "강우", "rain"),
+        (("battery", "배터리"), "배터리", "battery"),
+        (("fan", "순환팬", "배기팬"), "순환팬", "actuator_state"),
+        (("roof", "window", "천창"), "천창", "actuator_position"),
+        (("side", "sidewall", "측창"), "측창", "actuator_position"),
+        (("curtain", "screen", "커튼"), "커튼", "actuator_position"),
+        (("valve", "밸브"), "관수밸브", "actuator_state"),
+        (("pump", "펌프"), "펌프", "actuator_state"),
+    ]
+    for needles, role, value_kind in rules:
+        if any(needle and needle in text for needle in needles) or any(needle == device_class for needle in needles):
+            return {"entityRole": role, "valueKind": value_kind, "readWriteMode": infer_green_smart_read_write_mode(domain)}
+    fallback = {
+        "sensor": ("측정값", "measurement"),
+        "binary_sensor": ("감지 상태", "binary_state"),
+        "switch": ("스위치", "actuator_state"),
+        "cover": ("개폐 장치", "actuator_position"),
+        "number": ("설정값", "setpoint"),
+        "select": ("모드", "mode"),
+        "button": ("명령 버튼", "command"),
+        "fan": ("팬", "actuator_state"),
+        "valve": ("밸브", "actuator_state"),
+    }
+    role, value_kind = fallback.get(domain, ("기타", "unknown"))
+    return {"entityRole": role, "valueKind": value_kind, "readWriteMode": infer_green_smart_read_write_mode(domain)}
+
+
+def _safe_json(value: Any) -> str:
+    try:
+        return json.dumps(value, ensure_ascii=False, default=str)
+    except Exception:
+        return "{}"
+
+
+def _state_numeric(value: Any) -> float | None:
+    try:
+        text = str(value).strip()
+        if text.lower() in {"", "unknown", "unavailable", "none"}:
+            return None
+        return float(text)
+    except Exception:
+        return None
+
+
+def _state_bool(value: Any) -> int | None:
+    text = str(value or "").lower()
+    if text in {"on", "open", "true", "home", "detected"}:
+        return 1
+    if text in {"off", "closed", "false", "not_home", "clear"}:
+        return 0
+    return None
+
+
+def _dt_text(value: Any) -> str | None:
+    if not value:
+        return None
+    try:
+        if hasattr(value, "isoformat"):
+            return value.isoformat(sep=" ")[:19]
+    except Exception:
+        pass
+    return str(value).replace("T", " ")[:19]
+
+
+async def _connected_green_smart_ha_device_ids(hass, farm_id: int = 1) -> set[str]:
+    try:
+        rows = await fetchall(hass, """
+            SELECT ha_device_id
+            FROM green_smart_devices
+            WHERE farm_id = %s AND ha_device_id <> '' AND status NOT IN ('deleted', 'inactive', '삭제됨', '비활성')
+        """, (farm_id,))
+        return {str(row.get("ha_device_id") or "") for row in rows if row.get("ha_device_id")}
+    except Exception:
+        return set()
+
+
+async def list_green_smart_unlinked_ha_devices(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    if dr is None:
+        return []
+    connected = await _connected_green_smart_ha_device_ids(hass, farm_id)
+    try:
+        device_registry = dr.async_get(hass)
+        entity_registry = er.async_get(hass) if er is not None else None
+        entity_counts: dict[str, int] = {}
+        if entity_registry is not None:
+            for entity in getattr(entity_registry, "entities", {}).values():
+                device_id = getattr(entity, "device_id", None)
+                if device_id:
+                    entity_counts[device_id] = entity_counts.get(device_id, 0) + 1
+        devices: list[dict[str, Any]] = []
+        for device in getattr(device_registry, "devices", {}).values():
+            ha_device_id = getattr(device, "id", "") or ""
+            if not ha_device_id or ha_device_id in connected:
+                continue
+            config_entries = list(getattr(device, "config_entries", []) or [])
+            device_name = getattr(device, "name_by_user", None) or getattr(device, "name", None) or getattr(device, "model", None) or ha_device_id
+            devices.append({
+                "haDeviceId": ha_device_id,
+                "deviceName": device_name,
+                "name": device_name,
+                "manufacturer": getattr(device, "manufacturer", None) or "",
+                "model": getattr(device, "model", None) or "",
+                "modelId": getattr(device, "model_id", None) or "",
+                "swVersion": getattr(device, "sw_version", None) or "",
+                "hwVersion": getattr(device, "hw_version", None) or "",
+                "serialNumber": getattr(device, "serial_number", None) or "",
+                "areaId": getattr(device, "area_id", None) or "",
+                "configEntryId": config_entries[0] if config_entries else "",
+                "integrationDomain": "",
+                "entityCount": entity_counts.get(ha_device_id, 0),
+            })
+        return sorted(devices, key=lambda item: (str(item.get("deviceName") or ""), str(item.get("haDeviceId") or "")))
+    except Exception:
+        return []
+
+
+async def list_green_smart_ha_device_entities(hass, ha_device_id: str) -> list[dict[str, Any]]:
+    if er is None or not ha_device_id:
+        return []
+    try:
+        entity_registry = er.async_get(hass)
+        entities: list[dict[str, Any]] = []
+        for entry in getattr(entity_registry, "entities", {}).values():
+            if getattr(entry, "device_id", None) != ha_device_id:
+                continue
+            entity_id = getattr(entry, "entity_id", "") or ""
+            domain = _entity_domain(entity_id)
+            state = hass.states.get(entity_id) if hasattr(hass, "states") else None
+            attrs = getattr(state, "attributes", {}) or {}
+            unit = attrs.get("unit_of_measurement") or getattr(entry, "unit_of_measurement", "") or ""
+            device_class = attrs.get("device_class") or getattr(entry, "device_class", "") or getattr(entry, "original_device_class", "") or ""
+            state_class = attrs.get("state_class") or getattr(entry, "state_class", "") or ""
+            name = getattr(entry, "name", None) or getattr(entry, "original_name", None) or attrs.get("friendly_name") or entity_id
+            inferred = infer_green_smart_entity_role(entity_id, domain=domain, unit=unit, device_class=device_class, name=name)
+            entities.append({
+                "entityId": entity_id,
+                "domain": domain,
+                "unitOfMeasurement": unit,
+                "deviceClass": str(device_class or ""),
+                "stateClass": str(state_class or ""),
+                "state": str(getattr(state, "state", "") or "") if state is not None else "",
+                "platform": getattr(entry, "platform", "") or "",
+                "uniqueId": getattr(entry, "unique_id", "") or "",
+                "originalName": getattr(entry, "original_name", "") or "",
+                "name": name,
+                "entityCategory": str(getattr(entry, "entity_category", "") or ""),
+                "disabledBy": str(getattr(entry, "disabled_by", "") or ""),
+                "hiddenBy": str(getattr(entry, "hidden_by", "") or ""),
+                **inferred,
+            })
+        return sorted(entities, key=lambda item: str(item.get("entityId") or ""))
+    except Exception:
+        return []
+
+
+async def list_green_smart_devices(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    rows = await fetchall(hass, """
+        SELECT id, farm_id, zone_id, equipment_kind, device_name, ha_device_id, ha_device_name, manufacturer, model, model_id,
+               sw_version, hw_version, serial_number, area_id, config_entry_id, integration_domain, entities_snapshot_json,
+               status, connection_status, last_seen_at, note, created_at, updated_at
+        FROM green_smart_devices
+        WHERE farm_id = %s AND status NOT IN ('deleted', '삭제됨')
+        ORDER BY updated_at DESC, id DESC
+    """, (farm_id,))
+    return [dict(row) for row in rows]
+
+
+async def refresh_green_smart_device_latest_values(hass, device_id: int, farm_id: int = 1, *, write_sample: bool = False) -> list[dict[str, Any]]:
+    entity_rows = await fetchall(hass, """
+        SELECT id, green_smart_device_id, ha_device_id, entity_id, entity_domain, unit_of_measurement, device_class, entity_role
+        FROM green_smart_device_entities
+        WHERE farm_id = %s AND green_smart_device_id = %s AND status = 'active'
+    """, (farm_id, device_id))
+    latest: list[dict[str, Any]] = []
+    for row in entity_rows:
+        entity_id = row.get("entity_id") or ""
+        state = hass.states.get(entity_id) if hasattr(hass, "states") else None
+        attrs = dict(getattr(state, "attributes", {}) or {}) if state is not None else {}
+        state_value = str(getattr(state, "state", "") or "") if state is not None else ""
+        unit = attrs.get("unit_of_measurement") or row.get("unit_of_measurement") or ""
+        device_class = attrs.get("device_class") or row.get("device_class") or ""
+        sampled_at = datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep=" ")[:19]
+        freshness_state = "fresh" if state is not None and state_value not in {"unknown", "unavailable"} else "unavailable"
+        args = (
+            farm_id, row.get("green_smart_device_id"), row.get("id"), row.get("ha_device_id"), entity_id, state_value,
+            _state_numeric(state_value), _state_bool(state_value), unit, device_class, row.get("entity_domain") or _entity_domain(entity_id),
+            row.get("entity_role") or "", _safe_json(attrs), _dt_text(getattr(state, "last_changed", None)), _dt_text(getattr(state, "last_updated", None)),
+            sampled_at, freshness_state, "ha_state",
+        )
+        await execute(hass, """
+            INSERT INTO green_smart_device_entity_latest_values
+                (farm_id, green_smart_device_id, green_smart_entity_id, ha_device_id, entity_id, state_value, state_numeric, state_bool,
+                 unit_of_measurement, device_class, entity_domain, entity_role, attributes_json, ha_last_changed, ha_last_updated, sampled_at, freshness_state, source)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                green_smart_device_id = VALUES(green_smart_device_id), green_smart_entity_id = VALUES(green_smart_entity_id),
+                state_value = VALUES(state_value), state_numeric = VALUES(state_numeric), state_bool = VALUES(state_bool),
+                unit_of_measurement = VALUES(unit_of_measurement), device_class = VALUES(device_class), entity_domain = VALUES(entity_domain),
+                entity_role = VALUES(entity_role), attributes_json = VALUES(attributes_json), ha_last_changed = VALUES(ha_last_changed),
+                ha_last_updated = VALUES(ha_last_updated), sampled_at = VALUES(sampled_at), freshness_state = VALUES(freshness_state), source = VALUES(source),
+                updated_at = CURRENT_TIMESTAMP
+        """, args)
+        if write_sample:
+            await execute(hass, """
+                INSERT INTO green_smart_device_entity_samples
+                    (farm_id, green_smart_device_id, green_smart_entity_id, ha_device_id, entity_id, sampled_at, state_value, state_numeric, state_bool,
+                     unit_of_measurement, device_class, entity_domain, entity_role, attributes_json, ha_last_changed, ha_last_updated, freshness_state, source)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (farm_id, row.get("green_smart_device_id"), row.get("id"), row.get("ha_device_id"), entity_id, sampled_at, state_value,
+                  _state_numeric(state_value), _state_bool(state_value), unit, device_class, row.get("entity_domain") or _entity_domain(entity_id),
+                  row.get("entity_role") or "", _safe_json(attrs), _dt_text(getattr(state, "last_changed", None)), _dt_text(getattr(state, "last_updated", None)), freshness_state, "ha_state"))
+        latest.append({"entityId": entity_id, "state": state_value, "unitOfMeasurement": unit, "entityRole": row.get("entity_role") or "", "freshnessState": freshness_state, "sampledAt": sampled_at})
+    return latest
+
+
+async def create_green_smart_device_connection(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    ha_device_id = _str(payload, "haDeviceId", "ha_device_id", "deviceId", "device_id")
+    entities = payload.get("entities") if isinstance(payload.get("entities"), list) else []
+    if not ha_device_id:
+        return {"ok": False, 'saved': False, "error": "ha_device_id_required"}
+    if not entities:
+        return {"ok": False, 'saved': False, "error": "entities_required"}
+    device_name = _str(payload, "deviceName", "device_name", "name", default=ha_device_id)
+    equipment_kind = _str(payload, "equipmentKind", "equipment_kind", "deviceType", "device_type", default="기타")
+    zone_id = _str(payload, "zoneId", "zone_id", default="zone-1")
+    snapshot = [{**entity} for entity in entities if isinstance(entity, dict)]
+    await execute(hass, """
+        INSERT INTO green_smart_devices
+            (farm_id, zone_id, equipment_kind, device_name, ha_device_id, ha_device_name, manufacturer, model, model_id, sw_version, hw_version,
+             serial_number, area_id, config_entry_id, integration_domain, entities_snapshot_json, status, connection_status, last_seen_at, note, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', 'connected', CURRENT_TIMESTAMP, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            zone_id = VALUES(zone_id), equipment_kind = VALUES(equipment_kind), device_name = VALUES(device_name), ha_device_name = VALUES(ha_device_name),
+            manufacturer = VALUES(manufacturer), model = VALUES(model), model_id = VALUES(model_id), sw_version = VALUES(sw_version), hw_version = VALUES(hw_version),
+            serial_number = VALUES(serial_number), area_id = VALUES(area_id), config_entry_id = VALUES(config_entry_id), integration_domain = VALUES(integration_domain),
+            entities_snapshot_json = VALUES(entities_snapshot_json), status = 'active', connection_status = 'connected', last_seen_at = CURRENT_TIMESTAMP,
+            note = VALUES(note), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
+    """, (farm_id, zone_id, equipment_kind, device_name, ha_device_id, _str(payload, "haDeviceName", "ha_device_name", default=device_name),
+          _str(payload, "manufacturer"), _str(payload, "model"), _str(payload, "modelId", "model_id"), _str(payload, "swVersion", "sw_version"),
+          _str(payload, "hwVersion", "hw_version"), _str(payload, "serialNumber", "serial_number"), _str(payload, "areaId", "area_id"),
+          _str(payload, "configEntryId", "config_entry_id"), _str(payload, "integrationDomain", "integration_domain"), _safe_json(snapshot), _str(payload, "note"), actor, actor))
+    device_row = await fetchone(hass, "SELECT id, farm_id, zone_id, equipment_kind, device_name, ha_device_id FROM green_smart_devices WHERE farm_id = %s AND ha_device_id = %s LIMIT 1", (farm_id, ha_device_id))
+    green_smart_device_id = int((device_row or {}).get("id") or 0)
+    saved_entities: list[dict[str, Any]] = []
+    for entity in snapshot:
+        entity_id = _str(entity, "entityId", "entity_id")
+        if not entity_id:
+            continue
+        domain = _str(entity, "domain", "entityDomain", "entity_domain", default=_entity_domain(entity_id))
+        unit = _str(entity, "unitOfMeasurement", "unit_of_measurement", "unit")
+        device_class = _str(entity, "deviceClass", "device_class")
+        inferred = infer_green_smart_entity_role(entity_id, domain=domain, unit=unit, device_class=device_class, name=_str(entity, "name", "displayName", "display_name"))
+        entity_role = _str(entity, "entityRole", "entity_role", "role", default=inferred["entityRole"])
+        value_kind = _str(entity, "valueKind", "value_kind", default=inferred["valueKind"])
+        read_write_mode = _str(entity, "readWriteMode", "read_write_mode", default=inferred["readWriteMode"])
+        await execute(hass, """
+            INSERT INTO green_smart_device_entities
+                (farm_id, green_smart_device_id, ha_device_id, entity_id, entity_domain, platform, unique_id, original_name, display_name,
+                 device_class, state_class, unit_of_measurement, entity_category, disabled_by, hidden_by, entity_role, value_kind, read_write_mode, status, created_by, updated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', %s, %s)
+            ON DUPLICATE KEY UPDATE
+                green_smart_device_id = VALUES(green_smart_device_id), ha_device_id = VALUES(ha_device_id), entity_domain = VALUES(entity_domain),
+                platform = VALUES(platform), unique_id = VALUES(unique_id), original_name = VALUES(original_name), display_name = VALUES(display_name),
+                device_class = VALUES(device_class), state_class = VALUES(state_class), unit_of_measurement = VALUES(unit_of_measurement),
+                entity_category = VALUES(entity_category), disabled_by = VALUES(disabled_by), hidden_by = VALUES(hidden_by), entity_role = VALUES(entity_role),
+                value_kind = VALUES(value_kind), read_write_mode = VALUES(read_write_mode), status = 'active', updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
+        """, (farm_id, green_smart_device_id, ha_device_id, entity_id, domain, _str(entity, "platform"), _str(entity, "uniqueId", "unique_id"),
+              _str(entity, "originalName", "original_name"), _str(entity, "name", "displayName", "display_name", default=entity_id), device_class,
+              _str(entity, "stateClass", "state_class"), unit, _str(entity, "entityCategory", "entity_category"), _str(entity, "disabledBy", "disabled_by"),
+              _str(entity, "hiddenBy", "hidden_by"), entity_role, value_kind, read_write_mode, actor, actor))
+        saved_entities.append({"entityId": entity_id, "domain": domain, "unitOfMeasurement": unit, "entityRole": entity_role, "valueKind": value_kind, "readWriteMode": read_write_mode})
+    latest = await refresh_green_smart_device_latest_values(hass, green_smart_device_id, farm_id)
+    return {"ok": True, "saved": True, "kind": "device-connection", "device": {"id": green_smart_device_id, "haDeviceId": ha_device_id, "deviceName": device_name, "equipmentKind": equipment_kind, "zoneId": zone_id}, "entities": saved_entities, "latestValues": latest}
+
+
+async def latest_green_smart_device_values(hass, device_id: int, farm_id: int = 1) -> list[dict[str, Any]]:
+    rows = await fetchall(hass, """
+        SELECT entity_id, state_value, state_numeric, state_bool, unit_of_measurement, device_class, entity_domain, entity_role, sampled_at, freshness_state
+        FROM green_smart_device_entity_latest_values
+        WHERE farm_id = %s AND green_smart_device_id = %s
+        ORDER BY entity_role, entity_id
+    """, (farm_id, device_id))
+    return [dict(row) for row in rows]
+
+
+async def sample_green_smart_device_values(hass, device_id: int, farm_id: int = 1, limit: int = 500) -> list[dict[str, Any]]:
+    rows = await fetchall(hass, """
+        SELECT entity_id, sampled_at, state_value, state_numeric, state_bool, unit_of_measurement, device_class, entity_domain, entity_role, freshness_state
+        FROM green_smart_device_entity_samples
+        WHERE farm_id = %s AND green_smart_device_id = %s
+        ORDER BY sampled_at DESC, entity_id
+        LIMIT %s
+    """, (farm_id, device_id, limit))
+    return [dict(row) for row in rows]
+
+
 def _manifest_version(path: Path, default: str = "미설치") -> str:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -773,6 +1100,92 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
             zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
     system_integration = await system_integration_watchdog_response(hass)
     return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "haDevices": ha_devices, "deviceGroups": device_groups, "systemIntegration": system_integration}
+
+
+class GreenSmartHaUnlinkedDevicesView(HomeAssistantView):
+    url = "/api/green_smart/devices/ha/unlinked"
+    name = "api:green_smart:devices:ha_unlinked"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        return self.json({"ok": True, "devices": await list_green_smart_unlinked_ha_devices(hass)})
+
+
+class GreenSmartHaDeviceEntitiesView(HomeAssistantView):
+    url = "/api/green_smart/devices/ha/{ha_device_id}/entities"
+    name = "api:green_smart:devices:ha_device_entities"
+    requires_auth = True
+
+    async def get(self, request: web.Request, ha_device_id=None) -> web.Response:
+        hass = request.app["hass"]
+        ha_device_id = ha_device_id or request.match_info["ha_device_id"]
+        return self.json({"ok": True, "haDeviceId": ha_device_id, "entities": await list_green_smart_ha_device_entities(hass, ha_device_id)})
+
+
+class GreenSmartDevicesView(HomeAssistantView):
+    url = "/api/green_smart/devices"
+    name = "api:green_smart:devices"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        return self.json({"ok": True, "devices": await list_green_smart_devices(hass)})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        result = await create_green_smart_device_connection(hass, await _settings_payload(request), actor=_request_actor(request))
+        status_code = 200 if result.get("ok") else 400
+        return self.json({**result, "settingsSnapshot": await settings_snapshot_response(hass) if result.get("ok") else {}}, status_code=status_code)
+
+
+class GreenSmartDeviceItemView(HomeAssistantView):
+    url = "/api/green_smart/devices/{device_id}"
+    name = "api:green_smart:device_item"
+    requires_auth = True
+
+    async def get(self, request: web.Request, device_id=None) -> web.Response:
+        hass = request.app["hass"]
+        device_id = int(device_id or request.match_info["device_id"])
+        devices = await list_green_smart_devices(hass)
+        device = next((row for row in devices if int(row.get("id") or 0) == device_id), None)
+        return self.json({"ok": bool(device), "device": device or {}, "latestValues": await latest_green_smart_device_values(hass, device_id) if device else []}, status_code=200 if device else 404)
+
+
+class GreenSmartDeviceLatestDataView(HomeAssistantView):
+    url = "/api/green_smart/devices/{device_id}/data/latest"
+    name = "api:green_smart:device_latest_data"
+    requires_auth = True
+
+    async def get(self, request: web.Request, device_id=None) -> web.Response:
+        hass = request.app["hass"]
+        device_id = int(device_id or request.match_info["device_id"])
+        return self.json({"ok": True, "deviceId": device_id, "values": await latest_green_smart_device_values(hass, device_id)})
+
+
+class GreenSmartDeviceDataRefreshView(HomeAssistantView):
+    url = "/api/green_smart/devices/{device_id}/data/refresh"
+    name = "api:green_smart:device_data_refresh"
+    requires_auth = True
+
+    async def post(self, request: web.Request, device_id=None) -> web.Response:
+        hass = request.app["hass"]
+        device_id = int(device_id or request.match_info["device_id"])
+        payload = await _settings_payload(request)
+        values = await refresh_green_smart_device_latest_values(hass, device_id, write_sample=bool(payload.get("writeSample", True)))
+        return self.json({"ok": True, "deviceId": device_id, "refreshed": True, "values": values})
+
+
+class GreenSmartDeviceSamplesView(HomeAssistantView):
+    url = "/api/green_smart/devices/{device_id}/data/samples"
+    name = "api:green_smart:device_samples"
+    requires_auth = True
+
+    async def get(self, request: web.Request, device_id=None) -> web.Response:
+        hass = request.app["hass"]
+        device_id = int(device_id or request.match_info["device_id"])
+        limit = int(request.query.get("limit", 500)) if hasattr(request, "query") else 500
+        return self.json({"ok": True, "deviceId": device_id, "samples": await sample_green_smart_device_values(hass, device_id, limit=max(1, min(limit, 2000)))})
 
 
 class RebuildSettingsSnapshotView(HomeAssistantView):

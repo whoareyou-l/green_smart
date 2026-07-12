@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.42"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.42"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.42"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.43"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.43"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.43"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -69,33 +69,32 @@ def test_r7_128_settings_tab_and_button_use_device_connection_authoring_label():
     assert '장치·그룹' not in html
 
 
-def test_r7_128_device_connection_modal_has_unlinked_ha_entity_and_equipment_type_dropdowns():
+def test_r7_128_device_connection_modal_has_unlinked_ha_device_and_entity_role_groups():
     html = _node_render('(panel._openSettingsDeviceSensorMappingModal(), panel.renderR7SettingsDeviceSensorMappingModal())')
     for marker in (
         'data-r7-settings-device-connection-authoring-modal="true"',
         'data-r7-settings-device-connection-modal-title="장치 연결"',
+        'data-r7-device-canonical-connection-modal="true"',
         'data-r7-settings-ha-device-id-select',
-        'data-r7-settings-ha-device-id-source="all-ha-devices"',
+        'data-r7-settings-ha-device-id-source="unlinked-ha-devices"',
+        'data-r7-ha-unlinked-device-select',
         'data-r7-settings-green-smart-device-fk="ha_device_id"',
-        'data-r7-settings-unlinked-ha-entity-select',
-        'data-r7-settings-unlinked-ha-entity-option',
         'data-r7-settings-equipment-kind-select',
         'data-r7-settings-device-name-input',
+        'data-r7-device-zone-select',
+        'data-r7-device-entity-repeat-group="true"',
+        'data-r7-device-entity-role-select',
     ):
         assert marker in html
     assert '장치 연결 작성' not in html
     assert '장비 엔티티 ID' not in html
-    assert '장비 ID' in html
+    for phrase in ('장치 ID', '장비종류', '장치명', '구역', '엔티티ID', '종류', '단위', '역할'):
+        assert phrase in html
     assert 'ha-device-roof-window' in html
-    assert 'ha-device-linked-temp' in html
-    assert '이미 연결된 HA 온도센서' in html
-    assert 'sensor.unlinked_temp_humidity' in html
-    assert 'fan.unlinked_exhaust' in html
-    assert 'sensor.linked_temperature' not in html
-    assert 'switch.unlinked_roof_window' not in html
-    for option in ('온습도 센서', 'CO2 센서', '일사 센서', 'VWC 센서', '천창 장치', '측창 장치', '스크린 장치', '유동팬 장치', '배기팬 장치', '관수 장치'):
+    assert 'ha-device-linked-temp' not in html
+    assert '이미 연결된 HA 온도센서' not in html
+    for option in ('온습도 센서', 'CO2 센서', 'CO₂ 센서', '광량 센서', '천창', '측창', '차광커튼', '순환팬', '배기팬', '관수밸브'):
         assert option in html
-    assert '역할' not in html
 
 
 def test_r7_128_device_add_card_opens_ha_devices_page_modal():

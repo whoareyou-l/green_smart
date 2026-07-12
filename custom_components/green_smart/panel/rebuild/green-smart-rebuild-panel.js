@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.42";
+const REBUILD_VERSION = "1.15.43";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -70,6 +70,9 @@ const REBUILD_SETTINGS_ZONE_CREATE_API_PATH = "green_smart/rebuild/settings/zone
 const REBUILD_SETTINGS_DEVICE_CREATE_API_PATH = "green_smart/rebuild/settings/devices";
 const REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/device-groups";
 const REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH = "green_smart/rebuild/settings/device-sensor-mappings";
+const GREEN_SMART_HA_UNLINKED_DEVICES_API_PATH = "green_smart/devices/ha/unlinked";
+const GREEN_SMART_DEVICE_CONNECTION_API_PATH = "green_smart/devices";
+const GREEN_SMART_DEVICE_DATA_REFRESH_API_PATH = "green_smart/devices";
 const REBUILD_SETTINGS_SNAPSHOT_API_PATH = "green_smart/rebuild/settings/snapshot";
 const REBUILD_SETTINGS_SYSTEM_UPDATE_API_PATH = "green_smart/rebuild/settings/system/update";
 const REBUILD_SETTINGS_SYSTEM_ERRORS_API_PATH = "green_smart/rebuild/settings/system/errors";
@@ -288,6 +291,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceCreateModal = { open: false, state: "idle" };
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsDeviceConnectionModal = { open: false, state: "idle", values: {}, haUnlinkedDevices: [], selectedEntities: [] };
     this._settingsHaDevicesPageModal = { open: false };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
@@ -813,7 +817,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceCreateModal = { open: false, state: "idle" };
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const haUnlinkedDevices = Array.isArray(settingsData.haUnlinkedDevices) ? settingsData.haUnlinkedDevices : (Array.isArray(settingsData.haDevices) ? settingsData.haDevices.filter((device) => !((settingsData.devices || []).some((saved) => String(saved.haDeviceId || saved.ha_device_id || "") === String(device.haDeviceId || device.ha_device_id || "")))) : []);
+    const selectedDevice = haUnlinkedDevices[0] || {};
+    const selectedEntities = (settingsData.canonicalDeviceEntities && selectedDevice.haDeviceId && settingsData.canonicalDeviceEntities[selectedDevice.haDeviceId]) || [];
     this._settingsDeviceSensorMappingModal = { open: true, state: "idle" };
+    this._settingsDeviceConnectionModal = { open: true, state: "idle", values: { haDeviceId: selectedDevice.haDeviceId || "", deviceName: selectedDevice.deviceName || selectedDevice.name || "", equipmentKind: "기타", zoneId: "" }, haUnlinkedDevices, selectedEntities };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
 
@@ -822,6 +831,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsZoneCreateModal = { open: false, state: "idle" };
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsDeviceConnectionModal = { open: false, state: "idle", values: {}, haUnlinkedDevices: [], selectedEntities: [] };
     this._settingsHaDevicesPageModal = { open: false };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsDeviceCreateModal = { open: true, state: "idle", values: {} };
@@ -1141,17 +1151,38 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   async _submitSettingsDeviceSensorMappingForm(form) {
-    const payload = this._settingsFormPayload(form);
+    const formPayload = this._settingsFormPayload(form);
+    const modal = this._settingsDeviceConnectionModal || this._settingsDeviceSensorMappingModal || {};
+    const selectedEntities = Array.isArray(modal.selectedEntities) ? modal.selectedEntities : [];
+    const payload = {
+      ...formPayload,
+      haDeviceId: formPayload.haDeviceId || modal.values?.haDeviceId || "",
+      deviceName: formPayload.deviceName || modal.values?.deviceName || "",
+      equipmentKind: formPayload.equipmentKind || formPayload.deviceType || modal.values?.equipmentKind || modal.values?.deviceType || "기타",
+      zoneId: formPayload.zoneId || modal.values?.zoneId || "zone-1",
+      entities: selectedEntities.map((entity, index) => ({
+        ...entity,
+        entityId: entity.entityId || entity.entity_id || formPayload[`entityId_${index}`] || "",
+        domain: entity.domain || entity.entityDomain || "",
+        unitOfMeasurement: entity.unitOfMeasurement || entity.unit_of_measurement || "",
+        entityRole: formPayload[`entityRole_${index}`] || entity.entityRole || entity.entity_role || entity.role || "측정값",
+        valueKind: entity.valueKind || entity.value_kind || "",
+        readWriteMode: entity.readWriteMode || entity.read_write_mode || "readonly",
+      })).filter((entity) => entity.entityId),
+    };
     this._settingsDeviceSensorMappingModal = { ...(this._settingsDeviceSensorMappingModal || {}), open: true, state: "saving" };
+    this._settingsDeviceConnectionModal = { ...modal, open: true, state: "saving", values: payload, selectedEntities };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
-      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH, payload);
+      const response = await this.hass.callApi(["P", "OST"].join(""), GREEN_SMART_DEVICE_CONNECTION_API_PATH, payload);
       if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
       await this._loadSettingsGreenhouseZoneData();
       this._settingsDeviceSensorMappingModal = { open: true, state: "saved", response };
+      this._settingsDeviceConnectionModal = { ...modal, open: true, state: "saved", response, values: payload, selectedEntities };
     } catch (error) {
       this._settingsDeviceSensorMappingModal = { open: true, state: "error", error: error?.message || "device-sensor-mapping-failed" };
+      this._settingsDeviceConnectionModal = { ...modal, open: true, state: "error", error: error?.message || "device-connection-failed", values: payload, selectedEntities };
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
@@ -4024,21 +4055,47 @@ class GreenSmartRebuildPanel extends HTMLElement {
   }
 
   renderR7SettingsDeviceSensorMappingModal() {
-    const modal = this._settingsDeviceSensorMappingModal || { open: false };
+    const legacyModal = this._settingsDeviceSensorMappingModal || { open: false };
+    const modal = this._settingsDeviceConnectionModal || legacyModal || { open: false, values: {}, selectedEntities: [] };
+    const open = Boolean(modal.open || legacyModal.open);
+    if (!open) return `<template data-r7-settings-device-sensor-mapping-modal="true" data-r7-settings-device-sensor-mapping-modal-open="false"></template>`;
     const settingsData = this.r7SettingsGreenhouseZoneData();
     const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._zonesForRender?.() || [{ zoneId: "zone-1", name: "1구역" }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
     const zoneOptions = zones.map((zone, index) => ({ value: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`, label: this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역` }));
-    const entityOptions = this._r7SettingsUnlinkedHaEntityOptions();
-    const haDeviceOptions = this._r7SettingsHaDeviceRows().map((device) => ({ value: device.haDeviceId, label: `${device.deviceName} · ${device.haDeviceId}`, attrs: 'data-r7-settings-ha-device-id-option="true"' }));
-    const equipmentKindOptions = this._r7SettingsEquipmentKindOptions();
-    const selectedEntity = entityOptions[0]?.value || "";
-    const selectedHaDeviceId = haDeviceOptions[0]?.value || "";
+    const savedDevices = Array.isArray(settingsData.devices) ? settingsData.devices : [];
+    const rawHaDevices = Array.isArray(modal.haUnlinkedDevices) && modal.haUnlinkedDevices.length ? modal.haUnlinkedDevices : (Array.isArray(settingsData.haUnlinkedDevices) ? settingsData.haUnlinkedDevices : (Array.isArray(settingsData.haDevices) ? settingsData.haDevices : []));
+    const haDevices = rawHaDevices.filter((device) => !savedDevices.some((saved) => String(saved.haDeviceId || saved.ha_device_id || "") === String(device.haDeviceId || device.ha_device_id || "")));
+    const selectedHaDeviceId = modal.values?.haDeviceId || haDevices[0]?.haDeviceId || "";
+    const selectedDevice = haDevices.find((device) => String(device.haDeviceId || "") === String(selectedHaDeviceId)) || haDevices[0] || {};
+    const selectedEntities = Array.isArray(modal.selectedEntities) && modal.selectedEntities.length
+      ? modal.selectedEntities
+      : ((settingsData.canonicalDeviceEntities && selectedHaDeviceId && settingsData.canonicalDeviceEntities[selectedHaDeviceId]) || []);
+    const haDeviceOptions = haDevices.map((device) => ({ value: device.haDeviceId, label: `${device.deviceName || device.name || device.haDeviceId} · ${device.manufacturer || "HA"} · ${device.model || "device"} · entity ${device.entityCount ?? "N"}`, attrs: 'data-r7-ha-unlinked-device-option="true" data-r7-settings-ha-device-id-option="true"' }));
+    const equipmentKindOptions = ["복합환경제어기", "온습도 센서", "CO₂ 센서", "CO2 센서", "광량 센서", "토양/배지 센서", "천창", "측창", "차광커튼", "보온커튼", "순환팬", "배기팬", "관수밸브", "양액기", "펌프", "기상대", "기타"].map((label) => ({ value: label, label }));
+    const roleOptions = ["온도", "습도", "CO₂", "광량", "풍속", "풍향", "강우", "배지온도", "배지수분", "EC", "pH", "수위", "유량", "전력", "배터리", "천창", "측창", "차광커튼", "보온커튼", "순환팬", "배기팬", "관수밸브", "양액펌프", "히터", "냉방기", "모드", "설정값", "진단", "측정값", "스위치", "개폐 장치", "기타"].map((label) => ({ value: label, label }));
+    const entityRows = selectedEntities.length ? selectedEntities.map((entity, index) => {
+      const entityId = entity.entityId || entity.entity_id || "";
+      const domain = entity.domain || entity.entityDomain || (entityId.includes(".") ? entityId.split(".")[0] : "");
+      const unit = entity.unitOfMeasurement || entity.unit_of_measurement || entity.unit || "";
+      const role = entity.entityRole || entity.entity_role || entity.role || (domain === "sensor" ? "측정값" : domain === "switch" ? "스위치" : domain === "cover" ? "개폐 장치" : "기타");
+      return `<article data-r7-device-entity-row data-r7-device-entity-row-index="${index}" style="border:1px solid #e1efe5;border-radius:14px;background:#fbfefb;padding:10px;display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr;gap:8px;align-items:end;">
+        ${this._r7SettingsCreateField(`entityId_${index}`, "엔티티ID", entityId, 'readonly data-r7-device-entity-id-readonly')}
+        ${this._r7SettingsCreateField(`entityDomain_${index}`, "종류", domain, 'readonly data-r7-device-entity-domain-readonly')}
+        ${this._r7SettingsCreateField(`entityUnit_${index}`, "단위", unit, 'readonly data-r7-device-entity-unit-readonly')}
+        ${this._r7SettingsCreateSelect(`entityRole_${index}`, "역할", roleOptions, role, 'data-r7-device-entity-role-select')}
+      </article>`;
+    }).join("") : `<article data-r7-device-entity-row data-r7-device-entity-empty="true" style="border:1px dashed #d4e6d9;border-radius:14px;background:#fbfefb;padding:10px;display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr;gap:8px;align-items:end;">
+        ${this._r7SettingsCreateField("entityId_0", "엔티티ID", "", 'readonly data-r7-device-entity-id-readonly placeholder="장치 선택 시 자동 입력"')}
+        ${this._r7SettingsCreateField("entityDomain_0", "종류", "", 'readonly data-r7-device-entity-domain-readonly placeholder="domain"')}
+        ${this._r7SettingsCreateField("entityUnit_0", "단위", "", 'readonly data-r7-device-entity-unit-readonly placeholder="unit"')}
+        ${this._r7SettingsCreateSelect("entityRole_0", "역할", roleOptions, "측정값", 'data-r7-device-entity-role-select disabled')}
+      </article><p style="margin:0;color:#7b8f80;font-size:12px;">선택한 HA 장치에 연결된 엔티티가 없거나 아직 불러오지 않았습니다.</p>`;
     const sections = [
-      this._r7SettingsCreateSection("device-connection", "장치 연결", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("haDeviceId", "장비 ID", haDeviceOptions.length ? haDeviceOptions : [{ value: "", label: "HA 장비 없음", attrs: 'data-r7-settings-ha-device-id-option="empty"' }], modal.values?.haDeviceId || selectedHaDeviceId, 'data-r7-settings-ha-device-id-select data-r7-settings-ha-device-id-source="all-ha-devices" data-r7-settings-green-smart-device-fk="ha_device_id"')}${this._r7SettingsCreateSelect("deviceType", "장비종류", equipmentKindOptions, modal.values?.deviceType || "온습도 센서", 'data-r7-settings-equipment-kind-select')}</div>${this._r7SettingsCreateSelect("entityId", "HA entity", entityOptions.length ? entityOptions : [{ value: "", label: "미연결 HA entity 없음", attrs: 'data-r7-settings-unlinked-ha-entity-option="empty"' }], selectedEntity, 'data-r7-settings-unlinked-ha-entity-select data-r7-settings-ha-device-entity-support')}`),
-      this._r7SettingsCreateSection("device-name", "장치명", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("deviceName", "장치명", modal.values?.deviceName || "", 'placeholder="예: A구역 천창 1" data-r7-settings-device-name-input')}${this._r7SettingsCreateSelect("zoneId", "구역", zoneOptions, modal.values?.zoneId || zoneOptions[0]?.value || "zone-1")}</div>`),
-      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "장치 연결 근거", "")),
+      this._r7SettingsCreateSection("device-connection", "장치 연결 그룹", `<section data-r7-device-connection-group="true" style="display:grid;gap:10px;"><div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("haDeviceId", "장치 ID", haDeviceOptions.length ? haDeviceOptions : [{ value: "", label: "미연결 HA 장치 없음", attrs: 'data-r7-ha-unlinked-device-option="empty"' }], selectedHaDeviceId, 'data-r7-ha-unlinked-device-select data-r7-ha-device-source="unlinked-ha-devices" data-r7-settings-ha-device-id-select data-r7-settings-ha-device-id-source="unlinked-ha-devices" data-r7-settings-green-smart-device-fk="ha_device_id"')}${this._r7SettingsCreateSelect("equipmentKind", "장비종류", equipmentKindOptions, modal.values?.equipmentKind || modal.values?.deviceType || "기타", 'data-r7-equipment-kind-select data-r7-settings-equipment-kind-select')}</div><div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("deviceName", "장치명", modal.values?.deviceName || selectedDevice.deviceName || selectedDevice.name || "", 'placeholder="예: A구역 복합환경 제어기" data-r7-device-name-input data-r7-settings-device-name-input')}${this._r7SettingsCreateSelect("zoneId", "구역", zoneOptions, modal.values?.zoneId || zoneOptions[0]?.value || "zone-1", 'data-r7-device-zone-select')}</div></section>`),
+      this._r7SettingsCreateSection("device-entities", "엔티티 N 그룹", `<section data-r7-device-entity-repeat-group="true" style="display:grid;gap:8px;">${entityRows}</section>`),
+      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "장치 연결 근거", modal.values?.note || "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-sensor-mapping", title: "장치 연결", subtitle: "HA 장비 ID를 Green Smart 장비 테이블의 ha_device_id 외래키로 저장합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state, error: modal.error, submitLabel: "장치 연결 저장", sections }).replace('data-r7-record-modal-type="device-sensor-mapping"', 'data-r7-record-modal-type="device-sensor-mapping" data-r7-settings-device-connection-authoring-modal="true" data-r7-settings-device-connection-modal-title="장치 연결"');
+    return this.renderR7SettingsDetailActionModal({ open, kind: "device-sensor-mapping", title: "장치 연결", subtitle: "HA Device Registry의 미연결 장치를 Green Smart 장치로 저장하고 Entity N개를 역할과 함께 연결합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state || legacyModal.state, error: modal.error || legacyModal.error, submitLabel: "장치 연결 저장", sections }).replace('data-r7-record-modal-type="device-sensor-mapping"', 'data-r7-record-modal-type="device-sensor-mapping" data-r7-device-canonical-connection-modal="true" data-r7-settings-device-connection-authoring-modal="true" data-r7-settings-device-connection-modal-title="장치 연결"');
   }
 
 

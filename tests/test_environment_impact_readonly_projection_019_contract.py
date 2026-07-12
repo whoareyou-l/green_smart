@@ -27,11 +27,11 @@ def _load_service():
 
 
 def test_rs019_version_surfaces_are_aligned_to_1_12_18():
-    assert '"version": "1.15.42"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.42"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.42"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.43"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.43"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.43"' in _read(REBUILD_PANEL)
     for path in (DOC, INTERFACE_SPEC, PRODUCT_PLAN, LEGACY_INVENTORY):
-        assert "v1.15.42" in _read(path)
+        assert "v1.15.43" in _read(path)
 
 
 def test_rs019_document_records_environment_impact_projection_boundary():
@@ -184,7 +184,7 @@ def test_docs_specs_plan_and_inventory_record_rs019_and_next_step():
         assert marker in spec
     for marker in (
         "Phase R4.15 — Environment impact read-only projection",
-        "Status:** `v1.15.42`에서 영향지도 read-only projection 완료",
+        "Status:** `v1.15.43`에서 영향지도 read-only projection 완료",
         "No production route removal in RS-019",
         "No DB migration in RS-019",
         "No write/mutation in RS-019",
