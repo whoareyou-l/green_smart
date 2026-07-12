@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_20_declares_domain_shell_cache_store_and_helpers():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.39"' in text
+    assert 'const REBUILD_VERSION = "1.15.40"' in text
     for marker in [
         'this._r7DomainShellCache = new Map();',
         'this._r7DomainShellCacheStats = { hits: 0, misses: 0 };',
@@ -49,5 +49,5 @@ def test_v1_15_20_attach_shell_reuses_panel_cache_and_dirty_patch():
 
 def test_v1_15_20_plan_documents_workspace_innerhtml_replacement_removed_for_settings():
     plan = PLAN.read_text()
-    for marker in ['모바일 설정 domain shell cache 계획', 'workspace.innerHTML', 'cached shell attach', 'GitHub Release v1.15.39']:
+    for marker in ['모바일 설정 domain shell cache 계획', 'workspace.innerHTML', 'cached shell attach', 'GitHub Release v1.15.40']:
         assert marker in plan

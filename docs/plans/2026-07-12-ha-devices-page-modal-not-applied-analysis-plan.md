@@ -1,4 +1,4 @@
-# v1.15.39 장치 추가 버튼 HA 기기 페이지 모달 미반영 분석/수정 계획
+# v1.15.40 장치 추가 버튼 HA 기기 페이지 모달 미반영 분석/수정 계획
 
 ## 사용자 증상
 
@@ -15,7 +15,7 @@
 
 ### A. 운영 반영 불일치
 
-제품 repo에는 v1.15.39 코드가 있으나 운영 HA가 실제로 서빙하는 bind source/container JS는 이전 JS일 수 있다.
+제품 repo에는 v1.15.40 코드가 있으나 운영 HA가 실제로 서빙하는 bind source/container JS는 이전 JS일 수 있다.
 
 검증:
 - repo JS marker 확인
@@ -28,11 +28,11 @@
 
 ### B. WebView/브라우저/HA module cache
 
-served JS는 v1.15.39인데 모바일 WebView가 기존 custom element/module을 계속 사용하면 이전 DOM이 보일 수 있다.
+served JS는 v1.15.40인데 모바일 WebView가 기존 custom element/module을 계속 사용하면 이전 DOM이 보일 수 있다.
 
 검증:
 - 실제 화면 custom element name이 `green-smart-rebuild-panel-v1-15-39`인지 확인
-- served module URL이 `?v=1.15.39`인지 확인
+- served module URL이 `?v=1.15.40`인지 확인
 - 필요 시 v1.15.40으로 version bump해 cache bust.
 
 ### C. settings persistent DOM cache stale panel

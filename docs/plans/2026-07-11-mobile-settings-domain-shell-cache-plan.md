@@ -1,4 +1,4 @@
-# v1.15.39 모바일 설정 domain shell cache 계획
+# v1.15.40 모바일 설정 domain shell cache 계획
 
 ## 목표
 
@@ -8,7 +8,7 @@ v1.15.17~19에서 설정 하위탭 panel, 모달, panel hydrate는 캐시/dirty 
 workspace.innerHTML = this.renderR7ActiveDomainPage();
 ```
 
-v1.15.39 목표는 **모바일 설정 도메인 한정**으로 domain page shell 자체를 persistent DOM cache에 보관하고, 설정 버튼 클릭 시 workspace 전체 innerHTML 교체 대신 cached shell attach/show를 사용하도록 바꾸는 것이다.
+v1.15.40 목표는 **모바일 설정 도메인 한정**으로 domain page shell 자체를 persistent DOM cache에 보관하고, 설정 버튼 클릭 시 workspace 전체 innerHTML 교체 대신 cached shell attach/show를 사용하도록 바꾸는 것이다.
 
 ## 현재 문제
 
@@ -66,4 +66,4 @@ _attachR7CachedSettingsDomainShell(workspace)
 - 설정 branch에서는 `workspace.innerHTML = this.renderR7ActiveDomainPage()`보다 cached shell attach가 먼저 실행된다.
 - cached settings shell path marker가 served JS에 존재한다.
 - 기존 generic domain fallback은 유지된다.
-- 전체 테스트/Prod smoke/GitHub Release v1.15.39 완료.
+- 전체 테스트/Prod smoke/GitHub Release v1.15.40 완료.

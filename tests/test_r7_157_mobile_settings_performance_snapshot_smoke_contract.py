@@ -13,7 +13,7 @@ def source() -> str:
 
 def test_v1_15_23_declares_perf_snapshot_summary_and_self_smoke_helpers():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.39"' in text
+    assert 'const REBUILD_VERSION = "1.15.40"' in text
     for marker in [
         'this._r7SettingsPerf = { eventKind: "idle", startedAt: 0, samples: {} };',
         '_snapshotR7SettingsPerf()',
@@ -39,7 +39,7 @@ def test_v1_15_23_record_helper_updates_snapshot_after_every_sample():
 
 def test_v1_15_23_plan_documents_snapshot_smoke_scope():
     plan = PLAN.read_text()
-    for marker in ['성능 snapshot/smoke 계획', '_snapshotR7SettingsPerf()', '_runR7SettingsPerfMarkerSmoke()', 'GitHub Release v1.15.39']:
+    for marker in ['성능 snapshot/smoke 계획', '_snapshotR7SettingsPerf()', '_runR7SettingsPerfMarkerSmoke()', 'GitHub Release v1.15.40']:
         assert marker in plan
 
 

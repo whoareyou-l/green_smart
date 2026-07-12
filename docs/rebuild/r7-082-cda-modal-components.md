@@ -1,6 +1,6 @@
 # R7-082 CDA modal components
 
-Status: current baseline for `v1.15.39`.
+Status: current baseline for `v1.15.40`.
 
 ## Goal
 

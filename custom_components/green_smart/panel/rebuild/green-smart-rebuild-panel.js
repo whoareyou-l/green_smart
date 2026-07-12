@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.39";
+const REBUILD_VERSION = "1.15.40";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -3944,14 +3944,14 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const modal = this._settingsHaDevicesPageModal || { open: false };
     if (!modal.open) return `<template data-r7-settings-ha-devices-page-modal="false"></template>`;
     const src = modal.src || "/config/devices/dashboard";
-    const header = this.renderR7CdaModalHeader({ icon: "mdi:devices", title: "HA 기기 페이지", subtitle: "Home Assistant 기기 페이지를 그대로 열어 기기 추가와 기존 기능을 사용합니다", closeAttr: "data-r7-settings-ha-devices-page-close", attrs: "data-r7-settings-ha-devices-page-header" });
-    const helper = `<div data-r7-settings-ha-devices-page-helper style="border:1px solid #dcebe0;border-radius:12px;background:#fbfdfb;color:#31523b;padding:9px 12px;font-size:12px;display:flex;justify-content:space-between;gap:10px;align-items:center;">
-      <span>이 팝업은 HA <b>설정 › 기기 및 서비스 › 기기</b> 화면을 same-origin iframe으로 표시합니다. 우측 하단 HA의 <b>기기 추가</b> 버튼 등 페이지 기능을 그대로 사용할 수 있습니다.</span>
-      <a href="${src}" target="_blank" rel="noreferrer" data-r7-settings-ha-devices-page-open-new-tab style="border:1px solid #bdd7f0;border-radius:10px;background:#eef6ff;color:#326aa5;padding:7px 10px;text-decoration:none;font-weight:950;white-space:nowrap;">새 탭</a>
+    const cropTop = 104;
+    const cropLeft = 48;
+    const header = this.renderR7CdaModalHeader({ icon: "mdi:devices", title: "HA 기기 페이지", subtitle: "기기 목록 본문만 크게 표시합니다", closeAttr: "data-r7-settings-ha-devices-page-close", attrs: "data-r7-settings-ha-devices-page-header" });
+    const iframe = `<div data-r7-settings-ha-devices-page-iframe-viewport data-r7-settings-ha-devices-page-crop="hide-ha-sidebar-and-tabs" data-r7-settings-ha-devices-page-crop-top="${cropTop}" data-r7-settings-ha-devices-page-crop-left="${cropLeft}" style="position:relative;min-height:0;height:100%;overflow:hidden;border:1px solid #e2eee5;border-radius:14px;background:#fff;box-sizing:border-box;">
+      <iframe title="Home Assistant 기기 페이지" src="${src}" data-r7-settings-ha-devices-page-iframe data-r7-settings-ha-devices-page-src="${src}" style="position:absolute;left:-${cropLeft}px;top:-${cropTop}px;width:calc(100% + ${cropLeft}px);height:calc(100% + ${cropTop}px);min-height:0;border:0;background:#fff;box-sizing:border-box;"></iframe>
     </div>`;
-    const iframe = `<iframe title="Home Assistant 기기 페이지" src="${src}" data-r7-settings-ha-devices-page-iframe data-r7-settings-ha-devices-page-src="${src}" style="width:100%;height:100%;min-height:0;border:1px solid #e2eee5;border-radius:14px;background:#fff;box-sizing:border-box;"></iframe>`;
-    const responsive = `<style data-r7-settings-ha-devices-page-responsive-style>@media (max-width: 860px) {[data-r7-settings-ha-devices-page-card] { width: calc(100vw - 16px) !important; height: calc(100vh - 16px) !important; max-height: calc(100vh - 16px) !important; border-radius:14px !important; padding:10px !important; }[data-r7-settings-ha-devices-page-helper] { display:none !important; }[data-r7-settings-ha-devices-page-iframe] { border-radius:10px !important; }}</style>`;
-    const card = this.renderR7CdaModalCard({ attrs: `data-r7-settings-ha-devices-page-card data-r7-settings-ha-devices-page-modal="true" data-r7-settings-ha-devices-page-route="${src}"`, width: "min(1240px,calc(100vw - 24px))", maxHeight: "calc(100vh - 24px)", rows: "auto auto minmax(0,1fr)", body: `${responsive}${header}${helper}${iframe}` });
+    const responsive = `<style data-r7-settings-ha-devices-page-responsive-style>@media (max-width: 860px) {[data-r7-settings-ha-devices-page-overlay] { padding:6px !important; align-items:stretch !important; }[data-r7-settings-ha-devices-page-card] { width: calc(100vw - 12px) !important; height: calc(100vh - 12px) !important; max-height: calc(100vh - 12px) !important; border-radius:14px !important; padding:10px !important; }[data-r7-settings-ha-devices-page-iframe-viewport] { border-radius:10px !important; }[data-r7-settings-ha-devices-page-iframe] { left:-48px !important; top:-104px !important; width:calc(100% + 48px) !important; height:calc(100% + 104px) !important; }}</style>`;
+    const card = this.renderR7CdaModalCard({ attrs: `data-r7-settings-ha-devices-page-card data-r7-settings-ha-devices-page-modal="true" data-r7-settings-ha-devices-page-route="${src}" data-r7-settings-ha-devices-page-layout="cropped-full-height"`, width: "min(1240px,calc(100vw - 16px))", maxHeight: "calc(100vh - 16px)", rows: "auto minmax(0,1fr)", body: `${responsive}${header}${iframe}` }).replace("max-height:calc(100vh - 16px);", "height:calc(100vh - 16px);max-height:calc(100vh - 16px);");
     return this.renderR7CdaModalOverlay({ open: true, zIndex: 52, attrs: `data-r7-settings-ha-devices-page-overlay data-r7-settings-ha-devices-page-modal="true" data-r7-settings-ha-devices-page-route="${src}"`, body: card });
   }
 

@@ -50,9 +50,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.39"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.39"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.39"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.40"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.40"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.40"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -100,11 +100,19 @@ def test_r7_128_device_add_card_opens_ha_devices_page_modal():
     for marker in (
         'data-r7-settings-ha-devices-page-modal="true"',
         'data-r7-settings-ha-devices-page-iframe',
+        'data-r7-settings-ha-devices-page-iframe-viewport',
+        'data-r7-settings-ha-devices-page-crop="hide-ha-sidebar-and-tabs"',
+        'data-r7-settings-ha-devices-page-layout="cropped-full-height"',
+        'height:calc(100vh - 16px);max-height:calc(100vh - 16px);',
+        'left:-48px',
+        'top:-104px',
         'src="/config/devices/dashboard"',
         'data-r7-settings-ha-devices-page-close',
-        'data-r7-settings-ha-devices-page-open-new-tab',
     ):
         assert marker in modal_html
+    assert 'data-r7-settings-ha-devices-page-helper' not in modal_html
+    assert '이 팝업은 HA' not in modal_html
+    assert 'data-r7-settings-ha-devices-page-open-new-tab' not in modal_html
 
 
 def test_r7_128_device_list_modal_has_edit_delete_footer_and_no_bottom_close_button():

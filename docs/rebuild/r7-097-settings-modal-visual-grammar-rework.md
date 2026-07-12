@@ -65,4 +65,4 @@ data-r7-settings-shortcut-review-section="evidence"
 
 - 생성 모달이 생육조사 작성 모달의 sectioned form + 저장 전 검증 문법을 갖는지
 - 목록 모달이 승인 모달 / 감사 로그 모달의 review list + detail evidence 문법을 갖는지
-- 버전 표면이 `1.15.39`인지
+- 버전 표면이 `1.15.40`인지

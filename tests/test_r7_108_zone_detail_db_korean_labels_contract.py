@@ -13,9 +13,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_108_version_surfaces_are_1_14_39():
-    assert '"version": "1.15.39"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.39"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.39"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.40"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.40"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.40"' in _read(REBUILD_PANEL)
 
 
 def test_r7_108_zone_detail_matches_green_smart_settings_zones_db_fields():
