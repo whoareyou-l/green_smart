@@ -253,6 +253,27 @@ def _device_group_dto(row: dict[str, Any]) -> dict[str, Any]:
         "updatedAt": row.get("updated_at"),
     }
 
+
+def _irrigation_group_dto(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row.get("id"),
+        "farmId": row.get("farm_id"),
+        "zoneId": row.get("zone_id") or "zone-1",
+        "zoneName": row.get("zone_name") or "",
+        "irrigationGroupNo": row.get("irrigation_group_no") or 0,
+        "irrigationGroupName": row.get("irrigation_group_name") or "관수그룹",
+        "irrigationMethod": row.get("irrigation_method") or "배지경",
+        "irrigationMethodDetail": row.get("irrigation_method_detail") or "코코피트",
+        "outletCount": row.get("outlet_count") or 0,
+        "flowRatePerOutlet": row.get("flow_rate_per_outlet") or 0,
+        "flowRateUnit": row.get("flow_rate_unit") or "L/h",
+        "bedCount": row.get("bed_count") or 0,
+        "note": row.get("note") or "",
+        "status": row.get("status") or "active",
+        "createdAt": row.get("created_at"),
+        "updatedAt": row.get("updated_at"),
+    }
+
 async def list_settings_greenhouses(hass, farm_id: int = 1) -> list[dict[str, Any]]:
 
     rows = await fetchall(hass, """
@@ -478,6 +499,56 @@ async def create_settings_device_group(hass, payload: dict[str, Any], actor: str
         """, (farm_id, zone_id, group_name, _str(payload, "groupType", "group_type", default="환경 그룹"), _str(payload, "linkPolicy", "link_policy", default="다중 그룹 연결 허용"), _str(payload, "note"), _zone_status_label(payload, "status", "state", default="정상"), actor, actor))
     rows = await list_settings_device_groups(hass, farm_id)
     return next((row for row in rows if row["zoneId"] == zone_id and row["groupName"] == group_name), rows[0] if rows else {"zoneId": zone_id, "groupName": group_name})
+
+
+async def list_settings_irrigation_groups(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    rows = await fetchall(hass, """
+        SELECT ig.id, ig.farm_id, ig.zone_id, z.name AS zone_name, ig.irrigation_group_no, ig.irrigation_group_name,
+               ig.irrigation_method, ig.irrigation_method_detail, ig.outlet_count, ig.flow_rate_per_outlet,
+               ig.flow_rate_unit, ig.bed_count, ig.note, ig.status, ig.created_at, ig.updated_at
+        FROM green_smart_settings_irrigation_groups ig
+        LEFT JOIN green_smart_settings_zones z ON z.farm_id = ig.farm_id AND (CAST(z.id AS CHAR) = ig.zone_id OR CONCAT('settings-zone-', z.id) = ig.zone_id)
+        WHERE ig.farm_id = %s AND ig.status NOT IN ('삭제됨', 'deleted')
+        ORDER BY ig.zone_id ASC, ig.irrigation_group_no ASC, ig.id ASC
+        """, (farm_id,))
+    return [_irrigation_group_dto(row) for row in rows]
+
+
+def _zone_label_for_irrigation_group(zones: list[dict[str, Any]], zone_id: str) -> str:
+    for zone in zones:
+        if str(zone.get("zoneId")) == str(zone_id) or str(zone.get("id")) == str(zone_id) or f"settings-zone-{zone.get('id')}" == str(zone_id):
+            return str(zone.get("name") or zone.get("zoneName") or zone_id)
+    return str(zone_id or "구역")
+
+
+async def create_settings_irrigation_group(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    zone_id = _str(payload, "zoneId", "zone_id", default="zone-1")
+    rows = await fetchall(hass, """
+        SELECT COALESCE(MAX(irrigation_group_no), 0) + 1 AS next_no
+        FROM green_smart_settings_irrigation_groups
+        WHERE farm_id = %s AND zone_id = %s
+        """, (farm_id, zone_id))
+    next_no = int((rows[0] or {}).get("next_no") or 1) if rows else 1
+    zone_name = _zone_label_for_irrigation_group(await list_settings_zones(hass, farm_id), zone_id)
+    group_name = f"{zone_name} 관수그룹 {next_no}"
+    await execute(hass, """
+        INSERT INTO green_smart_settings_irrigation_groups
+            (farm_id, zone_id, irrigation_group_no, irrigation_group_name, irrigation_method, irrigation_method_detail,
+             outlet_count, flow_rate_per_outlet, flow_rate_unit, bed_count, note, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'L/h', %s, %s, %s, %s, %s)
+        """, (
+            farm_id, zone_id, next_no, group_name,
+            _str(payload, "irrigationMethod", "irrigation_method", default="배지경"),
+            _str(payload, "irrigationMethodDetail", "irrigation_method_detail", default="코코피트"),
+            _int(payload, "outletCount", "outlet_count", default=0),
+            _str(payload, "flowRatePerOutlet", "flow_rate_per_outlet", default="0"),
+            _int(payload, "bedCount", "bed_count", default=0),
+            _str(payload, "note"),
+            _zone_status_label(payload, "status", "state", default="active"),
+            actor, actor,
+        ))
+    groups = await list_settings_irrigation_groups(hass, farm_id)
+    return next((row for row in groups if row.get("zoneId") == zone_id and int(row.get("irrigationGroupNo") or 0) == next_no), groups[-1] if groups else {"zoneId": zone_id, "irrigationGroupName": group_name})
 
 
 async def create_settings_device_sensor_mapping(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
@@ -1176,6 +1247,7 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
     canonical_device_latest_values = await list_green_smart_device_latest_values_map(hass, farm_id)
     ha_devices = await list_ha_device_registry_summary(hass)
     device_groups = await list_settings_device_groups(hass, farm_id)
+    irrigation_groups = await list_settings_irrigation_groups(hass, farm_id)
     zone_by_id = {str(zone.get("id")): zone for zone in zones}
     zone_by_key = {str(zone.get("zoneId")): zone for zone in zones}
     for mapping in mappings:
@@ -1188,8 +1260,15 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
         label = device_group.get("groupName") or device_group.get("groupType")
         if zone is not None and label:
             zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
+    for irrigation_group in irrigation_groups:
+        zone = zone_by_id.get(str(irrigation_group.get("zoneId"))) or zone_by_key.get(str(irrigation_group.get("zoneId")))
+        if zone is not None:
+            zone.setdefault("irrigationGroups", []).append(irrigation_group)
+            label = irrigation_group.get("irrigationGroupName") or irrigation_group.get("irrigationMethod")
+            if label:
+                zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
     system_integration = await system_integration_watchdog_response(hass)
-    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "canonicalDevices": canonical_devices, "canonicalDeviceEntities": canonical_device_entities, "canonicalDeviceLatestValues": canonical_device_latest_values, "haDevices": ha_devices, "deviceGroups": device_groups, "systemIntegration": system_integration}
+    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "canonicalDevices": canonical_devices, "canonicalDeviceEntities": canonical_device_entities, "canonicalDeviceLatestValues": canonical_device_latest_values, "haDevices": ha_devices, "deviceGroups": device_groups, "irrigationGroups": irrigation_groups, "systemIntegration": system_integration}
 
 
 class GreenSmartHaUnlinkedDevicesView(HomeAssistantView):
@@ -1417,6 +1496,21 @@ class RebuildSettingsDeviceGroupCreateView(HomeAssistantView):
         hass = request.app["hass"]
         item = await create_settings_device_group(hass, await _settings_payload(request), actor=_request_actor(request))
         return self.json({"ok": True, "kind": "device-group", "saved": True, "approvalRequired": False, "deviceGroup": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+
+class RebuildSettingsIrrigationGroupCreateView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/irrigation-groups"
+    name = "api:green_smart:rebuild:settings:irrigation_groups"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        return self.json({"ok": True, "irrigationGroups": await list_settings_irrigation_groups(hass)})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        item = await create_settings_irrigation_group(hass, await _settings_payload(request), actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "irrigation-group", "saved": True, "approvalRequired": False, "irrigationGroup": item, "settingsSnapshot": await settings_snapshot_response(hass)})
 
 
 class RebuildSettingsDeviceSensorMappingView(HomeAssistantView):

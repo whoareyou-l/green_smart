@@ -1,6 +1,6 @@
 # R7-078 Approval-all modal routing hotfix
 
-Status: current baseline for `v1.15.47`.
+Status: current baseline for `v1.15.48`.
 
 ## Problem
 

@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.47";
+const REBUILD_VERSION = "1.15.48";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -69,6 +69,7 @@ const REBUILD_SETTINGS_GREENHOUSE_CREATE_API_PATH = "green_smart/rebuild/setting
 const REBUILD_SETTINGS_ZONE_CREATE_API_PATH = "green_smart/rebuild/settings/zones";
 const REBUILD_SETTINGS_DEVICE_CREATE_API_PATH = "green_smart/rebuild/settings/devices";
 const REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/device-groups";
+const REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/irrigation-groups";
 const REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH = "green_smart/rebuild/settings/device-sensor-mappings";
 const GREEN_SMART_HA_UNLINKED_DEVICES_API_PATH = "green_smart/devices/ha/unlinked";
 const GREEN_SMART_DEVICE_CONNECTION_API_PATH = "green_smart/devices";
@@ -1189,7 +1190,6 @@ class GreenSmartRebuildPanel extends HTMLElement {
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
-
   async _submitSettingsDeviceCreateForm(form) {
     const payload = this._settingsFormPayload(form);
     const modal = this._settingsDeviceCreateModal || {};
@@ -1209,13 +1209,13 @@ class GreenSmartRebuildPanel extends HTMLElement {
 
   async _submitSettingsDeviceGroupCreateForm(form) {
     const payload = this._settingsFormPayload(form);
-    payload.deviceIds = Array.from(form.querySelectorAll?.('input[name="deviceIds"]:checked') || []).map((input) => input.value);
+    payload.flowRateUnit = "L/h";
     const modal = this._settingsDeviceGroupCreateModal || {};
     this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saving" };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
-      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH, payload);
+      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH, payload);
       if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
       await this._loadSettingsGreenhouseZoneData();
       this._settingsDeviceGroupCreateModal = { ...modal, open: true, state: "saved", response };
@@ -4103,25 +4103,30 @@ class GreenSmartRebuildPanel extends HTMLElement {
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-create", title: "장치 생성", subtitle: "온실 생성 팝업처럼 기본 정보와 저장 전 검증을 나눠 입력합니다", formAttr: "data-r7-settings-device-create-form", closeKind: "device", state: modal.state, error: modal.error, submitLabel: "장치 저장", sections });
   }
-
   renderR7SettingsDeviceGroupCreateModal() {
     const modal = this._settingsDeviceGroupCreateModal || { open: false };
     const values = modal.values || {};
     const settingsData = this.r7SettingsGreenhouseZoneData();
-    const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._homeContext?.zones || [{ id: "zone-a", zoneName: "A구역", name: "A구역" }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
+    const zones = (Array.isArray(settingsData.zones) && settingsData.zones.length ? settingsData.zones : (this._homeContext?.zones || [{ id: "zone-a", zoneId: "zone-a", zoneName: "A구역", name: "A구역", bedCount: 2 }])).filter((zone) => this._r7ZoneId?.(zone) !== "all");
     const zoneOptions = zones.map((zone, index) => ({ value: this._r7ZoneId?.(zone) || zone.zoneId || zone.id || `zone-${index + 1}`, label: this._r7ZoneName?.(zone) || zone.zoneName || zone.name || `${index + 1}구역` }));
-    const groupTypeOptions = [{ value: "센서 그룹", label: "센서 그룹" }, { value: "장치 그룹", label: "장치 그룹" }, { value: "관수 그룹", label: "관수 그룹" }];
-    const candidates = this._r7SettingsUngroupedConnectedDeviceRows();
-    const candidateHtml = candidates.length ? candidates.map((device) => `<label data-r7-settings-device-group-candidate-row="${device.id}" style="border:1px solid #edf4ef;border-radius:10px;padding:9px;display:flex;gap:8px;align-items:flex-start;background:#fff;"><input type="checkbox" name="deviceIds" value="${device.id}" data-r7-settings-device-group-candidate-checkbox data-r7-settings-device-group-ungrouped-only="true" data-r7-settings-device-group-multi-select="true" style="margin-top:3px;"><span style="display:grid;gap:3px;"><b>${device.deviceName || device.name}</b><span>${device.deviceType || device.installType} · ${device.entityId || device.deviceEntity}</span></span></label>`).join("") : `<p data-r7-settings-device-group-no-candidate style="margin:0;color:#78927f;font-size:12px;">그룹에 추가할 수 있는 연결 완료·미등록 장치가 없습니다.</p>`;
+    const selectedZoneId = values.zoneId || zoneOptions[0]?.value || "zone-a";
+    const selectedZone = zones.find((zone) => String(this._r7ZoneId?.(zone) || zone.zoneId || zone.id) === String(selectedZoneId)) || zones[0] || {};
+    const selectedZoneName = this._r7ZoneName?.(selectedZone) || selectedZone.zoneName || selectedZone.name || "A구역";
+    const irrigationGroups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
+    const nextNo = irrigationGroups.filter((group) => String(group.zoneId || group.zone_id || "") === String(selectedZoneId)).reduce((max, group) => Math.max(max, Number(group.irrigationGroupNo || group.irrigation_group_no || 0)), 0) + 1;
+    const expectedName = `${selectedZoneName} 관수그룹 ${nextNo}`;
+    const bedDefault = values.bedCount || selectedZone.bedCount || selectedZone.beds || selectedZone.bed_count || 1;
+    const statusOptions = [{ value: "active", label: "사용" }, { value: "inactive", label: "미사용" }, { value: "maintenance", label: "점검" }];
+    const methodOptions = [{ value: "순수경", label: "순수경" }, { value: "배지경", label: "배지경" }];
+    const detailOptions = ["DFT", "NFT", "분무수경", "담액수경", "박막수경", "코코피트", "암면", "펄라이트", "피트모스", "혼합배지", "토양", "기타"].map((label) => ({ value: label, label }));
     const sections = [
-      this._r7SettingsCreateSection("basic-info", "기본 정보", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("groupName", "그룹명", values.groupName || "신규 장치 그룹")}${this._r7SettingsCreateSelect("groupType", "그룹 유형", groupTypeOptions, values.groupType || "장치 그룹")}</div>`),
-      this._r7SettingsCreateSection("zone-fk", "구역 FK", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("zoneId", "구역 FK", zoneOptions, values.zoneId || zoneOptions[0]?.value || "zone-a", 'data-r7-settings-device-group-zone-fk-select')}${this._r7SettingsCreateField("linkPolicy", "장치 연결 정책", values.linkPolicy || "연결 완료 장치만 그룹 등록")}</div>`),
-      this._r7SettingsCreateSection("device-candidates", "그룹 장치 선택", `<div data-r7-settings-device-group-candidates data-r7-settings-device-group-ungrouped-only="true" data-r7-settings-device-group-multi-select="true" style="display:grid;gap:8px;">${candidateHtml}</div>`),
-      this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "그룹 추가 사유", values.note || "")),
+      this._r7SettingsCreateSection("irrigation-group-info", "관수그룹 정보", `<section data-r7-settings-irrigation-group-info-section="true" style="display:grid;gap:10px;"><div style="display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;">${this._r7SettingsCreateSelect("zoneId", "구역", zoneOptions, selectedZoneId, 'data-r7-settings-irrigation-group-zone-fk-select data-r7-settings-device-group-zone-fk-select')}${this._r7SettingsCreateField("irrigationGroupPreview", "관수그룹", expectedName, 'readonly data-r7-settings-irrigation-group-auto-name-preview')}${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "active", 'data-r7-settings-irrigation-group-status-select')}</div><p data-r7-settings-irrigation-group-auto-name-note style="margin:0;color:#6f8875;font-size:12px;">구역 FK 기준으로 저장 직전에 관수그룹 번호와 이름이 자동 생성됩니다.</p></section>`),
+      this._r7SettingsCreateSection("irrigation-method", "관수방법", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("irrigationMethod", "관수방법", methodOptions, values.irrigationMethod || "배지경", 'data-r7-settings-irrigation-method-select')}${this._r7SettingsCreateSelect("irrigationMethodDetail", "관수방법 상세", detailOptions, values.irrigationMethodDetail || "코코피트", 'data-r7-settings-irrigation-method-detail-select')}</div>`),
+      this._r7SettingsCreateSection("irrigation-outlet-cultivation", "토출/재배 기준", `<div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;">${this._r7SettingsCreateField("outletCount", "토출구 수", values.outletCount || "0", 'type="number" min="0" data-r7-settings-irrigation-outlet-count-input')}${this._r7SettingsCreateField("flowRatePerOutlet", "기준 유량", values.flowRatePerOutlet || "0", 'type="number" min="0" step="0.001" data-r7-settings-irrigation-flow-rate-input')}<label style="display:grid;gap:5px;font-size:12px;font-weight:900;color:#31523b;min-width:0;"><span>유량 단위</span><input name="flowRateUnit" value="L/h" readonly data-r7-settings-irrigation-flow-rate-unit style="height:36px;border:1px solid #dcebe0;border-radius:8px;padding:0 9px;background:#f7fbf8;box-sizing:border-box;font-size:12px;min-width:0;width:100%;"></label>${this._r7SettingsCreateField("bedCount", "배드 수", bedDefault, 'type="number" min="0" data-r7-settings-irrigation-bed-count-input')}</div><p style="margin:0;color:#6f8875;font-size:12px;">배드 수는 선택 구역의 배드 수를 기본값으로 참고하며, 추후 작기와 연동해 재식 수 판단에 사용합니다.</p>`),
+      this._r7SettingsCreateSection("memo", "운영 메모", this._r7SettingsCreateTextarea("note", "예: A구역 좌측 1~2번 베드, 드립퍼 100개, 기준 유량 2L/h", values.note || "")),
     ];
-    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-group-create", title: "그룹 생성", subtitle: "연결 완료 후 아직 그룹에 등록되지 않은 장치를 체크박스로 다중 선택합니다", formAttr: "data-r7-settings-device-group-create-form", closeKind: "device-group", state: modal.state, error: modal.error, submitLabel: "그룹 저장", sections });
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "device-group-create", title: "관수그룹 생성", subtitle: "구역 FK 기반으로 관수그룹 마스터를 생성합니다. 장치는 장치 하위탭에서 관수그룹 FK로 연결합니다.", formAttr: "data-r7-settings-device-group-create-form", closeKind: "device-group", state: modal.state, error: modal.error, submitLabel: "관수그룹 저장", sections }).replace('data-r7-record-modal-type="device-group-create"', 'data-r7-record-modal-type="device-group-create" data-r7-settings-irrigation-group-create-modal="true"');
   }
-
   renderR7SettingsDeviceSensorMappingModal() {
     const legacyModal = this._settingsDeviceSensorMappingModal || { open: false };
     const modal = this._settingsDeviceConnectionModal || legacyModal || { open: false, values: {}, selectedEntities: [] };
@@ -4597,19 +4602,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     const selected = normalized[0];
     const selectedUnmapped = selected.labels.filter((label) => /미연결|unmapped|누락|missing/i.test(String(label))).length;
-    const selectedDevices = selected.devices;
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const allIrrigationGroups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
+    const selectedIrrigationGroups = allIrrigationGroups.filter((group) => String(group.zoneId || group.zone_id || "") === String(selected.zoneId) || String(group.zoneId || group.zone_id || "") === String(selected.zoneId).replace(/^settings-zone-/, ""));
     const greenhouseInfo = this.renderR7CdbSummaryCard({ key: "greenhouse-basic-info", icon: "mdi:greenhouse", title: "온실 정보", primary: "온실 운영 기준", rows: [this._r7SettingsGreenhouseValueRow("온실명", this._homeContext?.greenhouseName || "제1온실"), this._r7SettingsGreenhouseValueRow("위치", "경기 화성"), this._r7SettingsGreenhouseValueRow("설치유형", "NUC edge")], tone: "green", statusKey: "normal-ready" });
     const zoneInfo = this.renderR7CdbSummaryCard({ key: "zone-basic-info", icon: "mdi:view-grid-outline", title: "구역 정보", primary: selected.zoneName, rows: [this._r7SettingsGreenhouseValueRow("구역 용도", selected.purpose), this._r7SettingsGreenhouseValueRow("면적", selected.area), this._r7SettingsGreenhouseValueRow("배드 수", selected.bedCount)], tone: selected.statusTone === "amber" ? "amber" : "green", statusKey: selected.statusTone === "amber" ? "needs-verification" : "normal-ready" });
-    const irrigationGroupCount = Math.max(0, selected.labels.filter((label) => /관수|irrigation|밸브|valve/i.test(String(label))).length || Math.min(selectedDevices, 1));
-    const irrigationMethodLabel = selected.labels.find((label) => /점적|drip|스프링클러|sprinkler|분무|mist|fog|양액|nutrient/i.test(String(label)));
-    const irrigationMethod = irrigationMethodLabel ? String(irrigationMethodLabel).replace(/\s*(관수|irrigation|방식|method)\s*/gi, "").trim() || "점적" : "점적";
-    const outletCount = Math.max(0, selected.labels.filter((label) => /토출|outlet|밸브|valve/i.test(String(label))).length || selectedDevices || irrigationGroupCount);
-    const equipmentInfo = this.renderR7CdbSummaryCard({ key: "equipment-composition", icon: "mdi:water-pump", title: "관수그룹 정보", primary: `${selected.zoneName} · 관수그룹 상태`, rows: [this._r7SettingsGreenhouseValueRow("그룹 수", `${irrigationGroupCount}개`, 'data-r7-settings-irrigation-group-count'), this._r7SettingsGreenhouseValueRow("관수 방식", irrigationMethod, 'data-r7-settings-irrigation-method'), this._r7SettingsGreenhouseValueRow("토출구 수", `${outletCount}개`, 'data-r7-settings-irrigation-outlet-count')], tone: selectedUnmapped ? "amber" : "green", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-equipment-status-card="selected-zone" data-r7-settings-irrigation-group-info-card="true"' });
+    const irrigationGroupCount = selectedIrrigationGroups.length;
+    const methodSet = [...new Set(selectedIrrigationGroups.map((group) => [group.irrigationMethod, group.irrigationMethodDetail].filter(Boolean).join(" · ")).filter(Boolean))];
+    const irrigationMethod = methodSet.length === 0 ? "미등록" : methodSet.length === 1 ? methodSet[0] : `${methodSet[0]} 외 ${methodSet.length - 1}`;
+    const outletCount = selectedIrrigationGroups.reduce((sum, group) => sum + Number(group.outletCount || group.outlet_count || 0), 0);
+    const equipmentInfo = this.renderR7CdbSummaryCard({ key: "equipment-composition", icon: "mdi:water-pump", title: "관수그룹 정보", primary: `${selected.zoneName} · 관수그룹 상태`, rows: [this._r7SettingsGreenhouseValueRow("그룹 수", `${irrigationGroupCount}개`, 'data-r7-settings-irrigation-group-count'), this._r7SettingsGreenhouseValueRow("관수 방식", irrigationMethod, 'data-r7-settings-irrigation-method'), this._r7SettingsGreenhouseValueRow("토출구 수", `${outletCount}개`, 'data-r7-settings-irrigation-outlet-count')], tone: selectedUnmapped ? "amber" : "green", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", extraAttrs: 'data-r7-settings-equipment-status-card="selected-zone" data-r7-settings-irrigation-group-info-card="true" data-r7-settings-irrigation-group-card-source="irrigationGroups"' });
     const createCard = ({ kind, title, icon, primary, note, addLabel, addAttr, shortcutLabel, shortcutAttr, tone = "blue" }) => this.renderR7CdbButtonTwoCard({ kind, icon, title, statusKey: "due-today", tone, primary, note, firstLabel: addLabel, firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: `${addAttr} data-r7-settings-modal-skip-record-binding="true"`, secondLabel: shortcutLabel, secondIcon: "mdi:history", secondTone: "blue", secondAttrs: `${shortcutAttr} data-r7-settings-modal-skip-record-binding="true"`, extraAttrs: `data-r7-settings-create-card="${kind}" data-r7-settings-greenhouse-summary-card="${kind.replace('settings-', '').replace('-create', '')}-create" data-r7-settings-zone-create-reference-card="image-like-common-card"` });
     const createCards = [
       createCard({ kind: "settings-greenhouse-create", title: "온실 생성", icon: "mdi:greenhouse", primary: "새 온실 없음", note: "온실을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 온실 추가", addAttr: 'data-r7-settings-greenhouse-create-button', shortcutLabel: "온실 정보", shortcutAttr: 'data-r7-settings-greenhouse-info-shortcut-button' }),
       createCard({ kind: "settings-zone-create", title: "구역 생성", icon: "mdi:plus-circle-outline", primary: "새 구역 없음", note: "구역을 추가하려면 승인 후 저장이 필요합니다", addLabel: "+ 새 구역 추가", addAttr: 'data-r7-settings-zone-create-card data-r7-settings-zone-create-button', shortcutLabel: "구역 목록", shortcutAttr: 'data-r7-settings-zone-list-shortcut-button' }),
-      this.renderR7CdbButtonTwoCard({ kind: "settings-irrigation-group-create", icon: "mdi:water-pump", title: "관수그룹 생성", subtitle: "선택 구역 관수그룹", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", tone: selectedUnmapped ? "amber" : "blue", primary: `${irrigationGroupCount}개 관수그룹`, note: "관수그룹은 구역 FK와 연결 장치를 기준으로 관리합니다.", firstLabel: "+ 관수그룹 생성", firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: 'data-r7-settings-device-group-create-button data-r7-settings-irrigation-group-create-button data-r7-settings-device-process="group-create-zone-fk" data-r7-settings-device-group-zone-fk="required" data-r7-settings-modal-skip-record-binding="true"', secondLabel: "관수그룹 목록", secondIcon: "mdi:format-list-bulleted", secondTone: "blue", secondAttrs: 'data-r7-settings-device-group-list-shortcut data-r7-settings-irrigation-group-list-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-check-card="settings-irrigation-group-create" data-r7-settings-greenhouse-summary-card="irrigation-group-create" data-r7-settings-irrigation-group-create-card="button-two"' }),
+      this.renderR7CdbButtonTwoCard({ kind: "settings-irrigation-group-create", icon: "mdi:water-pump", title: "관수그룹 생성", subtitle: "선택 구역 관수그룹", statusKey: selectedUnmapped ? "needs-verification" : "normal-ready", tone: selectedUnmapped ? "amber" : "blue", primary: `${irrigationGroupCount}개 관수그룹`, note: "관수그룹은 구역 FK와 관수/토출 기준값으로 먼저 생성합니다.", firstLabel: "+ 관수그룹 생성", firstIcon: "mdi:plus-circle-outline", firstTone: "green", firstAttrs: 'data-r7-settings-device-group-create-button data-r7-settings-irrigation-group-create-button data-r7-settings-device-process="group-create-zone-fk" data-r7-settings-device-group-zone-fk="required" data-r7-settings-modal-skip-record-binding="true"', secondLabel: "관수그룹 목록", secondIcon: "mdi:format-list-bulleted", secondTone: "blue", secondAttrs: 'data-r7-settings-device-group-list-shortcut data-r7-settings-irrigation-group-list-button data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-check-card="settings-irrigation-group-create" data-r7-settings-greenhouse-summary-card="irrigation-group-create" data-r7-settings-irrigation-group-create-card="button-two"' }),
     ].join("");
     const zoneRows = normalized.map((zone, index) => ({
       kind: zone.zoneName,

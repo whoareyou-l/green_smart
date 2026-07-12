@@ -52,9 +52,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.47"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.47"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.47"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.48"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.48"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.48"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -196,8 +196,9 @@ def test_r7_115_group_add_uses_greenhouse_create_common_modal_grammar_with_zone_
         'data-r7-settings-device-group-create-modal="true"',
         'data-r7-settings-create-growth-like-modal="true"',
         'data-r7-settings-create-left-form',
-        'data-r7-settings-create-section="basic-info"',
-        'data-r7-settings-create-section="zone-fk"',
+        'data-r7-settings-create-section="irrigation-group-info"',
+        'data-r7-settings-create-section="irrigation-method"',
+        'data-r7-settings-create-section="irrigation-outlet-cultivation"',
         'data-r7-settings-create-section="memo"',
         'data-r7-settings-create-pre-save-checklist',
         'data-r7-record-pre-save-checklist',
@@ -205,5 +206,7 @@ def test_r7_115_group_add_uses_greenhouse_create_common_modal_grammar_with_zone_
         'data-r7-settings-device-group-zone-fk-select',
     ):
         assert marker in html
-    for text in ('그룹 생성', '그룹명', '구역 FK', 'A구역', '그룹 저장', '저장 전 검증'):
+    for text in ('관수그룹 생성', '관수그룹 정보', '구역', '관수그룹', '상태', '관수방법', '관수방법 상세', '토출구 수', '기준 유량', 'L/h', '배드 수', '관수그룹 저장', '저장 전 검증'):
         assert text in html
+    for forbidden in ('그룹 장치 선택', '장치 연결 정책', '그룹 유형', '공급 방식', '배액 관리', '물량 계산 기준'):
+        assert forbidden not in html

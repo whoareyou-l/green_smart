@@ -220,6 +220,32 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             KEY idx_settings_device_group_zone (farm_id, zone_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
+
+        """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_irrigation_groups (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            zone_id VARCHAR(128) NOT NULL,
+            irrigation_group_no INT NOT NULL,
+            irrigation_group_name VARCHAR(128) NOT NULL,
+            irrigation_method VARCHAR(32) NOT NULL,
+            irrigation_method_detail VARCHAR(64) NOT NULL,
+            outlet_count INT NOT NULL DEFAULT 0,
+            flow_rate_per_outlet DECIMAL(10,3) NOT NULL DEFAULT 0,
+            flow_rate_unit VARCHAR(16) NOT NULL DEFAULT 'L/h',
+            bed_count INT NOT NULL DEFAULT 0,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_irrigation_group_zone_no (farm_id, zone_id, irrigation_group_no),
+            KEY idx_settings_irrigation_group_zone (farm_id, zone_id),
+            KEY idx_settings_irrigation_group_method (farm_id, irrigation_method, irrigation_method_detail),
+            KEY idx_settings_irrigation_group_status (farm_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
         """
         CREATE TABLE IF NOT EXISTS green_smart_devices (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,

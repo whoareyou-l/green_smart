@@ -14,11 +14,11 @@ def _read(path: Path) -> str:
 
 
 def test_r1_version_surfaces_are_v1111():
-    assert '"version": "1.15.47"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.47"' in _read(PANEL)
-    assert "v1.15.47" in _read(IA)
-    assert "v1.15.47" in _read(UI_DOC)
-    assert "v1.15.47" in _read(BACKEND_DOC)
+    assert '"version": "1.15.48"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.48"' in _read(PANEL)
+    assert "v1.15.48" in _read(IA)
+    assert "v1.15.48" in _read(UI_DOC)
+    assert "v1.15.48" in _read(BACKEND_DOC)
 
 
 def test_r1_ia_defines_six_ui_buckets_and_four_display_states():

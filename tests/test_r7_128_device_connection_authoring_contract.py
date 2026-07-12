@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.47"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.47"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.47"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.48"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.48"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.48"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -223,18 +223,27 @@ def test_r7_128_device_list_modal_uses_canonical_device_entity_latest_snapshot()
     assert 'data-r7-settings-device-delete-button="77"' in html
 
 
-def test_r7_128_group_create_modal_lists_only_connected_ungrouped_devices_as_checkboxes():
+def test_r7_128_group_create_modal_creates_irrigation_group_master_without_device_selection():
     html = _node_render('(panel._openSettingsDeviceGroupCreateModal(), panel.renderR7SettingsDeviceGroupCreateModal())')
     for marker in (
-        'data-r7-settings-device-group-candidate-checkbox',
-        'name="deviceIds"',
-        'data-r7-settings-device-group-ungrouped-only="true"',
-        'data-r7-settings-device-group-multi-select="true"',
+        'data-r7-settings-irrigation-group-create-modal="true"',
+        'data-r7-settings-create-section="irrigation-group-info"',
+        'data-r7-settings-create-section="irrigation-method"',
+        'data-r7-settings-create-section="irrigation-outlet-cultivation"',
+        'data-r7-settings-irrigation-group-zone-fk-select',
+        'data-r7-settings-irrigation-group-auto-name-preview',
+        'data-r7-settings-irrigation-method-select',
+        'data-r7-settings-irrigation-method-detail-select',
+        'data-r7-settings-irrigation-outlet-count-input',
+        'data-r7-settings-irrigation-flow-rate-input',
+        'data-r7-settings-irrigation-flow-rate-unit',
+        'data-r7-settings-irrigation-bed-count-input',
     ):
         assert marker in html
-    assert '천창 1' in html
-    assert 'switch.unlinked_roof_window' in html
-    assert '연결 온도 센서' not in html
+    for phrase in ('관수그룹 생성', '관수그룹 저장', '관수방법', '순수경', '배지경', 'DFT', 'NFT', '분무수경', '코코피트', '암면', '펄라이트', '토출구 수', '기준 유량', 'L/h', '배드 수', '장치는 장치 하위탭에서 관수그룹 FK로 연결'):
+        assert phrase in html
+    for forbidden in ('data-r7-settings-device-group-candidate-checkbox', 'name="deviceIds"', 'data-r7-settings-device-group-ungrouped-only="true"', '그룹 장치 선택', '공급 방식', '배액 관리', '물량 계산 기준'):
+        assert forbidden not in html
 
 
 def test_r7_128_group_list_button_opens_group_list_cda_modal():
