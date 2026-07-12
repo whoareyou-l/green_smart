@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.41";
+const REBUILD_VERSION = "1.15.42";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -4034,7 +4034,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const selectedEntity = entityOptions[0]?.value || "";
     const selectedHaDeviceId = haDeviceOptions[0]?.value || "";
     const sections = [
-      this._r7SettingsCreateSection("device-connection", "장치 연결", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("haDeviceId", "장비 ID", haDeviceOptions.length ? haDeviceOptions : [{ value: "", label: "HA 장비 없음", attrs: 'data-r7-settings-ha-device-id-option="empty"' }], modal.values?.haDeviceId || selectedHaDeviceId, 'data-r7-settings-ha-device-id-select data-r7-settings-green-smart-device-fk="ha_device_id"')}${this._r7SettingsCreateSelect("deviceType", "장비종류", equipmentKindOptions, modal.values?.deviceType || "온습도 센서", 'data-r7-settings-equipment-kind-select')}</div>${this._r7SettingsCreateSelect("entityId", "HA entity", entityOptions.length ? entityOptions : [{ value: "", label: "미연결 HA entity 없음", attrs: 'data-r7-settings-unlinked-ha-entity-option="empty"' }], selectedEntity, 'data-r7-settings-unlinked-ha-entity-select data-r7-settings-ha-device-entity-support')}`),
+      this._r7SettingsCreateSection("device-connection", "장치 연결", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("haDeviceId", "장비 ID", haDeviceOptions.length ? haDeviceOptions : [{ value: "", label: "HA 장비 없음", attrs: 'data-r7-settings-ha-device-id-option="empty"' }], modal.values?.haDeviceId || selectedHaDeviceId, 'data-r7-settings-ha-device-id-select data-r7-settings-ha-device-id-source="all-ha-devices" data-r7-settings-green-smart-device-fk="ha_device_id"')}${this._r7SettingsCreateSelect("deviceType", "장비종류", equipmentKindOptions, modal.values?.deviceType || "온습도 센서", 'data-r7-settings-equipment-kind-select')}</div>${this._r7SettingsCreateSelect("entityId", "HA entity", entityOptions.length ? entityOptions : [{ value: "", label: "미연결 HA entity 없음", attrs: 'data-r7-settings-unlinked-ha-entity-option="empty"' }], selectedEntity, 'data-r7-settings-unlinked-ha-entity-select data-r7-settings-ha-device-entity-support')}`),
       this._r7SettingsCreateSection("device-name", "장치명", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateField("deviceName", "장치명", modal.values?.deviceName || "", 'placeholder="예: A구역 천창 1" data-r7-settings-device-name-input')}${this._r7SettingsCreateSelect("zoneId", "구역", zoneOptions, modal.values?.zoneId || zoneOptions[0]?.value || "zone-1")}</div>`),
       this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "장치 연결 근거", "")),
     ];

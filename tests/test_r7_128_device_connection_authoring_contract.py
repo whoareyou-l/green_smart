@@ -35,7 +35,7 @@ def _node_render(expr: str) -> str:
       panel._settingsGreenhouseZoneData = {{
         source: 'test', greenhouses: [{{ id: 1, name: '대표 온실' }}], zones: panel._homeContext.zones,
         devices: [{{ id: 'dev-1', haDeviceId: 'ha-device-linked-temp', deviceName: '연결 온도 센서', deviceType: '온습도 센서', entityId: 'sensor.linked_temperature', zoneId: 'zone-a', status: 'active' }}],
-        haDevices: [{{ haDeviceId: 'ha-device-roof-window', deviceName: 'HA 천창 컨트롤러', manufacturer: 'HA', model: 'Cover', entityCount: 3 }}, {{ haDeviceId: 'ha-device-fan', deviceName: 'HA 배기팬', manufacturer: 'HA', model: 'Fan', entityCount: 2 }}],
+        haDevices: [{{ haDeviceId: 'ha-device-linked-temp', deviceName: '이미 연결된 HA 온도센서', manufacturer: 'HA', model: 'Sensor', entityCount: 1 }}, {{ haDeviceId: 'ha-device-roof-window', deviceName: 'HA 천창 컨트롤러', manufacturer: 'HA', model: 'Cover', entityCount: 3 }}, {{ haDeviceId: 'ha-device-fan', deviceName: 'HA 배기팬', manufacturer: 'HA', model: 'Fan', entityCount: 2 }}],
         deviceGroups: [{{ id: 'grp-1', groupName: '기존 관수 그룹', groupType: '관수 그룹', zoneId: 'zone-a', deviceIds: ['dev-1'], status: 'active' }}],
         deviceSensorMappings: [
           {{ id: 'dev-1', zoneId: 'zone-a', zoneName: 'A구역', deviceName: '연결 온도 센서', deviceType: '온습도 센서', mappingRole: '온습도 센서', sensorEntity: 'sensor.linked_temperature', deviceEntity: 'sensor.linked_temperature', entityId: 'sensor.linked_temperature', status: 'active', groupId: 'grp-1', note: '이미 그룹 등록' }},
@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.41"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.41"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.41"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.42"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.42"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.42"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -75,6 +75,7 @@ def test_r7_128_device_connection_modal_has_unlinked_ha_entity_and_equipment_typ
         'data-r7-settings-device-connection-authoring-modal="true"',
         'data-r7-settings-device-connection-modal-title="장치 연결"',
         'data-r7-settings-ha-device-id-select',
+        'data-r7-settings-ha-device-id-source="all-ha-devices"',
         'data-r7-settings-green-smart-device-fk="ha_device_id"',
         'data-r7-settings-unlinked-ha-entity-select',
         'data-r7-settings-unlinked-ha-entity-option',
@@ -86,6 +87,8 @@ def test_r7_128_device_connection_modal_has_unlinked_ha_entity_and_equipment_typ
     assert '장비 엔티티 ID' not in html
     assert '장비 ID' in html
     assert 'ha-device-roof-window' in html
+    assert 'ha-device-linked-temp' in html
+    assert '이미 연결된 HA 온도센서' in html
     assert 'sensor.unlinked_temp_humidity' in html
     assert 'fan.unlinked_exhaust' in html
     assert 'sensor.linked_temperature' not in html

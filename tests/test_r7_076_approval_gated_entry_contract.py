@@ -16,9 +16,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_076_version_surfaces_are_1_14_1():
-    assert '"version": "1.15.41"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.41"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.41"' in _read(PANEL)
+    assert '"version": "1.15.42"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.42"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.42"' in _read(PANEL)
 
 
 def test_r7_076_backend_has_pending_first_approval_gate_not_active_upsert():

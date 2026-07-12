@@ -11,8 +11,8 @@ def source() -> str:
 
 def test_v1_15_34_declares_settings_post_modal_refresh_without_full_render():
     text = source()
-    assert '"version": "1.15.41"' in MANIFEST.read_text()
-    assert 'const REBUILD_VERSION = "1.15.41"' in text
+    assert '"version": "1.15.42"' in MANIFEST.read_text()
+    assert 'const REBUILD_VERSION = "1.15.42"' in text
     assert '_refreshR7SettingsSideModalRootWithoutFullRender(reason = "settings-state-change")' in text
     assert '_refreshR7ActiveSettingsPanelWithoutFullRender(reason = "settings-state-change", tabKey = "")' in text
     assert '_renderOrRefreshR7SettingsPanel(reason = "settings-state-change", tabKey = "")' in text
@@ -64,7 +64,7 @@ def test_v1_15_34_settings_modal_state_changes_use_refresh_helper_not_direct_ren
 
 def test_v1_15_35_settings_record_modal_x_close_uses_cache_only_refresh_route():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.41"' in text
+    assert 'const REBUILD_VERSION = "1.15.42"' in text
     assert '_closeR7SettingsRecordModalFromButton(button)' in text
     block = text[text.index('  _closeR7SettingsRecordModalFromButton'):text.index('  _openSettingsGreenhouseInfoSplitModal()', text.index('  _closeR7SettingsRecordModalFromButton'))]
     for marker in [
