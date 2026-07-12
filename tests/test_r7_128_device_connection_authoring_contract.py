@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.51"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.51"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.52"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.52"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.52"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -260,12 +260,55 @@ def test_r7_128_irrigation_group_modal_accepts_display_bed_count_label_without_n
     assert 'NaN' not in html
 
 
-def test_r7_128_group_list_button_opens_group_list_cda_modal():
-    html = _node_render('(panel._openSettingsDeviceGroupListModal(), panel.renderR7SettingsShortcutCdaSplitModal())')
+def test_r7_128_group_list_button_opens_irrigation_group_list_cda_modal():
+    html = _node_render("""(
+        panel._settingsGreenhouseZoneData.zones = [{ id: 'zone-a', zoneId: 'zone-a', zoneName: 'A구역', name: 'A구역', bedCount: 6 }],
+        panel._settingsGreenhouseZoneData.irrigationGroups = [{
+            id: 'ig-1',
+            zoneId: 'zone-a',
+            irrigationGroupName: 'A구역 관수그룹 1',
+            irrigationGroupNo: 1,
+            irrigationMethod: '배지경',
+            irrigationMethodDetail: '코코피트',
+            circulationType: '비순환식',
+            drainageReuse: '배액 재활용 안함',
+            outletCount: 100,
+            flowRatePerOutlet: 3,
+            flowRateUnit: 'L/h',
+            bedCount: 6,
+            status: 'active',
+            note: 'A구역 좌측 1~2번 베드'
+        }],
+        panel._openSettingsDeviceGroupListModal(),
+        panel.renderR7SettingsShortcutCdaSplitModal()
+    )""")
     for marker in (
         'data-r7-settings-device-group-list-cda-modal="true"',
-        'data-r7-settings-device-group-list-detail-panel',
-        '기존 관수 그룹',
-        '관수 그룹',
+        'data-r7-settings-irrigation-group-list-cda-modal="true"',
+        'data-r7-settings-irrigation-group-list-detail-panel',
+        'data-r7-settings-irrigation-group-list-row',
+        '관수그룹 목록',
+        '관수그룹별 목록 · 선택 관수그룹 상세',
+        '관수그룹명',
+        'A구역 관수그룹 1',
+        '관수방법',
+        '관수방법 상세',
+        '배지경',
+        '코코피트',
+        '순환 방식',
+        '비순환식',
+        '배액 재활용',
+        '토출구 수',
+        '100개',
+        '기준 유량',
+        '3 L/h',
+        '배드 수',
+        '6개',
+        '운영 메모',
+        'A구역 좌측 1~2번 베드',
     ):
         assert marker in html
+    modal_start = html.index('data-r7-settings-irrigation-group-list-cda-modal="true"')
+    modal_html = html[modal_start:]
+    for legacy_phrase in ('장치 그룹별 포함 장치', '기존 관수 그룹', '포함 장치'):
+        assert legacy_phrase not in modal_html

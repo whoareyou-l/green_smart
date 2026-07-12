@@ -52,9 +52,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.51"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.51"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.52"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.52"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.52"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():

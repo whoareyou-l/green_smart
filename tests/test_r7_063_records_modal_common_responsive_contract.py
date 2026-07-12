@@ -34,9 +34,9 @@ def _render(record_type="growth-survey", width=1024):
 
 
 def test_r7_063_version_surfaces_are_1_12_98():
-    assert '"version": "1.15.51"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.51"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.52"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.52"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.52"' in _read(REBUILD_PANEL)
 
 
 def test_r7_063_required_note_card_removed_from_write_modal():

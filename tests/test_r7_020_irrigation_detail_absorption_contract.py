@@ -46,10 +46,10 @@ def _visible_text(html: str) -> str:
 
 
 def test_r7_020_version_surfaces_are_1_12_54():
-    assert '"version": "1.15.51"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.51"' in _read(REBUILD_PANEL)
-    assert "v1.15.51" in _read(DOC)
+    assert '"version": "1.15.52"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.52"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.52"' in _read(REBUILD_PANEL)
+    assert "v1.15.52" in _read(DOC)
 
 
 def test_r7_020_doc_records_irrigation_detail_inventory_and_mapping():
