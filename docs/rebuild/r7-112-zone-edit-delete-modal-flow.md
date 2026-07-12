@@ -1,6 +1,6 @@
 # R7-112 Zone list edit/delete modal flow
 
-Version: v1.15.44
+Version: v1.15.45
 Status: prod verified
 
 ## Scope

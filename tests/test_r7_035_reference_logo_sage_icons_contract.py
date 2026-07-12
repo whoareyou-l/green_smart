@@ -14,10 +14,10 @@ def _read(path: Path) -> str:
 
 
 def test_r7_035_version_surfaces_are_current_after_mdi_supersession():
-    assert '"version": "1.15.44"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.44"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.44"' in _read(REBUILD_PANEL)
-    assert "v1.15.44" in _read(DOC)
+    assert '"version": "1.15.45"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.45"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.45"' in _read(REBUILD_PANEL)
+    assert "v1.15.45" in _read(DOC)
 
 
 def test_r7_035_reference_asset_remains_historical_but_not_active_sidebar_logo():

@@ -1,7 +1,7 @@
-# v1.15.44 모바일/로그아웃/반응형 보정 계획
+# v1.15.45 모바일/로그아웃/반응형 보정 계획
 
 ## 배경
-v1.15.44에서 HA sidebar-aware root와 모바일 top nav를 적용했지만 실제 사용 피드백에서 다음 문제가 남았다.
+v1.15.45에서 HA sidebar-aware root와 모바일 top nav를 적용했지만 실제 사용 피드백에서 다음 문제가 남았다.
 
 1. PC 사이드바 간략/상세/로그아웃 버튼 모양이 원하는 형태와 다름.
 2. 로그아웃이 `/auth/authorize` 직접 이동으로 Invalid redirect URI를 유발.
@@ -23,6 +23,6 @@ v1.15.44에서 HA sidebar-aware root와 모바일 top nav를 적용했지만 실
 
 ## 검증
 - 신규 R7-136 계약: logout event, fallback `/`, no `/auth/authorize`, mobile account text, mobile logout button, mobile tab grammar, responsive card/zone scroll markers.
-- 기존 R7-134/R7-135 계약을 v1.15.44 기준으로 갱신.
+- 기존 R7-134/R7-135 계약을 v1.15.45 기준으로 갱신.
 - node --check, 집중 pytest, 전체 pytest.
 - Prod served smoke: version, no invalid redirect route, event logout markers, mobile responsive markers.

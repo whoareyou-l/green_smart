@@ -53,7 +53,7 @@
 
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
 
-const REBUILD_VERSION = "1.15.44";
+const REBUILD_VERSION = "1.15.45";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -3511,12 +3511,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<div data-r7-cda-entity-detail-fields="${entityType}" style="margin-top:7px;border:1px solid #edf4ef;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;">${fieldHtml}</div>`;
   }
 
-  renderR7CdaEntityListDetailModal({ entityType = "entity", modalOpen = true, icon = "mdi:information-outline", title = "", subtitle = "", rows = [], selectedId = "", listColumns = [], detailFields = [], detailSectionTitle = "1. 선택 항목 상세 정보", detailPanelAttrs = "", rowAttr = "", entityFooterActions = [], closeAttr = "", marker = "", zIndex = 44, suppressCloseButtons = false } = {}) {
+  renderR7CdaEntityListDetailModal({ entityType = "entity", modalOpen = true, icon = "mdi:information-outline", title = "", subtitle = "", rows = [], selectedId = "", listColumns = [], detailFields = [], detailSectionTitle = "1. 선택 항목 상세 정보", detailPanelAttrs = "", rowAttr = "", entityFooterActions = [], closeAttr = "", marker = "", zIndex = 44, suppressCloseButtons = false, detailExtraHtml = "" } = {}) {
     const selected = rows.find((row) => String(row.id) === String(selectedId)) || rows[0] || {};
     const search = this.renderR7CdaSearchFilterBar({ searchAttr: "data-r7-settings-shortcut-search-input", searchPlaceholder: `${title} 검색`, filters: [["all","전체"],["needs-review","검토 필요"],["normal","정상"],["evidence","감사 근거"]].map(([key,label]) => ({ label, active: key === "all", tone: key === "needs-review" ? "red" : "green", attrs: `data-r7-settings-shortcut-filter="${key}"` })) });
     const rowHtml = this.renderR7CdaEntityRows({ entityType, rows, selectedId: selected.id, rowAttr });
     const listPanel = this.renderR7CdaListPanel({ title: `${title} 목록`, columns: listColumns, rowsHtml: rowHtml || `<p style="margin:0;color:#78927f;font-size:13px;">표시할 항목 없음</p>`, footer: `<span>‹</span><span style="border:1px solid #badcc8;border-radius:8px;padding:5px 9px;background:#f6fbf7;color:#31523b;font-weight:900;">1</span><span>›</span><span>총 ${rows.length}건</span>`, attrs: `data-r7-settings-shortcut-review-list-panel data-r7-settings-shortcut-cda-split-kind="${entityType}"` });
-    const detailBody = `${this.renderR7CdaDetailSection({ title: detailSectionTitle, attrs: 'data-r7-settings-shortcut-review-section="entity-detail"', body: this.renderR7CdaEntityDetailFields({ entityType, entity: selected, fields: detailFields }) })}`;
+    const detailBody = `${this.renderR7CdaDetailSection({ title: detailSectionTitle, attrs: 'data-r7-settings-shortcut-review-section="entity-detail"', body: this.renderR7CdaEntityDetailFields({ entityType, entity: selected, fields: detailFields }) })}${detailExtraHtml || ""}`;
     const closeAction = suppressCloseButtons ? [] : [`<button type="button" ${closeAttr} style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 12px;font-weight:950;">닫기</button>`];
     const detailPanel = this.renderR7CdaDetailPanel({ title: "선택 항목 상세", attrs: `${detailPanelAttrs} data-r7-settings-shortcut-review-pane data-r7-settings-shortcut-cda-split-kind="${entityType}"`, badge: `<span style="border:1px solid;border-radius:999px;padding:5px 9px;font-size:11px;${this._r7ApprovalToneStyle(selected.tone || 'green')}">${selected.statusLabel || selected.status || '정상'}</span>`, body: detailBody, footer: this.renderR7CdaActionFooter({ attrs: `data-r7-cda-entity-detail-footer="${entityType}"`, left: `<button type="button" data-r7-settings-shortcut-evidence-button style="border:1px solid #dcebe0;border-radius:10px;background:#fff;color:#31523b;padding:8px 11px;font-weight:950;">상세 로그 보기</button>`, actions: [...entityFooterActions, ...closeAction] }) });
     const header = this.renderR7CdaModalHeader({ icon, title, subtitle, closeAttr });
@@ -3666,9 +3666,72 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return ["온습도 센서", "CO2 센서", "일사 센서", "VWC 센서", "천창 장치", "측창 장치", "스크린 장치", "유동팬 장치", "배기팬 장치", "관수 장치"].map((label) => ({ value: label, label }));
   }
 
+  _r7SettingsDeviceLatestMap(values = []) {
+    const byEntity = new Map();
+    (Array.isArray(values) ? values : []).forEach((value) => {
+      const entityId = value.entityId || value.entity_id || "";
+      if (entityId) byEntity.set(String(entityId), value);
+    });
+    return byEntity;
+  }
+
+  renderR7SettingsDeviceEntityTable(device = {}) {
+    const entities = Array.isArray(device.entities) ? device.entities : [];
+    const latestByEntity = this._r7SettingsDeviceLatestMap(device.latestValues || []);
+    const rows = entities.length ? entities.map((entity) => {
+      const entityId = entity.entityId || entity.entity_id || "";
+      const latest = latestByEntity.get(String(entityId)) || {};
+      const unit = latest.unitOfMeasurement || latest.unit_of_measurement || entity.unitOfMeasurement || entity.unit_of_measurement || "-";
+      const state = latest.state ?? latest.state_value ?? latest.value ?? "미수집";
+      const freshness = latest.freshnessState || latest.freshness_state || "미수집";
+      return `<tr data-r7-settings-device-list-entity-row="${entityId}"><td style="padding:8px;border-top:1px solid #edf4ef;font-weight:900;word-break:break-all;">${entityId || 'entity 미등록'}</td><td style="padding:8px;border-top:1px solid #edf4ef;">${entity.entityDomain || entity.entity_domain || entity.domain || '-'}</td><td style="padding:8px;border-top:1px solid #edf4ef;">${unit}</td><td style="padding:8px;border-top:1px solid #edf4ef;">${entity.entityRole || entity.entity_role || entity.role || '-'}</td><td data-r7-settings-device-list-latest-value="${entityId}" style="padding:8px;border-top:1px solid #edf4ef;font-weight:950;color:#25804a;">${state}${unit && unit !== '-' ? ` ${unit}` : ''}</td><td style="padding:8px;border-top:1px solid #edf4ef;">${freshness}</td></tr>`;
+    }).join("") : `<tr data-r7-settings-device-list-entity-row="empty"><td colspan="6" style="padding:10px;border-top:1px solid #edf4ef;color:#78927f;">연결된 Entity가 없습니다.</td></tr>`;
+    return `<section data-r7-settings-device-list-entity-table="true" style="border:1px solid #edf4ef;border-radius:12px;overflow:hidden;background:#fff;"><header style="padding:9px 10px;background:#fbfdfb;font-weight:950;color:#31523b;">2. 연결 Entity 및 현재값</header><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#fbfdfb;color:#5d6f62;text-align:left;"><th style="padding:8px;">Entity ID</th><th style="padding:8px;">종류</th><th style="padding:8px;">단위</th><th style="padding:8px;">역할</th><th style="padding:8px;">현재값</th><th style="padding:8px;">freshness</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+  }
+
   _r7SettingsConnectedDeviceRows() {
     const data = this.r7SettingsGreenhouseZoneData();
     const zones = Array.isArray(data.zones) ? data.zones : [];
+    const zoneNameById = new Map(zones.flatMap((zone) => [[String(zone.id || ""), zone.zoneName || zone.name || zone.zoneId || ""], [String(zone.zoneId || zone.zone_id || ""), zone.zoneName || zone.name || zone.zoneId || ""]]).filter(([key]) => key));
+    const canonicalDevices = Array.isArray(data.canonicalDevices) ? data.canonicalDevices : [];
+    const canonicalEntities = data.canonicalDeviceEntities && typeof data.canonicalDeviceEntities === "object" ? data.canonicalDeviceEntities : {};
+    const canonicalLatest = data.canonicalDeviceLatestValues && typeof data.canonicalDeviceLatestValues === "object" ? data.canonicalDeviceLatestValues : {};
+    const fromCanonical = canonicalDevices.map((device, index) => {
+      const id = device.id || device.deviceId || device.device_id || device.haDeviceId || device.ha_device_id || `canonical-device-${index + 1}`;
+      const entities = Array.isArray(canonicalEntities[String(id)]) ? canonicalEntities[String(id)] : [];
+      const latestValues = Array.isArray(canonicalLatest[String(id)]) ? canonicalLatest[String(id)] : [];
+      const zoneId = device.zoneId || device.zone_id || "";
+      const status = device.status || "active";
+      const connectionStatus = device.connectionStatus || device.connection_status || "connected";
+      return {
+        id,
+        source: "canonical-device",
+        canonical: true,
+        haDeviceId: device.haDeviceId || device.ha_device_id || "",
+        name: device.deviceName || device.device_name || device.name || device.haDeviceName || device.ha_device_name || "장치",
+        deviceName: device.deviceName || device.device_name || device.name || device.haDeviceName || device.ha_device_name || "장치",
+        deviceType: device.equipmentKind || device.equipment_kind || device.deviceType || device.device_type || "장치",
+        installType: device.equipmentKind || device.equipment_kind || device.deviceType || device.device_type || "장치",
+        entityId: `${entities.length}개 Entity`,
+        deviceEntity: `${entities.length}개 Entity`,
+        operatingStatus: `Entity ${entities.length}개 · 현재값 ${latestValues.length}개`,
+        approvalScope: `Entity ${entities.length}개`,
+        entityCount: entities.length,
+        latestValueCount: latestValues.length,
+        zoneId,
+        location: device.zoneName || device.zone_name || zoneNameById.get(String(zoneId)) || zoneId || "구역 미등록",
+        haDeviceIdLabel: device.haDeviceId || device.ha_device_id || "미등록",
+        currentValueSummary: latestValues.length ? `${latestValues.length}/${entities.length || latestValues.length} 수집` : "미수집",
+        connectionStatus,
+        status,
+        statusLabel: status === "inactive" ? "비활성" : connectionStatus === "connected" ? "연결됨" : "정상",
+        tone: status === "inactive" ? "amber" : connectionStatus === "connected" ? "green" : "amber",
+        groupId: device.groupId || device.group_id || "",
+        note: device.note || "canonical device",
+        entities,
+        latestValues,
+      };
+    });
     const fromMappings = this.normalizeR7SettingsEquipmentEntityRows(Array.isArray(data.deviceSensorMappings) ? data.deviceSensorMappings : [], zones);
     const fromDevices = Array.isArray(data.devices) ? data.devices.map((device, index) => ({
       id: device.id || device.deviceId || device.haDeviceId || device.ha_device_id || `device-${index + 1}`,
@@ -3688,8 +3751,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
       note: device.note || "미등록",
     })) : [];
     const byEntity = new Map();
-    [...fromDevices, ...fromMappings].forEach((row) => {
-      const key = row.entityId || row.deviceEntity || row.sensorEntity || row.id;
+    [...fromCanonical, ...fromDevices, ...fromMappings].forEach((row) => {
+      const key = row.canonical ? `canonical:${row.id}` : (row.entityId || row.deviceEntity || row.sensorEntity || row.id);
       if (key && !byEntity.has(key)) byEntity.set(key, row);
     });
     return [...byEntity.values()];
@@ -4186,18 +4249,19 @@ class GreenSmartRebuildPanel extends HTMLElement {
         modalOpen: modal.open,
         icon: meta.icon,
         title: meta.title,
-        subtitle: "장치별 목록 · 선택 장치 상세",
+        subtitle: "canonical 장치별 목록 · Entity N개 · 최신값",
         rows: equipmentRows,
         selectedId: selectedMapping?.id,
-        listColumns: ["장치명", "장비종류", "장비 엔티티 ID", "상태"],
-        detailFields: [["deviceName", "장치명"], ["deviceType", "장비종류"], ["entityId", "장비 엔티티 ID"], ["location", "구역"], ["statusLabel", "상태"], ["note", "메모"]],
+        listColumns: ["장치명", "장비종류", "Entity 수", "상태"],
+        detailFields: selectedMapping?.canonical ? [["deviceName", "장치명"], ["deviceType", "장비종류"], ["location", "구역"], ["haDeviceIdLabel", "HA Device ID"], ["approvalScope", "연결 Entity 수"], ["currentValueSummary", "현재값 수집"], ["statusLabel", "상태"], ["note", "메모"]] : [["deviceName", "장치명"], ["deviceType", "장비종류"], ["entityId", "장비 엔티티 ID"], ["location", "구역"], ["statusLabel", "상태"], ["note", "메모"]],
         detailSectionTitle: "1. 장치 상세 정보",
-        detailPanelAttrs: "data-r7-settings-device-list-detail-panel",
+        detailPanelAttrs: "data-r7-settings-device-list-detail-panel data-r7-settings-device-list-canonical=\"true\" data-r7-settings-device-list-ha-device-id",
         rowAttr: "data-r7-settings-equipment-info-row",
         entityFooterActions,
         closeAttr: "data-r7-settings-shortcut-cda-split-close",
         marker: meta.marker,
         suppressCloseButtons: true,
+        detailExtraHtml: selectedMapping?.canonical ? this.renderR7SettingsDeviceEntityTable(selectedMapping) : "",
       });
     }
     if (kind === "device-group-list") {

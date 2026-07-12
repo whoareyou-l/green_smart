@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.44"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.44"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.44"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.45"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.45"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.45"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -175,6 +175,52 @@ def test_r7_128_device_list_modal_has_edit_delete_footer_and_no_bottom_close_but
     footer_start = html.index('data-r7-cda-entity-detail-footer="equipment-info"')
     footer = html[footer_start:html.index('</footer>', footer_start)]
     assert '>닫기<' not in footer
+
+
+def test_r7_128_device_list_modal_uses_canonical_device_entity_latest_snapshot():
+    script = f"""
+      const classSet = new Set();
+      globalThis.location = {{ pathname: '/green_smart', search: '', hash: '#settings-admin' }};
+      globalThis.innerWidth = 1280;
+      globalThis.document = {{ body: {{ classList: {{ add(c){{ classSet.add(c); }}, remove(c){{ classSet.delete(c); }}, contains(c){{ return classSet.has(c); }} }} }}, getElementById(){{ return null; }}, createElement(){{ return {{ id: '', textContent: '', setAttribute(){{}}, appendChild(){{}} }}; }}, head: {{ appendChild(){{}} }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = '';this.dataset = {{}};this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
+      globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
+      const mod = await import({str(REBUILD_PANEL)!r});
+      const panel = new mod.GreenSmartRebuildPanel();
+      panel.hass = {{ user: {{ name: 'admin', is_admin: true }}, states: {{}}, callApi: async () => ({{}}) }};
+      panel._homeContext = {{ greenhouseName: '대표 온실', zones: [{{ id: 'zone-a', zoneId: 'zone-a', zoneName: 'A구역', name: 'A구역' }}] }};
+      panel._settingsGreenhouseZoneData = {{
+        source: 'test', greenhouses: [{{ id: 1, name: '대표 온실' }}], zones: panel._homeContext.zones,
+        deviceSensorMappings: [], devices: [], deviceGroups: [],
+        canonicalDevices: [{{ id: 77, haDeviceId: 'ha-device-env-77', deviceName: 'A구역 복합환경 제어기', equipmentKind: '복합환경제어기', zoneId: 'zone-a', connectionStatus: 'connected', status: 'active', note: 'canonical row' }}],
+        canonicalDeviceEntities: {{ '77': [
+          {{ entityId: 'sensor.a_temperature', entityDomain: 'sensor', unitOfMeasurement: '°C', entityRole: '온도', readWriteMode: 'readonly' }},
+          {{ entityId: 'sensor.a_humidity', entityDomain: 'sensor', unitOfMeasurement: '%', entityRole: '습도', readWriteMode: 'readonly' }}
+        ] }},
+        canonicalDeviceLatestValues: {{ '77': [
+          {{ entityId: 'sensor.a_temperature', state: '24.7', unitOfMeasurement: '°C', entityRole: '온도', freshnessState: 'fresh' }},
+          {{ entityId: 'sensor.a_humidity', state: '68', unitOfMeasurement: '%', entityRole: '습도', freshnessState: 'fresh' }}
+        ] }}
+      }};
+      panel._openSettingsDeviceListModal();
+      const html = panel.renderR7SettingsShortcutCdaSplitModal();
+      console.log(JSON.stringify({{ html }}));
+    """
+    result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr + result.stdout
+    html = json.loads(result.stdout)["html"]
+    for marker in (
+        'data-r7-settings-device-list-canonical="true"',
+        'data-r7-settings-device-list-ha-device-id',
+        'data-r7-settings-device-list-entity-table',
+        'data-r7-settings-device-list-entity-row',
+        'data-r7-settings-device-list-latest-value',
+    ):
+        assert marker in html
+    for phrase in ('A구역 복합환경 제어기', 'ha-device-env-77', '복합환경제어기', 'Entity 수', '현재값 수집', 'sensor.a_temperature', 'sensor.a_humidity', '온도', '습도', '24.7', '68', 'fresh'):
+        assert phrase in html
+    assert 'data-r7-settings-device-edit-button="77"' in html
+    assert 'data-r7-settings-device-delete-button="77"' in html
 
 
 def test_r7_128_group_create_modal_lists_only_connected_ungrouped_devices_as_checkboxes():

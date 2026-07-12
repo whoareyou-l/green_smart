@@ -694,7 +694,94 @@ async def list_green_smart_devices(hass, farm_id: int = 1) -> list[dict[str, Any
         WHERE farm_id = %s AND status NOT IN ('deleted', '삭제됨')
         ORDER BY updated_at DESC, id DESC
     """, (farm_id,))
-    return [dict(row) for row in rows]
+    devices: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        devices.append({
+            **item,
+            "id": item.get("id"),
+            "farmId": item.get("farm_id"),
+            "zoneId": item.get("zone_id") or "",
+            "equipmentKind": item.get("equipment_kind") or "",
+            "deviceName": item.get("device_name") or "",
+            "haDeviceId": item.get("ha_device_id") or "",
+            "haDeviceName": item.get("ha_device_name") or "",
+            "modelId": item.get("model_id") or "",
+            "swVersion": item.get("sw_version") or "",
+            "hwVersion": item.get("hw_version") or "",
+            "serialNumber": item.get("serial_number") or "",
+            "areaId": item.get("area_id") or "",
+            "configEntryId": item.get("config_entry_id") or "",
+            "integrationDomain": item.get("integration_domain") or "",
+            "entitiesSnapshotJson": item.get("entities_snapshot_json"),
+            "connectionStatus": item.get("connection_status") or "unknown",
+            "lastSeenAt": _dt_text(item.get("last_seen_at")),
+            "createdAt": _dt_text(item.get("created_at")),
+            "updatedAt": _dt_text(item.get("updated_at")),
+        })
+    return devices
+
+
+async def list_green_smart_device_entities_map(hass, farm_id: int = 1) -> dict[str, list[dict[str, Any]]]:
+    rows = await fetchall(hass, """
+        SELECT id, green_smart_device_id, ha_device_id, entity_id, entity_domain, platform, unique_id, original_name, display_name,
+               device_class, state_class, unit_of_measurement, entity_category, disabled_by, hidden_by, entity_role, value_kind, read_write_mode, status
+        FROM green_smart_device_entities
+        WHERE farm_id = %s AND status NOT IN ('deleted', '삭제됨')
+        ORDER BY green_smart_device_id, entity_role, entity_id
+    """, (farm_id,))
+    by_device: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        item = dict(row)
+        key = str(item.get("green_smart_device_id") or "")
+        by_device.setdefault(key, []).append({
+            **item,
+            "greenSmartDeviceId": item.get("green_smart_device_id"),
+            "haDeviceId": item.get("ha_device_id") or "",
+            "entityId": item.get("entity_id") or "",
+            "entityDomain": item.get("entity_domain") or "",
+            "uniqueId": item.get("unique_id") or "",
+            "originalName": item.get("original_name") or "",
+            "displayName": item.get("display_name") or "",
+            "deviceClass": item.get("device_class") or "",
+            "stateClass": item.get("state_class") or "",
+            "unitOfMeasurement": item.get("unit_of_measurement") or "",
+            "entityCategory": item.get("entity_category") or "",
+            "disabledBy": item.get("disabled_by") or "",
+            "hiddenBy": item.get("hidden_by") or "",
+            "entityRole": item.get("entity_role") or "",
+            "valueKind": item.get("value_kind") or "",
+            "readWriteMode": item.get("read_write_mode") or "readonly",
+        })
+    return by_device
+
+
+async def list_green_smart_device_latest_values_map(hass, farm_id: int = 1) -> dict[str, list[dict[str, Any]]]:
+    rows = await fetchall(hass, """
+        SELECT green_smart_device_id, entity_id, state_value, state_numeric, state_bool, unit_of_measurement, device_class, entity_domain, entity_role, sampled_at, freshness_state
+        FROM green_smart_device_entity_latest_values
+        WHERE farm_id = %s
+        ORDER BY green_smart_device_id, entity_role, entity_id
+    """, (farm_id,))
+    by_device: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        item = dict(row)
+        key = str(item.get("green_smart_device_id") or "")
+        by_device.setdefault(key, []).append({
+            **item,
+            "greenSmartDeviceId": item.get("green_smart_device_id"),
+            "entityId": item.get("entity_id") or "",
+            "state": item.get("state_value") or "",
+            "stateNumeric": item.get("state_numeric"),
+            "stateBool": item.get("state_bool"),
+            "unitOfMeasurement": item.get("unit_of_measurement") or "",
+            "deviceClass": item.get("device_class") or "",
+            "entityDomain": item.get("entity_domain") or "",
+            "entityRole": item.get("entity_role") or "",
+            "sampledAt": _dt_text(item.get("sampled_at")),
+            "freshnessState": item.get("freshness_state") or "unknown",
+        })
+    return by_device
 
 
 async def refresh_green_smart_device_latest_values(hass, device_id: int, farm_id: int = 1, *, write_sample: bool = False) -> list[dict[str, Any]]:
@@ -1084,6 +1171,9 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
     zones = await list_settings_zones(hass, farm_id)
     mappings = await list_settings_device_sensor_mappings(hass, farm_id)
     devices = await list_settings_devices(hass, farm_id)
+    canonical_devices = await list_green_smart_devices(hass, farm_id)
+    canonical_device_entities = await list_green_smart_device_entities_map(hass, farm_id)
+    canonical_device_latest_values = await list_green_smart_device_latest_values_map(hass, farm_id)
     ha_devices = await list_ha_device_registry_summary(hass)
     device_groups = await list_settings_device_groups(hass, farm_id)
     zone_by_id = {str(zone.get("id")): zone for zone in zones}
@@ -1099,7 +1189,7 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
         if zone is not None and label:
             zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
     system_integration = await system_integration_watchdog_response(hass)
-    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "haDevices": ha_devices, "deviceGroups": device_groups, "systemIntegration": system_integration}
+    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "canonicalDevices": canonical_devices, "canonicalDeviceEntities": canonical_device_entities, "canonicalDeviceLatestValues": canonical_device_latest_values, "haDevices": ha_devices, "deviceGroups": device_groups, "systemIntegration": system_integration}
 
 
 class GreenSmartHaUnlinkedDevicesView(HomeAssistantView):
