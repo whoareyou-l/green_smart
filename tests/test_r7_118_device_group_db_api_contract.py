@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_118_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.40"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.40"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.40"' in _read(PANEL)
+    assert '"version": "1.15.41"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.41"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.41"' in _read(PANEL)
 
 
 def test_r7_118_db_has_real_device_and_group_tables():
@@ -24,6 +24,8 @@ def test_r7_118_db_has_real_device_and_group_tables():
     for literal in (
         "CREATE TABLE IF NOT EXISTS green_smart_settings_devices",
         "CREATE TABLE IF NOT EXISTS green_smart_settings_device_groups",
+        "ha_device_id VARCHAR(255) NOT NULL DEFAULT ''",
+        "KEY idx_settings_device_ha_device_id (farm_id, ha_device_id)",
         "UNIQUE KEY uniq_settings_device_entity (farm_id, entity_id)",
         "UNIQUE KEY uniq_settings_device_group_zone_name (farm_id, zone_id, group_name)",
     ):
@@ -38,9 +40,12 @@ def test_r7_118_backend_exposes_device_and_group_create_apis():
         "create_settings_device",
         "create_settings_device_group",
         "list_settings_devices",
+        "list_ha_device_registry_summary",
+        "ensure_settings_device_ha_device_fk_schema",
         "list_settings_device_groups",
         "green_smart_settings_devices",
         "green_smart_settings_device_groups",
+        '"haDevices": ha_devices',
         '"devices": devices',
         '"deviceGroups": device_groups',
     ):

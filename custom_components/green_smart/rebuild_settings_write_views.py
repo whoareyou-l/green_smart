@@ -22,6 +22,11 @@ try:
     from homeassistant.helpers.storage import Store
 except Exception:  # isolated contract tests may stub homeassistant as a non-package
     Store = None
+try:
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+except Exception:  # isolated contract tests may stub homeassistant as a non-package
+    dr = None
+    er = None
 
 try:
     from .const import DOMAIN
@@ -222,6 +227,7 @@ def _device_dto(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": row.get("id"),
         "farmId": row.get("farm_id"),
+        "haDeviceId": row.get("ha_device_id") or "",
         "deviceName": row.get("device_name") or "신규 장치",
         "deviceType": row.get("device_type") or "환기창",
         "entityId": row.get("entity_id") or "",
@@ -377,9 +383,54 @@ async def list_settings_device_sensor_mappings(hass, farm_id: int = 1) -> list[d
     return [_mapping_dto(row) for row in rows]
 
 
+async def ensure_settings_device_ha_device_fk_schema(hass) -> None:
+    try:
+        await execute(hass, "ALTER TABLE green_smart_settings_devices ADD COLUMN ha_device_id VARCHAR(255) NOT NULL DEFAULT '' AFTER farm_id")
+    except Exception:
+        pass
+    try:
+        await execute(hass, "ALTER TABLE green_smart_settings_devices ADD KEY idx_settings_device_ha_device_id (farm_id, ha_device_id)")
+    except Exception:
+        pass
+
+
+async def list_ha_device_registry_summary(hass) -> list[dict[str, Any]]:
+    if dr is None:
+        return []
+    try:
+        device_registry = dr.async_get(hass)
+        entity_registry = er.async_get(hass) if er is not None else None
+        entity_counts: dict[str, int] = {}
+        if entity_registry is not None:
+            for entity in getattr(entity_registry, "entities", {}).values():
+                device_id = getattr(entity, "device_id", None)
+                if device_id:
+                    entity_counts[device_id] = entity_counts.get(device_id, 0) + 1
+        devices = []
+        for device in getattr(device_registry, "devices", {}).values():
+            device_id = getattr(device, "id", "") or ""
+            if not device_id:
+                continue
+            name = getattr(device, "name_by_user", None) or getattr(device, "name", None) or getattr(device, "model", None) or device_id
+            devices.append({
+                "haDeviceId": device_id,
+                "deviceName": name,
+                "name": name,
+                "manufacturer": getattr(device, "manufacturer", None) or "",
+                "model": getattr(device, "model", None) or "",
+                "areaId": getattr(device, "area_id", None) or "",
+                "entryType": str(getattr(device, "entry_type", None) or "device"),
+                "entityCount": entity_counts.get(device_id, 0),
+            })
+        return sorted(devices, key=lambda item: (str(item.get("deviceName") or ""), str(item.get("haDeviceId") or "")))
+    except Exception:
+        return []
+
+
 async def list_settings_devices(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    await ensure_settings_device_ha_device_fk_schema(hass)
     rows = await fetchall(hass, """
-        SELECT id, farm_id, device_name, device_type, entity_id, vendor_model, note, status, created_at, updated_at
+        SELECT id, farm_id, ha_device_id, device_name, device_type, entity_id, vendor_model, note, status, created_at, updated_at
         FROM green_smart_settings_devices
         WHERE farm_id = %s
         ORDER BY updated_at DESC, id DESC
@@ -388,18 +439,20 @@ async def list_settings_devices(hass, farm_id: int = 1) -> list[dict[str, Any]]:
 
 
 async def create_settings_device(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    await ensure_settings_device_ha_device_fk_schema(hass)
     device_name = _str(payload, "deviceName", "device_name", "name", default="신규 장치")
-    entity_id = _str(payload, "entityId", "entity_id", default="switch.greenhouse_device")
+    ha_device_id = _str(payload, "haDeviceId", "ha_device_id", "deviceId", "device_id", default="")
+    entity_id = _str(payload, "entityId", "entity_id", default=ha_device_id or "switch.greenhouse_device")
     await execute(hass, """
         INSERT INTO green_smart_settings_devices
-            (farm_id, device_name, device_type, entity_id, vendor_model, note, status, created_by, updated_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (farm_id, ha_device_id, device_name, device_type, entity_id, vendor_model, note, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
-            device_name = VALUES(device_name), device_type = VALUES(device_type), vendor_model = VALUES(vendor_model),
+            ha_device_id = VALUES(ha_device_id), device_name = VALUES(device_name), device_type = VALUES(device_type), vendor_model = VALUES(vendor_model),
             note = VALUES(note), status = VALUES(status), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
-        """, (farm_id, device_name, _str(payload, "deviceType", "device_type", default="환기창"), entity_id, _str(payload, "vendorModel", "vendor_model"), _str(payload, "note"), _zone_status_label(payload, "status", "state", default="정상"), actor, actor))
+        """, (farm_id, ha_device_id, device_name, _str(payload, "deviceType", "device_type", default="환기창"), entity_id, _str(payload, "vendorModel", "vendor_model"), _str(payload, "note"), _zone_status_label(payload, "status", "state", default="정상"), actor, actor))
     rows = await list_settings_devices(hass, farm_id)
-    return next((row for row in rows if row["entityId"] == entity_id), rows[0] if rows else {"entityId": entity_id})
+    return next((row for row in rows if row.get("haDeviceId") == ha_device_id and ha_device_id), next((row for row in rows if row["entityId"] == entity_id), rows[0] if rows else {"entityId": entity_id, "haDeviceId": ha_device_id}))
 
 
 async def list_settings_device_groups(hass, farm_id: int = 1) -> list[dict[str, Any]]:
@@ -429,9 +482,12 @@ async def create_settings_device_group(hass, payload: dict[str, Any], actor: str
 
 async def create_settings_device_sensor_mapping(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
     zone_id = _str(payload, "zoneId", "zone_id", default="zone-1")
-    sensor_entity = _str(payload, "sensorEntity", "sensor_entity")
-    device_entity = _str(payload, "deviceEntity", "device_entity")
-    mapping_role = _str(payload, "mappingRole", "mapping_role", default="환경 센서/장비")
+    ha_device_id = _str(payload, "haDeviceId", "ha_device_id", "deviceId", "device_id")
+    sensor_entity = _str(payload, "sensorEntity", "sensor_entity", "entityId", "entity_id")
+    device_entity = _str(payload, "deviceEntity", "device_entity", default=ha_device_id)
+    mapping_role = _str(payload, "mappingRole", "mapping_role", "deviceType", "device_type", default="환경 센서/장비")
+    if ha_device_id:
+        await create_settings_device(hass, {**payload, "haDeviceId": ha_device_id, "entityId": sensor_entity or ha_device_id, "deviceType": mapping_role}, actor=actor, farm_id=farm_id)
     await execute(hass, """
         INSERT INTO green_smart_settings_device_sensor_mappings
             (farm_id, zone_id, sensor_entity, device_entity, mapping_role, note, created_by, updated_by)
@@ -701,6 +757,7 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
     zones = await list_settings_zones(hass, farm_id)
     mappings = await list_settings_device_sensor_mappings(hass, farm_id)
     devices = await list_settings_devices(hass, farm_id)
+    ha_devices = await list_ha_device_registry_summary(hass)
     device_groups = await list_settings_device_groups(hass, farm_id)
     zone_by_id = {str(zone.get("id")): zone for zone in zones}
     zone_by_key = {str(zone.get("zoneId")): zone for zone in zones}
@@ -715,7 +772,7 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
         if zone is not None and label:
             zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
     system_integration = await system_integration_watchdog_response(hass)
-    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "deviceGroups": device_groups, "systemIntegration": system_integration}
+    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "haDevices": ha_devices, "deviceGroups": device_groups, "systemIntegration": system_integration}
 
 
 class RebuildSettingsSnapshotView(HomeAssistantView):

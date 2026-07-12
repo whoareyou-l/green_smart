@@ -35,6 +35,10 @@ def _render_device_mapping() -> str:
       panel._settingsGreenhouseZoneData = {{
         source: 'test', greenhouses: [{{ id: 1, name: '대표 온실' }}],
         zones: panel._homeContext.zones,
+        haDevices: [
+          {{ haDeviceId: 'ha-device-roof-window', deviceName: 'HA 천창 컨트롤러', manufacturer: 'HA', model: 'Cover', entityCount: 4 }},
+          {{ haDeviceId: 'ha-device-irrigation', deviceName: 'HA 관수 밸브', manufacturer: 'HA', model: 'Switch', entityCount: 2 }}
+        ],
         deviceSensorMappings: [
           {{ id: 10, zoneId: 'zone-a', zoneName: 'A구역', mappingRole: '환경 센서 그룹', sensorEntity: 'sensor.a_temperature', deviceEntity: 'switch.a_roof_motor', protocol: 'HA entity', direction: 'sensor_to_device', status: 'active', note: '천창 제어 기준' }},
           {{ id: 11, zoneId: 'zone-b', zoneName: 'B구역', mappingRole: '관수 그룹', sensorEntity: 'sensor.b_ec', deviceEntity: 'switch.b_irrigation_valve', protocol: 'HA entity', direction: 'sensor_to_device', status: 'inactive', note: '점검 필요' }}
@@ -48,9 +52,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.40"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.40"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.40"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.41"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.41"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.41"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -67,11 +71,13 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
         'data-r7-settings-device-list-panel',
     ):
         assert marker in html
-    for text in ('장치 연결 작성', '장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록'):
+    for text in ('장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록', 'HA로 이동', 'HA 천창 컨트롤러'):
         assert text in html
     for text in ('미연결', '통신 오류', '장치 오류', '센서', '장치', '센서 그룹', '장치 그룹', '관수 그룹', '장치 연결'):
         assert text in html
     assert 'data-r7-settings-ha-devices-page-button' in html
+    assert 'data-r7-settings-ha-device-list-card="true"' in html
+    assert 'data-r7-settings-ha-device-card-row="ha-device-roof-window"' in html
     assert 'data-r7-settings-device-create-button' not in html
     assert 'data-r7-settings-device-group-create-button' in html
     for forbidden in ('data-r7-settings-device-selected-zone-strip', 'data-r7-settings-device-process-summary', 'data-r7-settings-device-action-card="mapping"', '장치 구성', '그룹 구성', '매핑 목록'):
@@ -104,7 +110,7 @@ def test_r7_115_device_mapping_uses_only_cdb_card_grammar_for_rows():
 def test_r7_115_device_button_two_cards_have_common_subtitles():
     html = _render_device_mapping()
     expectations = {
-        'device-create': 'HA 기기 페이지에서 장치를 추가',
+        'device-create': '실제 HA 연동 기기 목록',
         'device-link': '장치와 센서 연결',
         'group-add': '구역 FK 필수',
     }

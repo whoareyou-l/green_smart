@@ -1,4 +1,4 @@
-# v1.15.40 장치 추가 버튼 HA 기기 페이지 모달 미반영 분석/수정 계획
+# v1.15.41 장치 추가 버튼 HA 기기 페이지 모달 미반영 분석/수정 계획
 
 ## 사용자 증상
 
@@ -15,7 +15,7 @@
 
 ### A. 운영 반영 불일치
 
-제품 repo에는 v1.15.40 코드가 있으나 운영 HA가 실제로 서빙하는 bind source/container JS는 이전 JS일 수 있다.
+제품 repo에는 v1.15.41 코드가 있으나 운영 HA가 실제로 서빙하는 bind source/container JS는 이전 JS일 수 있다.
 
 검증:
 - repo JS marker 확인
@@ -28,12 +28,12 @@
 
 ### B. WebView/브라우저/HA module cache
 
-served JS는 v1.15.40인데 모바일 WebView가 기존 custom element/module을 계속 사용하면 이전 DOM이 보일 수 있다.
+served JS는 v1.15.41인데 모바일 WebView가 기존 custom element/module을 계속 사용하면 이전 DOM이 보일 수 있다.
 
 검증:
 - 실제 화면 custom element name이 `green-smart-rebuild-panel-v1-15-39`인지 확인
-- served module URL이 `?v=1.15.40`인지 확인
-- 필요 시 v1.15.40으로 version bump해 cache bust.
+- served module URL이 `?v=1.15.41`인지 확인
+- 필요 시 v1.15.41으로 version bump해 cache bust.
 
 ### C. settings persistent DOM cache stale panel
 
@@ -72,7 +72,7 @@ settings cache가 브라우저 메모리에서 이전 `device-sensor-mapping` pa
 
 1. repo/deploy/container/served JS 네 곳의 version/marker를 표로 비교한다.
 2. prod bind source가 root-owned이면 `docker cp` 또는 container 내부 복사로 실제 `/config`를 갱신하고 host bind에도 반영됐는지 재확인한다.
-3. 반영 불일치가 지속되면 v1.15.40으로 bump하여 제품 repo, deploy source, container served를 강제 정렬한다.
+3. 반영 불일치가 지속되면 v1.15.41으로 bump하여 제품 repo, deploy source, container served를 강제 정렬한다.
 4. stale DOM cache까지 방지하기 위해 `device-sensor-mapping` panel이 old `data-r7-settings-device-create-button`을 포함하면 강제 real-card rehydrate하는 marker/guard를 추가한다.
 5. 실제 HA served-origin smoke:
    - `장치 연결 작성` 하위탭 렌더

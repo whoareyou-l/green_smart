@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_21_declares_settings_delegated_event_helpers_and_markers():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.40"' in text
+    assert 'const REBUILD_VERSION = "1.15.41"' in text
     for marker in [
         '_handleR7SettingsDelegatedClick(event)',
         '_bindR7SettingsDelegatedEvents(root = this)',
@@ -64,5 +64,5 @@ def test_v1_15_21_shell_and_modal_mount_bind_delegated_events():
 
 def test_v1_15_21_plan_documents_delegation_scope():
     plan = PLAN.read_text()
-    for marker in ['event delegation', 'delegated click handler', 'data-r7-settings-delegated-events-bound', 'GitHub Release v1.15.40']:
+    for marker in ['event delegation', 'delegated click handler', 'data-r7-settings-delegated-events-bound', 'GitHub Release v1.15.41']:
         assert marker in plan

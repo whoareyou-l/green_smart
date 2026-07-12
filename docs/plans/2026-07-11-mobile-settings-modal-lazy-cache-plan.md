@@ -1,12 +1,12 @@
-# v1.15.40 모바일 설정 모달 lazy cache 전환 계획
+# v1.15.41 모바일 설정 모달 lazy cache 전환 계획
 
 ## 목표
 
-v1.15.40에서 설정 하위탭 panel은 persistent DOM cache/show-hide로 바뀌었다. v1.15.40은 다음 단계로, 대표 설정 모달을 전체 render가 아니라 lazy cache root에 mount한다.
+v1.15.41에서 설정 하위탭 panel은 persistent DOM cache/show-hide로 바뀌었다. v1.15.41은 다음 단계로, 대표 설정 모달을 전체 render가 아니라 lazy cache root에 mount한다.
 
 ## 문제
 
-v1.15.40 기준 주요 설정 모달 open/select/close 함수는 여전히 `this.render()`를 호출했다.
+v1.15.41 기준 주요 설정 모달 open/select/close 함수는 여전히 `this.render()`를 호출했다.
 
 - `_openSettingsApprovalModal`
 - `_openSettingsApprovalListModal`

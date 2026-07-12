@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_32_cached_settings_hydrate_uses_real_cards_not_compact_summary():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.40"' in text
+    assert 'const REBUILD_VERSION = "1.15.41"' in text
     block = text[text.index('_hydrateR7CachedSettingsPanel(tabKey)'):text.index('_ensureR7SettingsModalRoot()', text.index('_hydrateR7CachedSettingsPanel(tabKey)'))]
     assert '_renderR7SubtabPanelForDomain("settings-admin", tabKey)' in block
     assert 'template.innerHTML = fullHtml;' in block
@@ -63,5 +63,5 @@ def test_v1_15_19_cached_action_buttons_are_bound_to_lazy_modal_or_dirty_patch()
 
 def test_v1_15_19_plan_documents_no_full_panel_hydrate():
     plan = PLAN.read_text()
-    for marker in ['full hydrate 분해', 'panel.innerHTML = fullHtml', 'summary-card-dirty-patch', 'not-used-compact-patch', 'GitHub Release v1.15.40']:
+    for marker in ['full hydrate 분해', 'panel.innerHTML = fullHtml', 'summary-card-dirty-patch', 'not-used-compact-patch', 'GitHub Release v1.15.41']:
         assert marker in plan

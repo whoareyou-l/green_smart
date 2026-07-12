@@ -13,9 +13,9 @@ def _read(path: Path) -> str:
 
 
 def test_rb003_version_surfaces_are_v1117():
-    assert '"version": "1.15.40"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.40"' in _read(PANEL)
-    assert "v1.15.40" in _read(FRONTEND_PLAN)
+    assert '"version": "1.15.41"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.41"' in _read(PANEL)
+    assert "v1.15.41" in _read(FRONTEND_PLAN)
 
 
 def test_rb003_crop_readonly_module_exists_and_exports_pure_render_helpers():
@@ -76,7 +76,7 @@ def test_rb003_frontend_plan_records_readonly_extraction_boundaries():
     master = _read(MASTER_PLAN)
     for marker in (
         "RB-003 Crop read-only component extraction",
-        "v1.15.40",
+        "v1.15.41",
         "domains/crop/crop-readonly.js",
         "read-only render helpers only",
         "crop write modal/save/delete 변경 없음",

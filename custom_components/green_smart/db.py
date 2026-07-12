@@ -186,6 +186,7 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
         CREATE TABLE IF NOT EXISTS green_smart_settings_devices (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             farm_id BIGINT NOT NULL DEFAULT 1,
+            ha_device_id VARCHAR(255) NOT NULL DEFAULT '',
             device_name VARCHAR(128) NOT NULL,
             device_type VARCHAR(64) NOT NULL DEFAULT '환기창',
             entity_id VARCHAR(255) NOT NULL,
@@ -197,6 +198,7 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uniq_settings_device_entity (farm_id, entity_id),
+            KEY idx_settings_device_ha_device_id (farm_id, ha_device_id),
             KEY idx_settings_device_status (farm_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
@@ -447,6 +449,7 @@ async def ensure_schema(hass: HomeAssistant) -> None:
         CREATE TABLE IF NOT EXISTS green_smart_settings_devices (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             farm_id BIGINT NOT NULL DEFAULT 1,
+            ha_device_id VARCHAR(255) NOT NULL DEFAULT '',
             device_name VARCHAR(128) NOT NULL,
             device_type VARCHAR(64) NOT NULL DEFAULT '환기창',
             entity_id VARCHAR(255) NOT NULL,
@@ -458,6 +461,7 @@ async def ensure_schema(hass: HomeAssistant) -> None:
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uniq_settings_device_entity (farm_id, entity_id),
+            KEY idx_settings_device_ha_device_id (farm_id, ha_device_id),
             KEY idx_settings_device_status (farm_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,

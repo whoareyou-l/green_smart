@@ -35,9 +35,9 @@ def _render(extra="") -> str:
 
 
 def test_r7_059_version_surfaces_are_1_12_94():
-    assert '"version": "1.15.40"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.40"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.40"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.41"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.41"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.41"' in _read(REBUILD_PANEL)
 
 
 def test_r7_059_growth_modal_matches_reference_image_layout_sections():
