@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_132_version_surfaces_are_1_15_00():
-    assert '"version": "1.15.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.50"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.51"' in _read(REBUILD_PANEL)
 
 
 def test_r7_132_source_has_adaptive_content_width_policy_markers():

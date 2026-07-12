@@ -1,6 +1,6 @@
 # R7-094 Settings info card header subtitle
 
-Status: current baseline for `v1.15.50`.
+Status: current baseline for `v1.15.51`.
 
 ## Change
 

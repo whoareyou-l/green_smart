@@ -1,7 +1,7 @@
-# v1.15.50 설정 cache prewarm 실행 계획
+# v1.15.51 설정 cache prewarm 실행 계획
 
 ## 배경
-v1.15.50까지 settings-admin은 기존 full render fallback 없이 `settings-shell-cache-show-hide` 경로로만 진입한다. 하지만 cache는 브라우저/WebView 메모리 안에서 생성되는 DOM cache이므로 첫 진입 전에는 비어 있다.
+v1.15.51까지 settings-admin은 기존 full render fallback 없이 `settings-shell-cache-show-hide` 경로로만 진입한다. 하지만 cache는 브라우저/WebView 메모리 안에서 생성되는 DOM cache이므로 첫 진입 전에는 비어 있다.
 
 현재 구조:
 
@@ -103,7 +103,7 @@ Chromium 390×844 조건에서:
 ```text
 전체 pytest 통과
 모바일 viewport first-click prewarmed cache-hit smoke 통과
-Prod served JS v1.15.50 확인
+Prod served JS v1.15.51 확인
 HA HTTP 200
 served smoke: PREWARM markers ok
 Git commit/tag/release 완료

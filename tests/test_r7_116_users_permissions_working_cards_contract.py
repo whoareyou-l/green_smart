@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_116_version_surfaces_are_1_14_80():
-    assert '"version": "1.15.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.50"' in _read(PANEL)
+    assert '"version": "1.15.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.51"' in _read(PANEL)
 
 
 def test_r7_116_users_permissions_routes_registered_even_when_schema_bootstrap_is_off():

@@ -18,9 +18,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_075_version_surfaces_are_1_14_0():
-    assert '"version": "1.15.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.50"' in _read(PANEL)
+    assert '"version": "1.15.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.51"' in _read(PANEL)
 
 
 def test_r7_075_db_schema_creates_settings_users_permissions_tables():

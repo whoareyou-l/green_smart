@@ -1,10 +1,10 @@
-# v1.15.50 root/content 폭 분리 계획
+# v1.15.51 root/content 폭 분리 계획
 
 ## 문제
 
 v1.14.96은 root와 content column 모두에 `100dvw`를 넣어 화면을 넘겼다.
 
-v1.15.50은 root와 content column 모두에 `100%`를 넣어 HA/custom-element 부모가 0폭 또는 shrink 폭이면 화면이 blank처럼 보일 수 있었다.
+v1.15.51은 root와 content column 모두에 `100%`를 넣어 HA/custom-element 부모가 0폭 또는 shrink 폭이면 화면이 blank처럼 보일 수 있었다.
 
 핵심 원인은 root main과 grid content column에 같은 width style을 재사용한 것이다.
 

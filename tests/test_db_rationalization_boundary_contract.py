@@ -92,9 +92,9 @@ def _production_py_files() -> list[Path]:
 
 
 def test_db_rationalization_version_surfaces_are_1_14_32():
-    assert '"version": "1.15.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.50"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.51"' in _read(REBUILD_PANEL)
 
 
 def test_db_rationalization_docs_classify_all_current_tables_and_protect_ha_recorder():

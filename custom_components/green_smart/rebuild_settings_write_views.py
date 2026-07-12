@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,23 @@ def _coerce_int_value(value: Any, default: int | None = 0) -> int | None:
         return int(float(text))
     except Exception:
         return default
+
+
+def _json_number(value: Any, default: float = 0.0) -> int | float:
+    if value is None or value == "":
+        return default
+    if isinstance(value, Decimal):
+        value = float(value)
+    try:
+        number = float(value)
+    except Exception:
+        return default
+    return int(number) if number.is_integer() else number
+
+
+def _json_int(value: Any, default: int = 0) -> int:
+    parsed = _coerce_int_value(value, default)
+    return int(parsed if parsed is not None else default)
 
 
 def _int(payload: dict[str, Any], *keys: str, default: int = 0) -> int:
@@ -269,16 +287,16 @@ def _irrigation_group_dto(row: dict[str, Any]) -> dict[str, Any]:
         "farmId": row.get("farm_id"),
         "zoneId": row.get("zone_id") or "zone-1",
         "zoneName": row.get("zone_name") or "",
-        "irrigationGroupNo": row.get("irrigation_group_no") or 0,
+        "irrigationGroupNo": _json_int(row.get("irrigation_group_no"), 0),
         "irrigationGroupName": row.get("irrigation_group_name") or "관수그룹",
         "irrigationMethod": row.get("irrigation_method") or "배지경",
         "irrigationMethodDetail": row.get("irrigation_method_detail") or "코코피트",
         "circulationType": row.get("circulation_type") or "해당 없음",
         "drainageReuse": row.get("drainage_reuse") or "배액 재활용 안함",
-        "outletCount": row.get("outlet_count") or 0,
-        "flowRatePerOutlet": row.get("flow_rate_per_outlet") or 0,
+        "outletCount": _json_int(row.get("outlet_count"), 0),
+        "flowRatePerOutlet": _json_number(row.get("flow_rate_per_outlet"), 0),
         "flowRateUnit": row.get("flow_rate_unit") or "L/h",
-        "bedCount": row.get("bed_count") or 0,
+        "bedCount": _json_int(row.get("bed_count"), 0),
         "note": row.get("note") or "",
         "status": row.get("status") or "active",
         "createdAt": row.get("created_at"),

@@ -37,9 +37,9 @@ def _render_greenhouse_zones() -> str:
 
 
 def test_r7_095_version_surfaces_are_1_14_20():
-    assert '"version": "1.15.50"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.50"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.50"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.51"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.51"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.51"' in _read(REBUILD_PANEL)
 
 
 def test_r7_095_backend_api_views_exist_and_are_registered():
