@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.53"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.53"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.53"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.54"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.54"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.54"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -318,3 +318,31 @@ def test_r7_128_group_list_button_opens_irrigation_group_list_cda_modal():
     modal_html = html[modal_start:]
     for legacy_phrase in ('장치 그룹별 포함 장치', '기존 관수 그룹', '포함 장치'):
         assert legacy_phrase not in modal_html
+
+
+def test_r7_128_irrigation_group_list_rows_are_selectable_and_update_detail():
+    source = _read(REBUILD_PANEL)
+    for literal in (
+        '_selectSettingsDeviceGroupListRow',
+        "[data-r7-settings-irrigation-group-list-row], [data-r7-settings-device-group-list-row]",
+        'rowAttrsForId',
+    ):
+        assert literal in source
+    html = _node_render("""(
+        panel._settingsGreenhouseZoneData.zones = [{ id: 'zone-a', zoneId: 'zone-a', zoneName: 'A구역', name: 'A구역', bedCount: 6 }],
+        panel._settingsGreenhouseZoneData.irrigationGroups = [
+          { id: 'ig-1', zoneId: 'zone-a', irrigationGroupName: 'A구역 관수그룹 1', irrigationMethod: '배지경', irrigationMethodDetail: '코코피트', circulationType: '비순환식', drainageReuse: '배액 재활용 안함', outletCount: 100, flowRatePerOutlet: 3, flowRateUnit: 'L/h', bedCount: 6, status: 'active', note: '첫 번째 그룹' },
+          { id: 'ig-2', zoneId: 'zone-a', irrigationGroupName: 'A구역 관수그룹 2', irrigationMethod: '순수경', irrigationMethodDetail: 'NFT', circulationType: '순환식', drainageReuse: '배액 재활용', outletCount: 40, flowRatePerOutlet: 1.5, flowRateUnit: 'L/h', bedCount: 2, status: 'maintenance', note: '두 번째 그룹' }
+        ],
+        panel._openSettingsDeviceGroupListModal(),
+        panel._selectSettingsDeviceGroupListRow('ig-2'),
+        panel.renderR7SettingsShortcutCdaSplitModal()
+    )""")
+    assert 'data-r7-settings-irrigation-group-list-row="ig-2"' in html
+    assert 'data-r7-settings-device-group-list-row="ig-2"' in html
+    assert 'data-r7-settings-shortcut-review-row="ig-2" data-r7-settings-shortcut-review-row-selected="true"' in html
+    assert 'A구역 관수그룹 2' in html
+    assert 'NFT' in html
+    assert '순환식' in html
+    assert '1.5 L/h' in html
+    assert '두 번째 그룹' in html

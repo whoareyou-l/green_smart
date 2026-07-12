@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_22_declares_lightweight_perf_helpers_and_state():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.53"' in text
+    assert 'const REBUILD_VERSION = "1.15.54"' in text
     for marker in [
         'this._r7SettingsPerf = { eventKind: "idle", startedAt: 0, samples: {} };',
         '_nowR7Perf()',

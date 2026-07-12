@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_31_settings_domain_replaces_workspace_not_appends_below_old_page():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.53"' in text
+    assert 'const REBUILD_VERSION = "1.15.54"' in text
     start = text.index('  _attachR7CachedSettingsDomainShell(workspace)')
     block = text[start:text.index('  _patchR7MobileActiveDomainPage()', start)]
     assert 'workspace.replaceChildren?.(shell);' in block

@@ -51,7 +51,7 @@
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
-const REBUILD_VERSION = "1.15.53";
+const REBUILD_VERSION = "1.15.54";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -999,6 +999,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
   _selectSettingsZoneListRow(zoneId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "zone-list", selectedZoneId: zoneId }; this._renderOrRefreshR7SettingsPanel("settings-modal-state-change"); }
+  _selectSettingsDeviceGroupListRow(groupId) { this._settingsShortcutCdaModal = { ...(this._settingsShortcutCdaModal || {}), open: true, kind: "device-group-list", selectedGroupId: groupId, selectedId: groupId }; this._renderOrRefreshR7SettingsPanel("settings-modal-state-change"); }
   _zoneById(zoneId) {
     const rows = Array.isArray(this.r7SettingsGreenhouseZoneData().zones) ? this.r7SettingsGreenhouseZoneData().zones : [];
     return rows.find((row) => String(row.id || row.zoneId) === String(zoneId)) || rows[0] || null;
@@ -2567,6 +2568,8 @@ class GreenSmartRebuildPanel extends HTMLElement {
     if (approvalRow) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsApprovalListRequest(approvalRow.getAttribute("data-r7-settings-approval-list-item-button")); return true; }
     const auditRow = closest('[data-r7-settings-audit-log-list-item-button]');
     if (auditRow) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsAuditLogRow(auditRow.getAttribute("data-r7-settings-audit-log-list-item-button")); return true; }
+    const deviceGroupRow = closest('[data-r7-settings-irrigation-group-list-row], [data-r7-settings-device-group-list-row]');
+    if (deviceGroupRow) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsDeviceGroupListRow(deviceGroupRow.getAttribute("data-r7-settings-irrigation-group-list-row") || deviceGroupRow.getAttribute("data-r7-settings-device-group-list-row")); return true; }
     const permissionBucket = closest('[data-r7-settings-permission-edit]');
     if (permissionBucket) { event.preventDefault?.(); event.stopPropagation?.(); this._selectSettingsPermissionMatrixBucket(permissionBucket.getAttribute("data-r7-settings-permission-edit")); return true; }
     const permissionRole = closest('[data-r7-settings-role-permission-list-item-button]');
@@ -2798,6 +2801,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this.querySelectorAll("[data-r7-settings-zone-delete-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._deleteSettingsZone(button.getAttribute("data-r7-settings-zone-delete-button")); });
+    });
+    this.querySelectorAll("[data-r7-settings-device-group-list-row], [data-r7-settings-irrigation-group-list-row]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._selectSettingsDeviceGroupListRow(button.getAttribute("data-r7-settings-irrigation-group-list-row") || button.getAttribute("data-r7-settings-device-group-list-row")); });
     });
   }
   _bindR7DomainNavigation() {
@@ -3284,9 +3290,10 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return `<section data-r7-cda-detail-panel ${attrs} style="border:1px solid #edf4ef;border-radius:16px;background:#fff;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;"><h3 style="margin:0;padding:14px 14px 8px;font-size:15px;color:#24323f;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${title}</span>${badge}</h3><div style="overflow:auto;padding:0 14px 12px;display:grid;gap:12px;font-size:12px;">${body}</div>${footer}</section>`;
   }
   renderR7CdaEntityRows({ entityType = "entity", rows = [], selectedId = "", rowAttr = "" } = {}) {
+    const rowAttrsForId = (rowId) => String(rowAttr || "").split(/\s+/).filter(Boolean).map((attr) => `${attr}="${rowId}"`).join(" ");
     return rows.map((row) => this.renderR7CdaCompactListRow({
       selected: String(row.id) === String(selectedId),
-      attrs: `data-r7-cda-entity-row="${entityType}" ${rowAttr ? `${rowAttr}="${row.id}"` : ""} data-r7-settings-shortcut-review-row="${row.id}" data-r7-settings-shortcut-review-row-selected="${String(row.id) === String(selectedId) ? 'true' : 'false'}"`,
+      attrs: `data-r7-cda-entity-row="${entityType}" ${rowAttrsForId(row.id)} data-r7-settings-shortcut-review-row="${row.id}" data-r7-settings-shortcut-review-row-selected="${String(row.id) === String(selectedId) ? 'true' : 'false'}"`,
       columns: [
         `<b>${row.name || '미등록'}</b>`,
         `<span>${row.location || '위치 미등록'}</span>`,
