@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_30_settings_entry_has_capture_safety_net_before_click_hash():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.57"' in text
+    assert 'const REBUILD_VERSION = "1.15.58"' in text
     assert 'this._r7SettingsEntryCaptureHandler = (event) => this._routeR7SettingsEntryEvent(event);' in text
     assert 'this._bindR7SettingsEntryCaptureListeners();' in text
     assert 'this._unbindR7SettingsEntryCaptureListeners();' in text

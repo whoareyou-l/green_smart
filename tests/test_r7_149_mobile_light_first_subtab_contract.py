@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_15_mobile_subtab_click_first_paints_light_real_panel():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.57"' in text
+    assert 'const REBUILD_VERSION = "1.15.58"' in text
     assert '_renderR7MobileLightSubtabPanel(domain, tabKey)' in text
     assert 'data-r7-mobile-light-subtab-panel="true"' in text
     assert 'data-r7-mobile-subtab-first-paint="summary"' in text

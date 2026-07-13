@@ -12,5 +12,5 @@
   "requirements": [
     "aiomysql==0.2.0"
   ],
-  "version": "1.15.57"
+  "version": "1.15.58"
 }

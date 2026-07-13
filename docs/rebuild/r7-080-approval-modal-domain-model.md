@@ -1,6 +1,6 @@
 # R7-080 Approval modal domain model
 
-Status: current baseline for `v1.15.57`.
+Status: current baseline for `v1.15.58`.
 
 This updates the `모든 승인 요청 확인 → 승인 필요 작업` popup so it is no longer an image-value mockup. Every visible region is backed by a normalized approval request model.
 

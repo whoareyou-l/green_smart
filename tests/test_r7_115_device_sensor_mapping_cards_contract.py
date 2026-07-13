@@ -52,9 +52,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.57"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.57"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.57"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.58"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.58"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.58"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -125,12 +125,18 @@ def test_r7_115_irrigation_group_device_link_modal_fields_and_save_contract():
         'data-r7-settings-irrigation-group-device-link-form',
         'data-r7-settings-irrigation-group-device-link-group-fk-select',
         'data-r7-settings-irrigation-group-device-link-role-select',
+        'data-r7-settings-irrigation-group-device-link-component-type-select',
+        'data-r7-settings-irrigation-group-device-link-io-type-select',
+        'data-r7-settings-irrigation-group-device-link-control-target-select',
+        'data-r7-settings-irrigation-group-device-link-nutrient-channel-select',
         'data-r7-settings-irrigation-group-device-link-device-fk-select',
         'data-r7-settings-irrigation-group-device-link-entity-input',
+        'data-r7-settings-irrigation-group-device-link-unit-input',
+        'data-r7-settings-irrigation-group-device-link-normal-range-input',
         'data-r7-settings-irrigation-group-device-link-status-select',
     ):
         assert marker in html
-    for phrase in ('관수그룹 장치 연결', '관수그룹 장치 연결 저장', '관수그룹', '연결 역할', '양액기 센서', '양액기 장치', '배액기 센서', '연결 장치', '대표 Entity', '연결 상태', '장치오류', 'A구역 관수그룹 1', 'A구역 양액기'):
+    for phrase in ('관수그룹 장치 연결', '관수그룹 장치 연결 저장', '관수그룹', '상위 역할', '구성요소 상세', '구성요소 유형', '입출력 유형', '제어/측정 대상', '계통/채널', '양액기 센서', '양액기 액추에이터', '양액기 유량계', '원수/급수 장치', '관수그룹 공급장치', '배액기 센서', '배액기 장치', 'EC 센서', 'pH 센서', '급액 유량계', '원수 유량계', 'EC 조절 솔밸브', 'pH 조절 솔밸브', '원수 유입 모터', '급수 모터', '관수그룹 공급 솔밸브', 'Entity 연결', '대표 Entity', '단위', '정상 범위', '연결 상태', '장치오류', 'A구역 관수그룹 1', 'A구역 양액기'):
         assert phrase in html
     assert '관수그룹 생성' not in html
 
@@ -145,6 +151,12 @@ def test_r7_115_irrigation_group_device_link_db_api_contract_exists():
         'device_id VARCHAR(128)',
         'device_entity VARCHAR(255)',
         'link_role VARCHAR(64)',
+        'component_type VARCHAR(96)',
+        'io_type VARCHAR(32)',
+        'control_target VARCHAR(64)',
+        'nutrient_channel VARCHAR(64)',
+        'unit VARCHAR(32)',
+        'normal_range VARCHAR(64)',
         'uniq_settings_irrigation_group_device_link',
     ):
         assert literal in db
@@ -154,6 +166,11 @@ def test_r7_115_irrigation_group_device_link_db_api_contract_exists():
         'class RebuildSettingsIrrigationGroupDeviceLinkView',
         'url = "/api/green_smart/rebuild/settings/irrigation-group-device-links"',
         '"irrigationGroupDeviceLinks": irrigation_group_device_links',
+        '"componentType": row.get("component_type")',
+        '_str(payload, "componentType", "component_type"',
+        '_str(payload, "ioType", "io_type"',
+        '_str(payload, "controlTarget", "control_target"',
+        '_str(payload, "nutrientChannel", "nutrient_channel"',
     ):
         assert literal in backend
     assert 'RebuildSettingsIrrigationGroupDeviceLinkView' in init

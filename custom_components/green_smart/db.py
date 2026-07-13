@@ -256,6 +256,12 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             device_id VARCHAR(128) NOT NULL DEFAULT '',
             device_entity VARCHAR(255) NOT NULL DEFAULT '',
             link_role VARCHAR(64) NOT NULL DEFAULT '양액기 장치',
+            component_type VARCHAR(96) NOT NULL DEFAULT '',
+            io_type VARCHAR(32) NOT NULL DEFAULT '',
+            control_target VARCHAR(64) NOT NULL DEFAULT '',
+            nutrient_channel VARCHAR(64) NOT NULL DEFAULT '',
+            unit VARCHAR(32) NOT NULL DEFAULT '',
+            normal_range VARCHAR(64) NOT NULL DEFAULT '',
             sort_order INT NOT NULL DEFAULT 0,
             status VARCHAR(32) NOT NULL DEFAULT 'active',
             note TEXT NULL,
@@ -263,10 +269,10 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             updated_by VARCHAR(128) NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_settings_irrigation_group_device_link (farm_id, irrigation_group_id, device_id, device_entity, link_role),
+            UNIQUE KEY uniq_settings_irrigation_group_device_link (farm_id, irrigation_group_id, device_id, device_entity, link_role, component_type),
             KEY idx_settings_irrigation_group_device_link_group (farm_id, irrigation_group_id, status),
             KEY idx_settings_irrigation_group_device_link_device (farm_id, device_id, status),
-            KEY idx_settings_irrigation_group_device_link_role (farm_id, link_role, status)
+            KEY idx_settings_irrigation_group_device_link_role (farm_id, link_role, component_type, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
