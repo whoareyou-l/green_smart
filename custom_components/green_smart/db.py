@@ -527,6 +527,12 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
             await _ensure_column(cur, "green_smart_settings_greenhouses", "timezone", "timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Seoul' AFTER install_type")
             await _ensure_column(cur, "green_smart_settings_greenhouses", "creation_reason", "creation_reason TEXT NULL AFTER note")
             await _ensure_index(cur, "green_smart_settings_greenhouses", "idx_settings_greenhouse_operating_status", "(farm_id, operating_status)")
+            await _ensure_column(cur, "green_smart_settings_irrigation_group_device_links", "component_type", "component_type VARCHAR(96) NOT NULL DEFAULT '' AFTER link_role")
+            await _ensure_column(cur, "green_smart_settings_irrigation_group_device_links", "io_type", "io_type VARCHAR(32) NOT NULL DEFAULT '' AFTER component_type")
+            await _ensure_column(cur, "green_smart_settings_irrigation_group_device_links", "control_target", "control_target VARCHAR(64) NOT NULL DEFAULT '' AFTER io_type")
+            await _ensure_column(cur, "green_smart_settings_irrigation_group_device_links", "nutrient_channel", "nutrient_channel VARCHAR(64) NOT NULL DEFAULT '' AFTER control_target")
+            await _ensure_column(cur, "green_smart_settings_irrigation_group_device_links", "unit", "unit VARCHAR(32) NOT NULL DEFAULT '' AFTER nutrient_channel")
+            await _ensure_column(cur, "green_smart_settings_irrigation_group_device_links", "normal_range", "normal_range VARCHAR(64) NOT NULL DEFAULT '' AFTER unit")
             await cur.execute("ALTER TABLE green_smart_settings_greenhouses MODIFY operating_status VARCHAR(32) NOT NULL DEFAULT '운영중'")
             await cur.execute("ALTER TABLE green_smart_settings_greenhouses MODIFY status VARCHAR(32) NOT NULL DEFAULT '정상'")
             await cur.execute("""

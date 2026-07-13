@@ -12,9 +12,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_137_version_surfaces_are_1_15_06():
-    assert '"version": "1.15.58"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.58"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.58"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.59"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.59"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.59"' in _read(REBUILD_PANEL)
 
 
 def test_r7_137_source_has_fixed_overlay_pc_trapezoids_mobile_right_user_and_inner_overflow_fix():
