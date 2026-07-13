@@ -1,6 +1,6 @@
 # RS-016 Crop Cycle Read-only Page Slice
 
-> 기준 버전: `v1.15.56`
+> 기준 버전: `v1.15.57`
 > Status: active crop cycle read-only UI slice
 > 목적: MariaDB-backed home context에서 들어온 `crop_cycle/currentCrop` 데이터를 작물상태 / 생육목표 화면 안에 읽기 전용으로 명확히 표시한다.
 

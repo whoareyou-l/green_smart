@@ -51,7 +51,7 @@
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
-const REBUILD_VERSION = "1.15.56";
+const REBUILD_VERSION = "1.15.57";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -68,6 +68,7 @@ const REBUILD_SETTINGS_ZONE_CREATE_API_PATH = "green_smart/rebuild/settings/zone
 const REBUILD_SETTINGS_DEVICE_CREATE_API_PATH = "green_smart/rebuild/settings/devices";
 const REBUILD_SETTINGS_DEVICE_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/device-groups";
 const REBUILD_SETTINGS_IRRIGATION_GROUP_CREATE_API_PATH = "green_smart/rebuild/settings/irrigation-groups";
+const REBUILD_SETTINGS_IRRIGATION_GROUP_DEVICE_LINK_API_PATH = "green_smart/rebuild/settings/irrigation-group-device-links";
 const REBUILD_SETTINGS_DEVICE_SENSOR_MAPPING_API_PATH = "green_smart/rebuild/settings/device-sensor-mappings";
 const GREEN_SMART_HA_UNLINKED_DEVICES_API_PATH = "green_smart/devices/ha/unlinked";
 const GREEN_SMART_DEVICE_CONNECTION_API_PATH = "green_smart/devices";
@@ -266,7 +267,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._contextLoadError = null;
     this._contextRequestId = 0;
     this._settingsUsersPermissions = { source: "loading", users: [], approvalRows: [], auditRows: [], counts: { users: 0, approvals: 0, audits: 0 }, requestState: "idle" };
-    this._settingsGreenhouseZoneData = { source: "loading", greenhouses: [], zones: [], deviceSensorMappings: [] };
+    this._settingsGreenhouseZoneData = { source: "loading", greenhouses: [], zones: [], deviceSensorMappings: [], irrigationGroupDeviceLinks: [] };
     this._settingsGreenhouseZoneLoadState = "loading";
     this._settingsGreenhouseZoneLoadError = null;
     this._settingsGreenhouseZoneRequestId = 0;
@@ -280,6 +281,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsDeviceConnectionModal = { open: false, state: "idle", values: {}, haUnlinkedDevices: [], selectedEntities: [] };
+    this._settingsIrrigationGroupDeviceLinkModal = { open: false, state: "idle", values: {} };
     this._settingsHaDevicesPageModal = { open: false };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsSystemActionModal = { open: false, kind: "", state: "idle", data: null, error: "" };
@@ -373,6 +375,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this.renderR7SettingsDeviceCreateModal(),
       this.renderR7SettingsDeviceGroupCreateModal(),
       this.renderR7SettingsDeviceSensorMappingModal(),
+      this.renderR7SettingsIrrigationGroupDeviceLinkModal(),
       this.renderR7SettingsHaDevicesPageModal(),
       this.renderR7SettingsShortcutCdaSplitModal(),
       this.renderR7SettingsSystemActionModal(),
@@ -412,7 +415,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     return false;
   }
   r7SettingsGreenhouseZoneData() {
-    return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], irrigationGroups: [], systemIntegration: {} };
+    return this._settingsGreenhouseZoneData || { source: "empty", greenhouses: [], zones: [], deviceSensorMappings: [], devices: [], deviceGroups: [], irrigationGroups: [], irrigationGroupDeviceLinks: [], systemIntegration: {} };
   }
   async _loadSettingsGreenhouseZoneData() {
     const requestId = ++this._settingsGreenhouseZoneRequestId;
@@ -430,6 +433,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
         devices: Array.isArray(response?.devices) ? response.devices : [],
         deviceGroups: Array.isArray(response?.deviceGroups) ? response.deviceGroups : [],
         irrigationGroups: Array.isArray(response?.irrigationGroups) ? response.irrigationGroups : [],
+        irrigationGroupDeviceLinks: Array.isArray(response?.irrigationGroupDeviceLinks) ? response.irrigationGroupDeviceLinks : [],
         systemIntegration: response?.systemIntegration && typeof response.systemIntegration === "object" ? response.systemIntegration : {},
       };
       this._settingsGreenhouseZoneLoadState = "ready";
@@ -807,6 +811,21 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
     this._settingsShortcutCdaModal = { open: false, kind: "" };
     this._settingsDeviceGroupCreateModal = { open: true, state: "idle", values: {} };
+    this._settingsIrrigationGroupDeviceLinkModal = { open: false, state: "idle", values: {} };
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
+  }
+  _openSettingsIrrigationGroupDeviceLinkModal() {
+    this._settingsGreenhouseCreateModal = { open: false, state: "idle" };
+    this._settingsZoneCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceGroupCreateModal = { open: false, state: "idle" };
+    this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
+    this._settingsDeviceConnectionModal = { open: false, state: "idle", values: {}, haUnlinkedDevices: [], selectedEntities: [] };
+    this._settingsShortcutCdaModal = { open: false, kind: "" };
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const groups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
+    const devices = this._r7SettingsConnectedDeviceRows?.() || [];
+    this._settingsIrrigationGroupDeviceLinkModal = { open: true, state: "idle", values: { irrigationGroupId: groups[0]?.id || "", deviceId: devices[0]?.id || "", linkRole: "양액기 장치", status: "active" } };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
   _closeSettingsDetailActionModal(kind = "all") {
@@ -818,6 +837,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._settingsDeviceSensorMappingModal = { open: false, state: "idle" };
       this._settingsDeviceConnectionModal = { open: false, state: "idle", values: {}, haUnlinkedDevices: [], selectedEntities: [] };
     }
+    if (kind === "irrigation-group-device-link" || kind === "all") this._settingsIrrigationGroupDeviceLinkModal = { open: false, state: "idle", values: {} };
     if (kind === "ha-devices-page" || kind === "all") this._settingsHaDevicesPageModal = { open: false };
     if (kind === "audit-log-edit" || kind === "all") this._settingsAuditLogEditModal = { open: false, state: "idle" };
     if (kind === "role-permission" || kind === "all") this._settingsRolePermissionEditModal = { open: false, state: "idle" };
@@ -835,6 +855,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       "device-create": "device",
       "device-group-create": "device-group",
       "device-sensor-mapping": "mapping",
+      "irrigation-group-device-link": "irrigation-group-device-link",
       "system-center-connection": "system-action",
     }[type] || "";
     if (!closeKind && mode !== "settings-create") return false;
@@ -1162,6 +1183,22 @@ class GreenSmartRebuildPanel extends HTMLElement {
     } catch (error) {
       this._settingsDeviceSensorMappingModal = { open: true, state: "error", error: error?.message || "device-sensor-mapping-failed" };
       this._settingsDeviceConnectionModal = { ...modal, open: true, state: "error", error: error?.message || "device-connection-failed", values: payload, selectedEntities };
+    }
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
+  }
+  async _submitSettingsIrrigationGroupDeviceLinkForm(form) {
+    const payload = this._settingsFormPayload(form);
+    const modal = this._settingsIrrigationGroupDeviceLinkModal || {};
+    this._settingsIrrigationGroupDeviceLinkModal = { ...modal, open: true, state: "saving", values: payload };
+    this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
+    try {
+      if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
+      const response = await this.hass.callApi(["P", "OST"].join(""), REBUILD_SETTINGS_IRRIGATION_GROUP_DEVICE_LINK_API_PATH, payload);
+      if (response?.settingsSnapshot) this._settingsGreenhouseZoneData = response.settingsSnapshot;
+      await this._loadSettingsGreenhouseZoneData();
+      this._settingsIrrigationGroupDeviceLinkModal = { ...modal, open: true, state: "saved", response, values: payload };
+    } catch (error) {
+      this._settingsIrrigationGroupDeviceLinkModal = { ...modal, open: true, state: "error", error: error?.message || "irrigation-group-device-link-failed", values: payload };
     }
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
@@ -2745,6 +2782,9 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this.querySelectorAll("[data-r7-settings-device-group-create-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsDeviceGroupCreateModal(); });
     });
+    this.querySelectorAll("[data-r7-settings-irrigation-group-device-link-button]").forEach((button) => {
+      button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsIrrigationGroupDeviceLinkModal(); });
+    });
     this.querySelectorAll("[data-r7-settings-system-update-deferred-button]").forEach((button) => {
       button.addEventListener("click", (event) => { event.preventDefault(); this._openSettingsSystemUpdateModal(); });
     });
@@ -2807,6 +2847,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     });
     this.querySelectorAll("form[data-r7-settings-zone-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsZoneCreateForm(form); }));
     this.querySelectorAll("form[data-r7-settings-device-sensor-mapping-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceSensorMappingForm(form); }));
+    this.querySelectorAll("form[data-r7-settings-irrigation-group-device-link-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsIrrigationGroupDeviceLinkForm(form); }));
     this.querySelectorAll("form[data-r7-settings-device-create-form]").forEach((form) => form.addEventListener("submit", (event) => { event.preventDefault(); this._submitSettingsDeviceCreateForm(form); }));
     this.querySelectorAll("form[data-r7-settings-device-group-create-form]").forEach((form) => {
       this._handleSettingsIrrigationGroupDynamicFields(form);
@@ -3760,7 +3801,12 @@ class GreenSmartRebuildPanel extends HTMLElement {
       "device-group-create": [
         ["basic-info", "그룹 기본값 확인", "그룹명과 목적을 확인합니다."],
         ["zone-fk", "구역 FK 확인", "관수그룹 생성 단계에서 구역 FK를 선택합니다."],
-        ["memo", "승인 메모", "관수그룹 연결 사유를 감사 로그 근거로 남깁니다."],
+        ["memo", "승인 메모", "관수그룹 생성 사유를 감사 로그 근거로 남깁니다."],
+      ],
+      "irrigation-group-device-link": [
+        ["group-fk", "관수그룹 FK 확인", "장치를 연결할 관수그룹 마스터를 확인합니다."],
+        ["device-fk", "장치 FK 확인", "양액기/배액기 센서 또는 장치가 올바른지 확인합니다."],
+        ["memo", "승인 메모", "관수그룹 장치 연결 사유를 감사 로그 근거로 남깁니다."],
       ],
     }[kind] || [["basic-info", "기본 정보", "입력값을 확인합니다."]];
     const toneStyle = (idx) => idx === 0
@@ -3986,6 +4032,33 @@ class GreenSmartRebuildPanel extends HTMLElement {
       this._r7SettingsCreateSection("memo", "메모", this._r7SettingsCreateTextarea("note", "장치 연결 근거", modal.values?.note || "")),
     ];
     return this.renderR7SettingsDetailActionModal({ open, kind: "device-sensor-mapping", title: "구역 장치 연결", subtitle: "HA Device Registry의 미연결 장치를 Green Smart 구역 장치로 저장하고 Entity N개를 역할과 함께 연결합니다", formAttr: "data-r7-settings-device-sensor-mapping-form", closeKind: "mapping", state: modal.state || legacyModal.state, error: modal.error || legacyModal.error, submitLabel: "구역 장치 연결 저장", sections }).replace('data-r7-record-modal-type="device-sensor-mapping"', 'data-r7-record-modal-type="device-sensor-mapping" data-r7-device-canonical-connection-modal="true" data-r7-settings-device-connection-authoring-modal="true" data-r7-settings-device-connection-modal-title="구역 장치 연결"');
+  }
+  renderR7SettingsIrrigationGroupDeviceLinkModal() {
+    const modal = this._settingsIrrigationGroupDeviceLinkModal || { open: false, values: {} };
+    if (!modal.open) return `<template data-r7-settings-irrigation-group-device-link-modal="true" data-r7-settings-irrigation-group-device-link-modal-open="false"></template>`;
+    const settingsData = this.r7SettingsGreenhouseZoneData();
+    const values = modal.values || {};
+    const irrigationGroups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
+    const devices = this._r7SettingsConnectedDeviceRows?.() || [];
+    const groupOptions = irrigationGroups.map((group, index) => ({
+      value: group.id || group.irrigationGroupId || `irrigation-group-${index + 1}`,
+      label: `${group.irrigationGroupName || group.irrigation_group_name || `관수그룹 ${index + 1}`} · ${group.zoneName || group.zone_name || group.zoneId || group.zone_id || "구역 미등록"}`,
+      attrs: `data-r7-settings-irrigation-group-device-link-zone-id="${String(group.zoneId || group.zone_id || "").replace(/\"/g, '&quot;')}"`,
+    }));
+    const deviceOptions = devices.map((device, index) => ({
+      value: device.id || device.deviceId || device.haDeviceId || device.entityId || `device-${index + 1}`,
+      label: `${device.deviceName || device.name || "장치"} · ${device.deviceType || device.installType || "장치"} · ${device.entityId || device.haDeviceId || "entity 미등록"}`,
+      attrs: `data-r7-settings-irrigation-group-device-link-device-type="${String(device.deviceType || device.installType || "").replace(/\"/g, '&quot;')}"`,
+    }));
+    const roleOptions = ["양액기 센서", "양액기 장치", "배액기 센서"].map((label) => ({ value: label, label }));
+    const statusOptions = [{ value: "active", label: "연결" }, { value: "inactive", label: "미연결" }, { value: "error", label: "장치오류" }];
+    const sections = [
+      this._r7SettingsCreateSection("irrigation-group-device-link-target", "관수그룹 선택", `<section data-r7-settings-irrigation-group-device-link-target-section="true" style="display:grid;gap:10px;"><div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("irrigationGroupId", "관수그룹", groupOptions.length ? groupOptions : [{ value: "", label: "관수그룹 먼저 생성 필요" }], values.irrigationGroupId || groupOptions[0]?.value || "", 'data-r7-settings-irrigation-group-device-link-group-fk-select data-r7-settings-irrigation-group-fk="required"')}${this._r7SettingsCreateSelect("linkRole", "연결 역할", roleOptions, values.linkRole || "양액기 장치", 'data-r7-settings-irrigation-group-device-link-role-select')}</div><p style="margin:0;color:#6f8875;font-size:12px;">관수그룹 FK를 기준으로 양액기/배액기 센서와 장치를 연결합니다. 관수그룹 마스터의 관수/토출 기준값은 수정하지 않습니다.</p></section>`),
+      this._r7SettingsCreateSection("irrigation-group-device-link-device", "연결 장치", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("deviceId", "장치", deviceOptions.length ? deviceOptions : [{ value: "", label: "구역 장치 먼저 연결 필요" }], values.deviceId || deviceOptions[0]?.value || "", 'data-r7-settings-irrigation-group-device-link-device-fk-select data-r7-settings-device-fk="required"')}${this._r7SettingsCreateField("entityId", "대표 Entity", values.entityId || "", 'placeholder="예: sensor.fertigation_ec" data-r7-settings-irrigation-group-device-link-entity-input')}</div>`),
+      this._r7SettingsCreateSection("irrigation-group-device-link-meta", "연결 상태", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "active", 'data-r7-settings-irrigation-group-device-link-status-select')}${this._r7SettingsCreateField("sortOrder", "표시 순서", values.sortOrder || "0", 'type="number" min="0" data-r7-settings-irrigation-group-device-link-sort-order')}</div>`),
+      this._r7SettingsCreateSection("memo", "운영 메모", this._r7SettingsCreateTextarea("note", "예: A구역 관수그룹 1의 양액기 EC 센서", values.note || "")),
+    ];
+    return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "irrigation-group-device-link", title: "관수그룹 장치 연결", subtitle: "관수그룹 FK에 양액기 센서, 양액기 장치, 배액기 센서를 연결합니다", formAttr: "data-r7-settings-irrigation-group-device-link-form", closeKind: "irrigation-group-device-link", state: modal.state, error: modal.error, submitLabel: "관수그룹 장치 연결 저장", sections }).replace('data-r7-record-modal-type="irrigation-group-device-link"', 'data-r7-record-modal-type="irrigation-group-device-link" data-r7-settings-irrigation-group-device-link-modal="true" data-r7-settings-irrigation-group-device-link-modal-open="true"');
   }
   renderR7SettingsShortcutReviewLikeModal() {
     const modal = this._settingsShortcutCdaModal || { open: false, kind: "" };
@@ -4511,7 +4584,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const actions = [
       this.renderR7CdbButtonOneCard({ kind: "device-create", section: "device-create", icon: "mdi:home-assistant", title: "장치 추가", subtitle: "실제 HA 연동 기기 목록", statusKey: haDeviceRows.length ? "normal-ready" : "needs-verification", tone: "blue", summaryHtml: this._r7SettingsHaDeviceCardSummaryRows(3).join(""), buttonLabel: "HA로 이동", buttonIcon: "mdi:home-assistant", buttonTone: "blue", buttonAttrs: 'data-r7-settings-ha-devices-page-button data-r7-settings-device-process="ha-devices-page" data-r7-settings-modal-skip-record-binding="true"', extraAttrs: 'data-r7-settings-device-action-card="device-create" data-r7-settings-ha-devices-page-card-entry="true" data-r7-settings-ha-device-list-card="true"' }),
       actionCard({ kind: "device-link", title: "구역 장치 연결", icon: "mdi:link-variant", primary: "구역 장치와 센서 연결", note: "등록된 장치와 센서 entity를 구역 기준으로 연결합니다.", addLabel: "구역 장치 연결", firstIcon: "mdi:link-plus", addAttr: 'data-r7-settings-device-sensor-mapping-button data-r7-settings-device-process="group-device-link" data-r7-settings-device-group-link-stage="device-to-group"', shortcutLabel: "장치 목록", shortcutAttr: 'data-r7-settings-equipment-info-shortcut-button' }),
-      actionCard({ kind: "group-add", title: "관수그룹 연결", icon: "mdi:water-pump", primary: "관수그룹 FK 필수", note: "양액기·배액기 센서/장치는 관수그룹 기준으로 연결합니다.", addLabel: "관수그룹 연결", addAttr: 'data-r7-settings-device-group-create-button data-r7-settings-device-process="group-create-zone-fk" data-r7-settings-device-group-zone-fk="required"', shortcutLabel: "관수그룹 목록", shortcutAttr: 'data-r7-settings-device-group-list-shortcut' }),
+      actionCard({ kind: "group-add", title: "관수그룹 장치 연결", icon: "mdi:water-pump", primary: "관수그룹 FK 필수", note: "양액기·배액기 센서/장치는 관수그룹 기준으로 연결합니다.", addLabel: "관수그룹 장치 연결", addAttr: 'data-r7-settings-irrigation-group-device-link-button data-r7-settings-device-process="irrigation-group-device-link" data-r7-settings-device-group-zone-fk="required"', shortcutLabel: "관수그룹 목록", shortcutAttr: 'data-r7-settings-device-group-list-shortcut' }),
     ].join("");
     const listRows = (visibleMappings.length ? visibleMappings : [{ id: "empty", mappingRole: "구역 장치 미등록", sensorEntity: "sensor 미연결", deviceEntity: "device 미연결", note: "장치 추가 후 구역 장치 연결", tone: "amber", statusLabel: "확인" }]).map((row) => ({
       kind: row.mappingRole || row.name || "구역 장치",
@@ -6014,6 +6087,7 @@ class GreenSmartRebuildPanel extends HTMLElement {
       ${this.renderR7SettingsDeviceCreateModal()}
       ${this.renderR7SettingsDeviceGroupCreateModal()}
       ${this.renderR7SettingsDeviceSensorMappingModal()}
+      ${this.renderR7SettingsIrrigationGroupDeviceLinkModal()}
       ${this.renderR7SettingsHaDevicesPageModal()}
       ${this.renderR7SettingsShortcutCdaSplitModal()}
       ${this.renderR7SettingsSystemActionModal()}

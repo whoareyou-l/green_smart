@@ -303,6 +303,27 @@ def _irrigation_group_dto(row: dict[str, Any]) -> dict[str, Any]:
         "updatedAt": row.get("updated_at"),
     }
 
+
+def _irrigation_group_device_link_dto(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row.get("id"),
+        "farmId": row.get("farm_id"),
+        "irrigationGroupId": _json_int(row.get("irrigation_group_id"), 0),
+        "irrigationGroupName": row.get("irrigation_group_name") or "",
+        "zoneId": row.get("zone_id") or "",
+        "zoneName": row.get("zone_name") or "",
+        "deviceId": row.get("device_id") or "",
+        "deviceEntity": row.get("device_entity") or "",
+        "deviceName": row.get("device_name") or row.get("device_id") or "",
+        "deviceType": row.get("device_type") or "",
+        "linkRole": row.get("link_role") or "양액기 장치",
+        "sortOrder": _json_int(row.get("sort_order"), 0),
+        "note": row.get("note") or "",
+        "status": row.get("status") or "active",
+        "createdAt": row.get("created_at"),
+        "updatedAt": row.get("updated_at"),
+    }
+
 async def list_settings_greenhouses(hass, farm_id: int = 1) -> list[dict[str, Any]]:
 
     rows = await fetchall(hass, """
@@ -553,6 +574,70 @@ async def list_settings_irrigation_groups(hass, farm_id: int = 1) -> list[dict[s
         ORDER BY ig.zone_id ASC, ig.irrigation_group_no ASC, ig.id ASC
         """, (farm_id,))
     return [_irrigation_group_dto(row) for row in rows]
+
+
+async def ensure_settings_irrigation_group_device_link_schema(hass) -> None:
+    await execute(hass, """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_irrigation_group_device_links (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            irrigation_group_id BIGINT NOT NULL,
+            device_id VARCHAR(128) NOT NULL DEFAULT '',
+            device_entity VARCHAR(255) NOT NULL DEFAULT '',
+            link_role VARCHAR(64) NOT NULL DEFAULT '양액기 장치',
+            sort_order INT NOT NULL DEFAULT 0,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_irrigation_group_device_link (farm_id, irrigation_group_id, device_id, device_entity, link_role),
+            KEY idx_settings_irrigation_group_device_link_group (farm_id, irrigation_group_id, status),
+            KEY idx_settings_irrigation_group_device_link_device (farm_id, device_id, status),
+            KEY idx_settings_irrigation_group_device_link_role (farm_id, link_role, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+
+
+async def list_settings_irrigation_group_device_links(hass, farm_id: int = 1) -> list[dict[str, Any]]:
+    await ensure_settings_irrigation_group_device_link_schema(hass)
+    rows = await fetchall(hass, """
+        SELECT l.id, l.farm_id, l.irrigation_group_id, ig.irrigation_group_name, ig.zone_id, z.name AS zone_name,
+               l.device_id, l.device_entity, d.device_name, d.device_type, l.link_role, l.sort_order, l.note, l.status, l.created_at, l.updated_at
+        FROM green_smart_settings_irrigation_group_device_links l
+        LEFT JOIN green_smart_settings_irrigation_groups ig ON ig.farm_id = l.farm_id AND ig.id = l.irrigation_group_id
+        LEFT JOIN green_smart_settings_zones z ON z.farm_id = ig.farm_id AND (CAST(z.id AS CHAR) = ig.zone_id OR CONCAT('settings-zone-', z.id) = ig.zone_id)
+        LEFT JOIN green_smart_settings_devices d ON d.farm_id = l.farm_id AND (CAST(d.id AS CHAR) = l.device_id OR d.entity_id = l.device_entity OR d.ha_device_id = l.device_id)
+        WHERE l.farm_id = %s AND l.status NOT IN ('삭제됨', 'deleted')
+        ORDER BY ig.zone_id ASC, ig.irrigation_group_no ASC, l.sort_order ASC, l.id ASC
+        """, (farm_id,))
+    return [_irrigation_group_device_link_dto(row) for row in rows]
+
+
+async def create_settings_irrigation_group_device_link(hass, payload: dict[str, Any], actor: str = "operator", farm_id: int = 1) -> dict[str, Any]:
+    await ensure_settings_irrigation_group_device_link_schema(hass)
+    irrigation_group_id = _int(payload, "irrigationGroupId", "irrigation_group_id", default=0)
+    if irrigation_group_id <= 0:
+        raise web.HTTPBadRequest(reason="irrigation-group-id-required")
+    device_id = _str(payload, "deviceId", "device_id", default="")
+    device_entity = _str(payload, "entityId", "deviceEntity", "device_entity", "entity_id", default="")
+    if not device_id and not device_entity:
+        raise web.HTTPBadRequest(reason="device-id-or-entity-required")
+    link_role = _str(payload, "linkRole", "link_role", default="양액기 장치")
+    await execute(hass, """
+        INSERT INTO green_smart_settings_irrigation_group_device_links
+            (farm_id, irrigation_group_id, device_id, device_entity, link_role, sort_order, note, status, created_by, updated_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            sort_order = VALUES(sort_order), note = VALUES(note), status = VALUES(status), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
+        """, (
+            farm_id, irrigation_group_id, device_id, device_entity, link_role,
+            _int(payload, "sortOrder", "sort_order", default=0), _str(payload, "note"),
+            _str(payload, "status", "state", default="active"), actor, actor,
+        ))
+    links = await list_settings_irrigation_group_device_links(hass, farm_id)
+    return next((row for row in links if int(row.get("irrigationGroupId") or 0) == irrigation_group_id and str(row.get("deviceId") or "") == str(device_id) and str(row.get("deviceEntity") or "") == str(device_entity) and row.get("linkRole") == link_role), links[0] if links else {"irrigationGroupId": irrigation_group_id, "deviceId": device_id, "linkRole": link_role})
 
 
 def _zone_label_for_irrigation_group(zones: list[dict[str, Any]], zone_id: str) -> str:
@@ -1337,6 +1422,7 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
     ha_devices = await list_ha_device_registry_summary(hass)
     device_groups = await list_settings_device_groups(hass, farm_id)
     irrigation_groups = await list_settings_irrigation_groups(hass, farm_id)
+    irrigation_group_device_links = await list_settings_irrigation_group_device_links(hass, farm_id)
     zone_by_id = {str(zone.get("id")): zone for zone in zones}
     zone_by_key = {str(zone.get("zoneId")): zone for zone in zones}
     for mapping in mappings:
@@ -1357,7 +1443,7 @@ async def settings_snapshot_response(hass, farm_id: int = 1) -> dict[str, Any]:
             if label:
                 zone.setdefault("equipmentProfile", {}).setdefault("labels", []).append(label)
     system_integration = await system_integration_watchdog_response(hass)
-    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "canonicalDevices": canonical_devices, "canonicalDeviceEntities": canonical_device_entities, "canonicalDeviceLatestValues": canonical_device_latest_values, "haDevices": ha_devices, "deviceGroups": device_groups, "irrigationGroups": irrigation_groups, "systemIntegration": system_integration}
+    return {"ok": True, "source": "green_smart_settings_db", "greenhouses": greenhouses, "zones": zones, "deviceSensorMappings": mappings, "devices": devices, "canonicalDevices": canonical_devices, "canonicalDeviceEntities": canonical_device_entities, "canonicalDeviceLatestValues": canonical_device_latest_values, "haDevices": ha_devices, "deviceGroups": device_groups, "irrigationGroups": irrigation_groups, "irrigationGroupDeviceLinks": irrigation_group_device_links, "systemIntegration": system_integration}
 
 
 class GreenSmartHaUnlinkedDevicesView(HomeAssistantView):
@@ -1618,6 +1704,21 @@ class RebuildSettingsIrrigationGroupItemView(HomeAssistantView):
         irrigation_group_id = int(irrigation_group_id or request.match_info["irrigation_group_id"])
         item = await delete_settings_irrigation_group(hass, irrigation_group_id, actor=_request_actor(request))
         return self.json({"ok": True, "kind": "irrigation-group", "deleted": True, "approvalRequired": False, "irrigationGroup": item, "settingsSnapshot": await settings_snapshot_response(hass)})
+
+
+class RebuildSettingsIrrigationGroupDeviceLinkView(HomeAssistantView):
+    url = "/api/green_smart/rebuild/settings/irrigation-group-device-links"
+    name = "api:green_smart:rebuild:settings:irrigation_group_device_links"
+    requires_auth = True
+
+    async def get(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        return self.json({"ok": True, "irrigationGroupDeviceLinks": await list_settings_irrigation_group_device_links(hass)})
+
+    async def post(self, request: web.Request) -> web.Response:
+        hass = request.app["hass"]
+        item = await create_settings_irrigation_group_device_link(hass, await _settings_payload(request), actor=_request_actor(request))
+        return self.json({"ok": True, "kind": "irrigation-group-device-link", "saved": True, "approvalRequired": False, "irrigationGroupDeviceLink": item, "settingsSnapshot": await settings_snapshot_response(hass)})
 
 
 class RebuildSettingsDeviceSensorMappingView(HomeAssistantView):

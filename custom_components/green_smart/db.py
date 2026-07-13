@@ -249,6 +249,27 @@ async def ensure_settings_schema(hass: HomeAssistant) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """,
         """
+        CREATE TABLE IF NOT EXISTS green_smart_settings_irrigation_group_device_links (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            farm_id BIGINT NOT NULL DEFAULT 1,
+            irrigation_group_id BIGINT NOT NULL,
+            device_id VARCHAR(128) NOT NULL DEFAULT '',
+            device_entity VARCHAR(255) NOT NULL DEFAULT '',
+            link_role VARCHAR(64) NOT NULL DEFAULT '양액기 장치',
+            sort_order INT NOT NULL DEFAULT 0,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            note TEXT NULL,
+            created_by VARCHAR(128) NULL,
+            updated_by VARCHAR(128) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_settings_irrigation_group_device_link (farm_id, irrigation_group_id, device_id, device_entity, link_role),
+            KEY idx_settings_irrigation_group_device_link_group (farm_id, irrigation_group_id, status),
+            KEY idx_settings_irrigation_group_device_link_device (farm_id, device_id, status),
+            KEY idx_settings_irrigation_group_device_link_role (farm_id, link_role, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """,
+        """
         CREATE TABLE IF NOT EXISTS green_smart_devices (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,
             farm_id BIGINT NOT NULL DEFAULT 1,

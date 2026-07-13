@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_24_settings_shell_cache_is_built_from_direct_settings_detail_subpage():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.56"' in text
+    assert 'const REBUILD_VERSION = "1.15.57"' in text
     start = text.index('  _getOrCreateR7CachedSettingsDomainShell()')
     block = text[start:text.index('  _attachR7CachedSettingsDomainShell(workspace)', start)]
     assert 'R7_DETAIL_SUBPAGES.find((item) => item.key === "settings-admin")' in block

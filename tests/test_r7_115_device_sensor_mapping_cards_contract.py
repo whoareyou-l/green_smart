@@ -52,9 +52,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.56"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.56"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.56"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.57"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.57"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.57"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -71,7 +71,7 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
         'data-r7-settings-device-list-panel',
     ):
         assert marker in html
-    for text in ('전체 장치', '구역 장치', '관수그룹 장치', '장치 추가', '관수그룹 연결', '장치 목록', 'HA로 이동', 'HA 천창 컨트롤러'):
+    for text in ('전체 장치', '구역 장치', '관수그룹 장치', '장치 추가', '관수그룹 장치 연결', '장치 목록', 'HA로 이동', 'HA 천창 컨트롤러'):
         assert text in html
     for text in ('연결', '미연결', '장치오류', '센서', '복합환경제어반 장치', '기타 장치', '양액기 센서', '양액기 장치', '배액기 센서', '구역 장치 연결'):
         assert text in html
@@ -83,6 +83,81 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
     for forbidden in ('data-r7-settings-device-selected-zone-strip', 'data-r7-settings-device-process-summary', 'data-r7-settings-device-action-card="mapping"', '장치 구성', '그룹 구성', '매핑 목록'):
         assert forbidden not in html
     assert 'data-r7-settings-device-action-row style="display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:12px;"' in html
+
+
+def test_r7_115_irrigation_group_device_link_button_opens_dedicated_modal_not_group_create():
+    html = _render_device_mapping()
+    group_start = html.index('data-r7-settings-device-action-card="group-add"')
+    group_card = html[html.rindex('<article', 0, group_start):html.index('</article>', group_start)]
+    assert '관수그룹 장치 연결' in group_card
+    assert 'data-r7-settings-irrigation-group-device-link-button' in group_card
+    assert 'data-r7-settings-device-process="irrigation-group-device-link"' in group_card
+    assert 'data-r7-settings-device-group-create-button' not in group_card
+    assert '관수그룹 연결' not in group_card
+
+
+def test_r7_115_irrigation_group_device_link_modal_fields_and_save_contract():
+    script = f"""
+      const classSet = new Set();
+      globalThis.location = {{ pathname: '/green_smart', search: '', hash: '#settings-admin' }};
+      globalThis.innerWidth = 1280;
+      globalThis.document = {{ body: {{ classList: {{ add(c){{ classSet.add(c); }}, remove(c){{ classSet.delete(c); }}, contains(c){{ return classSet.has(c); }} }} }}, getElementById(){{ return null; }}, createElement(){{ return {{ id: '', textContent: '', setAttribute(){{}}, appendChild(){{}} }}; }}, head: {{ appendChild(){{}} }} }};
+      globalThis.HTMLElement = class {{ constructor(){{ this.innerHTML = '';this.dataset = {{}};this.style = {{}}; }} querySelectorAll(){{ return []; }} querySelector(){{ return null; }} addEventListener(){{}} }};
+      globalThis.customElements = {{ _items: new Map(), get(name){{ return this._items.get(name); }}, define(name, cls){{ this._items.set(name, cls); }} }};
+      const mod = await import({str(REBUILD_PANEL)!r});
+      const panel = new mod.GreenSmartRebuildPanel();
+      panel.hass = {{ user: {{ name: 'admin', is_admin: true }}, callApi: async () => ({{}}) }};
+      panel._homeContext = {{ greenhouseName: '대표 온실', zones: [{{ id: 'zone-a', zoneId: 'zone-a', zoneName: 'A구역', name: 'A구역' }}] }};
+      panel._settingsGreenhouseZoneData = {{
+        source: 'test', greenhouses: [{{ id: 1, name: '대표 온실' }}], zones: panel._homeContext.zones,
+        irrigationGroups: [{{ id: 7, zoneId: 'zone-a', zoneName: 'A구역', irrigationGroupName: 'A구역 관수그룹 1' }}],
+        devices: [{{ id: 9, deviceName: 'A구역 양액기', deviceType: '양액기', entityId: 'switch.a_fertigation', status: 'active' }}],
+        deviceSensorMappings: []
+      }};
+      panel._openSettingsIrrigationGroupDeviceLinkModal();
+      console.log(JSON.stringify({{ html: panel.renderR7SettingsIrrigationGroupDeviceLinkModal() }}));
+    """
+    result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr + result.stdout
+    html = json.loads(result.stdout)["html"]
+    for marker in (
+        'data-r7-settings-irrigation-group-device-link-modal="true"',
+        'data-r7-settings-irrigation-group-device-link-form',
+        'data-r7-settings-irrigation-group-device-link-group-fk-select',
+        'data-r7-settings-irrigation-group-device-link-role-select',
+        'data-r7-settings-irrigation-group-device-link-device-fk-select',
+        'data-r7-settings-irrigation-group-device-link-entity-input',
+        'data-r7-settings-irrigation-group-device-link-status-select',
+    ):
+        assert marker in html
+    for phrase in ('관수그룹 장치 연결', '관수그룹 장치 연결 저장', '관수그룹', '연결 역할', '양액기 센서', '양액기 장치', '배액기 센서', '연결 장치', '대표 Entity', '연결 상태', '장치오류', 'A구역 관수그룹 1', 'A구역 양액기'):
+        assert phrase in html
+    assert '관수그룹 생성' not in html
+
+
+def test_r7_115_irrigation_group_device_link_db_api_contract_exists():
+    db = (ROOT / 'custom_components/green_smart/db.py').read_text(encoding='utf-8')
+    backend = (ROOT / 'custom_components/green_smart/rebuild_settings_write_views.py').read_text(encoding='utf-8')
+    init = (ROOT / 'custom_components/green_smart/__init__.py').read_text(encoding='utf-8')
+    for literal in (
+        'CREATE TABLE IF NOT EXISTS green_smart_settings_irrigation_group_device_links',
+        'irrigation_group_id BIGINT NOT NULL',
+        'device_id VARCHAR(128)',
+        'device_entity VARCHAR(255)',
+        'link_role VARCHAR(64)',
+        'uniq_settings_irrigation_group_device_link',
+    ):
+        assert literal in db
+    for literal in (
+        'list_settings_irrigation_group_device_links',
+        'create_settings_irrigation_group_device_link',
+        'class RebuildSettingsIrrigationGroupDeviceLinkView',
+        'url = "/api/green_smart/rebuild/settings/irrigation-group-device-links"',
+        '"irrigationGroupDeviceLinks": irrigation_group_device_links',
+    ):
+        assert literal in backend
+    assert 'RebuildSettingsIrrigationGroupDeviceLinkView' in init
+    assert 'hass.http.register_view(RebuildSettingsIrrigationGroupDeviceLinkView())' in init
 
 
 def test_r7_115_device_mapping_uses_only_cdb_card_grammar_for_rows():
