@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_12_mobile_fast_mode_renders_active_panel_immediately():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.55"' in text
+    assert 'const REBUILD_VERSION = "1.15.56"' in text
     assert 'data-r7-mobile-immediate-panel-render", "true"' in text
     assert 'data-r7-mobile-panel-hydration", "not-used-immediate"' in text
     assert 'const activePanel = activeKey ? renderer(activeKey) : "";' in text

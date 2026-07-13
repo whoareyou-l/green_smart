@@ -50,9 +50,9 @@ def _render_settings() -> str:
 
 
 def test_r7_114_version_surfaces_are_1_14_45():
-    assert '"version": "1.15.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.55"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.56"' in _read(REBUILD_PANEL)
 
 
 def test_r7_114_crop_cycle_subtab_absorbs_crop_object_rule_card():
@@ -75,7 +75,7 @@ def test_r7_114_settings_domain_no_longer_exposes_crop_cycle_objects_subtab():
     assert 'data-r7-settings-admin-subtab="crop-cycle-objects"' not in html
     assert 'data-r7-settings-crop-cycle-objects' not in html
     assert 'data-r7-settings-object-rule="four-per-cycle"' not in html
-    for remaining in ('온실·구역', '장치 연결 작성', '사용자·권한', '시스템·연동'):
+    for remaining in ('온실·구역', '장치', '사용자·권한', '시스템·연동'):
         assert remaining in html
     for removed in ('안전·승인 정책', '진단·감사'):
         assert removed not in html

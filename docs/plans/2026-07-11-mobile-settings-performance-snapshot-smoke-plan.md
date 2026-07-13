@@ -1,8 +1,8 @@
-# v1.15.55 모바일 설정 성능 snapshot/smoke 계획
+# v1.15.56 모바일 설정 성능 snapshot/smoke 계획
 
 ## 목표
 
-v1.15.55는 모바일 설정 상호작용 구간별 성능 marker를 기록한다. v1.15.55의 목표는 그 marker를 운영/브라우저/테스트에서 한 번에 읽고 판정할 수 있는 snapshot/summary 계층을 추가하는 것이다.
+v1.15.56는 모바일 설정 상호작용 구간별 성능 marker를 기록한다. v1.15.56의 목표는 그 marker를 운영/브라우저/테스트에서 한 번에 읽고 판정할 수 있는 snapshot/summary 계층을 추가하는 것이다.
 
 ## 배경
 
@@ -65,4 +65,4 @@ _runR7SettingsPerfMarkerSmoke()
 - Node 계약 테스트에서 helper를 호출해 `all-under-sla` snapshot 확인
 - 전체 테스트 통과
 - Prod served smoke 통과
-- GitHub Release v1.15.55 완료
+- GitHub Release v1.15.56 완료

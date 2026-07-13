@@ -51,9 +51,9 @@ def _node_render(expr: str) -> str:
 
 
 def test_r7_128_version_surfaces_are_1_14_85():
-    assert '"version": "1.15.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.55"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.56"' in _read(REBUILD_PANEL)
 
 
 def test_r7_128_plan_is_recorded_before_implementation():
@@ -62,18 +62,19 @@ def test_r7_128_plan_is_recorded_before_implementation():
         assert phrase in text
 
 
-def test_r7_128_settings_tab_and_button_use_device_connection_authoring_label():
+def test_r7_128_settings_tab_and_button_use_device_label():
     html = _node_render('panel.renderR7SettingsAdminZoneVisual()')
-    for phrase in ('장치 연결 작성', '장치 연결', '장치 목록', '그룹 목록'):
+    for phrase in ('장치', '구역 장치 연결', '장치 목록', '관수그룹 목록'):
         assert phrase in html
     assert '장치·그룹' not in html
+    assert '장치 연결 작성' not in html
 
 
 def test_r7_128_device_connection_modal_has_unlinked_ha_device_and_entity_role_groups():
     html = _node_render('(panel._openSettingsDeviceSensorMappingModal(), panel.renderR7SettingsDeviceSensorMappingModal())')
     for marker in (
         'data-r7-settings-device-connection-authoring-modal="true"',
-        'data-r7-settings-device-connection-modal-title="장치 연결"',
+        'data-r7-settings-device-connection-modal-title="구역 장치 연결"',
         'data-r7-device-canonical-connection-modal="true"',
         'data-r7-settings-ha-device-id-select',
         'data-r7-settings-ha-device-id-source="unlinked-ha-devices"',
@@ -87,6 +88,7 @@ def test_r7_128_device_connection_modal_has_unlinked_ha_device_and_entity_role_g
     ):
         assert marker in html
     assert '장치 연결 작성' not in html
+    assert '구역 장치 연결' in html
     assert '장비 엔티티 ID' not in html
     for phrase in ('장치 ID', '장비종류', '장치명', '구역', '엔티티ID', '종류', '단위', '역할'):
         assert phrase in html

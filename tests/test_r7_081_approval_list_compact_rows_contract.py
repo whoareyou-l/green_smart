@@ -14,9 +14,9 @@ def _read(path: Path) -> str:
 
 
 def test_r7_081_version_surfaces_are_1_14_6():
-    assert '"version": "1.15.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.55"' in _read(PANEL)
+    assert '"version": "1.15.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.56"' in _read(PANEL)
 
 
 def test_r7_081_left_approval_list_body_prevents_single_row_stretch():

@@ -11,7 +11,7 @@ def source() -> str:
 
 def test_v1_15_29_settings_cache_prewarm_state_and_lifecycle():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.55"' in text
+    assert 'const REBUILD_VERSION = "1.15.56"' in text
     for marker in [
         'this._r7SettingsCachePrewarmTimer = 0;',
         'this._r7SettingsCachePrewarmIdle = 0;',

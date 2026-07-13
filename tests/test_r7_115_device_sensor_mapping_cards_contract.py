@@ -52,9 +52,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.55"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.55"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.55"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.56"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.56"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.56"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -71,9 +71,9 @@ def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_lab
         'data-r7-settings-device-list-panel',
     ):
         assert marker in html
-    for text in ('장치 기본 정보', '그룹 기본 정보', '오류 기본 정보', '장치 추가', '그룹 추가', '장치 목록', 'HA로 이동', 'HA 천창 컨트롤러'):
+    for text in ('전체 장치', '구역 장치', '관수그룹 장치', '장치 추가', '관수그룹 연결', '장치 목록', 'HA로 이동', 'HA 천창 컨트롤러'):
         assert text in html
-    for text in ('미연결', '통신 오류', '장치 오류', '센서', '장치', '센서 그룹', '장치 그룹', '관수 그룹', '장치 연결'):
+    for text in ('연결', '미연결', '장치오류', '센서', '복합환경제어반 장치', '기타 장치', '양액기 센서', '양액기 장치', '배액기 센서', '구역 장치 연결'):
         assert text in html
     assert 'data-r7-settings-ha-devices-page-button' in html
     assert 'data-r7-settings-ha-device-list-card="true"' in html
@@ -111,8 +111,8 @@ def test_r7_115_device_button_two_cards_have_common_subtitles():
     html = _render_device_mapping()
     expectations = {
         'device-create': '실제 HA 연동 기기 목록',
-        'device-link': '장치와 센서 연결',
-        'group-add': '구역 FK 필수',
+        'device-link': '구역 장치와 센서 연결',
+        'group-add': '관수그룹 FK 필수',
     }
     for card, subtitle in expectations.items():
         marker_at = html.index(f'data-r7-settings-device-action-card="{card}"')
