@@ -313,8 +313,8 @@ def _irrigation_group_device_link_dto(row: dict[str, Any]) -> dict[str, Any]:
         "zoneId": row.get("zone_id") or "",
         "zoneName": row.get("zone_name") or "",
         "deviceId": row.get("device_id") or "",
+        "deviceName": row.get("device_name") or row.get("device_name_snapshot") or row.get("device_id") or "",
         "deviceEntity": row.get("device_entity") or "",
-        "deviceName": row.get("device_name") or row.get("device_id") or "",
         "deviceType": row.get("device_type") or "",
         "linkRole": row.get("link_role") or "양액기 장치",
         "componentType": row.get("component_type") or "",
@@ -589,6 +589,7 @@ async def ensure_settings_irrigation_group_device_link_schema(hass) -> None:
             farm_id BIGINT NOT NULL DEFAULT 1,
             irrigation_group_id BIGINT NOT NULL,
             device_id VARCHAR(128) NOT NULL DEFAULT '',
+            device_name_snapshot VARCHAR(128) NOT NULL DEFAULT '',
             device_entity VARCHAR(255) NOT NULL DEFAULT '',
             link_role VARCHAR(64) NOT NULL DEFAULT '양액기 장치',
             component_type VARCHAR(96) NOT NULL DEFAULT '',
@@ -611,6 +612,7 @@ async def ensure_settings_irrigation_group_device_link_schema(hass) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """)
     for ddl in (
+        "ALTER TABLE green_smart_settings_irrigation_group_device_links ADD COLUMN device_name_snapshot VARCHAR(128) NOT NULL DEFAULT '' AFTER device_id",
         "ALTER TABLE green_smart_settings_irrigation_group_device_links ADD COLUMN component_type VARCHAR(96) NOT NULL DEFAULT '' AFTER link_role",
         "ALTER TABLE green_smart_settings_irrigation_group_device_links ADD COLUMN io_type VARCHAR(32) NOT NULL DEFAULT '' AFTER component_type",
         "ALTER TABLE green_smart_settings_irrigation_group_device_links ADD COLUMN control_target VARCHAR(64) NOT NULL DEFAULT '' AFTER io_type",
@@ -628,7 +630,7 @@ async def list_settings_irrigation_group_device_links(hass, farm_id: int = 1) ->
     await ensure_settings_irrigation_group_device_link_schema(hass)
     rows = await fetchall(hass, """
         SELECT l.id, l.farm_id, l.irrigation_group_id, ig.irrigation_group_name, ig.zone_id, z.name AS zone_name,
-               l.device_id, l.device_entity, d.device_name, d.device_type, l.link_role,
+               l.device_id, l.device_name_snapshot, l.device_entity, d.device_name, d.device_type, l.link_role,
                l.component_type, l.io_type, l.control_target, l.nutrient_channel, l.unit, l.normal_range,
                l.sort_order, l.note, l.status, l.created_at, l.updated_at
         FROM green_smart_settings_irrigation_group_device_links l
@@ -647,31 +649,63 @@ async def create_settings_irrigation_group_device_link(hass, payload: dict[str, 
     if irrigation_group_id <= 0:
         raise web.HTTPBadRequest(reason="irrigation-group-id-required")
     device_id = _str(payload, "deviceId", "device_id", default="")
-    device_entity = _str(payload, "entityId", "deviceEntity", "device_entity", "entity_id", default="")
-    if not device_id and not device_entity:
+    device_name = _str(payload, "deviceName", "device_name", "deviceNameSnapshot", "device_name_snapshot", default="")
+    raw_entities = payload.get("entities") if isinstance(payload.get("entities"), list) else []
+    if raw_entities:
+        entities = raw_entities
+    else:
+        entities = [{
+            "entityId": _str(payload, "entityId", "deviceEntity", "device_entity", "entity_id", default=""),
+            "linkRole": _str(payload, "linkRole", "link_role", default="양액기 장치"),
+            "componentType": _str(payload, "componentType", "component_type", default=""),
+            "ioType": _str(payload, "ioType", "io_type", default=""),
+            "controlTarget": _str(payload, "controlTarget", "control_target", default=""),
+            "nutrientChannel": _str(payload, "nutrientChannel", "nutrient_channel", default=""),
+            "unit": _str(payload, "unit", default=""),
+            "normalRange": _str(payload, "normalRange", "normal_range", default=""),
+            "sortOrder": _int(payload, "sortOrder", "sort_order", default=0),
+            "note": _str(payload, "note"),
+            "status": _str(payload, "status", "state", default="active"),
+        }]
+    normalized_entities = []
+    for index, entity in enumerate(entities):
+        if not isinstance(entity, dict):
+            continue
+        device_entity = str(entity.get("entityId") or entity.get("entity_id") or entity.get("deviceEntity") or entity.get("device_entity") or "").strip()
+        if not device_id and not device_entity:
+            continue
+        normalized_entities.append({
+            "deviceEntity": device_entity,
+            "linkRole": str(entity.get("linkRole") or entity.get("link_role") or payload.get("linkRole") or "양액기 장치").strip(),
+            "componentType": str(entity.get("componentType") or entity.get("component_type") or "").strip(),
+            "ioType": str(entity.get("ioType") or entity.get("io_type") or "").strip(),
+            "controlTarget": str(entity.get("controlTarget") or entity.get("control_target") or "").strip(),
+            "nutrientChannel": str(entity.get("nutrientChannel") or entity.get("nutrient_channel") or "").strip(),
+            "unit": str(entity.get("unit") or entity.get("unitOfMeasurement") or entity.get("unit_of_measurement") or "").strip(),
+            "normalRange": str(entity.get("normalRange") or entity.get("normal_range") or "").strip(),
+            "sortOrder": _json_int(entity.get("sortOrder") if "sortOrder" in entity else entity.get("sort_order"), index),
+            "note": str(entity.get("note") or payload.get("note") or "").strip(),
+            "status": str(entity.get("status") or entity.get("state") or payload.get("status") or "active").strip(),
+        })
+    if not normalized_entities:
         raise web.HTTPBadRequest(reason="device-id-or-entity-required")
-    link_role = _str(payload, "linkRole", "link_role", default="양액기 장치")
-    component_type = _str(payload, "componentType", "component_type", default="")
-    await execute(hass, """
-        INSERT INTO green_smart_settings_irrigation_group_device_links
-            (farm_id, irrigation_group_id, device_id, device_entity, link_role, component_type, io_type, control_target, nutrient_channel, unit, normal_range, sort_order, note, status, created_by, updated_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            io_type = VALUES(io_type), control_target = VALUES(control_target), nutrient_channel = VALUES(nutrient_channel),
-            unit = VALUES(unit), normal_range = VALUES(normal_range), sort_order = VALUES(sort_order),
-            note = VALUES(note), status = VALUES(status), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
-        """, (
-            farm_id, irrigation_group_id, device_id, device_entity, link_role, component_type,
-            _str(payload, "ioType", "io_type", default=""),
-            _str(payload, "controlTarget", "control_target", default=""),
-            _str(payload, "nutrientChannel", "nutrient_channel", default=""),
-            _str(payload, "unit", default=""),
-            _str(payload, "normalRange", "normal_range", default=""),
-            _int(payload, "sortOrder", "sort_order", default=0), _str(payload, "note"),
-            _str(payload, "status", "state", default="active"), actor, actor,
-        ))
+    for entity in normalized_entities:
+        await execute(hass, """
+            INSERT INTO green_smart_settings_irrigation_group_device_links
+                (farm_id, irrigation_group_id, device_id, device_name_snapshot, device_entity, link_role, component_type, io_type, control_target, nutrient_channel, unit, normal_range, sort_order, note, status, created_by, updated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                device_name_snapshot = VALUES(device_name_snapshot), io_type = VALUES(io_type), control_target = VALUES(control_target), nutrient_channel = VALUES(nutrient_channel),
+                unit = VALUES(unit), normal_range = VALUES(normal_range), sort_order = VALUES(sort_order),
+                note = VALUES(note), status = VALUES(status), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP
+            """, (
+                farm_id, irrigation_group_id, device_id, device_name, entity["deviceEntity"], entity["linkRole"], entity["componentType"],
+                entity["ioType"], entity["controlTarget"], entity["nutrientChannel"], entity["unit"], entity["normalRange"],
+                entity["sortOrder"], entity["note"], entity["status"], actor, actor,
+            ))
     links = await list_settings_irrigation_group_device_links(hass, farm_id)
-    return next((row for row in links if int(row.get("irrigationGroupId") or 0) == irrigation_group_id and str(row.get("deviceId") or "") == str(device_id) and str(row.get("deviceEntity") or "") == str(device_entity) and row.get("linkRole") == link_role and row.get("componentType") == component_type), links[0] if links else {"irrigationGroupId": irrigation_group_id, "deviceId": device_id, "linkRole": link_role, "componentType": component_type})
+    saved = [row for row in links if int(row.get("irrigationGroupId") or 0) == irrigation_group_id and str(row.get("deviceId") or "") == str(device_id)]
+    return {"irrigationGroupId": irrigation_group_id, "deviceId": device_id, "deviceName": device_name, "savedCount": len(normalized_entities), "links": saved[:len(normalized_entities)]}
 
 
 def _zone_label_for_irrigation_group(zones: list[dict[str, Any]], zone_id: str) -> str:

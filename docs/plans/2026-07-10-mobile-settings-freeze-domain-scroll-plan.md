@@ -1,13 +1,13 @@
-# v1.15.59 모바일 설정 버튼 freeze 및 도메인 탭 스크롤 보정 계획
+# v1.15.60 모바일 설정 버튼 freeze 및 도메인 탭 스크롤 보정 계획
 
 ## 사용자 증상
 
 1. 모바일 상단의 설정 버튼을 눌러도 설정 도메인으로 들어가지 않고, 잠깐 화면이 멈춘 뒤 이전 화면처럼 보인다.
 2. 모바일 도메인 버튼 전환 시 선택된 버튼이 화면 밖에 있으면 사용자가 직접 스크롤해야 한다. 선택된 버튼이 우측 끝에 오도록 자동 보정해야 한다.
 
-## 확인한 현재 상태(v1.15.59)
+## 확인한 현재 상태(v1.15.60)
 
-- 운영 served 파일은 `/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v=1.15.59`에서 v1.15.59이 정상 제공된다.
+- 운영 served 파일은 `/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v=1.15.60`에서 v1.15.60이 정상 제공된다.
 - 모바일 설정 버튼은 `<button>`으로 바뀌었지만, 여전히 일반 `[data-r7-sidebar-target]` 라우팅 바인딩을 함께 사용한다.
 - 설정 도메인 렌더링은 active tab이 `greenhouse-zones`여도 `greenhouse-zones`, `device-sensor-mapping`, `users-permissions`, `system-integration` 전체 패널 HTML을 한 번에 생성한다.
 - 작물/환경/관수/장치/자동화/안전 도메인도 active 하위탭만 보이지만, inactive 하위탭 패널 body까지 모두 HTML로 만든 뒤 `display:none` 처리한다.
@@ -57,7 +57,7 @@
    - active-only subtab panel helper/markers 계약 테스트.
    - active domain button right-edge scroll scheduler 계약 테스트.
    - `node --check`, 집중 pytest, 전체 pytest.
-   - Prod served smoke에서 v1.15.59, settings dedicated action, active-only panels, right-edge scroll markers 확인.
+   - Prod served smoke에서 v1.15.60, settings dedicated action, active-only panels, right-edge scroll markers 확인.
 
 ## 성공 기준
 

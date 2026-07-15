@@ -51,7 +51,7 @@
 // this._homeContext = getRebuildHomeContext()
 // zone.currentCrop?.cropLabelKo / zone.currentCrop?.growthStage / zone.equipmentProfile?.labels / zone.dataAvailability
 import { getRebuildHomeContext, normalizeRebuildHomeContext } from "./current-crop-adapter.js";
-const REBUILD_VERSION = "1.15.59";
+const REBUILD_VERSION = "1.15.60";
 const REBUILD_ELEMENT_NAME = "green-smart-rebuild-panel";
 const REBUILD_VERSIONED_ELEMENT_NAME = `${REBUILD_ELEMENT_NAME}-v${REBUILD_VERSION.replace(/[^a-zA-Z0-9]+/g, "-")}`;
 const REBUILD_CONTEXT_API_PATH = "green_smart/rebuild/home/context";
@@ -825,7 +825,11 @@ class GreenSmartRebuildPanel extends HTMLElement {
     const settingsData = this.r7SettingsGreenhouseZoneData();
     const groups = Array.isArray(settingsData.irrigationGroups) ? settingsData.irrigationGroups : [];
     const devices = this._r7SettingsConnectedDeviceRows?.() || [];
-    this._settingsIrrigationGroupDeviceLinkModal = { open: true, state: "idle", values: { irrigationGroupId: groups[0]?.id || "", deviceId: devices[0]?.id || "", linkRole: "양액기 장치", status: "active" } };
+    const selectedDevice = devices.find((device) => String(device.deviceType || device.installType || "").includes("양액")) || devices[0] || {};
+    const selectedDeviceId = selectedDevice.id || selectedDevice.deviceId || selectedDevice.haDeviceId || selectedDevice.entityId || "";
+    const selectedHaDeviceId = selectedDevice.haDeviceId || selectedDevice.ha_device_id || selectedDevice.deviceId || selectedDeviceId;
+    const selectedEntities = (settingsData.canonicalDeviceEntities && (settingsData.canonicalDeviceEntities[selectedHaDeviceId] || settingsData.canonicalDeviceEntities[selectedDeviceId])) || [];
+    this._settingsIrrigationGroupDeviceLinkModal = { open: true, state: "idle", values: { irrigationGroupId: groups[0]?.id || "", deviceId: selectedDeviceId, deviceName: selectedDevice.deviceName || selectedDevice.name || "", linkRole: "양액기 센서", status: "active" }, selectedEntities };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
   _closeSettingsDetailActionModal(kind = "all") {
@@ -1187,9 +1191,29 @@ class GreenSmartRebuildPanel extends HTMLElement {
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
   }
   async _submitSettingsIrrigationGroupDeviceLinkForm(form) {
-    const payload = this._settingsFormPayload(form);
+    const formPayload = this._settingsFormPayload(form);
     const modal = this._settingsIrrigationGroupDeviceLinkModal || {};
-    this._settingsIrrigationGroupDeviceLinkModal = { ...modal, open: true, state: "saving", values: payload };
+    const selectedEntities = Array.isArray(modal.selectedEntities) ? modal.selectedEntities : [];
+    const entities = selectedEntities.map((entity, index) => ({
+      ...entity,
+      entityId: entity.entityId || entity.entity_id || formPayload[`entityId_${index}`] || "",
+      domain: entity.domain || entity.entityDomain || formPayload[`entityDomain_${index}`] || "",
+      unit: formPayload[`unit_${index}`] || entity.unit || entity.unitOfMeasurement || entity.unit_of_measurement || "",
+      linkRole: formPayload[`linkRole_${index}`] || formPayload.linkRole || entity.linkRole || "양액기 센서",
+      componentType: formPayload[`componentType_${index}`] || entity.componentType || "",
+      ioType: formPayload[`ioType_${index}`] || entity.ioType || "",
+      controlTarget: formPayload[`controlTarget_${index}`] || entity.controlTarget || "",
+      nutrientChannel: formPayload[`nutrientChannel_${index}`] || entity.nutrientChannel || "",
+      normalRange: formPayload[`normalRange_${index}`] || entity.normalRange || "",
+      sortOrder: Number(formPayload[`sortOrder_${index}`] ?? index) || index,
+    })).filter((entity) => entity.entityId);
+    const payload = {
+      ...formPayload,
+      deviceId: formPayload.deviceId || modal.values?.deviceId || "",
+      deviceName: formPayload.deviceName || modal.values?.deviceName || "",
+      entities,
+    };
+    this._settingsIrrigationGroupDeviceLinkModal = { ...modal, open: true, state: "saving", values: payload, selectedEntities };
     this._renderOrRefreshR7SettingsPanel("settings-modal-state-change");
     try {
       if (!this.hass?.callApi) throw new Error("hass-callApi-unavailable");
@@ -4050,24 +4074,61 @@ class GreenSmartRebuildPanel extends HTMLElement {
       label: `${device.deviceName || device.name || "장치"} · ${device.deviceType || device.installType || "장치"} · ${device.entityId || device.haDeviceId || "entity 미등록"}`,
       attrs: `data-r7-settings-irrigation-group-device-link-device-type="${String(device.deviceType || device.installType || "").replace(/\"/g, '&quot;')}"`,
     }));
+    const selectedDeviceId = values.deviceId || deviceOptions[0]?.value || "";
+    const selectedDevice = devices.find((device) => String(device.id || device.deviceId || device.haDeviceId || device.entityId || "") === String(selectedDeviceId)) || devices[0] || {};
+    const selectedHaDeviceId = selectedDevice.haDeviceId || selectedDevice.ha_device_id || selectedDevice.deviceId || selectedDeviceId;
+    const selectedEntities = Array.isArray(modal.selectedEntities) && modal.selectedEntities.length
+      ? modal.selectedEntities
+      : ((settingsData.canonicalDeviceEntities && (settingsData.canonicalDeviceEntities[selectedHaDeviceId] || settingsData.canonicalDeviceEntities[selectedDeviceId])) || []);
     const roleOptions = ["양액기 센서", "양액기 액추에이터", "양액기 유량계", "원수/급수 장치", "관수그룹 공급장치", "배액기 센서", "배액기 장치", "기타"].map((label) => ({ value: label, label }));
     const componentOptions = [
       "EC 센서", "pH 센서", "수온 센서", "원수 EC 센서", "원수 pH 센서", "급액 EC 센서", "급액 pH 센서", "배액 EC 센서", "배액 pH 센서", "수위 센서", "압력 센서",
       "원수 유량계", "급액 유량계", "관수그룹 유량계", "배액 유량계",
-      "EC 조절 솔밸브", "pH 조절 솔밸브", "A액 주입 솔밸브", "B액 주입 솔밸브", "산 주입 솔밸브", "알칼리 주입 솔밸브", "원수 유입 솔밸브", "급수 솔밸브", "관수그룹 공급 솔밸브", "배액 솔밸브",
+      "EC 조절 솔밸브", "pH 조절 솔밸브", "A액 주입 솔밸브", "B액 주입 솔밸브", "C액 주입 솔밸브", "D액 주입 솔밸브", "A통 솔밸브", "B통 솔밸브", "C통 솔밸브", "D통 솔밸브", "산 주입 솔밸브", "알칼리 주입 솔밸브", "원수 유입 솔밸브", "급수 솔밸브", "구역 솔밸브", "관수그룹 공급 솔밸브", "배액 솔밸브",
       "원수 유입 모터", "급수 모터", "양액 공급 펌프", "비료 주입 펌프", "산 주입 펌프", "알칼리 주입 펌프", "교반 모터", "배액 펌프",
       "양액기 상태", "양액기 알람", "기타",
     ].map((label) => ({ value: label, label }));
     const ioOptions = ["sensor", "meter", "valve", "motor", "pump", "actuator", "status", "alarm"].map((label) => ({ value: label, label }));
     const targetOptions = ["EC", "pH", "유량", "수위", "압력", "수온", "원수", "급수", "급액", "배액", "공급", "교반", "알람", "상태"].map((label) => ({ value: label, label }));
-    const channelOptions = ["A액", "B액", "산", "알칼리", "원수", "급수", "급액", "배액", "관수그룹 공급", "공통"].map((label) => ({ value: label, label }));
+    const channelOptions = ["A액", "B액", "C액", "D액", "산", "알칼리", "원수", "급수", "급액", "배액", "관수그룹 공급", "구역", "공통"].map((label) => ({ value: label, label }));
     const statusOptions = [{ value: "active", label: "연결" }, { value: "inactive", label: "미연결" }, { value: "error", label: "장치오류" }];
+    const inferEntityDefaults = (entity, index = 0) => {
+      const entityId = String(entity.entityId || entity.entity_id || "");
+      const label = `${entityId} ${entity.name || entity.originalName || entity.displayName || entity.original_name || ""}`.toLowerCase();
+      const domain = entity.domain || entity.entityDomain || (entityId.includes(".") ? entityId.split(".")[0] : "");
+      let defaults = { linkRole: "양액기 센서", componentType: "기타", ioType: domain === "sensor" ? "sensor" : domain === "switch" ? "valve" : "actuator", controlTarget: "상태", nutrientChannel: "공통" };
+      if (label.includes("ec")) defaults = { linkRole: "양액기 센서", componentType: "EC 센서", ioType: "sensor", controlTarget: "EC", nutrientChannel: "급액" };
+      if (label.includes("ph") || label.includes("pH".toLowerCase())) defaults = { linkRole: "양액기 센서", componentType: "pH 센서", ioType: "sensor", controlTarget: "pH", nutrientChannel: "급액" };
+      if (label.includes("flow") || label.includes("유량")) defaults = { linkRole: "양액기 유량계", componentType: "급액 유량계", ioType: "meter", controlTarget: "유량", nutrientChannel: "급액" };
+      if (label.includes("raw") || label.includes("원수")) defaults = { linkRole: "원수/급수 장치", componentType: label.includes("flow") || label.includes("유량") ? "원수 유량계" : "원수 유입 모터", ioType: label.includes("flow") || label.includes("유량") ? "meter" : "motor", controlTarget: "원수", nutrientChannel: "원수" };
+      if (label.includes("supply_motor") || label.includes("급수 모터")) defaults = { linkRole: "원수/급수 장치", componentType: "급수 모터", ioType: "motor", controlTarget: "급수", nutrientChannel: "급수" };
+      if (label.includes("tank_a") || label.includes("a_tank") || label.includes("a_valve") || label.includes("a통")) defaults = { linkRole: "양액기 액추에이터", componentType: "A통 솔밸브", ioType: "valve", controlTarget: "EC", nutrientChannel: "A액" };
+      if (label.includes("tank_b") || label.includes("b_tank") || label.includes("b_valve") || label.includes("b통")) defaults = { linkRole: "양액기 액추에이터", componentType: "B통 솔밸브", ioType: "valve", controlTarget: "EC", nutrientChannel: "B액" };
+      if (label.includes("tank_c") || label.includes("c_tank") || label.includes("c_valve") || label.includes("c통")) defaults = { linkRole: "양액기 액추에이터", componentType: "C통 솔밸브", ioType: "valve", controlTarget: "pH", nutrientChannel: "C액" };
+      if (label.includes("tank_d") || label.includes("d_tank") || label.includes("d_valve") || label.includes("d통")) defaults = { linkRole: "양액기 액추에이터", componentType: "D통 솔밸브", ioType: "valve", controlTarget: "pH", nutrientChannel: "D액" };
+      if (label.includes("zone_valve") || label.includes("구역") && label.includes("밸브")) defaults = { linkRole: "관수그룹 공급장치", componentType: "구역 솔밸브", ioType: "valve", controlTarget: "공급", nutrientChannel: "구역" };
+      if (label.includes("group_valve") || label.includes("supply_valve") || label.includes("공급 솔")) defaults = { linkRole: "관수그룹 공급장치", componentType: "관수그룹 공급 솔밸브", ioType: "valve", controlTarget: "공급", nutrientChannel: "관수그룹 공급" };
+      return { ...defaults, sortOrder: index };
+    };
+    const entityRows = selectedEntities.length ? selectedEntities.map((entity, index) => {
+      const entityId = entity.entityId || entity.entity_id || "";
+      const domain = entity.domain || entity.entityDomain || (entityId.includes(".") ? entityId.split(".")[0] : "");
+      const unit = entity.unitOfMeasurement || entity.unit_of_measurement || entity.unit || "";
+      const inferred = inferEntityDefaults(entity, index);
+      return `<article data-r7-irrigation-group-device-entity-row data-r7-irrigation-group-device-entity-row-index="${index}" style="border:1px solid #e1efe5;border-radius:14px;background:#fbfefb;padding:10px;display:grid;gap:8px;">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end;">${this._r7SettingsCreateField(`entityId_${index}`, "엔티티ID", entityId, 'readonly data-r7-irrigation-group-device-entity-id-readonly')}${this._r7SettingsCreateField(`entityDomain_${index}`, "종류", domain, 'readonly data-r7-irrigation-group-device-entity-domain-readonly')}${this._r7SettingsCreateField(`unit_${index}`, "단위", unit, 'data-r7-irrigation-group-device-entity-unit-input')}</div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:8px;align-items:end;">${this._r7SettingsCreateSelect(`linkRole_${index}`, "상위 역할", roleOptions, entity.linkRole || inferred.linkRole, 'data-r7-irrigation-group-device-entity-role-select')}${this._r7SettingsCreateSelect(`componentType_${index}`, "구성요소 유형", componentOptions, entity.componentType || inferred.componentType, 'data-r7-irrigation-group-device-entity-component-type-select')}${this._r7SettingsCreateSelect(`ioType_${index}`, "입출력 유형", ioOptions, entity.ioType || inferred.ioType, 'data-r7-irrigation-group-device-entity-io-type-select')}${this._r7SettingsCreateSelect(`controlTarget_${index}`, "제어/측정 대상", targetOptions, entity.controlTarget || inferred.controlTarget, 'data-r7-irrigation-group-device-entity-control-target-select')}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:8px;align-items:end;">${this._r7SettingsCreateSelect(`nutrientChannel_${index}`, "계통/채널", channelOptions, entity.nutrientChannel || inferred.nutrientChannel, 'data-r7-irrigation-group-device-entity-nutrient-channel-select')}${this._r7SettingsCreateField(`normalRange_${index}`, "정상 범위", entity.normalRange || "", 'placeholder="예: 1.8~2.4" data-r7-irrigation-group-device-entity-normal-range-input')}${this._r7SettingsCreateField(`sortOrder_${index}`, "표시 순서", entity.sortOrder ?? index, 'type="number" min="0" data-r7-irrigation-group-device-entity-sort-order')}</div>
+      </article>`;
+    }).join("") : `<article data-r7-irrigation-group-device-entity-row data-r7-irrigation-group-device-entity-empty="true" style="border:1px dashed #d4e6d9;border-radius:14px;background:#fbfefb;padding:10px;display:grid;gap:8px;">
+        ${this._r7SettingsCreateField("entityId_0", "엔티티ID", "", 'readonly data-r7-irrigation-group-device-entity-id-readonly placeholder="양액기 디바이스 선택 시 자동 입력"')}
+        <p style="margin:0;color:#7b8f80;font-size:12px;">선택한 양액기 디바이스에 연결된 엔티티가 없거나 아직 불러오지 않았습니다. 구역 장치 연결에서 양액기 디바이스와 entity를 먼저 연결하세요.</p>
+      </article>`;
     const sections = [
-      this._r7SettingsCreateSection("irrigation-group-device-link-target", "관수그룹 선택", `<section data-r7-settings-irrigation-group-device-link-target-section="true" style="display:grid;gap:10px;"><div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("irrigationGroupId", "관수그룹", groupOptions.length ? groupOptions : [{ value: "", label: "관수그룹 먼저 생성 필요" }], values.irrigationGroupId || groupOptions[0]?.value || "", 'data-r7-settings-irrigation-group-device-link-group-fk-select data-r7-settings-irrigation-group-fk="required"')}${this._r7SettingsCreateSelect("linkRole", "상위 역할", roleOptions, values.linkRole || "양액기 센서", 'data-r7-settings-irrigation-group-device-link-role-select')}</div><p style="margin:0;color:#6f8875;font-size:12px;">관수그룹 FK를 기준으로 양액기 내부 센서·유량계·솔밸브·모터·펌프 entity를 각각 연결합니다.</p></section>`),
-      this._r7SettingsCreateSection("irrigation-group-device-link-component", "구성요소 상세", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("componentType", "구성요소 유형", componentOptions, values.componentType || "EC 센서", 'data-r7-settings-irrigation-group-device-link-component-type-select')}${this._r7SettingsCreateSelect("ioType", "입출력 유형", ioOptions, values.ioType || "sensor", 'data-r7-settings-irrigation-group-device-link-io-type-select')}${this._r7SettingsCreateSelect("controlTarget", "제어/측정 대상", targetOptions, values.controlTarget || "EC", 'data-r7-settings-irrigation-group-device-link-control-target-select')}${this._r7SettingsCreateSelect("nutrientChannel", "계통/채널", channelOptions, values.nutrientChannel || "급액", 'data-r7-settings-irrigation-group-device-link-nutrient-channel-select')}</div>`),
-      this._r7SettingsCreateSection("irrigation-group-device-link-device", "Entity 연결", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("deviceId", "장치", deviceOptions.length ? deviceOptions : [{ value: "", label: "구역 장치 먼저 연결 필요" }], values.deviceId || deviceOptions[0]?.value || "", 'data-r7-settings-irrigation-group-device-link-device-fk-select data-r7-settings-device-fk="required"')}${this._r7SettingsCreateField("entityId", "대표 Entity", values.entityId || "", 'placeholder="예: sensor.fertigation_ec" data-r7-settings-irrigation-group-device-link-entity-input')}${this._r7SettingsCreateField("unit", "단위", values.unit || "", 'placeholder="예: mS/cm, pH, L/min" data-r7-settings-irrigation-group-device-link-unit-input')}${this._r7SettingsCreateField("normalRange", "정상 범위", values.normalRange || "", 'placeholder="예: 1.8~2.4" data-r7-settings-irrigation-group-device-link-normal-range-input')}</div>`),
-      this._r7SettingsCreateSection("irrigation-group-device-link-meta", "연결 상태", `<div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "active", 'data-r7-settings-irrigation-group-device-link-status-select')}${this._r7SettingsCreateField("sortOrder", "표시 순서", values.sortOrder || "0", 'type="number" min="0" data-r7-settings-irrigation-group-device-link-sort-order')}</div>`),
-      this._r7SettingsCreateSection("memo", "운영 메모", this._r7SettingsCreateTextarea("note", "예: A구역 관수그룹 급액 EC 센서, pH 조절 산 주입 솔밸브", values.note || "")),
+      this._r7SettingsCreateSection("irrigation-group-device-link-target", "관수그룹 선택", `<section data-r7-settings-irrigation-group-device-link-target-section="true" style="display:grid;gap:10px;"><div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("irrigationGroupId", "관수그룹", groupOptions.length ? groupOptions : [{ value: "", label: "관수그룹 먼저 생성 필요" }], values.irrigationGroupId || groupOptions[0]?.value || "", 'data-r7-settings-irrigation-group-device-link-group-fk-select data-r7-settings-irrigation-group-fk="required"')}${this._r7SettingsCreateSelect("status", "상태", statusOptions, values.status || "active", 'data-r7-settings-irrigation-group-device-link-status-select')}</div><p style="margin:0;color:#6f8875;font-size:12px;">관수그룹 FK를 기준으로 양액기 디바이스 안의 모든 센서·유량계·솔밸브·모터 entity를 저장합니다.</p></section>`),
+      this._r7SettingsCreateSection("irrigation-group-device-link-device", "디바이스 선택", `<section data-r7-irrigation-group-device-device-section="true" style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;">${this._r7SettingsCreateSelect("deviceId", "디바이스 ID", deviceOptions.length ? deviceOptions : [{ value: "", label: "구역 장치 먼저 연결 필요" }], selectedDeviceId, 'data-r7-settings-irrigation-group-device-link-device-fk-select data-r7-settings-device-fk="required" data-r7-irrigation-group-device-id-select')}${this._r7SettingsCreateField("deviceName", "디바이스 명", values.deviceName || selectedDevice.deviceName || selectedDevice.name || "", 'placeholder="예: A구역 양액기" data-r7-irrigation-group-device-name-input')}</section>`),
+      this._r7SettingsCreateSection("irrigation-group-device-link-entities", "엔티티 N 그룹", `<section data-r7-irrigation-group-device-entity-repeat-group="true" style="display:grid;gap:8px;">${entityRows}</section>`),
+      this._r7SettingsCreateSection("memo", "운영 메모", this._r7SettingsCreateTextarea("note", "예: A구역 양액기 전체 entity를 관수그룹 1에 연결", values.note || "")),
     ];
     return this.renderR7SettingsDetailActionModal({ open: modal.open, kind: "irrigation-group-device-link", title: "관수그룹 장치 연결", subtitle: "관수그룹 FK에 EC/pH 센서, 유량계, 솔밸브, 모터, 펌프 entity를 세부 구성요소로 연결합니다", formAttr: "data-r7-settings-irrigation-group-device-link-form", closeKind: "irrigation-group-device-link", state: modal.state, error: modal.error, submitLabel: "관수그룹 장치 연결 저장", sections }).replace('data-r7-record-modal-type="irrigation-group-device-link"', 'data-r7-record-modal-type="irrigation-group-device-link" data-r7-settings-irrigation-group-device-link-modal="true" data-r7-settings-irrigation-group-device-link-modal-open="true"');
   }

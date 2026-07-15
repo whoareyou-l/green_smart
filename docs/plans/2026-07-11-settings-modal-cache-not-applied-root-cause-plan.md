@@ -1,18 +1,18 @@
-# v1.15.59 설정 모달 취소 후 실제 카드 미반영 원인 분석/수정 계획
+# v1.15.60 설정 모달 취소 후 실제 카드 미반영 원인 분석/수정 계획
 
 ## 사용자 증상
 
 - 설정 페이지 하위탭 `온실·구역`에서 `온실 추가` 모달 진입 후 하단 `취소`를 누르면 내용카드가 요약에서 실제 카드로 전환되지 않는다.
-- 이전 수정(v1.15.34/v1.15.59)이 실제 화면에 반영되지 않은 것으로 보인다.
+- 이전 수정(v1.15.34/v1.15.60)이 실제 화면에 반영되지 않은 것으로 보인다.
 
 ## 확인된 현재 상태
 
 ### 제품 repo `/home/smartfarm/green_smart`
 
 - Git HEAD: `a023289e7 fix settings modal cancel cache close hydration`
-- Tag: `v1.15.59`
+- Tag: `v1.15.60`
 - JS source contains:
-  - `REBUILD_VERSION = "1.15.59"`
+  - `REBUILD_VERSION = "1.15.60"`
   - `settings-modal-close-cache-only`
   - `_closeR7SettingsRecordModalFromButton`
   - record workflow close 차단: `data-r7-record-modal-mode="settings-create"`
@@ -25,8 +25,8 @@
 - Container file still contains:
   - `REBUILD_VERSION = "1.15.33"`
   - `manifest.json` version `1.15.33`
-- Served URL also lacks v1.15.59 markers:
-  - `/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v=1.15.59`
+- Served URL also lacks v1.15.60 markers:
+  - `/green_smart_panel/rebuild/green-smart-rebuild-panel.js?v=1.15.60`
   - served content is effectively v1.15.33 static file.
 
 ## Root cause
@@ -49,7 +49,7 @@ The modal close bug itself has two parts:
 3. Confirm host bind source and container `/config` hashes match the product repo.
 4. Restart HA.
 5. Fetch served module URL and assert:
-   - `REBUILD_VERSION = "1.15.59"`
+   - `REBUILD_VERSION = "1.15.60"`
    - `green-smart-rebuild-panel-v1-15-35`
    - `settings-modal-close-cache-only`
    - `_closeR7SettingsRecordModalFromButton`
@@ -63,11 +63,11 @@ The modal close bug itself has two parts:
    - no `data-r7-mobile-light-subtab-panel="true"`
    - no `data-r7-settings-cached-patch-panel`
 7. Check HA logs for Green Smart/Traceback/Error/Exception.
-8. If served smoke passes but user still sees old behavior, add/verify stronger cache-busting by bumping to v1.15.59 and ensuring panel registration module URL changes in HA frontend metadata.
+8. If served smoke passes but user still sees old behavior, add/verify stronger cache-busting by bumping to v1.15.60 and ensuring panel registration module URL changes in HA frontend metadata.
 
 ## Release criteria
 
 - Product repo and deploy bind source are both at the same version.
 - Container `/config` and served URL show the new markers.
 - Real served browser smoke passes for bottom cancel.
-- Full tests remain passing or only skipped if no code changed after v1.15.59.
+- Full tests remain passing or only skipped if no code changed after v1.15.60.

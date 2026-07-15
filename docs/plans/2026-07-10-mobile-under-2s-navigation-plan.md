@@ -1,4 +1,4 @@
-# v1.15.59 모바일 2초 이내 체감 전환 계획
+# v1.15.60 모바일 2초 이내 체감 전환 계획
 
 ## 사용자 기준
 
@@ -8,9 +8,9 @@
 
 ## 실제 재분석 결과
 
-### 1. v1.15.59의 핵심 버그
+### 1. v1.15.60의 핵심 버그
 
-v1.15.59는 light-first panel을 넣었지만 `_patchR7MobileSubtabPanel()` 시작부에서 여전히 full panel을 먼저 생성했다.
+v1.15.60는 light-first panel을 넣었지만 `_patchR7MobileSubtabPanel()` 시작부에서 여전히 full panel을 먼저 생성했다.
 
 ```js
 const panelHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
@@ -24,7 +24,7 @@ const panelHtml = this._renderR7SubtabPanelForDomain(domain, tabKey);
 - Node 문자열 생성은 수 ms지만, 모바일 HA WebView에서는 큰 `innerHTML` 삽입/layout/reflow가 병목일 가능성이 높음.
 - 설정 데이터 API는 인증 라우트라 unauth curl로는 404/401처럼 보일 수 있으나, 프론트는 `hass.callApi`로 호출한다. 초기 연결 시 `_loadHomeContext`, `_loadSettingsUsersPermissions`, `_loadSettingsGreenhouseZoneData`가 각각 render를 유발하므로 모바일에서 클릭과 겹치면 jank 가능성이 있다.
 
-## v1.15.59 수정 방침
+## v1.15.60 수정 방침
 
 1. 하위탭 클릭 프레임에서 full panel HTML 생성 금지.
    - `_patchR7MobileSubtabPanel()`은 먼저 light panel만 생성/삽입한다.

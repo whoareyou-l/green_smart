@@ -11,8 +11,8 @@ def source() -> str:
 
 def test_v1_15_37_settings_create_modal_mobile_stacks_form_and_checklist_sections():
     text = source()
-    assert '"version": "1.15.59"' in MANIFEST.read_text(encoding="utf-8")
-    assert 'const REBUILD_VERSION = "1.15.59"' in text
+    assert '"version": "1.15.60"' in MANIFEST.read_text(encoding="utf-8")
+    assert 'const REBUILD_VERSION = "1.15.60"' in text
     start = text.index('  renderR7RecordCommonModalShell(modal, summary, body)')
     block = text[start:text.index('  renderR7RecordHistoryCdaBody', start)]
     assert 'data-r7-record-modal-responsive-style' in block

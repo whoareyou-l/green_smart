@@ -52,9 +52,9 @@ def _render_device_mapping() -> str:
 
 
 def test_r7_115_version_surfaces_are_1_14_49():
-    assert '"version": "1.15.59"' in _read(MANIFEST)
-    assert 'const VERSION = "1.15.59"' in _read(LEGACY_PANEL)
-    assert 'REBUILD_VERSION = "1.15.59"' in _read(REBUILD_PANEL)
+    assert '"version": "1.15.60"' in _read(MANIFEST)
+    assert 'const VERSION = "1.15.60"' in _read(LEGACY_PANEL)
+    assert 'REBUILD_VERSION = "1.15.60"' in _read(REBUILD_PANEL)
 
 
 def test_r7_115_device_mapping_removes_selected_zone_and_uses_requested_card_labels():
@@ -111,7 +111,17 @@ def test_r7_115_irrigation_group_device_link_modal_fields_and_save_contract():
       panel._settingsGreenhouseZoneData = {{
         source: 'test', greenhouses: [{{ id: 1, name: '대표 온실' }}], zones: panel._homeContext.zones,
         irrigationGroups: [{{ id: 7, zoneId: 'zone-a', zoneName: 'A구역', irrigationGroupName: 'A구역 관수그룹 1' }}],
-        devices: [{{ id: 9, deviceName: 'A구역 양액기', deviceType: '양액기', entityId: 'switch.a_fertigation', status: 'active' }}],
+        devices: [{{ id: 9, haDeviceId: 'ha-fertigation-a', deviceName: 'A구역 양액기', deviceType: '양액기', entityId: 'switch.a_fertigation', status: 'active' }}],
+        canonicalDeviceEntities: {{
+          'ha-fertigation-a': [
+            {{ entityId: 'sensor.a_fertigation_ec', domain: 'sensor', unitOfMeasurement: 'mS/cm', originalName: '급액 EC 센서' }},
+            {{ entityId: 'sensor.a_fertigation_ph', domain: 'sensor', unitOfMeasurement: 'pH', originalName: '급액 pH 센서' }},
+            {{ entityId: 'sensor.a_fertigation_flow', domain: 'sensor', unitOfMeasurement: 'L/min', originalName: '급액 유량계' }},
+            {{ entityId: 'switch.a_tank_a_valve', domain: 'switch', originalName: 'A통 솔밸브' }},
+            {{ entityId: 'switch.a_tank_b_valve', domain: 'switch', originalName: 'B통 솔밸브' }},
+            {{ entityId: 'switch.a_zone_valve', domain: 'switch', originalName: '구역 솔밸브' }},
+          ]
+        }},
         deviceSensorMappings: []
       }};
       panel._openSettingsIrrigationGroupDeviceLinkModal();
@@ -124,19 +134,21 @@ def test_r7_115_irrigation_group_device_link_modal_fields_and_save_contract():
         'data-r7-settings-irrigation-group-device-link-modal="true"',
         'data-r7-settings-irrigation-group-device-link-form',
         'data-r7-settings-irrigation-group-device-link-group-fk-select',
-        'data-r7-settings-irrigation-group-device-link-role-select',
-        'data-r7-settings-irrigation-group-device-link-component-type-select',
-        'data-r7-settings-irrigation-group-device-link-io-type-select',
-        'data-r7-settings-irrigation-group-device-link-control-target-select',
-        'data-r7-settings-irrigation-group-device-link-nutrient-channel-select',
         'data-r7-settings-irrigation-group-device-link-device-fk-select',
-        'data-r7-settings-irrigation-group-device-link-entity-input',
-        'data-r7-settings-irrigation-group-device-link-unit-input',
-        'data-r7-settings-irrigation-group-device-link-normal-range-input',
+        'data-r7-irrigation-group-device-id-select',
+        'data-r7-irrigation-group-device-name-input',
+        'data-r7-irrigation-group-device-entity-repeat-group',
+        'data-r7-irrigation-group-device-entity-row',
+        'data-r7-irrigation-group-device-entity-id-readonly',
+        'data-r7-irrigation-group-device-entity-component-type-select',
+        'data-r7-irrigation-group-device-entity-io-type-select',
+        'data-r7-irrigation-group-device-entity-control-target-select',
+        'data-r7-irrigation-group-device-entity-nutrient-channel-select',
+        'data-r7-irrigation-group-device-entity-normal-range-input',
         'data-r7-settings-irrigation-group-device-link-status-select',
     ):
         assert marker in html
-    for phrase in ('관수그룹 장치 연결', '관수그룹 장치 연결 저장', '관수그룹', '상위 역할', '구성요소 상세', '구성요소 유형', '입출력 유형', '제어/측정 대상', '계통/채널', '양액기 센서', '양액기 액추에이터', '양액기 유량계', '원수/급수 장치', '관수그룹 공급장치', '배액기 센서', '배액기 장치', 'EC 센서', 'pH 센서', '급액 유량계', '원수 유량계', 'EC 조절 솔밸브', 'pH 조절 솔밸브', '원수 유입 모터', '급수 모터', '관수그룹 공급 솔밸브', 'Entity 연결', '대표 Entity', '단위', '정상 범위', '연결 상태', '장치오류', 'A구역 관수그룹 1', 'A구역 양액기'):
+    for phrase in ('관수그룹 장치 연결', '관수그룹 장치 연결 저장', '관수그룹', '디바이스 선택', '디바이스 ID', '디바이스 명', '엔티티 N 그룹', '엔티티ID', '상위 역할', '구성요소 유형', '입출력 유형', '제어/측정 대상', '계통/채널', '양액기 센서', '양액기 액추에이터', '양액기 유량계', '원수/급수 장치', '관수그룹 공급장치', 'EC 센서', 'pH 센서', '급액 유량계', 'A통 솔밸브', 'B통 솔밸브', '구역 솔밸브', '관수그룹 공급 솔밸브', '정상 범위', 'A구역 관수그룹 1', 'A구역 양액기', 'sensor.a_fertigation_ec', 'sensor.a_fertigation_ph', 'sensor.a_fertigation_flow', 'switch.a_tank_a_valve', 'switch.a_tank_b_valve', 'switch.a_zone_valve'):
         assert phrase in html
     assert '관수그룹 생성' not in html
 
@@ -149,6 +161,7 @@ def test_r7_115_irrigation_group_device_link_db_api_contract_exists():
         'CREATE TABLE IF NOT EXISTS green_smart_settings_irrigation_group_device_links',
         'irrigation_group_id BIGINT NOT NULL',
         'device_id VARCHAR(128)',
+        'device_name_snapshot VARCHAR(128)',
         'device_entity VARCHAR(255)',
         'link_role VARCHAR(64)',
         'component_type VARCHAR(96)',
@@ -168,6 +181,9 @@ def test_r7_115_irrigation_group_device_link_db_api_contract_exists():
         '"irrigationGroupDeviceLinks": irrigation_group_device_links',
         '"componentType": row.get("component_type")',
         '_str(payload, "componentType", "component_type"',
+        'raw_entities = payload.get("entities")',
+        'device_name_snapshot = VALUES(device_name_snapshot)',
+        'savedCount',
         '_str(payload, "ioType", "io_type"',
         '_str(payload, "controlTarget", "control_target"',
         '_str(payload, "nutrientChannel", "nutrient_channel"',

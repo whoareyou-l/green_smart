@@ -10,7 +10,7 @@ def source() -> str:
 
 def test_v1_15_25_mobile_settings_button_is_also_sidebar_target_for_primary_nav_binding():
     text = source()
-    assert 'const REBUILD_VERSION = "1.15.59"' in text
+    assert 'const REBUILD_VERSION = "1.15.60"' in text
     nav_start = text.index('  renderR7MobileTopNavigation()')
     button_start = text.index('data-r7-mobile-settings-button="true"', nav_start)
     button = text[button_start:button_start + 700]
